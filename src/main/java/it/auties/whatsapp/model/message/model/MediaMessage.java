@@ -1,11 +1,9 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
-import it.auties.whatsapp.util.LocalFileSystem;
 import it.auties.whatsapp.util.Medias;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -37,11 +35,6 @@ import java.util.Optional;
 @EqualsAndHashCode(callSuper = true)
 public abstract sealed class MediaMessage extends ContextualMessage implements AttachmentProvider permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
-     * The folder where medias are saved
-     */
-    private static final Path MEDIA_FOLDER = LocalFileSystem.of("medias");
-
-    /**
      * The cached decoded media, by default null
      */
     private byte[] decodedMedia;
@@ -62,19 +55,6 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @return a non-null {@link MediaMessageType}
      */
     public abstract MediaMessageType mediaType();
-
-    /**
-     * Saves this media to the internal memory of the host. Throws an error if the media cannot be
-     * downloaded successfully.
-     *
-     * @return the non-null path where the file was downloaded
-     */
-    public Path save() {
-        var randomId = Bytes.ofRandom(5).toHex();
-        var extension = mediaType().fileExtension();
-        var fileName = "%s.%s".formatted(randomId, extension);
-        return save(MEDIA_FOLDER.resolve(fileName));
-    }
 
     /**
      * Saves this media to the provided path. Throws an error if the media cannot be downloaded

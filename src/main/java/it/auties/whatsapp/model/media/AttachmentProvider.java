@@ -3,11 +3,12 @@ package it.auties.whatsapp.model.media;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.sync.ExternalBlobReference;
 import it.auties.whatsapp.model.sync.HistorySyncNotification;
+import it.auties.whatsapp.model.sync.StickerMetadata;
 
 /**
  * A sealed interface that represents a class that can provide data about a media
  */
-public sealed interface AttachmentProvider permits MediaMessage, ExternalBlobReference, HistorySyncNotification {
+public sealed interface AttachmentProvider permits MediaMessage, ExternalBlobReference, HistorySyncNotification, StickerMetadata {
     /**
      * Returns the url to the media
      *

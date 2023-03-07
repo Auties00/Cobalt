@@ -33,11 +33,11 @@ import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.io.IOException;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -273,7 +273,7 @@ class StreamHandler extends Handler implements JacksonProvider {
                 .orElseGet(() -> socketHandler.store().addChat(fromJid));
         var timestamp = node.attributes().getLong("t");
         if (fromChat.isGroup()) {
-            addMessageForGroupStubType(fromChat, StubType.GROUP_CHANGE_ICON, timestamp);
+            addMessageForGroupStubType(fromChat, StubType.GROUP_CHANGE_ICON, timestamp, node);
             socketHandler.onGroupPictureChange(fromChat);
             return;
         }
@@ -286,10 +286,17 @@ class StreamHandler extends Handler implements JacksonProvider {
     }
 
     private void handleGroupNotification(Node node) {
-        node.findNode()
-                .map(Node::description)
-                .flatMap(StubType::of)
-                .ifPresent(stubType -> handleGroupStubNotification(node, stubType));
+        var child = node.findNode();
+        if(child.isEmpty()){
+            return;
+        }
+
+        var stubType = StubType.of(child.get().description());
+        if(stubType.isEmpty()){
+            return;
+        }
+
+        handleGroupStubNotification(node, stubType.get());
     }
 
     private void handleGroupStubNotification(Node node, StubType stubType) {
@@ -300,19 +307,48 @@ class StreamHandler extends Handler implements JacksonProvider {
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
                 .orElseGet(() -> socketHandler.store().addChat(fromJid));
-        addMessageForGroupStubType(fromChat, stubType, timestamp);
+        addMessageForGroupStubType(fromChat, stubType, timestamp, node);
     }
 
-    private void addMessageForGroupStubType(Chat chat, StubType stubType, long timestamp) {
-        var key = MessageKey.builder().chatJid(chat.jid()).build();
+    private void addMessageForGroupStubType(Chat chat, StubType stubType, long timestamp, Node metadata) {
+        var participantJid = metadata.attributes()
+                .getJid("participant")
+                .orElse(null);
+        var parameters = getStubTypeParameters(metadata);
+        var key = MessageKey.builder()
+                .chatJid(chat.jid())
+                .senderJid(participantJid)
+                .build();
         var message = MessageInfo.builder()
                 .timestampSeconds(timestamp)
                 .key(key)
                 .ignore(true)
                 .stubType(stubType)
-                .stubParameters(List.of())
+                .stubParameters(parameters)
+                .senderJid(participantJid)
                 .build();
-        chat.addNewMessage(socketHandler.store().attribute(message));
+        socketHandler.store().attribute(message);
+        chat.addNewMessage(message);
+        socketHandler.onNewMessage(message, false);
+    }
+
+    private List<String> getStubTypeParameters(Node metadata) {
+        try {
+            var attributes  = new ArrayList<String>();
+            attributes.add(JSON.writeValueAsString(metadata.attributes().toMap()));
+            for(var child : metadata.children()){
+                var data = child.attributes();
+                if(data.isEmpty()){
+                    continue;
+                }
+
+                attributes.add(JSON.writeValueAsString(data.toMap()));
+            }
+
+            return Collections.unmodifiableList(attributes);
+        }catch (IOException exception){
+            return List.of();
+        }
     }
 
     private void handleEncryptNotification(Node node) {
@@ -498,7 +534,8 @@ class StreamHandler extends Handler implements JacksonProvider {
             return;
         }
 
-        var chatsFuture = ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
+        var chatsFuture = socketHandler.options()
+                .deserializer()
                 .attributeStore(socketHandler.store())
                 .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, chatsFuture)

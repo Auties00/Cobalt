@@ -19,11 +19,11 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.Clock;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
@@ -38,18 +38,11 @@ import java.util.stream.Stream;
 /**
  * This controller holds the user-related data regarding a WhatsappWeb session
  */
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@SuperBuilder
 @Jacksonized
-@Builder
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Store implements Controller<Store> {
-    /**
-     * All the known stores
-     */
-    @JsonIgnore
-    private static ConcurrentHashMap<Integer, Store> stores = new ConcurrentHashMap<>();
-
+public final class Store extends Controller<Store> {
     /**
      * The session id of this store
      */
@@ -214,11 +207,6 @@ public final class Store implements Controller<Store> {
     @Default
     private CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
 
-    @JsonIgnore
-    @Getter
-    @Setter
-    private boolean useDefaultSerializer;
-
     /**
      * The request tag, used to create messages
      */
@@ -235,9 +223,9 @@ public final class Store implements Controller<Store> {
      * @return a non-null store
      */
     public static Store of(@NonNull WhatsappOptions options) {
-        var deserializer = ControllerProviderLoader.findOnlyDeserializer(options.defaultSerialization());
+        var deserializer = options.deserializer();
         var result = deserializer.deserializeStore(options.id())
-                .map(store -> store.useDefaultSerializer(options.defaultSerialization()))
+                .map(store -> store.serializer(options.serializer()))
                 .orElseGet(() -> random(options));
         deserializer.attributeStore(result); // Run async
         return result;
@@ -250,19 +238,10 @@ public final class Store implements Controller<Store> {
      * @return a non-null store
      */
     public static Store random(@NonNull WhatsappOptions options) {
-        var result = Store.builder().id(options.id()).useDefaultSerializer(options.defaultSerialization()).build();
-        stores.put(result.id(), result);
-        return result;
-    }
-
-    /**
-     * Queries the first store whose id is equal to {@code id}
-     *
-     * @param id the id to search
-     * @return a non-null optional
-     */
-    public static Optional<Store> findStoreById(int id) {
-        return Optional.ofNullable(stores.get(id));
+        return Store.builder()
+                .serializer(options.serializer())
+                .id(options.id())
+                .build();
     }
 
     /**
@@ -735,7 +714,6 @@ public final class Store implements Controller<Store> {
 
     @Override
     public void serialize(boolean async) {
-        ControllerProviderLoader.findAllSerializers(useDefaultSerializer())
-                .forEach(serializer -> serializer.serializeStore(this, async));
+        serializer.serializeStore(this, async);
     }
 }

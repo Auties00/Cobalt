@@ -45,7 +45,6 @@ import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.model.sync.*;
-import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
@@ -173,7 +172,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection(@NonNull WhatsappOptions options) {
-        var lastIds = ControllerProviderLoader.findAllIds(options.defaultSerialization());
+        var lastIds = options.deserializer().findIds();
         if (!lastIds.isEmpty()) {
             options.id(lastIds.peekFirst());
         }
@@ -198,7 +197,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection(@NonNull WhatsappOptions options) {
-        var lastIds = ControllerProviderLoader.findAllIds(options.defaultSerialization());
+        var lastIds = options.deserializer().findIds();
         if (!lastIds.isEmpty()) {
             options.id(lastIds.peekLast());
         }
@@ -231,7 +230,8 @@ public class Whatsapp {
      * @return a non-null Stream
      */
     public static Stream<Whatsapp> streamConnections(@NonNull WhatsappOptions options) {
-        return ControllerProviderLoader.findAllIds(options.defaultSerialization())
+        return options.deserializer()
+                .findIds()
                 .stream()
                 .map(id -> Whatsapp.newConnection(options.id(id)));
     }
@@ -2525,6 +2525,4 @@ public class Whatsapp {
                         .orElseThrow(() -> new NoSuchElementException("Missing community response, something went wrong: %s".formatted(findErrorNode(response)))))
                 .thenApplyAsync(GroupMetadata::of);
     }
-
-
 }

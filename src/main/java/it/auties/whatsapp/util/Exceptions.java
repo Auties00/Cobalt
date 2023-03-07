@@ -2,8 +2,10 @@ package it.auties.whatsapp.util;
 
 import lombok.experimental.UtilityClass;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -23,18 +25,16 @@ public class Exceptions {
     }
 
     public Path save(Throwable throwable) {
-        var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
         try {
-            var path = LocalFileSystem.of("exceptions");
-            Files.createDirectories(path);
-            var file = path.resolve("%s.txt".formatted(System.currentTimeMillis()));
+            var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
+            var path = Files.createTempFile("whatsapp4j", ".txt");
             var stackTraceWriter = new StringWriter();
             var stackTracePrinter = new PrintWriter(stackTraceWriter);
             actual.printStackTrace(stackTracePrinter);
-            Files.writeString(file, stackTraceWriter.toString());
-            return file;
-        } catch (Throwable ignored) {
-            throw new RuntimeException("Cannot serialize exception. Here is the non-serialized stack trace", actual);
+            Files.writeString(path, stackTraceWriter.toString());
+            return path;
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot serialize exception. Here is the non-serialized stack trace", exception);
         }
     }
 }

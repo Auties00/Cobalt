@@ -58,9 +58,9 @@ public class HistorySync implements ProtobufMessage {
     @ProtobufProperty(index = 10, type = UINT32)
     private Integer threadDsTimeframeOffset;
 
-    @ProtobufProperty(implementation = RecentStickerMetadata.class, index = 11, name = "recentStickers", repeated = true, type = MESSAGE)
+    @ProtobufProperty(implementation = StickerMetadata.class, index = 11, name = "recentStickers", repeated = true, type = MESSAGE)
     @Default
-    private List<RecentStickerMetadata> recentStickers = new ArrayList<>();
+    private List<StickerMetadata> recentStickers = new ArrayList<>();
 
     @ProtobufProperty(implementation = PastParticipants.class, index = 12, name = "pastParticipants", repeated = true, type = MESSAGE)
     @Default
