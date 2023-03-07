@@ -19,7 +19,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.serialization.ControllerProviderLoader;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.util.Clock;
 import lombok.*;
 import lombok.Builder.Default;
@@ -55,6 +55,12 @@ public final class Store implements Controller<Store> {
      */
     @Getter
     private int id;
+
+    @Getter
+    @Setter
+    @JsonIgnore
+    @NonNull
+    private Serializers serializers;
 
     /**
      * The locale of the user linked to this account. This field will be null while the user hasn't
@@ -214,11 +220,6 @@ public final class Store implements Controller<Store> {
     @Default
     private CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
 
-    @JsonIgnore
-    @Getter
-    @Setter
-    private boolean useDefaultSerializer;
-
     /**
      * The request tag, used to create messages
      */
@@ -234,12 +235,11 @@ public final class Store implements Controller<Store> {
      * @param options the non-null options
      * @return a non-null store
      */
-    public static Store of(@NonNull WhatsappOptions options) {
-        var deserializer = ControllerProviderLoader.findOnlyDeserializer(options.defaultSerialization());
-        var result = deserializer.deserializeStore(options.id())
-                .map(store -> store.useDefaultSerializer(options.defaultSerialization()))
+    public static Store of(@NonNull WhatsappOptions options, @NonNull Serializers serializers) {
+        var result = serializers.deserializer().deserializeStore(options.id())
                 .orElseGet(() -> random(options));
-        deserializer.attributeStore(result); // Run async
+        result.serializers = serializers ;
+        serializers.deserializer().attributeStore(result); // Run async
         return result;
     }
 
@@ -250,7 +250,7 @@ public final class Store implements Controller<Store> {
      * @return a non-null store
      */
     public static Store random(@NonNull WhatsappOptions options) {
-        var result = Store.builder().id(options.id()).useDefaultSerializer(options.defaultSerialization()).build();
+        var result = Store.builder().id(options.id()).build();
         stores.put(result.id(), result);
         return result;
     }
@@ -735,7 +735,6 @@ public final class Store implements Controller<Store> {
 
     @Override
     public void serialize(boolean async) {
-        ControllerProviderLoader.findAllSerializers(useDefaultSerializer())
-                .forEach(serializer -> serializer.serializeStore(this, async));
+        this.serializers.serializer().serializeStore(this, async);
     }
 }

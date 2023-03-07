@@ -32,6 +32,7 @@ import it.auties.whatsapp.model.signal.auth.ClientHello;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.KeyHelper;
@@ -87,6 +88,10 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
     private final WhatsappOptions options;
 
     @NonNull
+    @Getter
+    private final Serializers serializers;
+
+    @NonNull
     @Getter(AccessLevel.PROTECTED)
     private final FailureHandler errorHandler;
 
@@ -107,9 +112,10 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
 
     private CompletableFuture<Void> authFuture;
 
-    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull WhatsappOptions options, @NonNull Store store, @NonNull Keys keys) {
+    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull WhatsappOptions options, @NonNull Serializers serializers, @NonNull Store store, @NonNull Keys keys) {
         this.whatsapp = whatsapp;
         this.options = options;
+        this.serializers = serializers;
         this.store = store;
         this.keys = keys;
         this.state = SocketState.WAITING;
@@ -266,7 +272,7 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
                 session.close();
                 LocalFileSystem.delete(keys().id());
                 options.id(KeyHelper.registrationId());
-                this.keys = Keys.random(options);
+                this.keys = Keys.random(options, serializers);
                 this.store = Store.random(options);
                 store.listeners().addAll(oldListeners);
                 yield connect();

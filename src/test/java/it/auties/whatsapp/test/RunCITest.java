@@ -29,6 +29,9 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.serialization.DefaultControllerDeserializerProvider;
+import it.auties.whatsapp.serialization.DefaultControllerSerializerProvider;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
@@ -87,6 +90,10 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     private void createApi() {
+        Serializers serializers = Serializers.builder()
+                .serializer(new DefaultControllerSerializerProvider())
+                .deserializer(new DefaultControllerDeserializerProvider())
+                .build();
         log("Initializing api to start testing...");
         if (!GithubActions.isActionsEnvironment()) {
             if (GithubActions.isReleaseEnv()) {
@@ -94,12 +101,12 @@ public class RunCITest implements Listener, JacksonProvider {
                 skip = true;
                 return;
             }
-            api = Whatsapp.lastConnection();
+            api = Whatsapp.lastConnection(serializers);
             api.addListener(this);
             return;
         }
         log("Detected github actions environment");
-        api = Whatsapp.newConnection(WebOptions.defaultOptions(), loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
+        api = Whatsapp.newConnection(WebOptions.defaultOptions(), serializers, loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
         api.addListener(this);
     }
 

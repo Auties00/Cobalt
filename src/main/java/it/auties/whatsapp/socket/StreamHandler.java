@@ -33,7 +33,6 @@ import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -498,7 +497,7 @@ class StreamHandler extends Handler implements JacksonProvider {
             return;
         }
 
-        var chatsFuture = ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
+        var chatsFuture = socketHandler.serializers().deserializer()
                 .attributeStore(socketHandler.store())
                 .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, chatsFuture)

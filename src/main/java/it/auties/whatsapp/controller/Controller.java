@@ -1,6 +1,9 @@
 package it.auties.whatsapp.controller;
 
+import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.util.JacksonProvider;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,25 +26,11 @@ public sealed interface Controller<T extends Controller<T>> extends JacksonProvi
     void dispose();
 
     /**
-     * Whether the default serializer should be used
-     *
-     * @return a boolean
-     */
-    boolean useDefaultSerializer();
-
-    /**
      * Serializes this object
      *
      * @param async whether the operation should be executed asynchronously
      */
     void serialize(boolean async);
-
-    /**
-     * Set whether the default serializer should be used
-     *
-     * @return the same instance
-     */
-    T useDefaultSerializer(boolean useDefaultSerializer);
 
     /**
      * Converts this controller to a json. Useful when debugging.

@@ -5,6 +5,9 @@ import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.serialization.DefaultControllerDeserializerProvider;
+import it.auties.whatsapp.serialization.DefaultControllerSerializerProvider;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.util.JacksonProvider;
 
 import java.util.Scanner;
@@ -17,7 +20,11 @@ public class MobileTest implements JacksonProvider {
                 .verificationCodeMethod(VerificationCodeMethod.CALL)
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
-        var whatsapp = Whatsapp.lastConnection(options)
+        Serializers serializers = Serializers.builder()
+                .serializer(new DefaultControllerSerializerProvider())
+                .deserializer(new DefaultControllerDeserializerProvider())
+                .build();
+        var whatsapp = Whatsapp.lastConnection(options, serializers)
                 .addLoggedInListener(api -> {
                     System.out.println("Connected: " + api.store().userCompanionJid());
                     api.sendMessage(ContactJid.of("393495089819"), "test");

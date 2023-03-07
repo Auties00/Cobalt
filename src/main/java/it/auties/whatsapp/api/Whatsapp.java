@@ -45,7 +45,7 @@ import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.model.sync.*;
-import it.auties.whatsapp.serialization.ControllerProviderLoader;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
@@ -83,12 +83,12 @@ public class Whatsapp {
      */
     private final SocketHandler socketHandler;
 
-    private Whatsapp(@NonNull WhatsappOptions options) {
-        this(options, Store.of(options), Keys.of(options));
+    private Whatsapp(@NonNull WhatsappOptions options, @NonNull Serializers serializers) {
+        this(options, serializers, Store.of(options, serializers), Keys.of(options, serializers));
     }
 
-    private Whatsapp(WhatsappOptions options, Store store, Keys keys) {
-        this.socketHandler = new SocketHandler(this, options, store, keys);
+    private Whatsapp(WhatsappOptions options, Serializers serializers, Store store, Keys keys) {
+        this.socketHandler = new SocketHandler(this, options, serializers, store, keys);
         if (!options.autodetectListeners()) {
             return;
         }
@@ -128,8 +128,8 @@ public class Whatsapp {
      *
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp newConnection() {
-        return newConnection(defaultOptions());
+    public static Whatsapp newConnection(@NonNull Serializers serializers) {
+        return newConnection(defaultOptions(), serializers);
     }
 
     /**
@@ -139,8 +139,8 @@ public class Whatsapp {
      * @param options the non-null options used to create this session
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp newConnection(@NonNull WhatsappOptions options) {
-        return new Whatsapp(options);
+    public static Whatsapp newConnection(@NonNull WhatsappOptions options, @NonNull Serializers serializers) {
+        return new Whatsapp(options, serializers);
     }
 
     /**
@@ -151,8 +151,8 @@ public class Whatsapp {
      * @param keys    the non-null keys used to create this session
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp newConnection(@NonNull WhatsappOptions options, @NonNull Store store, @NonNull Keys keys) {
-        return new Whatsapp(options, store, keys);
+    public static Whatsapp newConnection(@NonNull WhatsappOptions options, @NonNull Serializers serializers, @NonNull Store store, @NonNull Keys keys) {
+        return new Whatsapp(options, serializers, store, keys);
     }
 
     /**
@@ -161,8 +161,8 @@ public class Whatsapp {
      *
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp firstConnection() {
-        return firstConnection(defaultOptions());
+    public static Whatsapp firstConnection(@NonNull Serializers serializers) {
+        return firstConnection(defaultOptions(), serializers);
     }
 
     /**
@@ -172,12 +172,12 @@ public class Whatsapp {
      * @param options the non-null options
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp firstConnection(@NonNull WhatsappOptions options) {
-        var lastIds = ControllerProviderLoader.findAllIds(options.defaultSerialization());
+    public static Whatsapp firstConnection(@NonNull WhatsappOptions options, @NonNull Serializers serializers) {
+        var lastIds = serializers.deserializer().findIds() ;
         if (!lastIds.isEmpty()) {
             options.id(lastIds.peekFirst());
         }
-        return newConnection(options);
+        return newConnection(serializers);
     }
 
     /**
@@ -186,8 +186,8 @@ public class Whatsapp {
      *
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp lastConnection() {
-        return lastConnection(defaultOptions());
+    public static Whatsapp lastConnection(@NonNull Serializers serializers) {
+        return lastConnection(defaultOptions(), serializers);
     }
 
     /**
@@ -197,12 +197,12 @@ public class Whatsapp {
      * @param options the non-null options
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp lastConnection(@NonNull WhatsappOptions options) {
-        var lastIds = ControllerProviderLoader.findAllIds(options.defaultSerialization());
+    public static Whatsapp lastConnection(@NonNull WhatsappOptions options, @NonNull Serializers serializers) {
+        var lastIds = serializers.deserializer().findIds() ;
         if (!lastIds.isEmpty()) {
             options.id(lastIds.peekLast());
         }
-        return newConnection(options);
+        return newConnection(options, serializers);
     }
 
     /**
@@ -210,8 +210,8 @@ public class Whatsapp {
      *
      * @return a non-null List
      */
-    public static List<Whatsapp> listConnections() {
-        return listConnections(defaultOptions());
+    public static List<Whatsapp> listConnections(@NonNull Serializers serializers) {
+        return listConnections(defaultOptions(), serializers);
     }
 
     /**
@@ -220,8 +220,8 @@ public class Whatsapp {
      * @param options the non-null options
      * @return a non-null List
      */
-    public static List<Whatsapp> listConnections(@NonNull WhatsappOptions options) {
-        return streamConnections(options).toList();
+    public static List<Whatsapp> listConnections(@NonNull WhatsappOptions options, @NonNull Serializers serializers) {
+        return streamConnections(options, serializers).toList();
     }
 
     /**
@@ -230,17 +230,16 @@ public class Whatsapp {
      * @param options the non-null options
      * @return a non-null Stream
      */
-    public static Stream<Whatsapp> streamConnections(@NonNull WhatsappOptions options) {
-        return ControllerProviderLoader.findAllIds(options.defaultSerialization())
-                .stream()
-                .map(id -> Whatsapp.newConnection(options.id(id)));
+    public static Stream<Whatsapp> streamConnections(@NonNull WhatsappOptions options, @NonNull Serializers serializers) {
+        return serializers.deserializer().findIds().stream()
+                .map(id -> Whatsapp.newConnection(options.id(id), serializers));
     }
 
     /**
      * Deletes all the known connections from memory
      */
-    public static void deleteConnections() {
-        streamConnections().forEach(entry -> LocalFileSystem.delete(entry.keys().id()));
+    public static void deleteConnections(@NonNull Serializers serializers) {
+        streamConnections(serializers).forEach(entry -> LocalFileSystem.delete(entry.keys().id()));
     }
 
     /**
@@ -248,8 +247,8 @@ public class Whatsapp {
      *
      * @return a non-null Stream
      */
-    public static Stream<Whatsapp> streamConnections() {
-        return streamConnections(defaultOptions());
+    public static Stream<Whatsapp> streamConnections(@NonNull Serializers serializers) {
+        return streamConnections(defaultOptions(), serializers);
     }
 
     /**
@@ -1369,7 +1368,7 @@ public class Whatsapp {
                 .value() == PrivacySettingValue.EVERYONE ? "read" : "read-self";
         socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), type);
         var count = info.chat().unreadMessagesCount();
-        if (count > 0) {
+        if(count > 0) {
             info.chat().unreadMessagesCount(count - 1);
         }
         return CompletableFuture.completedFuture(info.status(MessageStatus.READ));

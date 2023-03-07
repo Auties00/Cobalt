@@ -3,6 +3,7 @@ package it.auties.whatsapp.serialization;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -11,9 +12,16 @@ import java.util.concurrent.CompletableFuture;
  * and
  * <a href="https://www.baeldung.com/java-spi#3-service-provider">register it in your manifest</a>
  */
-public non-sealed interface ControllerDeserializerProvider extends ControllerProvider {
+public interface ControllerDeserializerProvider {
     /**
-     * Serializes the keys
+     * Returns all the known IDs
+     *
+     * @return a non-null linked list
+     */
+    LinkedList<Integer> findIds();
+
+    /**
+     * Deserializes the keys
      *
      * @param id the id of the keys
      * @return a non-null keys
@@ -38,15 +46,5 @@ public non-sealed interface ControllerDeserializerProvider extends ControllerPro
      */
     default CompletableFuture<Void> attributeStore(@SuppressWarnings("unused") Store store) {
         return CompletableFuture.completedFuture(null);
-    }
-
-    /**
-     * Returns whether this serializer should be favoured when compared to other serializers. If more
-     * than one serializer with this flag exists and is loaded, an error will be thrown.
-     *
-     * @return the boolean
-     */
-    default boolean isBest() {
-        return true;
     }
 }

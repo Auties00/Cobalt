@@ -2,13 +2,20 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
+import it.auties.whatsapp.serialization.DefaultControllerDeserializerProvider;
+import it.auties.whatsapp.serialization.DefaultControllerSerializerProvider;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.util.JacksonProvider;
 
 // Just used for testing locally
 public class WaitTest implements JacksonProvider {
     public static void main(String[] args) {
+        Serializers serializers = Serializers.builder()
+                .serializer(new DefaultControllerSerializerProvider())
+                .deserializer(new DefaultControllerDeserializerProvider())
+                .build();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
-        Whatsapp.lastConnection(WebOptions.defaultOptions())
+        Whatsapp.lastConnection(WebOptions.defaultOptions(), serializers)
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

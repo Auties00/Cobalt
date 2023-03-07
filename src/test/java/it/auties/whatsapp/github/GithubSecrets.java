@@ -5,6 +5,9 @@ import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.utils.LibraryLoader;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.serialization.DefaultControllerDeserializerProvider;
+import it.auties.whatsapp.serialization.DefaultControllerSerializerProvider;
+import it.auties.whatsapp.serialization.Serializers;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import lombok.SneakyThrows;
@@ -138,10 +141,18 @@ public class GithubSecrets implements JacksonProvider {
     }
 
     private byte[] getStoreAsJson() throws JsonProcessingException {
-        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().store());
+        Serializers serializers = Serializers.builder()
+                .serializer(new DefaultControllerSerializerProvider())
+                .deserializer(new DefaultControllerDeserializerProvider())
+                .build();
+        return SMILE.writeValueAsBytes(Whatsapp.lastConnection(serializers).store());
     }
 
     private byte[] getCredentialsAsJson() throws JsonProcessingException {
-        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().keys());
+        Serializers serializers = Serializers.builder()
+                .serializer(new DefaultControllerSerializerProvider())
+                .deserializer(new DefaultControllerDeserializerProvider())
+                .build();
+        return SMILE.writeValueAsBytes(Whatsapp.lastConnection(serializers).keys());
     }
 }
