@@ -29,9 +29,7 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.serialization.DefaultControllerDeserializerProvider;
-import it.auties.whatsapp.serialization.DefaultControllerSerializerProvider;
-import it.auties.whatsapp.serialization.Serializers;
+import it.auties.whatsapp.serialization.*;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
@@ -90,9 +88,11 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     private void createApi() {
+        ControllerSerializerProvider serializer = new DefaultControllerSerializerProvider() ;
+        ControllerDeserializerProvider deserializer = new DefaultControllerDeserializerProvider();
         Serializers serializers = Serializers.builder()
-                .serializer(new DefaultControllerSerializerProvider())
-                .deserializer(new DefaultControllerDeserializerProvider())
+                .serializer(serializer)
+                .deserializer(deserializer)
                 .build();
         log("Initializing api to start testing...");
         if (!GithubActions.isActionsEnvironment()) {

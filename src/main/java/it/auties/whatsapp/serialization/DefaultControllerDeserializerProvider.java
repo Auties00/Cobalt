@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.ERROR;
@@ -23,6 +24,9 @@ import static java.lang.System.Logger.Level.WARNING;
 
 public class DefaultControllerDeserializerProvider extends DefaultControllerProviderBase
         implements ControllerDeserializerProvider {
+
+    private final AtomicReference<CompletableFuture<Void>> deserializer =  new AtomicReference<>();
+
     @Override
     public synchronized CompletableFuture<Void> attributeStore(Store store) {
         var oldTask = deserializer.get();
