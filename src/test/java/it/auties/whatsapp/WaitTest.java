@@ -2,10 +2,9 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
-import it.auties.whatsapp.util.JacksonProvider;
 
 // Just used for testing locally
-public class WaitTest implements JacksonProvider {
+public class WaitTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         Whatsapp.lastConnection(WebOptions.defaultOptions())

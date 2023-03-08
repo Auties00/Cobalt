@@ -67,7 +67,7 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.*;
 
-class MessageHandler extends Handler implements JacksonProvider {
+class MessageHandler extends Handler {
     private static final int MAX_ATTEMPTS = 3;
 
     private final SocketHandler socketHandler;

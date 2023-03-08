@@ -8,7 +8,6 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.socket.SocketSession;
 import it.auties.whatsapp.util.Exceptions;
-import it.auties.whatsapp.util.JacksonProvider;
 import lombok.NonNull;
 
 import java.io.IOException;
@@ -24,7 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 @SuppressWarnings("UnusedReturnValue")
 public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future,
-                      Function<Node, Boolean> filter, Throwable caller) implements JacksonProvider {
+                      Function<Node, Boolean> filter, Throwable caller) {
     /**
      * The timeout in seconds before a Request wrapping a Node fails
      */

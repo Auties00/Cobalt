@@ -37,7 +37,6 @@ import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -55,7 +54,7 @@ import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Accessors(fluent = true)
-class StreamHandler extends Handler implements JacksonProvider {
+class StreamHandler extends Handler {
     private static final byte[] MESSAGE_HEADER = {6, 0};
     private static final byte[] SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
@@ -333,22 +332,18 @@ class StreamHandler extends Handler implements JacksonProvider {
     }
 
     private List<String> getStubTypeParameters(Node metadata) {
-        try {
-            var attributes  = new ArrayList<String>();
-            attributes.add(JSON.writeValueAsString(metadata.attributes().toMap()));
-            for(var child : metadata.children()){
-                var data = child.attributes();
-                if(data.isEmpty()){
-                    continue;
-                }
-
-                attributes.add(JSON.writeValueAsString(data.toMap()));
+        var attributes  = new ArrayList<String>();
+        attributes.add(Json.writeValueAsString(metadata.attributes().toMap()));
+        for(var child : metadata.children()){
+            var data = child.attributes();
+            if(data.isEmpty()){
+                continue;
             }
 
-            return Collections.unmodifiableList(attributes);
-        }catch (IOException exception){
-            return List.of();
+            attributes.add(Json.writeValueAsString(data.toMap()));
         }
+
+        return Collections.unmodifiableList(attributes);
     }
 
     private void handleEncryptNotification(Node node) {

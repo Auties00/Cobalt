@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.request;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Json;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
@@ -22,7 +21,7 @@ import static java.util.Objects.requireNonNull;
  *                    {@link Number}
  */
 public record Node(@NonNull String description, @NonNull Attributes attributes,
-                   Object content) implements JacksonProvider {
+                   Object content) {
     /**
      * Constructs a Node that only provides a non-null tag
      *
@@ -306,10 +305,6 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
      * @return a non null String
      */
     public String toJson() {
-        try {
-            return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(this);
-        } catch (JsonProcessingException exception) {
-            throw new RuntimeException("Cannot convert node to json", exception);
-        }
+        return Json.writeValueAsString(this, true);
     }
 }

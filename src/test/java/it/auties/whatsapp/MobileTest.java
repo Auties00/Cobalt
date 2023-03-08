@@ -5,11 +5,10 @@ import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import it.auties.whatsapp.util.JacksonProvider;
 
 import java.util.Scanner;
 
-public class MobileTest implements JacksonProvider {
+public class MobileTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
