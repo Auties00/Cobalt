@@ -69,7 +69,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
      */
     @ProtobufProperty(index = 12, type = UINT64)
-    private final long timestampSeconds;
+    private long timestampSeconds;
 
     /**
      * A non-null arrayList of messages in this chat sorted chronologically
@@ -679,6 +679,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             return false;
         }
         messages.addLast(info);
+        updateChatTimestamp(info);
         return true;
     }
 
@@ -688,8 +689,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param info the message to add to the chat
      * @return whether the messages were added
      */
-    public boolean addNewMessages(@NonNull Collection<MessageInfo> info) {
-        return messages.addAll(info);
+    public boolean addNewMessages(@NonNull List<MessageInfo> info) {
+        if(info.isEmpty()){
+            return true;
+        }
+        var result = messages.addAll(info);
+        updateChatTimestamp(info.get(info.size() - 1));
+        return result;
     }
 
     /**
@@ -712,7 +718,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param messages the messages to add to the chat
      * @return whether the messages were added
      */
-    public boolean addOldMessages(@NonNull Collection<MessageInfo> messages) {
+    public boolean addOldMessages(@NonNull List<MessageInfo> messages) {
         messages.forEach(this.messages::addFirst);
         return true;
     }
@@ -724,7 +730,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull MessageInfo info) {
-        return messages.remove(info);
+        var result = messages.remove(info);
+        refreshChatTimestamp();
+        return result;
     }
 
     /**
@@ -734,7 +742,26 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
-        return messages.removeIf(predicate);
+        var result = messages.removeIf(predicate);
+        refreshChatTimestamp();
+        return result;
+    }
+
+    private void refreshChatTimestamp() {
+        var message = newestMessage();
+        if(message.isEmpty()){
+            return;
+        }
+
+        updateChatTimestamp(message.get());
+    }
+
+    private void updateChatTimestamp(MessageInfo info) {
+        var oldTimeStamp = newestMessage().map(MessageInfo::timestampSeconds).orElse(0L);
+        if(oldTimeStamp > info.timestampSeconds()){
+            return;
+        }
+        timestampSeconds(info.timestampSeconds());
     }
 
     /**

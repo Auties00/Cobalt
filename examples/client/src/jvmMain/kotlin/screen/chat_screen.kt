@@ -23,7 +23,6 @@ fun Chat(chat: Chat) = Column {
     val navigator = LocalScreenNavigator.current
     val messages = chat.messages()
             .map { it.message().content() }
-            .filterIsInstance<TextMessage>()
             .toList()
     TopAppBar(
             title = { Text(chat.name()) },
@@ -42,7 +41,10 @@ fun Chat(chat: Chat) = Column {
         items(messages) {
             ListItem(
                     text = {
-                        Text(it.text())
+                        Text(when(it){
+                            is TextMessage -> it.text()
+                            else -> "[${it.javaClass.name}]"
+                        })
                     }
             )
         }

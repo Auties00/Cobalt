@@ -388,10 +388,11 @@ class MessageHandler extends Handler {
             var participant = infoNode.attributes().getJid("participant").orElse(null);
             var messageBuilder = MessageInfo.builder();
             var keyBuilder = MessageKey.builder();
-            var receiver = socketHandler.store().userCompanionJid();
-            if(receiver == null){
-                return;
+            var userCompanionJid =socketHandler.store().userCompanionJid();
+            if(userCompanionJid == null){
+                return; // This means that the session got disconnected while processing
             }
+            var receiver = userCompanionJid.toUserJid();
             if (from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
@@ -524,7 +525,7 @@ class MessageHandler extends Handler {
         }
         info.sender().ifPresent(sender -> sender.lastSeen(ZonedDateTime.now()));
         info.sender().filter(this::isTyping).ifPresent(sender -> sender.lastKnownPresence(ContactStatus.AVAILABLE));
-        if (!info.ignore()) {
+        if (!info.ignore() && !info.fromMe()) {
             info.chat().unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
         }
         socketHandler.onNewMessage(info, offline);

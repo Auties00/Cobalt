@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import controller.State
 import controller.WhatsappController
@@ -67,7 +68,16 @@ fun Home(state: MutableState<State>) = Column {
                             },
                             text = {
                                 Text(it.name())
+                            },
+                        trailing = {
+                            if(it.unreadMessagesCount() > 0)  {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(backgroundColor=Green) { Text(it.unreadMessagesCount().toString()) }
+                                    }
+                                ){}
                             }
+                        }
                     )
                 }
             }
