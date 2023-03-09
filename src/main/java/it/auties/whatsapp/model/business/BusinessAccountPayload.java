@@ -4,7 +4,6 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.BusinessAccountInfo;
-import it.auties.whatsapp.util.JacksonProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("BizAccountPayload")
-public class BusinessAccountPayload implements ProtobufMessage, JacksonProvider {
+public class BusinessAccountPayload implements ProtobufMessage {
     /**
      * The certificate of this account
      */

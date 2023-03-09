@@ -21,7 +21,7 @@ import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMeth
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 import it.auties.whatsapp.util.Validate;
@@ -46,7 +46,7 @@ import static java.util.Base64.getUrlEncoder;
 import static java.util.Map.entry;
 
 @RequiredArgsConstructor
-class AuthHandler extends Handler implements JacksonProvider {
+class AuthHandler extends Handler {
     private final SocketHandler socketHandler;
     private Handshake handshake;
 
@@ -217,30 +217,22 @@ class AuthHandler extends Handler implements JacksonProvider {
     }
 
     private void sendVerificationCode(PhoneNumber phoneNumber, String userAgent, String code) {
-        try {
-            var registerOptions = getRegistrationOptions(phoneNumber, entry("code", code.replaceAll("-", "")));
-            var codeResponse = sendRegistrationRequest(userAgent,"/register", registerOptions);
-            var phoneNumberResponse = JSON.readValue(codeResponse.body(), VerificationCodeResponse.class);
-            Validate.isTrue(phoneNumberResponse.status()
-                    .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
-        } catch (IOException exception) {
-            throw new RuntimeException("Cannot send verification code", exception);
-        }
+        var registerOptions = getRegistrationOptions(phoneNumber, entry("code", code.replaceAll("-", "")));
+        var codeResponse = sendRegistrationRequest(userAgent,"/register", registerOptions);
+        var phoneNumberResponse = Json.readValue(codeResponse.body(), VerificationCodeResponse.class);
+        Validate.isTrue(phoneNumberResponse.status()
+                .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
     }
 
     private VerificationCodeResponse askForVerificationCode(PhoneNumber phoneNumber, String userAgent, VerificationCodeMethod method) {
-        try {
-            var codeOptions = getRegistrationOptions(phoneNumber, entry("mcc", phoneNumber.countryCode()
-                    .mcc()), entry("mnc", phoneNumber.countryCode()
-                    .mnc()), entry("sim_mcc", "000"), entry("sim_mnc", "000"), entry("method", method.type()), entry("reason", ""), entry("hasav", "1"));
-            var codeResponse = sendRegistrationRequest(userAgent, "/code", codeOptions);
-            var phoneNumberResponse = JSON.readValue(codeResponse.body(), VerificationCodeResponse.class);
-            Validate.isTrue(phoneNumberResponse.status()
-                    .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
-            return phoneNumberResponse;
-        } catch (IOException exception) {
-            throw new RuntimeException("Cannot get verification code", exception);
-        }
+        var codeOptions = getRegistrationOptions(phoneNumber, entry("mcc", phoneNumber.countryCode()
+                .mcc()), entry("mnc", phoneNumber.countryCode()
+                .mnc()), entry("sim_mcc", "000"), entry("sim_mnc", "000"), entry("method", method.type()), entry("reason", ""), entry("hasav", "1"));
+        var codeResponse = sendRegistrationRequest(userAgent, "/code", codeOptions);
+        var phoneNumberResponse = Json.readValue(codeResponse.body(), VerificationCodeResponse.class);
+        Validate.isTrue(phoneNumberResponse.status()
+                .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
+        return phoneNumberResponse;
     }
 
     private HttpResponse<String> sendRegistrationRequest(String userAgent, String path, Map<String, Object> params) {

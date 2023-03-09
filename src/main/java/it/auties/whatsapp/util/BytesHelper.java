@@ -13,7 +13,7 @@ import java.util.zip.Inflater;
 import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
 
 @UtilityClass
-public class BytesHelper implements JacksonProvider {
+public class BytesHelper {
     public byte versionToBytes(int version) {
         return (byte) (version << 4 | CURRENT_VERSION);
     }

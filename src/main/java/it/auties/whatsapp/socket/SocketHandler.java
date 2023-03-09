@@ -33,7 +33,6 @@ import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.KeyHelper;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -59,7 +58,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
-public class SocketHandler extends Handler implements SocketListener, JacksonProvider {
+public class SocketHandler extends Handler implements SocketListener {
     private static final int MANUAL_INITIAL_PULL_TIMEOUT = 5;
 
     static {

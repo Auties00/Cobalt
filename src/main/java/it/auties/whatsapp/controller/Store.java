@@ -568,7 +568,7 @@ public final class Store extends Controller<Store> {
      * @return an immutable collection
      */
     public Collection<Chat> chats() {
-        return chats.values().stream().sorted(Comparator.comparingLong(Chat::timestampSeconds).reversed()).toList();
+        return chats.values().stream().sorted(Comparator.comparingLong((Chat chat) -> chat.timestampSeconds()).reversed()).toList();
     }
 
     /**
