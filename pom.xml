@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.auties00</groupId>
+    <groupId>io.github.angleto</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.1.3</version>
+    <version>1.0.0</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -102,7 +102,7 @@
         <linkpreview.version>2.1</linkpreview.version>
         <vcard.version>0.11.3</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
-        <libphonenumber.version>8.13.5</libphonenumber.version>
+        <libphonenumber.version>8.13.7</libphonenumber.version>
         <delombok.plugin.version>1.18.24.1</delombok.plugin.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>
         <delombok.output>${project.build.directory}\delombok</delombok.output>
