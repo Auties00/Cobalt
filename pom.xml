@@ -60,6 +60,8 @@
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
+                                    <keyname>${gpg.keyname}</keyname>
+                                    <passphraseServerId>${gpg.passphrase}</passphraseServerId>
                                     <gpgArguments>
                                         <arg>--pinentry-mode</arg>
                                         <arg>loopback</arg>
@@ -77,11 +79,11 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>17</java.version>
-        <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
-        <maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
-        <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-        <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
-        <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
+        <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
+        <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
+        <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
+        <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
+        <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
@@ -102,10 +104,10 @@
         <linkpreview.version>2.1</linkpreview.version>
         <vcard.version>0.11.3</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
-        <libphonenumber.version>8.13.5</libphonenumber.version>
+        <libphonenumber.version>8.13.7</libphonenumber.version>
         <delombok.plugin.version>1.18.24.1</delombok.plugin.version>
-        <delombok.input>${project.basedir}\src\main\java</delombok.input>
-        <delombok.output>${project.build.directory}\delombok</delombok.output>
+        <delombok.input>${project.basedir}/src/main/java</delombok.input>
+        <delombok.output>${project.build.directory}/delombok</delombok.output>
     </properties>
 
     <build>
@@ -202,7 +204,7 @@
                 <version>${maven.javadoc.plugin.version}</version>
                 <executions>
                     <execution>
-                        <phase>prepare-package</phase>
+                        <id>attach-javadocs</id>
                         <goals>
                             <goal>jar</goal>
                         </goals>
@@ -213,6 +215,7 @@
                     <release>${java.version}</release>
                     <failOnError>true</failOnError>
                     <additionalOptions>--enable-preview</additionalOptions>
+                    <show>private</show>
                     <debug>true</debug>
                     <verbose>true</verbose>
                 </configuration>
