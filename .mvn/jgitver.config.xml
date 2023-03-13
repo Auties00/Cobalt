@@ -5,12 +5,6 @@
     <!-- One of MAVEN, CONFIGURABLE, PATTERN -->
     <strategy>MAVEN</strategy>
 
-    <!-- One of MAX, LATEST, NEAREST -->
-    <policy>MAX</policy>
-
-    <!-- Boolean -->
-    <useGitCommitId>true</useGitCommitId>
-
     <!-- String, comma separate multiple branches -->
     <nonQualifierBranches>master</nonQualifierBranches>
 </configuration>
