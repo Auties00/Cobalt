@@ -1,0 +1,16 @@
+<configuration xmlns="http://jgitver.github.io/maven/configuration/1.1.0"
+	    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	    xsi:schemaLocation="http://jgitver.github.io/maven/configuration/1.1.0 https://jgitver.github.io/maven/configuration/jgitver-configuration-v1_1_0.xsd">
+
+    <!-- One of MAVEN, CONFIGURABLE, PATTERN -->
+    <strategy>MAVEN</strategy>
+
+    <!-- One of MAX, LATEST, NEAREST -->
+    <policy>MAX</policy>
+
+    <!-- Boolean -->
+    <useGitCommitId>true</useGitCommitId>
+
+    <!-- String, comma separate multiple branches -->
+    <nonQualifierBranches>master</nonQualifierBranches>
+</configuration>
