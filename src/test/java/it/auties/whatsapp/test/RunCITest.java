@@ -17,7 +17,10 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.chat.GroupPolicy;
-import it.auties.whatsapp.model.contact.*;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactCard;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
@@ -29,9 +32,9 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
+import it.auties.whatsapp.utils.Smile;
 import lombok.SneakyThrows;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
@@ -59,7 +62,7 @@ import java.util.stream.IntStream;
 // I repeat: DO NOT RUN THIS CI LOCALLY ON A BRAND-NEW NUMBER OR IT WILL GET BANNED
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class RunCITest implements Listener, JacksonProvider {
+public class RunCITest implements Listener {
     @SuppressWarnings("HttpUrlsUsage")
     private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 
@@ -108,7 +111,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
         var path = Path.of("ci/%s.gpg".formatted(parameter));
         var decrypted = ByteArrayHandler.decrypt(Files.readAllBytes(path), passphrase.toCharArray());
-        return SMILE.readValue(decrypted, type);
+        return Smile.readValue(decrypted, type);
     }
 
     private void loadConfig() throws IOException {

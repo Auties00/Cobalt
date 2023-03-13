@@ -6,7 +6,6 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Specification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +23,7 @@ import static it.auties.whatsapp.util.Specification.Signal.SIGNATURE_LENGTH;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class SenderKeyMessage implements ProtobufMessage, JacksonProvider {
+public class SenderKeyMessage implements ProtobufMessage {
     private int version;
 
     @ProtobufProperty(index = 1, type = UINT32)

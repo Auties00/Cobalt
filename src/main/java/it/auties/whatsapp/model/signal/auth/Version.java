@@ -6,7 +6,7 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.model.response.AppVersionResponse;
-import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,7 +34,7 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("AppVersion")
-public class Version implements ProtobufMessage, JacksonProvider {
+public class Version implements ProtobufMessage {
     private static final Version DEFAULT_WEB_VERSION = new Version(2, 2245, 9);
     private static final Pattern MOBILE_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )(.*)(?=\\) Requires IOS)");
 
@@ -98,7 +98,7 @@ public class Version implements ProtobufMessage, JacksonProvider {
                     .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_WEB_VERSION)))
                     .build();
             var response = client.send(request, ofString());
-            var model = JSON.readValue(response.body(), AppVersionResponse.class);
+            var model = Json.readValue(response.body(), AppVersionResponse.class);
             return model.currentVersion() == null ? DEFAULT_WEB_VERSION : new Version(model.currentVersion());
         } catch (Throwable throwable) {
             return DEFAULT_WEB_VERSION;

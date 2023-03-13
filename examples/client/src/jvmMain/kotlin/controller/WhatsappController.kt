@@ -30,11 +30,13 @@ object WhatsappController {
                 .addSettingListener { setting -> println("New setting: $setting") }
                 .addContactPresenceListener { chat, contact, status -> println("Status of ${contact.name()} changed in ${chat.name()} to ${status.name}") }
                 .addAnyMessageStatusListener { _, contact, info, status -> println("Message ${info.id()} in chat ${info.chatName()} now has status $status for ${contact?.name()}") }
-                .addDisconnectedListener { reason -> when(reason){
-                    DisconnectReason.RECONNECTING -> println("Reconnecting...")
-                    DisconnectReason.DISCONNECTED, DisconnectReason.LOGGED_OUT -> exitProcess(0)
-                    DisconnectReason.RESTORE -> println("Restoring...")
-                    else -> println("Unsupported action")
+                .addDisconnectedListener { reason ->
+                    println("Disconnected: $reason")
+                    when(reason){
+                        DisconnectReason.RECONNECTING -> println("Reconnecting...")
+                        DisconnectReason.DISCONNECTED, DisconnectReason.LOGGED_OUT -> exitProcess(0)
+                        DisconnectReason.RESTORE -> println("Restoring...")
+                        else -> println("Unsupported action")
                 } }
                 .addLoggedInListener { -> onLoginProgress(state) }
                 .addChatsListener { _ -> onLoginProgress(state) }
@@ -76,7 +78,7 @@ object WhatsappController {
     }
 
     private fun parsePercentage(input: Int?): Int? =
-            if (input == null || input >= 100) null else input
+            if (input == null || input >= 99) null else input
 
     private fun createOptions(state: MutableState<State>): WhatsappOptions =
         WebOptions.builder()

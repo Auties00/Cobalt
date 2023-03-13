@@ -34,7 +34,7 @@ import static java.lang.System.Logger.Level.WARNING;
 import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-class AppStateHandler extends Handler implements JacksonProvider {
+class AppStateHandler extends Handler {
     public static final int TIMEOUT = 120;
     private static final int PULL_ATTEMPTS = 3;
     private final SocketHandler socketHandler;

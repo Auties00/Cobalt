@@ -16,14 +16,12 @@ import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
 import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Json;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -39,7 +37,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("WebMessageInfo")
-public final class MessageInfo implements Info, MessageMetadataProvider, JacksonProvider {
+public final class MessageInfo implements Info, MessageMetadataProvider {
     /**
      * The MessageKey of this message
      */
@@ -523,11 +521,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * @return a non-null string
      */
     public String toJson() {
-        try {
-            return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(this);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot convert message to json", exception);
-        }
+        return Json.writeValueAsString(this, true);
     }
 
     /**

@@ -1,12 +1,12 @@
 package it.auties.whatsapp.github;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.utils.LibraryLoader;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.utils.ConfigUtils;
+import it.auties.whatsapp.utils.Smile;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
@@ -29,7 +29,7 @@ import static java.net.URI.create;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
 @UtilityClass
-public class GithubSecrets implements JacksonProvider {
+public class GithubSecrets {
     private final LazySodiumJava SODIUM = new LazySodiumJava(new SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY));
     private final String REQUEST_PATH = "https://api.github.com/repos/Auties00/WhatsappWeb4j";
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
@@ -58,12 +58,12 @@ public class GithubSecrets implements JacksonProvider {
         uploadSecret(GithubActions.GPG_PASSWORD, password);
     }
 
-    private void updateStore() throws IOException {
+    private void updateStore() {
         var store = getStoreAsJson();
         writeGpgSecret(GithubActions.STORE_NAME, store);
     }
 
-    private void updateKeys() throws IOException {
+    private void updateKeys() {
         var credentials = getCredentialsAsJson();
         writeGpgSecret(GithubActions.CREDENTIALS_NAME, credentials);
     }
@@ -82,7 +82,7 @@ public class GithubSecrets implements JacksonProvider {
     private GithubKey getPublicKey() {
         var request = createPublicKeyRequest();
         var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        var result = JSON.readValue(response.body(), GithubKey.class);
+        var result = Json.readValue(response.body(), GithubKey.class);
         if (result.message() != null) {
             throw new IllegalArgumentException("Cannot get public key: %s".formatted(response.body()));
         }
@@ -115,7 +115,7 @@ public class GithubSecrets implements JacksonProvider {
         var encrypted = encrypt(value.getBytes(StandardCharsets.UTF_8));
         var upload = new GithubUpload(PUBLIC_KEY.keyId(), encrypted);
         var request = HttpRequest.newBuilder()
-                .PUT(ofString(JSON.writeValueAsString(upload)))
+                .PUT(ofString(Json.writeValueAsString(upload)))
                 .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH.formatted(key))))
                 .header("Accept", "application/vnd.github.v3+json")
                 .header("Authorization", "Bearer %s".formatted(loadGithubToken()))
@@ -137,11 +137,11 @@ public class GithubSecrets implements JacksonProvider {
         return Objects.requireNonNull(config.getProperty("contact"), "Missing github_token in configuration");
     }
 
-    private byte[] getStoreAsJson() throws JsonProcessingException {
-        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().store());
+    private byte[] getStoreAsJson() {
+        return Smile.writeValueAsBytes(Whatsapp.lastConnection().store());
     }
 
-    private byte[] getCredentialsAsJson() throws JsonProcessingException {
-        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().keys());
+    private byte[] getCredentialsAsJson() {
+        return Smile.writeValueAsBytes(Whatsapp.lastConnection().keys());
     }
 }

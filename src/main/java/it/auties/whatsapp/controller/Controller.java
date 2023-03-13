@@ -1,12 +1,9 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Json;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
 
 /**
  * This interface represents is implemented by all WhatsappWeb4J's controllers. It provides an easy
@@ -15,7 +12,7 @@ import java.io.UncheckedIOException;
 @SuperBuilder
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
-public abstract sealed class Controller<T extends Controller<T>> implements JacksonProvider permits Store, Keys {
+public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
     /**
      * The serializer instance to use
      */
@@ -59,10 +56,6 @@ public abstract sealed class Controller<T extends Controller<T>> implements Jack
      * @return a non-null string
      */
     public String toJson() {
-        try {
-            return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(this);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot convert controller to json", exception);
-        }
+        return Json.writeValueAsString(this, true);
     }
 }

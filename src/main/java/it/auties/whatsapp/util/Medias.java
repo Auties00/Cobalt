@@ -39,11 +39,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 
 @UtilityClass
-public class Medias implements JacksonProvider {
+public class Medias {
     public static final int PROFILE_PIC_SIZE = 640;
     public static final String DEFAULT_HOST = "https://mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
@@ -127,10 +125,10 @@ public class Medias implements JacksonProvider {
                     .build();
             var response = client.send(request, ofString());
             Validate.isTrue(response.statusCode() == 200, "Invalid status countryCode: %s", response.statusCode());
-            var upload = JSON.readValue(response.body(), MediaUpload.class);
-            return of(new MediaFile(fileSha256, fileEncSha256, keys.mediaKey(), file.length, upload.directPath(), upload.url()));
-        } catch (Throwable ignored) {
-            return empty();
+            var upload = Json.readValue(response.body(), MediaUpload.class);
+            return Optional.of(new MediaFile(fileSha256, fileEncSha256, keys.mediaKey(), file.length, upload.directPath(), upload.url()));
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -245,12 +243,12 @@ public class Medias implements JacksonProvider {
                 return MediaDimensions.DEFAULT;
             }
             var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            var ffprobe = JSON.readValue(result, FfprobeResult.class);
+            var ffprobe = Json.readValue(result, FfprobeResult.class);
             if (ffprobe.streams() == null || ffprobe.streams().isEmpty()) {
                 return MediaDimensions.DEFAULT;
             }
             return ffprobe.streams().get(0);
-        } catch (Throwable throwable) {
+        } catch (IOException | InterruptedException throwable) {
             return MediaDimensions.DEFAULT;
         }
     }

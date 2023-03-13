@@ -2,9 +2,8 @@ package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler;
-import it.auties.whatsapp.util.JacksonProvider;
 
-class FailureHandler extends Handler implements JacksonProvider {
+class FailureHandler extends Handler {
     private final SocketHandler socketHandler;
 
     public FailureHandler(SocketHandler socketHandler) {
