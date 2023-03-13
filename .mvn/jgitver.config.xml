@@ -7,4 +7,7 @@
 
     <!-- String, comma separate multiple branches -->
     <nonQualifierBranches>master</nonQualifierBranches>
+
+    <!-- String, regex with at least one capture group -->
+    <regexVersionTag>v?([0-9]+(?:\\.[0-9]+){0,2}(?:-[a-zA-Z0-9\\-_]+)?)</regexVersionTag>
 </configuration>
