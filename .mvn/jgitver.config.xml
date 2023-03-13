@@ -3,11 +3,8 @@
 	    xsi:schemaLocation="http://jgitver.github.io/maven/configuration/1.1.0 https://jgitver.github.io/maven/configuration/jgitver-configuration-v1_1_0.xsd">
 
     <!-- One of MAVEN, CONFIGURABLE, PATTERN -->
-    <strategy>PATTERN</strategy>
+    <strategy>MAVEN</strategy>
 
     <!-- String, comma separate multiple branches -->
     <nonQualifierBranches>master</nonQualifierBranches>
-
-    <!-- String, regex with at least one capture group -->
-    <regexVersionTag>v?([0-9]+(?:\\.[0-9]+){1,2}(?:-[a-zA-Z0-9\\-_]+)?)</regexVersionTag>
 </configuration>
