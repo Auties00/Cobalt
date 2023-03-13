@@ -3,7 +3,7 @@
 	    xsi:schemaLocation="http://jgitver.github.io/maven/configuration/1.1.0 https://jgitver.github.io/maven/configuration/jgitver-configuration-v1_1_0.xsd">
 
     <!-- One of MAVEN, CONFIGURABLE, PATTERN -->
-    <strategy>MAVEN</strategy>
+    <strategy>PATTERN</strategy>
 
     <!-- String, comma separate multiple branches -->
     <nonQualifierBranches>master</nonQualifierBranches>
