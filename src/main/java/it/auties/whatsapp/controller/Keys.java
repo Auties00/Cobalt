@@ -19,7 +19,7 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.Specification.Whatsapp;
+import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;

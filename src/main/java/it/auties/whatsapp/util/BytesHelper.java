@@ -10,7 +10,7 @@ import lombok.experimental.UtilityClass;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.Inflater;
 
-import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
+import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
 
 @UtilityClass
 public class BytesHelper {

@@ -4,7 +4,7 @@ import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Spec;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -56,7 +56,7 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
     private byte[] serialized;
 
     public SignalDistributionMessage(int id, int iteration, byte @NonNull [] chainKey, byte @NonNull [] signingKey) {
-        this.version = Specification.Signal.CURRENT_VERSION;
+        this.version = Spec.Signal.CURRENT_VERSION;
         this.id = id;
         this.iteration = iteration;
         this.chainKey = chainKey;

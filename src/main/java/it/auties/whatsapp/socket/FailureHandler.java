@@ -3,10 +3,10 @@ package it.auties.whatsapp.socket;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler;
 
-class FailureHandler extends Handler {
+class FailureHandler {
     private final SocketHandler socketHandler;
 
-    public FailureHandler(SocketHandler socketHandler) {
+    protected FailureHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
     }
 

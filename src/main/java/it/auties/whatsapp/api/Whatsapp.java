@@ -949,7 +949,9 @@ public class Whatsapp {
      */
     @SafeVarargs
     public final <T extends ContactJidProvider> CompletableFuture<Whatsapp> changePrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingValue value, @NonNull T @NonNull ... excluded) {
-        Validate.isTrue(type.isSupported(value), "Cannot change setting %s to %s: this toggle cannot be used because Whatsapp doesn't support it", value.name(), type.name());
+        checkLoggedIn();
+        Validate.isTrue(type.isSupported(value),
+                "Cannot change setting %s to %s: this toggle cannot be used because Whatsapp doesn't support it", value.name(), type.name());
         var attributes = Attributes.of()
                 .put("name", type.data())
                 .put("value", value.data())
@@ -978,6 +980,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(@NonNull ChatEphemeralTimer timer) {
+        checkLoggedIn();
         return socketHandler.sendQuery("set", "disappearing_mode", Node.ofAttributes("disappearing_mode", Map.of("duration", timer.period()
                         .toSeconds())))
                 .thenRunAsync(() -> store().newChatsEphemeralTimer(timer))
@@ -992,6 +995,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> createGdprAccountInfo() {
+        checkLoggedIn();
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.ofAttributes("gdpr", Map.of("gdpr", "request")))
                 .thenApplyAsync(ignored -> this);
     }
@@ -1004,6 +1008,7 @@ public class Whatsapp {
      */
     // TODO: Implement ready and error states
     public CompletableFuture<GdprAccountReport> getGdprAccountInfoStatus() {
+        checkLoggedIn();
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.ofAttributes("gdpr", Map.of("gdpr", "status")))
                 .thenApplyAsync(result -> GdprAccountReport.ofPending(result.attributes().getLong("timestamp")));
     }
@@ -1015,6 +1020,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeName(@NonNull String newName) {
+        checkLoggedIn();
         var oldName = socketHandler.store().userName();
         return socketHandler.send(Node.ofChildren("presence", Map.of("name", newName)))
                 .thenRunAsync(() -> socketHandler.updateUserName(newName, oldName))
@@ -1028,6 +1034,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeStatus(@NonNull String newStatus) {
+        checkLoggedIn();
         return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))
                 .thenRunAsync(() -> store().userName(newStatus))
                 .thenApplyAsync(ignored -> this);
@@ -1041,6 +1048,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> subscribeToPresence(@NonNull T jid) {
+        checkLoggedIn();
         return socketHandler.subscribeToPresence(jid).thenApplyAsync(ignored -> jid);
     }
 
@@ -1065,6 +1073,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, String reaction) {
+        checkLoggedIn();
         var key = MessageKey.builder()
                 .chatJid(message.chat().jid())
                 .senderJid(message.senderJid())
@@ -1116,6 +1125,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
+        checkLoggedIn();
         store().attribute(info);
         attributeMessageMetadata(info);
         var future = socketHandler.sendMessage(MessageSendRequest.of(info));
@@ -1313,6 +1323,7 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> mark(@NonNull T chat, boolean read) {
+        checkLoggedIn();
         var range = createRange(chat, false);
         var markAction = MarkChatAsReadAction.of(read, range);
         var syncAction = ActionValueSync.of(markAction);
@@ -1358,6 +1369,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> markRead(@NonNull MessageInfo info) {
+        checkLoggedIn();
         var type = store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS)
                 .value() == PrivacySettingValue.EVERYONE ? "read" : "read-self";
         socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), type);
@@ -1471,6 +1483,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps a non-null map
      */
     public CompletableFuture<Map<ContactJid, HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider... contacts) {
+        checkLoggedIn();
         var contactNodes = Arrays.stream(contacts)
                 .map(jid -> Node.ofChildren("user", Node.of("contact", jid.toJid().toPhoneNumber())))
                 .toArray(Node[]::new);
@@ -1490,6 +1503,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps a non-null list of ContactJid
      */
     public CompletableFuture<List<ContactJid>> queryBlockList() {
+        checkLoggedIn();
         return socketHandler.queryBlockList();
     }
 
@@ -1500,6 +1514,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps an optional contact status response
      */
     public CompletableFuture<Optional<ContactStatusResponse>> queryStatus(@NonNull ContactJidProvider chat) {
+        checkLoggedIn();
         return socketHandler.queryStatus(chat);
     }
 
@@ -1510,6 +1525,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
     public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
+        checkLoggedIn();
         return socketHandler.queryPicture(chat);
     }
 
@@ -1520,6 +1536,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<GroupMetadata> queryGroupMetadata(@NonNull ContactJidProvider chat) {
+        checkLoggedIn();
         return socketHandler.queryGroupMetadata(chat.toJid());
     }
 
@@ -1530,6 +1547,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<BusinessProfile>> queryBusinessProfile(@NonNull ContactJidProvider contact) {
+        checkLoggedIn();
         return socketHandler.sendQuery("get", "w:biz", Node.ofChildren("business_profile", Node.of("v", "116"), Node.ofAttributes("profile", Map.of("jid", contact.toJid()))))
                 .thenApplyAsync(this::getBusinessProfile);
     }
@@ -1544,6 +1562,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCategory>> queryBusinessCategories() {
+        checkLoggedIn();
         return socketHandler.sendQuery("get", "fb:thrift_iq", Node.of("request", Map.of("op", "profile_typeahead", "type", "catkit", "v", "1"), Node.ofChildren("query", List.of())))
                 .thenApplyAsync(Whatsapp::parseBusinessCategories);
     }
@@ -1565,6 +1584,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<String> queryGroupInviteCode(@NonNull ContactJidProvider chat) {
+        checkLoggedIn();
         return socketHandler.sendQuery(chat.toJid(), "get", "w:g2", Node.of("invite"))
                 .thenApplyAsync(Whatsapp::parseInviteCode);
     }
@@ -1583,6 +1603,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> revokeGroupInvite(@NonNull T chat) {
+        checkLoggedIn();
         return socketHandler.sendQuery(chat.toJid(), "set", "w:g2", Node.of("invite")).thenApplyAsync(ignored -> chat);
     }
 
@@ -1593,6 +1614,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<Chat>> acceptGroupInvite(@NonNull String inviteCode) {
+        checkLoggedIn();
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", Node.ofAttributes("invite", Map.of("code", inviteCode)))
                 .thenApplyAsync(this::parseAcceptInvite);
     }
@@ -1610,6 +1632,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Boolean> changePresence(boolean available) {
+        checkLoggedIn();
         var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
         var node = Node.ofAttributes("presence", Map.of("type", presence.data()));
         return socketHandler.sendWithNoResponse(node)
@@ -1639,6 +1662,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changePresence(@NonNull T chat, @NonNull ContactStatus presence) {
+        checkLoggedIn();
         var node = Node.ofAttributes("presence", Map.of("to", chat.toJid(), "type", presence.data()));
         return socketHandler.sendWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updateSelfPresence(chat, presence))
@@ -1657,6 +1681,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<List<ContactJid>> executeActionOnGroupParticipant(ContactJidProvider group, GroupAction action, ContactJidProvider... jids) {
+        checkLoggedIn();
         var body = Arrays.stream(jids)
                 .map(ContactJidProvider::toJid)
                 .map(jid -> Node.ofAttributes("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
@@ -1727,6 +1752,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeGroupSubject(@NonNull T group, @NonNull String newName) {
+        checkLoggedIn();
         var body = Node.of("subject", newName.getBytes(StandardCharsets.UTF_8));
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
     }
@@ -1739,6 +1765,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeGroupDescription(@NonNull T group, String description) {
+        checkLoggedIn();
         return socketHandler.queryGroupMetadata(group.toJid())
                 .thenApplyAsync(GroupMetadata::descriptionId)
                 .thenComposeAsync(descriptionId -> changeGroupDescription(group, description, descriptionId))
@@ -1766,6 +1793,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeWhoCanSendMessages(@NonNull T group, @NonNull GroupPolicy policy) {
+        checkLoggedIn();
         var body = Node.of(policy != GroupPolicy.ANYONE ? "not_announcement" : "announcement");
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
     }
@@ -1778,6 +1806,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeWhoCanEditInfo(@NonNull T group, @NonNull GroupPolicy policy) {
+        checkLoggedIn();
         var body = Node.of(policy != GroupPolicy.ANYONE ? "locked" : "unlocked");
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
     }
@@ -1811,6 +1840,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeGroupPicture(@NonNull T group, byte[] image) {
+        checkLoggedIn();
         var profilePic = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), profilePic);
         return socketHandler.sendQuery(group.toJid().toUserJid(), "set", "w:profile:picture", body)
@@ -1862,6 +1892,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, ContactJidProvider parentGroup, @NonNull ContactJidProvider... contacts) {
+        checkLoggedIn();
         Validate.isTrue(!subject.isBlank(), "The subject of a group cannot be blank");
         var minimumMembersCount = parentGroup == null ? 1 : 0;
         Validate.isTrue(contacts.length >= minimumMembersCount, "Expected at least %s members for this group", minimumMembersCount);
@@ -1897,6 +1928,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public <T extends ContactJidProvider> CompletableFuture<T> leaveGroup(@NonNull T group) {
+        checkLoggedIn();
         var body = Node.ofChildren("leave", Node.ofAttributes("group", Map.of("id", group.toJid())));
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
     }
@@ -1909,6 +1941,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps a map guaranteed to contain every group that was provided as input paired to whether the request was successful
      */
     public CompletableFuture<Map<ContactJid, Boolean>> linkGroupsToCommunity(@NonNull ContactJidProvider community, @NonNull ContactJidProvider... groups){
+        checkLoggedIn();
         var body = Arrays.stream(groups)
                 .map(entry -> Node.ofAttributes("group", Map.of("jid", entry.toJid())))
                 .toArray(Node[]::new);
@@ -1940,6 +1973,7 @@ public class Whatsapp {
      * @return a CompletableFuture that indicates whether the request was successful
      */
     public CompletableFuture<Boolean> unlinkGroupFromCommunity(@NonNull ContactJidProvider community, @NonNull ContactJidProvider group){
+        checkLoggedIn();
         return socketHandler.sendQuery(community.toJid(), "set", "w:g2", Node.ofChildren("unlink", Map.of("unlink_type", "sub_group"), Node.ofAttributes("group", Map.of("jid", group.toJid()))))
                 .thenApplyAsync(result -> parseUnlinkResponse(result, group));
     }
@@ -1970,6 +2004,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> mute(@NonNull T chat, @NonNull ChatMute mute) {
+        checkLoggedIn();
         var muteAction = MuteAction.of(true, mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ? mute.endTimeStamp() * 1000L : mute.endTimeStamp(), false);
         var syncAction = ActionValueSync.of(muteAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
@@ -1983,6 +2018,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> unmute(@NonNull T chat) {
+        checkLoggedIn();
         var muteAction = MuteAction.of(false, null, false);
         var syncAction = ActionValueSync.of(muteAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
@@ -1996,6 +2032,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> block(@NonNull T chat) {
+        checkLoggedIn();
         var body = Node.ofAttributes("item", Map.of("action", "block", "jid", chat.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body).thenApplyAsync(ignored -> chat);
     }
@@ -2007,6 +2044,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> unblock(@NonNull T chat) {
+        checkLoggedIn();
         var body = Node.ofAttributes("item", Map.of("action", "unblock", "jid", chat.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body).thenApplyAsync(ignored -> chat);
     }
@@ -2019,6 +2057,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeEphemeralTimer(@NonNull T chat, @NonNull ChatEphemeralTimer timer) {
+        checkLoggedIn();
         return switch (chat.toJid().server()) {
             case USER, WHATSAPP -> {
                 var message = ProtocolMessage.builder()
@@ -2044,6 +2083,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> markPlayed(@NonNull MessageInfo info) {
+        checkLoggedIn();
         if (store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS).value() != PrivacySettingValue.EVERYONE) {
             return CompletableFuture.completedFuture(info);
         }
@@ -2072,13 +2112,6 @@ public class Whatsapp {
         return pin(chat, true);
     }
 
-    private <T extends ContactJidProvider> CompletableFuture<T> pin(T chat, boolean pin) {
-        var pinAction = PinAction.of(pin);
-        var syncAction = ActionValueSync.of(pinAction);
-        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 5, chat.toJid().toString());
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
-    }
-
     /**
      * Unpins a chat from the top
      *
@@ -2087,6 +2120,14 @@ public class Whatsapp {
      */
     public <T extends ContactJidProvider> CompletableFuture<T> unpin(@NonNull T chat) {
         return pin(chat, false);
+    }
+
+    private <T extends ContactJidProvider> CompletableFuture<T> pin(T chat, boolean pin) {
+        checkLoggedIn();
+        var pinAction = PinAction.of(pin);
+        var syncAction = ActionValueSync.of(pinAction);
+        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 5, chat.toJid().toString());
+        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
     /**
@@ -2100,6 +2141,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<MessageInfo> star(MessageInfo info, boolean star) {
+        checkLoggedIn();
         var starAction = StarAction.of(star);
         var syncAction = ActionValueSync.of(starAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
@@ -2140,6 +2182,7 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> archive(T chat, boolean archive) {
+        checkLoggedIn();
         var range = createRange(chat, false);
         var archiveAction = ArchiveChatAction.of(archive, range);
         var syncAction = ActionValueSync.of(archiveAction);
@@ -2166,6 +2209,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> delete(@NonNull MessageInfo info, boolean everyone) {
+        checkLoggedIn();
         if (everyone) {
             var message = ProtocolMessage.builder()
                     .protocolType(ProtocolMessage.ProtocolMessageType.REVOKE)
@@ -2201,6 +2245,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> delete(@NonNull T chat) {
+        checkLoggedIn();
         var range = createRange(chat.toJid(), false);
         var deleteChatAction = DeleteChatAction.of(range);
         var syncAction = ActionValueSync.of(deleteChatAction);
@@ -2217,6 +2262,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> clear(@NonNull T chat, boolean keepStarredMessages) {
+        checkLoggedIn();
         var known = store().findChatByJid(chat);
         var range = createRange(chat.toJid(), true);
         var clearChatAction = ClearChatAction.of(range);
@@ -2237,6 +2283,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<String> changeBusinessAttribute(String key, String value) {
+        checkLoggedIn();
         return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.of(key, requireNonNullElse(value, "").getBytes(StandardCharsets.UTF_8))))
                 .thenAcceptAsync(result -> checkBusinessAttributeConflict(key, value, result))
                 .thenApplyAsync(ignored -> value);
@@ -2283,6 +2330,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCategory>> changeBusinessCategories(List<BusinessCategory> categories) {
+        checkLoggedIn();
         return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.ofChildren("categories", createCategories(categories))))
                 .thenApplyAsync(ignored -> categories);
     }
@@ -2301,6 +2349,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<URI>> changeBusinessWebsites(List<URI> websites) {
+        checkLoggedIn();
         return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), createWebsites(websites)))
                 .thenApplyAsync(ignored -> websites);
     }
@@ -2341,6 +2390,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(@NonNull ContactJidProvider contact, int productsLimit) {
+        checkLoggedIn();
         return socketHandler.sendQuery("get", "w:biz:catalog", Node.ofChildren("product_catalog", Map.of("jid", contact, "allow_shop_source", "true"), Node.of("limit", String.valueOf(productsLimit)
                         .getBytes(StandardCharsets.UTF_8)), Node.of("width", "100".getBytes(StandardCharsets.UTF_8)), Node.of("height", "100".getBytes(StandardCharsets.UTF_8))))
                 .thenApplyAsync(this::parseCatalog);
@@ -2393,6 +2443,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCollectionEntry>> queryBusinessCollections(@NonNull ContactJidProvider contact, int collectionsLimit) {
+        checkLoggedIn();
         return socketHandler.sendQuery("get", "w:biz:catalog", Map.of("smax_id", "35"), Node.ofChildren("collections", Map.of("biz_jid", contact), Node.of("collection_limit", String.valueOf(collectionsLimit)
                         .getBytes(StandardCharsets.UTF_8)), Node.of("item_limit", String.valueOf(collectionsLimit)
                         .getBytes(StandardCharsets.UTF_8)), Node.of("width", "100".getBytes(StandardCharsets.UTF_8)), Node.of("height", "100".getBytes(StandardCharsets.UTF_8))))
@@ -2429,6 +2480,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<byte[]> downloadMedia(@NonNull MessageInfo info) {
+        checkLoggedIn();
         Validate.isTrue(info.message()
                 .category() == MessageCategory.MEDIA, "Expected media message, got: %s(%s)", info.message()
                 .category(), info.message().type());
@@ -2452,6 +2504,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> requireMediaReupload(@NonNull MessageInfo info) {
+        checkLoggedIn();
         Validate.isTrue(info.message()
                 .category() == MessageCategory.MEDIA, "Expected media message, got: %s(%s)", info.message()
                 .category(), info.message().type());
@@ -2510,6 +2563,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<GroupMetadata> createCommunity(@NonNull String subject, String body) {
+        checkLoggedIn();
         var entry = Node.ofChildren("create", Map.of("subject", subject), Node.ofChildren("description", Map.of("id", socketHandler.store()
                 .nextTag()), Node.of("body", requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))), Node.ofAttributes("parent", Map.of("default_membership_approval_mode", "request_required")));
         return socketHandler.sendQuery(GROUP.toJid(), "set", "w:g2", entry)
@@ -2517,5 +2571,10 @@ public class Whatsapp {
                         .flatMap(node -> node.findNode("group"))
                         .orElseThrow(() -> new NoSuchElementException("Missing community response, something went wrong: %s".formatted(findErrorNode(response)))))
                 .thenApplyAsync(GroupMetadata::of);
+    }
+
+    private void checkLoggedIn() {
+        Validate.isTrue(store().userCompanionJid() != null,
+                "You need to be logged in to execute this action");
     }
 }

@@ -6,7 +6,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Spec;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +16,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
-import static it.auties.whatsapp.util.Specification.Signal.SIGNATURE_LENGTH;
+import static it.auties.whatsapp.util.Spec.Signal.SIGNATURE_LENGTH;
 
 @AllArgsConstructor
 @Data
@@ -42,7 +42,7 @@ public class SenderKeyMessage implements ProtobufMessage {
     private byte[] serialized;
 
     public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText, byte @NonNull [] signingKey) {
-        this.version = Specification.Signal.CURRENT_VERSION;
+        this.version = Spec.Signal.CURRENT_VERSION;
         this.id = id;
         this.iteration = iteration;
         this.cipherText = cipherText;

@@ -54,7 +54,7 @@ import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Accessors(fluent = true)
-class StreamHandler extends Handler {
+class StreamHandler {
     private static final byte[] MESSAGE_HEADER = {6, 0};
     private static final byte[] SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
@@ -65,12 +65,12 @@ class StreamHandler extends Handler {
 
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
+    private ScheduledExecutorService service;
 
-    public StreamHandler(SocketHandler socketHandler) {
+    protected StreamHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.retries = new HashMap<>();
     }
-
 
     protected void digest(@NonNull Node node) {
         switch (node.description()) {
@@ -522,7 +522,6 @@ class StreamHandler extends Handler {
                 .thenRunAsync(this::onInitialInfo);
         if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
             socketHandler.store().initialSync(true);
-            socketHandler.disableAppStateSync();
         }
 
         if (!socketHandler.store().initialSync()) {
@@ -697,7 +696,7 @@ class StreamHandler extends Handler {
                 .map(SignalPreKeyPair::toNode)
                 .toList();
         socketHandler.sendQuery("set", "encrypt", Node.of("registration", BytesHelper.intToBytes(socketHandler.keys()
-                .id(), 4)), Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
+                .id(), 4)), Node.of("type", Spec.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
                 .identityKeyPair()
                 .publicKey()), ofChildren("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
     }
@@ -771,14 +770,18 @@ class StreamHandler extends Handler {
         socketHandler.store().addContact(Contact.ofJid(socketHandler.store().userCompanionJid().toUserJid()));
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
+    protected void dispose() {
         retries.clear();
+        if(service != null){
+            service.shutdownNow();
+        }
     }
 
-    @Override
-    protected ExecutorService createService() {
-        return Executors.newSingleThreadScheduledExecutor();
+    private synchronized ScheduledExecutorService getOrCreateService(){
+        if(service == null){
+            service = Executors.newSingleThreadScheduledExecutor();
+        }
+
+        return service;
     }
 }

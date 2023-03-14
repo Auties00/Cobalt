@@ -60,17 +60,18 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static it.auties.whatsapp.model.sync.HistorySync.HistorySyncHistorySyncType.RECENT;
-import static it.auties.whatsapp.util.Specification.Signal.*;
+import static it.auties.whatsapp.util.Spec.Signal.*;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.*;
 
-class MessageHandler extends Handler {
+class MessageHandler {
     private static final int MAX_ATTEMPTS = 3;
 
     private final SocketHandler socketHandler;
+    private final OrderedAsyncTaskRunner runner;
     private final Map<String, Integer> retries;
     private final Cache<ContactJid, GroupMetadata> groupsCache;
     private final Cache<String, List<ContactJid>> devicesCache;
@@ -84,26 +85,26 @@ class MessageHandler extends Handler {
         this.pastParticipantsQueue = new ConcurrentHashMap<>();
         this.retries = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
+        this.runner = new OrderedAsyncTaskRunner();
     }
 
     private <K, V> Cache<K, V> createCache(Duration duration) {
         return Caffeine.newBuilder().expireAfterWrite(duration).build();
     }
 
-    protected final CompletableFuture<Void> encode(MessageSendRequest request) {
-        try {
-            var semaphore = getOrCreateSemaphore();
-            var future = isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
-            return future.thenRunAsync(() -> attributeOutgoingMessage(request))
-                    .thenRunAsync(semaphore::release)
-                    .exceptionallyAsync(throwable -> {
-                        semaphore.release();
-                        request.info().status(MessageStatus.ERROR);
-                        return socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
-                    });
-        } catch (Exception exception) {
-            return CompletableFuture.failedFuture(exception);
-        }
+    protected CompletableFuture<Void> encode(MessageSendRequest request) {
+        return runner.runAsync(() -> encodeMessageNode(request)
+                .thenRunAsync(() -> attributeOutgoingMessage(request))
+                .exceptionallyAsync(throwable -> onEncodeError(request, throwable)));
+    }
+
+    private CompletableFuture<Node> encodeMessageNode(MessageSendRequest request) {
+        return isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
+    }
+
+    private Void onEncodeError(MessageSendRequest request, Throwable throwable) {
+        request.info().status(MessageStatus.ERROR);
+        return socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
     }
 
     private void attributeOutgoingMessage(MessageSendRequest request) {
@@ -350,20 +351,22 @@ class MessageHandler extends Handler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public void decode(Node node) {
-        getOrCreateService().execute(() -> {
-            try {
-                var businessName = getBusinessName(node);
-                var encrypted = node.findNodes("enc");
-                if (node.hasNode("unavailable") && !node.hasNode("enc")) {
-                    decode(node, null, businessName);
-                    return;
-                }
-                encrypted.forEach(message -> decode(node, message, businessName));
-            } catch (Throwable throwable) {
-                socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
+    public CompletableFuture<Void> decode(Node node) {
+        return runner.runAsync(() -> decodeMessages(node));
+    }
+
+    private void decodeMessages(Node node) {
+        try {
+            var businessName = getBusinessName(node);
+            var encrypted = node.findNodes("enc");
+            if (node.hasNode("unavailable") && !node.hasNode("enc")) {
+                decodeMessage(node, null, businessName);
+                return;
             }
-        });
+            encrypted.forEach(message -> decodeMessage(node, message, businessName));
+        } catch (Throwable throwable) {
+            socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
+        }
     }
 
     private String getBusinessName(Node node) {
@@ -375,7 +378,7 @@ class MessageHandler extends Handler {
                 .orElse(null);
     }
 
-    private void decode(Node infoNode, Node messageNode, String businessName) {
+    private void decodeMessage(Node infoNode, Node messageNode, String businessName) {
         try {
             var offline = infoNode.attributes().hasKey("offline");
             var pushName = infoNode.attributes().getNullableString("notify");
@@ -534,7 +537,7 @@ class MessageHandler extends Handler {
     private Node createPreKeyNode() {
         var preKey = SignalPreKeyPair.random(socketHandler.keys().lastPreKeyId() + 1);
         var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
-        return Node.ofChildren("keys", Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
+        return Node.ofChildren("keys", Node.of("type", Spec.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
                 .identityKeyPair()
                 .publicKey()), preKey.toNode(), socketHandler.keys()
                 .signedKeyPair()
@@ -748,13 +751,12 @@ class MessageHandler extends Handler {
         return Stream.of(all).filter(Objects::nonNull).flatMap(Collection::stream).toList();
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
+    protected void dispose() {
         retries.clear();
         groupsCache.invalidateAll();
         devicesCache.invalidateAll();
         historyCache.clear();
+        runner.cancel();
     }
 
     private record MessageDecodeResult(byte[] message, Throwable error) {

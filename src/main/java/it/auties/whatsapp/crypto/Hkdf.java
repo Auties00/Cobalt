@@ -9,7 +9,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 
-import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+import static it.auties.whatsapp.util.Spec.Signal.KEY_LENGTH;
 
 @UtilityClass
 public class Hkdf {

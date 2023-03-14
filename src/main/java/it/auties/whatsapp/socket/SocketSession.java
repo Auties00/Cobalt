@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.socket.SocketSession.AppSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession.OriginPatcher;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Spec;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.NonNull;
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static it.auties.whatsapp.util.Specification.Whatsapp.*;
+import static it.auties.whatsapp.util.Spec.Whatsapp.*;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
@@ -28,26 +28,26 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     protected SocketListener listener;
     protected boolean closed;
 
-    static SocketSession of(ClientType type) {
+    protected static SocketSession of(ClientType type) {
         return switch (type) {
             case WEB_CLIENT -> new WebSocketSession();
             case APP_CLIENT -> new AppSocketSession();
         };
     }
 
-    public CompletableFuture<Void> connect(SocketListener listener) {
+    protected CompletableFuture<Void> connect(SocketListener listener) {
         this.uuid = UUID.randomUUID();
         this.listener = listener;
         this.closed = false;
         return null;
     }
 
-    public CompletableFuture<Void> close() {
+    protected CompletableFuture<Void> close() {
         this.closed = true;
         return null;
     }
 
-    abstract boolean isOpen();
+    protected abstract boolean isOpen();
 
     public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
 
@@ -138,8 +138,8 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
         public static class OriginPatcher extends Configurator {
             @Override
             public void beforeRequest(@NonNull Map<String, List<String>> headers) {
-                headers.put("Origin", List.of(Specification.Whatsapp.WEB_ORIGIN));
-                headers.put("Host", List.of(Specification.Whatsapp.WEB_HOST));
+                headers.put("Origin", List.of(Spec.Whatsapp.WEB_ORIGIN));
+                headers.put("Host", List.of(Spec.Whatsapp.WEB_HOST));
             }
         }
     }

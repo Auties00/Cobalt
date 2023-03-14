@@ -22,8 +22,8 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Specification;
-import it.auties.whatsapp.util.Specification.Whatsapp;
+import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Spec.Whatsapp;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ import static java.util.Base64.getUrlEncoder;
 import static java.util.Map.entry;
 
 @RequiredArgsConstructor
-class AuthHandler extends Handler {
+class AuthHandler {
     private final SocketHandler socketHandler;
     private Handshake handshake;
 
@@ -154,7 +154,7 @@ class AuthHandler extends Handler {
         var companion = CompanionData.builder()
                 .buildHash(socketHandler.options().version().toHash())
                 .id(socketHandler.keys().encodedId())
-                .keyType(BytesHelper.intToBytes(Specification.Signal.KEY_TYPE, 1))
+                .keyType(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
                 .identifier(socketHandler.keys().identityKeyPair().publicKey())
                 .signatureId(socketHandler.keys().signedKeyPair().encodedId())
                 .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
@@ -288,9 +288,7 @@ class AuthHandler extends Handler {
                 .collect(Collectors.joining("&"));
     }
 
-    @Override
     protected void dispose() {
-        super.dispose();
         handshake = null;
     }
 }

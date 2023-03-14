@@ -5,7 +5,7 @@ import it.auties.whatsapp.controller.Keys;
 import lombok.NonNull;
 
 import static it.auties.bytes.Bytes.of;
-import static it.auties.whatsapp.util.Specification.Whatsapp.PROTOCOL;
+import static it.auties.whatsapp.util.Spec.Whatsapp.PROTOCOL;
 
 public class Handshake {
     private final Keys keys;

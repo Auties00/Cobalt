@@ -58,7 +58,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
-public class SocketHandler extends Handler implements SocketListener {
+public class SocketHandler implements SocketListener {
     private static final int MANUAL_INITIAL_PULL_TIMEOUT = 5;
 
     static {
@@ -105,6 +105,8 @@ public class SocketHandler extends Handler implements SocketListener {
 
     private CompletableFuture<Void> authFuture;
 
+    private ExecutorService service;
+
     public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull WhatsappOptions options, @NonNull Store store, @NonNull Keys keys) {
         this.whatsapp = whatsapp;
         this.options = options;
@@ -129,17 +131,6 @@ public class SocketHandler extends Handler implements SocketListener {
         }
     }
 
-    @Override
-    protected void dispose() {
-        onSocketEvent(SocketEvent.CLOSE);
-        authHandler.dispose();
-        streamHandler.dispose();
-        messageHandler.dispose();
-        appStateHandler.dispose();
-        errorHandler.dispose();
-        super.dispose();
-    }
-
     protected void onSocketEvent(SocketEvent event) {
         callListenersAsync(listener -> {
             listener.onSocketEvent(whatsapp, event);
@@ -153,11 +144,6 @@ public class SocketHandler extends Handler implements SocketListener {
         }
         var service = getOrCreateService();
         store.listeners().forEach(listener -> service.execute(() -> consumer.accept(listener)));
-    }
-
-    @Override
-    protected ExecutorService createService() {
-        return Executors.newCachedThreadPool();
     }
 
     @Override
@@ -720,7 +706,22 @@ public class SocketHandler extends Handler implements SocketListener {
         messageHandler.querySessions(List.of(contactJid), true);
     }
 
-    protected void disableAppStateSync() {
-        appStateHandler.completeLatch();
+    private void dispose() {
+        onSocketEvent(SocketEvent.CLOSE);
+        authHandler.dispose();
+        streamHandler.dispose();
+        messageHandler.dispose();
+        appStateHandler.dispose();
+        if(service != null){
+            service.shutdownNow();
+        }
+    }
+
+    private synchronized ExecutorService getOrCreateService(){
+        if(service == null || service.isShutdown()){
+            service = Executors.newCachedThreadPool();
+        }
+
+        return service;
     }
 }

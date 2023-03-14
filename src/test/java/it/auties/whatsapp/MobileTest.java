@@ -12,8 +12,8 @@ public class MobileTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
-                .phoneNumber("+18542177236")
-                .verificationCodeMethod(VerificationCodeMethod.CALL)
+                .phoneNumber("+17408290640")
+                .verificationCodeMethod(VerificationCodeMethod.NONE)
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
         var whatsapp = Whatsapp.lastConnection(options)

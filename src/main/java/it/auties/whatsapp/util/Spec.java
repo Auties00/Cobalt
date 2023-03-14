@@ -6,7 +6,7 @@ import it.auties.whatsapp.binary.Tokens;
 import java.net.URI;
 
 @SuppressWarnings("unused")
-public class Specification {
+public class Spec {
     public final static class Whatsapp {
         public static final Bytes PROTOCOL = Bytes.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
         public static final String WEB_ORIGIN = "https://web.whatsapp.com";
