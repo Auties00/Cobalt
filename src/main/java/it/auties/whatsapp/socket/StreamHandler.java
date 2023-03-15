@@ -85,6 +85,7 @@ class StreamHandler {
             case "message" -> socketHandler.decodeMessage(node);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
+            case "xmlstreamend" -> socketHandler.disconnect(DisconnectReason.DISCONNECTED);
         }
     }
 
@@ -235,6 +236,10 @@ class StreamHandler {
     }
 
     private void digestAck(Node node) {
+        // TODO: Fix me
+        if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
+            return;
+        }
         var clazz = node.attributes().getString("class");
         if (!Objects.equals(clazz, "message")) {
             return;
@@ -638,7 +643,8 @@ class StreamHandler {
             return;
         }
         socketHandler.store().serialize(true);
-        socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"));
+        socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
+                        .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(STREAM, throwable));
         socketHandler.onSocketEvent(SocketEvent.PING);
     }
 

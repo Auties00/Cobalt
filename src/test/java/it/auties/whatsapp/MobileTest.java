@@ -7,19 +7,21 @@ import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class MobileTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
-                .phoneNumber("+17408290640")
-                .verificationCodeMethod(VerificationCodeMethod.NONE)
+                .phoneNumber("+15703346901")
+                .verificationCodeMethod(VerificationCodeMethod.CALL)
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
-        var whatsapp = Whatsapp.lastConnection(options)
+        Whatsapp.lastConnection(options)
                 .addLoggedInListener(api -> {
                     System.out.println("Connected: " + api.store().userCompanionJid());
-                    api.sendMessage(ContactJid.of("393495089819"), "test");
+                    CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS).execute(() -> api.sendMessage(ContactJid.of("393495089819"), "test"));
                 })
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
@@ -30,8 +32,9 @@ public class MobileTest {
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
                 .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact.name(), chat.name(), status.name()))
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
-                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason));
-        whatsapp.connect().join();
+                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
+                .connect()
+                .join();
     }
 
     private static String onScanCode(VerificationCodeResponse type) {
