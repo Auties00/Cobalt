@@ -28,7 +28,8 @@ import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
     public Node encrypt(byte @NonNull [] data) {
-        var currentState = loadSession().currentState();
+        var currentState = loadSession().currentState()
+                        .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
         Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key", SecurityException.class);
         var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
