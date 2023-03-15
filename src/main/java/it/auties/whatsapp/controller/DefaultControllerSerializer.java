@@ -330,6 +330,9 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
                         zipStream.write(serialized);
                     }
                 }
+                if(Files.notExists(file.getParent())) {
+                    Files.createDirectories(file.getParent());
+                }
                 Files.write(file, compressedStream.toByteArray(), StandardOpenOption.CREATE);
             } catch (IOException exception){
                 throw new UncheckedIOException("Cannot complete file write", exception);
