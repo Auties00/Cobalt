@@ -224,7 +224,7 @@ public final class Store extends Controller<Store> {
      */
     public static Store of(@NonNull WhatsappOptions options) {
         var deserializer = options.deserializer();
-        var result = deserializer.deserializeStore(options.id())
+        var result = deserializer.deserializeStore(options.clientType(), options.id())
                 .map(store -> store.serializer(options.serializer()))
                 .orElseGet(() -> random(options));
         deserializer.attributeStore(result); // Run async
@@ -240,6 +240,7 @@ public final class Store extends Controller<Store> {
     public static Store random(@NonNull WhatsappOptions options) {
         return Store.builder()
                 .serializer(options.serializer())
+                .clientType(options.clientType())
                 .id(options.id())
                 .build();
     }

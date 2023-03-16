@@ -85,8 +85,15 @@ class StreamHandler {
             case "message" -> socketHandler.decodeMessage(node);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
-            case "xmlstreamend" -> socketHandler.disconnect(DisconnectReason.DISCONNECTED);
+            case "xmlstreamend" -> digestStreamEnd();
         }
+    }
+
+    private void digestStreamEnd() {
+        if(socketHandler.state() != SocketState.CONNECTED){
+            return;
+        }
+        socketHandler.disconnect(DisconnectReason.DISCONNECTED);
     }
 
     private void digestFailure(Node node) {

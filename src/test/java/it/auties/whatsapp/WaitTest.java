@@ -21,6 +21,7 @@ public class WaitTest {
                 .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
-                .join();
+                .join()
+                .awaitDisconnection();
     }
 }

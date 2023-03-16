@@ -223,7 +223,11 @@ public class SocketHandler implements SocketListener {
         }
 
         this.session = SocketSession.of(options.clientType());
-        return session.connect(this).thenCompose(ignored -> authFuture);
+        return session.connect(this);
+    }
+
+    public CompletableFuture<Void> disconnectionFuture(){
+        return authFuture;
     }
 
     public CompletableFuture<Void> disconnect(DisconnectReason reason) {
@@ -241,14 +245,14 @@ public class SocketHandler implements SocketListener {
             case LOGGED_OUT -> {
                 store.resolveAllPendingRequests();
                 session.close();
-                options.serializer().deleteSession(options.id());
+                options.serializer().deleteSession(options.clientType(), options.id());
                 yield CompletableFuture.completedFuture(null);
             }
             case RESTORE -> {
                 store.resolveAllPendingRequests();
                 var oldListeners = new ArrayList<>(store.listeners());
                 session.close();
-                options.serializer().deleteSession(options.id());
+                options.serializer().deleteSession(options.clientType(), options.id());
                 options.id(KeyHelper.registrationId());
                 this.keys = Keys.random(options);
                 this.store = Store.random(options);

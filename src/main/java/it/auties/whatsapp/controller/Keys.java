@@ -92,13 +92,6 @@ public final class Keys extends Controller<Keys> {
     private byte[] companionKey = SignalKeyPair.random().publicKey();
 
     /**
-     * The client type
-     */
-    @Getter
-    @NonNull
-    private ClientType clientType;
-
-    /**
      * The prologue to send in a message
      */
     @Getter
@@ -199,7 +192,7 @@ public final class Keys extends Controller<Keys> {
      */
     public static Keys of(@NonNull WhatsappOptions options) {
         return options.deserializer()
-                .deserializeKeys(options.id())
+                .deserializeKeys(options.clientType(), options.id())
                 .map(keys -> keys.serializer(options.serializer()))
                 .orElseGet(() -> random(options));
     }

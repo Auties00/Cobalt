@@ -172,7 +172,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection(@NonNull WhatsappOptions options) {
-        var lastIds = options.deserializer().findIds();
+        var lastIds = options.deserializer().findIds(options.clientType());
         if (!lastIds.isEmpty()) {
             options.id(lastIds.peekFirst());
         }
@@ -197,7 +197,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection(@NonNull WhatsappOptions options) {
-        var lastIds = options.deserializer().findIds();
+        var lastIds = options.deserializer().findIds(options.clientType());
         if (!lastIds.isEmpty()) {
             options.id(lastIds.peekLast());
         }
@@ -231,7 +231,7 @@ public class Whatsapp {
      */
     public static Stream<Whatsapp> streamConnections(@NonNull WhatsappOptions options) {
         return options.deserializer()
-                .findIds()
+                .findIds(options.clientType())
                 .stream()
                 .map(id -> Whatsapp.newConnection(options.id(id)));
     }
@@ -897,10 +897,26 @@ public class Whatsapp {
     /**
      * Opens a connection with Whatsapp Web's WebSocket if a previous connection doesn't exist
      *
-     * @return a future that will only be completed when the connection is closed
+     * @return a future that will be completed when a connection is successfully established with whatsapp
      */
-    public CompletableFuture<Void> connect() {
-        return socketHandler.connect();
+    public CompletableFuture<Whatsapp> connect() {
+        return socketHandler.connect().thenApply(ignored -> this);
+    }
+
+    /**
+     * Returns a future that is resolved when this connection is closed either by yourself or by Whatsapp(reconnects don't count as disconnects)
+     *
+     * @return a future
+     */
+    public CompletableFuture<Void> onDisconnection() {
+        return socketHandler.disconnectionFuture();
+    }
+
+    /**
+     * Waits for this connection to close
+     */
+    public void awaitDisconnection() {
+        onDisconnection().join();
     }
 
     /**
@@ -933,8 +949,7 @@ public class Whatsapp {
         }
         var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
         var device = Node.ofAttributes("remove-companion-device", metadata);
-        return socketHandler.sendQuery("set", "md", device).thenRunAsync(() -> {
-        });
+        return socketHandler.sendQuery("set", "md", device).thenRun(() -> {});
     }
 
     /**
@@ -963,7 +978,7 @@ public class Whatsapp {
                 .toList();
         return socketHandler.sendQuery("set", "privacy", Node.ofChildren("privacy", Node.ofChildren("category", attributes, children)))
                 .thenRunAsync(() -> onPrivacyFeatureChanged(type, value, excludedJids))
-                .thenApplyAsync(ignored -> this);
+                .thenApply(ignored -> this);
     }
 
     private void onPrivacyFeatureChanged(PrivacySettingType type, PrivacySettingValue value, List<ContactJid> excludedJids) {
@@ -984,7 +999,7 @@ public class Whatsapp {
         return socketHandler.sendQuery("set", "disappearing_mode", Node.ofAttributes("disappearing_mode", Map.of("duration", timer.period()
                         .toSeconds())))
                 .thenRunAsync(() -> store().newChatsEphemeralTimer(timer))
-                .thenApplyAsync(ignored -> this);
+                .thenApply(ignored -> this);
     }
 
     /**
@@ -997,7 +1012,7 @@ public class Whatsapp {
     public CompletableFuture<Whatsapp> createGdprAccountInfo() {
         checkLoggedIn();
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.ofAttributes("gdpr", Map.of("gdpr", "request")))
-                .thenApplyAsync(ignored -> this);
+                .thenApply(ignored -> this);
     }
 
     /**
@@ -1024,7 +1039,7 @@ public class Whatsapp {
         var oldName = socketHandler.store().userName();
         return socketHandler.send(Node.ofChildren("presence", Map.of("name", newName)))
                 .thenRunAsync(() -> socketHandler.updateUserName(newName, oldName))
-                .thenApplyAsync(ignored -> this);
+                .thenApply(ignored -> this);
     }
 
     /**
@@ -1037,7 +1052,7 @@ public class Whatsapp {
         checkLoggedIn();
         return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))
                 .thenRunAsync(() -> store().userName(newStatus))
-                .thenApplyAsync(ignored -> this);
+                .thenApply(ignored -> this);
     }
 
     /**

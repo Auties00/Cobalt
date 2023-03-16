@@ -1,7 +1,10 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.util.Json;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
@@ -18,6 +21,13 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      */
     @JsonIgnore
     protected ControllerSerializer serializer;
+
+    /**
+     * The client type
+     */
+    @Getter
+    @NonNull
+    protected ClientType clientType;
 
     /**
      * Returns the id of this controller

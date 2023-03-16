@@ -34,7 +34,8 @@ public class MobileTest {
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
-                .join();
+                .join()
+                .awaitDisconnection();
     }
 
     private static String onScanCode(VerificationCodeResponse type) {
