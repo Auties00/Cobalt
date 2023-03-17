@@ -1,13 +1,12 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 
 // Just used for testing locally
 public class WaitTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
-        Whatsapp.lastConnection(WebOptions.defaultOptions())
+        var whatsapp = Whatsapp.newConnection()
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
@@ -21,7 +20,9 @@ public class WaitTest {
                 .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
-                .join()
-                .awaitDisconnection();
+                .join();
+        System.out.println("Connected");
+        whatsapp.awaitDisconnection();
+        System.out.println("Disconnected");
     }
 }
