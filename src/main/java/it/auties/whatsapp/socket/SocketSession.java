@@ -18,6 +18,7 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import static it.auties.whatsapp.util.Spec.Whatsapp.*;
@@ -25,15 +26,15 @@ import static it.auties.whatsapp.util.Spec.Whatsapp.*;
 @RequiredArgsConstructor
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
-    protected final ExecutorService executorService;
+    protected final Executor executor;
     protected UUID uuid;
     protected SocketListener listener;
     protected boolean closed;
 
     static SocketSession of(WhatsappOptions options) {
         return switch (options.clientType()) {
-            case WEB_CLIENT -> new WebSocketSession(options.executorService());
-            case APP_CLIENT -> new AppSocketSession(options.executorService());
+            case WEB_CLIENT -> new WebSocketSession(options.socketService());
+            case APP_CLIENT -> new AppSocketSession(options.socketService());
         };
     }
 
@@ -57,7 +58,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     public final static class WebSocketSession extends SocketSession {
         private Session session;
 
-        public WebSocketSession(ExecutorService executor) {
+        public WebSocketSession(Executor executor) {
             super(executor);
         }
 
@@ -72,7 +73,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (DeploymentException exception) {
                     throw new RuntimeException(exception);
                 }
-            }, executorService);
+            }, executor);
         }
 
         @Override
@@ -88,7 +89,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot close connection to host", exception);
                 }
-            }, executorService);
+            }, executor);
         }
 
         @Override
@@ -102,7 +103,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
             var future = new CompletableFuture<Void>();
             try {
                 session.getAsyncRemote().sendBinary(ByteBuffer.wrap(bytes), result -> {
-                    if (!Objects.equals(this.uuid, currentUuid)) {
+                    if(!Objects.equals(this.uuid, currentUuid)){
                         future.completeExceptionally(new IllegalStateException("Cannot send request: session was closed"));
                         return;
                     }
@@ -155,7 +156,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         private Socket socket;
 
-        public AppSocketSession(ExecutorService executor) {
+        public AppSocketSession(Executor executor) {
             super(executor);
         }
 
@@ -171,12 +172,12 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                     this.socket = new Socket();
                     socket.setKeepAlive(true);
                     socket.connect(new InetSocketAddress(APP_ENDPOINT_HOST, APP_ENDPOINT_PORT));
-                    executorService.execute(this::readMessages);
+                    executor.execute(this::readMessages);
                     listener.onOpen(this);
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot connect to host", exception);
                 }
-            }, executorService);
+            }, executor);
         }
 
         @Override
@@ -211,7 +212,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot send message", exception);
                 }
-            }, executorService);
+            }, executor);
         }
 
         private void readMessages() {
@@ -232,7 +233,9 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         private void closeResources() {
             this.socket = null;
-            executorService.shutdownNow();
+            if(executor instanceof ExecutorService service) {
+                service.shutdownNow();
+            }
             listener.onClose();
         }
     }

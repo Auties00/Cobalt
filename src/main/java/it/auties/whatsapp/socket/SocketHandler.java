@@ -222,7 +222,7 @@ public class SocketHandler implements SocketListener {
             authHandler.checkRegistrationStatus();
         }
 
-        this.session = SocketSession.of(options.clientType());
+        this.session = SocketSession.of(options);
         return session.connect(this)
                 .thenCompose(ignored -> loginFuture);
     }

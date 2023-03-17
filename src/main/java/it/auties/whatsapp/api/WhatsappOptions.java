@@ -16,8 +16,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 
@@ -32,6 +31,10 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      * Constant for unlimited listeners size
      */
     private static final int UNLIMITED_LISTENERS = -1;
+    /**
+     * The default executor, mirrors {@link java.util.concurrent.CompletableFuture} implementation
+     */
+    private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
     /**
      * The id of the session. This id needs to be unique. By default, a random integer.
      */
@@ -62,11 +65,11 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
     @Default
     private TextPreviewSetting textPreviewSetting = TextPreviewSetting.ENABLED_WITH_INFERENCE;
     /**
-     * Executor service
+     * The executor to use for the WebSocket
+     * Introduced because of <a href="https://github.com/Auties00/Whatsapp4j/issues/223">223</a>
      */
     @Default
-    private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-
+    private Executor socketService = DEFAULT_EXECUTOR;
     /**
      * Handles failures in the WebSocket. By default, uses the simple handler and prints to the
      * terminal.
