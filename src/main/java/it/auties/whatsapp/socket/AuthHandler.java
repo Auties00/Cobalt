@@ -56,6 +56,9 @@ class AuthHandler {
     }
 
     protected CompletableFuture<Void> loginSocket(SocketSession session, byte[] message) {
+        if(handshake == null){
+            createHandshake();
+        }
         var serverHello = Protobuf.readMessage(message, HandshakeMessage.class).serverHello();
         handshake.updateHash(serverHello.ephemeral());
         var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()

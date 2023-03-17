@@ -908,15 +908,8 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public CompletableFuture<Void> onDisconnection() {
-        return socketHandler.disconnectionFuture();
-    }
-
-    /**
-     * Waits for this connection to close
-     */
-    public void awaitDisconnection() {
-        onDisconnection().join();
+    public CompletableFuture<Void> onLoggedIn() {
+        return socketHandler.logoutFuture();
     }
 
     /**
@@ -926,6 +919,22 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> disconnect() {
         return socketHandler.disconnect(DisconnectReason.DISCONNECTED);
+    }
+
+    /**
+     * Returns a future that is resolved when this connection is closed either by yourself or by Whatsapp(reconnects don't count as disconnects)
+     *
+     * @return a future
+     */
+    public CompletableFuture<Void> onDisconnected() {
+        return socketHandler.logoutFuture();
+    }
+
+    /**
+     * Waits for this connection to close
+     */
+    public void awaitDisconnection() {
+        onDisconnected().join();
     }
 
     /**
