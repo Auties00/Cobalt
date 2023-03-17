@@ -65,7 +65,7 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      * Executor service
      */
     @Default
-    private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();//ForkJoinPool.commonPool();
+    private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Handles failures in the WebSocket. By default, uses the simple handler and prints to the
