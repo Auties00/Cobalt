@@ -2,12 +2,12 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
-import it.auties.whatsapp.controller.ControllerDeserializer;
-import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.controller.DefaultControllerSerializer;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.controller.ControllerDeserializer;
+import it.auties.whatsapp.controller.ControllerSerializer;
+import it.auties.whatsapp.controller.DefaultControllerSerializer;
 import it.auties.whatsapp.util.KeyHelper;
 import lombok.Builder.Default;
 import lombok.Data;
