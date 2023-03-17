@@ -1,6 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.socket.SocketSession.AppSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession.OriginPatcher;
@@ -8,6 +8,7 @@ import it.auties.whatsapp.util.Spec;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -17,25 +18,27 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static it.auties.whatsapp.util.Spec.Whatsapp.*;
 
+@RequiredArgsConstructor
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
+    protected final Executor executor;
     protected UUID uuid;
     protected SocketListener listener;
     protected boolean closed;
 
-    protected static SocketSession of(ClientType type) {
-        return switch (type) {
-            case WEB_CLIENT -> new WebSocketSession();
-            case APP_CLIENT -> new AppSocketSession();
+    static SocketSession of(WhatsappOptions options) {
+        return switch (options.clientType()) {
+            case WEB_CLIENT -> new WebSocketSession(options.socketService());
+            case APP_CLIENT -> new AppSocketSession(options.socketService());
         };
     }
 
-    protected CompletableFuture<Void> connect(SocketListener listener) {
+    public CompletableFuture<Void> connect(SocketListener listener) {
         this.uuid = UUID.randomUUID();
         this.listener = listener;
         this.closed = false;
@@ -55,6 +58,10 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     public final static class WebSocketSession extends SocketSession {
         private Session session;
 
+        public WebSocketSession(Executor executor) {
+            super(executor);
+        }
+
         @Override
         public CompletableFuture<Void> connect(SocketListener listener) {
             return CompletableFuture.runAsync(() -> {
@@ -66,7 +73,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (DeploymentException exception) {
                     throw new RuntimeException(exception);
                 }
-            });
+            }, executor);
         }
 
         @Override
@@ -82,7 +89,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot close connection to host", exception);
                 }
-            });
+            }, executor);
         }
 
         @Override
@@ -148,11 +155,14 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
         private static final int MAX_READ_SIZE = 65535;
 
         private Socket socket;
-        private ExecutorService service;
+
+        public AppSocketSession(Executor executor) {
+            super(executor);
+        }
 
         @Override
         public CompletableFuture<Void> connect(SocketListener listener) {
-            if(socket != null && isOpen()){
+            if (socket != null && isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -162,18 +172,17 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                     this.socket = new Socket();
                     socket.setKeepAlive(true);
                     socket.connect(new InetSocketAddress(APP_ENDPOINT_HOST, APP_ENDPOINT_PORT));
-                    this.service = Executors.newSingleThreadScheduledExecutor();
-                    service.execute(this::readMessages);
+                    executor.execute(this::readMessages);
                     listener.onOpen(this);
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot connect to host", exception);
                 }
-            });
+            }, executor);
         }
 
         @Override
         public CompletableFuture<Void> close() {
-            if(socket == null || !isOpen()){
+            if (socket == null || !isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -203,7 +212,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot send message", exception);
                 }
-            });
+            }, executor);
         }
 
         private void readMessages() {
@@ -224,8 +233,9 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         private void closeResources() {
             this.socket = null;
-            service.shutdownNow();
-            this.service = null;
+            if(executor instanceof ExecutorService service) {
+                service.shutdownNow();
+            }
             listener.onClose();
         }
     }
