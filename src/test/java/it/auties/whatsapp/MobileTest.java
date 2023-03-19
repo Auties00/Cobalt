@@ -7,21 +7,19 @@ import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 public class MobileTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
-                .phoneNumber("393509809558")
-                .verificationCodeMethod(VerificationCodeMethod.SMS)
+                .phoneNumber("18542177236")
+                .verificationCodeMethod(VerificationCodeMethod.CALL)
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
         Whatsapp.lastConnection(options)
                 .addLoggedInListener(api -> {
                     System.out.println("Connected: " + api.store().userCompanionJid());
-                    CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS).execute(() -> api.sendMessage(ContactJid.of("393495089819"), "test"));
+                    api.sendMessage(ContactJid.of("393495089819"), "test");
                 })
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

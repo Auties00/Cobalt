@@ -215,19 +215,22 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
             }, executor);
         }
 
+
         private void readMessages() {
-            var bytes = new byte[MAX_READ_SIZE];
-            while (isOpen()) {
-                try {
-                    var stream = socket.getInputStream();
-                    var size = stream.read(bytes);
-                    listener.onMessage(Arrays.copyOf(bytes, size));
-                } catch (SocketException exception) {
-                    closeResources();
-                } catch (IOException exception) {
-                    listener.onError(exception);
+            var buffer = new byte[1024];
+            try(var input = socket.getInputStream()) {
+                int bytesRead;
+                while (isOpen() && (bytesRead = input.read(buffer)) != -1) {
+                    var messageBytes = new byte[bytesRead];
+                    System.arraycopy(buffer, 0, messageBytes, 0, bytesRead);
+                    listener.onMessage(messageBytes);
                 }
+            }catch (SocketException exception) {
+                closeResources();
+            }catch (IOException exception) {
+                listener.onError(exception);
             }
+
             closeResources();
         }
 

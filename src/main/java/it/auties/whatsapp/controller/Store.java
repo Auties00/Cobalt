@@ -20,8 +20,10 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
-import lombok.*;
 import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -32,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -349,6 +352,16 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Queries the first chat that matches the provided function
+     *
+     * @param function the non-null filter
+     * @return a non-null optional
+     */
+    public Optional<Chat> findChatBy(@NonNull Function<Chat, Boolean> function) {
+        return chats.values().stream().filter(function::apply).findFirst();
+    }
+
+    /**
      * Queries every chat whose name is equal to {@code name}
      *
      * @param name the name to search
@@ -356,6 +369,16 @@ public final class Store extends Controller<Store> {
      */
     public Set<Chat> findChatsByName(String name) {
         return findChatsStream(name).collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * Queries the first chat that matches the provided function
+     *
+     * @param function the non-null filter
+     * @return a non-null optional
+     */
+    public Set<Chat> findChatsBy(@NonNull Function<Chat, Boolean> function) {
+        return chats.values().stream().filter(function::apply).collect(Collectors.toUnmodifiableSet());
     }
 
     /**
