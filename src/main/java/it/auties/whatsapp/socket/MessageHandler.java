@@ -352,7 +352,8 @@ class MessageHandler {
     }
 
     public CompletableFuture<Void> decode(Node node) {
-        return runner.runAsync(() -> decodeMessages(node));
+        decodeMessages(node);
+        return CompletableFuture.completedFuture(null);
     }
 
     private void decodeMessages(Node node) {

@@ -566,8 +566,13 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void onDisconnected(DisconnectReason loggedOut) {
-        if(loggedOut != DisconnectReason.RECONNECTING && !logoutFuture.isDone()) {
-            logoutFuture.complete(null);
+        if(loggedOut != DisconnectReason.RECONNECTING) {
+            if(loginFuture != null && !loginFuture.isDone()){
+                loginFuture.complete(null);
+            }
+            if(logoutFuture != null && !logoutFuture.isDone()) {
+                logoutFuture.complete(null);
+            }
         }
         callListenersSync(listener -> {
             listener.onDisconnected(whatsapp, loggedOut);

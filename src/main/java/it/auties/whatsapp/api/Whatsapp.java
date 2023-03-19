@@ -1157,7 +1157,6 @@ public class Whatsapp {
     }
 
     private void attributeMessageMetadata(MessageInfo info) {
-        info.ignore(true);
         info.key().chatJid(info.chatJid().toUserJid());
         info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toUserJid());
         fixEphemeralMessage(info);
@@ -1168,8 +1167,7 @@ public class Whatsapp {
             case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(info, pollUpdateMessage);
             case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
             case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
-            default -> {
-            }
+            default -> {}
         }
     }
 
@@ -1289,32 +1287,25 @@ public class Whatsapp {
 
     private void attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
         switch (buttonMessage) {
-            case ButtonsMessage buttonsMessage && buttonsMessage.header().isPresent() && buttonsMessage.header()
-                    .get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-            case ButtonsMessage buttonsMessage && buttonsMessage.header().isPresent() && buttonsMessage.header()
-                    .get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+            case ButtonsMessage buttonsMessage
+                    && buttonsMessage.header().isPresent()
+                    && buttonsMessage.header().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
             case TemplateMessage templateMessage && templateMessage.format().isPresent() -> {
                 switch (templateMessage.format().get()) {
-                    case FourRowTemplate fourRowTemplate && fourRowTemplate.title()
-                            .isPresent() && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage ->
-                            attributeMediaMessage(mediaMessage);
-                    case HydratedFourRowTemplate hydratedFourRowTemplate && hydratedFourRowTemplate.title()
-                            .isPresent() && hydratedFourRowTemplate.title()
-                            .get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-                    default -> {
-                    }
+                    case FourRowTemplate fourRowTemplate
+                            && fourRowTemplate.title().isPresent()
+                            && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                    case HydratedFourRowTemplate hydratedFourRowTemplate
+                            && hydratedFourRowTemplate.title().isPresent()
+                            && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                    default -> {}
                 }
             }
-            case InteractiveMessage interactiveMessage && interactiveMessage.header()
-                    .isPresent() && interactiveMessage.header()
-                    .get()
-                    .attachment()
-                    .isPresent() && interactiveMessage.header()
-                    .get()
-                    .attachment()
-                    .get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-            default -> {
-            }
+            case InteractiveMessage interactiveMessage
+                    && interactiveMessage.header().isPresent()
+                    && interactiveMessage.header().get().attachment().isPresent()
+                    && interactiveMessage.header().get().attachment().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+            default -> {}
         }
 
         // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781

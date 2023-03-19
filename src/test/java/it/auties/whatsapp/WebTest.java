@@ -3,10 +3,10 @@ package it.auties.whatsapp;
 import it.auties.whatsapp.api.Whatsapp;
 
 // Just used for testing locally
-public class WaitTest {
+public class WebTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
-        var whatsapp = Whatsapp.newConnection()
+        var whatsapp = Whatsapp.lastConnection()
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
