@@ -21,10 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -84,7 +81,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     @Override
-    public LinkedList<Integer> findIds(@NonNull ClientType type) {
+    public LinkedList<UUID> findIds(@NonNull ClientType type) {
         try (var walker = Files.walk(getDirectoryFromType(type), 1)
                 .sorted(Comparator.comparing(this::getLastModifiedTime))) {
             return walker.map(this::parsePathAsId)
@@ -103,10 +100,10 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         }
     }
 
-    private Optional<Integer> parsePathAsId(Path file) {
+    private Optional<UUID> parsePathAsId(Path file) {
         try {
-            return Optional.of(Integer.parseInt(file.getFileName().toString()));
-        } catch (NumberFormatException ignored) {
+            return Optional.of(UUID.fromString(file.getFileName().toString()));
+        } catch (IllegalArgumentException ignored) {
             return Optional.empty();
         }
     }
@@ -117,7 +114,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         if (task != null && !task.isDone()) {
             return;
         }
-        var path = getDirectoryFromType(keys.clientType()).resolve("%s/keys.smile".formatted(keys.id()));
+        var path = getDirectoryFromType(keys.clientType()).resolve("%s/keys.smile".formatted(keys.uuid()));
         var preferences = SmileFile.of(path);
         preferences.write(keys, async);
     }
@@ -128,7 +125,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         if (task != null && !task.isDone()) {
             return;
         }
-        var path = getDirectoryFromType(store.clientType()).resolve("%s/store.smile".formatted(store.id()));
+        var path = getDirectoryFromType(store.clientType()).resolve("%s/store.smile".formatted(store.uuid()));
         var preferences = SmileFile.of(path);
         preferences.write(store, async);
         store.chats()
@@ -152,13 +149,13 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     private void serializeChat(Store store, Chat chat, boolean async) {
-        var path = getDirectoryFromType(store.clientType()).resolve("%s/%s%s.smile".formatted(store.id(), CHAT_PREFIX, chat.jid()));
+        var path = getDirectoryFromType(store.clientType()).resolve("%s/%s%s.smile".formatted(store.uuid(), CHAT_PREFIX, chat.jid()));
         var preferences = SmileFile.of(path);
         preferences.write(chat, async);
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(@NonNull ClientType type, int id) {
+    public Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id) {
         try {
             var path = getDirectoryFromType(type).resolve("%s/keys.smile".formatted(id));
             var preferences = SmileFile.of(path);
@@ -169,7 +166,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     @Override
-    public Optional<Store> deserializeStore(@NonNull ClientType type, int id) {
+    public Optional<Store> deserializeStore(@NonNull ClientType type, UUID id) {
         try {
             var path = getDirectoryFromType(type).resolve("%s/store.smile".formatted(id));
             var preferences = SmileFile.of(path);
@@ -185,7 +182,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         if (oldTask != null) {
             return oldTask;
         }
-        var directory = getDirectoryFromType(store.clientType()).resolve(String.valueOf(store.id()));
+        var directory = getDirectoryFromType(store.clientType()).resolve(String.valueOf(store.uuid()));
         if (Files.notExists(directory)) {
             return CompletableFuture.completedFuture(null);
         }
@@ -202,7 +199,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     @Override
-    public void deleteSession(@NonNull ClientType type, int id) {
+    public void deleteSession(@NonNull ClientType type, UUID id) {
         var folderPath = getDirectoryFromType(type).resolve(String.valueOf(id));
         deleteDirectory(folderPath.toFile());
     }

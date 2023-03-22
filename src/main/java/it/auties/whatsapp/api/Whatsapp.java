@@ -174,7 +174,7 @@ public class Whatsapp {
     public static Whatsapp firstConnection(@NonNull WhatsappOptions options) {
         var lastIds = options.deserializer().findIds(options.clientType());
         if (!lastIds.isEmpty()) {
-            options.id(lastIds.peekFirst());
+            options.uuid(lastIds.peekFirst());
         }
         return newConnection(options);
     }
@@ -199,7 +199,7 @@ public class Whatsapp {
     public static Whatsapp lastConnection(@NonNull WhatsappOptions options) {
         var lastIds = options.deserializer().findIds(options.clientType());
         if (!lastIds.isEmpty()) {
-            options.id(lastIds.peekLast());
+            options.uuid(lastIds.peekLast());
         }
         return newConnection(options);
     }
@@ -233,7 +233,7 @@ public class Whatsapp {
         return options.deserializer()
                 .findIds(options.clientType())
                 .stream()
-                .map(id -> Whatsapp.newConnection(options.id(id)));
+                .map(id -> Whatsapp.newConnection(options.uuid(id)));
     }
 
     /**

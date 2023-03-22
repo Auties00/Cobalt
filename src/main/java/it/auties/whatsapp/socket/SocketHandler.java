@@ -33,7 +33,6 @@ import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.KeyHelper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -258,7 +257,7 @@ public class SocketHandler implements SocketListener {
                 store.resolveAllPendingRequests();
                 var oldListeners = new ArrayList<>(store.listeners());
                 session.close();
-                options.id(KeyHelper.registrationId());
+                options.uuid(UUID.randomUUID());
                 this.keys = Keys.random(options);
                 this.store = Store.random(options);
                 store.listeners().addAll(oldListeners);
@@ -269,7 +268,7 @@ public class SocketHandler implements SocketListener {
 
     private void deleteCurrentSession() {
         var serializer = options.serializer();
-        serializer.deleteSession(options.clientType(), options.id());
+        serializer.deleteSession(options.clientType(), options.uuid());
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {

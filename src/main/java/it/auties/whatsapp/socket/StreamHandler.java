@@ -61,7 +61,7 @@ class StreamHandler {
     private static final int PRE_KEYS_UPLOAD_CHUNK = 30;
     private static final int PING_INTERVAL = 30;
     private static final int MEDIA_CONNECTION_DEFAULT_INTERVAL = 60;
-    private static final int MAX_ATTEMPTS = 3;
+    private static final int MAX_ATTEMPTS = 5;
 
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
@@ -194,7 +194,9 @@ class StreamHandler {
             return;
         }
         var attempts = retries.getOrDefault(message.id(), 0);
-        Validate.isTrue(attempts <= MAX_ATTEMPTS, "Cannot send message retry: exceeded maximum tries");
+        if(attempts > MAX_ATTEMPTS){
+            return;
+        }
         try {
             var all = message.senderJid().device() == 0;
             socketHandler.querySessionsForcefully(message.senderJid());
@@ -708,10 +710,11 @@ class StreamHandler {
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        socketHandler.sendQuery("set", "encrypt", Node.of("registration", BytesHelper.intToBytes(socketHandler.keys()
-                .id(), 4)), Node.of("type", Spec.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
-                .identityKeyPair()
-                .publicKey()), ofChildren("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
+        socketHandler.sendQuery("set", "encrypt",
+                Node.of("registration", socketHandler.keys().encodedRegistrationId()),
+                Node.of("type", Spec.Signal.KEY_BUNDLE_TYPE),
+                Node.of("identity", socketHandler.keys().identityKeyPair().publicKey()),
+                Node.ofChildren("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
     }
 
     private void generateQrCode(Node node, Node container) {

@@ -47,6 +47,8 @@ import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -77,6 +79,7 @@ class MessageHandler {
     private final Cache<String, List<ContactJid>> devicesCache;
     private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
     private final Set<Chat> historyCache;
+    private final Logger logger;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -86,6 +89,7 @@ class MessageHandler {
         this.retries = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.runner = new OrderedAsyncTaskRunner();
+        this.logger = System.getLogger("MessageHandler");
     }
 
     private <K, V> Cache<K, V> createCache(Duration duration) {
@@ -408,19 +412,29 @@ class MessageHandler {
                 keyBuilder.fromMe(Objects.equals(participant.toUserJid(), receiver));
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
+            var key = keyBuilder.id(id).build();
             if (messageNode == null) {
-                sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null);
+                if(sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null)){
+                    return;
+                }
+
+                socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
+                socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
             }
             var type = messageNode.attributes().getRequiredString("type");
             var encodedMessage = messageNode.contentAsBytes().orElse(null);
             var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
             if (decodedMessage.hasError()) {
-                sendRetryReceipt(timestamp, id, from, recipient, participant, type, encodedMessage, decodedMessage);
+                if(sendRetryReceipt(timestamp, id, from, recipient, participant, type, encodedMessage, decodedMessage)){
+                    return;
+                }
+
+                socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
+                socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
             }
             var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
-            var key = keyBuilder.id(id).build();
             var info = messageBuilder.key(key)
                     .broadcast(key.chatJid().hasServer(Server.BROADCAST))
                     .pushName(pushName)
@@ -441,13 +455,14 @@ class MessageHandler {
         }
     }
 
-    private void sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant, String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
+    private boolean sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant, String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
+        logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
         var attempts = retries.getOrDefault(id, 0);
         if (attempts >= MAX_ATTEMPTS) {
             var cause = decodedMessage != null ? decodedMessage.error() : new RuntimeException("This message is not available");
             socketHandler.errorHandler()
                     .handleFailure(MESSAGE, new RuntimeException("Cannot decrypt message with type %s inside %s from %s".formatted(Objects.requireNonNullElse(type, "unknown"), from, requireNonNullElse(participant, from)), cause));
-            return;
+            return false;
         }
         var retryAttributes = Attributes.of()
                 .put("id", id)
@@ -456,10 +471,13 @@ class MessageHandler {
                 .put("recipient", recipient, () -> !Objects.equals(recipient, from))
                 .put("participant", participant, Objects::nonNull)
                 .toMap();
-        var retryNode = Node.ofChildren("receipt", retryAttributes, Node.ofAttributes("retry", Map.of("count", attempts, "id", id, "t", timestamp, "v", "1")), Node.of("registration", BytesHelper.intToBytes(socketHandler.keys()
-                .id(), 4)), attempts > 1 || encodedMessage == null ? createPreKeyNode() : null);
+        var retryNode = Node.ofChildren("receipt", retryAttributes,
+                Node.ofAttributes("retry", Map.of("count", attempts, "id", id, "t", timestamp, "v", "1")),
+                Node.of("registration", socketHandler.keys().encodedRegistrationId()),
+                attempts > 1 || encodedMessage == null ? createPreKeyNode() : null);
         socketHandler.sendWithNoResponse(retryNode);
         retries.put(id, attempts + 1);
+        return true;
     }
 
     private MessageDecodeResult decodeMessageBytes(String type, byte[] encodedMessage, ContactJid from, ContactJid participant) {

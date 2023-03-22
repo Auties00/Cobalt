@@ -123,7 +123,7 @@ class AuthHandler {
     private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
         if(socketHandler.options() instanceof MobileOptions options){
             var phoneNumber = PhoneNumber.of(options.phoneNumber());
-            return builder.sessionId(socketHandler.store().id())
+            return builder.sessionId(socketHandler.keys().registrationId())
                     .shortConnect(true)
                     .connectAttemptCount(0)
                     .device(0)
@@ -156,7 +156,7 @@ class AuthHandler {
     private CompanionData createRegisterData() {
         var companion = CompanionData.builder()
                 .buildHash(socketHandler.options().version().toHash())
-                .id(socketHandler.keys().encodedId())
+                .id(socketHandler.keys().encodedRegistrationId())
                 .keyType(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
                 .identifier(socketHandler.keys().identityKeyPair().publicKey())
                 .signatureId(socketHandler.keys().signedKeyPair().encodedId())
@@ -266,7 +266,7 @@ class AuthHandler {
                 .put("lc", "GB")
                 .put("mistyped", "6")
                 .put("authkey", getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
-                .put("e_regid", getUrlEncoder().encodeToString(keys.encodedId()))
+                .put("e_regid", getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
                 .put("e_keytype", "BQ")
                 .put("e_ident", getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
                 .put("e_skey_id", getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))

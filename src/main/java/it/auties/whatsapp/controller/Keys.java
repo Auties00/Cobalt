@@ -44,7 +44,7 @@ public final class Keys extends Controller<Keys> {
      * The client id
      */
     @Getter
-    private int id;
+    private int registrationId;
 
     /**
      * The secret key pair used for buffer messages
@@ -192,7 +192,7 @@ public final class Keys extends Controller<Keys> {
      */
     public static Keys of(@NonNull WhatsappOptions options) {
         return options.deserializer()
-                .deserializeKeys(options.clientType(), options.id())
+                .deserializeKeys(options.clientType(), options.uuid())
                 .map(keys -> keys.serializer(options.serializer()))
                 .orElseGet(() -> random(options));
     }
@@ -206,11 +206,11 @@ public final class Keys extends Controller<Keys> {
     public static Keys random(@NonNull WhatsappOptions options) {
         var result = Keys.builder()
                 .serializer(options.serializer())
-                .id(options.id())
+                .uuid(options.uuid())
                 .clientType(options.clientType())
                 .prologue(options.clientType() == ClientType.WEB_CLIENT ? Whatsapp.WEB_PROLOGUE : Whatsapp.APP_PROLOGUE)
                 .build();
-        result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
+        result.signedKeyPair(SignalSignedKeyPair.of(result.registrationId(), result.identityKeyPair()));
         result.serialize(true);
         return result;
     }
@@ -220,8 +220,8 @@ public final class Keys extends Controller<Keys> {
      *
      * @return a non-null byte array
      */
-    public byte[] encodedId() {
-        return BytesHelper.intToBytes(id(), 4);
+    public byte[] encodedRegistrationId() {
+        return BytesHelper.intToBytes(registrationId(), 4);
     }
 
     /**
@@ -434,7 +434,7 @@ public final class Keys extends Controller<Keys> {
 
     @JsonSetter
     private void defaultSignedKey() {
-        this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);
+        this.signedKeyPair = SignalSignedKeyPair.of(registrationId, identityKeyPair);
     }
 
     /**

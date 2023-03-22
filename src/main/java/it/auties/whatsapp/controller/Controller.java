@@ -8,6 +8,8 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
+import java.util.UUID;
+
 /**
  * This interface represents is implemented by all WhatsappWeb4J's controllers. It provides an easy
  * way to store IDs and serialize said class.
@@ -16,6 +18,13 @@ import lombok.experimental.SuperBuilder;
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
 public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
+    /**
+     * The id of this controller
+     */
+    @NonNull
+    @Getter
+    protected UUID uuid;
+
     /**
      * The serializer instance to use
      */
@@ -28,13 +37,6 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     @Getter
     @NonNull
     protected ClientType clientType;
-
-    /**
-     * Returns the id of this controller
-     *
-     * @return an id
-     */
-    public abstract int id();
 
     /**
      * Serializes this object

@@ -5,6 +5,7 @@ import lombok.NonNull;
 
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -17,7 +18,7 @@ public interface ControllerDeserializer {
      * @param type the non-null type of client
      * @return a non-null linked list
      */
-    LinkedList<Integer> findIds(@NonNull ClientType type);
+    LinkedList<UUID> findIds(@NonNull ClientType type);
 
     /**
      * Serializes the keys
@@ -26,7 +27,7 @@ public interface ControllerDeserializer {
      * @param id the id of the keys
      * @return a non-null keys
      */
-    Optional<Keys> deserializeKeys(@NonNull ClientType type, int id);
+    Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id);
 
     /**
      * Serializes the store
@@ -35,7 +36,7 @@ public interface ControllerDeserializer {
      * @param id the id of the store
      * @return a non-null store
      */
-    Optional<Store> deserializeStore(@NonNull ClientType type, int id);
+    Optional<Store> deserializeStore(@NonNull ClientType type, UUID id);
 
     /**
      * Attributes the store asynchronously. This method is optionally used to load asynchronously

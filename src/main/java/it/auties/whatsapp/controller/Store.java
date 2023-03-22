@@ -47,12 +47,6 @@ import java.util.stream.Stream;
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store extends Controller<Store> {
     /**
-     * The session id of this store
-     */
-    @Getter
-    private int id;
-
-    /**
      * The locale of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
@@ -227,7 +221,7 @@ public final class Store extends Controller<Store> {
      */
     public static Store of(@NonNull WhatsappOptions options) {
         var deserializer = options.deserializer();
-        var result = deserializer.deserializeStore(options.clientType(), options.id())
+        var result = deserializer.deserializeStore(options.clientType(), options.uuid())
                 .map(store -> store.serializer(options.serializer()))
                 .orElseGet(() -> random(options));
         deserializer.attributeStore(result); // Run async
@@ -244,7 +238,7 @@ public final class Store extends Controller<Store> {
         return Store.builder()
                 .serializer(options.serializer())
                 .clientType(options.clientType())
-                .id(options.id())
+                .uuid(options.uuid())
                 .build();
     }
 

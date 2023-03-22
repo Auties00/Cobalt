@@ -55,9 +55,14 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         if (!state.hasPreKey()) {
             return serializedMessage;
         }
-        var preKeyMessage = new SignalPreKeyMessage(state.pendingPreKey().preKeyId(), state.pendingPreKey()
-                .baseKey(), keys.identityKeyPair()
-                .encodedPublicKey(), serializedMessage, keys.id(), state.pendingPreKey().signedKeyId());
+        var preKeyMessage = new SignalPreKeyMessage(
+                state.pendingPreKey().preKeyId(),
+                state.pendingPreKey().baseKey(),
+                keys.identityKeyPair().encodedPublicKey(),
+                serializedMessage,
+                keys.registrationId(),
+                state.pendingPreKey().signedKeyId()
+        );
         return preKeyMessage.serialized();
     }
 
