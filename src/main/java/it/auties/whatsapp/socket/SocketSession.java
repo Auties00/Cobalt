@@ -1,5 +1,6 @@
 package it.auties.whatsapp.socket;
 
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.socket.SocketSession.AppSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession;
@@ -10,13 +11,17 @@ import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -53,6 +58,10 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     protected abstract boolean isOpen();
 
     public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
+
+    int decodeLength(Bytes buffer) {
+        return (buffer.readByte() << 16) | buffer.readUnsignedShort();
+    }
 
     @ClientEndpoint(configurator = OriginPatcher.class)
     public final static class WebSocketSession extends SocketSession {
@@ -139,7 +148,14 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @OnMessage
         public void onBinary(byte[] message) {
-            listener.onMessage(message);
+            var raw = Bytes.of(message);
+            while (raw.readableBytes() >= 3) {
+                var length = decodeLength(raw);
+                if (length < 0 || length > raw.readableBytes()) {
+                    continue;
+                }
+                listener.onMessage(raw.readBytes(length));
+            }
         }
 
         public static class OriginPatcher extends Configurator {
@@ -217,13 +233,15 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
 
         private void readMessages() {
-            var buffer = new byte[1024];
-            try(var input = socket.getInputStream()) {
-                int bytesRead;
-                while (isOpen() && (bytesRead = input.read(buffer)) != -1) {
-                    var messageBytes = new byte[bytesRead];
-                    System.arraycopy(buffer, 0, messageBytes, 0, bytesRead);
-                    listener.onMessage(messageBytes);
+            try(var input = new DataInputStream(socket.getInputStream())) {
+                while (isOpen()) {
+                    var length = decodeLength(input);
+                    if(length < 0){
+                        break;
+                    }
+                    var message = new byte[length];
+                    input.readFully(message);
+                    listener.onMessage(message);
                 }
             }catch (SocketException exception) {
                 closeResources();
@@ -232,6 +250,17 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
             }
 
             closeResources();
+        }
+
+        private int decodeLength(DataInputStream input) {
+           try {
+               var lengthBytes = new byte[3];
+               input.readFully(lengthBytes);
+               var buffer = Bytes.of(lengthBytes);
+               return decodeLength(buffer);
+           }catch (IOException exception){
+               return -1;
+           }
         }
 
         private void closeResources() {

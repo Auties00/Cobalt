@@ -335,7 +335,7 @@ class AppStateHandler {
                 case LocaleSetting localeSetting ->
                         socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().userLocale());
                 case PushNameSetting pushNameSetting ->
-                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
+                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userCompanionName());
                 case UnarchiveChatsSetting unarchiveChatsSetting ->
                         socketHandler.store().unarchiveChats(unarchiveChatsSetting.unarchiveChats());
                 default -> {

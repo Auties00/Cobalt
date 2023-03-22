@@ -228,7 +228,6 @@ public final class Keys extends Controller<Keys> {
      * Clears the signal keys associated with this object
      */
     public void clearReadWriteKey() {
-        this.readKey = null;
         this.writeKey = null;
         this.writeCounter.set(0);
         this.readCounter.set(0);

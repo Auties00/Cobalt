@@ -245,10 +245,6 @@ class StreamHandler {
     }
 
     private void digestAck(Node node) {
-        // TODO: Fix me
-        if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
-            return;
-        }
         var clazz = node.attributes().getString("class");
         if (!Objects.equals(clazz, "message")) {
             return;

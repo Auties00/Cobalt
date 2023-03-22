@@ -200,7 +200,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
 
     @Override
     public void deleteSession(@NonNull ClientType type, UUID id) {
-        var folderPath = getDirectoryFromType(type).resolve(String.valueOf(id));
+        var folderPath = getDirectoryFromType(type).resolve(id.toString());
         deleteDirectory(folderPath.toFile());
     }
 

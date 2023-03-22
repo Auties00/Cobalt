@@ -5,10 +5,11 @@ import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
-import it.auties.whatsapp.binary.MessageWrapper;
+import it.auties.whatsapp.binary.Decoder;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
@@ -161,23 +162,18 @@ public class SocketHandler implements SocketListener {
     }
 
     @Override
-    public void onMessage(byte[] raw) {
-        var message = new MessageWrapper(raw);
-        if (message.decoded().isEmpty()) {
-            return;
-        }
+    public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
-            var header = message.decoded().getFirst().toByteArray();
-            authHandler.loginSocket(session, header).thenRunAsync(() -> state(SocketState.CONNECTED));
+            authHandler.loginSocket(session, message)
+                    .thenRunAsync(() -> state(SocketState.CONNECTED));
             return;
         }
-        message.toNodes(keys).forEach(this::handleNode);
-    }
-
-    private void handleNode(Node deciphered) {
-        onNodeReceived(deciphered);
-        store.resolvePendingRequest(deciphered, false);
-        streamHandler.digest(deciphered);
+        var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey().toByteArray());
+        var decoder = new Decoder();
+        var node = decoder.readNode(plainText);
+        onNodeReceived(node);
+        store.resolvePendingRequest(node, false);
+        streamHandler.digest(node);
     }
 
     private void onNodeReceived(Node deciphered) {
@@ -674,7 +670,7 @@ public class SocketHandler implements SocketListener {
         }
         var self = store().userCompanionJid().toUserJid();
         store().findContactByJid(self).orElseGet(() -> store().addContact(self)).chosenName(newName);
-        store().userName(newName);
+        store().userCompanionName(newName);
     }
 
 

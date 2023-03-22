@@ -60,7 +60,7 @@ public final class Store extends Controller<Store> {
      */
     @Getter
     @Setter
-    private String userName;
+    private String userCompanionName;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user

@@ -457,6 +457,10 @@ class MessageHandler {
 
     private boolean sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant, String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
         logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
+        if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
+            return false;
+        }
+
         var attempts = retries.getOrDefault(id, 0);
         if (attempts >= MAX_ATTEMPTS) {
             var cause = decodedMessage != null ? decodedMessage.error() : new RuntimeException("This message is not available");

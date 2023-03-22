@@ -1045,7 +1045,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> changeName(@NonNull String newName) {
         checkLoggedIn();
-        var oldName = socketHandler.store().userName();
+        var oldName = socketHandler.store().userCompanionName();
         return socketHandler.send(Node.ofChildren("presence", Map.of("name", newName)))
                 .thenRunAsync(() -> socketHandler.updateUserName(newName, oldName))
                 .thenApply(ignored -> this);
@@ -1060,7 +1060,7 @@ public class Whatsapp {
     public CompletableFuture<Whatsapp> changeStatus(@NonNull String newStatus) {
         checkLoggedIn();
         return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))
-                .thenRunAsync(() -> store().userName(newStatus))
+                .thenRunAsync(() -> store().userCompanionName(newStatus))
                 .thenApply(ignored -> this);
     }
 

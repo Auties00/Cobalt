@@ -56,33 +56,34 @@ class AuthHandler {
     }
 
     protected CompletableFuture<Void> loginSocket(SocketSession session, byte[] message) {
-        if(handshake == null){
-            createHandshake();
+        try {
+            var serverHello = Protobuf.readMessage(message, HandshakeMessage.class).serverHello();
+            handshake.updateHash(serverHello.ephemeral());
+            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
+                    .ephemeralKeyPair()
+                    .privateKey());
+            handshake.mixIntoKey(sharedEphemeral);
+            var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
+            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys()
+                    .ephemeralKeyPair()
+                    .privateKey());
+            handshake.mixIntoKey(sharedStatic);
+            handshake.cipher(serverHello.payload(), false);
+            var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
+            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
+                    .noiseKeyPair()
+                    .privateKey());
+            handshake.mixIntoKey(sharedPrivate);
+            var encodedPayload = handshake.cipher(createUserPayload(), true);
+            var clientFinish = new ClientFinish(encodedKey, encodedPayload);
+            var handshakeMessage = new HandshakeMessage(clientFinish);
+            return Request.of(handshakeMessage)
+                    .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
+                    .thenRunAsync(socketHandler.keys()::clearReadWriteKey)
+                    .thenRunAsync(handshake::finish);
+        }catch (Throwable throwable){
+            return CompletableFuture.failedFuture(throwable);
         }
-        var serverHello = Protobuf.readMessage(message, HandshakeMessage.class).serverHello();
-        handshake.updateHash(serverHello.ephemeral());
-        var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
-                .ephemeralKeyPair()
-                .privateKey());
-        handshake.mixIntoKey(sharedEphemeral);
-        var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-        var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys()
-                .ephemeralKeyPair()
-                .privateKey());
-        handshake.mixIntoKey(sharedStatic);
-        handshake.cipher(serverHello.payload(), false);
-        var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
-        var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
-                .noiseKeyPair()
-                .privateKey());
-        handshake.mixIntoKey(sharedPrivate);
-        var encodedPayload = handshake.cipher(createUserPayload(), true);
-        var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-        var handshakeMessage = new HandshakeMessage(clientFinish);
-        return Request.of(handshakeMessage)
-                .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
-                .thenRunAsync(socketHandler.keys()::clearReadWriteKey)
-                .thenRunAsync(handshake::finish);
     }
 
     private byte[] createUserPayload() {

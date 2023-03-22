@@ -2,7 +2,6 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
-import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 
@@ -17,11 +16,8 @@ public class MobileTest {
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
         Whatsapp.lastConnection(options)
-                .addLoggedInListener(api -> {
-                    System.out.println("Connected: " + api.store().userCompanionJid());
-                    api.sendMessage(ContactJid.of("393495089819"), "test");
-                })
-                .addNewMessageListener(message -> System.out.println(message.toJson()))
+                .addLoggedInListener(api -> System.out.println("Connected: " + api.store().userCompanionJid()))
+                .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
