@@ -323,8 +323,7 @@ class AppStateHandler {
                         targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
                 case TimeFormatAction timeFormatAction ->
                         socketHandler.store().twentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
-                default -> {
-                }
+                default -> {}
             }
             socketHandler.onAction(action, messageIndex);
         }

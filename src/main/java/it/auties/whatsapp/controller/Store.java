@@ -486,10 +486,33 @@ public final class Store extends Controller<Store> {
     public Chat addChat(@NonNull Chat chat) {
         chat.messages().forEach(this::attribute);
         if (chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
-            findContactByJid(chat.jid()).orElseGet(() -> addContact(Contact.ofJid(chat.jid()))).fullName(chat.name());
+            var contact = findContactByJid(chat.jid())
+                    .orElseGet(() -> addContact(Contact.ofJid(chat.jid())));
+            contact.fullName(chat.name());
+        }
+
+        var oldChat = chats.get(chat.jid());
+        if(oldChat != null) {
+            joinMessages(chat, oldChat);
         }
 
         return addChatDirect(chat);
+    }
+
+    private void joinMessages(Chat chat, Chat oldChat) {
+        var newChatTimestamp = chat.newestMessage()
+                .map(MessageInfo::timestampSeconds)
+                .orElse(0L);
+        var oldChatTimestamp = oldChat.newestMessage()
+                .map(MessageInfo::timestampSeconds)
+                .orElse(0L);
+        if (newChatTimestamp <= oldChatTimestamp) {
+            chat.internalMessages().addAll(oldChat.messages());
+            return;
+        }
+        var result = oldChat.internalMessages();
+        result.addAll(chat.messages());
+        chat.messages(result);
     }
 
     /**

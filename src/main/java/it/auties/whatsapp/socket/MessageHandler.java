@@ -10,10 +10,7 @@ import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
-import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
-import it.auties.whatsapp.model.chat.GroupMetadata;
-import it.auties.whatsapp.model.chat.PastParticipant;
+import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
@@ -708,65 +705,87 @@ class MessageHandler {
 
     private void handleHistorySync(HistorySync history) {
         switch (history.syncType()) {
-            case INITIAL_STATUS_V3 -> {
-                history.statusV3Messages().forEach(socketHandler.store()::addStatus);
-                socketHandler.onStatus();
-            }
-            case INITIAL_BOOTSTRAP -> {
-                historyCache.addAll(history.conversations());
-                history.conversations().forEach(this::updateChatMessages);
-                socketHandler.onChats();
-            }
-            case PUSH_NAME -> {
-                history.pushNames().forEach(this::handNewPushName);
-                socketHandler.onContacts();
-            }
-            case RECENT, FULL -> handleRecentMessagesListener(history);
-            case NON_BLOCKING_DATA -> history.pastParticipants()
-                    .forEach(pastParticipants -> socketHandler.store()
-                            .findChatByJid(pastParticipants.groupJid())
-                            .ifPresentOrElse(chat -> chat.pastParticipants()
-                                    .addAll(pastParticipants.pastParticipants()), () -> pastParticipantsQueue.put(pastParticipants.groupJid(), pastParticipants.pastParticipants())));
+            case INITIAL_STATUS_V3 -> handleInitialStatus(history);
+            case PUSH_NAME -> handlePushNames(history);
+            case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
+            case RECENT, FULL -> handleChatsSync(history);
+            case NON_BLOCKING_DATA -> handleNonBlockingData(history);
         }
     }
 
-    private void updateChatMessages(Chat carrier) {
-        var chatJid = carrier.jid();
-        var chat = socketHandler.store().findChatByJid(chatJid);
-        if (chat.isEmpty()) {
-            socketHandler.store().addChat(carrier);
-            var pastParticipants = pastParticipantsQueue.remove(chatJid);
-            if (pastParticipants != null) {
-                carrier.pastParticipants().addAll(pastParticipants);
-            }
-
-            return;
+    private void handleInitialStatus(HistorySync history) {
+        var store = socketHandler.store();
+        for (var messageInfo : history.statusV3Messages()) {
+            store.addStatus(messageInfo);
         }
+        socketHandler.onStatus();
+    }
 
-        var messages = carrier.messages().stream().peek(socketHandler.store()::attribute).toList();
-        chat.get().addOldMessages(messages);
+    private void handlePushNames(HistorySync history) {
+        for (var pushName : history.pushNames()) {
+            handNewPushName(pushName);
+        }
+        socketHandler.onContacts();
     }
 
     private void handNewPushName(PushName pushName) {
         var jid = ContactJid.of(pushName.id());
-        socketHandler.store().findContactByJid(jid).orElseGet(() -> {
-            var contact = socketHandler.store().addContact(jid);
-            socketHandler.onNewContact(contact);
-            return contact;
-        }).chosenName(pushName.name());
+        var contact = socketHandler.store()
+                .findContactByJid(jid)
+                .orElseGet(() -> createNewContact(jid));
+        contact.chosenName(pushName.name());
         var action = ContactAction.of(pushName.name(), null, null);
         socketHandler.onAction(action, MessageIndexInfo.of("contact", jid, null, true));
     }
 
-    private void handleRecentMessagesListener(HistorySync history) {
-        history.conversations().forEach(this::updateChatMessages);
-        historyCache.forEach(cached -> {
+    private Contact createNewContact(ContactJid jid) {
+        var contact = socketHandler.store().addContact(jid);
+        socketHandler.onNewContact(contact);
+        return contact;
+    }
+
+    private void handleInitialBootstrap(HistorySync history) {
+        historyCache.addAll(history.conversations());
+        handleConversations(history);
+        socketHandler.onChats();
+    }
+
+    private void handleChatsSync(HistorySync history) {
+        handleConversations(history);
+        for (var cached : historyCache) {
             var chat = socketHandler.store()
                     .findChatByJid(cached.jid())
                     .orElse(cached);
             socketHandler.onChatRecentMessages(chat, !history.conversations().contains(cached));
-        });
+        }
         historyCache.removeIf(entry -> !history.conversations().contains(entry));
+    }
+
+    private void handleConversations(HistorySync history) {
+        var store = socketHandler.store();
+        for (var chat : history.conversations()) {
+            store.addChat(chat);
+        }
+    }
+
+    private void handleNonBlockingData(HistorySync history) {
+        for (var pastParticipants : history.pastParticipants()) {
+            handlePastParticipants(pastParticipants);
+        }
+    }
+
+    private void handlePastParticipants(PastParticipants pastParticipants) {
+        socketHandler.store()
+                .findChatByJid(pastParticipants.groupJid())
+                .ifPresentOrElse(chat -> addPastParticipants(pastParticipants, chat), () -> queuePastParticipants(pastParticipants));
+    }
+
+    private void addPastParticipants(PastParticipants pastParticipants, Chat chat) {
+        chat.pastParticipants().addAll(pastParticipants.pastParticipants());
+    }
+
+    private void queuePastParticipants(PastParticipants pastParticipants) {
+        pastParticipantsQueue.put(pastParticipants.groupJid(), pastParticipants.pastParticipants());
     }
 
     @SafeVarargs
