@@ -304,8 +304,7 @@ public class Medias {
     }
 
     private Optional<byte[]> getPdf(byte[] file) {
-        try (var outputStream = new ByteArrayOutputStream()) {
-            var document = PDDocument.load(file);
+        try (var outputStream = new ByteArrayOutputStream(); var document = PDDocument.load(file)) {
             var renderer = new PDFRenderer(document);
             var image = renderer.renderImage(0);
             var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
