@@ -24,7 +24,8 @@ import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
-import static it.auties.whatsapp.util.Medias.Format.FILE;
+import static it.auties.whatsapp.util.Medias.THUMBNAIL_HEIGHT;
+import static it.auties.whatsapp.util.Medias.THUMBNAIL_WIDTH;
 
 /**
  * A model class that represents a message holding a document inside
@@ -148,17 +149,20 @@ public final class DocumentMessage extends MediaMessage implements ProductHeader
      */
     @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "simpleBuilder")
     private static DocumentMessage customBuilder(byte[] media, String mimeType, String title, int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
+        var actualMimeType = Optional.ofNullable(mimeType)
+                .or(() -> Medias.getMimeType(fileName))
+                .or(() -> Medias.getMimeType(media))
+                .orElse(DOCUMENT.defaultMimeType());
         return DocumentMessage.builder()
                 .decodedMedia(media)
                 .mediaKeyTimestamp(Clock.nowSeconds())
-                .mimetype(Optional.ofNullable(mimeType)
-                        .or(() -> Medias.getMimeType(fileName))
-                        .or(() -> Medias.getMimeType(media))
-                        .orElse(DOCUMENT.defaultMimeType()))
+                .mimetype(actualMimeType)
                 .fileName(fileName)
                 .pageCount(pageCount)
                 .title(title)
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, FILE).orElse(null))
+                .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, actualMimeType).orElse(null))
+                .thumbnailWidth(THUMBNAIL_WIDTH)
+                .thumbnailHeight(THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }
