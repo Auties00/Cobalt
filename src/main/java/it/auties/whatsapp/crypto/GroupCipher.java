@@ -41,7 +41,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
         if (senderKeyState.chainKey().iteration() > iteration) {
             return senderKeyState.findSenderMessageKey(iteration)
-                    .orElseThrow(() -> new NoSuchElementException("Received message with old counter: got %s, expected > %s".formatted(iteration, senderKeyState.chainKey()
+                    .orElseThrow(() -> new NoSuchElementException("Received message with old counter: got %s, expected more than %s".formatted(iteration, senderKeyState.chainKey()
                             .iteration())));
         }
         var lastChainKey = senderKeyState.chainKey();

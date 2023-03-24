@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.protobuf.base.ProtobufType.UINT32;
-import static it.auties.whatsapp.util.Specification.Whatsapp.WEB_UPDATE_URL;
+import static it.auties.whatsapp.util.Spec.Whatsapp.WEB_UPDATE_URL;
 import static java.lang.Integer.parseInt;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 

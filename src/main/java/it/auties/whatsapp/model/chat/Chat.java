@@ -22,7 +22,6 @@ import lombok.extern.jackson.Jacksonized;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -66,18 +65,20 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private final ContactJid oldJid;
 
     /**
-     * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
+     * The timestamp of this chat
+     * Usually refers to the time when it was last modified
+     * Doesn't necessarily match {@link Chat#newestMessage()}'s timestamp
      */
     @ProtobufProperty(index = 12, type = UINT64)
     private long timestampSeconds;
 
     /**
-     * A non-null arrayList of messages in this chat sorted chronologically
+     * A non-null list of messages in this chat sorted chronologically
      */
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
     @NonNull
     @Default
-    private ConcurrentLinkedDeque<MessageInfo> messages = new ConcurrentLinkedDeque<>();
+    private LinkedList<MessageInfo> messages = new LinkedList<>();
 
     /**
      * The number of unread messages in this chat. If this field is negative, this chat is marked as
@@ -505,7 +506,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> newestStandardMessage() {
         return messages.stream()
-                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER))
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
                 .reduce((first, second) -> second);
     }
 
@@ -517,7 +518,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> newestMessageFromMe() {
         return messages.stream()
-                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER))
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
                 .filter(MessageInfo::fromMe)
                 .reduce((first, second) -> second);
     }
@@ -530,7 +531,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> newestServerMessage() {
         return messages.stream()
-                .filter(info -> info.message().hasCategory(MessageCategory.SERVER))
+                .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
                 .reduce((first, second) -> second);
     }
 
@@ -551,7 +552,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> oldestMessageFromMe() {
         return messages.stream()
-                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER))
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
                 .filter(MessageInfo::fromMe)
                 .findFirst();
     }
@@ -563,7 +564,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestStandardMessage() {
-        return messages.stream().filter(info -> !info.message().hasCategory(MessageCategory.SERVER)).findFirst();
+        return messages.stream()
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
+                .findFirst();
     }
 
     /**
@@ -573,7 +576,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestServerMessage() {
-        return messages.stream().filter(info -> info.message().hasCategory(MessageCategory.SERVER)).findFirst();
+        return messages.stream()
+                .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
+                .findFirst();
     }
 
     /**
@@ -669,6 +674,15 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Adds a new unspecified amount of messages to this chat and sorts them accordingly
+     *
+     * @param newMessages the non-null messages to add
+     */
+    public void addMessages(@NonNull Collection<MessageInfo> newMessages) {
+        messages.addAll(newMessages);
+    }
+
+    /**
      * Adds a message to the chat in the most recent slot available
      *
      * @param info the message to add to the chat
@@ -684,21 +698,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Adds a collection of messages to the chat in the most recent slot available
-     *
-     * @param info the message to add to the chat
-     * @return whether the messages were added
-     */
-    public boolean addNewMessages(@NonNull List<MessageInfo> info) {
-        if(info.isEmpty()){
-            return true;
-        }
-        var result = messages.addAll(info);
-        updateChatTimestamp(info.get(info.size() - 1));
-        return result;
-    }
-
-    /**
      * Adds a message to the chat in the oldest slot available
      *
      * @param info the message to add to the chat
@@ -709,17 +708,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             return false;
         }
         messages.addFirst(info);
-        return true;
-    }
-
-    /**
-     * Adds a collection of messages to the chat in the oldest slot available
-     *
-     * @param messages the messages to add to the chat
-     * @return whether the messages were added
-     */
-    public boolean addOldMessages(@NonNull List<MessageInfo> messages) {
-        messages.forEach(this.messages::addFirst);
         return true;
     }
 
@@ -778,6 +766,15 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Collection<MessageInfo> messages() {
         return Collections.unmodifiableCollection(messages);
+    }
+
+    /**
+     * Returns an immutable list of all the messages in this chat
+     *
+     * @return a non-null collection
+     */
+    public LinkedList<MessageInfo> internalMessages() {
+        return messages;
     }
 
     /**
@@ -850,16 +847,17 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Internal implementation to deserialize messages
      */
     public static class ChatBuilder {
-        public ChatBuilder messages(ConcurrentLinkedDeque<HistorySyncMessage> messages) {
+        public ChatBuilder messages(Collection<HistorySyncMessage> messages) {
             this.messages$value = messages.stream()
+                    .sorted(Comparator.comparing(HistorySyncMessage::messageOrderId))
                     .map(HistorySyncMessage::message)
-                    .collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
+                    .collect(Collectors.toCollection(LinkedList::new));
             this.messages$set = true;
             return this;
         }
 
         @JsonSetter("messages")
-        public ChatBuilder decodedMessages(@NonNull ConcurrentLinkedDeque<MessageInfo> messages) {
+        public ChatBuilder decodedMessages(@NonNull LinkedList<MessageInfo> messages) {
             this.messages$value = messages;
             this.messages$set = true;
             return this;

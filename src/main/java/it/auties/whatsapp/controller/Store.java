@@ -20,8 +20,10 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
-import lombok.*;
 import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -32,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,12 +46,6 @@ import java.util.stream.Stream;
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store extends Controller<Store> {
-    /**
-     * The session id of this store
-     */
-    @Getter
-    private int id;
-
     /**
      * The locale of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
@@ -63,7 +60,7 @@ public final class Store extends Controller<Store> {
      */
     @Getter
     @Setter
-    private String userName;
+    private String userCompanionName;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
@@ -224,7 +221,7 @@ public final class Store extends Controller<Store> {
      */
     public static Store of(@NonNull WhatsappOptions options) {
         var deserializer = options.deserializer();
-        var result = deserializer.deserializeStore(options.id())
+        var result = deserializer.deserializeStore(options.clientType(), options.uuid())
                 .map(store -> store.serializer(options.serializer()))
                 .orElseGet(() -> random(options));
         deserializer.attributeStore(result); // Run async
@@ -240,7 +237,8 @@ public final class Store extends Controller<Store> {
     public static Store random(@NonNull WhatsappOptions options) {
         return Store.builder()
                 .serializer(options.serializer())
-                .id(options.id())
+                .clientType(options.clientType())
+                .uuid(options.uuid())
                 .build();
     }
 
@@ -348,6 +346,16 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Queries the first chat that matches the provided function
+     *
+     * @param function the non-null filter
+     * @return a non-null optional
+     */
+    public Optional<Chat> findChatBy(@NonNull Function<Chat, Boolean> function) {
+        return chats.values().stream().filter(function::apply).findFirst();
+    }
+
+    /**
      * Queries every chat whose name is equal to {@code name}
      *
      * @param name the name to search
@@ -355,6 +363,16 @@ public final class Store extends Controller<Store> {
      */
     public Set<Chat> findChatsByName(String name) {
         return findChatsStream(name).collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * Queries the first chat that matches the provided function
+     *
+     * @param function the non-null filter
+     * @return a non-null optional
+     */
+    public Set<Chat> findChatsBy(@NonNull Function<Chat, Boolean> function) {
+        return chats.values().stream().filter(function::apply).collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -468,10 +486,33 @@ public final class Store extends Controller<Store> {
     public Chat addChat(@NonNull Chat chat) {
         chat.messages().forEach(this::attribute);
         if (chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
-            findContactByJid(chat.jid()).orElseGet(() -> addContact(Contact.ofJid(chat.jid()))).fullName(chat.name());
+            var contact = findContactByJid(chat.jid())
+                    .orElseGet(() -> addContact(Contact.ofJid(chat.jid())));
+            contact.fullName(chat.name());
+        }
+
+        var oldChat = chats.get(chat.jid());
+        if(oldChat != null) {
+            joinMessages(chat, oldChat);
         }
 
         return addChatDirect(chat);
+    }
+
+    private void joinMessages(Chat chat, Chat oldChat) {
+        var newChatTimestamp = chat.newestMessage()
+                .map(MessageInfo::timestampSeconds)
+                .orElse(0L);
+        var oldChatTimestamp = oldChat.newestMessage()
+                .map(MessageInfo::timestampSeconds)
+                .orElse(0L);
+        if (newChatTimestamp <= oldChatTimestamp) {
+            chat.internalMessages().addAll(oldChat.messages());
+            return;
+        }
+        var result = oldChat.internalMessages();
+        result.addAll(chat.messages());
+        chat.messages(result);
     }
 
     /**

@@ -85,7 +85,7 @@ public class RunCITest implements Listener {
         }
         loadConfig();
         createLatch();
-        future = api.connect();
+        future = api.connect().thenComposeAsync(Whatsapp::onDisconnected);
         latch.await();
     }
 

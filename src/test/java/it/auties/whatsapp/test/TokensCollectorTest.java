@@ -1,7 +1,7 @@
 package it.auties.whatsapp.test;
 
 import it.auties.whatsapp.github.GithubActions;
-import it.auties.whatsapp.util.Specification.Whatsapp;
+import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 

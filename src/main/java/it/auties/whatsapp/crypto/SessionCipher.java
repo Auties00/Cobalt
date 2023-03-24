@@ -22,13 +22,14 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
-import static it.auties.whatsapp.util.Specification.Signal.*;
+import static it.auties.whatsapp.util.Spec.Signal.*;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
     public Node encrypt(byte @NonNull [] data) {
-        var currentState = loadSession().currentState();
+        var currentState = loadSession().currentState()
+                        .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
         Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key", SecurityException.class);
         var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
@@ -54,9 +55,14 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         if (!state.hasPreKey()) {
             return serializedMessage;
         }
-        var preKeyMessage = new SignalPreKeyMessage(state.pendingPreKey().preKeyId(), state.pendingPreKey()
-                .baseKey(), keys.identityKeyPair()
-                .encodedPublicKey(), serializedMessage, keys.id(), state.pendingPreKey().signedKeyId());
+        var preKeyMessage = new SignalPreKeyMessage(
+                state.pendingPreKey().preKeyId(),
+                state.pendingPreKey().baseKey(),
+                keys.identityKeyPair().encodedPublicKey(),
+                serializedMessage,
+                keys.registrationId(),
+                state.pendingPreKey().signedKeyId()
+        );
         return preKeyMessage.serialized();
     }
 

@@ -54,23 +54,23 @@ import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Accessors(fluent = true)
-class StreamHandler extends Handler {
+class StreamHandler {
     private static final byte[] MESSAGE_HEADER = {6, 0};
     private static final byte[] SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int PRE_KEYS_UPLOAD_CHUNK = 30;
     private static final int PING_INTERVAL = 30;
     private static final int MEDIA_CONNECTION_DEFAULT_INTERVAL = 60;
-    private static final int MAX_ATTEMPTS = 3;
+    private static final int MAX_ATTEMPTS = 5;
 
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
+    private ScheduledExecutorService service;
 
-    public StreamHandler(SocketHandler socketHandler) {
+    protected StreamHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.retries = new HashMap<>();
     }
-
 
     protected void digest(@NonNull Node node) {
         switch (node.description()) {
@@ -85,7 +85,15 @@ class StreamHandler extends Handler {
             case "message" -> socketHandler.decodeMessage(node);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
+            case "xmlstreamend" -> digestStreamEnd();
         }
+    }
+
+    private void digestStreamEnd() {
+        if(socketHandler.state() != SocketState.CONNECTED){
+            return;
+        }
+        socketHandler.disconnect(DisconnectReason.DISCONNECTED);
     }
 
     private void digestFailure(Node node) {
@@ -186,7 +194,9 @@ class StreamHandler extends Handler {
             return;
         }
         var attempts = retries.getOrDefault(message.id(), 0);
-        Validate.isTrue(attempts <= MAX_ATTEMPTS, "Cannot send message retry: exceeded maximum tries");
+        if(attempts > MAX_ATTEMPTS){
+            return;
+        }
         try {
             var all = message.senderJid().device() == 0;
             socketHandler.querySessionsForcefully(message.senderJid());
@@ -522,7 +532,6 @@ class StreamHandler extends Handler {
                 .thenRunAsync(this::onInitialInfo);
         if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
             socketHandler.store().initialSync(true);
-            socketHandler.disableAppStateSync();
         }
 
         if (!socketHandler.store().initialSync()) {
@@ -639,7 +648,8 @@ class StreamHandler extends Handler {
             return;
         }
         socketHandler.store().serialize(true);
-        socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"));
+        socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
+                        .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(STREAM, throwable));
         socketHandler.onSocketEvent(SocketEvent.PING);
     }
 
@@ -696,10 +706,11 @@ class StreamHandler extends Handler {
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        socketHandler.sendQuery("set", "encrypt", Node.of("registration", BytesHelper.intToBytes(socketHandler.keys()
-                .id(), 4)), Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
-                .identityKeyPair()
-                .publicKey()), ofChildren("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
+        socketHandler.sendQuery("set", "encrypt",
+                Node.of("registration", socketHandler.keys().encodedRegistrationId()),
+                Node.of("type", Spec.Signal.KEY_BUNDLE_TYPE),
+                Node.of("identity", socketHandler.keys().identityKeyPair().publicKey()),
+                Node.ofChildren("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
     }
 
     private void generateQrCode(Node node, Node container) {
@@ -771,14 +782,18 @@ class StreamHandler extends Handler {
         socketHandler.store().addContact(Contact.ofJid(socketHandler.store().userCompanionJid().toUserJid()));
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
+    protected void dispose() {
         retries.clear();
+        if(service != null){
+            service.shutdownNow();
+        }
     }
 
-    @Override
-    protected ExecutorService createService() {
-        return Executors.newSingleThreadScheduledExecutor();
+    private synchronized ScheduledExecutorService getOrCreateService(){
+        if(service == null){
+            service = Executors.newSingleThreadScheduledExecutor();
+        }
+
+        return service;
     }
 }

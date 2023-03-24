@@ -5,10 +5,11 @@ import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
-import it.auties.whatsapp.binary.MessageWrapper;
+import it.auties.whatsapp.binary.Decoder;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
@@ -33,7 +34,6 @@ import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.KeyHelper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -58,7 +58,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
-public class SocketHandler extends Handler implements SocketListener {
+public class SocketHandler implements SocketListener {
     private static final int MANUAL_INITIAL_PULL_TIMEOUT = 5;
 
     static {
@@ -103,7 +103,11 @@ public class SocketHandler extends Handler implements SocketListener {
     @NonNull
     private Store store;
 
-    private CompletableFuture<Void> authFuture;
+    private CompletableFuture<Void> loginFuture;
+
+    private CompletableFuture<Void> logoutFuture;
+
+    private ExecutorService service;
 
     public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull WhatsappOptions options, @NonNull Store store, @NonNull Keys keys) {
         this.whatsapp = whatsapp;
@@ -129,17 +133,6 @@ public class SocketHandler extends Handler implements SocketListener {
         }
     }
 
-    @Override
-    protected void dispose() {
-        onSocketEvent(SocketEvent.CLOSE);
-        authHandler.dispose();
-        streamHandler.dispose();
-        messageHandler.dispose();
-        appStateHandler.dispose();
-        errorHandler.dispose();
-        super.dispose();
-    }
-
     protected void onSocketEvent(SocketEvent event) {
         callListenersAsync(listener -> {
             listener.onSocketEvent(whatsapp, event);
@@ -148,16 +141,8 @@ public class SocketHandler extends Handler implements SocketListener {
     }
 
     private void callListenersAsync(Consumer<Listener> consumer) {
-        if (state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT) {
-            return;
-        }
         var service = getOrCreateService();
         store.listeners().forEach(listener -> service.execute(() -> consumer.accept(listener)));
-    }
-
-    @Override
-    protected ExecutorService createService() {
-        return Executors.newCachedThreadPool();
     }
 
     @Override
@@ -177,23 +162,18 @@ public class SocketHandler extends Handler implements SocketListener {
     }
 
     @Override
-    public void onMessage(byte[] raw) {
-        var message = new MessageWrapper(raw);
-        if (message.decoded().isEmpty()) {
-            return;
-        }
+    public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
-            var header = message.decoded().getFirst().toByteArray();
-            authHandler.loginSocket(session, header).thenRunAsync(() -> state(SocketState.CONNECTED));
+            authHandler.loginSocket(session, message)
+                    .thenRunAsync(() -> state(SocketState.CONNECTED));
             return;
         }
-        message.toNodes(keys).forEach(this::handleNode);
-    }
-
-    private void handleNode(Node deciphered) {
-        onNodeReceived(deciphered);
-        store.resolvePendingRequest(deciphered, false);
-        streamHandler.digest(deciphered);
+        var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey().toByteArray());
+        var decoder = new Decoder();
+        var node = decoder.readNode(plainText);
+        onNodeReceived(node);
+        store.resolvePendingRequest(node, false);
+        streamHandler.digest(node);
     }
 
     private void onNodeReceived(Node deciphered) {
@@ -211,9 +191,6 @@ public class SocketHandler extends Handler implements SocketListener {
         }
         onDisconnected(state.toReason());
         onShutdown(state == SocketState.RECONNECTING);
-        if (authFuture != null && !authFuture.isDone() && state.isDisconnected()) {
-            authFuture.complete(null);
-        }
     }
 
     @Override
@@ -228,16 +205,29 @@ public class SocketHandler extends Handler implements SocketListener {
     }
 
     public CompletableFuture<Void> connect() {
-        if (authFuture == null || authFuture.isDone()) {
-            this.authFuture = new CompletableFuture<>();
+        if (loginFuture == null || loginFuture.isDone()) {
+            this.loginFuture = new CompletableFuture<>();
+        }
+
+        if (logoutFuture == null || logoutFuture.isDone()) {
+            this.logoutFuture = new CompletableFuture<>();
         }
 
         if(options instanceof MobileOptions mobileOptions && !keys.registered()){
             authHandler.checkRegistrationStatus();
         }
 
-        this.session = SocketSession.of(options.clientType());
-        return session.connect(this).thenCompose(ignored -> authFuture);
+        this.session = SocketSession.of(options);
+        return session.connect(this)
+                .thenCompose(ignored -> loginFuture);
+    }
+
+    public CompletableFuture<Void> loginFuture(){
+        return loginFuture;
+    }
+
+    public CompletableFuture<Void> logoutFuture(){
+        return logoutFuture;
     }
 
     public CompletableFuture<Void> disconnect(DisconnectReason reason) {
@@ -253,23 +243,28 @@ public class SocketHandler extends Handler implements SocketListener {
                 yield connect();
             }
             case LOGGED_OUT -> {
+                deleteCurrentSession();
                 store.resolveAllPendingRequests();
                 session.close();
-                options.serializer().deleteSession(options.id());
                 yield CompletableFuture.completedFuture(null);
             }
             case RESTORE -> {
+                deleteCurrentSession();
                 store.resolveAllPendingRequests();
                 var oldListeners = new ArrayList<>(store.listeners());
                 session.close();
-                options.serializer().deleteSession(options.id());
-                options.id(KeyHelper.registrationId());
+                options.uuid(UUID.randomUUID());
                 this.keys = Keys.random(options);
                 this.store = Store.random(options);
                 store.listeners().addAll(oldListeners);
                 yield connect();
             }
         };
+    }
+
+    private void deleteCurrentSession() {
+        var serializer = options.serializer();
+        serializer.deleteSession(options.clientType(), options.uuid());
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {
@@ -566,6 +561,14 @@ public class SocketHandler extends Handler implements SocketListener {
     }
 
     protected void onDisconnected(DisconnectReason loggedOut) {
+        if(loggedOut != DisconnectReason.RECONNECTING) {
+            if(loginFuture != null && !loginFuture.isDone()){
+                loginFuture.complete(null);
+            }
+            if(logoutFuture != null && !logoutFuture.isDone()) {
+                logoutFuture.complete(null);
+            }
+        }
         callListenersSync(listener -> {
             listener.onDisconnected(whatsapp, loggedOut);
             listener.onDisconnected(loggedOut);
@@ -573,6 +576,9 @@ public class SocketHandler extends Handler implements SocketListener {
     }
 
     protected void onLoggedIn() {
+        if(!loginFuture.isDone()) {
+            loginFuture.complete(null);
+        }
         callListenersSync(listener -> {
             listener.onLoggedIn(whatsapp);
             listener.onLoggedIn();
@@ -580,9 +586,6 @@ public class SocketHandler extends Handler implements SocketListener {
     }
 
     public void callListenersSync(Consumer<Listener> consumer) {
-        if (state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT) {
-            return;
-        }
         var service = getOrCreateService();
         var futures = store.listeners()
                 .stream()
@@ -667,7 +670,7 @@ public class SocketHandler extends Handler implements SocketListener {
         }
         var self = store().userCompanionJid().toUserJid();
         store().findContactByJid(self).orElseGet(() -> store().addContact(self)).chosenName(newName);
-        store().userName(newName);
+        store().userCompanionName(newName);
     }
 
 
@@ -720,7 +723,22 @@ public class SocketHandler extends Handler implements SocketListener {
         messageHandler.querySessions(List.of(contactJid), true);
     }
 
-    protected void disableAppStateSync() {
-        appStateHandler.completeLatch();
+    private void dispose() {
+        onSocketEvent(SocketEvent.CLOSE);
+        authHandler.dispose();
+        streamHandler.dispose();
+        messageHandler.dispose();
+        appStateHandler.dispose();
+        if(service != null){
+            service.shutdownNow();
+        }
+    }
+
+    private synchronized ExecutorService getOrCreateService(){
+        if(service == null || service.isShutdown()){
+            service = Executors.newCachedThreadPool();
+        }
+
+        return service;
     }
 }

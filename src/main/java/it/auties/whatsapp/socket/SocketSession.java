@@ -1,37 +1,45 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.ClientType;
+import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.socket.SocketSession.AppSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession.OriginPatcher;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Spec;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import static it.auties.whatsapp.util.Specification.Whatsapp.*;
+import static it.auties.whatsapp.util.Spec.Whatsapp.*;
 
+@RequiredArgsConstructor
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
+    protected final Executor executor;
     protected UUID uuid;
     protected SocketListener listener;
     protected boolean closed;
 
-    static SocketSession of(ClientType type) {
-        return switch (type) {
-            case WEB_CLIENT -> new WebSocketSession();
-            case APP_CLIENT -> new AppSocketSession();
+    static SocketSession of(WhatsappOptions options) {
+        return switch (options.clientType()) {
+            case WEB_CLIENT -> new WebSocketSession(options.socketService());
+            case APP_CLIENT -> new AppSocketSession(options.socketService());
         };
     }
 
@@ -42,18 +50,26 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
         return null;
     }
 
-    public CompletableFuture<Void> close() {
+    protected CompletableFuture<Void> close() {
         this.closed = true;
         return null;
     }
 
-    abstract boolean isOpen();
+    protected abstract boolean isOpen();
 
     public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
+
+    int decodeLength(Bytes buffer) {
+        return (buffer.readByte() << 16) | buffer.readUnsignedShort();
+    }
 
     @ClientEndpoint(configurator = OriginPatcher.class)
     public final static class WebSocketSession extends SocketSession {
         private Session session;
+
+        public WebSocketSession(Executor executor) {
+            super(executor);
+        }
 
         @Override
         public CompletableFuture<Void> connect(SocketListener listener) {
@@ -66,7 +82,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (DeploymentException exception) {
                     throw new RuntimeException(exception);
                 }
-            });
+            }, executor);
         }
 
         @Override
@@ -82,7 +98,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot close connection to host", exception);
                 }
-            });
+            }, executor);
         }
 
         @Override
@@ -132,14 +148,21 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @OnMessage
         public void onBinary(byte[] message) {
-            listener.onMessage(message);
+            var raw = Bytes.of(message);
+            while (raw.readableBytes() >= 3) {
+                var length = decodeLength(raw);
+                if (length < 0 || length > raw.readableBytes()) {
+                    continue;
+                }
+                listener.onMessage(raw.readBytes(length));
+            }
         }
 
         public static class OriginPatcher extends Configurator {
             @Override
             public void beforeRequest(@NonNull Map<String, List<String>> headers) {
-                headers.put("Origin", List.of(Specification.Whatsapp.WEB_ORIGIN));
-                headers.put("Host", List.of(Specification.Whatsapp.WEB_HOST));
+                headers.put("Origin", List.of(Spec.Whatsapp.WEB_ORIGIN));
+                headers.put("Host", List.of(Spec.Whatsapp.WEB_HOST));
             }
         }
     }
@@ -148,11 +171,14 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
         private static final int MAX_READ_SIZE = 65535;
 
         private Socket socket;
-        private ExecutorService service;
+
+        public AppSocketSession(Executor executor) {
+            super(executor);
+        }
 
         @Override
         public CompletableFuture<Void> connect(SocketListener listener) {
-            if(socket != null && isOpen()){
+            if (socket != null && isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -162,18 +188,17 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                     this.socket = new Socket();
                     socket.setKeepAlive(true);
                     socket.connect(new InetSocketAddress(APP_ENDPOINT_HOST, APP_ENDPOINT_PORT));
-                    this.service = Executors.newSingleThreadScheduledExecutor();
-                    service.execute(this::readMessages);
+                    executor.execute(this::readMessages);
                     listener.onOpen(this);
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot connect to host", exception);
                 }
-            });
+            }, executor);
         }
 
         @Override
         public CompletableFuture<Void> close() {
-            if(socket == null || !isOpen()){
+            if (socket == null || !isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -203,29 +228,46 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot send message", exception);
                 }
-            });
+            }, executor);
         }
 
+
         private void readMessages() {
-            var bytes = new byte[MAX_READ_SIZE];
-            while (isOpen()) {
-                try {
-                    var stream = socket.getInputStream();
-                    var size = stream.read(bytes);
-                    listener.onMessage(Arrays.copyOf(bytes, size));
-                } catch (SocketException exception) {
-                    closeResources();
-                } catch (IOException exception) {
-                    listener.onError(exception);
+            try(var input = new DataInputStream(socket.getInputStream())) {
+                while (isOpen()) {
+                    var length = decodeLength(input);
+                    if(length < 0){
+                        break;
+                    }
+                    var message = new byte[length];
+                    input.readFully(message);
+                    listener.onMessage(message);
                 }
+            }catch (SocketException exception) {
+                closeResources();
+            }catch (IOException exception) {
+                listener.onError(exception);
             }
+
             closeResources();
+        }
+
+        private int decodeLength(DataInputStream input) {
+           try {
+               var lengthBytes = new byte[3];
+               input.readFully(lengthBytes);
+               var buffer = Bytes.of(lengthBytes);
+               return decodeLength(buffer);
+           }catch (IOException exception){
+               return -1;
+           }
         }
 
         private void closeResources() {
             this.socket = null;
-            service.shutdownNow();
-            this.service = null;
+            if(executor instanceof ExecutorService service) {
+                service.shutdownNow();
+            }
             listener.onClose();
         }
     }

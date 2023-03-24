@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.auties.map.SimpleMapModule;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.Validate;
@@ -20,10 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -83,8 +81,8 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     @Override
-    public LinkedList<Integer> findIds() {
-        try (var walker = Files.walk(baseDirectory, 1)
+    public LinkedList<UUID> findIds(@NonNull ClientType type) {
+        try (var walker = Files.walk(getDirectoryFromType(type), 1)
                 .sorted(Comparator.comparing(this::getLastModifiedTime))) {
             return walker.map(this::parsePathAsId)
                     .flatMap(Optional::stream)
@@ -102,10 +100,10 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         }
     }
 
-    private Optional<Integer> parsePathAsId(Path file) {
+    private Optional<UUID> parsePathAsId(Path file) {
         try {
-            return Optional.of(Integer.parseInt(file.getFileName().toString()));
-        } catch (NumberFormatException ignored) {
+            return Optional.of(UUID.fromString(file.getFileName().toString()));
+        } catch (IllegalArgumentException ignored) {
             return Optional.empty();
         }
     }
@@ -116,7 +114,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         if (task != null && !task.isDone()) {
             return;
         }
-        var path = baseDirectory.resolve("%s/keys.smile".formatted(keys.id()));
+        var path = getDirectoryFromType(keys.clientType()).resolve("%s/keys.smile".formatted(keys.uuid()));
         var preferences = SmileFile.of(path);
         preferences.write(keys, async);
     }
@@ -127,7 +125,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         if (task != null && !task.isDone()) {
             return;
         }
-        var path = baseDirectory.resolve("%s/store.smile".formatted(store.id()));
+        var path = getDirectoryFromType(store.clientType()).resolve("%s/store.smile".formatted(store.uuid()));
         var preferences = SmileFile.of(path);
         preferences.write(store, async);
         store.chats()
@@ -151,15 +149,15 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     private void serializeChat(Store store, Chat chat, boolean async) {
-        var path = baseDirectory.resolve("%s/%s%s.smile".formatted(store.id(), CHAT_PREFIX, chat.jid()));
+        var path = getDirectoryFromType(store.clientType()).resolve("%s/%s%s.smile".formatted(store.uuid(), CHAT_PREFIX, chat.jid()));
         var preferences = SmileFile.of(path);
         preferences.write(chat, async);
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(int id) {
+    public Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id) {
         try {
-            var path = baseDirectory.resolve("%s/keys.smile".formatted(id));
+            var path = getDirectoryFromType(type).resolve("%s/keys.smile".formatted(id));
             var preferences = SmileFile.of(path);
             return preferences.read(Keys.class);
         } catch (IOException exception) {
@@ -168,9 +166,9 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     @Override
-    public Optional<Store> deserializeStore(int id) {
+    public Optional<Store> deserializeStore(@NonNull ClientType type, UUID id) {
         try {
-            var path = baseDirectory.resolve("%s/store.smile".formatted(id));
+            var path = getDirectoryFromType(type).resolve("%s/store.smile".formatted(id));
             var preferences = SmileFile.of(path);
             return preferences.read(Store.class);
         } catch (IOException exception) {
@@ -184,7 +182,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         if (oldTask != null) {
             return oldTask;
         }
-        var directory = baseDirectory.resolve(String.valueOf(store.id()));
+        var directory = getDirectoryFromType(store.clientType()).resolve(String.valueOf(store.uuid()));
         if (Files.notExists(directory)) {
             return CompletableFuture.completedFuture(null);
         }
@@ -201,8 +199,8 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     @Override
-    public void deleteSession(int id) {
-        var folderPath = baseDirectory.resolve(String.valueOf(id));
+    public void deleteSession(@NonNull ClientType type, UUID id) {
+        var folderPath = getDirectoryFromType(type).resolve(id.toString());
         deleteDirectory(folderPath.toFile());
     }
 
@@ -254,6 +252,19 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
             baseStore.addChatDirect(result);
             hashCodesMap.put(result.jid(), result.fullHashCode());
         }
+    }
+
+    private Path getDirectoryFromType(ClientType type) {
+        var directory = baseDirectory.resolve(type == ClientType.APP_CLIENT ? "mobile" : "web");
+        if(!Files.exists(directory)){
+            try {
+                Files.createDirectories(directory);
+            } catch (IOException exception) {
+                throw new UncheckedIOException("Cannot create directory", exception);
+            }
+        }
+
+        return directory;
     }
 
     private record SmileFile(Path file, Semaphore semaphore) {
@@ -329,6 +340,9 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
                     try (var zipStream = new GZIPOutputStream(compressedStream, 65536)) {
                         zipStream.write(serialized);
                     }
+                }
+                if(Files.notExists(file.getParent())) {
+                    Files.createDirectories(file.getParent());
                 }
                 Files.write(file, compressedStream.toByteArray(), StandardOpenOption.CREATE);
             } catch (IOException exception){

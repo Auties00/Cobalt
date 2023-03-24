@@ -1,7 +1,11 @@
 package it.auties.whatsapp.controller;
 
+import it.auties.whatsapp.api.ClientType;
+import lombok.NonNull;
+
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -11,25 +15,28 @@ public interface ControllerDeserializer {
     /**
      * Returns all the known IDs
      *
+     * @param type the non-null type of client
      * @return a non-null linked list
      */
-    LinkedList<Integer> findIds();
+    LinkedList<UUID> findIds(@NonNull ClientType type);
 
     /**
      * Serializes the keys
      *
+     * @param type the non-null type of client
      * @param id the id of the keys
      * @return a non-null keys
      */
-    Optional<Keys> deserializeKeys(int id);
+    Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id);
 
     /**
      * Serializes the store
      *
+     * @param type the non-null type of client
      * @param id the id of the store
      * @return a non-null store
      */
-    Optional<Store> deserializeStore(int id);
+    Optional<Store> deserializeStore(@NonNull ClientType type, UUID id);
 
     /**
      * Attributes the store asynchronously. This method is optionally used to load asynchronously

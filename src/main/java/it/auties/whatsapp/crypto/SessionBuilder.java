@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Spec;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
@@ -24,7 +24,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         var baseKey = SignalKeyPair.random();
         var state = createState(true, baseKey, null, identityKey, preKey == null ? null : preKey.keyPair()
                 .encodedPublicKey(), signedPreKey.keyPair()
-                .encodedPublicKey(), id, Specification.Signal.CURRENT_VERSION);
+                .encodedPublicKey(), id, Spec.Signal.CURRENT_VERSION);
         var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
         state.pendingPreKey(pendingPreKey);
         keys.findSessionByAddress(address)

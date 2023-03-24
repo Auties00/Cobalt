@@ -51,7 +51,7 @@ In short, if you use this library without a malicious intent, you will never get
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.1.2</version>
+    <version>3.2.1</version>
 </dependency>
 ```
 
@@ -59,12 +59,12 @@ In short, if you use this library without a malicious intent, you will never get
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.1.2'
+   implementation 'com.github.auties00:whatsappweb4j:3.2.1'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.1.2")
+   implementation("com.github.auties00:whatsappweb4j:3.2.1")
    ```
 
 ### Examples
@@ -112,13 +112,13 @@ var api = Whatsapp.newConnection();
 
 If you need, you can supply a custom set of options:
 ```java
-var options = Options.defaultOptions(); // Set the options you need using the wither or the builder
+var options = WhatsappOptions.defaultOptions(); // Set the options you need using the wither or the builder
 var api = Whatsapp.newConnection(options);
 ```
 
 If a connection was already created previously, use any of these methods instead depending on your needs:
 ```java
-var apiById = Whatsapp.newConnection(someId); // Finds a connection by its id
+var apiByOptions = Whatsapp.newConnection(options); // Finds a connection by using options
 var latestApi = Whatsapp.lastConnection(); // Finds the latest connection that was opened
 var firstApi = Whatsapp.firstConnection(); // Finds the first connection that was opened
 var allKnownApis = Whatsapp.streamConnections(); // Streams all the known connections
@@ -128,11 +128,18 @@ var allKnownApis = Whatsapp.streamConnections(); // Streams all the known connec
 ### How to open a connection
 
 To open the connection to Whatsapp use the connect method.
-This method returns a CompletableFuture that will be completed only when the connection is closed.
-So, by calling the join method which awaits a future, we are waiting for the connection to be closed:
+This method returns a CompletableFuture that will be completed when a connection is established.
+So, by calling the join method which awaits a future, we are waiting for the connection to be established:
 ```java
 api.connect().join();
 ```
+If you also want to wait for the connection to be closed, use:
+```java
+api.connect()
+        .join()
+        .awaitDisconnection();
+```
+Any code after `awaitDisconnection`will not be called until the connection is closed.
 
 ### How to close a connection
 
@@ -141,21 +148,21 @@ There are three ways to close a connection:
 1. Disconnect
    
    ```java
-   api.disconnect().join();
+   api.disconnect();
    ```
    > **_IMPORTANT:_** The session remains valid for future uses
 
 2. Reconnect
 
    ```java
-   api.reconnect().join();
+   api.reconnect();
    ```
    > **_IMPORTANT:_** The session remains valid for future uses
 
 3. Log out
 
    ```java
-   api.logout().join();
+   api.logout();
    ```
    > **_IMPORTANT:_** The session doesn't remain valid for future uses
 
@@ -253,26 +260,20 @@ In the original version of WhatsappWeb, chats, contacts and messages could be qu
 The multi-device implementation, instead, sends all of this information progressively when the connection is initialized for the first time and doesn't allow any subsequent queries to access the latter.
 In practice, this means that this data needs to be serialized somewhere.
 
-By default, this library serializes data regarding a session at `$HOME/.whatsappweb4j/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
+By default, this library serializes data regarding a session at `$HOME/.whatsappweb4j/[web|mobile]/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
 The latter is serialized every time a modification occurs to the model, while the store is serialized everytime a ping is sent by the socket to the server.
 Both are serialized when the socket is closed.
 
-If your application needs to serialize data in a different way, for example in a database:
-1. Disable the default serialization mechanism (optional)
-
-    ```java
-    var options = Options.defaultOptions() // Use the default options
-            .withDefaultSerialization(false); // Disables default serialization
-    var api = Whatsapp.newConnection(options); // Any named constructor can be used
-    ```
-
-2. Create a custom ControllerSerializerProvider and/or ControllerDeserializerProvider
-
-3. Register the custom serializer and/or deserializer in the manifest
-
-   - Create a directory called services inside the META-INF. 
-   - Inside the folder that was just created, create a file called `it.auties.whatsapp.serialization.ControllerProvider`.
-   - Finally, inside the file that was just created write the fully qualified name of your implementation, for example `com.example.CustomProvider`.
+If your application needs to serialize data in a different way, for example in a database create a custom implementation of ControllerDeserializer and/or ControllerSerializer.
+Then make sure to specify your implementation in the options:
+```java
+var options = WebOptions.builder()
+        .serializer(new YourCustomSerializer()) // Use a custom serializer or new DefaultControllerSerializer() for the default one
+        .deserializer(new YourCustomDeserializer()) // Use a custom deserializer or new DefaultControllerSerializer() for the default one
+        .build();
+var api = Whatsapp.newConnection(options); // Any named constructor can be used
+```
+This works for the mobile api as well.
 
 ### How to handle session disconnects
 
@@ -506,7 +507,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Empty header
 
           ```java
-          var buttons = ButtonsMessage.withoutHeaderBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
                .buttons(List.of(button, anotherButton)) // Set the buttons
@@ -517,8 +518,8 @@ All types of messages supported by Whatsapp are supported by this library:
      - Text header
 
           ```java
-          var buttons = ButtonsMessage.withTextHeaderBuilder() // Create a new button message builder
-               .header("A nice header :)") // Set the header
+          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
+               .header(TextMessage.of("A nice header :)")) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
                .buttons(List.of(button, anotherButton)) // Set the buttons
@@ -529,7 +530,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Document header
 
           ```java
-          var buttons = ButtonsMessage.withDocumentHeaderBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
                .header(documentMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -541,7 +542,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Image header
 
           ```java
-          var buttons = ButtonsMessage.withImageHeaderBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
                .header(imageMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -553,7 +554,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Video header
 
           ```java
-          var buttons = ButtonsMessage.withVideoHeaderBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
                .header(videoMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -565,7 +566,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Location header
 
           ```java
-          var buttons = ButtonsMessage.withLocationHeaderBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
                .header(locationMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -608,8 +609,8 @@ All types of messages supported by Whatsapp are supported by this library:
      var quickReplyButton = HydratedButtonTemplate.of(HydratedQuickReplyButton.of("Click me!")); // Create a quick reply button
      var urlButton = HydratedButtonTemplate.of(HydratedURLButton.of("Search it", "https://google.com")); // Create an url button
      var callButton = HydratedButtonTemplate.of(HydratedCallButton.of("Call me", "some_phone_number")); // Create a call button
-     var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder() // Create a new template builder
-           .title("A nice title") // Set the title
+     var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder() // Create a new template builder
+           .title(TextMessage.of("A nice title")) // Set the title
            .body("A nice body") // Set the body
            .buttons(List.of(quickReplyButton, urlButton, callButton)) // Set the buttons
            .build(); // Create the template

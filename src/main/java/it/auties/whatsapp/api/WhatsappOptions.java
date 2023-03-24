@@ -2,13 +2,12 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.controller.ControllerDeserializer;
 import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.DefaultControllerSerializer;
-import it.auties.whatsapp.util.KeyHelper;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
+import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.model.signal.auth.Version;
 import lombok.Builder.Default;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,6 +15,9 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
+import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 
 /**
@@ -30,10 +32,14 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      */
     private static final int UNLIMITED_LISTENERS = -1;
     /**
-     * The id of the session. This id needs to be unique. By default, a random integer.
+     * The default executor, mirrors {@link java.util.concurrent.CompletableFuture} implementation
+     */
+    private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
+    /**
+     * The id of the session
      */
     @Default
-    private int id = KeyHelper.registrationId();
+    private UUID uuid = UUID.randomUUID();
     /**
      * Whether listeners marked with @RegisteredListener should be registered automatically. By
      * default, this option is enabled.
@@ -58,6 +64,12 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      */
     @Default
     private TextPreviewSetting textPreviewSetting = TextPreviewSetting.ENABLED_WITH_INFERENCE;
+    /**
+     * The executor to use for the WebSocket
+     * Introduced because of <a href="https://github.com/Auties00/Whatsapp4j/issues/223">223</a>
+     */
+    @Default
+    private Executor socketService = DEFAULT_EXECUTOR;
     /**
      * Handles failures in the WebSocket. By default, uses the simple handler and prints to the
      * terminal.

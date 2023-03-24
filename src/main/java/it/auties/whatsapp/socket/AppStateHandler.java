@@ -34,26 +34,24 @@ import static java.lang.System.Logger.Level.WARNING;
 import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-class AppStateHandler extends Handler {
+class AppStateHandler {
     public static final int TIMEOUT = 120;
     private static final int PULL_ATTEMPTS = 3;
     private final SocketHandler socketHandler;
     private final Map<PatchType, Integer> attempts;
+    private final OrderedAsyncTaskRunner runner;
 
     protected AppStateHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.attempts = new HashMap<>();
+        this.runner = new OrderedAsyncTaskRunner();
     }
 
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
-        return CompletableFuture.runAsync(() -> {
-                    awaitLatch();
-                    pullUninterruptedly(List.of(patch.type()))
-                            .thenCompose(ignored -> sendPush(createPushRequest(patch)))
-                            .join();
-                }, getOrCreateService())
+        return runner.runAsync(() -> pullUninterruptedly(List.of(patch.type()))
+                .thenCompose(ignored -> sendPush(createPushRequest(patch)))
                 .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))
-                .orTimeout(TIMEOUT, TimeUnit.SECONDS);
+                .orTimeout(TIMEOUT, TimeUnit.SECONDS));
     }
 
     private PushRequest createPushRequest(PatchRequest patch) {
@@ -119,19 +117,22 @@ class AppStateHandler extends Handler {
         results.records().forEach(this::processActions);
     }
 
-    @SuppressWarnings("CodeBlock2Expr")
-    protected void pull(PatchType... patchTypes) {
+    protected CompletableFuture<Void> pull(PatchType... patchTypes) {
         if (patchTypes == null || patchTypes.length == 0) {
-            return;
+            return completedFuture(null);
         }
-        CompletableFuture.runAsync(() -> {
-            pullUninterruptedly(Arrays.asList(patchTypes)).thenAcceptAsync(success -> onPull(false, success)).join();
-        }, getOrCreateService()).exceptionallyAsync(exception -> onPullError(false, exception));
+
+        return runner.runAsync(() -> pullUninterruptedly(Arrays.asList(patchTypes))
+                .thenAcceptAsync(success -> onPull(false, success))
+                .exceptionallyAsync(exception -> onPullError(false, exception)));
     }
 
     protected CompletableFuture<Void> pullInitial() {
-        return pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW)).thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH)))
-                .thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW)))
+        if(socketHandler.store().initialSync()){
+            return completedFuture(null);
+        }
+
+        return pullUninterruptedly(Arrays.asList(PatchType.values()))
                 .thenAcceptAsync(success -> onPull(true, success))
                 .exceptionallyAsync(exception -> onPullError(true, exception));
     }
@@ -141,7 +142,6 @@ class AppStateHandler extends Handler {
             socketHandler.store().initialSync((initial && success) || isSyncComplete());
         }
 
-        getOrCreateLatch().countDown();
         attempts.clear();
     }
 
@@ -156,7 +156,6 @@ class AppStateHandler extends Handler {
     private Void onPullError(boolean initial, Throwable exception) {
         attempts.clear();
         if (initial) {
-            getOrCreateLatch().countDown();
             return socketHandler.errorHandler().handleFailure(INITIAL_APP_STATE_SYNC, exception);
         }
         return socketHandler.errorHandler().handleFailure(PULL_APP_STATE, exception);
@@ -324,8 +323,7 @@ class AppStateHandler extends Handler {
                         targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
                 case TimeFormatAction timeFormatAction ->
                         socketHandler.store().twentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
-                default -> {
-                }
+                default -> {}
             }
             socketHandler.onAction(action, messageIndex);
         }
@@ -336,7 +334,7 @@ class AppStateHandler extends Handler {
                 case LocaleSetting localeSetting ->
                         socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().userLocale());
                 case PushNameSetting pushNameSetting ->
-                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
+                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userCompanionName());
                 case UnarchiveChatsSetting unarchiveChatsSetting ->
                         socketHandler.store().unarchiveChats(unarchiveChatsSetting.unarchiveChats());
                 default -> {
@@ -441,7 +439,7 @@ class AppStateHandler extends Handler {
                 .stream()
                 .map(mutation -> mutation.record().value().blob())
                 .map(Bytes::of)
-                .map(binary -> binary.slice(-Specification.Signal.KEY_LENGTH))
+                .map(binary -> binary.slice(-Spec.Signal.KEY_LENGTH))
                 .reduce(Bytes.newBuffer(), Bytes::append)
                 .toByteArray();
     }
@@ -483,8 +481,8 @@ class AppStateHandler extends Handler {
             return Optional.empty();
         }
         var blob = Bytes.of(sync.value().blob());
-        var encryptedBlob = blob.cut(-Specification.Signal.KEY_LENGTH).toByteArray();
-        var encryptedMac = blob.slice(-Specification.Signal.KEY_LENGTH).toByteArray();
+        var encryptedBlob = blob.cut(-Spec.Signal.KEY_LENGTH).toByteArray();
+        var encryptedMac = blob.slice(-Spec.Signal.KEY_LENGTH).toByteArray();
         Validate.isTrue(Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
                 .id(), mutationKeys.get().macKey())), "decode_mutation", HmacValidationException.class);
         var result = AesCbc.decrypt(encryptedBlob, mutationKeys.get().encKey());
@@ -497,9 +495,9 @@ class AppStateHandler extends Handler {
 
     private byte[] generateMac(RecordSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {
         var keyData = Bytes.of(operation.content()).append(keyId).toByteArray();
-        var last = Bytes.newBuffer(Specification.Signal.MAC_LENGTH - 1).append(keyData.length).toByteArray();
+        var last = Bytes.newBuffer(Spec.Signal.MAC_LENGTH - 1).append(keyData.length).toByteArray();
         var total = Bytes.of(keyData, data, last).toByteArray();
-        return Bytes.of(Hmac.calculateSha512(total, key)).cut(Specification.Signal.KEY_LENGTH).toByteArray();
+        return Bytes.of(Hmac.calculateSha512(total, key)).cut(Spec.Signal.KEY_LENGTH).toByteArray();
     }
 
     private byte[] generateSnapshotMac(byte[] ltHash, long version, PatchType patchType, byte[] key) {
@@ -519,20 +517,9 @@ class AppStateHandler extends Handler {
         return Hmac.calculateSha256(total, key);
     }
 
-    @Override
     protected void dispose() {
-        super.dispose();
         attempts.clear();
-        completeLatch();
-    }
-
-    @Override
-    protected void awaitLatch() {
-        if (socketHandler.store().initialSync()) {
-            return;
-        }
-
-        super.awaitLatch();
+        runner.cancel();
     }
 
     private record SyncRecord(LTHashState state, List<ActionDataSync> records) {

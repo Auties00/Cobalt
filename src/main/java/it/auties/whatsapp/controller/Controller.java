@@ -1,9 +1,14 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.util.Json;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+
+import java.util.UUID;
 
 /**
  * This interface represents is implemented by all WhatsappWeb4J's controllers. It provides an easy
@@ -14,17 +19,24 @@ import lombok.experimental.SuperBuilder;
 @SuppressWarnings("unused")
 public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
     /**
+     * The id of this controller
+     */
+    @NonNull
+    @Getter
+    protected UUID uuid;
+
+    /**
      * The serializer instance to use
      */
     @JsonIgnore
     protected ControllerSerializer serializer;
 
     /**
-     * Returns the id of this controller
-     *
-     * @return an id
+     * The client type
      */
-    public abstract int id();
+    @Getter
+    @NonNull
+    protected ClientType clientType;
 
     /**
      * Serializes this object

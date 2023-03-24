@@ -32,12 +32,4 @@ public class Validate {
             return new RuntimeException(formattedMessage);
         }
     }
-
-    @SuppressWarnings("unchecked")
-    public <T extends Throwable> void isTrue(boolean value, @NonNull Throwable throwable) throws T {
-        if (value) {
-            return;
-        }
-        throw (T) throwable;
-    }
 }

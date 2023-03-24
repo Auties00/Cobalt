@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.signal.sender;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Spec;
 import lombok.Builder;
 import lombok.extern.jackson.Jacksonized;
 
@@ -18,15 +18,15 @@ public record SenderMessageKey(int iteration, byte[] seed, byte[] iv, byte[] cip
 
     private static byte[] createIv(byte[] seed) {
         var derivative = getDerivedSeed(seed);
-        return Bytes.of(derivative[0]).cut(Specification.Signal.IV_LENGTH).toByteArray();
+        return Bytes.of(derivative[0]).cut(Spec.Signal.IV_LENGTH).toByteArray();
     }
 
     private static byte[] createCipherKey(byte[] seed) {
         var derivative = getDerivedSeed(seed);
         return Bytes.of(derivative[0])
-                .slice(Specification.Signal.IV_LENGTH)
+                .slice(Spec.Signal.IV_LENGTH)
                 .append(derivative[1])
-                .cut(Specification.Signal.KEY_LENGTH)
+                .cut(Spec.Signal.KEY_LENGTH)
                 .toByteArray();
     }
 

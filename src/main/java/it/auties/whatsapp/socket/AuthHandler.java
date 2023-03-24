@@ -22,8 +22,8 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Specification;
-import it.auties.whatsapp.util.Specification.Whatsapp;
+import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Spec.Whatsapp;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ import static java.util.Base64.getUrlEncoder;
 import static java.util.Map.entry;
 
 @RequiredArgsConstructor
-class AuthHandler extends Handler {
+class AuthHandler {
     private final SocketHandler socketHandler;
     private Handshake handshake;
 
@@ -56,30 +56,34 @@ class AuthHandler extends Handler {
     }
 
     protected CompletableFuture<Void> loginSocket(SocketSession session, byte[] message) {
-        var serverHello = Protobuf.readMessage(message, HandshakeMessage.class).serverHello();
-        handshake.updateHash(serverHello.ephemeral());
-        var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
-                .ephemeralKeyPair()
-                .privateKey());
-        handshake.mixIntoKey(sharedEphemeral);
-        var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-        var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys()
-                .ephemeralKeyPair()
-                .privateKey());
-        handshake.mixIntoKey(sharedStatic);
-        handshake.cipher(serverHello.payload(), false);
-        var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
-        var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
-                .noiseKeyPair()
-                .privateKey());
-        handshake.mixIntoKey(sharedPrivate);
-        var encodedPayload = handshake.cipher(createUserPayload(), true);
-        var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-        var handshakeMessage = new HandshakeMessage(clientFinish);
-        return Request.of(handshakeMessage)
-                .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
-                .thenRunAsync(socketHandler.keys()::clearReadWriteKey)
-                .thenRunAsync(handshake::finish);
+        try {
+            var serverHello = Protobuf.readMessage(message, HandshakeMessage.class).serverHello();
+            handshake.updateHash(serverHello.ephemeral());
+            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
+                    .ephemeralKeyPair()
+                    .privateKey());
+            handshake.mixIntoKey(sharedEphemeral);
+            var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
+            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys()
+                    .ephemeralKeyPair()
+                    .privateKey());
+            handshake.mixIntoKey(sharedStatic);
+            handshake.cipher(serverHello.payload(), false);
+            var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
+            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
+                    .noiseKeyPair()
+                    .privateKey());
+            handshake.mixIntoKey(sharedPrivate);
+            var encodedPayload = handshake.cipher(createUserPayload(), true);
+            var clientFinish = new ClientFinish(encodedKey, encodedPayload);
+            var handshakeMessage = new HandshakeMessage(clientFinish);
+            return Request.of(handshakeMessage)
+                    .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
+                    .thenRunAsync(socketHandler.keys()::clearReadWriteKey)
+                    .thenRunAsync(handshake::finish);
+        }catch (Throwable throwable){
+            return CompletableFuture.failedFuture(throwable);
+        }
     }
 
     private byte[] createUserPayload() {
@@ -120,7 +124,7 @@ class AuthHandler extends Handler {
     private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
         if(socketHandler.options() instanceof MobileOptions options){
             var phoneNumber = PhoneNumber.of(options.phoneNumber());
-            return builder.sessionId(socketHandler.store().id())
+            return builder.sessionId(socketHandler.keys().registrationId())
                     .shortConnect(true)
                     .connectAttemptCount(0)
                     .device(0)
@@ -153,8 +157,8 @@ class AuthHandler extends Handler {
     private CompanionData createRegisterData() {
         var companion = CompanionData.builder()
                 .buildHash(socketHandler.options().version().toHash())
-                .id(socketHandler.keys().encodedId())
-                .keyType(BytesHelper.intToBytes(Specification.Signal.KEY_TYPE, 1))
+                .id(socketHandler.keys().encodedRegistrationId())
+                .keyType(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
                 .identifier(socketHandler.keys().identityKeyPair().publicKey())
                 .signatureId(socketHandler.keys().signedKeyPair().encodedId())
                 .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
@@ -263,7 +267,7 @@ class AuthHandler extends Handler {
                 .put("lc", "GB")
                 .put("mistyped", "6")
                 .put("authkey", getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
-                .put("e_regid", getUrlEncoder().encodeToString(keys.encodedId()))
+                .put("e_regid", getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
                 .put("e_keytype", "BQ")
                 .put("e_ident", getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
                 .put("e_skey_id", getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
@@ -288,9 +292,7 @@ class AuthHandler extends Handler {
                 .collect(Collectors.joining("&"));
     }
 
-    @Override
     protected void dispose() {
-        super.dispose();
         handshake = null;
     }
 }

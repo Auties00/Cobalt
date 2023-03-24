@@ -6,7 +6,6 @@ import ezvcard.VCardVersion;
 import ezvcard.property.Telephone;
 import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.serialization.exception.ProtobufSerializationException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -14,10 +13,9 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A model class to represent and build the vcard of a contact
@@ -45,23 +43,19 @@ public class ContactCard implements ProtobufMessage {
     /**
      * The phone numbers, ordered by type
      */
-    @NonNull Map<String, ContactJid> phoneNumbers;
+    @NonNull Map<String, List<ContactJid>> phoneNumbers;
 
     /**
      * The business name
      */
     String businessName;
 
+    /**
+     * Do not use this method, reserved for protobuf
+     */
     @ProtobufConverter
-    @SuppressWarnings("unused")
-    public static ContactCard convert(Object input) {
-        if (input == null) {
-            return null;
-        }
-        if (input instanceof String string) {
-            return ContactCard.of(string);
-        }
-        throw new ProtobufSerializationException(input.toString());
+    public static ContactCard ofProtobuf(Object vcard) {
+        return vcard == null ? null : of((String) vcard);
     }
 
     /**
@@ -77,14 +71,25 @@ public class ContactCard implements ProtobufMessage {
         var phoneNumbers = parsed.getTelephoneNumbers()
                 .stream()
                 .filter(ContactCard::isValidPhoneNumber)
-                .collect(Collectors.toUnmodifiableMap(entry -> entry.getParameters()
-                        .getType(), entry -> ContactJid.of(entry.getParameter(PHONE_NUMBER_PROPERTY))));
+                .collect(Collectors.toUnmodifiableMap(ContactCard::getPhoneType, ContactCard::getPhoneValue, ContactCard::joinPhoneNumbers));
         var businessName = parsed.getExtendedProperty(BUSINESS_NAME_PROPERTY);
         return ContactCard.of(version, name, phoneNumbers, businessName != null ? businessName.getValue() : null);
     }
 
     private static boolean isValidPhoneNumber(Telephone entry) {
-        return entry.getParameters().getType() != null && entry.getParameter(PHONE_NUMBER_PROPERTY) != null;
+        return getPhoneType(entry) != null && entry.getParameter(PHONE_NUMBER_PROPERTY) != null;
+    }
+
+    private static String getPhoneType(Telephone entry) {
+        return entry.getParameters().getType();
+    }
+
+    private static List<ContactJid> getPhoneValue(Telephone entry) {
+        return List.of(ContactJid.of(entry.getParameter(PHONE_NUMBER_PROPERTY)));
+    }
+
+    private static List<ContactJid> joinPhoneNumbers(List<ContactJid> first, List<ContactJid> second) {
+        return Stream.of(first, second).flatMap(Collection::stream).toList();
     }
 
     /**
@@ -111,7 +116,6 @@ public class ContactCard implements ProtobufMessage {
      * @return a non-null String
      */
     @ProtobufConverter
-    @SuppressWarnings("unused")
     public Object toValue() {
         return toString();
     }
@@ -135,11 +139,18 @@ public class ContactCard implements ProtobufMessage {
         var vcard = new VCard();
         vcard.setVersion(version().map(VCardVersion::valueOfByStr).orElse(VCardVersion.V3_0));
         vcard.setFormattedName(name);
-        phoneNumbers().forEach((type, contact) -> addPhoneNumber(vcard, type, contact));
+        phoneNumbers().forEach((type, contacts) -> contacts.forEach(contact -> addPhoneNumber(vcard, type, contact)));
         if (businessName != null) {
             vcard.addExtendedProperty(BUSINESS_NAME_PROPERTY, businessName);
         }
         return Ezvcard.write(vcard).go();
+    }
+
+    private void addPhoneNumber(VCard vcard, String type, ContactJid contact) {
+        var telephone = new Telephone(contact.toPhoneNumber());
+        telephone.getParameters().setType(type);
+        telephone.getParameters().put(PHONE_NUMBER_PROPERTY, contact.user());
+        vcard.addTelephoneNumber(telephone);
     }
 
     /**
@@ -149,13 +160,6 @@ public class ContactCard implements ProtobufMessage {
      */
     public Optional<String> version() {
         return Optional.ofNullable(version);
-    }
-
-    private void addPhoneNumber(VCard vcard, String type, ContactJid contact) {
-        var telephone = new Telephone(contact.toPhoneNumber());
-        telephone.getParameters().setType(type);
-        telephone.getParameters().put(PHONE_NUMBER_PROPERTY, contact.user());
-        vcard.addTelephoneNumber(telephone);
     }
 
     public static class ContactCardBuilder {
@@ -168,7 +172,14 @@ public class ContactCard implements ProtobufMessage {
             if (phoneNumbers == null) {
                 this.phoneNumbers = new HashMap<>();
             }
-            phoneNumbers.put(category, contact);
+            var oldValue = phoneNumbers.get(category);
+            if(oldValue == null){
+                phoneNumbers.put(category, List.of(contact));
+                return this;
+            }
+            var values = new ArrayList<>(oldValue);
+            values.add(contact);
+            phoneNumbers.put(category, Collections.unmodifiableList(values));
             return this;
         }
     }

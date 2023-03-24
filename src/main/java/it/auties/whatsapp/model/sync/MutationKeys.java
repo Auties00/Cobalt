@@ -6,7 +6,7 @@ import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 
-import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+import static it.auties.whatsapp.util.Spec.Signal.KEY_LENGTH;
 
 public record MutationKeys(byte[] indexKey, byte[] encKey, byte[] macKey, byte[] snapshotMacKey, byte[] patchMacKey) {
     private static final int EXPANDED_SIZE = 160;

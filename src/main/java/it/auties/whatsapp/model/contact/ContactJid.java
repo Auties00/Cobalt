@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.serialization.exception.ProtobufSerializationException;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -117,20 +116,15 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, 0);
     }
 
+    /**
+     * Do not use this method, reserved for protobuf
+     */
     @ProtobufConverter
-    @SuppressWarnings("unused")
-    public static ContactJid convert(Object input) {
-        if (input == null) {
-            return null;
-        }
-        if (input instanceof String string) {
-            return ContactJid.of(string);
-        }
-        throw new ProtobufSerializationException(input.toString());
+    public static ContactJid ofProtobuf(Object input) {
+        return input == null ? null : of((String) input);
     }
 
     @ProtobufConverter
-    @SuppressWarnings("unused")
     public Object toValue() {
         return toString();
     }
