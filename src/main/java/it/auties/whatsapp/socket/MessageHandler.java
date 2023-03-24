@@ -764,6 +764,10 @@ class MessageHandler {
     private void handleConversations(HistorySync history) {
         var store = socketHandler.store();
         for (var chat : history.conversations()) {
+            var pastParticipants = pastParticipantsQueue.remove(chat.jid());
+            if (pastParticipants != null) {
+                chat.pastParticipants().addAll(pastParticipants);
+            }
             store.addChat(chat);
         }
     }
