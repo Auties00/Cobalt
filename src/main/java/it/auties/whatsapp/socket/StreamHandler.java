@@ -102,9 +102,7 @@ class StreamHandler {
             socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             return;
         }
-
-        socketHandler.errorHandler()
-                .handleFailure(Location.STREAM, new RuntimeException("Stream error: %s".formatted(node)));
+        socketHandler.handleFailure(Location.STREAM, new RuntimeException("Stream error: %s".formatted(node)));
     }
 
     private void digestChatState(Node node) {
@@ -494,7 +492,7 @@ class StreamHandler {
 
     private void digestError(Node node) {
         if (node.hasNode("bad-mac")) {
-            socketHandler.errorHandler().handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
+            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
             return;
         }
         var statusCode = node.attributes().getInt("code");
@@ -510,7 +508,7 @@ class StreamHandler {
         var type = child.attributes().getString("type");
         var reason = child.attributes().getString("reason", type);
         if (!Objects.equals(reason, "device_removed")) {
-            socketHandler.errorHandler().handleFailure(STREAM, new RuntimeException(reason));
+            socketHandler.handleFailure(STREAM, new RuntimeException(reason));
             return;
         }
 
@@ -528,7 +526,7 @@ class StreamHandler {
         executor.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
         createMediaConnection(0, null);
         var loggedInFuture = queryInitialInfo()
-                .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(LOGIN, throwable))
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable))
                 .thenRunAsync(this::onInitialInfo);
         if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
             socketHandler.store().initialSync(true);
@@ -541,7 +539,7 @@ class StreamHandler {
         var chatsFuture = socketHandler.options()
                 .deserializer()
                 .attributeStore(socketHandler.store())
-                .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
+                .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, chatsFuture)
                 .thenRunAsync(socketHandler::onChats);
     }
@@ -649,7 +647,7 @@ class StreamHandler {
         }
         socketHandler.store().serialize(true);
         socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
-                        .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(STREAM, throwable));
+                        .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
         socketHandler.onSocketEvent(SocketEvent.PING);
     }
 
@@ -659,7 +657,7 @@ class StreamHandler {
         }
         if (tries >= MAX_ATTEMPTS) {
             socketHandler.store().mediaConnection((MediaConnection) null);
-            socketHandler.errorHandler().handleFailure(MEDIA_CONNECTION, error);
+            socketHandler.handleFailure(MEDIA_CONNECTION, error);
             scheduleMediaConnection(MEDIA_CONNECTION_DEFAULT_INTERVAL);
             return;
         }
@@ -737,7 +735,7 @@ class StreamHandler {
                 .orElseThrow(), SignedDeviceIdentityHMAC.class);
         var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
-            socketHandler.errorHandler().handleFailure(LOGIN, new HmacValidationException("adv_sign"));
+            socketHandler.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
             return;
         }
         var account = Protobuf.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
@@ -746,7 +744,7 @@ class StreamHandler {
                 .append(socketHandler.keys().identityKeyPair().publicKey())
                 .toByteArray();
         if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
-            socketHandler.errorHandler().handleFailure(LOGIN, new HmacValidationException("message_header"));
+            socketHandler.handleFailure(LOGIN, new HmacValidationException("message_header"));
             return;
         }
         var deviceSignatureMessage = Bytes.of(SIGNATURE_HEADER)

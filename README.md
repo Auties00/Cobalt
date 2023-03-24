@@ -260,7 +260,7 @@ In the original version of WhatsappWeb, chats, contacts and messages could be qu
 The multi-device implementation, instead, sends all of this information progressively when the connection is initialized for the first time and doesn't allow any subsequent queries to access the latter.
 In practice, this means that this data needs to be serialized somewhere.
 
-By default, this library serializes data regarding a session at `$HOME/.whatsappweb4j/[web|mobile]/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
+By default, this library serializes data regarding a session at `$HOME/.whatsapp4j/[web|mobile]/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
 The latter is serialized every time a modification occurs to the model, while the store is serialized everytime a ping is sent by the socket to the server.
 Both are serialized when the socket is closed.
 
