@@ -104,21 +104,21 @@ public final class Store extends Controller<Store> {
      */
     @NonNull
     @Default
-    private ConcurrentHashMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
+    private Map<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
 
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
-    private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
+    private Map<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
 
     /**
      * The non-null toMap of privacy settings
      */
     @NonNull
     @Default
-    private ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
+    private Map<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
 
     /**
      * Whether this store has already received the snapshot from Whatsapp Web containing chats and

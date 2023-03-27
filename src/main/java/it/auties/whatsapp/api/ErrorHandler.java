@@ -18,14 +18,14 @@ import static java.lang.System.Logger.Level.WARNING;
 public interface ErrorHandler {
     /**
      * Handles an error that occurred inside the api
-     * 
+     *
      * @param type the type of client experiencing the error
      * @param location the location where the error occurred
      * @param throwable a stacktrace of the error, if available
      * @return a result determining what should be done
      */
     Result handleError(ClientType type, Location location, Throwable throwable);
-    
+
     /**
      * Default error handler. Prints the exception on the terminal.
      *

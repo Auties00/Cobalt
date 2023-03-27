@@ -14,9 +14,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
-import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.fasterxml.jackson.databind.DeserializationFeature.*;
 import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
 import static java.lang.System.Logger.Level.ERROR;
 
 @UtilityClass
@@ -29,6 +29,8 @@ public class Json {
                     .registerModule(new JavaTimeModule())
                     .setSerializationInclusion(NON_DEFAULT)
                     .enable(FAIL_ON_EMPTY_BEANS)
+                    .enable(WRITE_ENUMS_USING_INDEX)
+                    .enable(READ_ENUMS_USING_TO_STRING)
                     .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
                     .disable(FAIL_ON_UNKNOWN_PROPERTIES)
                     .setVisibility(ALL, ANY)
