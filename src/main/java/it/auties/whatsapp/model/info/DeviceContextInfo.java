@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 public final class DeviceContextInfo implements Info {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DeviceListMetadata.class)
     @Default
-    private DeviceListMetadata deviceListMetadata = DeviceListMetadata.of();
+    private DeviceListMetadata deviceListMetadata = new DeviceListMetadata();
 
     @ProtobufProperty(index = 2, type = INT32)
     @Default

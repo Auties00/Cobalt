@@ -2,7 +2,10 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.bytes.Bytes;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -14,6 +17,11 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.standard.PollCreationMessage;
+import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
+import it.auties.whatsapp.model.message.standard.ReactionMessage;
+import it.auties.whatsapp.model.poll.PollUpdate;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
@@ -29,6 +37,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -313,7 +322,10 @@ public final class Store extends Controller<Store> {
         if (chat == null) {
             return Optional.empty();
         }
-        return chat.messages().parallelStream().filter(message -> Objects.equals(message.key().id(), id)).findAny();
+        return chat.messages()
+                .parallelStream()
+                .filter(message -> Objects.equals(message.key().id(), id))
+                .findAny();
     }
 
     /**
@@ -492,6 +504,9 @@ public final class Store extends Controller<Store> {
         }
         var oldChat = chats.get(chat.jid());
         if(oldChat != null) {
+            if(oldChat.hasName() && !chat.hasName()){
+                chat.name(oldChat.name()); // Coming from contact actions
+            }
             joinMessages(chat, oldChat);
         }
         return addChatDirect(chat);
@@ -505,12 +520,10 @@ public final class Store extends Controller<Store> {
                 .map(MessageInfo::timestampSeconds)
                 .orElse(0L);
         if (newChatTimestamp <= oldChatTimestamp) {
-            chat.internalMessages().addAll(oldChat.messages());
+            chat.addMessages(oldChat.messages());
             return;
         }
-        var result = oldChat.internalMessages();
-        result.addAll(chat.messages());
-        chat.messages(result);
+        chat.addOldMessages(chat.messages());
     }
 
     /**
@@ -556,6 +569,7 @@ public final class Store extends Controller<Store> {
         info.key().chat(chat);
         info.key().senderJid().ifPresent(senderJid -> attributeSender(info, senderJid));
         info.message().contentWithContext().map(ContextualMessage::contextInfo).ifPresent(this::attributeContext);
+        processMessage(info);
         return info;
     }
 
@@ -579,6 +593,74 @@ public final class Store extends Controller<Store> {
         contextInfo.quotedMessageSender(contact);
     }
 
+    private void processMessage(MessageInfo info) {
+        switch (info.message().content()) {
+            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
+            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
+            default -> {}
+        }
+    }
+
+    private void handlePollCreation(MessageInfo info, PollCreationMessage pollCreationMessage) {
+        if(pollCreationMessage.encryptionKey() != null){
+            return;
+        }
+
+        info.message()
+                .deviceInfo()
+                .messageSecret()
+                .or(info::messageSecret)
+                .ifPresent(pollCreationMessage::encryptionKey);
+    }
+
+    private void handlePollUpdate(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
+        var originalPollInfo = findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
+                .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
+        var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
+        pollUpdateMessage.pollCreationMessage(originalPollMessage);
+        var originalPollSender = originalPollInfo.senderJid()
+                .toUserJid()
+                .toString()
+                .getBytes(StandardCharsets.UTF_8);
+        var modificationSenderJid = info.senderJid().toUserJid();
+        pollUpdateMessage.voter(modificationSenderJid);
+        var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
+        var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
+        var useSecretPayload = Bytes.of(originalPollInfo.id())
+                .append(originalPollSender)
+                .append(modificationSender)
+                .append(secretName)
+                .toByteArray();
+        var encryptionKey = originalPollInfo.message()
+                .deviceInfo()
+                .messageSecret()
+                .orElseThrow(() -> new NoSuchElementException("Missing encryption key for poll"));
+        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
+        var additionalData = "%s\0%s".formatted(
+                originalPollInfo.id(),
+                modificationSenderJid
+        );
+        var metadata = pollUpdateMessage.encryptedMetadata();
+        var decrypted = AesGmc.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
+        var pollVoteMessage = Protobuf.readMessage(decrypted, PollUpdateEncryptedOptions.class);
+        var selectedOptions = pollVoteMessage.selectedOptions()
+                .stream()
+                .map(sha256 -> originalPollMessage.selectableOptionsHashesMap().get(Bytes.of(sha256).toHex()))
+                .filter(Objects::nonNull)
+                .toList();
+        originalPollMessage.selectedOptionsMap().put(modificationSenderJid, selectedOptions);
+        pollUpdateMessage.votes(selectedOptions);
+        var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowInMilliseconds());
+        info.pollUpdates().add(update);
+    }
+
+    private void handleReactionMessage(MessageInfo info, ReactionMessage reactionMessage) {
+        info.ignore(true);
+        findMessageByKey(reactionMessage.key())
+                .ifPresent(message -> message.reactions().add(reactionMessage));
+    }
+    
     /**
      * Returns the chats pinned to the top sorted new to old
      *

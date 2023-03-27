@@ -895,8 +895,8 @@ public class RunCITest implements Listener {
                 .footer("A nice footer")
                 .listType(ListMessage.Type.SINGLE_SELECT)
                 .build();
-        api.sendMessage(contact, listMessage).join();
-        log("Sent list message");
+        var result = api.sendMessage(contact, listMessage).join();
+        log("Sent list message: " + result);
     }
 
     @Test

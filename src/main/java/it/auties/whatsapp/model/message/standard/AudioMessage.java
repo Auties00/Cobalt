@@ -132,7 +132,7 @@ public final class AudioMessage extends MediaMessage {
                 .decodedMedia(media)
                 .mediaKeyTimestamp(Clock.nowSeconds())
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .duration(Medias.getDuration(media, false))
+                .duration(Medias.getDuration(media))
                 .mimetype(getMimeType(media, mimeType))
                 .voiceMessage(voiceMessage)
                 .build();

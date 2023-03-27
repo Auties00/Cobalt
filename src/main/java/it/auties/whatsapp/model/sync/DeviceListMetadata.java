@@ -14,7 +14,7 @@ import java.util.List;
 import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
-@NoArgsConstructor(staticName = "of")
+@NoArgsConstructor
 @Data
 @Builder
 @Jacksonized

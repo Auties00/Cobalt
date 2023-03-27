@@ -377,6 +377,27 @@ class StreamHandler {
             return;
         }
         switch (child.get().description()) {
+            case "devices" -> {
+                // TODO: Finish me
+                // WATI:
+                // "senderKeyHash" : "v/n3vzFajeyg1Q==",
+                // "senderTimestamp" : 1679846963
+                // Me:
+                // "senderKeyHash" : "v/n3vzFajeyg1Q==",
+                //  "senderTimestamp" : 1679846963
+                var deviceHash = child.get().attributes().getString("dhash");
+                var devices = child.get()
+                        .findNodes("device")
+                        .stream()
+                        .map(entry -> entry.attributes().getJid("device"))
+                        .toList();
+                var timestamp = child.get()
+                        .findNode("key-index-list")
+                        .get()
+                        .attributes()
+                        .getLong("ts");
+
+            }
             case "privacy" -> changeUserPrivacySetting(child.get());
             case "disappearing_mode" -> updateUserDisappearingMode(child.get());
             case "status" -> updateUserStatus(true);

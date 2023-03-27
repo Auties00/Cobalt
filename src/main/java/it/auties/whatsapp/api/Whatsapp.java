@@ -1307,9 +1307,6 @@ public class Whatsapp {
                     && interactiveMessage.header().get().attachment().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
             default -> {}
         }
-
-        // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
-        info.message(info.message().toViewOnce());
     }
 
     // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense

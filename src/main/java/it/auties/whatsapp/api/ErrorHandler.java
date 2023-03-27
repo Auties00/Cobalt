@@ -118,11 +118,7 @@ public interface ErrorHandler {
         /**
          * Called when an error occurs when serializing or deserializing a Whatsapp message
          */
-        MESSAGE,
-        /**
-         * Called when an error occurs when deciphering a poll message
-         */
-        POLL
+        MESSAGE
     }
 
     /**

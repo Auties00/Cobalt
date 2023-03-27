@@ -19,10 +19,6 @@ enum SocketState {
         };
     }
 
-    boolean isDisconnected() {
-        return this == DISCONNECTED || this == LOGGED_OUT;
-    }
-
     DisconnectReason toReason() {
         return switch (this) {
             case WAITING, CONNECTED, RECONNECTING -> DisconnectReason.RECONNECTING;

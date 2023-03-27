@@ -14,6 +14,7 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.product.ProductHeaderAttachment;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -138,17 +139,20 @@ public final class DocumentMessage extends MediaMessage implements ProductHeader
      * {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param media       the non-null document that the new message wraps
+     * @param fileName    the non-null name of the document that the new message wraps
      * @param mimeType    the mime type of the new message, by default
      *                    {@link MediaMessageType#defaultMimeType()}
      * @param title       the title of the document that the new message wraps
      * @param pageCount   the number of pages of the document that the new message wraps
-     * @param fileName    the name of the document that the new message wraps
      * @param thumbnail   the thumbnail of the document that the new message wraps
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "simpleBuilder")
-    private static DocumentMessage customBuilder(byte[] media, String mimeType, String title, int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
+    private static DocumentMessage customBuilder(byte[] media, @NonNull String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
+        var extensionIndex = fileName.lastIndexOf(".");
+        Validate.isTrue(extensionIndex != -1 && extensionIndex + 1 < fileName.length(), "Expected fileName to be formatted as name.extension");
+        var extension = fileName.substring(extensionIndex + 1);
         var actualMimeType = Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(fileName))
                 .or(() -> Medias.getMimeType(media))
@@ -158,7 +162,7 @@ public final class DocumentMessage extends MediaMessage implements ProductHeader
                 .mediaKeyTimestamp(Clock.nowSeconds())
                 .mimetype(actualMimeType)
                 .fileName(fileName)
-                .pageCount(pageCount)
+                .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media, extension).orElse(1))
                 .title(title)
                 .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, actualMimeType).orElse(null))
                 .thumbnailWidth(THUMBNAIL_WIDTH)
