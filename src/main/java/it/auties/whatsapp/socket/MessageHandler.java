@@ -105,7 +105,7 @@ class MessageHandler {
 
     private Void onEncodeError(MessageSendRequest request, Throwable throwable) {
         request.info().status(MessageStatus.ERROR);
-        return socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
+        return socketHandler.handleFailure(MESSAGE, throwable);
     }
 
     private void attributeOutgoingMessage(MessageSendRequest request) {
@@ -367,7 +367,7 @@ class MessageHandler {
             }
             encrypted.forEach(message -> decodeMessage(node, message, businessName));
         } catch (Throwable throwable) {
-            socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
+            socketHandler.handleFailure(MESSAGE, throwable);
         }
     }
 
@@ -448,7 +448,7 @@ class MessageHandler {
             socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
             socketHandler.onReply(info);
         } catch (Throwable throwable) {
-            socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
+            socketHandler.handleFailure(MESSAGE, throwable);
         }
     }
 
@@ -461,7 +461,7 @@ class MessageHandler {
         var attempts = retries.getOrDefault(id, 0);
         if (attempts >= MAX_ATTEMPTS) {
             var cause = decodedMessage != null ? decodedMessage.error() : new RuntimeException("This message is not available");
-            socketHandler.errorHandler()
+            socketHandler
                     .handleFailure(MESSAGE, new RuntimeException("Cannot decrypt message with type %s inside %s from %s".formatted(Objects.requireNonNullElse(type, "unknown"), from, requireNonNullElse(participant, from)), cause));
             return false;
         }
@@ -587,7 +587,7 @@ class MessageHandler {
         switch (protocolMessage.protocolType()) {
             case HISTORY_SYNC_NOTIFICATION -> downloadHistorySync(protocolMessage)
                     .thenAcceptAsync(history -> onHistoryNotification(info, history))
-                    .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(MESSAGE, throwable));
+                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
             case APP_STATE_SYNC_KEY_SHARE -> {
                 socketHandler.keys().addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
                 if (socketHandler.store().initialSync()) {
@@ -595,7 +595,7 @@ class MessageHandler {
                 }
 
                 socketHandler.pullInitialPatches()
-                        .exceptionallyAsync(throwable -> socketHandler.errorHandler()
+                        .exceptionallyAsync(throwable -> socketHandler
                                 .handleFailure(UNKNOWN, throwable));
             }
             case REVOKE -> socketHandler.store()
@@ -672,7 +672,7 @@ class MessageHandler {
             var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowInMilliseconds());
             info.pollUpdates().add(update);
         } catch (Throwable throwable) {
-            socketHandler.errorHandler().handleFailure(Location.POLL, throwable);
+            socketHandler.handleFailure(Location.POLL, throwable);
         }
     }
 
@@ -764,6 +764,10 @@ class MessageHandler {
     private void handleConversations(HistorySync history) {
         var store = socketHandler.store();
         for (var chat : history.conversations()) {
+            var pastParticipants = pastParticipantsQueue.remove(chat.jid());
+            if (pastParticipants != null) {
+                chat.pastParticipants().addAll(pastParticipants);
+            }
             store.addChat(chat);
         }
     }

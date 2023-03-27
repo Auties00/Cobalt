@@ -50,7 +50,7 @@ class AppStateHandler {
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
         return runner.runAsync(() -> pullUninterruptedly(List.of(patch.type()))
                 .thenCompose(ignored -> sendPush(createPushRequest(patch)))
-                .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
                 .orTimeout(TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -156,9 +156,9 @@ class AppStateHandler {
     private Void onPullError(boolean initial, Throwable exception) {
         attempts.clear();
         if (initial) {
-            return socketHandler.errorHandler().handleFailure(INITIAL_APP_STATE_SYNC, exception);
+            return socketHandler.handleFailure(INITIAL_APP_STATE_SYNC, exception);
         }
-        return socketHandler.errorHandler().handleFailure(PULL_APP_STATE, exception);
+        return socketHandler.handleFailure(PULL_APP_STATE, exception);
     }
 
     private CompletableFuture<Boolean> pullUninterruptedly(List<PatchType> patchTypes) {

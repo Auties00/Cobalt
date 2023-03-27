@@ -208,6 +208,17 @@ public class RunCITest implements Listener {
     }
 
     @Test
+    @Order(4)
+    public void testChangeProfilePic() {
+        if (skip) {
+            return;
+        }
+        log("Setting picture...");
+        var picResponse = api.changeProfilePicture(MediaUtils.readBytes("https://upload.wikimedia.org/wikipedia/commons/d/d2/Solid_white.png?20060513000852")).join();
+        log("Result: %s", picResponse);
+    }
+
+    @Test
     @Order(5)
     public void testStatusQuery() {
         if (skip) {
@@ -668,7 +679,6 @@ public class RunCITest implements Listener {
         log("Sent video");
     }
 
-    @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(34)
     public void testPdfMessage() {
@@ -677,13 +687,45 @@ public class RunCITest implements Listener {
         }
         log("Sending pdf...");
         var document = DocumentMessage.simpleBuilder()
-                .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
+                .media(MediaUtils.readBytes("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")
                 .pageCount(1)
                 .build();
         api.sendMessage(contact, document).join();
         log("Sent pdf");
+    }
+
+    @Test
+    @Order(34)
+    public void testDocumentMessage() {
+        if (skip) {
+            return;
+        }
+        log("Sending document...");
+        var document = DocumentMessage.simpleBuilder()
+                .media(MediaUtils.readBytes("https://calibre-ebook.com/downloads/demos/demo.docx"))
+                .title("Document test")
+                .fileName("doc-test.docx")
+                .build();
+        api.sendMessage(contact, document).join();
+        log("Sent document");
+    }
+
+    @Test
+    @Order(34)
+    public void testPowerpointMessage() {
+        if (skip) {
+            return;
+        }
+        log("Sending powerpoint...");
+        var document = DocumentMessage.simpleBuilder()
+                .media(MediaUtils.readBytes("https://scholar.harvard.edu/files/torman_personal/files/samplepptx.pptx"))
+                .title("Presentation test")
+                .fileName("presentation-test.pptx")
+                .build();
+        api.sendMessage(contact, document).join();
+        log("Sent powerpoint");
     }
 
     @Test

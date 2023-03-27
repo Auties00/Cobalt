@@ -1,9 +1,7 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.SocketEvent;
-import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.binary.Decoder;
 import it.auties.whatsapp.binary.PatchType;
@@ -84,10 +82,6 @@ public class SocketHandler implements SocketListener {
     @Getter
     private final WhatsappOptions options;
 
-    @NonNull
-    @Getter(AccessLevel.PROTECTED)
-    private final FailureHandler errorHandler;
-
     private SocketSession session;
 
     @NonNull
@@ -119,7 +113,6 @@ public class SocketHandler implements SocketListener {
         this.streamHandler = new StreamHandler(this);
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
-        this.errorHandler = new FailureHandler(this);
         getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
     }
 
@@ -158,7 +151,7 @@ public class SocketHandler implements SocketListener {
         var handshakeMessage = new HandshakeMessage(clientHello);
         Request.of(handshakeMessage)
                 .sendWithPrologue(session, keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(CRYPTOGRAPHY, throwable));
+                .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
     }
 
     @Override
@@ -201,7 +194,7 @@ public class SocketHandler implements SocketListener {
             return;
         }
         onSocketEvent(SocketEvent.ERROR);
-        errorHandler.handleFailure(UNKNOWN, throwable);
+        handleFailure(UNKNOWN, throwable);
     }
 
     public CompletableFuture<Void> connect() {
@@ -310,7 +303,7 @@ public class SocketHandler implements SocketListener {
 
         var request = node.toRequest(store::nextTag, null);
         return request.sendWithNoResponse(session, keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(SOCKET, throwable))
+                .exceptionallyAsync(throwable -> handleFailure(STREAM, throwable))
                 .thenRunAsync(() -> onNodeSent(node));
     }
 
@@ -740,5 +733,19 @@ public class SocketHandler implements SocketListener {
         }
 
         return service;
+    }
+
+    protected <T> T handleFailure(Location location, Throwable throwable) {
+        if (state() == SocketState.RESTORE || state() == SocketState.LOGGED_OUT) {
+            return null;
+        }
+        var result = options().errorHandler().handleError(options.clientType(), location, throwable);
+        switch (result) {
+            case RESTORE -> disconnect(DisconnectReason.RESTORE);
+            case LOG_OUT -> disconnect(DisconnectReason.LOGGED_OUT);
+            case DISCONNECT -> disconnect(DisconnectReason.DISCONNECTED);
+            case RECONNECT -> disconnect(DisconnectReason.RECONNECTING);
+        }
+        return null;
     }
 }

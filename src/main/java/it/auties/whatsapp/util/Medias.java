@@ -10,10 +10,11 @@ import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
@@ -21,7 +22,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
@@ -42,11 +42,13 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 @UtilityClass
 public class Medias {
-    public static final int PROFILE_PIC_SIZE = 640;
-    public static final String DEFAULT_HOST = "https://mmg.whatsapp.net";
-    private static final int THUMBNAIL_SIZE = 32;
-    private static final int RANDOM_FILE_NAME_LENGTH = 8;
-    private static final Map<String, Path> CACHE = new ConcurrentHashMap<>();
+    public static final int THUMBNAIL_WIDTH = 480;
+    public static final int THUMBNAIL_HEIGHT = 339;
+    private final int PROFILE_PIC_SIZE = 640;
+    private final String DEFAULT_HOST = "https://mmg.whatsapp.net";
+    private final int THUMBNAIL_SIZE = 32;
+    private final int RANDOM_FILE_NAME_LENGTH = 8;
+    private final Map<String, Path> CACHE = new ConcurrentHashMap<>();
 
     public Optional<byte[]> getPreview(URI imageUri) {
         try {
@@ -273,8 +275,48 @@ public class Medias {
         return switch (format) {
             case JPG, PNG -> getImage(file, format, THUMBNAIL_SIZE);
             case VIDEO -> getVideo(file);
-            case FILE -> Optional.empty(); // TODO: 04/06/2022 Implement a file thumbnail
         };
+    }
+
+    public Optional<byte[]> getThumbnail(byte[] file, String mimeType){
+        return switch (mimeType) {
+            case "application/pdf" -> getPdf(file);
+            case "powerpoint", "presentation", "slideshow" -> getPresentation(file);
+            default -> Optional.empty();
+        };
+    }
+
+    private Optional<byte[]> getPresentation(byte[] file) {
+        try (var inputStream = new ByteArrayInputStream(file); var outputStream = new ByteArrayOutputStream()) {
+            var ppt = new XMLSlideShow(inputStream);
+            if(ppt.getSlides().isEmpty()){
+                return Optional.empty();
+            }
+            var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            var graphics2D = thumb.createGraphics();
+            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            ppt.getSlides().get(0).draw(graphics2D);
+            ImageIO.write(thumb, "jpg", outputStream);
+            return Optional.of(outputStream.toByteArray());
+        }catch (Throwable throwable){
+            return Optional.empty();
+        }
+    }
+
+    private Optional<byte[]> getPdf(byte[] file) {
+        try (var outputStream = new ByteArrayOutputStream(); var document = PDDocument.load(file)) {
+            var renderer = new PDFRenderer(document);
+            var image = renderer.renderImage(0);
+            var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            var graphics2D = thumb.createGraphics();
+            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            graphics2D.drawImage(image, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
+            graphics2D.dispose();
+            ImageIO.write(thumb, "jpg", outputStream);
+            return Optional.of(outputStream.toByteArray());
+        } catch (IOException e) {
+            return Optional.empty();
+        }
     }
 
     private Optional<byte[]> getVideo(byte[] file) {
@@ -298,27 +340,26 @@ public class Medias {
 
     public byte[] getProfilePic(byte[] file) {
         try {
-            var originalImage = ImageIO.read(new ByteArrayInputStream(file));
-            var size = Math.min(originalImage.getWidth(), originalImage.getHeight());
-            var subImage = originalImage.getSubimage(0, 0, size, size);
-            var actual = getResizedImage(subImage, PROFILE_PIC_SIZE);
-            var outputStream = new ByteArrayOutputStream();
-            var writer = (ImageWriter) ImageIO.getImageWritersByFormatName("jpeg").next();
-            writer.getDefaultWriteParam().setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            writer.getDefaultWriteParam().setCompressionQuality(0.5F);
-            writer.setOutput(outputStream);
-            writer.write(actual);
-            writer.dispose();
-            return outputStream.toByteArray();
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot generate profile pic", exception);
+            try(var inputStream = new ByteArrayInputStream(file)) {
+                var inputImage = ImageIO.read(inputStream);
+                var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
+                var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
+                var graphics2D = outputImage.createGraphics();
+                graphics2D.drawImage(scaledImage, 0, 0, null);
+                graphics2D.dispose();
+                try (var outputStream = new ByteArrayOutputStream()) {
+                    ImageIO.write(outputImage, "jpg", outputStream);
+                    return outputStream.toByteArray();
+                }
+            }
+        } catch (Throwable exception) {
+            return file;
         }
     }
 
     public enum Format {
         PNG,
         JPG,
-        FILE,
         VIDEO
     }
 

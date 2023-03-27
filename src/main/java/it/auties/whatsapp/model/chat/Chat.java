@@ -847,7 +847,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Internal implementation to deserialize messages
      */
     public static class ChatBuilder {
-        public ChatBuilder messages(Collection<HistorySyncMessage> messages) {
+        public ChatBuilder messages(List<HistorySyncMessage> messages) {
             this.messages$value = messages.stream()
                     .sorted(Comparator.comparing(HistorySyncMessage::messageOrderId))
                     .map(HistorySyncMessage::message)

@@ -490,12 +490,10 @@ public final class Store extends Controller<Store> {
                     .orElseGet(() -> addContact(Contact.ofJid(chat.jid())));
             contact.fullName(chat.name());
         }
-
         var oldChat = chats.get(chat.jid());
         if(oldChat != null) {
             joinMessages(chat, oldChat);
         }
-
         return addChatDirect(chat);
     }
 

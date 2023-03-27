@@ -23,6 +23,8 @@ open module it.auties.whatsappweb4j {
     requires it.auties.linkpreview;
     requires ez.vcard;
     requires libphonenumber;
+    requires org.apache.pdfbox;
+    requires org.apache.poi.ooxml;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

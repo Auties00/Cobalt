@@ -17,7 +17,13 @@ public class MobileTest {
                 .build();
         Whatsapp.lastConnection(options)
                 .addLoggedInListener(api -> System.out.println("Connected: " + api.store().userCompanionJid()))
-                .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
+                .addNewMessageListener((api, message, offline) -> {
+                    if(offline){
+                        return;
+                    }
+                    System.out.println(message.toJson());
+                    api.sendMessage(message.chatJid(), "Hello World");
+                })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
