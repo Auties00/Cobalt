@@ -78,6 +78,21 @@ public final class Keys extends Controller<Keys> {
     private SignalSignedKeyPair signedKeyPair;
 
     /**
+     * The signed key of the companion's device
+     * This value will be null until it gets synced by whatsapp
+     */
+    @Getter
+    @Setter
+    private byte[] signedKeyIndex;
+
+    /**
+     * The timestamp of the signed key companion's device
+     */
+    @Getter
+    @Setter
+    private long signedKeyIndexTimestamp;
+
+    /**
      * Whether these keys have generated pre keys assigned to them
      */
     @Default
@@ -151,7 +166,6 @@ public final class Keys extends Controller<Keys> {
     @NonNull
     @Default
     private Map<PatchType, LTHashState> hashStates = new ConcurrentHashMap<>();
-
 
     /**
      * Whether the client was registered, if mobile app

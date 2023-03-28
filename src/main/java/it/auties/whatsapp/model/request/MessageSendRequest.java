@@ -10,7 +10,9 @@ import java.util.Map;
 public record MessageSendRequest(MessageInfo info, ContactJid overrideSender, boolean force,
                                  Map<String, Object> additionalAttributes) {
     public static MessageSendRequest of(MessageInfo info) {
-        return MessageSendRequest.builder().info(info).build();
+        return MessageSendRequest.builder()
+                .info(info)
+                .build();
     }
 
     public boolean hasSenderOverride() {

@@ -196,7 +196,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @return a non-null jid
      */
-    public ContactJid toUserJid() {
+    public ContactJid toWhatsappJid() {
         return of(user(), server());
     }
 

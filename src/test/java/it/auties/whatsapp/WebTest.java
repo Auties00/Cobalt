@@ -1,10 +1,12 @@
 package it.auties.whatsapp;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.util.Json;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 // Just used for testing locally
 public class WebTest {
@@ -65,15 +67,16 @@ public class WebTest {
                 }
                 }""";
     public static void main(String[] args) {
-
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var whatsapp = Whatsapp.lastConnection()
                 .addLoggedInListener(api -> {
                     System.out.printf("Connected: %s%n", api.store().privacySettings());
-                    var result = Json.readValue(messageJson, MessageContainer.class);
-                    result.deviceInfo().deviceListMetadata().senderKeyHash(Bytes.ofBase64("v/n3vzFajeyg1Q==").toByteArray());
-                    result.deviceInfo().deviceListMetadata().senderTimestamp(1679846963L);
-                    api.sendMessage(ContactJid.of("14798024855"), result);
+                    CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS).execute(() -> {
+                        var result = Json.readValue(messageJson, MessageContainer.class);
+                        api.sendMessage(ContactJid.of("14798024855"), "Hello World")
+                                .thenRun(() -> System.out.println("Sent2"));
+                        System.out.println("Sent");
+                    });
                 })
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

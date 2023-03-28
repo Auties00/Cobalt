@@ -661,7 +661,7 @@ public class SocketHandler implements SocketListener {
             sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", newName, "type", "available")));
             onUserNameChange(newName, oldName);
         }
-        var self = store().userCompanionJid().toUserJid();
+        var self = store().userCompanionJid().toWhatsappJid();
         store().findContactByJid(self).orElseGet(() -> store().addContact(self)).chosenName(newName);
         store().userCompanionName(newName);
     }
@@ -747,5 +747,10 @@ public class SocketHandler implements SocketListener {
             case RECONNECT -> disconnect(DisconnectReason.RECONNECTING);
         }
         return null;
+    }
+
+    public CompletableFuture<Void> queryCompanionDevices() {
+        return messageHandler.getDevices(List.of(store.userCompanionJid().toWhatsappJid()), true, false)
+                .thenCompose(values -> messageHandler.querySessions(values, false));
     }
 }

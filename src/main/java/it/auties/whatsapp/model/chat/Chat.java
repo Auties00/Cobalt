@@ -725,14 +725,14 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was added
      */
     public boolean addNewMessage(@NonNull MessageInfo info) {
-        if (messages.contains(info)) {
-            return false;
-        }
         synchronized (messages) {
+            if (messages.contains(info)) {
+                return false;
+            }
             messages.addLast(info);
+            updateChatTimestamp(info);
+            return true;
         }
-        updateChatTimestamp(info);
-        return true;
     }
 
     /**
@@ -744,8 +744,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public boolean addOldMessage(@NonNull MessageInfo info) {
         synchronized (messages) {
             messages.addFirst(info);
+            return true;
         }
-        return true;
     }
 
     /**

@@ -72,6 +72,23 @@ public final class Store extends Controller<Store> {
     private String userCompanionName;
 
     /**
+     * The hash of the companion associated with this session
+     */
+    @Getter
+    @Setter
+    private String userCompanionDeviceHash;
+
+    /**
+     * A map of all the devices that the companion has associated using WhatsappWeb
+     * The key here is the index of the device's key
+     * The value is the device's companion jid
+     */
+    @Getter
+    @Setter
+    @Default
+    private LinkedHashMap<ContactJid, Integer> userCompanionDeviceKeyIndexes = new LinkedHashMap<>();
+
+    /**
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
@@ -101,7 +118,16 @@ public final class Store extends Controller<Store> {
     private ContactJid userCompanionLid;
 
     /**
-     * The non-null toMap of chats
+     * The non-null map of properties received by whatsapp
+     */
+    @NonNull
+    @Default
+    @Getter
+    @Setter
+    private ConcurrentHashMap<String, String> properties = new ConcurrentHashMap<>();
+    
+    /**
+     * The non-null map of chats
      */
     @NonNull
     @Default
@@ -109,7 +135,7 @@ public final class Store extends Controller<Store> {
     private ConcurrentHashMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
 
     /**
-     * The non-null toMap of contacts
+     * The non-null map of contacts
      */
     @NonNull
     @Default
@@ -123,7 +149,7 @@ public final class Store extends Controller<Store> {
     private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
 
     /**
-     * The non-null toMap of privacy settings
+     * The non-null map of privacy settings
      */
     @NonNull
     @Default
@@ -620,10 +646,10 @@ public final class Store extends Controller<Store> {
         var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
         pollUpdateMessage.pollCreationMessage(originalPollMessage);
         var originalPollSender = originalPollInfo.senderJid()
-                .toUserJid()
+                .toWhatsappJid()
                 .toString()
                 .getBytes(StandardCharsets.UTF_8);
-        var modificationSenderJid = info.senderJid().toUserJid();
+        var modificationSenderJid = info.senderJid().toWhatsappJid();
         pollUpdateMessage.voter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
@@ -825,6 +851,15 @@ public final class Store extends Controller<Store> {
      */
     public void addPrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingEntry entry){
         privacySettings.put(type, entry);
+    }
+
+    /**
+     * Returns an unmodifiable list that contains the devices associated using Whatsapp web to this session's companion
+     *
+     * @return an unmodifiable list
+     */
+    public Collection<ContactJid> userCompanionDevices(){
+        return userCompanionDeviceKeyIndexes.keySet();
     }
 
     public void dispose() {

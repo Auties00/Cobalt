@@ -29,13 +29,14 @@ import static java.util.Objects.requireNonNull;
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
     public Node encrypt(byte @NonNull [] data) {
         var currentState = loadSession().currentState()
-                        .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
+                .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
         Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key", SecurityException.class);
         var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
         fillMessageKeys(chain, chain.counter().get() + 1);
         var currentKey = chain.messageKeys().get(chain.counter().get());
         var secrets = Hkdf.deriveSecrets(currentKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+        chain.messageKeys().remove(chain.counter().get());
         var iv = Bytes.of(secrets[2]).cut(IV_LENGTH).toByteArray();
         var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
         var encryptedMessageType = getMessageType(currentState);
@@ -91,7 +92,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     public byte[] decrypt(SignalPreKeyMessage message) {
-        var session = loadSession(() -> createSession(message));
+        var session = loadSession(this::createSession);
         var builder = new SessionBuilder(address, keys);
         builder.createIncoming(session, message);
         var state = session.findState(message.version(), message.baseKey())
@@ -99,8 +100,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         return decrypt(message.signalMessage(), state);
     }
 
-    private Session createSession(SignalPreKeyMessage message) {
-        Validate.isTrue(message.registrationId() != 0, "Missing registration jid");
+    private Session createSession() {
         var newSession = new Session();
         keys.putSession(address, newSession);
         return newSession;
@@ -130,6 +130,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         var chain = state.findChain(message.ephemeralPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Invalid chain"));
         fillMessageKeys(chain, message.counter());
+        Validate.isTrue(chain.hasMessageKey(message.counter()), "Key used already or never filled");
         var messageKey = chain.messageKeys().get(message.counter());
         var secrets = Hkdf.deriveSecrets(messageKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
         var hmacInput = Bytes.of(state.remoteIdentityKey())

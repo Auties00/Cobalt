@@ -19,10 +19,7 @@ import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageStatus;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
@@ -51,6 +48,7 @@ import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
+import static it.auties.whatsapp.model.business.BusinessStorageType.FACEBOOK;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static it.auties.whatsapp.model.sync.HistorySync.HistorySyncHistorySyncType.RECENT;
@@ -140,8 +138,9 @@ class MessageHandler {
         var encodedMessage = BytesHelper.messageToBytes(request.info().message());
         var deviceMessage = DeviceSentMessage.of(request.info().chatJid().toString(), request.info().message(), null);
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-        var knownDevices = request.hasSenderOverride() ? List.of(request.overrideSender()) : List.of(sender.toUserJid(), request.info().chatJid());
-        return getDevices(knownDevices, true, request.force()).thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage, request.force()))
+        var knownDevices = request.hasSenderOverride() ? List.of(request.overrideSender()) : List.of(sender.toWhatsappJid(), request.info().chatJid());
+        return getDevices(knownDevices, true, request.force())
+                .thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage, request.force()))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request.info(), sessions, null, request.additionalAttributes()))
                 .thenComposeAsync(socketHandler::send);
     }
@@ -162,6 +161,15 @@ class MessageHandler {
             var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
             body.add(Node.of("device-identity", identity));
         }
+        if(info.message().content() instanceof ButtonMessage) {
+            var attributes = Attributes.of()
+                    .put("host_storage", FACEBOOK.index())
+                    .put("actual_actors", 2) //BSP.index())
+                    .put("privacy_mode_ts", "1612483200") // Clock.nowSeconds()
+                    .toMap();
+            body.add(Node.ofAttributes("biz", attributes));
+        }
+
         var attributes = Attributes.ofNullable(metadata)
                 .put("id", info.id())
                 .put("to", info.chatJid())
@@ -250,9 +258,10 @@ class MessageHandler {
         return getDevices(metadata.participantsJids(), false, force);
     }
 
-    private CompletableFuture<List<ContactJid>> getDevices(List<ContactJid> contacts, boolean excludeSelf, boolean force) {
+    protected CompletableFuture<List<ContactJid>> getDevices(List<ContactJid> contacts, boolean excludeSelf, boolean force) {
         if (force) {
-            return queryDevices(contacts, excludeSelf).thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, missingDevices) : missingDevices);
+            return queryDevices(contacts, excludeSelf)
+                    .thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, missingDevices) : missingDevices);
         }
         var partitioned = contacts.stream()
                 .collect(partitioningBy(contact -> devicesCache.asMap()
@@ -268,7 +277,8 @@ class MessageHandler {
         if (missing.isEmpty()) {
             return completedFuture(excludeSelf ? toSingleList(contacts, cached) : cached);
         }
-        return queryDevices(missing, excludeSelf).thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, cached, missingDevices) : toSingleList(cached, missingDevices));
+        return queryDevices(missing, excludeSelf)
+                .thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, cached, missingDevices) : toSingleList(cached, missingDevices));
     }
 
     private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
@@ -347,12 +357,7 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public CompletableFuture<Void> decode(Node node) {
-        decodeMessages(node);
-        return CompletableFuture.completedFuture(null);
-    }
-
-    private void decodeMessages(Node node) {
+    public void decode(Node node) {
         try {
             var businessName = getBusinessName(node);
             var encrypted = node.findNodes("enc");
@@ -398,7 +403,7 @@ class MessageHandler {
             if(userCompanionJid == null){
                 return; // This means that the session got disconnected while processing
             }
-            var receiver = userCompanionJid.toUserJid();
+            var receiver = userCompanionJid.toWhatsappJid();
             if (from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
@@ -407,15 +412,11 @@ class MessageHandler {
             } else {
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), receiver));
+                keyBuilder.fromMe(Objects.equals(participant.toWhatsappJid(), receiver));
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
             var key = keyBuilder.id(id).build();
             if (messageNode == null) {
-                if(sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null)){
-                    return;
-                }
-
                 socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
                 socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
@@ -517,7 +518,7 @@ class MessageHandler {
     }
 
     private void attributeMessageReceipt(MessageInfo info) {
-        var self = socketHandler.store().userCompanionJid().toUserJid();
+        var self = socketHandler.store().userCompanionJid().toWhatsappJid();
         if (!info.fromMe() || !info.chatJid().equals(self)) {
             return;
         }
