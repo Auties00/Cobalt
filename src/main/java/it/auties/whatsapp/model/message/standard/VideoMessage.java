@@ -182,7 +182,7 @@ public final class VideoMessage extends MediaMessage implements ProductHeaderAtt
     @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "simpleVideoBuilder")
     private static VideoMessage videoBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
-        var duration = Medias.getDuration(media, true);
+        var duration = Medias.getDuration(media);
         return VideoMessage.builder()
                 .decodedMedia(media)
                 .mediaKeyTimestamp(Clock.nowSeconds())
@@ -217,7 +217,7 @@ public final class VideoMessage extends MediaMessage implements ProductHeaderAtt
     private static VideoMessage gifBuilder(byte[] media, String mimeType, String caption, VideoMessageAttribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
         Validate.isTrue(isNotGif(media, mimeType), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
         var dimensions = Medias.getDimensions(media, true);
-        var duration = Medias.getDuration(media, true);
+        var duration = Medias.getDuration(media);
         return VideoMessage.builder()
                 .decodedMedia(media)
                 .mediaKeyTimestamp(Clock.nowSeconds())

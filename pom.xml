@@ -37,6 +37,13 @@
         </repository>
     </distributionManagement>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <profiles>
         <profile>
             <id>sign</id>
@@ -240,48 +247,22 @@
     </build>
 
     <dependencies>
-        <!-- Language extension -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- Web socket -->
         <dependency>
             <groupId>org.glassfish.tyrus</groupId>
             <artifactId>tyrus-server</artifactId>
             <version>${tyrus.version}</version>
         </dependency>
-
-        <!-- Scan listeners -->
-        <dependency>
-            <groupId>io.github.classgraph</groupId>
-            <artifactId>classgraph</artifactId>
-            <version>${classgraph.version}</version>
-        </dependency>
-
-        <!-- QR codes -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>${zxing.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>qr-terminal</artifactId>
-            <version>${qr.terminal.version}</version>
-        </dependency>
-
-        <!-- Mobile API -->
-        <dependency>
-            <groupId>com.googlecode.libphonenumber</groupId>
-            <artifactId>libphonenumber</artifactId>
-            <version>${libphonenumber.version}</version>
-        </dependency>
-
-        <!-- Cryptography -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
@@ -294,33 +275,9 @@
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
-            <artifactId>curve25519</artifactId>
-            <version>${curve25519.version}</version>
+            <artifactId>protobuf-serializer-performance</artifactId>
+            <version>${protoc.version}</version>
         </dependency>
-
-        <!-- Generate thumbnails -->
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>link-preview</artifactId>
-            <version>${linkpreview.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>${pdfbox.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>${poi.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.googlecode.ez-vcard</groupId>
-            <artifactId>ez-vcard</artifactId>
-            <version>${vcard.version}</version>
-        </dependency>
-
-        <!-- Jackson - Json -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -336,45 +293,71 @@
             <artifactId>jackson-datatype-jdk8</artifactId>
             <version>${jackson.modules.version}</version>
         </dependency>
-
-        <!-- Jackson - Smile -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-smile</artifactId>
             <version>${jackson.modules.version}</version>
         </dependency>
-
-        <!-- Jackson - Misc -->
-        <!-- TODO: Remove this -->
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>map-module</artifactId>
             <version>${jackson.map.version}</version>
         </dependency>
-
-        <!-- Protobuf -->
         <dependency>
             <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-serializer-performance</artifactId>
-            <version>${protoc.version}</version>
+            <artifactId>curve25519</artifactId>
+            <version>${curve25519.version}</version>
         </dependency>
-
-        <!-- Cache for history sync -->
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>${classgraph.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>${caffeine.version}</version>
         </dependency>
-
-        <!-- Buffer implementation -->
-        <!-- TODO: Switch this out -->
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>bytes</artifactId>
             <version>${bytes.version}</version>
         </dependency>
-
-        <!-- Unit test related libraries -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>link-preview</artifactId>
+            <version>${linkpreview.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>qr-terminal</artifactId>
+            <version>${qr.terminal.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.ez-vcard</groupId>
+            <artifactId>ez-vcard</artifactId>
+            <version>${vcard.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>${libphonenumber.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

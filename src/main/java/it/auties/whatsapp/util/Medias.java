@@ -12,11 +12,12 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.poi.hslf.usermodel.HSLFSlideShow;
+import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -204,19 +205,41 @@ public class Medias {
         }
     }
 
-    public int getDuration(byte[] file, boolean video) {
-        if (!video) {
-            try {
-                var audioInputStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(file));
-                var format = audioInputStream.getFormat();
-                var audioFileLength = file.length;
-                var frameSize = format.getFrameSize();
-                var frameRate = format.getFrameRate();
-                return (int) (audioFileLength / (frameSize * frameRate));
-            } catch (UnsupportedAudioFileException | IOException exception) {
-                return getDuration(file, true);
-            }
+    public OptionalInt getPagesCount(byte[] file, String fileType){
+        try(var inputStream = new ByteArrayInputStream(file)) {
+            return switch (fileType) {
+                case "docx" -> {
+                    var docx = new XWPFDocument(inputStream);
+                    var pages = docx.getProperties().getExtendedProperties().getUnderlyingProperties().getPages();
+                    docx.close();
+                    yield OptionalInt.of(pages);
+                }
+                case "doc" -> {
+                    var wordDoc = new HWPFDocument(inputStream);
+                    var pages = wordDoc.getSummaryInformation().getPageCount();
+                    wordDoc.close();
+                    yield OptionalInt.of(pages);
+                }
+                case "ppt" -> {
+                    var document = new HSLFSlideShow(inputStream);
+                    var slides = document.getSlides().size();
+                    document.close();
+                    yield OptionalInt.of(slides);
+                }
+                case "pptx" -> {
+                    var show = new XMLSlideShow(inputStream);
+                    var slides = show.getSlides().size();
+                    show.close();
+                    yield OptionalInt.of(slides);
+                }
+                default -> OptionalInt.empty();
+            };
+        } catch (Throwable throwable) {
+            return OptionalInt.empty();
         }
+    }
+
+    public int getDuration(byte[] file) {
         try {
             var input = createTempFile(file, true);
             var process = Runtime.getRuntime()
@@ -278,17 +301,16 @@ public class Medias {
         };
     }
 
-    public Optional<byte[]> getThumbnail(byte[] file, String mimeType){
-        return switch (mimeType) {
-            case "application/pdf" -> getPdf(file);
-            case "powerpoint", "presentation", "slideshow" -> getPresentation(file);
+    public Optional<byte[]> getThumbnail(byte[] file, String fileType){
+        return switch (fileType) {
+            case "pdf" -> getPdf(file);
+            case "pptx", "ppt" -> getPresentation(file);
             default -> Optional.empty();
         };
     }
 
     private Optional<byte[]> getPresentation(byte[] file) {
-        try (var inputStream = new ByteArrayInputStream(file); var outputStream = new ByteArrayOutputStream()) {
-            var ppt = new XMLSlideShow(inputStream);
+        try (var ppt = new XMLSlideShow(new ByteArrayInputStream(file)); var outputStream = new ByteArrayOutputStream()) {
             if(ppt.getSlides().isEmpty()){
                 return Optional.empty();
             }
@@ -304,7 +326,7 @@ public class Medias {
     }
 
     private Optional<byte[]> getPdf(byte[] file) {
-        try (var outputStream = new ByteArrayOutputStream(); var document = PDDocument.load(file)) {
+        try (var document = PDDocument.load(file); var outputStream = new ByteArrayOutputStream()) {
             var renderer = new PDFRenderer(document);
             var image = renderer.renderImage(0);
             var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
@@ -314,7 +336,7 @@ public class Medias {
             graphics2D.dispose();
             ImageIO.write(thumb, "jpg", outputStream);
             return Optional.of(outputStream.toByteArray());
-        } catch (IOException e) {
+        } catch (Throwable throwable) {
             return Optional.empty();
         }
     }

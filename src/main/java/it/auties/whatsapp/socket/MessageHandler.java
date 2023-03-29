@@ -2,11 +2,12 @@ package it.auties.whatsapp.socket;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.crypto.*;
+import it.auties.whatsapp.crypto.GroupBuilder;
+import it.auties.whatsapp.crypto.GroupCipher;
+import it.auties.whatsapp.crypto.SessionBuilder;
+import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
@@ -18,18 +19,10 @@ import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageStatus;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
-import it.auties.whatsapp.model.message.standard.PollCreationMessage;
-import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
-import it.auties.whatsapp.model.message.standard.ReactionMessage;
-import it.auties.whatsapp.model.poll.PollUpdate;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
@@ -46,7 +39,6 @@ import it.auties.whatsapp.util.*;
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -56,6 +48,7 @@ import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
+import static it.auties.whatsapp.model.business.BusinessStorageType.FACEBOOK;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static it.auties.whatsapp.model.sync.HistorySync.HistorySyncHistorySyncType.RECENT;
@@ -145,8 +138,9 @@ class MessageHandler {
         var encodedMessage = BytesHelper.messageToBytes(request.info().message());
         var deviceMessage = DeviceSentMessage.of(request.info().chatJid().toString(), request.info().message(), null);
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-        var knownDevices = request.hasSenderOverride() ? List.of(request.overrideSender()) : List.of(sender.toUserJid(), request.info().chatJid());
-        return getDevices(knownDevices, true, request.force()).thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage, request.force()))
+        var knownDevices = request.hasSenderOverride() ? List.of(request.overrideSender()) : List.of(sender.toWhatsappJid(), request.info().chatJid());
+        return getDevices(knownDevices, true, request.force())
+                .thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage, request.force()))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request.info(), sessions, null, request.additionalAttributes()))
                 .thenComposeAsync(socketHandler::send);
     }
@@ -167,6 +161,15 @@ class MessageHandler {
             var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
             body.add(Node.of("device-identity", identity));
         }
+        if(info.message().content() instanceof ButtonMessage) {
+            var attributes = Attributes.of()
+                    .put("host_storage", FACEBOOK.index())
+                    .put("actual_actors", 2) //BSP.index())
+                    .put("privacy_mode_ts", "1612483200") // Clock.nowSeconds()
+                    .toMap();
+            body.add(Node.ofAttributes("biz", attributes));
+        }
+
         var attributes = Attributes.ofNullable(metadata)
                 .put("id", info.id())
                 .put("to", info.chatJid())
@@ -255,9 +258,10 @@ class MessageHandler {
         return getDevices(metadata.participantsJids(), false, force);
     }
 
-    private CompletableFuture<List<ContactJid>> getDevices(List<ContactJid> contacts, boolean excludeSelf, boolean force) {
+    protected CompletableFuture<List<ContactJid>> getDevices(List<ContactJid> contacts, boolean excludeSelf, boolean force) {
         if (force) {
-            return queryDevices(contacts, excludeSelf).thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, missingDevices) : missingDevices);
+            return queryDevices(contacts, excludeSelf)
+                    .thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, missingDevices) : missingDevices);
         }
         var partitioned = contacts.stream()
                 .collect(partitioningBy(contact -> devicesCache.asMap()
@@ -273,7 +277,8 @@ class MessageHandler {
         if (missing.isEmpty()) {
             return completedFuture(excludeSelf ? toSingleList(contacts, cached) : cached);
         }
-        return queryDevices(missing, excludeSelf).thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, cached, missingDevices) : toSingleList(cached, missingDevices));
+        return queryDevices(missing, excludeSelf)
+                .thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, cached, missingDevices) : toSingleList(cached, missingDevices));
     }
 
     private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
@@ -352,12 +357,7 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public CompletableFuture<Void> decode(Node node) {
-        decodeMessages(node);
-        return CompletableFuture.completedFuture(null);
-    }
-
-    private void decodeMessages(Node node) {
+    public void decode(Node node) {
         try {
             var businessName = getBusinessName(node);
             var encrypted = node.findNodes("enc");
@@ -372,12 +372,18 @@ class MessageHandler {
     }
 
     private String getBusinessName(Node node) {
+        return node.attributes()
+                .getOptionalString("verified_name")
+                .or(() -> getBusinessNameFromNode(node))
+                .orElse(null);
+    }
+
+    private static Optional<String> getBusinessNameFromNode(Node node) {
         return node.findNode("verified_name")
                 .flatMap(Node::contentAsBytes)
                 .map(bytes -> Protobuf.readMessage(bytes, BusinessVerifiedNameCertificate.class))
                 .map(certificate -> Protobuf.readMessage(certificate.details(), BusinessVerifiedNameDetails.class))
-                .map(BusinessVerifiedNameDetails::name)
-                .orElse(null);
+                .map(BusinessVerifiedNameDetails::name);
     }
 
     private void decodeMessage(Node infoNode, Node messageNode, String businessName) {
@@ -393,11 +399,11 @@ class MessageHandler {
             var participant = infoNode.attributes().getJid("participant").orElse(null);
             var messageBuilder = MessageInfo.builder();
             var keyBuilder = MessageKey.builder();
-            var userCompanionJid =socketHandler.store().userCompanionJid();
+            var userCompanionJid = socketHandler.store().userCompanionJid();
             if(userCompanionJid == null){
                 return; // This means that the session got disconnected while processing
             }
-            var receiver = userCompanionJid.toUserJid();
+            var receiver = userCompanionJid.toWhatsappJid();
             if (from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
@@ -406,15 +412,11 @@ class MessageHandler {
             } else {
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), receiver));
+                keyBuilder.fromMe(Objects.equals(participant.toWhatsappJid(), receiver));
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
             var key = keyBuilder.id(id).build();
             if (messageNode == null) {
-                if(sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null)){
-                    return;
-                }
-
                 socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
                 socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
@@ -516,7 +518,7 @@ class MessageHandler {
     }
 
     private void attributeMessageReceipt(MessageInfo info) {
-        var self = socketHandler.store().userCompanionJid().toUserJid();
+        var self = socketHandler.store().userCompanionJid().toWhatsappJid();
         if (!info.fromMe() || !info.chatJid().equals(self)) {
             return;
         }
@@ -527,7 +529,9 @@ class MessageHandler {
     }
 
     private void saveMessage(MessageInfo info, String category, boolean offline) {
-        processMessage(info);
+        if(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
+            handleDistributionMessage(distributionMessage, info.senderJid());
+        }
         if (info.chatJid().type() == Type.STATUS) {
             socketHandler.store().addStatus(info);
             socketHandler.onNewStatus(info);
@@ -554,6 +558,13 @@ class MessageHandler {
         socketHandler.onNewMessage(info, offline);
     }
 
+    private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
+        var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
+        var builder = new GroupBuilder(socketHandler.keys());
+        var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
+        builder.createIncoming(groupName, message);
+    }
+
     private Node createPreKeyNode() {
         var preKey = SignalPreKeyPair.random(socketHandler.keys().lastPreKeyId() + 1);
         var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
@@ -562,16 +573,6 @@ class MessageHandler {
                 .publicKey()), preKey.toNode(), socketHandler.keys()
                 .signedKeyPair()
                 .toNode(), Node.of("device-identity", identity));
-    }
-
-    private void processMessage(MessageInfo info) {
-        switch (info.message().content()) {
-            case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, info.senderJid());
-            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
-            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-            default -> {}
-        }
     }
 
     private void onProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
@@ -613,74 +614,6 @@ class MessageHandler {
 
     private boolean isTyping(Contact sender) {
         return sender.lastKnownPresence() == ContactStatus.COMPOSING || sender.lastKnownPresence() == ContactStatus.RECORDING;
-    }
-
-    private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
-        var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
-        var builder = new GroupBuilder(socketHandler.keys());
-        var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
-        builder.createIncoming(groupName, message);
-    }
-
-    private void handlePollCreation(MessageInfo info, PollCreationMessage pollCreationMessage) {
-        if(pollCreationMessage.encryptionKey() != null){
-            return;
-        }
-
-        info.message()
-                .deviceInfo()
-                .messageSecret()
-                .or(info::messageSecret)
-                .ifPresent(pollCreationMessage::encryptionKey);
-    }
-
-    private void handlePollUpdate(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
-        try {
-            var originalPollInfo = socketHandler.store()
-                    .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
-                    .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
-            var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
-            pollUpdateMessage.pollCreationMessage(originalPollMessage);
-            var originalPollSender = originalPollInfo.senderJid()
-                    .toUserJid()
-                    .toString()
-                    .getBytes(StandardCharsets.UTF_8);
-            var modificationSenderJid = info.senderJid().toUserJid();
-            pollUpdateMessage.voter(modificationSenderJid);
-            var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
-            var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
-            var useSecretPayload = Bytes.of(originalPollInfo.id())
-                    .append(originalPollSender)
-                    .append(modificationSender)
-                    .append(secretName)
-                    .toByteArray();
-            var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
-            var additionalData = "%s\0%s".formatted(
-                    originalPollInfo.id(),
-                    modificationSenderJid
-            );
-            var metadata = pollUpdateMessage.encryptedMetadata();
-            var decrypted = AesGmc.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
-            var pollVoteMessage = Protobuf.readMessage(decrypted, PollUpdateEncryptedOptions.class);
-            var selectedOptions = pollVoteMessage.selectedOptions()
-                    .stream()
-                    .map(sha256 -> originalPollMessage.selectableOptionsHashesMap().get(Bytes.of(sha256).toHex()))
-                    .filter(Objects::nonNull)
-                    .toList();
-            originalPollMessage.selectedOptionsMap().put(modificationSenderJid, selectedOptions);
-            pollUpdateMessage.votes(selectedOptions);
-            var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowInMilliseconds());
-            info.pollUpdates().add(update);
-        } catch (Throwable throwable) {
-            socketHandler.handleFailure(Location.POLL, throwable);
-        }
-    }
-
-    private void handleReactionMessage(MessageInfo info, ReactionMessage reactionMessage) {
-        info.ignore(true);
-        socketHandler.store()
-                .findMessageByKey(reactionMessage.key())
-                .ifPresent(message -> message.reactions().add(reactionMessage));
     }
 
     private CompletableFuture<HistorySync> downloadHistorySync(ProtocolMessage protocolMessage) {

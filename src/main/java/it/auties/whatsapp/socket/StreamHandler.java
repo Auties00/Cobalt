@@ -98,7 +98,7 @@ class StreamHandler {
 
     private void digestFailure(Node node) {
         var reason = node.attributes().getInt("reason");
-        if (reason == 401) {
+        if (reason == 401 || reason == 403) {
             socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             return;
         }
@@ -377,12 +377,37 @@ class StreamHandler {
             return;
         }
         switch (child.get().description()) {
+            case "devices" -> handleDevices(child.get());
             case "privacy" -> changeUserPrivacySetting(child.get());
             case "disappearing_mode" -> updateUserDisappearingMode(child.get());
             case "status" -> updateUserStatus(true);
             case "picture" -> updateUserPicture(true);
             case "blocklist" -> updateBlocklist(child.orElse(null));
         }
+    }
+
+    private void handleDevices(Node child) {
+        var deviceHash = child.attributes().getString("dhash");
+        socketHandler.store().userCompanionDeviceHash(deviceHash);
+        var devices = child.findNodes("device")
+                .stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.attributes().getJid("jid").get(),
+                        entry -> entry.attributes().getInt("key-index"),
+                        (first, second) -> second,
+                        LinkedHashMap::new
+                ));
+        var companionJid = socketHandler.store().userCompanionJid().toWhatsappJid();
+        var companionDevice = devices.remove(companionJid);
+        devices.put(companionJid, companionDevice);
+        socketHandler.store().userCompanionDeviceKeyIndexes(devices);
+        var keyIndexListNode = child.findNode("key-index-list")
+                .orElseThrow(() -> new NoSuchElementException("Missing index key node from device sync"));
+        var signedKeyIndexBytes = keyIndexListNode.contentAsBytes()
+                .orElseThrow(() -> new NoSuchElementException("Missing index key from device sync"));
+        socketHandler.keys().signedKeyIndex(signedKeyIndexBytes);
+        var signedKeyIndexTimestamp = keyIndexListNode.attributes().getLong("ts");
+        socketHandler.keys().signedKeyIndexTimestamp(signedKeyIndexTimestamp);
     }
 
     private void updateBlocklist(Node child) {
@@ -559,7 +584,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        socketHandler.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1"))); // Ignore this response
+        socketHandler.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1"))); // TODO: Save them
         socketHandler.sendQuery("get", "w", Node.of("props"))
                 .thenAcceptAsync(this::parseProps);
         return CompletableFuture.allOf(queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false));
@@ -578,12 +603,12 @@ class StreamHandler {
     private void updateSelfPresence() {
         socketHandler.sendWithNoResponse(ofAttributes("presence", of("type", "available")));
         socketHandler.store()
-                .findContactByJid(socketHandler.store().userCompanionJid().toUserJid())
+                .findContactByJid(socketHandler.store().userCompanionJid().toWhatsappJid())
                 .ifPresent(entry -> entry.lastKnownPresence(ContactStatus.AVAILABLE).lastSeen(ZonedDateTime.now()));
     }
 
     private CompletableFuture<Void> updateUserStatus(boolean update) {
-        return socketHandler.queryStatus(socketHandler.store().userCompanionJid().toUserJid())
+        return socketHandler.queryStatus(socketHandler.store().userCompanionJid().toWhatsappJid())
                 .thenAcceptAsync(result -> parseNewStatus(result.orElse(null), update));
     }
 
@@ -600,7 +625,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> updateUserPicture(boolean update) {
-        return socketHandler.queryPicture(socketHandler.store().userCompanionJid().toUserJid())
+        return socketHandler.queryPicture(socketHandler.store().userCompanionJid().toWhatsappJid())
                 .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
     }
 
@@ -637,7 +662,8 @@ class StreamHandler {
                 .map(entry -> entry.findNodes("prop"))
                 .flatMap(Collection::stream)
                 .map(node -> Map.entry(node.attributes().getString("name"), node.attributes().getString("value")))
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (first, second) -> second, ConcurrentHashMap::new));
+        socketHandler.store().properties(properties);
         socketHandler.onMetadata(properties);
     }
 
@@ -777,7 +803,7 @@ class StreamHandler {
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store().userCompanionJid(companion);
-        socketHandler.store().addContact(Contact.ofJid(socketHandler.store().userCompanionJid().toUserJid()));
+        socketHandler.store().addContact(Contact.ofJid(socketHandler.store().userCompanionJid().toWhatsappJid()));
     }
 
     protected void dispose() {
