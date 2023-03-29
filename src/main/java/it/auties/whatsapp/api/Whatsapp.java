@@ -50,9 +50,6 @@ import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -1179,64 +1176,68 @@ public class Whatsapp {
 
     private void calculateHash(MessageInfo info, boolean recipient) {
         socketHandler.queryCompanionDevices().join();
-        try(var out = new ByteArrayOutputStream()) {
-            var indexes = new ArrayList<Integer>();
-            for (var entry : store().userCompanionDeviceKeyIndexes().entrySet()) {
-                if(Objects.equals(entry.getKey(), store().userCompanionJid())){
-                    var jid = recipient ? info.chatJid() : info.senderJid();
-                    if (!Objects.equals(jid.user(), store().userCompanionJid().user())) {
-                        continue;
-                    }
-
-                    var key = keys().identityKeyPair().publicKey();
-                    out.writeBytes(KeyHelper.withoutHeader(key));
-                    indexes.add(store().userCompanionDeviceKeyIndexes().get(info.senderJid().toWhatsappJid()));
-                    continue;
-                }
-
-                var session = keys().findSessionByAddress(entry.getKey().toSignalAddress());
-                if (session.isEmpty()) {
-                    continue;
-                }
-
-                var key = session.get()
-                        .currentState()
-                        .map(SessionState::remoteIdentityKey)
-                        .map(KeyHelper::withoutHeader);
-                if (key.isEmpty()) {
-                    continue;
-                }
-
-                indexes.add(entry.getValue());
-                out.writeBytes(key.get());
+        var identityKeys = new ArrayList<byte[]>();
+        var indexes = new ArrayList<Integer>();
+        for (var entry : store().userCompanionDeviceKeyIndexes().entrySet()) {
+            var session = keys().findSessionByAddress(entry.getKey().toSignalAddress());
+            if (session.isEmpty()) {
+                continue;
             }
 
-            var hash = Arrays.copyOf(Sha256.calculate(out.toByteArray()), 10); // get this from md_icdc_hash_length: Math.max(e, 8)
-            var metadata = info.message().deviceInfo().deviceListMetadata();
-            if(recipient) {
-                metadata.recipientKeyHash(hash);
-                if(indexes.size() != store().userCompanionDevices().size()) {
-                    metadata.recipientKeyIndexes(indexes);
-                }
-                metadata.senderTimestamp(info.timestampSeconds());
-                return;
+            var key = session.get()
+                    .currentState()
+                    .map(SessionState::remoteIdentityKey)
+                    .map(KeyHelper::withoutHeader);
+            if (key.isEmpty()) {
+                continue;
             }
 
-            metadata.senderKeyHash(hash);
-            if(indexes.size() != store().userCompanionDevices().size()) {
-                metadata.senderKeyIndexes(indexes);
-            }
-            metadata.senderTimestamp(info.timestampSeconds());
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot close output", exception);
+            indexes.add(entry.getValue());
+            identityKeys.add(key.get());
         }
+
+        var jid = recipient ? info.chatJid() : info.senderJid();
+        if (!recipient) {
+            identityKeys.add(keys().identityKeyPair().publicKey());
+            indexes.add(store().userCompanionDeviceKeyIndexes().get(store().userCompanionJid()));
+        }
+
+        identityKeys.sort((first, second) -> {
+            for (var index = 0; index < first.length; index++) {
+                var firstValue = Byte.toUnsignedInt(first[index]);
+                var secondValue = Byte.toUnsignedInt(second[index]);
+                if (firstValue != secondValue) {
+                    return firstValue - secondValue;
+                }
+            }
+            return first.length - second.length;
+        });
+
+        var concatenatedIdentityKeys = Bytes.of(identityKeys.toArray(byte[][]::new)).toByteArray();
+        var identityHash = Sha256.calculate(concatenatedIdentityKeys);
+        var participantHash = Arrays.copyOf(identityHash, 10); // get this from md_icdc_hash_length: Math.max(e, 8)
+        var messageMetadata = info.message().deviceInfo().deviceListMetadata();
+        if(recipient) {
+            messageMetadata.recipientKeyHash(participantHash);
+            if(indexes.size() != store().userCompanionDevices().size()) {
+                messageMetadata.recipientKeyIndexes(indexes);
+            }
+            messageMetadata.recipientTimestamp(info.timestampSeconds());
+            return;
+        }
+
+        messageMetadata.senderKeyHash(participantHash);
+        if(indexes.size() != store().userCompanionDevices().size()) {
+            messageMetadata.senderKeyIndexes(indexes);
+        }
+        messageMetadata.senderTimestamp(info.timestampSeconds());
     }
 
     /**
      * Marks a chat as read.
      *
      * @param chat the target chat
-     * @return a CompletableFuture
+     * @return a CompletableFutur
      */
     public <T extends ContactJidProvider> CompletableFuture<T> markRead(@NonNull T chat) {
         return mark(chat, true).thenComposeAsync(ignored -> markAllAsRead(chat)).thenApplyAsync(ignored -> chat);
