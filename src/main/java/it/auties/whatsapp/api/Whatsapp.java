@@ -1161,8 +1161,8 @@ public class Whatsapp {
         info.key().chatJid(info.chatJid().toWhatsappJid());
         info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toWhatsappJid());
         fixEphemeralMessage(info);
-        calculateHash(info, true);
         calculateHash(info, false);
+        calculateHash(info, true);
         switch (info.message().content()) {
             case TextMessage textMessage -> attributeTextMessage(textMessage);
             case MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
@@ -1178,6 +1178,25 @@ public class Whatsapp {
         socketHandler.queryCompanionDevices().join();
         var identityKeys = new ArrayList<byte[]>();
         var indexes = new ArrayList<Integer>();
+        populateIdentityKeys(identityKeys, indexes, recipient);
+        var concatenatedIdentityKeys = Bytes.of(identityKeys.toArray(byte[][]::new)).toByteArray();
+        var identityHash = Sha256.calculate(concatenatedIdentityKeys);
+        var participantHash = Arrays.copyOf(identityHash, 10); // get this from md_icdc_hash_length: Math.max(e, 8)
+        var messageMetadata = info.message().deviceInfo().deviceListMetadata();
+        if(recipient) {
+            messageMetadata.recipientKeyHash(participantHash);
+            messageMetadata.recipientTimestamp(info.timestampSeconds());
+            return;
+        }
+
+        messageMetadata.senderKeyHash(participantHash);
+        if(indexes.size() != store().userCompanionDevices().size()) {
+            messageMetadata.senderKeyIndexes(indexes);
+        }
+        messageMetadata.senderTimestamp(info.timestampSeconds());
+    }
+
+    private void populateIdentityKeys(List<byte[]> identityKeys, List<Integer> indexes, boolean recipient) {
         for (var entry : store().userCompanionDeviceKeyIndexes().entrySet()) {
             var session = keys().findSessionByAddress(entry.getKey().toSignalAddress());
             if (session.isEmpty()) {
@@ -1195,13 +1214,10 @@ public class Whatsapp {
             indexes.add(entry.getValue());
             identityKeys.add(key.get());
         }
-
-        var jid = recipient ? info.chatJid() : info.senderJid();
         if (!recipient) {
             identityKeys.add(keys().identityKeyPair().publicKey());
             indexes.add(store().userCompanionDeviceKeyIndexes().get(store().userCompanionJid()));
         }
-
         identityKeys.sort((first, second) -> {
             for (var index = 0; index < first.length; index++) {
                 var firstValue = Byte.toUnsignedInt(first[index]);
@@ -1212,32 +1228,13 @@ public class Whatsapp {
             }
             return first.length - second.length;
         });
-
-        var concatenatedIdentityKeys = Bytes.of(identityKeys.toArray(byte[][]::new)).toByteArray();
-        var identityHash = Sha256.calculate(concatenatedIdentityKeys);
-        var participantHash = Arrays.copyOf(identityHash, 10); // get this from md_icdc_hash_length: Math.max(e, 8)
-        var messageMetadata = info.message().deviceInfo().deviceListMetadata();
-        if(recipient) {
-            messageMetadata.recipientKeyHash(participantHash);
-            if(indexes.size() != store().userCompanionDevices().size()) {
-                messageMetadata.recipientKeyIndexes(indexes);
-            }
-            messageMetadata.recipientTimestamp(info.timestampSeconds());
-            return;
-        }
-
-        messageMetadata.senderKeyHash(participantHash);
-        if(indexes.size() != store().userCompanionDevices().size()) {
-            messageMetadata.senderKeyIndexes(indexes);
-        }
-        messageMetadata.senderTimestamp(info.timestampSeconds());
     }
 
     /**
      * Marks a chat as read.
      *
      * @param chat the target chat
-     * @return a CompletableFutur
+     * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> markRead(@NonNull T chat) {
         return mark(chat, true).thenComposeAsync(ignored -> markAllAsRead(chat)).thenApplyAsync(ignored -> chat);
