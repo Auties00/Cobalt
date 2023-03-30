@@ -1,20 +1,19 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.business.BusinessCollection;
-import it.auties.whatsapp.model.business.BusinessNativeFlow;
-import it.auties.whatsapp.model.business.BusinessShop;
+import it.auties.whatsapp.model.interactive.InteractiveCollection;
+import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
+import it.auties.whatsapp.model.interactive.InteractiveShop;
 import it.auties.whatsapp.model.button.TemplateFormatter;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.product.ProductBody;
-import it.auties.whatsapp.model.product.ProductFooter;
-import it.auties.whatsapp.model.product.ProductHeader;
+import it.auties.whatsapp.model.interactive.InteractiveBody;
+import it.auties.whatsapp.model.interactive.InteractiveFooter;
+import it.auties.whatsapp.model.interactive.InteractiveHeader;
 import lombok.*;
-import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -38,45 +37,44 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
     /**
      * Product header
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = ProductHeader.class)
-    private ProductHeader header;
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = InteractiveHeader.class)
+    private InteractiveHeader header;
 
     /**
      * Product body
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProductBody.class)
-    private ProductBody body;
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = InteractiveBody.class)
+    private InteractiveBody body;
 
     /**
      * Product footer
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ProductFooter.class)
-    private ProductFooter footer;
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = InteractiveFooter.class)
+    private InteractiveFooter footer;
 
     /**
      * Shop store message
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = BusinessShop.class)
-    private BusinessShop contentShop;
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = InteractiveShop.class)
+    private InteractiveShop contentShop;
 
     /**
      * Collection message
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessCollection.class)
-    private BusinessCollection contentCollection;
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = InteractiveCollection.class)
+    private InteractiveCollection contentCollection;
 
     /**
      * Native flow message
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, implementation = BusinessNativeFlow.class)
-    private BusinessNativeFlow contentNativeFlow;
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = InteractiveNativeFlow.class)
+    private InteractiveNativeFlow contentNativeFlow;
 
     /**
      * The context info of this message
      */
     @ProtobufProperty(index = 15, type = MESSAGE, implementation = ContextInfo.class)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     /**
      * Constructs a new builder to create an interactive message
@@ -89,16 +87,16 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      * @return a non-null new message
      */
     @Builder(builderClassName = "InteractiveMessageSimpleBuilder", builderMethodName = "simpleBuilder")
-    private static InteractiveMessage customBuilder(ProductHeader header, String body, String footer, InteractiveMessageContent content, ContextInfo contextInfo) {
+    private static InteractiveMessage customBuilder(InteractiveHeader header, String body, String footer, InteractiveMessageContent content, ContextInfo contextInfo) {
         var builder = InteractiveMessage.builder()
                 .header(header)
-                .body(ProductBody.of(body))
-                .footer(ProductFooter.of(footer))
+                .body(InteractiveBody.of(body))
+                .footer(InteractiveFooter.of(footer))
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new));
         switch (content){
-            case BusinessShop businessShop -> builder.contentShop(businessShop);
-            case BusinessCollection businessCollection -> builder.contentCollection(businessCollection);
-            case BusinessNativeFlow businessNativeFlow -> builder.contentNativeFlow(businessNativeFlow);
+            case InteractiveShop interactiveShop -> builder.contentShop(interactiveShop);
+            case InteractiveCollection interactiveCollection -> builder.contentCollection(interactiveCollection);
+            case InteractiveNativeFlow interactiveNativeFlow -> builder.contentNativeFlow(interactiveNativeFlow);
             case null -> {}
         }
         return builder.build();
@@ -120,7 +118,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      *
      * @return a non-null optional
      */
-    public Optional<ProductHeader> header(){
+    public Optional<InteractiveHeader> header(){
         return Optional.ofNullable(header);
     }
 
@@ -129,7 +127,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      *
      * @return a non-null optional
      */
-    public Optional<ProductBody> body(){
+    public Optional<InteractiveBody> body(){
         return Optional.ofNullable(body);
     }
 
@@ -138,7 +136,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      *
      * @return a non-null optional
      */
-    public Optional<ProductFooter> footer(){
+    public Optional<InteractiveFooter> footer(){
         return Optional.ofNullable(footer);
     }
 
@@ -165,7 +163,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      *
      * @return an optional
      */
-    public Optional<BusinessShop> contentShop() {
+    public Optional<InteractiveShop> contentShop() {
         return Optional.ofNullable(contentShop);
     }
 
@@ -174,7 +172,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      *
      * @return an optional
      */
-    public Optional<BusinessCollection> contentCollection() {
+    public Optional<InteractiveCollection> contentCollection() {
         return Optional.ofNullable(contentCollection);
     }
 
@@ -183,7 +181,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      *
      * @return an optional
      */
-    public Optional<BusinessNativeFlow> contentNativeFlow() {
+    public Optional<InteractiveNativeFlow> contentNativeFlow() {
         return Optional.ofNullable(contentNativeFlow);
     }
 

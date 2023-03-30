@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.*;
-import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -77,8 +76,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
      * The context info of this message
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     @Override
     public MessageType type() {

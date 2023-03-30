@@ -12,6 +12,10 @@ import java.util.NoSuchElementException;
 
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
+        if(data == null){
+            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
+        }
+
         var currentState = keys.findSenderKeyByName(name).findState();
         var messageKey = currentState.chainKey().toMessageKey();
         var ciphertext = AesCbc.encrypt(messageKey.iv(), data, messageKey.cipherKey());

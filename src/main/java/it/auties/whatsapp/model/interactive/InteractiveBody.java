@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.product;
+package it.auties.whatsapp.model.interactive;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
@@ -12,17 +12,17 @@ import lombok.extern.jackson.Jacksonized;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
- * A model class that represents the footer of a product
+ * A model class that represents the body of a product
  */
 @AllArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-@ProtobufName("Footer")
-public class ProductFooter implements ProtobufMessage {
+@ProtobufName("Body")
+public class InteractiveBody implements ProtobufMessage {
     /**
-     * The footer of this product
+     * The body of this product
      */
     @ProtobufProperty(index = 1, type = STRING)
     private String content;

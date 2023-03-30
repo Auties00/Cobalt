@@ -11,6 +11,7 @@ import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.util.KeyHelper;
+import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
@@ -25,7 +26,10 @@ import static it.auties.whatsapp.util.Spec.Signal.*;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
-    public CipheredMessageResult encrypt(byte @NonNull [] data) {
+    public CipheredMessageResult encrypt(byte[] data) {
+        if(data == null){
+            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
+        }
         var currentState = loadSession().currentState()
                 .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
         Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key", SecurityException.class);
@@ -43,7 +47,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     private String getMessageType(SessionState currentState) {
-        return currentState.hasPreKey() ? "pkmsg" : "msg";
+        return currentState.hasPreKey() ? Signal.PKMSG : Signal.MSG;
     }
 
     private byte[] encrypt(SessionState state, SessionChain chain, byte[] key, byte[] encrypted) {

@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.product.ProductHeaderAttachment;
+import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Validate;
@@ -38,7 +38,7 @@ import static it.auties.whatsapp.util.Medias.THUMBNAIL_WIDTH;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class DocumentMessage extends MediaMessage implements ProductHeaderAttachment, ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class DocumentMessage extends MediaMessage implements InteractiveHeaderAttachment, ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
     /**
      * The upload url of the encoded document that this object wraps
      */

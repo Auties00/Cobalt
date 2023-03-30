@@ -16,10 +16,13 @@ import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
@@ -83,6 +86,12 @@ class MessageHandler {
     }
 
     protected CompletableFuture<Void> encode(MessageSendRequest request) {
+        if(request.info().message().isEmpty()){
+            return encodeMessageNode(request)
+                    .thenRunAsync(() -> attributeOutgoingMessage(request))
+                    .exceptionallyAsync(throwable -> onEncodeError(request, throwable));
+        }
+
         return runner.runAsync(() -> encodeMessageNode(request)
                 .thenRunAsync(() -> attributeOutgoingMessage(request))
                 .exceptionallyAsync(throwable -> onEncodeError(request, throwable)));
@@ -115,7 +124,7 @@ class MessageHandler {
         if (request.hasSenderOverride()) {
             return getGroupRetryDevices(request.overrideSender(), request.force()).thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode, request.additionalAttributes()))
-                    .thenComposeAsync(socketHandler::send);
+                    .thenComposeAsync(body -> sendMessageNode(request, body));
         }
         return Optional.ofNullable(request.force() ? groupsCache.getIfPresent(request.info().chatJid()) : null)
                 .map(CompletableFuture::completedFuture)
@@ -123,7 +132,11 @@ class MessageHandler {
                 .thenComposeAsync(devices -> getGroupDevices(devices, request.force()))
                 .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
                 .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode, request.additionalAttributes()))
-                .thenComposeAsync(socketHandler::send);
+                .thenComposeAsync(body -> sendMessageNode(request, body));
+    }
+
+    private CompletableFuture<Node> sendMessageNode(MessageSendRequest request, Node body){
+        return socketHandler.send(body);
     }
 
     private CompletableFuture<Node> encodeConversation(MessageSendRequest request) {
@@ -139,7 +152,7 @@ class MessageHandler {
         return getDevices(knownDevices, true, request.force())
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request, sessions, null, request.additionalAttributes()))
-                .thenComposeAsync(socketHandler::send);
+                .thenComposeAsync(body -> sendMessageNode(request, body));
     }
 
     private boolean isConversation(MessageInfo info) {
@@ -159,18 +172,16 @@ class MessageHandler {
             body.add(Node.of("device-identity", identity));
         }
         if(request.info().message().content() instanceof ButtonMessage buttonMessage) {
-            Map<String, Object> attributes = buttonMessage.type() == MessageType.LIST ? Map.of("v", "2", "type", "single_select") : Map.of();
-            var description = Node.ofAttributes(getButtonName(request.info().message()), attributes);
-            // Metadata:   var attributes = Attributes.of()
-            //                    .put("host_storage", FACEBOOK.index())
-            //                    .put("actual_actors", 2) //BSP.index())
-            //                    .put("privacy_mode_ts", Clock.nowSeconds()) // Clock.nowSeconds()
-            //                    .toMap();
-            // List message: body.add(Node.ofChildren("biz", attributes, Node.ofAttributes("list", Map.of("v", "2", "type", "single_select"))));
-            // Buttons message: body.add(Node.ofChildren("biz", attributes, Node.of("buttons")));
-            body.add(Node.ofChildren("biz", description));
+            if(buttonMessage.type() == MessageType.TEMPLATE){
+                body.add(Node.ofAttributes("hsm", getButtonArgs(buttonMessage)));
+            }else {
+                var type = getButtonType(request.info().message());
+                if(type != null) {
+                    var description = Node.ofAttributes(type, getButtonArgs(buttonMessage));
+                    body.add(Node.ofChildren("biz", description));
+                }
+            }
         }
-
         var attributes = Attributes.ofNullable(metadata)
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
@@ -387,6 +398,59 @@ class MessageHandler {
                 .map(BusinessVerifiedNameDetails::name);
     }
 
+    private Node createMessageNode(MessageSendRequest request, CipheredMessageResult groupMessage) {
+        var mediaType = getMediaType(request.info().message());
+        var attributes = Attributes.of()
+                .put("v", "2")
+                .put("type", groupMessage.type())
+                .put("mediatype", mediaType, Objects::nonNull)
+                .toMap();
+        return Node.of("enc", attributes, groupMessage.message());
+    }
+
+    private String getButtonType(MessageContainer container){
+        return switch (container.type()){
+            case BUTTONS -> "buttons";
+            case BUTTONS_RESPONSE -> "buttons_response";
+            case INTERACTIVE_RESPONSE -> "interactive_response";
+            case LIST -> "list";
+            case LIST_RESPONSE -> "list_response";
+            default -> null;
+        };
+    }
+
+    private Map<String, Object> getButtonArgs(ButtonMessage buttonMessage) {
+        if(buttonMessage instanceof TemplateMessage templateMessage){
+            return Map.of("category", templateMessage.id());
+        }
+
+        if (buttonMessage instanceof ListMessage listMessage) {
+            return Map.of("v", "2", "type", listMessage.listType().name().toLowerCase());
+        }
+
+        return Map.of();
+    }
+
+    private String getMediaType(MessageContainer container){
+        return switch (container.content()){
+            case ImageMessage ignored -> "image";
+            case VideoMessage videoMessage -> videoMessage.gifPlayback() ? "gif" : "video";
+            case AudioMessage audioMessage -> audioMessage.voiceMessage() ? "ptt" : "audio";
+            case ContactMessage ignored -> "vcard";
+            case DocumentMessage ignored -> "document";
+            case ContactsArrayMessage ignored -> "contact_array";
+            case LiveLocationMessage ignored -> "livelocation";
+            case StickerMessage ignored -> "sticker";
+            case ListMessage ignored -> "list";
+            case ListResponseMessage ignored -> "list_response";
+            case ButtonsResponseMessage ignored -> "buttons_response";
+            case PaymentOrderMessage ignored -> "order";
+            case ProductMessage ignored -> "product";
+            case NativeFlowResponseMessage ignored -> "native_flow_response";
+            default -> null;
+        };
+    }
+
     private void decodeMessage(Node infoNode, Node messageNode, String businessName) {
         try {
             var offline = infoNode.attributes().hasKey("offline");
@@ -418,6 +482,10 @@ class MessageHandler {
             }
             var key = keyBuilder.id(id).build();
             if (messageNode == null) {
+                if(sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null)){
+                    return;
+                }
+
                 socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
                 socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
@@ -456,7 +524,10 @@ class MessageHandler {
     }
 
     private boolean sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant, String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
-        logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
+        if(encodedMessage != null) {
+            logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
+        }
+
         if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
             return false;
         }
@@ -737,53 +808,6 @@ class MessageHandler {
         devicesCache.invalidateAll();
         historyCache.clear();
         runner.cancel();
-    }
-
-    private Node createMessageNode(MessageSendRequest request, CipheredMessageResult groupMessage) {
-        var mediaType = getMediaType(request.info().message());
-        var attributes = Attributes.of()
-                .put("v", "2")
-                .put("type", groupMessage.type())
-                .put("mediatype", mediaType, Objects::nonNull)
-                .toMap();
-        return Node.of("enc", attributes, groupMessage.message());
-    }
-
-    private String getButtonName(MessageContainer container){
-        return switch (container.type()){
-            case BUTTONS -> "buttons";
-            case BUTTONS_RESPONSE -> "buttons_response";
-            case TEMPLATE -> "hsm";
-            case TEMPLATE_REPLY -> "template_button_reply";
-            case INTERACTIVE -> "interactive";
-            case INTERACTIVE_RESPONSE -> "interactive_response";
-            case LIST -> "list";
-            case LIST_RESPONSE -> "list_response";
-            default -> null;
-        };
-    }
-
-    private String getMediaType(MessageContainer container){
-        return switch (container.type()){
-            case AUDIO -> "audio";
-            case BUTTONS_RESPONSE -> "buttons_response";
-            case DOCUMENT -> "document";
-            case GROUP_INVITE -> "groups_v4_invite";
-            case TEMPLATE -> "hsm";
-            case IMAGE -> "image";
-            case INTERACTIVE -> "interactive";
-            case INTERACTIVE_RESPONSE -> "interactive_response";
-            case KEEP_IN_CHAT -> "keep_in_chat";
-            case LIST -> "list";
-            case LIST_RESPONSE -> "list_response";
-            case LOCATION -> "location";
-            case CONTACT_ARRAY -> "multi_vcard";
-            case VIDEO -> "video";
-            case CONTACT -> "contact";
-            case STICKER -> "sticker";
-            case TEMPLATE_REPLY -> "template_button_reply";
-            default -> null;
-        };
     }
 
     private record MessageDecodeResult(byte[] message, Throwable error) {

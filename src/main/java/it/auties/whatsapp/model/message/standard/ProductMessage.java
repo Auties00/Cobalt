@@ -7,7 +7,7 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.product.ProductCatalog;
-import it.auties.whatsapp.model.product.ProductSnapshot;
+import it.auties.whatsapp.model.product.Product;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -33,8 +33,8 @@ public final class ProductMessage extends ContextualMessage implements ButtonMes
     /**
      * The product that this message wraps
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = ProductSnapshot.class)
-    private ProductSnapshot product;
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = Product.class)
+    private Product product;
 
     /**
      * The jid of the WhatsappBusiness account that owns the product that this message wraps

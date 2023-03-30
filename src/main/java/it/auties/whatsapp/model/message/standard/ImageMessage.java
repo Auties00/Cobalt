@@ -12,7 +12,7 @@ import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.product.ProductHeaderAttachment;
+import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import lombok.*;
@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNullElse;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ImageMessage extends MediaMessage implements ProductHeaderAttachment, ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class ImageMessage extends MediaMessage implements InteractiveHeaderAttachment, ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
     /**
      * The upload url of the encoded image that this object wraps
      */

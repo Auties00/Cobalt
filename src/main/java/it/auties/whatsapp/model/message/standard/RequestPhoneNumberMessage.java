@@ -30,8 +30,7 @@ public final class RequestPhoneNumberMessage extends ContextualMessage {
      * The context of this message
      */
     @ProtobufProperty(index = 1, name = "contextInfo", type = MESSAGE)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     @Override
     public MessageType type() {

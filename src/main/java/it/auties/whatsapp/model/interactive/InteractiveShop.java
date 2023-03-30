@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.business;
+package it.auties.whatsapp.model.interactive;
 
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -24,7 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("InteractiveMessage.ShopMessage")
-public final class BusinessShop implements InteractiveMessageContent {
+public final class InteractiveShop implements InteractiveMessageContent {
     /**
      * The id of the shop
      */
@@ -34,7 +34,7 @@ public final class BusinessShop implements InteractiveMessageContent {
     /**
      * The surface of the shop
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessShop.SurfaceType.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = SurfaceType.class)
     private SurfaceType surfaceType;
 
     /**
@@ -50,7 +50,7 @@ public final class BusinessShop implements InteractiveMessageContent {
 
     /**
      * The constants of this enumerated type describe the various types of surfaces that a
-     * {@link BusinessShop} can have
+     * {@link InteractiveShop} can have
      */
     @AllArgsConstructor
     @Accessors(fluent = true)

@@ -80,8 +80,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * The context info of this message
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     /**
      * The buttons that this message wraps

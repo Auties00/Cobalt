@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.product;
+package it.auties.whatsapp.model.interactive;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
@@ -28,7 +28,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("Header")
-public class ProductHeader implements ProtobufMessage {
+public class InteractiveHeader implements ProtobufMessage {
     /**
      * The title of this header
      */
@@ -80,8 +80,8 @@ public class ProductHeader implements ProtobufMessage {
      * @return a non-null new header
      */
     @Builder(builderClassName = "ProductHeaderSimpleBuilder", builderMethodName = "simpleBuilder")
-    private static ProductHeader documentBuilder(String title, String subtitle, ProductHeaderAttachment attachment) {
-        var builder = ProductHeader.builder()
+    private static InteractiveHeader customBuilder(String title, String subtitle, InteractiveHeaderAttachment attachment) {
+        var builder = InteractiveHeader.builder()
                 .title(title)
                 .subtitle(subtitle);
         switch (attachment){
@@ -89,10 +89,11 @@ public class ProductHeader implements ProtobufMessage {
                     .mediaAttachment(true);
             case ImageMessage imageMessage -> builder.attachmentImage(imageMessage)
                     .mediaAttachment(true);
-            case ProductHeaderThumbnail productHeaderThumbnail -> builder.attachmentThumbnail(productHeaderThumbnail.thumbnail())
+            case InteractiveHeaderThumbnail productHeaderThumbnail -> builder.attachmentThumbnail(productHeaderThumbnail.thumbnail())
                     .mediaAttachment(true);
             case VideoMessage videoMessage -> builder.attachmentVideo(videoMessage)
                     .mediaAttachment(true);
+            case null -> {}
         }
         return builder.build();
     }
@@ -123,7 +124,7 @@ public class ProductHeader implements ProtobufMessage {
      *
      * @return a non-null attachment type
      */
-    public Optional<ProductHeaderAttachment> attachment() {
+    public Optional<InteractiveHeaderAttachment> attachment() {
         if (attachmentDocument != null) {
             return Optional.of(attachmentDocument);
         }
@@ -131,7 +132,7 @@ public class ProductHeader implements ProtobufMessage {
             return Optional.of(attachmentImage);
         }
         if (attachmentThumbnail != null) {
-            return Optional.of(ProductHeaderThumbnail.of(attachmentThumbnail));
+            return Optional.of(InteractiveHeaderThumbnail.of(attachmentThumbnail));
         }
         if (attachmentVideo != null) {
             return Optional.of(attachmentVideo);

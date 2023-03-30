@@ -1,6 +1,5 @@
 package it.auties.whatsapp.test;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
@@ -8,14 +7,14 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.model.business.BusinessCollection;
-import it.auties.whatsapp.model.business.BusinessNativeFlow;
-import it.auties.whatsapp.model.business.BusinessShop;
+import it.auties.whatsapp.model.interactive.InteractiveButton;
+import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
 import it.auties.whatsapp.model.button.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.interactive.InteractiveHeader;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
@@ -54,7 +53,6 @@ public class ButtonsTest implements Listener {
     private static CompletableFuture<Void> future;
     private static CountDownLatch latch;
     private static ContactJid contact;
-    private static ContactJid group;
     private static boolean skip;
 
     static {
@@ -128,7 +126,7 @@ public class ButtonsTest implements Listener {
 
     @SuppressWarnings("HttpUrlsUsage")
     @Test
-    @Order(29)
+    @Order(1)
     public void testButtonsMessage() {
         if (skip) {
             return;
@@ -179,62 +177,7 @@ public class ButtonsTest implements Listener {
     }
 
     @Test
-    @Order(41)
-    public void testInteractiveMessage() {
-        if (skip) {
-            return;
-        }
-        log("Sending interactive messages..");
-        var collectionMessage = BusinessCollection.builder()
-                .business(ContactJid.of("15086146312@s.whatsapp.net"))
-                .id("15086146312")
-                .version(3)
-                .build();
-        var interactiveMessageWithCollection = InteractiveMessage.simpleBuilder()
-                .content(collectionMessage)
-                .build();
-        api.sendMessage(contact, interactiveMessageWithCollection).join();
-        var shopMessage = BusinessShop.builder()
-                .id(Bytes.ofRandom(5).toHex())
-                .version(3)
-                .surfaceType(BusinessShop.SurfaceType.WHATSAPP)
-                .build();
-        var interactiveMessageWithShop = InteractiveMessage.simpleBuilder().content(shopMessage).build();
-        api.sendMessage(contact, interactiveMessageWithShop).join();
-        var nativeFlowMessage = BusinessNativeFlow.builder()
-                .buttons(List.of(NativeFlowButton.of("hello :)", "")))
-                .version(3)
-                .parameters("")
-                .build();
-        var interactiveMessageWithFlow = InteractiveMessage.simpleBuilder()
-                .content(nativeFlowMessage)
-                .build();
-        api.sendMessage(contact, interactiveMessageWithFlow).join();
-        log("Sent interactive messages");
-    }
-
-    @Test
-    @Order(42)
-    public void testTemplateMessage() {
-        if (skip) {
-            return;
-        }
-        log("Sending template message...");
-        var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
-        var urlButton = HydratedTemplateButton.of(HydratedURLButton.of("Search it", "https://google.com"));
-        var callButton = HydratedTemplateButton.of(HydratedCallButton.of("Call me", contact.toPhoneNumber()));
-        var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder()
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(List.of(quickReplyButton, urlButton, callButton))
-                .build();
-        var templateMessage = TemplateMessage.of(fourRowTemplate);
-        api.sendMessage(contact, templateMessage).join();
-        log("Sent template message");
-    }
-
-    @Test
-    @Order(43)
+    @Order(2)
     public void testListMessage() {
         if (skip) {
             return;
@@ -253,6 +196,50 @@ public class ButtonsTest implements Listener {
                 .build();
         var result = api.sendMessage(contact, listMessage).join();
         log("Sent list message: " + result);
+    }
+
+    @Test
+    @Order(3)
+    public void testTemplateMessage() {
+        if (skip) {
+            return;
+        }
+        log("Sending template message...");
+        var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
+        var urlButton = HydratedTemplateButton.of(HydratedURLButton.of("Search it", "https://google.com"));
+        var callButton = HydratedTemplateButton.of(HydratedCallButton.of("Call me", contact.toPhoneNumber()));
+        var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder()
+                .body("A nice body")
+                .footer("A nice footer")
+                .buttons(List.of(quickReplyButton, urlButton, callButton))
+                .build();
+        var templateMessage = TemplateMessage.of(fourRowTemplate);
+        api.sendMessage(contact, templateMessage).join();
+        log("Sent template message");
+    }
+
+    // Just have a test to see if it gets sent, it's not actually a functioning button because it's designed for more complex use cases
+    @Test
+    @Order(4)
+    public void testInteractiveMessage() {
+        if (skip) {
+            return;
+        }
+        log("Sending interactive messages..");
+        var nativeFlowMessage = InteractiveNativeFlow.builder()
+                .buttons(List.of(InteractiveButton.of("review_and_pay"), InteractiveButton.of("review_order")))
+                .build();
+        var nativeHeader = InteractiveHeader.simpleBuilder()
+                .title("Title")
+                .subtitle("Subtitle")
+                .build();
+        var interactiveMessageWithFlow = InteractiveMessage.simpleBuilder()
+                .header(nativeHeader)
+                .content(nativeFlowMessage)
+                .footer("Footer")
+                .build();
+        api.sendMessage(contact, interactiveMessageWithFlow).join();
+        log("Sent interactive messages");
     }
 
     @SuppressWarnings("JUnit3StyleTestMethodInJUnit4Class")

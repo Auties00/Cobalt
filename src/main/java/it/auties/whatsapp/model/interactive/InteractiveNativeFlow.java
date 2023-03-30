@@ -1,7 +1,6 @@
-package it.auties.whatsapp.model.business;
+package it.auties.whatsapp.model.interactive;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.button.NativeFlowButton;
 import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
 import it.auties.whatsapp.model.message.button.InteractiveMessageContentType;
 import lombok.AllArgsConstructor;
@@ -16,18 +15,19 @@ import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a native flow
+ * <a href="https://docs.360dialog.com/partner/messaging/interactive-messages/beta-receive-whatsapp-payments-via-stripe">Here</a>> is an explanation on how to use this kind of message
  */
 @AllArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessNativeFlow implements InteractiveMessageContent {
+public final class InteractiveNativeFlow implements InteractiveMessageContent {
     /**
      * The buttons of this flow
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = NativeFlowButton.class, repeated = true)
-    private List<NativeFlowButton> buttons;
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = InteractiveButton.class, repeated = true)
+    private List<InteractiveButton> buttons;
 
     /**
      * The parameters of this flow as json

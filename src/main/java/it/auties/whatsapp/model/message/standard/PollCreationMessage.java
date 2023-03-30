@@ -78,8 +78,7 @@ public final class PollCreationMessage extends ContextualMessage {
      * The context of this message
      */
     @ProtobufProperty(index = 5, name = "contextInfo", type = MESSAGE)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     /**
      * Constructs a new builder to create a PollCreationMessage The result can be later sent using

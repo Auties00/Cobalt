@@ -2345,8 +2345,7 @@ public class Whatsapp {
         var range = createRange(chat.toJid(), true);
         var clearChatAction = ClearChatAction.of(range);
         var syncAction = ActionValueSync.of(clearChatAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
-                .toString(), booleanToInt(keepStarredMessages), "0");
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
