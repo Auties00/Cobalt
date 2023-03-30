@@ -131,20 +131,21 @@ public class ButtonsTest implements Listener {
         if (skip) {
             return;
         }
+        var chat = api.store().findChatByName("Test2").orElseThrow();
         log("Sending buttons...");
         var emptyButtons = ButtonsMessage.simpleBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, emptyButtons).join();
+        api.sendMessage(chat, emptyButtons).join();
         var textButtons = ButtonsMessage.simpleBuilder()
                 .header(TextMessage.of("A nice header"))
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, textButtons).join();
+        api.sendMessage(chat, textButtons).join();
         var document = DocumentMessage.simpleBuilder()
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
                 .title("Pdf test")
@@ -157,7 +158,7 @@ public class ButtonsTest implements Listener {
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, documentButtons).join();
+        api.sendMessage(chat, documentButtons).join();
         var image = ImageMessage.simpleBuilder()
                 .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
@@ -168,7 +169,7 @@ public class ButtonsTest implements Listener {
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, imageButtons).join();
+        api.sendMessage(chat, imageButtons).join();
         log("Sent buttons");
     }
 

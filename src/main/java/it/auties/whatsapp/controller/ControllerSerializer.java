@@ -5,8 +5,7 @@ import it.auties.whatsapp.api.ClientType;
 import java.util.UUID;
 
 /**
- * This interface provides a standardized way to serialize a session. Implement this interface and
- * <a href="https://www.baeldung.com/java-spi#3-service-provider">register it in your manifest</a>
+ * This interface provides a standardized way to serialize a session
  */
 public interface ControllerSerializer {
     /**
