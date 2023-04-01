@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.*;
-import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -72,8 +71,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * The context info of this message
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     /**
      * Constructs a new template message

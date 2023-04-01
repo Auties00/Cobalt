@@ -6,10 +6,6 @@ package it.auties.whatsapp.model.message.model;
  */
 public enum MessageCategory {
     /**
-     * Server message
-     */
-    EMPTY,
-    /**
      * Device message
      */
     BUTTON,

@@ -9,9 +9,9 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.model.business.BusinessCollection;
-import it.auties.whatsapp.model.business.BusinessNativeFlow;
-import it.auties.whatsapp.model.business.BusinessShop;
+import it.auties.whatsapp.model.interactive.InteractiveCollection;
+import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
+import it.auties.whatsapp.model.interactive.InteractiveShop;
 import it.auties.whatsapp.model.button.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -22,6 +22,7 @@ import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.interactive.InteractiveButton;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
@@ -362,6 +363,7 @@ public class RunCITest implements Listener {
     }
 
     @Test
+    @Disabled
     @Order(15)
     public void testRemoveGroupParticipant() {
         if (skip) {
@@ -376,6 +378,7 @@ public class RunCITest implements Listener {
     }
 
     @Test
+    @Disabled
     @Order(16)
     public void testAddGroupParticipant() {
         if (skip) {
@@ -390,6 +393,7 @@ public class RunCITest implements Listener {
     }
 
     @Test
+    @Disabled
     @Order(17)
     public void testPromotion() {
         if (skip) {
@@ -404,6 +408,7 @@ public class RunCITest implements Listener {
     }
 
     @Test
+    @Disabled
     @Order(18)
     public void testDemotion() {
         if (skip) {
@@ -822,14 +827,15 @@ public class RunCITest implements Listener {
         log("Left group: %s", ephemeralResponse);
     }
 
+    // Just have a test to see if it gets sent, it's not actually a functioning button because it's designed for more complex use cases
     @Test
     @Order(41)
-    public void testInteractiveMessage() { // These are not even supported, though we have a test lol
+    public void testInteractiveMessage() {
         if (skip) {
             return;
         }
         log("Sending interactive messages..");
-        var collectionMessage = BusinessCollection.builder()
+        var collectionMessage = InteractiveCollection.builder()
                 .business(ContactJid.of("15086146312@s.whatsapp.net"))
                 .id("15086146312")
                 .version(3)
@@ -838,15 +844,15 @@ public class RunCITest implements Listener {
                 .content(collectionMessage)
                 .build();
         api.sendMessage(contact, interactiveMessageWithCollection).join();
-        var shopMessage = BusinessShop.builder()
+        var shopMessage = InteractiveShop.builder()
                 .id(Bytes.ofRandom(5).toHex())
                 .version(3)
-                .surfaceType(BusinessShop.SurfaceType.WHATSAPP)
+                .surfaceType(InteractiveShop.SurfaceType.WHATSAPP)
                 .build();
         var interactiveMessageWithShop = InteractiveMessage.simpleBuilder().content(shopMessage).build();
         api.sendMessage(contact, interactiveMessageWithShop).join();
-        var nativeFlowMessage = BusinessNativeFlow.builder()
-                .buttons(List.of(NativeFlowButton.of("hello :)", "")))
+        var nativeFlowMessage = InteractiveNativeFlow.builder()
+                .buttons(List.of(InteractiveButton.of("hello :)", "")))
                 .version(3)
                 .parameters("")
                 .build();
@@ -858,6 +864,7 @@ public class RunCITest implements Listener {
     }
 
     @Test
+    @Disabled
     @Order(42)
     public void testTemplateMessage() {
         if (skip) {

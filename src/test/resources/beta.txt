@@ -1,0 +1,55 @@
+  private void calculateHash(MessageInfo info, boolean recipient) {
+        socketHandler.queryCompanionDevices().join();
+        var identityKeys = new ArrayList<byte[]>();
+        var indexes = new ArrayList<Integer>();
+        populateIdentityKeys(identityKeys, indexes, recipient);
+        var concatenatedIdentityKeys = Bytes.of(identityKeys.toArray(byte[][]::new)).toByteArray();
+        var identityHash = Sha256.calculate(concatenatedIdentityKeys);
+        var participantHash = Arrays.copyOf(identityHash, 10); // get this from md_icdc_hash_length: Math.max(e, 8)
+        var messageMetadata = info.message().deviceInfo().deviceListMetadata();
+        if(recipient) {
+            messageMetadata.recipientKeyHash(participantHash);
+            messageMetadata.recipientTimestamp(info.timestampSeconds());
+            return;
+        }
+
+        messageMetadata.senderKeyHash(participantHash);
+        if(indexes.size() != store().userCompanionDevices().size()) {
+            messageMetadata.senderKeyIndexes(indexes);
+        }
+        messageMetadata.senderTimestamp(info.timestampSeconds());
+    }
+
+    private void populateIdentityKeys(List<byte[]> identityKeys, List<Integer> indexes, boolean recipient) {
+        for (var entry : store().userCompanionDeviceKeyIndexes().entrySet()) {
+            var session = keys().findSessionByAddress(entry.getKey().toSignalAddress());
+            if (session.isEmpty()) {
+                continue;
+            }
+
+            var key = session.get()
+                    .currentState()
+                    .map(SessionState::remoteIdentityKey)
+                    .map(KeyHelper::withoutHeader);
+            if (key.isEmpty()) {
+                continue;
+            }
+
+            indexes.add(entry.getValue());
+            identityKeys.add(key.get());
+        }
+        if (!recipient) {
+            identityKeys.add(keys().identityKeyPair().publicKey());
+            indexes.add(store().userCompanionDeviceKeyIndexes().get(store().userCompanionJid()));
+        }
+        identityKeys.sort((first, second) -> {
+            for (var index = 0; index < first.length; index++) {
+                var firstValue = Byte.toUnsignedInt(first[index]);
+                var secondValue = Byte.toUnsignedInt(second[index]);
+                if (firstValue != secondValue) {
+                    return firstValue - secondValue;
+                }
+            }
+            return first.length - second.length;
+        });
+    }

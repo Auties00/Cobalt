@@ -336,6 +336,15 @@ public class MessageContainer implements ProtobufMessage {
     private DeviceContextInfo deviceInfo = DeviceContextInfo.of();
 
     /**
+     * Returns an empty message container
+     *
+     * @return a non-null container
+     */
+    public static MessageContainer empty(){
+        return MessageContainer.of(EMPTY_MESSAGE);
+    }
+
+    /**
      * Constructs a new MessageContainerBuilder from a message of any type
      *
      * @param message the message that the new container should wrap
@@ -833,7 +842,7 @@ public class MessageContainer implements ProtobufMessage {
      * @return a boolean
      */
     public boolean isEmpty() {
-        return hasCategory(MessageCategory.EMPTY);
+        return hasType(MessageType.EMPTY);
     }
 
     /**

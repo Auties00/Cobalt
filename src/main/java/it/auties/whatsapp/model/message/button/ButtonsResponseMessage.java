@@ -45,8 +45,7 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
      * The context info of this message
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 4, name = "type", type = MESSAGE)
     private ResponseType responseType;

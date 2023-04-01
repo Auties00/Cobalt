@@ -6,9 +6,8 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.product.ProductBody;
+import it.auties.whatsapp.model.interactive.InteractiveBody;
 import lombok.AllArgsConstructor;
-import lombok.Builder.Default;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -26,14 +25,13 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @ProtobufName("InteractiveResponseMessage")
 public final class InteractiveResponseMessage extends ContextualMessage {
     @ProtobufProperty(index = 1, name = "body", type = MESSAGE)
-    private ProductBody body;
+    private InteractiveBody body;
 
     @ProtobufProperty(index = 2, name = "nativeFlowResponseMessage", type = MESSAGE)
     private NativeFlowResponseMessage nativeFlowResponseMessage;
 
     @ProtobufProperty(index = 15, name = "contextInfo", type = MESSAGE)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     @Override
     public MessageType type() {

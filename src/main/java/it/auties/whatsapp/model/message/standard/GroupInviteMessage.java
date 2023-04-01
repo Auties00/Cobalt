@@ -75,8 +75,7 @@ public final class GroupInviteMessage extends ContextualMessage {
      * The context info of this message
      */
     @ProtobufProperty(index = 7, type = MESSAGE, implementation = ContextInfo.class)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     /**
      * The type of this invite

@@ -1,19 +1,21 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.message.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
+import it.auties.whatsapp.util.Spec.Signal;
 import lombok.NonNull;
 
 import java.util.NoSuchElementException;
 
-import static java.util.Map.of;
-
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
-    public Node encrypt(byte[] data) {
+    public CipheredMessageResult encrypt(byte[] data) {
+        if(data == null){
+            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
+        }
+
         var currentState = keys.findSenderKeyByName(name).findState();
         var messageKey = currentState.chainKey().toMessageKey();
         var ciphertext = AesCbc.encrypt(messageKey.iv(), data, messageKey.cipherKey());
@@ -21,7 +23,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
                 .privateKey());
         var next = currentState.chainKey().next();
         currentState.chainKey(next);
-        return Node.of("enc", of("v", "2", "type", "skmsg"), senderKeyMessage.serialized());
+        return new CipheredMessageResult(senderKeyMessage.serialized(), Signal.SKMSG);
     }
 
     public byte[] decrypt(byte[] data) {

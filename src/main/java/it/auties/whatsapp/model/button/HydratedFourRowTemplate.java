@@ -195,5 +195,4 @@ public final class HydratedFourRowTemplate implements TemplateFormatter {
     public TemplateFormatterType templateType() {
         return TemplateFormatterType.HYDRATED_FOUR_ROW;
     }
-
 }

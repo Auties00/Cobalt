@@ -808,7 +808,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-null collection
      */
     public Collection<MessageInfo> messages() {
-        return Collections.unmodifiableList(messages);
+        synchronized (messages) {
+            return Collections.unmodifiableList(messages);
+        }
     }
 
     /**

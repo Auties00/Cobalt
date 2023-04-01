@@ -39,8 +39,11 @@ public class BytesHelper {
         return messageToBytes(MessageContainer.of(message));
     }
 
-    @SneakyThrows
     public byte[] messageToBytes(MessageContainer container) {
+        if(container.isEmpty()){
+            return null;
+        }
+
         var padRandomByte = KeyHelper.header();
         var padding = Bytes.newBuffer(padRandomByte).fill((byte) padRandomByte).toByteArray();
         return Bytes.of(Protobuf.writeMessage(container)).append(padding).toByteArray();

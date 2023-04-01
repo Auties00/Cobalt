@@ -4,10 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.crypto.GroupBuilder;
-import it.auties.whatsapp.crypto.GroupCipher;
-import it.auties.whatsapp.crypto.SessionBuilder;
-import it.auties.whatsapp.crypto.SessionCipher;
+import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
@@ -19,10 +16,13 @@ import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
@@ -48,7 +48,6 @@ import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
-import static it.auties.whatsapp.model.business.BusinessStorageType.FACEBOOK;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static it.auties.whatsapp.model.sync.HistorySync.HistorySyncHistorySyncType.RECENT;
@@ -87,6 +86,12 @@ class MessageHandler {
     }
 
     protected CompletableFuture<Void> encode(MessageSendRequest request) {
+        if(request.info().message().isEmpty()){
+            return encodeMessageNode(request)
+                    .thenRunAsync(() -> attributeOutgoingMessage(request))
+                    .exceptionallyAsync(throwable -> onEncodeError(request, throwable));
+        }
+
         return runner.runAsync(() -> encodeMessageNode(request)
                 .thenRunAsync(() -> attributeOutgoingMessage(request))
                 .exceptionallyAsync(throwable -> onEncodeError(request, throwable)));
@@ -115,18 +120,23 @@ class MessageHandler {
         var signalMessage = groupBuilder.createOutgoing(senderName);
         var groupCipher = new GroupCipher(senderName, socketHandler.keys());
         var groupMessage = groupCipher.encrypt(encodedMessage);
+        var messageNode = createMessageNode(request, groupMessage);
         if (request.hasSenderOverride()) {
-            return getGroupRetryDevices(request.overrideSender(), request.force()).thenComposeAsync(allDevices -> createGroupNodes(request.info(), signalMessage, allDevices, request.force()))
-                    .thenApplyAsync(preKeys -> createEncodedMessageNode(request.info(), preKeys, groupMessage, request.additionalAttributes()))
-                    .thenComposeAsync(socketHandler::send);
+            return getGroupRetryDevices(request.overrideSender(), request.force()).thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
+                    .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode, request.additionalAttributes()))
+                    .thenComposeAsync(body -> sendMessageNode(request, body));
         }
         return Optional.ofNullable(request.force() ? groupsCache.getIfPresent(request.info().chatJid()) : null)
                 .map(CompletableFuture::completedFuture)
                 .orElseGet(() -> socketHandler.queryGroupMetadata(request.info().chatJid()))
                 .thenComposeAsync(devices -> getGroupDevices(devices, request.force()))
-                .thenComposeAsync(allDevices -> createGroupNodes(request.info(), signalMessage, allDevices, request.force()))
-                .thenApplyAsync(preKeys -> createEncodedMessageNode(request.info(), preKeys, groupMessage, request.additionalAttributes()))
-                .thenComposeAsync(socketHandler::send);
+                .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
+                .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode, request.additionalAttributes()))
+                .thenComposeAsync(body -> sendMessageNode(request, body));
+    }
+
+    private CompletableFuture<Node> sendMessageNode(MessageSendRequest request, Node body){
+        return socketHandler.send(body);
     }
 
     private CompletableFuture<Node> encodeConversation(MessageSendRequest request) {
@@ -140,16 +150,16 @@ class MessageHandler {
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
         var knownDevices = request.hasSenderOverride() ? List.of(request.overrideSender()) : List.of(sender.toWhatsappJid(), request.info().chatJid());
         return getDevices(knownDevices, true, request.force())
-                .thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage, request.force()))
-                .thenApplyAsync(sessions -> createEncodedMessageNode(request.info(), sessions, null, request.additionalAttributes()))
-                .thenComposeAsync(socketHandler::send);
+                .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
+                .thenApplyAsync(sessions -> createEncodedMessageNode(request, sessions, null, request.additionalAttributes()))
+                .thenComposeAsync(body -> sendMessageNode(request, body));
     }
 
     private boolean isConversation(MessageInfo info) {
         return info.chatJid().type() == ContactJid.Type.USER || info.chatJid().type() == ContactJid.Type.STATUS;
     }
 
-    private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor, Map<String, Object> metadata) {
+    private Node createEncodedMessageNode(MessageSendRequest request, List<Node> preKeys, Node descriptor, Map<String, Object> metadata) {
         var body = new ArrayList<Node>();
         if (!preKeys.isEmpty()) {
             body.add(ofChildren("participants", preKeys));
@@ -161,20 +171,22 @@ class MessageHandler {
             var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
             body.add(Node.of("device-identity", identity));
         }
-        if(info.message().content() instanceof ButtonMessage) {
-            var attributes = Attributes.of()
-                    .put("host_storage", FACEBOOK.index())
-                    .put("actual_actors", 2) //BSP.index())
-                    .put("privacy_mode_ts", "1612483200") // Clock.nowSeconds()
-                    .toMap();
-            body.add(Node.ofAttributes("biz", attributes));
+        if(request.info().message().content() instanceof ButtonMessage buttonMessage) {
+            if(buttonMessage.type() == MessageType.TEMPLATE){
+                body.add(Node.ofAttributes("hsm", getButtonArgs(buttonMessage)));
+            }else {
+                var type = getButtonType(request.info().message());
+                if(type != null) {
+                    var description = Node.ofAttributes(type, getButtonArgs(buttonMessage));
+                    body.add(Node.ofChildren("biz", description));
+                }
+            }
         }
-
         var attributes = Attributes.ofNullable(metadata)
-                .put("id", info.id())
-                .put("to", info.chatJid())
+                .put("id", request.info().id())
+                .put("to", request.info().chatJid())
                 .put("type", "text")
-                .put("duration", "900", () -> info.message().type() == MessageType.LIVE_LOCATION)
+                .put("duration", "900", () -> request.info().message().type() == MessageType.LIVE_LOCATION)
                 .toMap();
         return ofChildren("message", attributes, body);
     }
@@ -188,26 +200,26 @@ class MessageHandler {
                 .anyMatch("pkmsg"::equals);
     }
 
-    private CompletableFuture<List<Node>> createConversationNodes(List<ContactJid> contacts, byte[] message, byte[] deviceMessage, boolean force) {
+    private CompletableFuture<List<Node>> createConversationNodes(MessageSendRequest request, List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
         var partitioned = contacts.stream()
                 .collect(partitioningBy(contact -> Objects.equals(contact.user(), socketHandler.store().userCompanionJid().user())));
-        var companions = querySessions(partitioned.get(true), force).thenApplyAsync(ignored -> createMessageNodes(partitioned.get(true), deviceMessage));
-        var others = querySessions(partitioned.get(false), force).thenApplyAsync(ignored -> createMessageNodes(partitioned.get(false), message));
+        var companions = querySessions(partitioned.get(true), request.force()).thenApplyAsync(ignored -> createMessageNodes(request, partitioned.get(true), deviceMessage));
+        var others = querySessions(partitioned.get(false), request.force()).thenApplyAsync(ignored -> createMessageNodes(request, partitioned.get(false), message));
         return companions.thenCombineAsync(others, (first, second) -> toSingleList(first, second));
     }
 
-    private CompletableFuture<List<Node>> createGroupNodes(MessageInfo info, byte[] distributionMessage, List<ContactJid> participants, boolean force) {
-        Validate.isTrue(info.chat().isGroup(), "Cannot send group message to non-group");
+    private CompletableFuture<List<Node>> createGroupNodes(MessageSendRequest request, byte[] distributionMessage, List<ContactJid> participants, boolean force) {
+        Validate.isTrue(request.info().chat().isGroup(), "Cannot send group message to non-group");
         var missingParticipants = participants.stream()
-                .filter(participant -> !info.chat().participantsPreKeys().contains(participant))
+                .filter(participant -> !request.info().chat().participantsPreKeys().contains(participant))
                 .toList();
         if (missingParticipants.isEmpty()) {
             return completedFuture(List.of());
         }
-        var whatsappMessage = new SenderKeyDistributionMessage(info.chatJid().toString(), distributionMessage);
+        var whatsappMessage = new SenderKeyDistributionMessage(request.info().chatJid().toString(), distributionMessage);
         var paddedMessage = BytesHelper.messageToBytes(whatsappMessage);
-        return querySessions(missingParticipants, force).thenApplyAsync(ignored -> createMessageNodes(missingParticipants, paddedMessage))
-                .thenApplyAsync(results -> savePreKeys(info.chat(), missingParticipants, results));
+        return querySessions(missingParticipants, force).thenApplyAsync(ignored -> createMessageNodes(request, missingParticipants, paddedMessage))
+                .thenApplyAsync(results -> savePreKeys(request.info().chat(), missingParticipants, results));
     }
 
     private List<Node> savePreKeys(Chat group, List<ContactJid> missingParticipants, List<Node> results) {
@@ -239,14 +251,14 @@ class MessageHandler {
                 .thenAcceptAsync(this::parseSessions);
     }
 
-    private List<Node> createMessageNodes(List<ContactJid> contacts, byte[] message) {
-        return contacts.stream().map(contact -> createMessageNode(contact, message)).toList();
+    private List<Node> createMessageNodes(MessageSendRequest request, List<ContactJid> contacts, byte[] message) {
+        return contacts.stream().map(contact -> createMessageNode(request, contact, message)).toList();
     }
 
-    private Node createMessageNode(ContactJid contact, byte[] message) {
+    private Node createMessageNode(MessageSendRequest request, ContactJid contact, byte[] message) {
         var cipher = new SessionCipher(contact.toSignalAddress(), socketHandler.keys());
         var encrypted = cipher.encrypt(message);
-        return ofChildren("to", of("jid", contact), encrypted);
+        return ofChildren("to", of("jid", contact), createMessageNode(request, encrypted));
     }
 
     private CompletableFuture<List<ContactJid>> getGroupRetryDevices(ContactJid contactJid, boolean force) {
@@ -386,6 +398,59 @@ class MessageHandler {
                 .map(BusinessVerifiedNameDetails::name);
     }
 
+    private Node createMessageNode(MessageSendRequest request, CipheredMessageResult groupMessage) {
+        var mediaType = getMediaType(request.info().message());
+        var attributes = Attributes.of()
+                .put("v", "2")
+                .put("type", groupMessage.type())
+                .put("mediatype", mediaType, Objects::nonNull)
+                .toMap();
+        return Node.of("enc", attributes, groupMessage.message());
+    }
+
+    private String getButtonType(MessageContainer container){
+        return switch (container.type()){
+            case BUTTONS -> "buttons";
+            case BUTTONS_RESPONSE -> "buttons_response";
+            case INTERACTIVE_RESPONSE -> "interactive_response";
+            case LIST -> "list";
+            case LIST_RESPONSE -> "list_response";
+            default -> null;
+        };
+    }
+
+    private Map<String, Object> getButtonArgs(ButtonMessage buttonMessage) {
+        if(buttonMessage instanceof TemplateMessage templateMessage){
+            return Map.of("category", templateMessage.id());
+        }
+
+        if (buttonMessage instanceof ListMessage listMessage) {
+            return Map.of("v", "2", "type", listMessage.listType().name().toLowerCase());
+        }
+
+        return Map.of();
+    }
+
+    private String getMediaType(MessageContainer container){
+        return switch (container.content()){
+            case ImageMessage ignored -> "image";
+            case VideoMessage videoMessage -> videoMessage.gifPlayback() ? "gif" : "video";
+            case AudioMessage audioMessage -> audioMessage.voiceMessage() ? "ptt" : "audio";
+            case ContactMessage ignored -> "vcard";
+            case DocumentMessage ignored -> "document";
+            case ContactsArrayMessage ignored -> "contact_array";
+            case LiveLocationMessage ignored -> "livelocation";
+            case StickerMessage ignored -> "sticker";
+            case ListMessage ignored -> "list";
+            case ListResponseMessage ignored -> "list_response";
+            case ButtonsResponseMessage ignored -> "buttons_response";
+            case PaymentOrderMessage ignored -> "order";
+            case ProductMessage ignored -> "product";
+            case NativeFlowResponseMessage ignored -> "native_flow_response";
+            default -> null;
+        };
+    }
+
     private void decodeMessage(Node infoNode, Node messageNode, String businessName) {
         try {
             var offline = infoNode.attributes().hasKey("offline");
@@ -417,6 +482,10 @@ class MessageHandler {
             }
             var key = keyBuilder.id(id).build();
             if (messageNode == null) {
+                if(sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null)){
+                    return;
+                }
+
                 socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
                 socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
@@ -455,7 +524,10 @@ class MessageHandler {
     }
 
     private boolean sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant, String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
-        logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
+        if(encodedMessage != null) {
+            logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
+        }
+
         if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
             return false;
         }

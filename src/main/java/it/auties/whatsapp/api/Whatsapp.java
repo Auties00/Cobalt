@@ -44,15 +44,11 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
-import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -1164,8 +1160,6 @@ public class Whatsapp {
         info.key().chatJid(info.chatJid().toWhatsappJid());
         info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toWhatsappJid());
         fixEphemeralMessage(info);
-        calculateHash(info, true);
-        calculateHash(info, false);
         switch (info.message().content()) {
             case TextMessage textMessage -> attributeTextMessage(textMessage);
             case MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
@@ -1174,61 +1168,6 @@ public class Whatsapp {
             case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
             case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
             default -> {}
-        }
-    }
-
-    private void calculateHash(MessageInfo info, boolean recipient) {
-        socketHandler.queryCompanionDevices().join();
-        try(var out = new ByteArrayOutputStream()) {
-            var indexes = new ArrayList<Integer>();
-            for (var entry : store().userCompanionDeviceKeyIndexes().entrySet()) {
-                if(Objects.equals(entry.getKey(), store().userCompanionJid())){
-                    var jid = recipient ? info.chatJid() : info.senderJid();
-                    if (!Objects.equals(jid.user(), store().userCompanionJid().user())) {
-                        continue;
-                    }
-
-                    var key = keys().identityKeyPair().publicKey();
-                    out.writeBytes(KeyHelper.withoutHeader(key));
-                    indexes.add(store().userCompanionDeviceKeyIndexes().get(info.senderJid().toWhatsappJid()));
-                    continue;
-                }
-
-                var session = keys().findSessionByAddress(entry.getKey().toSignalAddress());
-                if (session.isEmpty()) {
-                    continue;
-                }
-
-                var key = session.get()
-                        .currentState()
-                        .map(SessionState::remoteIdentityKey)
-                        .map(KeyHelper::withoutHeader);
-                if (key.isEmpty()) {
-                    continue;
-                }
-
-                indexes.add(entry.getValue());
-                out.writeBytes(key.get());
-            }
-
-            var hash = Arrays.copyOf(Sha256.calculate(out.toByteArray()), 10); // get this from md_icdc_hash_length: Math.max(e, 8)
-            var metadata = info.message().deviceInfo().deviceListMetadata();
-            if(recipient) {
-                metadata.recipientKeyHash(hash);
-                if(indexes.size() != store().userCompanionDevices().size()) {
-                    metadata.recipientKeyIndexes(indexes);
-                }
-                metadata.senderTimestamp(info.timestampSeconds());
-                return;
-            }
-
-            metadata.senderKeyHash(hash);
-            if(indexes.size() != store().userCompanionDevices().size()) {
-                metadata.senderKeyIndexes(indexes);
-            }
-            metadata.senderTimestamp(info.timestampSeconds());
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot close output", exception);
         }
     }
 
@@ -2347,8 +2286,7 @@ public class Whatsapp {
         var range = createRange(chat.toJid(), true);
         var clearChatAction = ClearChatAction.of(range);
         var syncAction = ActionValueSync.of(clearChatAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
-                .toString(), booleanToInt(keepStarredMessages), "0");
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 

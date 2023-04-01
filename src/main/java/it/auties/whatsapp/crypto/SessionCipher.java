@@ -2,7 +2,6 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
@@ -12,6 +11,7 @@ import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.util.KeyHelper;
+import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
@@ -23,11 +23,13 @@ import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
 import static it.auties.whatsapp.util.Spec.Signal.*;
-import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
-    public Node encrypt(byte @NonNull [] data) {
+    public CipheredMessageResult encrypt(byte[] data) {
+        if(data == null){
+            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
+        }
         var currentState = loadSession().currentState()
                 .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
         Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key", SecurityException.class);
@@ -41,11 +43,11 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
         var encryptedMessageType = getMessageType(currentState);
         var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
-        return Node.of("enc", of("v", "2", "type", encryptedMessageType), encryptedMessage);
+        return new CipheredMessageResult(encryptedMessage, encryptedMessageType);
     }
 
     private String getMessageType(SessionState currentState) {
-        return currentState.hasPreKey() ? "pkmsg" : "msg";
+        return currentState.hasPreKey() ? Signal.PKMSG : Signal.MSG;
     }
 
     private byte[] encrypt(SessionState state, SessionChain chain, byte[] key, byte[] encrypted) {

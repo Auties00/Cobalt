@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.business;
+package it.auties.whatsapp.model.interactive;
 
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessCollection implements InteractiveMessageContent {
+public final class InteractiveCollection implements InteractiveMessageContent {
     /**
      * The business jid of the message
      */

@@ -44,7 +44,7 @@ public final class ListResponseMessage extends ButtonReplyMessage {
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = ContextInfo.class)
     @Builder.Default
-    private ContextInfo contextInfo = new ContextInfo();
+    private ContextInfo contextInfo;
 
     /**
      * The description of this message

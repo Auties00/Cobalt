@@ -13,15 +13,24 @@ import java.util.List;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
+/**
+ * A model class that represents a section inside a list of products
+ */
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class ProductSection implements ProtobufMessage {
+    /**
+     * The title of the section
+     */
     @ProtobufProperty(index = 1, type = STRING)
     private String title;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = Product.class, repeated = true)
-    private List<Product> products;
+    /**
+     * The products in this section
+     */
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProductSectionEntry.class, repeated = true)
+    private List<ProductSectionEntry> products;
 }
