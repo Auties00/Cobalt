@@ -125,7 +125,7 @@ public final class Store extends Controller<Store> {
     @Getter
     @Setter
     private ConcurrentHashMap<String, String> properties = new ConcurrentHashMap<>();
-    
+
     /**
      * The non-null map of chats
      */
@@ -139,21 +139,21 @@ public final class Store extends Controller<Store> {
      */
     @NonNull
     @Default
-    private Map<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
 
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
-    private Map<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
 
     /**
      * The non-null map of privacy settings
      */
     @NonNull
     @Default
-    private Map<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
 
     /**
      * Whether this store has already received the snapshot from Whatsapp Web containing chats and
@@ -686,7 +686,7 @@ public final class Store extends Controller<Store> {
         findMessageByKey(reactionMessage.key())
                 .ifPresent(message -> message.reactions().add(reactionMessage));
     }
-    
+
     /**
      * Returns the chats pinned to the top sorted new to old
      *
