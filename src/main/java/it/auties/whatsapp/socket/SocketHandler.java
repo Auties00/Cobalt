@@ -228,24 +228,32 @@ public class SocketHandler implements SocketListener {
         keys.clearReadWriteKey();
         return switch (reason) {
             case DISCONNECTED -> {
-                session.close();
+                if(session != null) {
+                    session.close();
+                }
                 yield CompletableFuture.completedFuture(null);
             }
             case RECONNECTING -> {
-                session.close();
+                if(session != null) {
+                    session.close();
+                }
                 yield connect();
             }
             case LOGGED_OUT -> {
                 deleteCurrentSession();
                 store.resolveAllPendingRequests();
-                session.close();
+                if(session != null) {
+                    session.close();
+                }
                 yield CompletableFuture.completedFuture(null);
             }
             case RESTORE -> {
                 deleteCurrentSession();
                 store.resolveAllPendingRequests();
                 var oldListeners = new ArrayList<>(store.listeners());
-                session.close();
+                if(session != null) {
+                    session.close();
+                }
                 options.uuid(UUID.randomUUID());
                 this.keys = Keys.random(options);
                 this.store = Store.random(options);
