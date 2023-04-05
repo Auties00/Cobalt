@@ -1,60 +1,13 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.util.Json;
 
 // Just used for testing locally
 public class WebTest {
-    private static final String messageJson = """
-            {
-               "templateMessage":{
-                  "content":{
-                     "templateId":"826505928205159",
-                     "body":"Hi \\nWelcome to 360dialog. How would you like to proceed?",
-                     "buttons":[
-                        {
-                           "quickReplyButton":{
-                              "text":"Speak with an agent"
-                           }
-                        },
-                        {
-                           "quickReplyButton":{
-                              "text":"Get Pricing"
-                           }
-                        }
-                     ]
-                  },
-                  "fourRowTemplateFormat":{
-                     "content":{
-                        "namespace":"c8ae5f90_307a_ca4c_b8f6_d1e2a2573574|en",
-                        "elementName":"interactive_template_sandbox",
-                        "fallbackLg":"en",
-                        "templateMessage":{
-                           "content":{
-                             \s
-                           }
-                        }
-                     }
-                  }
-               }
-            }
-                """;
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var whatsapp = Whatsapp.lastConnection()
-                .addLoggedInListener(api -> {
-                   try {
-                       System.out.printf("Connected: %s%n", api.store().privacySettings());
-                       var result = Json.readValue(messageJson, MessageContainer.class);
-                       api.sendMessage(ContactJid.of("393495089819"), result)
-                               .thenRun(() -> System.out.println("Sent2"));
-                       System.out.println("Sent");
-                   }catch (Throwable throwable){
-                       throwable.printStackTrace();
-                   }
-                })
+                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

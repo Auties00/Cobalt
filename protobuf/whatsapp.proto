@@ -105,9 +105,7 @@ message CertChain {
       optional uint64 notBefore = 4;
       optional uint64 notAfter = 5;
     }
-
   }
-
 }
 
 message Chain {

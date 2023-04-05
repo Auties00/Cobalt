@@ -166,25 +166,13 @@ class AppStateHandler {
         var nodes = getPullNodes(patchTypes, tempStates);
         return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
                 .thenApplyAsync(this::parseSyncRequest)
-                .thenApplyAsync(records -> isPullSuccessful(records) ? records : null)
-                .thenApplyAsync(records -> records == null ? null : decodeSyncs(tempStates, records))
+                .thenApplyAsync(records -> decodeSyncs(tempStates, records))
                 .thenComposeAsync(this::handlePullResult)
                 .orTimeout(TIMEOUT, TimeUnit.SECONDS);
     }
 
     private CompletableFuture<Boolean> handlePullResult(List<PatchType> remaining) {
-        if (remaining == null) {
-            return completedFuture(false);
-        }
-        if (remaining.isEmpty()) {
-            return completedFuture(true);
-        }
-        return pullUninterruptedly(remaining);
-    }
-
-    private boolean isPullSuccessful(List<SnapshotSyncRecord> records) {
-        var count = records.stream().map(SnapshotSyncRecord::patches).mapToLong(Collection::size).sum();
-        return count != 0;
+        return remaining.isEmpty() ? completedFuture(true) : pullUninterruptedly(remaining);
     }
 
     private List<Node> getPullNodes(List<PatchType> patchTypes, Map<PatchType, LTHashState> tempStates) {

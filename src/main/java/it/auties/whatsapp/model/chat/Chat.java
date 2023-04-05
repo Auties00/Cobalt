@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
@@ -807,6 +808,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-null collection
      */
+    @JsonGetter
     public Collection<MessageInfo> messages() {
         synchronized (messages) {
             return Collections.unmodifiableList(messages);

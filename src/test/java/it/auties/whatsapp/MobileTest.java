@@ -2,24 +2,43 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
+import it.auties.whatsapp.model.button.HydratedQuickReplyButton;
+import it.auties.whatsapp.model.button.HydratedTemplateButton;
+import it.auties.whatsapp.model.button.HydratedURLButton;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
+import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class MobileTest {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
-                .phoneNumber("18542177236")
+                .phoneNumber("17154086027")
                 .verificationCodeMethod(VerificationCodeMethod.CALL)
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
         Whatsapp.lastConnection(options)
-                .addLoggedInListener(api -> System.out.println("Connected: " + api.store().userCompanionJid()))
-                .addNewMessageListener((api, message, offline) -> {
-
+                .addLoggedInListener(api -> {
+                    System.out.println("Connected: " + api.store().userCompanionJid());
+                    var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
+                    var urlButton = HydratedTemplateButton.of(HydratedURLButton.of("Search it", "https://google.com"));
+                    var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder()
+                            .body("A nice body")
+                            .footer("A nice footer")
+                            .buttons(List.of(quickReplyButton, urlButton))
+                            .build();
+                    var message = HighlyStructuredMessage.builder()
+                            .templateMessage(TemplateMessage.of(fourRowTemplate))
+                            .build();
+                    api.sendMessage(ContactJid.of("393495089819"), message).join();
                 })
+                .addNewMessageListener((api, message, offline) -> System.out.println(message))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))

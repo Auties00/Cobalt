@@ -12,7 +12,6 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.standard.*;
 import lombok.*;
-import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -270,6 +269,12 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
                     .filter(entry -> entry.index() == index)
                     .findFirst()
                     .orElse(HeaderType.UNKNOWN);
+        }
+
+        public boolean hasMedia(){
+            return this == DOCUMENT
+                    || this == IMAGE
+                    || this == VIDEO;
         }
     }
 }

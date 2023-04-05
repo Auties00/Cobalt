@@ -106,7 +106,7 @@ class AuthHandler {
                 .osVersion(socketHandler.options().osVersion())
                 .device(socketHandler.options().deviceName())
                 .manufacturer(socketHandler.options().deviceManufacturer())
-                .platform(mobile ? UserAgentPlatform.ANDROID : UserAgent.UserAgentPlatform.WEB)
+                .platform(mobile ? UserAgentPlatform.IOS : UserAgentPlatform.WEB)
                 .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .build();
@@ -130,7 +130,7 @@ class AuthHandler {
                     .device(0)
                     .dnsSource(getDnsSource())
                     .passive(false)
-                    .pushName("test")
+                    .pushName("WhatsappWeb4J")
                     .username(parseLong(phoneNumber.toJid().user()))
                     .build();
         }
@@ -214,6 +214,8 @@ class AuthHandler {
         sendVerificationCode(phoneNumber, userAgent, code);
         socketHandler.store().userCompanionJid(ContactJid.of(options.phoneNumber()));
         socketHandler.keys().registered(true);
+        socketHandler.keys().serialize(true);
+        socketHandler.store().serialize(true);
     }
 
     private String createUserAgent(MobileOptions options) {

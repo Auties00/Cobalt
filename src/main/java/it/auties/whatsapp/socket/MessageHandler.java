@@ -86,12 +86,6 @@ class MessageHandler {
     }
 
     protected CompletableFuture<Void> encode(MessageSendRequest request) {
-        if(request.info().message().isEmpty()){
-            return encodeMessageNode(request)
-                    .thenRunAsync(() -> attributeOutgoingMessage(request))
-                    .exceptionallyAsync(throwable -> onEncodeError(request, throwable));
-        }
-
         return runner.runAsync(() -> encodeMessageNode(request)
                 .thenRunAsync(() -> attributeOutgoingMessage(request))
                 .exceptionallyAsync(throwable -> onEncodeError(request, throwable)));
@@ -124,7 +118,7 @@ class MessageHandler {
         if (request.hasSenderOverride()) {
             return getGroupRetryDevices(request.overrideSender(), request.force()).thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode, request.additionalAttributes()))
-                    .thenComposeAsync(body -> sendMessageNode(request, body));
+                    .thenComposeAsync(socketHandler::send);
         }
         return Optional.ofNullable(request.force() ? groupsCache.getIfPresent(request.info().chatJid()) : null)
                 .map(CompletableFuture::completedFuture)
@@ -132,11 +126,7 @@ class MessageHandler {
                 .thenComposeAsync(devices -> getGroupDevices(devices, request.force()))
                 .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
                 .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode, request.additionalAttributes()))
-                .thenComposeAsync(body -> sendMessageNode(request, body));
-    }
-
-    private CompletableFuture<Node> sendMessageNode(MessageSendRequest request, Node body){
-        return socketHandler.send(body);
+                .thenComposeAsync(socketHandler::send);
     }
 
     private CompletableFuture<Node> encodeConversation(MessageSendRequest request) {
@@ -152,7 +142,7 @@ class MessageHandler {
         return getDevices(knownDevices, true, request.force())
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request, sessions, null, request.additionalAttributes()))
-                .thenComposeAsync(body -> sendMessageNode(request, body));
+                .thenComposeAsync(socketHandler::send);
     }
 
     private boolean isConversation(MessageInfo info) {
@@ -172,11 +162,11 @@ class MessageHandler {
             body.add(Node.of("device-identity", identity));
         }
         if(request.info().message().content() instanceof ButtonMessage buttonMessage) {
-            if(buttonMessage.type() == MessageType.TEMPLATE){
-                body.add(Node.ofAttributes("hsm", getButtonArgs(buttonMessage)));
+            if(buttonMessage.type() == MessageType.HIGHLY_STRUCTURED){
+                body.add(Node.ofAttributes("hsm", Map.of()));
             }else {
                 var type = getButtonType(request.info().message());
-                if(type != null) {
+                if (type != null) {
                     var description = Node.ofAttributes(type, getButtonArgs(buttonMessage));
                     body.add(Node.ofChildren("biz", description));
                 }
@@ -420,15 +410,11 @@ class MessageHandler {
     }
 
     private Map<String, Object> getButtonArgs(ButtonMessage buttonMessage) {
-        if(buttonMessage instanceof TemplateMessage templateMessage){
-            return Map.of("category", templateMessage.id());
-        }
-
-        if (buttonMessage instanceof ListMessage listMessage) {
-            return Map.of("v", "2", "type", listMessage.listType().name().toLowerCase());
-        }
-
-        return Map.of();
+        return switch (buttonMessage) {
+            case HighlyStructuredMessage ignored -> of("category", "");
+            case ListMessage listMessage -> of("v", "2", "type", listMessage.listType().name().toLowerCase());
+            default -> Map.of();
+        };
     }
 
     private String getMediaType(MessageContainer container){
@@ -447,6 +433,7 @@ class MessageHandler {
             case PaymentOrderMessage ignored -> "order";
             case ProductMessage ignored -> "product";
             case NativeFlowResponseMessage ignored -> "native_flow_response";
+            case ButtonsMessage buttonsMessage -> buttonsMessage.headerType().hasMedia() ? buttonsMessage.headerType().name().toLowerCase() : null;
             default -> null;
         };
     }
