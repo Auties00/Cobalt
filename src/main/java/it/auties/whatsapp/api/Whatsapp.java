@@ -1228,7 +1228,7 @@ public class Whatsapp {
                 .orElse(null);
         textMessage.matchedText(uri);
         textMessage.canonicalUrl(requireNonNullElse(videoUri, match.result().uri()).toString());
-        textMessage.thumbnail(Medias.getPreview(imageUri).orElse(null));
+        textMessage.thumbnail(Medias.download(imageUri).orElse(null));
         textMessage.description(match.result().siteDescription());
         textMessage.title(match.result().title());
         textMessage.previewType(videoUri != null ? VIDEO : NONE);

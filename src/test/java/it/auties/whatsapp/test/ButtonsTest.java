@@ -119,7 +119,6 @@ public class ButtonsTest implements Listener {
         return Arrays.stream(params).map(entry -> "***").toArray(String[]::new);
     }
 
-    @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(1)
     public void testButtonsMessage() {

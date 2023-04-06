@@ -51,47 +51,35 @@ public class Medias {
     private final int RANDOM_FILE_NAME_LENGTH = 8;
     private final Map<String, Path> CACHE = new ConcurrentHashMap<>();
 
-    public Optional<byte[]> getPreview(URI imageUri) {
+    public byte[] getProfilePic(byte[] file) {
+        try {
+            try(var inputStream = new ByteArrayInputStream(file)) {
+                var inputImage = ImageIO.read(inputStream);
+                var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
+                var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
+                var graphics2D = outputImage.createGraphics();
+                graphics2D.drawImage(scaledImage, 0, 0, null);
+                graphics2D.dispose();
+                try (var outputStream = new ByteArrayOutputStream()) {
+                    ImageIO.write(outputImage, "jpg", outputStream);
+                    return outputStream.toByteArray();
+                }
+            }
+        } catch (Throwable exception) {
+            return file;
+        }
+    }
+
+    public Optional<byte[]> download(URI imageUri) {
         try {
             if (imageUri == null) {
                 return Optional.empty();
             }
             var bytes = imageUri.toURL().openConnection().getInputStream().readAllBytes();
-            return getImage(bytes, Format.JPG, -1);
+            return Optional.of(bytes);
         } catch (IOException exception) {
             return Optional.empty();
         }
-    }
-
-    private Optional<byte[]> getImage(byte[] file, Format format, int dimensions) {
-        try {
-            if (dimensions <= 0) {
-                return Optional.of(file);
-            }
-            var image = ImageIO.read(new ByteArrayInputStream(file));
-            if (image == null) {
-                return Optional.empty();
-            }
-            var resizedImage = getResizedImage(image, dimensions);
-            var outputStream = new ByteArrayOutputStream();
-            ImageIO.write(resizedImage, format.name().toLowerCase(), outputStream);
-            return Optional.of(outputStream.toByteArray());
-        } catch (IOException exception) {
-            return Optional.empty();
-        }
-    }
-
-    private BufferedImage getResizedImage(BufferedImage originalImage, int size) {
-        var type = originalImage.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
-        var resizedImage = new BufferedImage(size, size, type);
-        var graphics = resizedImage.createGraphics();
-        graphics.drawImage(originalImage, 0, 0, size, size, null);
-        graphics.dispose();
-        graphics.setComposite(AlphaComposite.Src);
-        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        return resizedImage;
     }
 
     public MediaFile upload(byte[] file, MediaMessageType type, MediaConnection mediaConnection) {
@@ -174,7 +162,8 @@ public class Medias {
     }
 
     public Optional<String> getMimeType(String name) {
-        return getExtension(name).map(extension -> Path.of("bogus%s".formatted(extension)))
+        return getExtension(name)
+                .map(extension -> Path.of("bogus%s".formatted(extension)))
                 .flatMap(Medias::getMimeType);
     }
 
@@ -294,38 +283,63 @@ public class Medias {
         return input;
     }
 
+    public Optional<byte[]> getThumbnail(byte[] file, String fileType){
+        return getThumbnail(file, Format.ofDocument(fileType));
+    }
+
     public Optional<byte[]> getThumbnail(byte[] file, Format format) {
         return switch (format) {
-            case JPG, PNG -> getImage(file, format, THUMBNAIL_SIZE);
-            case VIDEO -> getVideo(file);
+            case UNKNOWN -> Optional.empty();
+            case JPG, PNG -> getImageThumbnail(file, format);
+            case PDF -> getPdfThumbnail(file);
+            case PPTX -> getPresentationThumbnail(file);
+            case VIDEO -> getVideoThumbnail(file);
         };
     }
 
-    public Optional<byte[]> getThumbnail(byte[] file, String fileType){
-        return switch (fileType) {
-            case "pdf" -> getPdf(file);
-            case "pptx", "ppt" -> getPresentation(file);
-            default -> Optional.empty();
-        };
-    }
-
-    private Optional<byte[]> getPresentation(byte[] file) {
-        try (var ppt = new XMLSlideShow(new ByteArrayInputStream(file)); var outputStream = new ByteArrayOutputStream()) {
-            if(ppt.getSlides().isEmpty()){
+    private Optional<byte[]> getImageThumbnail(byte[] file, Format format) {
+        try {
+            var image = ImageIO.read(new ByteArrayInputStream(file));
+            if (image == null) {
                 return Optional.empty();
             }
-            var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
-            var graphics2D = thumb.createGraphics();
-            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            ppt.getSlides().get(0).draw(graphics2D);
-            ImageIO.write(thumb, "jpg", outputStream);
+            var type = image.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : image.getType();
+            var resizedImage = new BufferedImage(THUMBNAIL_SIZE, THUMBNAIL_SIZE, type);
+            var graphics = resizedImage.createGraphics();
+            graphics.drawImage(image, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE, null);
+            graphics.dispose();
+            graphics.setComposite(AlphaComposite.Src);
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            var outputStream = new ByteArrayOutputStream();
+            ImageIO.write(resizedImage, format.name().toLowerCase(), outputStream);
             return Optional.of(outputStream.toByteArray());
-        }catch (Throwable throwable){
+        } catch (IOException exception) {
             return Optional.empty();
         }
     }
 
-    private Optional<byte[]> getPdf(byte[] file) {
+    private Optional<byte[]> getVideoThumbnail(byte[] file) {
+        var input = createTempFile(file, true);
+        var output = createTempFile(file, false);
+        try {
+            var process = Runtime.getRuntime()
+                    .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input, THUMBNAIL_SIZE, output));
+            if (process.waitFor() != 0) {
+                return Optional.empty();
+            }
+            return Optional.of(Files.readAllBytes(output));
+        } catch (Throwable throwable) {
+            return Optional.empty();
+        } finally {
+            try {
+                Files.delete(output);
+            } catch (IOException ignored) {}
+        }
+    }
+
+    private Optional<byte[]> getPdfThumbnail(byte[] file) {
         try (var document = PDDocument.load(file); var outputStream = new ByteArrayOutputStream()) {
             var renderer = new PDFRenderer(document);
             var image = renderer.renderImage(0);
@@ -341,48 +355,37 @@ public class Medias {
         }
     }
 
-    private Optional<byte[]> getVideo(byte[] file) {
-        var input = createTempFile(file, true);
-        var output = createTempFile(file, false);
-        try {
-            var process = Runtime.getRuntime()
-                    .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input, Medias.THUMBNAIL_SIZE, output));
-            if (process.waitFor() != 0) {
+    private Optional<byte[]> getPresentationThumbnail(byte[] file) {
+        try (var ppt = new XMLSlideShow(new ByteArrayInputStream(file)); var outputStream = new ByteArrayOutputStream()) {
+            if(ppt.getSlides().isEmpty()){
                 return Optional.empty();
             }
-            return Optional.of(Files.readAllBytes(output));
-        } catch (Throwable throwable) {
+            var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            var graphics2D = thumb.createGraphics();
+            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            ppt.getSlides().get(0).draw(graphics2D);
+            ImageIO.write(thumb, "jpg", outputStream);
+            return Optional.of(outputStream.toByteArray());
+        }catch (Throwable throwable){
             return Optional.empty();
-        } finally {
-            try {
-                Files.delete(output);
-            } catch (IOException ignored) {}
-        }
-    }
-
-    public byte[] getProfilePic(byte[] file) {
-        try {
-            try(var inputStream = new ByteArrayInputStream(file)) {
-                var inputImage = ImageIO.read(inputStream);
-                var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
-                var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
-                var graphics2D = outputImage.createGraphics();
-                graphics2D.drawImage(scaledImage, 0, 0, null);
-                graphics2D.dispose();
-                try (var outputStream = new ByteArrayOutputStream()) {
-                    ImageIO.write(outputImage, "jpg", outputStream);
-                    return outputStream.toByteArray();
-                }
-            }
-        } catch (Throwable exception) {
-            return file;
         }
     }
 
     public enum Format {
+        UNKNOWN,
         PNG,
         JPG,
-        VIDEO
+        VIDEO,
+        PDF,
+        PPTX;
+
+        static Format ofDocument(String fileType){
+            return fileType == null ? UNKNOWN : switch (fileType.toLowerCase()){
+                case "pdf" -> PDF;
+                case "pptx", "ppt" -> PPTX;
+                default -> UNKNOWN;
+            };
+        }
     }
 
     private record FfprobeResult(List<MediaDimensions> streams) {

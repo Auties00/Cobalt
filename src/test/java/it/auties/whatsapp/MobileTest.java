@@ -2,18 +2,13 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
-import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
-import it.auties.whatsapp.model.button.HydratedQuickReplyButton;
-import it.auties.whatsapp.model.button.HydratedTemplateButton;
-import it.auties.whatsapp.model.button.HydratedURLButton;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
-import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 
-import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class MobileTest {
     public static void main(String[] args) {
@@ -26,17 +21,9 @@ public class MobileTest {
         Whatsapp.lastConnection(options)
                 .addLoggedInListener(api -> {
                     System.out.println("Connected: " + api.store().userCompanionJid());
-                    var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
-                    var urlButton = HydratedTemplateButton.of(HydratedURLButton.of("Search it", "https://google.com"));
-                    var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder()
-                            .body("A nice body")
-                            .footer("A nice footer")
-                            .buttons(List.of(quickReplyButton, urlButton))
-                            .build();
-                    var message = HighlyStructuredMessage.builder()
-                            .templateMessage(TemplateMessage.of(fourRowTemplate))
-                            .build();
-                    api.sendMessage(ContactJid.of("393495089819"), message).join();
+                    CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS).execute(() -> {
+                        api.sendMessage(ContactJid.of("393495089819"), "Hello");
+                    });
                 })
                 .addNewMessageListener((api, message, offline) -> System.out.println(message))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

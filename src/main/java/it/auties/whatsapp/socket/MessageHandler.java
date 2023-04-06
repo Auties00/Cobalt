@@ -107,9 +107,7 @@ class MessageHandler {
 
     private CompletableFuture<Node> encodeGroup(MessageSendRequest request) {
         var encodedMessage = BytesHelper.messageToBytes(request.info().message());
-        var senderName = new SenderKeyName(request.info().chatJid().toString(), socketHandler.store()
-                .userCompanionJid()
-                .toSignalAddress());
+        var senderName = new SenderKeyName(request.info().chatJid().toString(), socketHandler.store().userCompanionJid().toSignalAddress());
         var groupBuilder = new GroupBuilder(socketHandler.keys());
         var signalMessage = groupBuilder.createOutgoing(senderName);
         var groupCipher = new GroupCipher(senderName, socketHandler.keys());
@@ -222,18 +220,7 @@ class MessageHandler {
                 .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
                 .map(contact -> ofAttributes("user", of("jid", contact)))
                 .toList();
-        if (missingSessions.isEmpty()) {
-            return completedFuture(null);
-        }
-
-        if (socketHandler.options().clientType() != ClientType.APP_CLIENT) {
-            return querySession(missingSessions);
-        }
-
-        var futures = missingSessions.stream()
-                .map(entry -> querySession(List.of(entry)))
-                .toArray(CompletableFuture[]::new);
-        return CompletableFuture.allOf(futures);
+        return missingSessions.isEmpty() ? completedFuture(null) : querySession(missingSessions);
     }
 
     private CompletableFuture<Void> querySession(List<Node> children){
@@ -468,6 +455,12 @@ class MessageHandler {
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
             var key = keyBuilder.id(id).build();
+            if(key.fromMe() && key.senderJid().filter(entry -> !entry.hasAgent()).isPresent()){
+                socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
+                socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
+                return;
+            }
+
             if (messageNode == null) {
                 if(sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null)){
                     return;

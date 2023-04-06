@@ -216,6 +216,14 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
         private String phoneNumber;
 
         /**
+         * The pushname of the registered user
+         * This is usually set just after registering in the mobile app
+         */
+        @Default
+        @NonNull
+        private String name = "Whatsapp4j";
+
+        /**
          * The method to use to confirm the phone number
          */
         @Default

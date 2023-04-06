@@ -164,7 +164,7 @@ public final class DocumentMessage extends MediaMessage implements InteractiveHe
                 .fileName(fileName)
                 .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media, extension).orElse(1))
                 .title(title)
-                .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, actualMimeType).orElse(null))
+                .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, extension).orElse(null))
                 .thumbnailWidth(THUMBNAIL_WIDTH)
                 .thumbnailHeight(THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))

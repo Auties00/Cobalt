@@ -130,7 +130,7 @@ class AuthHandler {
                     .device(0)
                     .dnsSource(getDnsSource())
                     .passive(false)
-                    .pushName("WhatsappWeb4J")
+                    .pushName(options.name())
                     .username(parseLong(phoneNumber.toJid().user()))
                     .build();
         }
@@ -212,9 +212,10 @@ class AuthHandler {
         var phoneNumber = PhoneNumber.of(options.phoneNumber());
         var userAgent = createUserAgent(options);
         sendVerificationCode(phoneNumber, userAgent, code);
-        socketHandler.store().userCompanionJid(ContactJid.of(options.phoneNumber()));
         socketHandler.keys().registered(true);
         socketHandler.keys().serialize(true);
+        socketHandler.store().userCompanionJid(ContactJid.of(options.phoneNumber()));
+        socketHandler.store().userCompanionName(options.name());
         socketHandler.store().serialize(true);
     }
 
@@ -226,8 +227,7 @@ class AuthHandler {
         var registerOptions = getRegistrationOptions(phoneNumber, entry("code", code.replaceAll("-", "")));
         var codeResponse = sendRegistrationRequest(userAgent,"/register", registerOptions);
         var phoneNumberResponse = Json.readValue(codeResponse.body(), VerificationCodeResponse.class);
-        Validate.isTrue(phoneNumberResponse.status()
-                .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
+        Validate.isTrue(phoneNumberResponse.status().isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
     }
 
     private VerificationCodeResponse askForVerificationCode(PhoneNumber phoneNumber, String userAgent, VerificationCodeMethod method) {
@@ -236,8 +236,7 @@ class AuthHandler {
                 .mnc()), entry("sim_mcc", "000"), entry("sim_mnc", "000"), entry("method", method.type()), entry("reason", ""), entry("hasav", "1"));
         var codeResponse = sendRegistrationRequest(userAgent, "/code", codeOptions);
         var phoneNumberResponse = Json.readValue(codeResponse.body(), VerificationCodeResponse.class);
-        Validate.isTrue(phoneNumberResponse.status()
-                .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
+        Validate.isTrue(phoneNumberResponse.status().isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
         return phoneNumberResponse;
     }
 
