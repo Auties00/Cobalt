@@ -25,7 +25,7 @@ public final class InteractiveCollection implements InteractiveMessageContent {
     /**
      * The business jid of the message
      */
-    @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
+    @ProtobufProperty(index = 1, type = STRING)
     private ContactJid business;
 
     /**

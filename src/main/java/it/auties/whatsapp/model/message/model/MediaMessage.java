@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.model;
 
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.Medias;
@@ -38,23 +39,6 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * The cached decoded media, by default null
      */
     private byte[] decodedMedia;
-
-    @Override
-    public MessageType type() {
-        return mediaType().messageType();
-    }
-
-    @Override
-    public MessageCategory category() {
-        return MessageCategory.MEDIA;
-    }
-
-    /**
-     * Returns the media type of the media that this object wraps
-     *
-     * @return a non-null {@link MediaMessageType}
-     */
-    public abstract MediaMessageType mediaType();
 
     /**
      * Saves this media to the provided path. Throws an error if the media cannot be downloaded
@@ -100,7 +84,24 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     public abstract long mediaKeyTimestamp();
 
     @Override
-    public String mediaName() {
-        return mediaType().keyName();
+    public MessageCategory category() {
+        return MessageCategory.MEDIA;
+    }
+
+    /**
+     * Returns the media type of the media that this object wraps
+     *
+     * @return a non-null {@link MediaMessageType}
+     */
+    public abstract MediaMessageType mediaType();
+
+    @Override
+    public MessageType type() {
+        return mediaType().toMessageType();
+    }
+
+    @Override
+    public AttachmentType attachmentType() {
+        return mediaType().toAttachmentType();
     }
 }

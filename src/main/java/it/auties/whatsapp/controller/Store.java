@@ -61,7 +61,7 @@ public final class Store extends Controller<Store> {
      */
     @Getter
     @Setter
-    private String userLocale;
+    private String locale;
 
     /**
      * The name of the user linked to this account. This field will be null while the user hasn't
@@ -69,14 +69,21 @@ public final class Store extends Controller<Store> {
      */
     @Getter
     @Setter
-    private String userCompanionName;
+    private String name;
+
+    /**
+     * Whether the linked companion is a business account or not
+     */
+    @Getter
+    @Setter
+    private boolean isBusiness;
 
     /**
      * The hash of the companion associated with this session
      */
     @Getter
     @Setter
-    private String userCompanionDeviceHash;
+    private String deviceHash;
 
     /**
      * A map of all the devices that the companion has associated using WhatsappWeb
@@ -86,36 +93,37 @@ public final class Store extends Controller<Store> {
     @Getter
     @Setter
     @Default
-    private LinkedHashMap<ContactJid, Integer> userCompanionDeviceKeyIndexes = new LinkedHashMap<>();
+    private LinkedHashMap<ContactJid, Integer> deviceKeyIndexes = new LinkedHashMap<>();
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
     @Setter
-    private URI userProfilePicture;
+    private URI profilePicture;
 
     /**
-     * The status of the user linked to this account. This field will be null while the user hasn't
-     * logged in yet. Assumed to be non-null otherwise.
+     * The status of the user linked to this account.
+     * This field will be null while the user hasn't logged in yet.
+     * Assumed to be non-null otherwise.
      */
     @Getter
     @Setter
-    private String userStatus;
+    private String about;
 
     /**
      * The user linked to this account. This field will be null while the user hasn't logged in yet.
      */
     @Getter
     @Setter
-    private ContactJid userCompanionJid;
+    private ContactJid jid;
 
     /**
      * The lid user linked to this account. This field will be null while the user hasn't logged in yet.
      */
     @Getter
     @Setter
-    private ContactJid userCompanionLid;
+    private ContactJid lid;
 
     /**
      * The non-null map of properties received by whatsapp
@@ -714,7 +722,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an immutable collection
      */
-    public Collection<Chat> chats() {
+    public List<Chat> chats() {
         return chats.values().stream().sorted(Comparator.comparingLong((Chat chat) -> chat.timestampSeconds()).reversed()).toList();
     }
 
@@ -820,8 +828,8 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional uri
      */
-    public Optional<URI> userProfilePicture() {
-        return Optional.ofNullable(userProfilePicture);
+    public Optional<URI> profilePicture() {
+        return Optional.ofNullable(profilePicture);
     }
 
     /**
@@ -848,9 +856,10 @@ public final class Store extends Controller<Store> {
      *
      * @param type a non-null type
      * @param entry the non-null entry
+     * @return the old privacy setting entry
      */
-    public void addPrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingEntry entry){
-        privacySettings.put(type, entry);
+    public PrivacySettingEntry addPrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingEntry entry){
+        return privacySettings.put(type, entry);
     }
 
     /**
@@ -858,8 +867,20 @@ public final class Store extends Controller<Store> {
      *
      * @return an unmodifiable list
      */
-    public Collection<ContactJid> userCompanionDevices(){
-        return userCompanionDeviceKeyIndexes.keySet();
+    public Collection<ContactJid> linkedDevices(){
+        return deviceKeyIndexes.keySet();
+    }
+
+    /**
+     * Registers a new companion
+     * Only use this method in the mobile api
+     *
+     * @param companion a non-null companion
+     * @param keyId     the id of its key
+     * @return the nullable old key
+     */
+    public Integer addLinkedDevice(@NonNull ContactJid companion, int keyId){
+        return deviceKeyIndexes.put(companion, keyId);
     }
 
     public void dispose() {

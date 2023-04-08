@@ -39,7 +39,7 @@ public final class ProductMessage extends ContextualMessage implements ButtonMes
     /**
      * The jid of the WhatsappBusiness account that owns the product that this message wraps
      */
-    @ProtobufProperty(index = 2, type = STRING, implementation = ContactJid.class)
+    @ProtobufProperty(index = 2, type = STRING)
     private ContactJid businessOwnerJid;
 
     /**

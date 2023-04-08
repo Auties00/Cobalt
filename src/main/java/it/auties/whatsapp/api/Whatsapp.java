@@ -1,6 +1,14 @@
 package it.auties.whatsapp.api;
 
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.ChecksumException;
+import com.google.zxing.FormatException;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.qrcode.QRCodeReader;
 import it.auties.bytes.Bytes;
+import it.auties.curve25519.Curve25519;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
@@ -9,6 +17,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.model.action.*;
@@ -19,17 +28,22 @@ import it.auties.whatsapp.model.business.BusinessProfile;
 import it.auties.whatsapp.model.button.FourRowTemplate;
 import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.*;
+import it.auties.whatsapp.model.companion.CompanionLinkResult;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.AttachmentType;
+import it.auties.whatsapp.model.media.MediaFile;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
+import it.auties.whatsapp.model.message.server.ProtocolMessage.ProtocolMessageType;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
@@ -44,20 +58,29 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
+import it.auties.whatsapp.model.signal.auth.*;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.sync.*;
+import it.auties.whatsapp.model.sync.HistorySyncNotification.Type;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 
+import javax.imageio.ImageIO;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
@@ -69,6 +92,7 @@ import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
 import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.NONE;
 import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.VIDEO;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
+import static it.auties.whatsapp.util.Spec.Whatsapp.*;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -705,21 +729,6 @@ public class Whatsapp {
     }
 
     /**
-     * Registers a message reply listener for a specific message
-     *
-     * @param id             the non-null id of the target message
-     * @param onMessageReply the non-null listener
-     */
-    public Whatsapp addMessageReplyListener(@NonNull String id, @NonNull OnMessageReply onMessageReply) {
-        return addMessageReplyListener((info, quoted) -> {
-            if (!info.id().equals(id)) {
-                return;
-            }
-            onMessageReply.onMessageReply(info, quoted);
-        });
-    }
-
-    /**
      * Registers a message reply listener
      *
      * @param onMessageReply the listener to register
@@ -745,13 +754,33 @@ public class Whatsapp {
      * @param id             the non-null id of the target message
      * @param onMessageReply the non-null listener
      */
+    public Whatsapp addMessageReplyListener(@NonNull String id, @NonNull OnMessageReply onMessageReply) {
+        return addMessageReplyListener(onMessageWithId(id, onMessageReply, false));
+    }
+
+    /**
+     * Registers a message reply listener for a specific message
+     *
+     * @param id             the non-null id of the target message
+     * @param onMessageReply the non-null listener
+     */
     public Whatsapp addMessageReplyListener(@NonNull String id, @NonNull OnWhatsappMessageReply onMessageReply) {
-        return addMessageReplyListener((info, quoted) -> {
+        return addMessageReplyListener(onMessageWithId(id, onMessageReply, true));
+    }
+
+    private OnMessageReply onMessageWithId(String id, Listener onMessageReply, boolean whatsapp) {
+        return (info, quoted) -> {
             if (!info.id().equals(id)) {
                 return;
             }
+
+            if(whatsapp) {
+                onMessageReply.onMessageReply(this, info, quoted);
+                return;
+            }
+
             onMessageReply.onMessageReply(info, quoted);
-        });
+        };
     }
 
     /**
@@ -775,10 +804,10 @@ public class Whatsapp {
     /**
      * Registers a status change listener
      *
-     * @param onUserStatusChange the non-null listener
+     * @param onUserAboutChange the non-null listener
      */
-    public Whatsapp addUserStatusChangeListener(@NonNull OnUserStatusChange onUserStatusChange) {
-        return addListener(onUserStatusChange);
+    public Whatsapp addUserStatusChangeListener(@NonNull OnUserAboutChange onUserAboutChange) {
+        return addListener(onUserAboutChange);
     }
 
     /**
@@ -786,7 +815,7 @@ public class Whatsapp {
      *
      * @param onUserStatusChange the non-null listener
      */
-    public Whatsapp addUserStatusChangeListener(@NonNull OnWhatsappUserStatusChange onUserStatusChange) {
+    public Whatsapp addUserStatusChangeListener(@NonNull onWhatsappUserAboutChange onUserStatusChange) {
         return addListener(onUserStatusChange);
     }
 
@@ -884,6 +913,26 @@ public class Whatsapp {
     }
 
     /**
+     * Registers a companion devices changed listener
+     *
+     * @param onCompanionDevices the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addCompanionDevicesListener(OnCompanionDevices onCompanionDevices) {
+        return addListener(onCompanionDevices);
+    }
+
+    /**
+     * Registers a companion devices changed listener
+     *
+     * @param onWhatsappCompanionDevices the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addCompanionDevicesListener(OnWhatsappCompanionDevices onWhatsappCompanionDevices) {
+        return addListener(onWhatsappCompanionDevices);
+    }
+
+    /**
      * Removes a listener
      *
      * @param listener the listener to remove
@@ -901,6 +950,15 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> connect() {
         return socketHandler.connect().thenApply(ignored -> this);
+    }
+
+    /**
+     * Registers the phone number associated with this session without opening a connection to Whatsapp
+     *
+     * @return a future that will be completed when the registration process is complete
+     */
+    public CompletableFuture<Whatsapp> register() {
+        return socketHandler.register().thenApply(ignored -> this);
     }
 
     /**
@@ -953,10 +1011,10 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Void> logout() {
-        if (store().userCompanionJid() == null) {
+        if (store().jid() == null) {
             return socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
         }
-        var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
+        var metadata = Map.of("jid", store().jid(), "reason", "user_initiated");
         var device = Node.ofAttributes("remove-companion-device", metadata);
         return socketHandler.sendQuery("set", "md", device).thenRun(() -> {});
     }
@@ -1045,7 +1103,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> changeName(@NonNull String newName) {
         checkLoggedIn();
-        var oldName = socketHandler.store().userCompanionName();
+        var oldName = socketHandler.store().name();
         return socketHandler.send(Node.ofChildren("presence", Map.of("name", newName)))
                 .thenRunAsync(() -> socketHandler.updateUserName(newName, oldName))
                 .thenApply(ignored -> this);
@@ -1060,7 +1118,7 @@ public class Whatsapp {
     public CompletableFuture<Whatsapp> changeStatus(@NonNull String newStatus) {
         checkLoggedIn();
         return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))
-                .thenRunAsync(() -> store().userCompanionName(newStatus))
+                .thenRunAsync(() -> store().name(newStatus))
                 .thenApply(ignored -> this);
     }
 
@@ -1101,7 +1159,7 @@ public class Whatsapp {
         var key = MessageKey.builder()
                 .chatJid(message.chat().jid())
                 .senderJid(message.senderJid())
-                .fromMe(Objects.equals(message.senderJid().toWhatsappJid(), store().userCompanionJid().toWhatsappJid()))
+                .fromMe(Objects.equals(message.senderJid().toWhatsappJid(), store().jid().toWhatsappJid()))
                 .id(message.id())
                 .build();
         var reactionMessage = ReactionMessage.builder()
@@ -1131,9 +1189,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull MessageContainer message) {
-        var key = MessageKey.builder().chatJid(chat.toJid()).fromMe(true).senderJid(store().userCompanionJid()).build();
+        var key = MessageKey.builder()
+                .chatJid(chat.toJid())
+                .fromMe(true)
+                .senderJid(store().jid())
+                .build();
         var info = MessageInfo.builder()
-                .senderJid(store().userCompanionJid())
+                .senderJid(store().jid())
                 .key(key)
                 .message(message)
                 .timestampSeconds(Clock.nowSeconds())
@@ -1151,24 +1213,30 @@ public class Whatsapp {
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
         checkLoggedIn();
         store().attribute(info);
-        attributeMessageMetadata(info);
-        var future = socketHandler.sendMessage(MessageSendRequest.of(info));
-        return future.thenApplyAsync(ignored -> info);
+        return attributeMessageMetadata(info)
+                .thenComposeAsync(ignored -> socketHandler.sendMessage(MessageSendRequest.of(info)))
+                .thenApplyAsync(ignored -> info);
     }
 
-    private void attributeMessageMetadata(MessageInfo info) {
+    private CompletableFuture<Void> attributeMessageMetadata(MessageInfo info) {
         info.key().chatJid(info.chatJid().toWhatsappJid());
         info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toWhatsappJid());
         fixEphemeralMessage(info);
         switch (info.message().content()) {
+            case MediaMessage mediaMessage -> {
+                return attributeMediaMessage(mediaMessage);
+            }
+            case ButtonMessage buttonMessage -> {
+                return attributeButtonMessage(info, buttonMessage);
+            }
             case TextMessage textMessage -> attributeTextMessage(textMessage);
-            case MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
             case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
             case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(info, pollUpdateMessage);
             case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
-            case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
             default -> {}
         }
+
+        return CompletableFuture.completedFuture(null);
     }
 
     /**
@@ -1234,12 +1302,13 @@ public class Whatsapp {
         textMessage.previewType(videoUri != null ? VIDEO : NONE);
     }
 
-    private void attributeMediaMessage(MediaMessage mediaMessage) {
-        Validate.isTrue(mediaMessage.decodedMedia()
-                .isPresent(), "Cannot upload a message whose content isn't available");
-        var upload = Medias.upload(mediaMessage.decodedMedia()
-                .get(), mediaMessage.mediaType(), store().mediaConnection());
-        mediaMessage.mediaSha256(upload.fileSha256())
+    private CompletableFuture<Void> attributeMediaMessage(MediaMessage mediaMessage) {
+        return Medias.upload(mediaMessage.decodedMedia().get(), mediaMessage.mediaType().toAttachmentType(), store().mediaConnection())
+                .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
+    }
+
+    private AttachmentProvider attributeMediaMessage(MediaMessage mediaMessage, MediaFile upload) {
+        return mediaMessage.mediaSha256(upload.fileSha256())
                 .mediaEncryptedSha256(upload.fileEncSha256())
                 .mediaKey(upload.mediaKey())
                 .mediaUrl(upload.url())
@@ -1262,7 +1331,7 @@ public class Whatsapp {
         }
         var iv = ofRandom(12).toByteArray();
         var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey()
-                .id(), store().userCompanionJid().toWhatsappJid());
+                .id(), store().jid().toWhatsappJid());
         var encryptedOptions = pollUpdateMessage.votes().stream().map(entry -> Sha256.calculate(entry.name())).toList();
         var pollUpdateEncryptedOptions = Protobuf.writeMessage(PollUpdateEncryptedOptions.of(encryptedOptions));
         var originalPollInfo = socketHandler.store()
@@ -1285,28 +1354,26 @@ public class Whatsapp {
         pollUpdateMessage.encryptedMetadata(pollUpdateEncryptedMetadata);
     }
 
-    private void attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
-        switch (buttonMessage) {
+    private CompletableFuture<Void> attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
+        return switch (buttonMessage) {
             case ButtonsMessage buttonsMessage
                     && buttonsMessage.header().isPresent()
                     && buttonsMessage.header().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-            case TemplateMessage templateMessage && templateMessage.format().isPresent() -> {
-                switch (templateMessage.format().get()) {
-                    case FourRowTemplate fourRowTemplate
-                            && fourRowTemplate.title().isPresent()
-                            && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-                    case HydratedFourRowTemplate hydratedFourRowTemplate
-                            && hydratedFourRowTemplate.title().isPresent()
-                            && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-                    default -> {}
-                }
-            }
+            case TemplateMessage templateMessage && templateMessage.format().isPresent() -> switch (templateMessage.format().get()) {
+                case FourRowTemplate fourRowTemplate
+                        && fourRowTemplate.title().isPresent()
+                        && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                case HydratedFourRowTemplate hydratedFourRowTemplate
+                        && hydratedFourRowTemplate.title().isPresent()
+                        && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                default ->  CompletableFuture.completedFuture(null);
+            };
             case InteractiveMessage interactiveMessage
                     && interactiveMessage.header().isPresent()
                     && interactiveMessage.header().get().attachment().isPresent()
                     && interactiveMessage.header().get().attachment().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-            default -> {}
-        }
+            default -> CompletableFuture.completedFuture(null);
+        };
     }
 
     // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
@@ -1525,9 +1592,9 @@ public class Whatsapp {
      * @param chat the target contact
      * @return a CompletableFuture that wraps an optional contact status response
      */
-    public CompletableFuture<Optional<ContactStatusResponse>> queryStatus(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(@NonNull ContactJidProvider chat) {
         checkLoggedIn();
-        return socketHandler.queryStatus(chat);
+        return socketHandler.queryAbout(chat);
     }
 
     /**
@@ -1646,14 +1713,14 @@ public class Whatsapp {
     public CompletableFuture<Boolean> changePresence(boolean available) {
         checkLoggedIn();
         var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
-        var node = Node.ofAttributes("presence", Map.of("type", presence.data(), "name", store().userCompanionName()));
+        var node = Node.ofAttributes("presence", Map.of("type", presence.data(), "name", store().name()));
         return socketHandler.sendWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updateSelfPresence(null, presence))
                 .thenApplyAsync(ignored -> available);
     }
 
     private void updateSelfPresence(ContactJidProvider chatJid, ContactStatus presence) {
-        var self = store().findContactByJid(store().userCompanionJid().toWhatsappJid());
+        var self = store().findContactByJid(store().jid().toWhatsappJid());
         if (self.isEmpty()) {
             return;
         }
@@ -1682,7 +1749,7 @@ public class Whatsapp {
                     .thenApplyAsync(ignored -> chat);
         }
 
-        var node = Node.ofAttributes("presence", Map.of("to", chat.toJid(), "type", presence.data(), "name", store().userCompanionName()));
+        var node = Node.ofAttributes("presence", Map.of("to", chat.toJid(), "type", presence.data(), "name", store().name()));
         return socketHandler.sendWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updateSelfPresence(chat, presence))
                 .thenApplyAsync(ignored -> chat);
@@ -1711,10 +1778,7 @@ public class Whatsapp {
     }
 
     private ContactJid checkGroupParticipantJid(ContactJid jid, String errorMessage) {
-        if (Objects.equals(jid.toWhatsappJid(), store().userCompanionJid().toWhatsappJid())) {
-            throw new IllegalArgumentException(errorMessage);
-        }
-
+        Validate.isTrue(Objects.equals(jid.toWhatsappJid(), store().jid().toWhatsappJid()), errorMessage);
         return jid;
     }
 
@@ -1837,7 +1901,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ContactJid> changeProfilePicture(byte[] image) {
-        return changeGroupPicture(store().userCompanionJid(), image);
+        return changeGroupPicture(store().jid(), image);
     }
 
     /**
@@ -2234,7 +2298,7 @@ public class Whatsapp {
                     .protocolType(ProtocolMessage.ProtocolMessageType.REVOKE)
                     .key(info.key())
                     .build();
-            var sender = info.chat().toJid().hasServer(GROUP) ? store().userCompanionJid() : null;
+            var sender = info.chat().toJid().hasServer(GROUP) ? store().jid() : null;
             var key = MessageKey.builder().chatJid(info.chatJid()).fromMe(true).senderJid(sender).build();
             var revokeInfo = MessageInfo.builder()
                     .senderJid(sender)
@@ -2397,7 +2461,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(int productsLimit) {
-        return queryBusinessCatalog(store().userCompanionJid().toWhatsappJid(), productsLimit);
+        return queryBusinessCatalog(store().jid().toWhatsappJid(), productsLimit);
     }
 
     /**
@@ -2450,7 +2514,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<?> queryBusinessCollections(int collectionsLimit) {
-        return queryBusinessCollections(store().userCompanionJid().toWhatsappJid(), collectionsLimit);
+        return queryBusinessCollections(store().jid().toWhatsappJid(), collectionsLimit);
     }
 
     /**
@@ -2538,7 +2602,7 @@ public class Whatsapp {
                 .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
                 .toMap();
         var node = Node.ofChildren("receipt", Map.of("id", info.key().id(), "to", socketHandler.store()
-                .userCompanionJid()
+                .jid()
                 .toWhatsappJid(), "type", "server-error"), Node.ofChildren("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.ofAttributes("rmr", rmrAttributes));
         return socketHandler.send(node, result -> result.hasDescription("notification"))
                 .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
@@ -2591,8 +2655,236 @@ public class Whatsapp {
                 .thenApplyAsync(GroupMetadata::of);
     }
 
+    /**
+     * Unlinks all the companions of this device
+     *
+     * @return a future
+     */
+    public CompletableFuture<Whatsapp> unlinkCompanions(){
+        Validate.isTrue(socketHandler.options().clientType() == ClientType.APP_CLIENT, "Companions cannot be unlinked from the web client");
+        return socketHandler.sendQuery("set", "md", Node.ofAttributes("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
+                .thenApply(ignored -> this);
+    }
+
+    /**
+     * Unlinks a specific companion
+     *
+     * @param companion the non-null companion to unlink
+     * @return a future
+     */
+    public CompletableFuture<Whatsapp> unlinkCompanion(@NonNull ContactJid companion){
+        Validate.isTrue(socketHandler.options().clientType() == ClientType.APP_CLIENT, "Companions cannot be unlinked from the web client");
+        Validate.isTrue(companion.hasAgent(), "Expected companion, got jid without agent: %s", companion);
+        return socketHandler.sendQuery("set", "md", Node.ofAttributes("remove-companion-device", Map.of("jid", companion, "reason", "user_initiated")))
+                .thenApply(ignored -> this);
+    }
+
+    /**
+     * Links a companion to this device
+     *
+     * @param qrCode the non-null qr code as an image
+     * @return a future
+     */
+    public CompletableFuture<CompanionLinkResult> linkCompanion(byte @NonNull [] qrCode){
+        try {
+            var inputStream = new ByteArrayInputStream(qrCode);
+            var luminanceSource = new BufferedImageLuminanceSource(ImageIO.read(inputStream));
+            var hybridBinarizer = new HybridBinarizer(luminanceSource);
+            var binaryBitmap = new BinaryBitmap(hybridBinarizer);
+            var reader = new QRCodeReader();
+            var result = reader.decode(binaryBitmap);
+            return linkCompanion(result.getText());
+        }catch (IOException | NotFoundException | ChecksumException | FormatException exception){
+            throw new IllegalArgumentException("Cannot read qr code", exception);
+        }
+    }
+
+    /**
+     * Links a companion to this device
+     *
+     * @param qrCode the non-null qr code as a String
+     * @return a future
+     */
+    public CompletableFuture<CompanionLinkResult> linkCompanion(@NonNull String qrCodeData){
+        Validate.isTrue(socketHandler.options().clientType() == ClientType.APP_CLIENT, "Companions cannot be linked from the web client");
+        if(store().linkedDevices().size() > MAX_COMPANIONS){
+            return CompletableFuture.completedFuture(CompanionLinkResult.MAX_DEVICES_ERROR);
+        }
+
+        var qrCodeParts = qrCodeData.split(",");
+        Validate.isTrue(qrCodeParts.length >= 4, "Expected qr code to be made up of at least four parts");
+        var ref = qrCodeParts[0];
+        var publicKey = Base64.getDecoder().decode(qrCodeParts[1]);
+        var advIdentity = Base64.getDecoder().decode(qrCodeParts[2]);
+        var identityKey = Base64.getDecoder().decode(qrCodeParts[3]);
+        var timestamp = Clock.nowSeconds();
+        var deviceIdentity = DeviceIdentity.builder()
+                .rawId(KeyHelper.agent())
+                .keyIndex(KeyHelper.keyIndex())
+                .timestamp(timestamp)
+                .build();
+        var deviceIdentityBytes = Protobuf.writeMessage(deviceIdentity);
+        var accountSignatureMessage = Bytes.of(ACCOUNT_SIGNATURE_HEADER)
+                .append(deviceIdentityBytes)
+                .append(advIdentity)
+                .toByteArray();
+        var accountSignature = Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), accountSignatureMessage, true);
+        var signedDeviceIdentity = SignedDeviceIdentity.builder()
+                .accountSignature(accountSignature)
+                .accountSignatureKey(socketHandler.keys().identityKeyPair().publicKey())
+                .details(deviceIdentityBytes)
+                .build();
+        var signedDeviceIdentityBytes = Protobuf.writeMessage(signedDeviceIdentity);
+        var deviceIdentityHmac = SignedDeviceIdentityHMAC.builder()
+                .hmac(Hmac.calculateSha256(signedDeviceIdentityBytes, identityKey))
+                .details(signedDeviceIdentityBytes)
+                .build();
+        var knownDevices = socketHandler.store()
+                .linkedDevices()
+                .stream()
+                .map(ContactJid::agent)
+                .toList();
+        var keyIndexList = KeyIndexList.builder()
+                .rawId(deviceIdentity.rawId())
+                .timestamp(deviceIdentity.timestamp())
+                .validIndexes(knownDevices)
+                .build();
+        var keyIndexListBytes = Protobuf.writeMessage(keyIndexList);
+        var deviceSignatureMessage = Bytes.of(DEVICE_MOBILE_SIGNATURE_HEADER)
+                .append(keyIndexListBytes)
+                .toByteArray();
+        var keyAccountSignature = Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true);
+        var signedKeyIndexList = SignedKeyIndexList.builder()
+                .accountSignature(keyAccountSignature)
+                .details(keyIndexListBytes)
+                .build();
+        return socketHandler.sendQuery("set", "md",
+                Node.ofChildren("pair-device",
+                        Node.of("ref", ref),
+                        Node.of("pub-key", publicKey),
+                        Node.of("device-identity", Protobuf.writeMessage(deviceIdentityHmac)),
+                        Node.of("key-index-list", Map.of("ts", timestamp), Protobuf.writeMessage(signedKeyIndexList))))
+                .thenComposeAsync(result -> handleCompanionPairing(result, deviceIdentity.keyIndex()));
+    }
+
+    private CompletableFuture<CompanionLinkResult> handleCompanionPairing(Node result, int keyId) {
+       try {
+           if(result.attributes().hasKey("type", "error")){
+               var error = result.findNode("error")
+                       .filter(entry -> entry.attributes().hasKey("text", "resource-limit"))
+                       .map(entry -> CompanionLinkResult.MAX_DEVICES_ERROR)
+                       .orElse(CompanionLinkResult.RETRY_ERROR);
+               return CompletableFuture.completedFuture(error);
+           }
+
+           var device = result.findNode("device")
+                   .flatMap(entry -> entry.attributes().getJid("jid"))
+                   .orElse(null);
+           if(device == null){
+               return CompletableFuture.completedFuture(CompanionLinkResult.RETRY_ERROR);
+           }
+
+           var latch = new CountDownLatch(1);
+           OnCompanionDevices listener = data -> {
+               if(data.contains(device)) {
+                   latch.countDown();
+               }
+           };
+           addCompanionDevicesListener(listener);
+           latch.await();
+           removeListener(listener);
+           return socketHandler.sendQuery("get", "encrypt", Node.ofChildren("key", Node.ofAttributes("user", Map.of("jid", device))))
+                   .thenComposeAsync(encryptResult -> handleCompanionEncrypt(encryptResult, device, keyId));
+       }catch (InterruptedException exception){
+           throw new RuntimeException("Cannot confirm connection", exception);
+       }
+    }
+
+    private CompletableFuture<CompanionLinkResult> handleCompanionEncrypt(Node result, ContactJid companion, int keyId) {
+        store().addLinkedDevice(companion, keyId);
+        socketHandler.parseSessions(result);
+        var initialSecurityMessage = ProtocolMessage.builder()
+                .protocolType(ProtocolMessageType.INITIAL_SECURITY_NOTIFICATION_SETTING_SYNC)
+                .initialSecurityNotificationSettingSync(InitialSecurityNotificationSettingSync.of(true))
+                .build();
+        var appStateKeys = IntStream.range(0, 5)
+                .mapToObj(index -> createAppKey())
+                .toList();
+        var appStateSyncKeyShare = AppStateSyncKeyShare.builder()
+                .keys(appStateKeys)
+                .build();
+        var appStateMessage = ProtocolMessage.builder()
+                .protocolType(ProtocolMessageType.APP_STATE_SYNC_KEY_SHARE)
+                .appStateSyncKeyShare(appStateSyncKeyShare)
+                .build();
+        var initialBootstrap = HistorySync.builder()
+                .conversations(socketHandler.store().chats())
+                .syncType(HistorySync.Type.INITIAL_BOOTSTRAP)
+                .build();
+        var initialBootstrapMessage = createHistoryProtocolMessage(initialBootstrap, Type.INITIAL_BOOTSTRAP);
+        var pushNamesData = socketHandler.store()
+                .contacts()
+                .stream()
+                .map(entry -> entry.chosenName() == null ? null : new PushName(entry.jid().toString(), entry.chosenName()))
+                .filter(Objects::nonNull)
+                .toList();
+        var pushNames = HistorySync.builder()
+                .pushNames(pushNamesData)
+                .syncType(HistorySync.Type.PUSH_NAME)
+                .build();
+        var pushNamesMessage = createHistoryProtocolMessage(pushNames, Type.PUSH_NAME);
+        return socketHandler.sendPeerMessage(companion, initialSecurityMessage)
+                .thenComposeAsync(ignored -> socketHandler.sendPeerMessage(companion, appStateMessage))
+                .thenComposeAsync(ignored -> initialBootstrapMessage.thenAcceptAsync(message -> socketHandler.sendPeerMessage(companion, message)))
+                .thenComposeAsync(ignored -> pushNamesMessage.thenAcceptAsync(message -> socketHandler.sendPeerMessage(companion, message)))
+                .thenApplyAsync(ignored -> CompanionLinkResult.SUCCESS);
+    }
+
+    private CompletableFuture<ProtocolMessage> createHistoryProtocolMessage(HistorySync historySync, HistorySyncNotification.Type type) {
+        var syncBytes = Protobuf.writeMessage(historySync);
+        return Medias.upload(syncBytes, AttachmentType.HISTORY_SYNC, socketHandler.store().mediaConnection())
+                .thenApplyAsync(upload -> createHistoryProtocolMessage(upload, type));
+    }
+
+    private ProtocolMessage createHistoryProtocolMessage(MediaFile upload, HistorySyncNotification.Type type) {
+        var notification = HistorySyncNotification.builder()
+                .mediaSha256(upload.fileSha256())
+                .mediaEncryptedSha256(upload.fileEncSha256())
+                .mediaKey(upload.mediaKey())
+                .mediaDirectPath(upload.directPath())
+                .mediaSize(upload.fileLength())
+                .syncType(type)
+                .build();
+        return ProtocolMessage.builder()
+                .protocolType(ProtocolMessageType.HISTORY_SYNC_NOTIFICATION)
+                .historySyncNotification(notification)
+                .build();
+    }
+
+    private AppStateSyncKey createAppKey() {
+        return AppStateSyncKey.builder()
+                .keyId(AppStateSyncKeyId.of(KeyHelper.appKeyId()))
+                .keyData(createAppKeyData())
+                .build();
+    }
+
+    private AppStateSyncKeyData createAppKeyData() {
+        return AppStateSyncKeyData.builder()
+                .keyData(SignalKeyPair.random().publicKey())
+                .fingerprint(createAppKeyFingerprint())
+                .timestamp(Clock.nowSeconds())
+                .build();
+    }
+
+    private AppStateSyncKeyFingerprint createAppKeyFingerprint() {
+        return AppStateSyncKeyFingerprint.builder()
+                .rawId(ThreadLocalRandom.current().nextInt(0, 10))
+                .currentIndex(ThreadLocalRandom.current().nextInt(0, 10))
+                .deviceIndexes(List.of(0))
+                .build();
+    }
+
     private void checkLoggedIn() {
-        Validate.isTrue(store().userCompanionJid() != null,
-                "You need to be logged in to execute this action");
+        Validate.isTrue(store().jid() != null, "You need to be logged in to execute this action");
     }
 }

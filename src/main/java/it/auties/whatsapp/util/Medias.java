@@ -5,7 +5,6 @@ import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.media.*;
-import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -43,10 +42,9 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 @UtilityClass
 public class Medias {
-    public static final int THUMBNAIL_WIDTH = 480;
-    public static final int THUMBNAIL_HEIGHT = 339;
+    private final HttpClient CLIENT = HttpClient.newHttpClient();
     private final int PROFILE_PIC_SIZE = 640;
-    private final String DEFAULT_HOST = "https://mmg.whatsapp.net";
+    private final String DEFAULT_HOST = "mmg.whatsapp.net";
     private final int THUMBNAIL_SIZE = 32;
     private final int RANDOM_FILE_NAME_LENGTH = 8;
     private final Map<String, Path> CACHE = new ConcurrentHashMap<>();
@@ -82,45 +80,29 @@ public class Medias {
         }
     }
 
-    public MediaFile upload(byte[] file, MediaMessageType type, MediaConnection mediaConnection) {
-        var client = HttpClient.newHttpClient();
+    public CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
-        var hosts = getHosts(mediaConnection);
-        return hosts.stream()
-                .map(host -> upload(file, type, client, auth, host))
-                .flatMap(Optional::stream)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Cannot upload media: no suitable host found: %s".formatted(hosts)));
-    }
-
-    private List<String> getHosts(MediaConnection mediaConnection) {
-        return Optional.ofNullable(mediaConnection).map(MediaConnection::hosts).orElse(List.of(DEFAULT_HOST));
-    }
-
-    private Optional<MediaFile> upload(byte[] file, MediaMessageType type, HttpClient client, String auth, String host) {
-        try {
-            var fileSha256 = Sha256.calculate(file);
-            var keys = MediaKeys.random(type.keyName());
-            var encryptedMedia = AesCbc.encrypt(keys.iv(), file, keys.cipherKey());
-            var hmac = calculateMac(encryptedMedia, keys);
-            var encrypted = Bytes.of(encryptedMedia).append(hmac).toByteArray();
-            var fileEncSha256 = Sha256.calculate(encrypted);
-            var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
-            var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(host, type.path(), token, auth, token));
-            var request = HttpRequest.newBuilder()
-                    .POST(ofByteArray(encrypted))
-                    .uri(uri)
-                    .header("Content-Type", "application/octet-stream")
-                    .header("Accept", "application/json")
-                    .header("Origin", Whatsapp.WEB_ORIGIN)
-                    .build();
-            var response = client.send(request, ofString());
+        var uploadData = type.inflatable() ? BytesHelper.compress(file) : file;
+        var fileSha256 = Sha256.calculate(uploadData);
+        var keys = MediaKeys.random(type.keyName());
+        var encryptedMedia = AesCbc.encrypt(keys.iv(), uploadData, keys.cipherKey());
+        var hmac = calculateMac(encryptedMedia, keys);
+        var encrypted = Bytes.of(encryptedMedia).append(hmac).toByteArray();
+        var fileEncSha256 = Sha256.calculate(encrypted);
+        var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
+        var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, type.path(), token, auth, token));
+        var request = HttpRequest.newBuilder()
+                .POST(ofByteArray(encrypted))
+                .uri(uri)
+                .header("Content-Type", "application/octet-stream")
+                .header("Accept", "application/json")
+                .header("Origin", Whatsapp.WEB_ORIGIN)
+                .build();
+        return CLIENT.sendAsync(request, ofString()).thenApplyAsync(response -> {
             Validate.isTrue(response.statusCode() == 200, "Invalid status countryCode: %s", response.statusCode());
             var upload = Json.readValue(response.body(), MediaUpload.class);
-            return Optional.of(new MediaFile(fileSha256, fileEncSha256, keys.mediaKey(), file.length, upload.directPath(), upload.url()));
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+            return new MediaFile(fileSha256, fileEncSha256, keys.mediaKey(), uploadData.length, upload.directPath(), upload.url());
+        });
     }
 
     private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
@@ -132,17 +114,19 @@ public class Medias {
         try {
             Validate.isTrue(provider.mediaUrl() != null || provider.mediaDirectPath() != null, "Missing url and path from media");
             var url = Objects.requireNonNullElseGet(provider.mediaUrl(), () -> createMediaUrl(provider.mediaDirectPath()));
-            var client = HttpClient.newHttpClient();
-            var request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+            return CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
                     .thenApplyAsync(response -> handleResponse(provider, response));
         } catch (Throwable error) {
-            return CompletableFuture.failedFuture(error);
+            return CompletableFuture.failedFuture(new RuntimeException("Cannot download media", error));
         }
     }
 
     public String createMediaUrl(@NonNull String directPath) {
-        return DEFAULT_HOST + directPath;
+        return "https://%s%s".formatted(DEFAULT_HOST, directPath);
     }
 
     private Optional<byte[]> handleResponse(AttachmentProvider provider, HttpResponse<byte[]> response) {
@@ -154,7 +138,7 @@ public class Medias {
         Validate.isTrue(Arrays.equals(sha256, provider.mediaEncryptedSha256()), "Cannot decode media: Invalid sha256 signature", SecurityException.class);
         var encryptedMedia = stream.cut(-10).toByteArray();
         var mediaMac = stream.slice(-10).toByteArray();
-        var keys = MediaKeys.of(provider.mediaKey(), provider.mediaName());
+        var keys = MediaKeys.of(provider.mediaKey(), provider.attachmentType().keyName());
         var hmac = calculateMac(encryptedMedia, keys);
         Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
         var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
@@ -343,7 +327,7 @@ public class Medias {
         try (var document = PDDocument.load(file); var outputStream = new ByteArrayOutputStream()) {
             var renderer = new PDFRenderer(document);
             var image = renderer.renderImage(0);
-            var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            var thumb = new BufferedImage(Spec.Whatsapp.THUMBNAIL_WIDTH, Spec.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
             var graphics2D = thumb.createGraphics();
             graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             graphics2D.drawImage(image, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
@@ -360,7 +344,7 @@ public class Medias {
             if(ppt.getSlides().isEmpty()){
                 return Optional.empty();
             }
-            var thumb = new BufferedImage(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            var thumb = new BufferedImage(Spec.Whatsapp.THUMBNAIL_WIDTH, Spec.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
             var graphics2D = thumb.createGraphics();
             graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             ppt.getSlides().get(0).draw(graphics2D);

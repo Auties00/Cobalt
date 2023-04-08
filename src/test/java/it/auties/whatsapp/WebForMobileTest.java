@@ -1,11 +1,15 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 
 // Just used for testing locally
-public class WebTest {
+public class WebForMobileTest {
     public static void main(String[] args) {
-        var whatsapp = Whatsapp.newConnection()
+        var options = WebOptions.builder()
+                .qrHandler(System.out::println)
+                .build();
+        var whatsapp = Whatsapp.newConnection(options)
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

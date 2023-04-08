@@ -8,6 +8,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -525,22 +526,22 @@ public interface Listener {
     }
 
     /**
-     * Called when the companion's status changes
+     * Called when the companion's about changes
      *
-     * @param oldStatus the non-null old status
-     * @param newStatus the non-null new status
+     * @param oldAbout the non-null old about
+     * @param newAbout the non-null new about
      */
-    default void onUserStatusChange(String oldStatus, String newStatus) {
+    default void onUserAboutChange(String oldAbout, String newAbout) {
     }
 
     /**
-     * Called when the companion's status changes
+     * Called when the companion's about changes
      *
      * @param whatsapp  an instance to the calling api
-     * @param oldStatus the non-null old status
-     * @param newStatus the non-null new status
+     * @param oldAbout the non-null old about
+     * @param newAbout the non-null new about
      */
-    default void onUserStatusChange(Whatsapp whatsapp, String oldStatus, String newStatus) {
+    default void onUserAboutChange(Whatsapp whatsapp, String oldAbout, String newAbout) {
     }
 
     /**
@@ -633,6 +634,25 @@ public interface Listener {
      * @param newPrivacyEntry the new entry
      */
     default void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry){
+
+    }
+
+    /**
+     * Called when the list of companion devices is updated
+     *
+     * @param whatsapp an instance to the calling api
+     * @param devices  the non-null devices
+     */
+    default void onCompanionDevices(Whatsapp whatsapp, Collection<ContactJid> devices){
+
+    }
+
+    /**
+     * Called when the list of companion devices is updated
+     *
+     * @param devices  the non-null devices
+     */
+    default void onCompanionDevices(Collection<ContactJid> devices){
 
     }
 }

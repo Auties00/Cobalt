@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
+import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
@@ -22,8 +23,21 @@ public class BytesHelper {
         return Byte.toUnsignedInt(version) >> 4;
     }
 
+    public byte[] compress(byte[] uncompressed) {
+        var deflater = new Deflater();
+        deflater.setInput(uncompressed);
+        deflater.finish();
+        var result = new ByteArrayOutputStream();
+        var buffer = new byte[1024];
+        while (!deflater.finished()) {
+            var count = deflater.deflate(buffer);
+            result.write(buffer, 0, count);
+        }
+        return result.toByteArray();
+    }
+
     @SneakyThrows
-    public byte[] deflate(byte[] compressed) {
+    public byte[] decompress(byte[] compressed) {
         var decompressor = new Inflater();
         decompressor.setInput(compressed);
         var result = new ByteArrayOutputStream();

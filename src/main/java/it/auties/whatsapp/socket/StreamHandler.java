@@ -33,7 +33,10 @@ import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.HmacValidationException;
+import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
@@ -42,21 +45,18 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.model.request.Node.ofAttributes;
-import static it.auties.whatsapp.model.request.Node.ofChildren;
-import static java.util.Map.of;
-import static java.util.concurrent.CompletableFuture.delayedExecutor;
-import static java.util.concurrent.CompletableFuture.runAsync;
+import static it.auties.whatsapp.util.Spec.Signal.KEY_BUNDLE_TYPE;
+import static it.auties.whatsapp.util.Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER;
+import static it.auties.whatsapp.util.Spec.Whatsapp.DEVICE_WEB_SIGNATURE_HEADER;
 
 @Accessors(fluent = true)
 class StreamHandler {
-    private static final byte[] MESSAGE_HEADER = {6, 0};
-    private static final byte[] SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int PRE_KEYS_UPLOAD_CHUNK = 30;
     private static final int PING_INTERVAL = 30;
@@ -66,10 +66,12 @@ class StreamHandler {
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
     private ScheduledExecutorService service;
+    private AtomicBoolean badMac;
 
     protected StreamHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.retries = new HashMap<>();
+        this.badMac = new AtomicBoolean();
     }
 
     protected void digest(@NonNull Node node) {
@@ -90,7 +92,7 @@ class StreamHandler {
     }
 
     private void digestStreamEnd() {
-        if(socketHandler.state() != SocketState.CONNECTED){
+        if (socketHandler.state() != SocketState.CONNECTED || badMac.get()) {
             return;
         }
         socketHandler.disconnect(DisconnectReason.DISCONNECTED);
@@ -217,8 +219,8 @@ class StreamHandler {
             return;
         }
         switch (status) {
-            case READ -> message.receipt().readTimestamp(Clock.nowSeconds());
-            case PLAYED -> message.receipt().playedTimestamp(Clock.nowSeconds());
+            case READ -> message.receipt().readTimestampSeconds(Clock.nowSeconds());
+            case PLAYED -> message.receipt().playedTimestampSeconds(Clock.nowSeconds());
         }
     }
 
@@ -239,7 +241,7 @@ class StreamHandler {
         if (call == null) {
             return;
         }
-        socketHandler.sendMessageAck(node, of("class", "call", "type", call.description()));
+        socketHandler.sendMessageAck(node, Map.of("class", "call", "type", call.description()));
     }
 
     private void digestAck(Node node) {
@@ -260,7 +262,7 @@ class StreamHandler {
             match.filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
                     .ifPresent(message -> message.status(MessageStatus.SERVER_ACK));
         }
-        var receipt = ofAttributes("ack", of("class", "receipt", "id", messageId, "from", from));
+        var receipt = Node.ofAttributes("ack", Map.of("class", "receipt", "id", messageId, "from", from));
         socketHandler.sendWithNoResponse(receipt);
     }
 
@@ -393,7 +395,7 @@ class StreamHandler {
 
     private void handleDevices(Node child) {
         var deviceHash = child.attributes().getString("dhash");
-        socketHandler.store().userCompanionDeviceHash(deviceHash);
+        socketHandler.store().deviceHash(deviceHash);
         var devices = child.findNodes("device")
                 .stream()
                 .collect(Collectors.toMap(
@@ -402,10 +404,10 @@ class StreamHandler {
                         (first, second) -> second,
                         LinkedHashMap::new
                 ));
-        var companionJid = socketHandler.store().userCompanionJid().toWhatsappJid();
+        var companionJid = socketHandler.store().jid().toWhatsappJid();
         var companionDevice = devices.remove(companionJid);
         devices.put(companionJid, companionDevice);
-        socketHandler.store().userCompanionDeviceKeyIndexes(devices);
+        socketHandler.onDevices(devices);
         var keyIndexListNode = child.findNode("key-index-list")
                 .orElseThrow(() -> new NoSuchElementException("Missing index key node from device sync"));
         var signedKeyIndexBytes = keyIndexListNode.contentAsBytes()
@@ -517,11 +519,13 @@ class StreamHandler {
             return;
         }
         var timestamp = dirty.get().attributes().getString("timestamp");
-        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", ofAttributes("clean", of("type", type, "timestamp", timestamp)));
+        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty",
+                Node.ofAttributes("clean", Map.of("type", type, "timestamp", timestamp)));
     }
 
     private void digestError(Node node) {
         if (node.hasNode("bad-mac")) {
+            badMac.set(true);
             socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
             return;
         }
@@ -546,7 +550,7 @@ class StreamHandler {
     }
 
     private void digestSuccess(Node node) {
-        node.attributes().getJid("lid").ifPresent(socketHandler.store()::userCompanionLid);
+        node.attributes().getJid("lid").ifPresent(socketHandler.store()::lid);
         confirmConnection();
         if (!socketHandler.keys().hasPreKeys()) {
             sendPreKeys();
@@ -585,13 +589,13 @@ class StreamHandler {
 
     private CompletableFuture<Void> queryInitialInfo() {
         updateSelfPresence();
-        if(socketHandler.options().clientType() != ClientType.WEB_CLIENT){
-            return CompletableFuture.completedFuture(null);
+        if(socketHandler.options().clientType() == ClientType.APP_CLIENT) {
+            socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.ofAttributes("config", Map.of("version", 1)));
+        }else {
+            socketHandler.sendQuery("get", "w", Node.of("props"))
+                    .thenAcceptAsync(this::parseProps);
         }
-
-        socketHandler.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1"))); // TODO: Save them
-        socketHandler.sendQuery("get", "w", Node.of("props"))
-                .thenAcceptAsync(this::parseProps);
+        socketHandler.sendQuery("get", "abt", Node.ofAttributes("props", Map.of("protocol", "1"))); // TODO: Save them
         return CompletableFuture.allOf(queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false));
     }
 
@@ -606,14 +610,14 @@ class StreamHandler {
     }
 
     private void updateSelfPresence() {
-        socketHandler.sendWithNoResponse(ofAttributes("presence", of("type", "available")));
+        socketHandler.sendWithNoResponse(Node.ofAttributes("presence", Map.of("type", "available")));
         socketHandler.store()
-                .findContactByJid(socketHandler.store().userCompanionJid().toWhatsappJid())
+                .findContactByJid(socketHandler.store().jid().toWhatsappJid())
                 .ifPresent(entry -> entry.lastKnownPresence(ContactStatus.AVAILABLE).lastSeen(ZonedDateTime.now()));
     }
 
     private CompletableFuture<Void> updateUserStatus(boolean update) {
-        return socketHandler.queryStatus(socketHandler.store().userCompanionJid().toWhatsappJid())
+        return socketHandler.queryAbout(socketHandler.store().jid().toWhatsappJid())
                 .thenAcceptAsync(result -> parseNewStatus(result.orElse(null), update));
     }
 
@@ -621,22 +625,22 @@ class StreamHandler {
         if (result == null) {
             return;
         }
-        var oldStatus = socketHandler.store().userStatus();
-        socketHandler.store().userStatus(result.status());
+        var oldStatus = socketHandler.store().about();
+        socketHandler.store().about(result.status());
         if (!update) {
             return;
         }
-        socketHandler.onUserStatusChange(result.status(), oldStatus);
+        socketHandler.onUserAboutChange(result.status(), oldStatus);
     }
 
     private CompletableFuture<Void> updateUserPicture(boolean update) {
-        return socketHandler.queryPicture(socketHandler.store().userCompanionJid().toWhatsappJid())
+        return socketHandler.queryPicture(socketHandler.store().jid().toWhatsappJid())
                 .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
     }
 
     private void handleUserPictureChange(URI newPicture, boolean update) {
-        var oldStatus = socketHandler.store().userProfilePicture().orElse(null);
-        socketHandler.store().userProfilePicture(newPicture);
+        var oldStatus = socketHandler.store().profilePicture().orElse(null);
+        socketHandler.store().profilePicture(newPicture);
         if (!update) {
             return;
         }
@@ -705,23 +709,20 @@ class StreamHandler {
     }
 
     private void scheduleMediaConnection(int seconds) {
-        var executor = delayedExecutor(seconds, TimeUnit.SECONDS);
-        runAsync(() -> createMediaConnection(0, null), executor);
+        var executor = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS);
+        CompletableFuture.runAsync(() -> createMediaConnection(0, null), executor);
     }
 
     private void digestIq(Node node) {
-        var container = node.children().peekFirst();
+        var container = node.findNode().orElse(null);
         if (container == null) {
             return;
         }
-        if (container.description().equals("pair-device")) {
-            generateQrCode(node, container);
-            return;
+
+        switch (container.description()){
+            case "pair-device" -> generateQrCode(node, container);
+            case "pair-success" -> confirmQrCode(node, container);
         }
-        if (!container.description().equals("pair-success")) {
-            return;
-        }
-        confirmQrCode(node, container);
     }
 
     private void confirmConnection() {
@@ -737,7 +738,7 @@ class StreamHandler {
                 .toList();
         socketHandler.sendQuery("set", "encrypt",
                 Node.of("registration", socketHandler.keys().encodedRegistrationId()),
-                Node.of("type", Spec.Signal.KEY_BUNDLE_TYPE),
+                Node.of("type", KEY_BUNDLE_TYPE),
                 Node.of("identity", socketHandler.keys().identityKeyPair().publicKey()),
                 Node.ofChildren("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
     }
@@ -751,9 +752,13 @@ class StreamHandler {
         var ref = container.findNode("ref")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
-        var qr = String.join(",", ref, Bytes.of(socketHandler.keys().noiseKeyPair().publicKey())
-                .toBase64(), Bytes.of(socketHandler.keys().identityKeyPair().publicKey())
-                .toBase64(), Bytes.of(socketHandler.keys().companionKey()).toBase64());
+        var qr = String.join(
+                ",",
+                ref,
+                Bytes.of(socketHandler.keys().noiseKeyPair().publicKey()).toBase64(),
+                Bytes.of(socketHandler.keys().identityKeyPair().publicKey()).toBase64(),
+                Bytes.of(socketHandler.keys().companionKey()).toBase64()
+        );
         var handler = (WebOptions) socketHandler.options();
         handler.qrHandler().accept(qr);
     }
@@ -769,7 +774,7 @@ class StreamHandler {
             return;
         }
         var account = Protobuf.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
-        var message = Bytes.of(MESSAGE_HEADER)
+        var message = Bytes.of(ACCOUNT_SIGNATURE_HEADER)
                 .append(account.details())
                 .append(socketHandler.keys().identityKeyPair().publicKey())
                 .toByteArray();
@@ -777,14 +782,16 @@ class StreamHandler {
             socketHandler.handleFailure(LOGIN, new HmacValidationException("message_header"));
             return;
         }
-        var deviceSignatureMessage = Bytes.of(SIGNATURE_HEADER)
+        var deviceSignatureMessage = Bytes.of(DEVICE_WEB_SIGNATURE_HEADER)
                 .append(account.details())
                 .append(socketHandler.keys().identityKeyPair().publicKey())
                 .append(account.accountSignatureKey())
                 .toByteArray();
         account.deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true));
         var keyIndex = Protobuf.readMessage(account.details(), DeviceIdentity.class).keyIndex();
-        var devicePairNode = ofChildren("pair-device-sign", Node.of("device-identity", of("key-index", keyIndex), Protobuf.writeMessage(account.withoutKey())));
+        var outgoingDeviceIdentity = Protobuf.writeMessage(new SignedDeviceIdentity(account.details(), null, account.accountSignature(), account.deviceSignature()));
+        var devicePairNode = Node.ofChildren("pair-device-sign",
+                Node.of("device-identity", Map.of("key-index", keyIndex), outgoingDeviceIdentity));
         socketHandler.keys().companionIdentity(account);
         sendConfirmNode(node, devicePairNode);
     }
@@ -795,17 +802,20 @@ class StreamHandler {
                 .put("type", "result")
                 .put("to", Server.WHATSAPP.toJid())
                 .toMap();
-        var request = ofChildren("iq", attributes, content);
+        var request = Node.ofChildren("iq", attributes, content);
         socketHandler.sendWithNoResponse(request);
     }
 
     private void saveCompanion(Node container) {
-        var node = container.findNode("device").orElseThrow(() -> new NoSuchElementException("Missing device"));
+        var node = container.findNode("device")
+                .orElseThrow(() -> new NoSuchElementException("Missing device"));
+        var isBusiness = container.hasNode("business");
         var companion = node.attributes()
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
-        socketHandler.store().userCompanionJid(companion);
-        socketHandler.store().addContact(Contact.ofJid(socketHandler.store().userCompanionJid().toWhatsappJid()));
+        socketHandler.store().jid(companion);
+        socketHandler.store().isBusiness(isBusiness);
+        socketHandler.store().addContact(Contact.ofJid(socketHandler.store().jid().toWhatsappJid()));
     }
 
     protected void dispose() {
@@ -813,6 +823,7 @@ class StreamHandler {
         if(service != null){
             service.shutdownNow();
         }
+        badMac.set(false);
     }
 
     private synchronized ScheduledExecutorService getOrCreateService(){

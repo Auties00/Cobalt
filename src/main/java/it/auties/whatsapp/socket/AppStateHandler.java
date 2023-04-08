@@ -29,10 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.lang.System.Logger.Level.WARNING;
-import static java.util.Map.of;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 class AppStateHandler {
     public static final int TIMEOUT = 120;
@@ -102,7 +99,7 @@ class AppStateHandler {
     }
 
     private CompletableFuture<Void> sendPush(PushRequest request) {
-        var body = ofChildren("collection", of("name", request.patch().type(), "version", request.newState().version() - 1, "return_snapshot", false),
+        var body = Node.ofChildren("collection", Map.of("name", request.patch().type(), "version", request.newState().version() - 1, "return_snapshot", false),
                 Node.of("patch", Protobuf.writeMessage(request.sync())));
         return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", body))
                 .thenAcceptAsync(this::parseSyncRequest)
@@ -119,7 +116,7 @@ class AppStateHandler {
 
     protected CompletableFuture<Void> pull(PatchType... patchTypes) {
         if (patchTypes == null || patchTypes.length == 0) {
-            return completedFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         return runner.runAsync(() -> pullUninterruptedly(Arrays.asList(patchTypes))
@@ -129,7 +126,7 @@ class AppStateHandler {
 
     protected CompletableFuture<Void> pullInitial() {
         if(socketHandler.store().initialSync()){
-            return completedFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         return pullUninterruptedly(Arrays.asList(PatchType.values()))
@@ -172,7 +169,7 @@ class AppStateHandler {
     }
 
     private CompletableFuture<Boolean> handlePullResult(List<PatchType> remaining) {
-        return remaining.isEmpty() ? completedFuture(true) : pullUninterruptedly(remaining);
+        return remaining.isEmpty() ? CompletableFuture.completedFuture(true) : pullUninterruptedly(remaining);
     }
 
     private List<Node> getPullNodes(List<PatchType> patchTypes, Map<PatchType, LTHashState> tempStates) {
@@ -255,16 +252,10 @@ class AppStateHandler {
     }
 
     private Optional<SnapshotSync> decodeSnapshot(Node snapshot) {
-        if (snapshot == null) {
-            return Optional.empty();
-        }
-        var bytes = snapshot.contentAsBytes();
-        if (bytes.isEmpty()) {
-            return Optional.empty();
-        }
-        var blob = Protobuf.readMessage(bytes.get(), ExternalBlobReference.class);
-        return Medias.download(blob)
-                .join()
+        return snapshot == null ? Optional.empty() : snapshot.contentAsBytes()
+                .map(bytes -> Protobuf.readMessage(bytes, ExternalBlobReference.class))
+                .map(Medias::download)
+                .flatMap(CompletableFuture::join)
                 .map(value -> Protobuf.readMessage(value, SnapshotSync.class));
     }
 
@@ -304,8 +295,7 @@ class AppStateHandler {
                 case MuteAction muteAction ->
                         targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestampSeconds())));
                 case PinAction pinAction ->
-                        targetChat.ifPresent(chat -> chat.pinnedTimestampSeconds(pinAction.pinned() ? mutation.value()
-                                .timestamp() : 0));
+                        targetChat.ifPresent(chat -> chat.pinnedTimestampSeconds(pinAction.pinned() ? (int) mutation.value().timestamp() : 0));
                 case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                 case ArchiveChatAction archiveChatAction ->
                         targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
@@ -320,9 +310,9 @@ class AppStateHandler {
             switch (setting) {
                 case EphemeralSetting ephemeralSetting -> showEphemeralMessageWarning(ephemeralSetting);
                 case LocaleSetting localeSetting ->
-                        socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().userLocale());
+                        socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().locale());
                 case PushNameSetting pushNameSetting ->
-                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userCompanionName());
+                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().name());
                 case UnarchiveChatsSetting unarchiveChatsSetting ->
                         socketHandler.store().unarchiveChats(unarchiveChatsSetting.unarchiveChats());
                 default -> {
@@ -395,7 +385,9 @@ class AppStateHandler {
 
     private MutationsRecord decodePatch(PatchType patchType, LTHashState newState, PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            Medias.download(patch.externalMutations()).join().ifPresent(blob -> handleExternalMutation(patch, blob));
+            Medias.download(patch.externalMutations())
+                    .join()
+                    .ifPresent(blob -> handleExternalMutation(patch, blob));
         }
 
         newState.version(patch.encodedVersion());

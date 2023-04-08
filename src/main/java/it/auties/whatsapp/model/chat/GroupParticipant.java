@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @Builder
 public record GroupParticipant(
-        @ProtobufProperty(index = 1, type = STRING, name = "userJid", implementation = ContactJid.class) @NonNull ContactJid jid,
+        @ProtobufProperty(index = 1, type = STRING, name = "userJid") @NonNull ContactJid jid,
         @ProtobufProperty(index = 2, type = MESSAGE, name = "rank") GroupRole role) implements ProtobufMessage {
     public GroupParticipant(ContactJid jid, GroupRole role) {
         this.jid = jid;

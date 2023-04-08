@@ -71,7 +71,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider {
     /**
      * The jid of the sender
      */
-    @ProtobufProperty(index = 5, type = STRING, implementation = ContactJid.class)
+    @ProtobufProperty(index = 5, type = STRING)
     @Setter(AccessLevel.NONE)
     private ContactJid senderJid;
 

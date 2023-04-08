@@ -93,10 +93,11 @@ public sealed interface AttachmentProvider permits MediaMessage, ExternalBlobRef
      */
     AttachmentProvider mediaSize(long mediaSize);
 
+
     /**
-     * Returns the name of this media for Whatsapp
+     * Returns the type of this attachment
      *
-     * @return a non-null String
+     * @return a non-null attachment
      */
-    String mediaName();
+    AttachmentType attachmentType();
 }
