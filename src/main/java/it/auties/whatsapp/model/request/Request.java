@@ -11,6 +11,7 @@ import it.auties.whatsapp.util.Exceptions;
 import lombok.NonNull;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -35,12 +36,18 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
 
     private Request(String id, Function<Node, Boolean> filter, @NonNull Object body) {
-        this(id, body, new CompletableFuture<>(), filter, Exceptions.current(getTimeoutMessage(body)));
+        this(id, body, new CompletableFuture<>(), filter, trace(body));
         EXECUTOR.execute(this::cancelTimedFuture);
     }
 
-    private static String getTimeoutMessage(Object body) {
-        return body instanceof Node node ? "Node timed out(%s), no response from WhatsApp".formatted(node) : "Binary timed out, no response from WhatsApp";
+    private static Throwable trace(Object body) {
+        var message = body instanceof Node node ? "%s node timed out".formatted(node.toString()) : "Binary timed out";
+        var current = Exceptions.current(message);
+        var actualStackTrace = Arrays.stream(current.getStackTrace())
+                .filter(entry -> !entry.getClassName().equals(Request.class.getName()) && !entry.getClassName().equals(Node.class.getName()))
+                .toArray(StackTraceElement[]::new);
+        current.setStackTrace(actualStackTrace);
+        return current;
     }
 
     private void cancelTimedFuture() {

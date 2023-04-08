@@ -95,7 +95,9 @@ public final class FourRowTemplate implements TemplateFormatter {
      */
     @Builder(builderClassName = "FourRowTemplateSimpleBuilder", builderMethodName = "simpleBuilder")
     private static FourRowTemplate customBuilder(FourRowTemplateTitle title, HighlyStructuredMessage content, HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
-        IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
+        if(buttons != null) {
+            IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
+        }
         var builder = FourRowTemplate.builder().content(content).footer(footer).buttons(buttons);
         switch (title){
             case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);

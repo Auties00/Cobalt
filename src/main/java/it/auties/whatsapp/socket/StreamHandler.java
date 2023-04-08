@@ -247,14 +247,19 @@ class StreamHandler {
         if (!Objects.equals(clazz, "message")) {
             return;
         }
+        var error = node.attributes().getInt("error");
         var messageId = node.id();
         var from = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
-        socketHandler.store()
-                .findMessageById(from, messageId)
-                .filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
-                .ifPresent(message -> message.status(MessageStatus.SERVER_ACK));
+        var match = socketHandler.store()
+                .findMessageById(from, messageId);
+        if (error != 0) {
+            match.ifPresent(message -> message.status(MessageStatus.ERROR));
+        } else {
+            match.filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
+                    .ifPresent(message -> message.status(MessageStatus.SERVER_ACK));
+        }
         var receipt = ofAttributes("ack", of("class", "receipt", "id", messageId, "from", from));
         socketHandler.sendWithNoResponse(receipt);
     }
@@ -757,8 +762,7 @@ class StreamHandler {
         saveCompanion(container);
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
-        var advIdentity = Protobuf.readMessage(deviceIdentity.contentAsBytes()
-                .orElseThrow(), SignedDeviceIdentityHMAC.class);
+        var advIdentity = Protobuf.readMessage(deviceIdentity.contentAsBytes().orElseThrow(), SignedDeviceIdentityHMAC.class);
         var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
             socketHandler.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
@@ -778,9 +782,7 @@ class StreamHandler {
                 .append(socketHandler.keys().identityKeyPair().publicKey())
                 .append(account.accountSignatureKey())
                 .toByteArray();
-        account.deviceSignature(Curve25519.sign(socketHandler.keys()
-                .identityKeyPair()
-                .privateKey(), deviceSignatureMessage, true));
+        account.deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true));
         var keyIndex = Protobuf.readMessage(account.details(), DeviceIdentity.class).keyIndex();
         var devicePairNode = ofChildren("pair-device-sign", Node.of("device-identity", of("key-index", keyIndex), Protobuf.writeMessage(account.withoutKey())));
         socketHandler.keys().companionIdentity(account);

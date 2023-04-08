@@ -7,21 +7,16 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.model.interactive.InteractiveButton;
-import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
 import it.auties.whatsapp.model.button.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.interactive.InteractiveButton;
 import it.auties.whatsapp.model.interactive.InteractiveHeader;
-import it.auties.whatsapp.model.message.button.ButtonsMessage;
-import it.auties.whatsapp.model.message.button.InteractiveMessage;
-import it.auties.whatsapp.model.message.button.ListMessage;
-import it.auties.whatsapp.model.message.button.TemplateMessage;
-import it.auties.whatsapp.model.message.standard.DocumentMessage;
+import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
+import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
-import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
@@ -131,34 +126,7 @@ public class ButtonsTest implements Listener {
         if (skip) {
             return;
         }
-        var chat = api.store().findChatByName("Test2").orElseThrow();
         log("Sending buttons...");
-        var emptyButtons = ButtonsMessage.simpleBuilder()
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(createButtons())
-                .build();
-        api.sendMessage(chat, emptyButtons).join();
-        var textButtons = ButtonsMessage.simpleBuilder()
-                .header(TextMessage.of("A nice header"))
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(createButtons())
-                .build();
-        api.sendMessage(chat, textButtons).join();
-        var document = DocumentMessage.simpleBuilder()
-                .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
-                .title("Pdf test")
-                .fileName("pdf-test.pdf")
-                .pageCount(1)
-                .build();
-        var documentButtons = ButtonsMessage.simpleBuilder()
-                .header(document)
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(createButtons())
-                .build();
-        api.sendMessage(chat, documentButtons).join();
         var image = ImageMessage.simpleBuilder()
                 .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
@@ -169,7 +137,7 @@ public class ButtonsTest implements Listener {
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(chat, imageButtons).join();
+        api.sendMessage(contact, imageButtons).join();
         log("Sent buttons");
     }
 
@@ -214,8 +182,10 @@ public class ButtonsTest implements Listener {
                 .footer("A nice footer")
                 .buttons(List.of(quickReplyButton, urlButton, callButton))
                 .build();
-        var templateMessage = TemplateMessage.of(fourRowTemplate);
-        api.sendMessage(contact, templateMessage).join();
+        var message = HighlyStructuredMessage.builder()
+                .templateMessage(TemplateMessage.of(fourRowTemplate))
+                .build();
+        api.sendMessage(contact, message).join();
         log("Sent template message");
     }
 
@@ -289,11 +259,11 @@ public class ButtonsTest implements Listener {
     }
 
     @Override
-    public void onChatMessagesSync(Chat chat, boolean last) {
+    public void onChatMessagesSync(Chat contact, boolean last) {
         if (!last) {
             return;
         }
-        System.out.printf("%s is ready with %s messages%n", chat.name(), chat.messages().size());
+        System.out.printf("%s is ready with %s messages%n", contact.name(), contact.messages().size());
     }
 
     @Override

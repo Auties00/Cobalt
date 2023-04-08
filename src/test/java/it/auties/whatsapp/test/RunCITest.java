@@ -4,14 +4,12 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Emojy;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.model.interactive.InteractiveCollection;
-import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
-import it.auties.whatsapp.model.interactive.InteractiveShop;
 import it.auties.whatsapp.model.button.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -23,12 +21,17 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.interactive.InteractiveButton;
+import it.auties.whatsapp.model.interactive.InteractiveCollection;
+import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
+import it.auties.whatsapp.model.interactive.InteractiveShop;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
+import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
@@ -47,10 +50,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -98,13 +98,24 @@ public class RunCITest implements Listener {
                 skip = true;
                 return;
             }
-            api = Whatsapp.lastConnection();
+            var options = MobileOptions.builder()
+                    .phoneNumber("17154086027")
+                    .verificationCodeMethod(VerificationCodeMethod.SMS)
+                    .verificationCodeHandler(this::onScanCode)
+                    .build();
+            api = Whatsapp.lastConnection(options);
             api.addListener(this);
             return;
         }
         log("Detected github actions environment");
         api = Whatsapp.newConnection(WebOptions.defaultOptions(), loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
         api.addListener(this);
+    }
+
+    private String onScanCode(VerificationCodeResponse type) {
+        System.out.println("Enter OTP: ");
+        var scanner = new Scanner(System.in);
+        return scanner.nextLine().trim();
     }
 
     @SneakyThrows
