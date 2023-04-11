@@ -149,7 +149,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     }
 
     private void serializeChat(Store store, Chat chat, boolean async) {
-        var path = getDirectoryFromType(store.clientType()).resolve("%s/%s%s.smile".formatted(store.uuid(), CHAT_PREFIX, chat.jid()));
+        var path = getDirectoryFromType(store.clientType()).resolve("%s/%s%s.smile".formatted(store.uuid(), CHAT_PREFIX, chat.uuid()));
         var preferences = SmileFile.of(path);
         preferences.write(chat, async);
     }

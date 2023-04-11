@@ -16,6 +16,7 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
@@ -31,51 +32,67 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      * Constant for unlimited listeners size
      */
     private static final int UNLIMITED_LISTENERS = -1;
+
     /**
      * The default executor, mirrors {@link java.util.concurrent.CompletableFuture} implementation
      */
     private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
+
     /**
      * The id of the session
      */
     @Default
     private UUID uuid = UUID.randomUUID();
+
+    /**
+     * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to
+     * connect.
+     */
+    @Default
+    private final Version version = Version.latest(clientType());
+
     /**
      * Whether listeners marked with @RegisteredListener should be registered automatically. By
      * default, this option is enabled.
      */
     @Default
     private boolean autodetectListeners = true;
+
     /**
      * Whether the default serialization mechanism should be used or not. Set this to false if you
      * want to implement a custom serializer.
      */
     @Default
     private ControllerSerializer serializer = new DefaultControllerSerializer();
+
     /**
      * Whether the default serialization mechanism should be used or not. Set this to false if you
      * want to implement a custom serializer.
      */
     @Default
     private ControllerDeserializer deserializer = new DefaultControllerSerializer();
+
     /**
      * Whether a preview should be automatically generated and attached to text messages that
      * contain links. By default, it's enabled with inference.
      */
     @Default
     private TextPreviewSetting textPreviewSetting = TextPreviewSetting.ENABLED_WITH_INFERENCE;
+
     /**
      * The executor to use for the WebSocket
      * Introduced because of <a href="https://github.com/Auties00/Whatsapp4j/issues/223">223</a>
      */
     @Default
     private Executor socketService = DEFAULT_EXECUTOR;
+
     /**
      * Handles failures in the WebSocket. By default, uses the simple handler and prints to the
      * terminal.
      */
     @Default
     private ErrorHandler errorHandler = ErrorHandler.toTerminal();
+
     /**
      * The number of maximum listeners that the linked Whatsapp instance supports. By default,
      * unlimited.
@@ -90,12 +107,6 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      */
     @NonNull
     public abstract ClientType clientType();
-
-    /**
-     * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to connect.
-     */
-    @NonNull
-    public abstract Version version();
 
     /**
      * The name of the os running the client, can be fake
@@ -125,12 +136,6 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
     @Data
     @Accessors(fluent = true)
     public final static class WebOptions extends WhatsappOptions {
-        /**
-         * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to
-         * connect.
-         */
-        @Default
-        private final Version version = Version.latest(ClientType.WEB_CLIENT);
         /**
          * The description provided to Whatsapp during the authentication process. This should be, for
          * example, the name of your service. By default, it's WhatsappWeb4j.
@@ -204,16 +209,17 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
     @Accessors(fluent = true)
     public final static class MobileOptions extends WhatsappOptions {
         /**
-         * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to
-         * connect.
-         */
-        @Default
-        private final Version version = Version.latest(ClientType.APP_CLIENT);
-        /**
          * The phone number to register, including the prefix
+         * This field can be null, but the associated session needs to be already registered
          */
-        @NonNull
         private String phoneNumber;
+
+        /**
+         * A function to retrieve the OTP sent to the registered phone number
+         * The first parameter can be null if the {@link MobileOptions#verificationCodeMethod} was set to {@link VerificationCodeMethod#NONE}
+         * This field can be null, but the associated session needs to be already registered
+         */
+        private Function<VerificationCodeResponse, CompletableFuture<String>> verificationCodeHandler;
 
         /**
          * The method to use to confirm the phone number
@@ -223,11 +229,25 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
         private VerificationCodeMethod verificationCodeMethod = VerificationCodeMethod.SMS;
 
         /**
-         * A function to retrieve the OTP sent to the registered phone number
-         * The first parameter can be null if the {@link MobileOptions#verificationCodeMethod} was set to {@link VerificationCodeMethod#NONE}
+         * The pushname of the registered user
+         * Setting this field for an already registered user will have no effect
          */
+        @Default
         @NonNull
-        private Function<VerificationCodeResponse, String> verificationCodeHandler;
+        private String name = "Whatsapp4j";
+
+
+        /**
+         * Constructs a new instance with default options for an already registered phone number
+         *
+         * @return a non-null instance
+         */
+        public static MobileOptions ofRegistered(@NonNull UUID uuid) {
+            return MobileOptions.builder()
+                    .uuid(uuid)
+                    .build();
+        }
+
 
         /**
          * Returns the type of client

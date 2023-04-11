@@ -1,4 +1,4 @@
-open module it.auties.whatsappweb4j {
+open module it.auties.whatsapp4j {
     requires static lombok;
     requires transitive java.desktop;
     requires jakarta.websocket.client;

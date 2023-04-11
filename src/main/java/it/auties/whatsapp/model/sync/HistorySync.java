@@ -28,8 +28,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 public class HistorySync implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = HistorySync.HistorySyncHistorySyncType.class)
-    private HistorySyncHistorySyncType syncType;
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = Type.class)
+    private Type syncType;
 
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = Chat.class, repeated = true)
     @Default
@@ -69,7 +69,7 @@ public class HistorySync implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("HistorySyncType")
-    public enum HistorySyncHistorySyncType {
+    public enum Type {
         INITIAL_BOOTSTRAP(0),
         INITIAL_STATUS_V3(1),
         FULL(2),
@@ -81,7 +81,7 @@ public class HistorySync implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static HistorySyncHistorySyncType of(int index) {
+        public static Type of(int index) {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
         }
     }

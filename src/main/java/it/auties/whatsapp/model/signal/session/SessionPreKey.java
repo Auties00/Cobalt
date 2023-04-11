@@ -6,6 +6,6 @@ import lombok.extern.jackson.Jacksonized;
 
 @Builder
 @Jacksonized
-public record SessionPreKey(int preKeyId, byte @NonNull [] baseKey, int signedKeyId) {
+public record SessionPreKey(Integer preKeyId, byte @NonNull [] baseKey, int signedKeyId) {
 
 }

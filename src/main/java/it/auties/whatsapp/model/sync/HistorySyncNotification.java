@@ -5,6 +5,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.AttachmentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,8 +38,8 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
     @ProtobufProperty(index = 5, type = STRING)
     private String mediaDirectPath;
 
-    @ProtobufProperty(index = 6, type = MESSAGE, implementation = HistorySyncNotification.HistorySyncNotificationHistorySyncType.class)
-    private HistorySyncNotificationHistorySyncType syncType;
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = Type.class)
+    private Type syncType;
 
     @ProtobufProperty(index = 7, type = UINT32)
     private Integer chunkOrder;
@@ -63,14 +64,14 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
     }
 
     @Override
-    public String mediaName() {
-        return "WhatsApp History Keys";
+    public AttachmentType attachmentType() {
+        return AttachmentType.HISTORY_SYNC;
     }
 
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("HistorySyncType")
-    public enum HistorySyncNotificationHistorySyncType {
+    public enum Type {
         INITIAL_BOOTSTRAP(0),
         INITIAL_STATUS_V3(1),
         FULL(2),
@@ -81,7 +82,7 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
         private final int index;
 
         @JsonCreator
-        public static HistorySyncNotificationHistorySyncType of(int index) {
+        public static Type of(int index) {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
         }
     }

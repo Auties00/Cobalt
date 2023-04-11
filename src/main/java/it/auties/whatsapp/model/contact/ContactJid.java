@@ -94,14 +94,14 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     /**
-     * Constructs a new ContactId for a companion
+     * Constructs a new ContactId for a device
      *
      * @param jid    the nullable jid of the user
      * @param agent  the agent jid
      * @param device the device jid
      * @return a non-null contact jid
      */
-    public static ContactJid ofCompanion(String jid, int device, int agent) {
+    public static ContactJid ofDevice(String jid, int device, int agent) {
         return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, agent);
     }
 

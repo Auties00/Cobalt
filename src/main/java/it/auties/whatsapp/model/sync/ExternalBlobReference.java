@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.sync;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.AttachmentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -46,7 +47,7 @@ public final class ExternalBlobReference implements ProtobufMessage, AttachmentP
     }
 
     @Override
-    public String mediaName() {
-        return "WhatsApp App State Keys";
+    public AttachmentType attachmentType() {
+        return AttachmentType.APP_STATE;
     }
 }

@@ -10,7 +10,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized

@@ -6,10 +6,13 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.NonNull;
 
+import java.util.Objects;
+
 public record PhoneNumber(long number, @NonNull CountryCode countryCode) {
     @JsonCreator
     public static PhoneNumber of(String phoneNumber) {
         try {
+            Objects.requireNonNull(phoneNumber, "Missing phone number: provide it in the MobileOptions");
             var prefixedPhoneNumber = phoneNumber.startsWith("+") ? phoneNumber : "+%s".formatted(phoneNumber);
             var parsed = PhoneNumberUtil.getInstance().parse(prefixedPhoneNumber, null);
             return CountryCode.ofPrefix(String.valueOf(parsed.getCountryCode()))

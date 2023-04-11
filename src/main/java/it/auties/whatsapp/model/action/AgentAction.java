@@ -39,12 +39,12 @@ public final class AgentAction implements Action {
     private boolean deleted;
 
     /**
-     * Always throws an exception as this action cannot be serialized
+     * The name of this action
      *
-     * @return an exception
+     * @return a non-null string
      */
     @Override
     public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action: no index name");
+        return "deviceAgent";
     }
 }

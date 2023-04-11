@@ -21,6 +21,10 @@ public class Clock {
         return Instant.now().toEpochMilli();
     }
 
+    public Optional<ZonedDateTime> parseSeconds(Integer input) {
+        return parseSeconds(input.longValue());
+    }
+
     public Optional<ZonedDateTime> parseSeconds(Long input) {
         return Optional.ofNullable(input)
                 .filter(time -> time != 0)

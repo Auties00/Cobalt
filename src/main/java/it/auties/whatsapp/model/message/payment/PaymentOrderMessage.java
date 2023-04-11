@@ -72,7 +72,7 @@ public final class PaymentOrderMessage extends ContextualMessage implements Paym
     /**
      * The jid of the seller associated with this order
      */
-    @ProtobufProperty(index = 8, type = STRING, implementation = ContactJid.class)
+    @ProtobufProperty(index = 8, type = STRING)
     private ContactJid sellerId;
 
     /**

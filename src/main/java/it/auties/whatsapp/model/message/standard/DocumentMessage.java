@@ -8,12 +8,13 @@ import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.Spec;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -25,8 +26,6 @@ import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
-import static it.auties.whatsapp.util.Medias.THUMBNAIL_HEIGHT;
-import static it.auties.whatsapp.util.Medias.THUMBNAIL_WIDTH;
 
 /**
  * A model class that represents a message holding a document inside
@@ -164,9 +163,9 @@ public final class DocumentMessage extends MediaMessage implements InteractiveHe
                 .fileName(fileName)
                 .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media, extension).orElse(1))
                 .title(title)
-                .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, actualMimeType).orElse(null))
-                .thumbnailWidth(THUMBNAIL_WIDTH)
-                .thumbnailHeight(THUMBNAIL_HEIGHT)
+                .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, extension).orElse(null))
+                .thumbnailWidth(Spec.Whatsapp.THUMBNAIL_WIDTH)
+                .thumbnailHeight(Spec.Whatsapp.THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }

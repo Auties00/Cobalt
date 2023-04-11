@@ -158,6 +158,7 @@ public final class Keys extends Controller<Keys> {
      */
     @NonNull
     @Default
+    @Getter
     private Map<SessionAddress, Session> sessions = new ConcurrentHashMap<>();
 
     /**

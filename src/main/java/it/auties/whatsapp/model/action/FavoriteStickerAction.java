@@ -73,6 +73,6 @@ public final class FavoriteStickerAction implements Action {
      */
     @Override
     public String indexName() {
-        return "star";
+        return "favoriteSticker";
     }
 }

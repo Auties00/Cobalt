@@ -34,7 +34,7 @@ public class Decoder {
         var buffer = Bytes.of(input);
         var token = buffer.readByte() & 2;
         var data = buffer.remaining().toByteArray();
-        this.buffer = Bytes.of(token == 0 ? data : BytesHelper.deflate(data));
+        this.buffer = Bytes.of(token == 0 ? data : BytesHelper.decompress(data));
         return readEmbeddedNode();
     }
 
@@ -132,7 +132,7 @@ public class Decoder {
         var agent = buffer.readUnsignedByte();
         var device = buffer.readUnsignedByte();
         var user = readString();
-        return ContactJid.ofCompanion(user, device, agent);
+        return ContactJid.ofDevice(user, device, agent);
     }
 
     private int readSize(int token) {

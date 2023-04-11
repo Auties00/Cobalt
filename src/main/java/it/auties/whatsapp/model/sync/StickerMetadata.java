@@ -4,7 +4,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
-import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -103,7 +103,7 @@ public final class StickerMetadata implements ProtobufMessage, AttachmentProvide
     }
 
     @Override
-    public String mediaName() {
-        return MediaMessageType.STICKER.keyName();
+    public AttachmentType attachmentType() {
+        return AttachmentType.IMAGE;
     }
 }

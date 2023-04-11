@@ -20,11 +20,11 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 @ProtobufName("ADVDeviceIdentity")
 public class DeviceIdentity implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = UINT32)
-    private Integer rawId;
+    private int rawId;
 
     @ProtobufProperty(index = 2, type = UINT64)
-    private Long timestamp;
+    private long timestamp;
 
     @ProtobufProperty(index = 3, type = UINT32)
-    private Integer keyIndex;
+    private int keyIndex;
 }

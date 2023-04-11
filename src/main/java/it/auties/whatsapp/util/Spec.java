@@ -24,6 +24,12 @@ public class Spec {
         public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(WEB_VERSION).toByteArray();
         private static final byte[] MOBILE_VERSION = new byte[]{5, Tokens.DICTIONARY_VERSION};
         public static final byte[] APP_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(MOBILE_VERSION).toByteArray();
+        public static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
+        public static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
+        public static final byte[] DEVICE_MOBILE_SIGNATURE_HEADER = {6, 2};
+        public static final int MAX_COMPANIONS = 5;
+        public static final int THUMBNAIL_WIDTH = 480;
+        public static final int THUMBNAIL_HEIGHT = 339;
     }
 
     public final static class Signal {

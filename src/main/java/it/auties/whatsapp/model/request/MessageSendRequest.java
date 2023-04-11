@@ -7,7 +7,7 @@ import lombok.Builder;
 import java.util.Map;
 
 @Builder
-public record MessageSendRequest(MessageInfo info, ContactJid overrideSender, boolean force,
+public record MessageSendRequest(MessageInfo info, ContactJid overrideSender, boolean force, boolean peer,
                                  Map<String, Object> additionalAttributes) {
     public static MessageSendRequest of(MessageInfo info) {
         return MessageSendRequest.builder()

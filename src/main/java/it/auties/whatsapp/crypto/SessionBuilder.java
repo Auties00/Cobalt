@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
@@ -22,10 +22,20 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         Validate.isTrue(Curve25519.verifySignature(KeyHelper.withoutHeader(identityKey), signedPreKey.keyPair()
                 .encodedPublicKey(), signedPreKey.signature()), "Signature mismatch", SecurityException.class);
         var baseKey = SignalKeyPair.random();
-        var state = createState(true, baseKey, null, identityKey, preKey == null ? null : preKey.keyPair()
-                .encodedPublicKey(), signedPreKey.keyPair()
-                .encodedPublicKey(), id, Spec.Signal.CURRENT_VERSION);
-        var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
+        var state = createState(true,
+                baseKey,
+                null,
+                identityKey,
+                preKey == null ? null : preKey.keyPair().encodedPublicKey(),
+                signedPreKey.keyPair().encodedPublicKey(),
+                id,
+                Signal.CURRENT_VERSION
+        );
+        var pendingPreKey = new SessionPreKey(
+                preKey == null ? null : preKey.id(),
+                baseKey.encodedPublicKey(),
+                signedPreKey.id()
+        );
         state.pendingPreKey(pendingPreKey);
         keys.findSessionByAddress(address)
                 .map(Session::closeCurrentState)
