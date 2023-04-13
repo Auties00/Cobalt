@@ -2,7 +2,7 @@ package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.api.DisconnectReason;
 
-enum SocketState {
+public enum SocketState {
     WAITING,
     CONNECTED,
     DISCONNECTED,

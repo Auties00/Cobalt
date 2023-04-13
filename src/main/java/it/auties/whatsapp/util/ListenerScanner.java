@@ -13,14 +13,18 @@ import java.util.NoSuchElementException;
 
 @UtilityClass
 public class ListenerScanner {
-    public List<Listener> scan(Whatsapp whatsapp) {
+    private static final List<Class<?>> listeners;
+
+    static {
         try (var scanner = createScanner()) {
-            return scanner.getClassesWithAnnotation(RegisterListener.class)
-                    .loadClasses()
-                    .stream()
-                    .map(clazz -> initialize(clazz, whatsapp))
-                    .toList();
+            listeners = scanner.getClassesWithAnnotation(RegisterListener.class).loadClasses();
         }
+    }
+
+    public List<Listener> scan(Whatsapp whatsapp) {
+        return listeners.stream()
+                .map(listener -> initialize(listener, whatsapp))
+                .toList();
     }
 
     private ScanResult createScanner() {
@@ -30,8 +34,8 @@ public class ListenerScanner {
     private Listener initialize(Class<?> listener, Whatsapp whatsapp) {
         Validate.isTrue(Listener.class.isAssignableFrom(listener), "Cannot initialize listener at %s: cannot register classes that don't implement WhatsappListener", listener.getName(), IllegalArgumentException.class);
         try {
-            return (Listener) listener.getConstructor(createParameters(whatsapp))
-                    .newInstance(createArguments(whatsapp));
+            return (Listener) listener.getConstructor(whatsapp == null ? new Class[0] : new Class[]{Whatsapp.class})
+                    .newInstance(whatsapp == null ? new Object[0] : new Object[]{whatsapp});
         } catch (NoSuchMethodException noArgsConstructorException) {
             if (whatsapp != null) {
                 return initialize(listener, null);
@@ -45,13 +49,5 @@ public class ListenerScanner {
         } catch (InstantiationException instantiationException) {
             throw new IllegalArgumentException("Cannot initialize listener at %s: an error occurred while initializing the class(check its constructor)".formatted(listener.getName()), instantiationException);
         }
-    }
-
-    private Object[] createArguments(Whatsapp whatsapp) {
-        return whatsapp == null ? new Object[0] : new Object[]{whatsapp};
-    }
-
-    private Class<?>[] createParameters(Whatsapp whatsapp) {
-        return whatsapp == null ? new Class[0] : new Class[]{Whatsapp.class};
     }
 }

@@ -4,15 +4,7 @@ import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.HistoryLength;
-import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
-import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.crypto.Handshake;
-import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
@@ -21,26 +13,10 @@ import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMeth
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Spec;
-import it.auties.whatsapp.util.Spec.Whatsapp;
-import it.auties.whatsapp.util.Validate;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Base64;
-import java.util.HexFormat;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 class AuthHandler {
@@ -88,7 +64,7 @@ class AuthHandler {
                 .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                 .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                 .userAgent(createUserAgent());
-        if(socketHandler.options().clientType() == ClientType.WEB_CLIENT){
+        if(socketHandler.store().clientType() == ClientType.WEB_CLIENT){
             builder.webInfo(new WebInfo(getWebPlatform()));
         }
 
@@ -97,37 +73,40 @@ class AuthHandler {
     }
 
     private UserAgent createUserAgent() {
-        var mobile = socketHandler.options().clientType() == ClientType.APP_CLIENT;
+        var mobile = socketHandler.store().clientType() == ClientType.APP_CLIENT;
         return UserAgent.builder()
-                .appVersion(socketHandler.options().version())
-                .osVersion(socketHandler.options().osVersion())
-                .device(socketHandler.options().deviceName())
-                .manufacturer(socketHandler.options().deviceManufacturer())
-                .platform(mobile ? UserAgentPlatform.IOS : UserAgentPlatform.WEB)
+                .appVersion(socketHandler.store().version())
+                .osVersion(Spec.Whatsapp.MOBILE_OS_VERSION)
+                .device(Spec.Whatsapp.MOBILE_DEVICE)
+                .manufacturer(Spec.Whatsapp.MOBILE_DEVICE_MANUFACTURER)
+                .platform(mobile ? Spec.Whatsapp.MOBILE_OS_TYPE : UserAgentPlatform.WEB)
                 .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .build();
     }
 
     private WebInfoWebSubPlatform getWebPlatform() {
-        if (socketHandler.options().clientType() != ClientType.WEB_CLIENT) {
+        if (socketHandler.store().clientType() != ClientType.WEB_CLIENT) {
             return null;
         }
 
-        var options = (WebOptions) socketHandler.options();
-        return options.historyLength() == HistoryLength.ONE_YEAR ? WebInfoWebSubPlatform.WIN_STORE : WebInfoWebSubPlatform.WEB_BROWSER;
+        if (socketHandler.store().historyLength() == HistoryLength.ONE_YEAR) {
+            return WebInfoWebSubPlatform.WIN_STORE;
+        }
+
+        return WebInfoWebSubPlatform.WEB_BROWSER;
     }
 
     private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
-        if(socketHandler.options() instanceof MobileOptions options){
-            var phoneNumber = PhoneNumber.of(options.phoneNumber());
+        if(socketHandler.store().clientType() == ClientType.APP_CLIENT){
+            var phoneNumber = socketHandler.store().phoneNumber();
             return builder.sessionId(socketHandler.keys().registrationId())
                     .shortConnect(true)
                     .connectAttemptCount(0)
                     .device(0)
                     .dnsSource(getDnsSource())
                     .passive(false)
-                    .pushName(options.name())
+                    .pushName(socketHandler.store().name())
                     .username(Long.parseLong(phoneNumber.toJid().user()))
                     .build();
         }
@@ -153,14 +132,14 @@ class AuthHandler {
 
     private CompanionData createRegisterData() {
         var companion = CompanionData.builder()
-                .buildHash(socketHandler.options().version().toHash())
+                .buildHash(socketHandler.store().version().toHash())
                 .id(socketHandler.keys().encodedRegistrationId())
                 .keyType(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
                 .identifier(socketHandler.keys().identityKeyPair().publicKey())
                 .signatureId(socketHandler.keys().signedKeyPair().encodedId())
                 .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
                 .signature(socketHandler.keys().signedKeyPair().signature());
-        if (socketHandler.options().clientType() == ClientType.WEB_CLIENT) {
+        if (socketHandler.store().clientType() == ClientType.WEB_CLIENT) {
             var props = Protobuf.writeMessage(createCompanionProps());
             companion.companion(props);
         }
@@ -169,130 +148,15 @@ class AuthHandler {
     }
 
     private Companion createCompanionProps() {
-        if (socketHandler.options().clientType() != ClientType.WEB_CLIENT) {
+        if (socketHandler.store().clientType() != ClientType.WEB_CLIENT) {
             return null;
         }
 
-        var options = (WebOptions) socketHandler.options();
         return Companion.builder()
-                .os(options.name())
-                .platformType(getWebBrowser(options))
-                .requireFullSync(options.historyLength() == HistoryLength.ONE_YEAR)
+                .os(socketHandler.store().name())
+                .platformType(socketHandler.store().historyLength() == HistoryLength.ONE_YEAR ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
+                .requireFullSync(socketHandler.store().historyLength() == HistoryLength.ONE_YEAR)
                 .build();
-    }
-
-    private CompanionPropsPlatformType getWebBrowser(WebOptions webOptions) {
-        return webOptions.historyLength() == HistoryLength.ONE_YEAR ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME;
-    }
-
-    protected CompletableFuture<Void> checkRegistrationStatus(){
-        var options = (MobileOptions) socketHandler.options();
-        if (options.verificationCodeMethod() != VerificationCodeMethod.NONE) {
-            return registerPhoneNumber();
-        }
-
-        return Objects.requireNonNull(options.verificationCodeHandler(), "Missing verification code handler: provide it in the MobileOptions")
-                .apply(null)
-                .thenAcceptAsync(this::verifyPhoneNumber);
-    }
-
-    private CompletableFuture<Void> registerPhoneNumber() {
-        var options = (MobileOptions) socketHandler.options();
-        var phoneNumber = PhoneNumber.of(options.phoneNumber());
-        var userAgent = createUserAgent(options);
-        return askForVerificationCode(phoneNumber, userAgent, options.verificationCodeMethod())
-                .thenComposeAsync(Objects.requireNonNull(options.verificationCodeHandler(), "Missing verification code handler: provide it in the MobileOptions"))
-                .thenComposeAsync(this::verifyPhoneNumber);
-    }
-
-    private CompletableFuture<Void> verifyPhoneNumber(@NonNull String code) {
-        var options = (MobileOptions) socketHandler.options();
-        var phoneNumber = PhoneNumber.of(options.phoneNumber());
-        var userAgent = createUserAgent(options);
-        return sendVerificationCode(phoneNumber, userAgent, code)
-                .thenRunAsync(() -> saveRegistrationStatus(options));
-    }
-
-    private void saveRegistrationStatus(MobileOptions options) {
-        socketHandler.keys().registered(true);
-        socketHandler.keys().serialize(true);
-        socketHandler.store().jid(ContactJid.of(options.phoneNumber()));
-        socketHandler.store().name(options.name());
-        socketHandler.store().serialize(true);
-    }
-
-    private String createUserAgent(MobileOptions options) {
-        return "WhatsApp/%s %s/%s Device/%s-%s".formatted(options.version(), options.osName(), options.osVersion(), options.deviceManufacturer(), options.deviceName());
-    }
-
-    private CompletableFuture<Void> sendVerificationCode(PhoneNumber phoneNumber, String userAgent, String code) {
-        var registerOptions = getRegistrationOptions(phoneNumber, Map.entry("code", code.replaceAll("-", "")));
-        return sendRegistrationRequest(userAgent,"/register", registerOptions)
-                .thenAcceptAsync(this::handleVerificationCode);
-    }
-
-    private CompletableFuture<VerificationCodeResponse> askForVerificationCode(PhoneNumber phoneNumber, String userAgent, VerificationCodeMethod method) {
-        var codeOptions = getRegistrationOptions(phoneNumber,
-                Map.entry("mcc", phoneNumber.countryCode().mcc()),
-                Map.entry("mnc", phoneNumber.countryCode().mnc()),
-                Map.entry("sim_mcc", "000"),
-                Map.entry("sim_mnc", "000"), Map.entry("method", method.type()),
-                Map.entry("reason", ""),
-                Map.entry("hasav", "1"));
-        return sendRegistrationRequest(userAgent, "/code", codeOptions)
-                .thenApplyAsync(this::handleVerificationCode);
-    }
-
-    private VerificationCodeResponse handleVerificationCode(HttpResponse<String> codeResponse) {
-        var phoneNumberResponse = Json.readValue(codeResponse.body(), VerificationCodeResponse.class);
-        Validate.isTrue(phoneNumberResponse.status().isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
-        return phoneNumberResponse;
-    }
-
-    private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(String userAgent, String path, Map<String, Object> params) {
-        var client = HttpClient.newHttpClient();
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
-                .GET()
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .header("User-Agent", userAgent)
-                .build();
-        return client.sendAsync(request, BodyHandlers.ofString());
-    }
-
-    @SafeVarargs
-    private Map<String, Object> getRegistrationOptions(PhoneNumber phoneNumber, Entry<String, Object>... attributes) {
-        var keys = socketHandler.keys();
-        return Attributes.of(attributes)
-                .put("cc", phoneNumber.countryCode().prefix())
-                .put("in", phoneNumber.number())
-                .put("lg", "en")
-                .put("lc", "GB")
-                .put("mistyped", "6")
-                .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
-                .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
-                .put("e_keytype", "BQ")
-                .put("e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
-                .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
-                .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
-                .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
-                .put("fdid", keys.phoneId())
-                .put("expid", keys.deviceId())
-                .put("network_radio_type", "1")
-                .put("simnum", "1")
-                .put("hasinrc", "1")
-                .put("pid", ThreadLocalRandom.current().nextInt(1000))
-                .put("rc", "0")
-                .put("id", keys.identityId())
-                .put("token", HexFormat.of().formatHex(MD5.calculate(Whatsapp.MOBILE_TOKEN + phoneNumber.number())))
-                .toMap();
-    }
-
-    private String toFormParams(Map<String, Object> values) {
-        return values.entrySet()
-                .stream()
-                .map(entry -> "%s=%s".formatted(entry.getKey(), entry.getValue()))
-                .collect(Collectors.joining("&"));
     }
 
     protected void dispose() {

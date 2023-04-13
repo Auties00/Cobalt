@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.api.ConnectionType;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
@@ -19,9 +19,12 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.Spec.Whatsapp;
-import lombok.*;
+import it.auties.whatsapp.util.Spec;
+import lombok.AccessLevel;
 import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -44,7 +47,8 @@ public final class Keys extends Controller<Keys> {
      * The client id
      */
     @Getter
-    private int registrationId;
+    @Default
+    private int registrationId = KeyHelper.registrationId();
 
     /**
      * The secret key pair used for buffer messages
@@ -202,28 +206,57 @@ public final class Keys extends Controller<Keys> {
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
-     * @param options the non-null options
+     * @param uuid           the uuid of the session to create, can be null
+     * @param connectionType the non-null connection type
+     * @param clientType     the non-null type of the client
+     * @param serializer     the non-null serializer
      * @return a non-null instance
      */
-    public static Keys of(@NonNull WhatsappOptions options) {
-        return options.deserializer()
-                .deserializeKeys(options.clientType(), options.uuid())
-                .map(keys -> keys.serializer(options.serializer()))
-                .orElseGet(() -> random(options));
+    public static Keys of(UUID uuid, ConnectionType connectionType, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return switch (connectionType) {
+            case NEW -> {
+                var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
+                yield of(sessionUuid, clientType, serializer);
+            }
+            case FIRST -> {
+                var sessionUuid = Objects.requireNonNullElseGet(serializer.findIds(clientType).peekFirst(), UUID::randomUUID);
+                yield of(sessionUuid, clientType, serializer);
+            }
+            case LAST -> {
+                var sessionUuid = Objects.requireNonNullElseGet(serializer.findIds(clientType).peekLast(), UUID::randomUUID);
+                yield of(sessionUuid, clientType, serializer);
+            }
+        };
+    }
+
+    /**
+     * Returns the keys saved in memory or constructs a new clean instance
+     *
+     * @param uuid       the non-null uuid of the session
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
+     * @return a non-null store
+     */
+    public static Keys of(@NonNull UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return serializer.deserializeKeys(clientType, uuid)
+                .map(keys -> keys.serializer(serializer))
+                .orElseGet(() -> random(uuid, clientType, serializer));
     }
 
     /**
      * Returns a new instance of random keys
      *
-     * @param options the non-null options
+     * @param uuid the uuid of the session to create, can be null
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
      * @return a non-null instance
      */
-    public static Keys random(@NonNull WhatsappOptions options) {
+    public static Keys random(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         var result = Keys.builder()
-                .serializer(options.serializer())
-                .uuid(options.uuid())
-                .clientType(options.clientType())
-                .prologue(options.clientType() == ClientType.WEB_CLIENT ? Whatsapp.WEB_PROLOGUE : Whatsapp.APP_PROLOGUE)
+                .serializer(serializer)
+                .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
+                .clientType(clientType)
+                .prologue(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.WEB_PROLOGUE : Spec.Whatsapp.APP_PROLOGUE)
                 .build();
         result.signedKeyPair(SignalSignedKeyPair.of(result.registrationId(), result.identityKeyPair()));
         result.serialize(true);

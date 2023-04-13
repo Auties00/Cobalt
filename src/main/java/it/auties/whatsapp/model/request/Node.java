@@ -153,8 +153,9 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
      *
      * @return an optional
      */
-    public Optional<Long> contentAsLong() {
-        return content instanceof Number number ? Optional.of(number.longValue()) : Optional.empty();
+    @SuppressWarnings("unused")
+    public OptionalLong contentAsLong() {
+        return content instanceof Number number ? OptionalLong.of(number.longValue()) : OptionalLong.empty();
     }
 
     /**
@@ -163,8 +164,22 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
      * @return an optional
      */
     @SuppressWarnings("unused")
-    public Optional<Double> contentAsDouble() {
-        return content instanceof Number number ? Optional.of(number.doubleValue()) : Optional.empty();
+    public OptionalDouble contentAsDouble() {
+        return content instanceof Number number ? OptionalDouble.of(number.doubleValue()) : OptionalDouble.empty();
+    }
+
+    /**
+     * Returns the content of this object as a double
+     *
+     * @return an optional
+     */
+    @SuppressWarnings("unused")
+    public Optional<Boolean> contentAsBoolean() {
+        return Optional.ofNullable(switch (content) {
+            case String string -> Boolean.parseBoolean(string.toLowerCase(Locale.ROOT));
+            case byte[] bytes -> Boolean.parseBoolean(new String(bytes, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT));
+            case null, default -> null;
+        });
     }
 
     /**

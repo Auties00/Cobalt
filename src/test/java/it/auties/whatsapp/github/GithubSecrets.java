@@ -138,10 +138,10 @@ public class GithubSecrets {
     }
 
     private byte[] getStoreAsJson() {
-        return Smile.writeValueAsBytes(Whatsapp.lastConnection().store());
+        return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().store());
     }
 
     private byte[] getCredentialsAsJson() {
-        return Smile.writeValueAsBytes(Whatsapp.lastConnection().keys());
+        return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().keys());
     }
 }

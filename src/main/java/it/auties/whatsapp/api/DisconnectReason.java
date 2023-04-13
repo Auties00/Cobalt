@@ -9,14 +9,17 @@ public enum DisconnectReason {
      * Default errorReason
      */
     DISCONNECTED,
+
     /**
      * Reconnect
      */
     RECONNECTING,
+
     /**
      * Logged out
      */
     LOGGED_OUT,
+
     /**
      * Session restore
      */

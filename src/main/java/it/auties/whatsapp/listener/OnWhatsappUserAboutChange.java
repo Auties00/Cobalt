@@ -2,7 +2,7 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
 
-public interface onWhatsappUserAboutChange extends Listener {
+public interface OnWhatsappUserAboutChange extends Listener {
     /**
      * Called when the companion's status changes
      *

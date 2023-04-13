@@ -10,6 +10,7 @@ public enum ClientType {
      * from <a href="https://web.whatsapp.com">Whatsapp Web Client</a>
      */
     WEB_CLIENT,
+
     /**
      * A standalone client that requires an SMS countryCode sent to the companion's phone number on log-in
      * Reversed from <a href="https://github.com/tgalal/yowsup/issues/2910">KaiOS Mobile App</a>

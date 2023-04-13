@@ -19,7 +19,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,8 +34,8 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 @Accessors(fluent = true)
 @ProtobufName("AppVersion")
 public class Version implements ProtobufMessage {
-    private static final Version DEFAULT_WEB_VERSION = new Version(2, 2245, 9);
-    private static final Pattern MOBILE_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )(.*)(?=\\) Requires IOS)");
+    private static Version cachedWebVersion;
+    private static Version cachedMobileVersion;
 
     @ProtobufProperty(index = 1, type = UINT32)
     private Integer primary;
@@ -92,22 +91,26 @@ public class Version implements ProtobufMessage {
 
     private static Version getLatestWebVersion() {
         try {
+            if(cachedWebVersion != null){
+                return cachedWebVersion;
+            }
+
             var client = HttpClient.newHttpClient();
             var request = HttpRequest.newBuilder()
                     .GET()
-                    .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_WEB_VERSION)))
+                    .uri(URI.create(WEB_UPDATE_URL))
                     .build();
             var response = client.send(request, ofString());
             var model = Json.readValue(response.body(), AppVersionResponse.class);
-            return model.currentVersion() == null ? DEFAULT_WEB_VERSION : new Version(model.currentVersion());
+            return new Version(model.currentVersion());
         } catch (Throwable throwable) {
-            return DEFAULT_WEB_VERSION;
+            throw new RuntimeException("Cannot fetch latest web version", throwable);
         }
     }
 
     private static Version getLatestMobileVersion() {
         // TODO: Find a way to make this dynamic
-        //
+        //     private static final Pattern MOBILE_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )(.*)(?=\\) Requires IOS)");
         //        try {
         //            var client = HttpClient.newHttpClient();
         //            var request = HttpRequest.newBuilder()

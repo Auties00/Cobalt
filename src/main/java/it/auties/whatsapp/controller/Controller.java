@@ -51,6 +51,15 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     public abstract void dispose();
 
     /**
+     * Returns the serializer
+     *
+     * @return a non-null serializer
+     */
+    public ControllerSerializer serializer() {
+        return serializer;
+    }
+
+    /**
      * Sets the serializer of this controller
      *
      * @param serializer a serializer
@@ -69,5 +78,12 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      */
     public String toJson() {
         return Json.writeValueAsString(this, true);
+    }
+
+    /**
+     * Deletes the current session
+     */
+    public void deleteSession() {
+        serializer.deleteSession(clientType, uuid);
     }
 }

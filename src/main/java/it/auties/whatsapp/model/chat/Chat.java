@@ -127,7 +127,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The history sync status
      */
     @ProtobufProperty(index = 11, name = "endOfHistoryTransferType", type = MESSAGE)
-    private EndOfHistoryTransferType endOfHistoryTransferType;
+    @Default
+    private EndOfHistoryTransferType endOfHistoryTransferType = EndOfHistoryTransferType.COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY;
 
     /**
      * The non-null display name of this chat
@@ -420,10 +421,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             return List.of();
         }
 
-        synchronized (historySyncMessages){
-            var iterator = historySyncMessages.iterator();
-            return IntStream.range(0, unreadMessagesCount).mapToObj(i -> iterator.next()).toList();
-        }
+        var iterator = historySyncMessages.iterator();
+        return IntStream.range(0, unreadMessagesCount).mapToObj(i -> iterator.next()).toList();
     }
 
     /**
@@ -506,9 +505,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> newestMessage() {
-        synchronized (historySyncMessages){
-            return Optional.ofNullable(historySyncMessages.peekLast());
-        }
+        return Optional.ofNullable(historySyncMessages.peekLast());
     }
 
     /**
@@ -518,11 +515,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> newestStandardMessage() {
-        synchronized (historySyncMessages) {
-            return historySyncMessages.stream()
-                    .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                    .reduce((first, second) -> second);
-        }
+        return historySyncMessages.stream()
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
+                .reduce((first, second) -> second);
+
     }
 
     /**
@@ -532,12 +528,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> newestMessageFromMe() {
-        synchronized (historySyncMessages){
-            return historySyncMessages.stream()
-                    .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                    .filter(MessageInfo::fromMe)
-                    .reduce((first, second) -> second);
-        }
+        return historySyncMessages.stream()
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
+                .filter(MessageInfo::fromMe)
+                .reduce((first, second) -> second);
     }
 
     /**
@@ -547,11 +541,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> newestServerMessage() {
-        synchronized (historySyncMessages) {
-            return historySyncMessages.stream()
-                    .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
-                    .reduce((first, second) -> second);
-        }
+        return historySyncMessages.stream()
+                .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
+                .reduce((first, second) -> second);
     }
 
     /**
@@ -560,9 +552,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestMessage() {
-        synchronized (historySyncMessages) {
-            return Optional.ofNullable(historySyncMessages.peekFirst());
-        }
+
+        return Optional.ofNullable(historySyncMessages.peekFirst());
+
     }
 
     /**
@@ -572,12 +564,11 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestMessageFromMe() {
-        synchronized (historySyncMessages) {
-            return historySyncMessages.stream()
-                    .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                    .filter(MessageInfo::fromMe)
-                    .findFirst();
-        }
+
+        return historySyncMessages.stream()
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
+                .filter(MessageInfo::fromMe)
+                .findFirst();
     }
 
     /**
@@ -587,11 +578,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestStandardMessage() {
-        synchronized (historySyncMessages) {
-            return historySyncMessages.stream()
-                    .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                    .findFirst();
-        }
+
+        return historySyncMessages.stream()
+                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
+                .findFirst();
     }
 
     /**
@@ -601,11 +591,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestServerMessage() {
-        synchronized (historySyncMessages) {
-            return historySyncMessages.stream()
-                    .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
-                    .findFirst();
-        }
+
+        return historySyncMessages.stream()
+                .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
+                .findFirst();
     }
 
     /**
@@ -614,11 +603,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-null list of messages
      */
     public Collection<MessageInfo> starredMessages() {
-        synchronized (historySyncMessages) {
-            return historySyncMessages.stream()
-                    .filter(MessageInfo::starred)
-                    .toList();
-        }
+
+        return historySyncMessages.stream()
+                .filter(MessageInfo::starred)
+                .toList();
     }
 
     /**
@@ -710,9 +698,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param newMessages the non-null messages to add
      */
     public void addMessages(@NonNull Collection<MessageInfo> newMessages) {
-        synchronized (historySyncMessages) {
-            historySyncMessages.addAll(newMessages);
-        }
+
+        historySyncMessages.addAll(newMessages);
     }
 
     /**
@@ -721,9 +708,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param oldMessages the non-null messages to add
      */
     public void addOldMessages(@NonNull Collection<MessageInfo> oldMessages) {
-        synchronized (historySyncMessages) {
-            historySyncMessages.addAll(0, oldMessages);
-        }
+        historySyncMessages.addAll(0, oldMessages);
     }
 
     /**
@@ -733,14 +718,12 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was added
      */
     public boolean addNewMessage(@NonNull MessageInfo info) {
-        synchronized (historySyncMessages) {
-            if (historySyncMessages.contains(info)) {
-                return false;
-            }
-            historySyncMessages.addLast(info);
-            updateChatTimestamp(info);
-            return true;
+        if (historySyncMessages.contains(info)) {
+            return false;
         }
+        historySyncMessages.add(info);
+        updateChatTimestamp(info);
+        return true;
     }
 
     /**
@@ -750,10 +733,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was added
      */
     public boolean addOldMessage(@NonNull MessageInfo info) {
-        synchronized (historySyncMessages) {
-            historySyncMessages.addFirst(info);
-            return true;
-        }
+
+        historySyncMessages.addFirst(info);
+        return true;
     }
 
     /**
@@ -763,11 +745,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull MessageInfo info) {
-        synchronized (historySyncMessages) {
-            var result = historySyncMessages.remove(info);
-            refreshChatTimestamp();
-            return result;
-        }
+
+        var result = historySyncMessages.remove(info);
+        refreshChatTimestamp();
+        return result;
     }
 
     /**
@@ -777,11 +758,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
-        synchronized (historySyncMessages) {
-            var result = historySyncMessages.removeIf(predicate);
-            refreshChatTimestamp();
-            return result;
-        }
+
+        var result = historySyncMessages.removeIf(predicate);
+        refreshChatTimestamp();
+        return result;
     }
 
     private void refreshChatTimestamp() {
@@ -805,9 +785,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Removes all messages from the chat
      */
     public void removeMessages() {
-        synchronized (historySyncMessages){
-            historySyncMessages.clear();
-        }
+        historySyncMessages.clear();
     }
 
     /**
@@ -817,9 +795,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @JsonGetter
     public Collection<MessageInfo> messages() {
-        synchronized (historySyncMessages) {
-            return Collections.unmodifiableList(historySyncMessages);
-        }
+        return Collections.unmodifiableCollection(historySyncMessages);
     }
 
     /**
@@ -829,15 +805,14 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-null collection
      */
     public Collection<HistorySyncMessage> historySyncMessages(){
-        synchronized (historySyncMessages) {
-            var size = historySyncMessages.size();
-            var syncs = new ArrayList<HistorySyncMessage>(size);
-            for(var index = 0; index < size; index++){
-                syncs.add(new HistorySyncMessage(historySyncMessages.get(index), index));
-            }
-
-            return Collections.unmodifiableList(syncs);
+        var iterator = historySyncMessages.iterator();
+        var syncs = new ArrayList<HistorySyncMessage>(historySyncMessages.size());
+        var index = 0;
+        while(iterator.hasNext()) {
+            syncs.add(new HistorySyncMessage(iterator.next(), index++));
         }
+
+        return Collections.unmodifiableList(syncs);
     }
 
     /**
@@ -906,7 +881,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
          * Complete and no more messages remain on the phone
          */
         COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY(1);
-        
+
         @Getter
         private final int index;
     }
@@ -915,8 +890,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Internal implementation to deserialize messages
      */
     public static class ChatBuilder {
-        public ChatBuilder historySyncMessage(List<HistorySyncMessage> historySyncMessages) {
-            this.historySyncMessages$value = historySyncMessages.stream()
+        public ChatBuilder historySyncMessages(LinkedList<HistorySyncMessage> messages) {
+            this.historySyncMessages$value = messages.stream()
                     .sorted(Comparator.comparing(HistorySyncMessage::messageOrderId))
                     .map(HistorySyncMessage::message)
                     .collect(Collectors.toCollection(LinkedList::new));
@@ -924,8 +899,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             return this;
         }
 
-        @JsonSetter("messages")
-        public ChatBuilder decodedMessages(@NonNull LinkedList<MessageInfo> messages) {
+        @JsonSetter("historySyncMessages")
+        public ChatBuilder messages(@NonNull LinkedList<MessageInfo> messages) {
             this.historySyncMessages$value = messages;
             this.historySyncMessages$set = true;
             return this;
