@@ -23,6 +23,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -86,7 +87,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
     @NonNull
     @Default
-    private final LinkedList<MessageInfo> historySyncMessages = new LinkedList<>();
+    private final ConcurrentLinkedDeque<MessageInfo> historySyncMessages = new ConcurrentLinkedDeque<>();
 
     /**
      * The number of unread messages in this chat. If this field is negative, this chat is marked as
@@ -698,7 +699,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param newMessages the non-null messages to add
      */
     public void addMessages(@NonNull Collection<MessageInfo> newMessages) {
-
         historySyncMessages.addAll(newMessages);
     }
 
@@ -708,7 +708,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param oldMessages the non-null messages to add
      */
     public void addOldMessages(@NonNull Collection<MessageInfo> oldMessages) {
-        historySyncMessages.addAll(0, oldMessages);
+        oldMessages.forEach(historySyncMessages::addFirst);
     }
 
     /**
@@ -733,7 +733,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was added
      */
     public boolean addOldMessage(@NonNull MessageInfo info) {
-
         historySyncMessages.addFirst(info);
         return true;
     }
@@ -890,17 +889,17 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Internal implementation to deserialize messages
      */
     public static class ChatBuilder {
-        public ChatBuilder historySyncMessages(LinkedList<HistorySyncMessage> messages) {
+        public ChatBuilder historySyncMessages(ConcurrentLinkedDeque<HistorySyncMessage> messages) {
             this.historySyncMessages$value = messages.stream()
                     .sorted(Comparator.comparing(HistorySyncMessage::messageOrderId))
                     .map(HistorySyncMessage::message)
-                    .collect(Collectors.toCollection(LinkedList::new));
+                    .collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
             this.historySyncMessages$set = true;
             return this;
         }
 
         @JsonSetter("historySyncMessages")
-        public ChatBuilder messages(@NonNull LinkedList<MessageInfo> messages) {
+        public ChatBuilder messages(@NonNull ConcurrentLinkedDeque<MessageInfo> messages) {
             this.historySyncMessages$value = messages;
             this.historySyncMessages$set = true;
             return this;

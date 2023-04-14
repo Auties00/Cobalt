@@ -103,7 +103,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public boolean isOpen() {
-            return session == null || session.isOpen();
+            return session != null && session.isOpen();
         }
 
         @Override
@@ -215,7 +215,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public boolean isOpen() {
-            return socket.isConnected();
+            return socket != null && socket.isConnected();
         }
 
         @Override

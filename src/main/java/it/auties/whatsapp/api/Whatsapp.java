@@ -1958,20 +1958,24 @@ public class Whatsapp {
                 return CompletableFuture.completedFuture(CompanionLinkResult.RETRY_ERROR);
             }
 
-            var latch = new CountDownLatch(1);
-            OnCompanionDevices listener = data -> {
-                if(data.contains(device)) {
-                    latch.countDown();
-                }
-            };
-            store().listeners().add(listener);
-            latch.await();
-            store().listeners().remove(listener);
+            awaitCompanionRegistration(device);
             return socketHandler.sendQuery("get", "encrypt", Node.ofChildren("key", Node.ofAttributes("user", Map.of("jid", device))))
                     .thenComposeAsync(encryptResult -> handleCompanionEncrypt(encryptResult, device, keyId));
         }catch (InterruptedException exception){
             throw new RuntimeException("Cannot confirm connection", exception);
         }
+    }
+
+    private void awaitCompanionRegistration(ContactJid device) throws InterruptedException {
+        var latch = new CountDownLatch(1);
+        OnCompanionDevices listener = data -> {
+            if(data.contains(device)) {
+                latch.countDown();
+            }
+        };
+        addCompanionDevicesListener(listener);
+        latch.await();
+        removeListener(listener);
     }
 
     private CompletableFuture<CompanionLinkResult> handleCompanionEncrypt(Node result, ContactJid companion, int keyId) {

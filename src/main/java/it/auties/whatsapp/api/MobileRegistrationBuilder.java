@@ -106,9 +106,30 @@ public sealed class MobileRegistrationBuilder {
          *
          * @return the same instance for chaining
          */
+        public CompletableFuture<Whatsapp> sendVerificationCode(long phoneNumber, Supplier<String> handler) {
+            store.phoneNumber(PhoneNumber.of(phoneNumber));
+            return sendVerificationCode(handler);
+        }
+
+        /**
+         * Sends the verification code you already requested to Whatsapp
+         *
+         * @return the same instance for chaining
+         */
         public CompletableFuture<Whatsapp> sendVerificationCode(Supplier<String> handler) {
             return sendVerificationCode(AsyncVerificationCodeSupplier.of(handler));
         }
+
+        /**
+         * Sends the verification code you already requested to Whatsapp
+         *
+         * @return the same instance for chaining
+         */
+        public CompletableFuture<Whatsapp> sendVerificationCode(long phoneNumber, AsyncVerificationCodeSupplier handler) {
+            store.phoneNumber(PhoneNumber.of(phoneNumber));
+            return sendVerificationCode(handler);
+        }
+
 
         /**
          * Sends the verification code you already requested to Whatsapp

@@ -18,6 +18,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
@@ -34,7 +35,7 @@ public class RegistrationHelper {
                 .thenComposeAsync(ignored -> sendVerificationCode(store, keys, handler));
     }
 
-    public CompletableFuture<VerificationCodeResponse> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method) {
+    public CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method) {
         if(method == VerificationCodeMethod.NONE){
             return CompletableFuture.completedFuture(null);
         }
@@ -47,32 +48,35 @@ public class RegistrationHelper {
                 Map.entry("reason", ""),
                 Map.entry("hasav", "1"));
         return sendRegistrationRequest(store,"/code", codeOptions)
-                .thenApplyAsync(RegistrationHelper::readResponse);
+                .thenAcceptAsync(RegistrationHelper::checkResponse)
+                .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
     }
 
     public CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, Supplier<CompletableFuture<String>> handler) {
         return handler.get()
                 .thenComposeAsync(result -> sendVerificationCode(store, keys, result))
-                .thenRunAsync(() -> saveRegistrationStatus(store, keys));
+                .thenRunAsync(() -> saveRegistrationStatus(store, keys, true));
     }
 
-    private void saveRegistrationStatus(Store store, Keys keys) {
-        keys.registered(true);
+    private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
+        keys.registered(registered);
+        if(registered){
+            store.jid(store.phoneNumber().toJid());
+            store.addLinkedDevice(store.jid(), 0);
+        }
         keys.serialize(true);
-        store.jid(store.phoneNumber().toJid());
         store.serialize(true);
     }
 
-    private CompletableFuture<VerificationCodeResponse> sendVerificationCode(Store store, Keys keys, String code) {
+    private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code) {
         var registerOptions = getRegistrationOptions(store, keys, Map.entry("code", code.replaceAll("-", "")));
         return sendRegistrationRequest(store, "/register", registerOptions)
-                .thenApplyAsync(RegistrationHelper::readResponse);
+                .thenAcceptAsync(RegistrationHelper::checkResponse);
     }
 
-    private static VerificationCodeResponse readResponse(HttpResponse<String> result) {
+    private void checkResponse(HttpResponse<String> result) {
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
         Validate.isTrue(response.status().isSuccessful(), "Invalid response: %s".formatted(result));
-        return response;
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
@@ -88,6 +92,7 @@ public class RegistrationHelper {
 
     @SafeVarargs
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
+        Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().countryCode().prefix())
                 .put("in", store.phoneNumber().number())
