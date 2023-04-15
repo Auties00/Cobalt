@@ -1,12 +1,21 @@
 package it.auties.whatsapp;
 
+import it.auties.whatsapp.api.HistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.contact.ContactJid;
 
 // Just used for testing locally
 public class WebTest {
     public static void main(String[] args) {
-        var whatsapp = Whatsapp.newConnection()
-                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
+        var whatsapp = Whatsapp.webBuilder()
+                .lastConnection()
+                .historyLength(HistoryLength.ZERO)
+                .build()
+                .addLoggedInListener(api -> {
+                    System.out.printf("Connected: %s%n", api.store().privacySettings());
+                    var result = api.queryBusinessCertificate(ContactJid.of("6281181188888")).join();
+                    System.out.println("Result: " + result);
+                })
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

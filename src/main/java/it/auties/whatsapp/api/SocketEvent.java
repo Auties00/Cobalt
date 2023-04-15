@@ -8,14 +8,17 @@ public enum SocketEvent {
      * Called when the socket is opened
      */
     OPEN,
+
     /**
      * Called when the socket is closed
      */
     CLOSE,
+
     /**
      * Called when an unexpected error is thrown, can be used as a safety mechanism
      */
     ERROR,
+
     /**
      * Called when a ping is sent
      */

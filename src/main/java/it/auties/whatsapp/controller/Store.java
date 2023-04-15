@@ -3,7 +3,7 @@ package it.auties.whatsapp.controller;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.serialization.performance.Protobuf;
-import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.listener.Listener;
@@ -20,6 +20,7 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -27,6 +28,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
+import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Clock;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -56,6 +58,17 @@ import java.util.stream.Stream;
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store extends Controller<Store> {
     /**
+     * The default executor
+     */
+    private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
+
+    /**
+     * The version used by this session
+     */
+    @Setter
+    private Version version;
+
+    /**
      * The locale of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
@@ -69,7 +82,8 @@ public final class Store extends Controller<Store> {
      */
     @Getter
     @Setter
-    private String name;
+    @Default
+    private String name = "Whatsapp4j";
 
     /**
      * Whether the linked companion is a business account or not
@@ -208,8 +222,7 @@ public final class Store extends Controller<Store> {
     @NonNull
     @JsonIgnore
     @Default
-    @Getter
-    private KeySetView<Listener, Boolean> listeners = ConcurrentHashMap.newKeySet();
+    private final KeySetView<Listener, Boolean> listeners = ConcurrentHashMap.newKeySet();
 
     /**
      * Request counter
@@ -257,31 +270,122 @@ public final class Store extends Controller<Store> {
     private ChatEphemeralTimer newChatsEphemeralTimer = ChatEphemeralTimer.OFF;
 
     /**
+     * The setting to use when generating previews for text messages that contain links
+     */
+    @Getter
+    @Setter
+    @Default
+    private TextPreviewSetting textPreviewSetting = TextPreviewSetting.ENABLED_WITH_INFERENCE;
+
+    /**
+     * Describes how much chat history Whatsapp should send
+     */
+    @Getter
+    @Setter
+    @Default
+    @NonNull
+    private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
+
+    /**
+     * The handler to use when printing out the qr coe
+     */
+    @Getter
+    @Setter
+    @Default
+    @NonNull
+    @JsonIgnore
+    private QrHandler qrHandler = QrHandler.toTerminal();
+
+    /**
+     * The handler for errors
+     */
+    @Getter
+    @Setter
+    @Default
+    @NonNull
+    @JsonIgnore
+    private ErrorHandler errorHandler = ErrorHandler.toTerminal();
+
+    /**
+     * The executor to use for the socket
+     */
+    @Getter
+    @Setter
+    @Default
+    @NonNull
+    @JsonIgnore
+    private Executor socketExecutor = DEFAULT_EXECUTOR;
+
+    /**
+     * Whether listeners should be automatically scanned and registered or not
+     */
+    @Getter
+    @Setter
+    @Default
+    private boolean autodetectListeners = true;
+
+    /**
+     * The phone number of this device
+     */
+    @Getter
+    @Setter
+    private PhoneNumber phoneNumber;
+
+    /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param options the non-null options
+     * @param uuid           the uuid of the session to load, can be null
+     * @param connectionType the non-null connection type
+     * @param clientType     the non-null type of the client
+     * @param serializer     the non-null serializer
      * @return a non-null store
      */
-    public static Store of(@NonNull WhatsappOptions options) {
-        var deserializer = options.deserializer();
-        var result = deserializer.deserializeStore(options.clientType(), options.uuid())
-                .map(store -> store.serializer(options.serializer()))
-                .orElseGet(() -> random(options));
-        deserializer.attributeStore(result); // Run async
+    public static Store of(UUID uuid, @NonNull ConnectionType connectionType, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return switch (connectionType) {
+            case NEW -> {
+                var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
+                yield of(sessionUuid, clientType, serializer);
+            }
+            case FIRST -> {
+                var sessionUuid = Objects.requireNonNullElseGet(serializer.findIds(clientType).peekFirst(), UUID::randomUUID);
+                yield of(sessionUuid, clientType, serializer);
+            }
+            case LAST -> {
+                var sessionUuid = Objects.requireNonNullElseGet(serializer.findIds(clientType).peekLast(), UUID::randomUUID);
+                yield of(sessionUuid, clientType, serializer);
+            }
+        };
+    }
+
+    /**
+     * Returns the store saved in memory or constructs a new clean instance
+     *
+     * @param uuid       the non-null uuid of the session
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
+     * @return a non-null store
+     */
+    public static Store of(@NonNull UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        var result = serializer.deserializeStore(clientType, uuid)
+                .map(store -> store.serializer(serializer))
+                .orElseGet(() -> random(uuid, clientType, serializer));
+        serializer.attributeStore(result); // Run async
         return result;
     }
 
     /**
      * Constructs a new default instance of WhatsappStore
      *
-     * @param options the non-null options
+     * @param uuid the uuid of the session to create, can be null
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
      * @return a non-null store
      */
-    public static Store random(@NonNull WhatsappOptions options) {
+    public static Store random(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return Store.builder()
-                .serializer(options.serializer())
-                .clientType(options.clientType())
-                .uuid(options.uuid())
+                .serializer(serializer)
+                .clientType(clientType)
+                .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .build();
     }
 
@@ -292,9 +396,7 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     public Optional<Contact> findContactByJid(ContactJidProvider jid) {
-        return jid == null ? Optional.empty() : contacts().parallelStream()
-                .filter(contact -> contact.jid().user().equals(jid.toJid().user()))
-                .findAny();
+        return jid == null ? Optional.empty() : Optional.ofNullable(contacts.get(jid.toJid()));
     }
 
     /**
@@ -599,8 +701,12 @@ public final class Store extends Controller<Store> {
      * @return the same incoming message
      */
     public MessageInfo attribute(@NonNull MessageInfo info) {
-        var chat = findChatByJid(info.chatJid()).orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
+        var chat = findChatByJid(info.chatJid())
+                .orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
         info.key().chat(chat);
+        if(info.fromMe() && !Objects.equals(info.senderJid().user(), jid.user())){
+            info.key().senderJid(jid.toWhatsappJid());
+        }
         info.key().senderJid().ifPresent(senderJid -> attributeSender(info, senderJid));
         info.message().contentWithContext().map(ContextualMessage::contextInfo).ifPresent(this::attributeContext);
         processMessage(info);
@@ -666,11 +772,7 @@ public final class Store extends Controller<Store> {
                 .append(modificationSender)
                 .append(secretName)
                 .toByteArray();
-        var encryptionKey = originalPollInfo.message()
-                .deviceInfo()
-                .messageSecret()
-                .orElseThrow(() -> new NoSuchElementException("Missing encryption key for poll"));
-        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
+        var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
         var additionalData = "%s\0%s".formatted(
                 originalPollInfo.id(),
                 modificationSenderJid
@@ -879,9 +981,10 @@ public final class Store extends Controller<Store> {
      * @param keyId     the id of its key
      * @return the nullable old key
      */
-    public Integer addLinkedDevice(@NonNull ContactJid companion, int keyId){
-        return deviceKeyIndexes.put(companion, keyId);
+    public Optional<Integer> addLinkedDevice(@NonNull ContactJid companion, int keyId){
+        return Optional.ofNullable(deviceKeyIndexes.put(companion, keyId));
     }
+
 
     public void dispose() {
         serialize(false);
@@ -892,5 +995,70 @@ public final class Store extends Controller<Store> {
     @Override
     public void serialize(boolean async) {
         serializer.serializeStore(this, async);
+    }
+
+    /**
+     * Returns an immutable collection of listeners
+     *
+     * @return a non-null collection
+     */
+    public Collection<Listener> listeners(){
+        return Collections.unmodifiableSet(listeners);
+    }
+
+    /**
+     * Registers a listener
+     *
+     * @param listener the listener to register
+     * @return the same instance
+     */
+    public Store addListener(@NonNull Listener listener) {
+        listeners.add(listener);
+        return this;
+    }
+
+    /**
+     * Registers a collection of listeners
+     *
+     * @param listeners the listeners to register
+     * @return the same instance
+     */
+    public Store addListeners(@NonNull Collection<Listener> listeners) {
+        this.listeners.addAll(listeners);
+        return this;
+    }
+
+    /**
+     * Removes a listener
+     *
+     * @param listener the listener to remove
+     * @return the same instance
+     */
+    public Store removeListener(@NonNull Listener listener) {
+        listeners.remove(listener);
+        return this;
+    }
+
+    /**
+     * Removes all listeners
+     *
+     * @return the same instance
+     */
+    public Store removeListener() {
+        listeners.clear();
+        return this;
+    }
+
+    /**
+     * Returns the version of this object
+     *
+     * @return a non-null version
+     */
+    public Version version(){
+        if(version == null){
+            this.version = Version.latest(clientType);
+        }
+
+        return version;
     }
 }

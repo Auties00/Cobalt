@@ -46,6 +46,11 @@ public class BusinessProfile {
     BusinessHours hours;
 
     /**
+     * Whether the cart is enabled
+     */
+    boolean cartEnabled;
+
+    /**
      * The websites of the business
      */
     @NonNull List<URI> websites;
@@ -65,8 +70,12 @@ public class BusinessProfile {
         var jid = node.attributes()
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing jid from business profile"));
-        var address = node.findNode("address").flatMap(Node::contentAsString).orElse(null);
-        var description = node.findNode("description").flatMap(Node::contentAsString).orElse(null);
+        var address = node.findNode("address")
+                .flatMap(Node::contentAsString)
+                .orElse(null);
+        var description = node.findNode("description")
+                .flatMap(Node::contentAsString)
+                .orElse(null);
         var websites = node.findNodes("website")
                 .stream()
                 .map(Node::contentAsString)
@@ -80,8 +89,12 @@ public class BusinessProfile {
                 .flatMap(Optional::stream)
                 .map(BusinessCategory::of)
                 .toList();
+        var commerceExperience = node.findNode("profile_options");
+        var cartEnabled = commerceExperience.flatMap(entry -> entry.findNode("cart_enabled"))
+                .flatMap(Node::contentAsBoolean)
+                .orElse(commerceExperience.isEmpty());
         var hours = createHours(node);
-        return new BusinessProfile(jid, description, address, email, hours, websites, categories);
+        return new BusinessProfile(jid, description, address, email, hours, cartEnabled, websites, categories);
     }
 
     private static BusinessHours createHours(Node node) {

@@ -11,10 +11,12 @@ public enum TextPreviewSetting {
      * generated
      */
     ENABLED_WITH_INFERENCE,
+
     /**
      * Link previews will be generated. No inference will be used.
      */
     ENABLED,
+
     /**
      * Link previews will not be generated
      */

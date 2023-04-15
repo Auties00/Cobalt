@@ -9,7 +9,6 @@ import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
-import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -47,6 +46,9 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     private ContextInfo contextInfo;
 
+    /**
+     * The type of the response
+     */
     @ProtobufProperty(index = 4, name = "type", type = MESSAGE)
     private ResponseType responseType;
 

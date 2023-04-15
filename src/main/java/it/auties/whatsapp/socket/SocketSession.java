@@ -1,7 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.socket.SocketSession.AppSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession.OriginPatcher;
@@ -36,10 +36,10 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     protected SocketListener listener;
     protected boolean closed;
 
-    static SocketSession of(WhatsappOptions options) {
-        return switch (options.clientType()) {
-            case WEB_CLIENT -> new WebSocketSession(options.socketService());
-            case APP_CLIENT -> new AppSocketSession(options.socketService());
+    static SocketSession of(ClientType clientType, Executor socketService) {
+        return switch (clientType) {
+            case WEB_CLIENT -> new WebSocketSession(socketService);
+            case APP_CLIENT -> new AppSocketSession(socketService);
         };
     }
 
@@ -103,7 +103,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public boolean isOpen() {
-            return session == null || session.isOpen();
+            return session != null && session.isOpen();
         }
 
         @Override
@@ -215,7 +215,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public boolean isOpen() {
-            return socket.isConnected();
+            return socket != null && socket.isConnected();
         }
 
         @Override

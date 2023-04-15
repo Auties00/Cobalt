@@ -8,9 +8,11 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.*;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,7 +72,8 @@ public final class ContextInfo implements Info {
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
     @ProtobufProperty(index = 15, type = STRING, repeated = true, implementation = ContactJid.class)
-    private List<ContactJid> mentions;
+    @Default
+    private List<ContactJid> mentions = new ArrayList<>();
 
     /**
      * Conversation source

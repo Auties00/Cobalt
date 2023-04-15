@@ -46,7 +46,7 @@ import static java.lang.System.Logger.Level.WARNING;
  * It uses smile to serialize all the data locally
  * The store and the keys are decoded synchronously, but the store's chat are decoded asynchronously to save time
  */
-public class DefaultControllerSerializer implements ControllerSerializer, ControllerDeserializer {
+public class DefaultControllerSerializer implements ControllerSerializer {
     private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsapp4j/");
     private static final String CHAT_PREFIX = "chat_";
     private static final Map<ContactJid, Integer> hashCodesMap = new ConcurrentHashMap<>();

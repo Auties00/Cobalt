@@ -4,11 +4,13 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.HistoryLength;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
 import it.auties.whatsapp.model.chat.*;
+import it.auties.whatsapp.model.chat.Chat.EndOfHistoryTransferType;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
@@ -47,8 +49,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.model.sync.HistorySync.Type.*;
+import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
+import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
+import static it.auties.whatsapp.model.sync.HistorySync.Type.FULL;
+import static it.auties.whatsapp.model.sync.HistorySync.Type.RECENT;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 class MessageHandler {
@@ -197,8 +201,18 @@ class MessageHandler {
             }else {
                 var type = getButtonType(request.info().message());
                 if (type != null) {
-                    var description = Node.ofAttributes(type, getButtonArgs(buttonMessage));
-                    body.add(Node.ofChildren("biz", description));
+                    body.add(Node.ofChildren(
+                            "biz",
+                            Map.of(
+                                    "host_storage", 1,
+                                    "privacy_mode_ts", Clock.nowSeconds(),
+                                    "actual_actors", 2
+                            ),
+                            Node.ofChildren(
+                                    type,
+                                    getButtonArgs(buttonMessage)
+                            )
+                    ));
                 }
             }
         }
@@ -430,7 +444,6 @@ class MessageHandler {
     private String getButtonType(MessageContainer container){
         return switch (container.type()){
             case BUTTONS -> "buttons";
-            case BUTTONS_RESPONSE -> "buttons_response";
             case INTERACTIVE_RESPONSE -> "interactive_response";
             case LIST -> "list";
             case LIST_RESPONSE -> "list_response";
@@ -548,7 +561,7 @@ class MessageHandler {
     }
 
     private boolean isSelfMessage(MessageKey key) {
-        return socketHandler.options().clientType() == ClientType.APP_CLIENT
+        return socketHandler.store().clientType() == ClientType.APP_CLIENT
                 && key.fromMe()
                 && key.senderJid().isPresent()
                 && !key.senderJid().get().hasAgent();
@@ -559,7 +572,7 @@ class MessageHandler {
             logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
         }
 
-        if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
+        if(socketHandler.store().clientType() == ClientType.APP_CLIENT){
             return false;
         }
 
@@ -690,30 +703,42 @@ class MessageHandler {
 
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage) {
         switch (protocolMessage.protocolType()) {
-            case HISTORY_SYNC_NOTIFICATION -> downloadHistorySync(protocolMessage)
-                    .thenAcceptAsync(history -> onHistoryNotification(info, history))
-                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
-            case APP_STATE_SYNC_KEY_SHARE -> {
-                socketHandler.keys().addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                if (socketHandler.store().initialSync()) {
-                    break;
-                }
-
-                socketHandler.pullInitialPatches()
-                        .exceptionallyAsync(throwable -> socketHandler
-                                .handleFailure(UNKNOWN, throwable));
-            }
-            case REVOKE -> socketHandler.store()
-                    .findMessageById(info.chat(), protocolMessage.key().id())
-                    .ifPresent(message -> onMessageDeleted(info, message));
-            case EPHEMERAL_SETTING -> {
-                info.chat()
-                        .ephemeralMessagesToggleTime(info.timestampSeconds())
-                        .ephemeralMessageDuration(ChatEphemeralTimer.of(protocolMessage.ephemeralExpiration()));
-                var setting = new EphemeralSetting((int) protocolMessage.ephemeralExpiration(), info.timestampSeconds());
-                socketHandler.onSetting(setting);
-            }
+            case HISTORY_SYNC_NOTIFICATION -> onHistorySyncNotification(info, protocolMessage);
+            case APP_STATE_SYNC_KEY_SHARE -> onAppStateSyncKeyShare(protocolMessage);
+            case REVOKE -> onMessageRevoked(info, protocolMessage);
+            case EPHEMERAL_SETTING -> onEphemeralSettings(info, protocolMessage);
         }
+    }
+
+    private void onEphemeralSettings(MessageInfo info, ProtocolMessage protocolMessage) {
+        info.chat()
+                .ephemeralMessagesToggleTime(info.timestampSeconds())
+                .ephemeralMessageDuration(ChatEphemeralTimer.of(protocolMessage.ephemeralExpiration()));
+        var setting = new EphemeralSetting((int) protocolMessage.ephemeralExpiration(), info.timestampSeconds());
+        socketHandler.onSetting(setting);
+    }
+
+    private void onMessageRevoked(MessageInfo info, ProtocolMessage protocolMessage) {
+        socketHandler.store()
+                .findMessageById(info.chat(), protocolMessage.key().id())
+                .ifPresent(message -> onMessageDeleted(info, message));
+    }
+
+    private void onAppStateSyncKeyShare(ProtocolMessage protocolMessage) {
+        socketHandler.keys().addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+        if (socketHandler.store().initialSync()) {
+            return;
+        }
+
+        socketHandler.pullInitialPatches()
+                .exceptionallyAsync(throwable -> socketHandler
+                        .handleFailure(UNKNOWN, throwable));
+    }
+
+    private void onHistorySyncNotification(MessageInfo info, ProtocolMessage protocolMessage) {
+        downloadHistorySync(protocolMessage)
+                .thenAcceptAsync(history -> onHistoryNotification(info, history))
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
     }
 
     private boolean isTyping(Contact sender) {
@@ -729,9 +754,19 @@ class MessageHandler {
     private void onHistoryNotification(MessageInfo info, HistorySync history) {
         handleHistorySync(history);
         if (history.progress() != null) {
+            if(isSyncComplete(history)) {
+                handleChatsSync(history, true);
+            }
+
             socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == RECENT);
         }
+
         socketHandler.sendSyncReceipt(info, "hist_sync");
+    }
+
+    private boolean isSyncComplete(HistorySync history) {
+        return history.progress() == 100
+                && socketHandler.store().historyLength() == HistoryLength.THREE_MONTHS ? history.syncType() == RECENT : history.syncType() == FULL;
     }
 
     private void onMessageDeleted(MessageInfo info, MessageInfo message) {
@@ -745,7 +780,7 @@ class MessageHandler {
             case INITIAL_STATUS_V3 -> handleInitialStatus(history);
             case PUSH_NAME -> handlePushNames(history);
             case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
-            case RECENT, FULL -> handleChatsSync(history);
+            case RECENT, FULL -> handleChatsSync(history, false);
             case NON_BLOCKING_DATA -> handleNonBlockingData(history);
         }
     }
@@ -782,18 +817,29 @@ class MessageHandler {
     }
 
     private void handleInitialBootstrap(HistorySync history) {
-        historyCache.addAll(history.conversations());
+        if(socketHandler.store().historyLength() != HistoryLength.ZERO){
+            historyCache.addAll(history.conversations());
+        }
+
         handleConversations(history);
         socketHandler.onChats();
     }
 
-    private void handleChatsSync(HistorySync history) {
+    private void handleChatsSync(HistorySync history, boolean forceDone) {
+        if(socketHandler.store().historyLength() == HistoryLength.ZERO){
+            return;
+        }
+
         handleConversations(history);
         for (var cached : historyCache) {
             var chat = socketHandler.store()
                     .findChatByJid(cached.jid())
                     .orElse(cached);
-            socketHandler.onChatRecentMessages(chat, !history.conversations().contains(cached));
+            var done = forceDone || !history.conversations().contains(cached);
+            if(done){
+                chat.endOfHistoryTransferType(EndOfHistoryTransferType.COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY);
+            }
+            socketHandler.onChatRecentMessages(chat, done);
         }
         historyCache.removeIf(entry -> !history.conversations().contains(entry));
     }

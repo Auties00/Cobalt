@@ -7,7 +7,6 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
-import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.model.chat.Chat;
@@ -66,7 +65,7 @@ class StreamHandler {
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
     private ScheduledExecutorService service;
-    private AtomicBoolean badMac;
+    private final AtomicBoolean badMac;
 
     protected StreamHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -560,9 +559,9 @@ class StreamHandler {
         executor.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
         createMediaConnection(0, null);
         var loggedInFuture = queryInitialInfo()
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable))
-                .thenRunAsync(this::onInitialInfo);
-        if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
+                .thenRunAsync(this::onInitialInfo)
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+        if(socketHandler.store().clientType() == ClientType.APP_CLIENT){
             socketHandler.store().initialSync(true);
         }
 
@@ -570,8 +569,7 @@ class StreamHandler {
             return;
         }
 
-        var chatsFuture = socketHandler.options()
-                .deserializer()
+        var chatsFuture = socketHandler.store().serializer()
                 .attributeStore(socketHandler.store())
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, chatsFuture)
@@ -589,7 +587,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> queryInitialInfo() {
         updateSelfPresence();
-        if(socketHandler.options().clientType() == ClientType.APP_CLIENT) {
+        if(socketHandler.store().clientType() == ClientType.APP_CLIENT) {
             socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.ofAttributes("config", Map.of("version", 1)));
         }else {
             socketHandler.sendQuery("get", "w", Node.of("props"))
@@ -759,8 +757,7 @@ class StreamHandler {
                 Bytes.of(socketHandler.keys().identityKeyPair().publicKey()).toBase64(),
                 Bytes.of(socketHandler.keys().companionKey()).toBase64()
         );
-        var handler = (WebOptions) socketHandler.options();
-        handler.qrHandler().accept(qr);
+        socketHandler.store().qrHandler().accept(qr);
     }
 
     private void confirmQrCode(Node node, Node container) {

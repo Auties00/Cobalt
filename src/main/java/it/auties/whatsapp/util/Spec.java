@@ -2,6 +2,7 @@ package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.binary.Tokens;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 
 import java.net.URI;
 
@@ -14,11 +15,9 @@ public class Spec {
         public static final URI WEB_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
         public static final String APP_ENDPOINT_HOST = "g.whatsapp.net";
         public static final int APP_ENDPOINT_PORT = 443;
-        public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=%s&platform=web";
+        public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_DOWNLOAD_URL = "https://www.whatsapp.com/download";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
-        // TODO: Fetch this dynamically if possible
-        public static final String MOBILE_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM4174c0243f5277a5d7720ce842cc4ae6";
         private static final String WHATSAPP_HEADER = "WA";
         private static final byte[] WEB_VERSION = new byte[]{6, Tokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(WEB_VERSION).toByteArray();
@@ -30,6 +29,14 @@ public class Spec {
         public static final int MAX_COMPANIONS = 5;
         public static final int THUMBNAIL_WIDTH = 480;
         public static final int THUMBNAIL_HEIGHT = 339;
+
+        // TODO: Fetch this dynamically if possible
+        public static final String MOBILE_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM4174c0243f5277a5d7720ce842cc4ae6";
+        public static final String MOBILE_OS_VERSION = "15.3.1";
+        public static final String MOBILE_DEVICE = "iPhone_7";
+        public static final String MOBILE_DEVICE_MANUFACTURER = "Apple";
+        public static final UserAgentPlatform MOBILE_OS_TYPE = UserAgentPlatform.IOS;
+        public static final String MOBILE_UA = "WhatsApp/%s iOS/15.3.1 Device/Apple-iPhone_7";
     }
 
     public final static class Signal {

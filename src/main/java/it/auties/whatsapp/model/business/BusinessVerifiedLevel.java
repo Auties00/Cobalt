@@ -21,14 +21,17 @@ public enum BusinessVerifiedLevel implements ProtobufMessage {
      * Unknown
      */
     UNKNOWN(0),
+
     /**
      * Low
      */
     LOW(1),
+
     /**
      * High
      */
     HIGH(2);
+
     @Getter
     private final int index;
 
