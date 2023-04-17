@@ -9,6 +9,7 @@ import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
@@ -23,7 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder
+@SuperBuilder
 @Accessors(fluent = true)
 @ProtobufName("OrderMessage")
 public final class PaymentOrderMessage extends ContextualMessage implements PaymentMessage {
