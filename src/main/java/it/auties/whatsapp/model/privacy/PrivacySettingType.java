@@ -5,7 +5,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * The constants of this enumerated type describe the various types of settings that a user can

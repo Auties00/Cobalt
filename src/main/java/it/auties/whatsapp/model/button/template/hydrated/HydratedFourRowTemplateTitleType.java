@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.template.hydrated;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
@@ -10,11 +10,11 @@ import java.util.Arrays;
 
 /**
  * The constants of this enumerated type describe the various types of title that a template can
- * have
+ * wrap
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum FourRowTemplateTitleType implements ProtobufMessage {
+public enum HydratedFourRowTemplateTitleType implements ProtobufMessage {
     /**
      * No title
      */
@@ -24,9 +24,9 @@ public enum FourRowTemplateTitleType implements ProtobufMessage {
      */
     DOCUMENT(1),
     /**
-     * Highly structured message title
+     * Text title
      */
-    HIGHLY_STRUCTURED(2),
+    TEXT(2),
     /**
      * Image title
      */
@@ -44,10 +44,10 @@ public enum FourRowTemplateTitleType implements ProtobufMessage {
     private final int index;
 
     @JsonCreator
-    public static FourRowTemplateTitleType of(int index) {
+    public static HydratedFourRowTemplateTitleType of(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()
-                .orElse(FourRowTemplateTitleType.NONE);
+                .orElse(HydratedFourRowTemplateTitleType.NONE);
     }
 }

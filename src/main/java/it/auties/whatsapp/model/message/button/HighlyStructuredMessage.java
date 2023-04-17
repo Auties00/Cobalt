@@ -2,8 +2,8 @@ package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessLocalizableParameter;
-import it.auties.whatsapp.model.button.FourRowTemplateTitle;
-import it.auties.whatsapp.model.button.FourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
@@ -28,7 +28,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class HighlyStructuredMessage implements ButtonMessage, FourRowTemplateTitle {
+public final class HighlyStructuredMessage implements ButtonMessage, HighlyStructuredFourRowTemplateTitle {
     /**
      * Namespace
      */
@@ -89,7 +89,7 @@ public final class HighlyStructuredMessage implements ButtonMessage, FourRowTemp
     }
 
     @Override
-    public FourRowTemplateTitleType titleType() {
-        return FourRowTemplateTitleType.HIGHLY_STRUCTURED;
+    public HighlyStructuredFourRowTemplateTitleType titleType() {
+        return HighlyStructuredFourRowTemplateTitleType.HIGHLY_STRUCTURED;
     }
 }

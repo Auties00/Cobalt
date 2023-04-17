@@ -19,7 +19,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      *
      * @return the same instance for chaining
      */
-    public WebOptionsBuilder historyLength(@NonNull HistoryLength historyLength) {
+    public WebOptionsBuilder historyLength(@NonNull WebHistoryLength historyLength) {
         store.historyLength(historyLength);
         return this;
     }

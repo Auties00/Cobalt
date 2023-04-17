@@ -1,6 +1,5 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.template.hsm;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
 import lombok.AllArgsConstructor;
@@ -19,7 +18,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class URLButton implements ProtobufMessage {
+public final class HighlyStructuredURLButton implements HighlyStructuredButton {
     /**
      * The text of this button
      */
@@ -31,4 +30,9 @@ public class URLButton implements ProtobufMessage {
      */
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage url;
+
+    @Override
+    public HighlyStructuredButtonType buttonType() {
+        return HighlyStructuredButtonType.URL;
+    }
 }

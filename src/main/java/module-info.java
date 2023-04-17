@@ -27,11 +27,15 @@ open module it.auties.whatsapp4j {
     requires org.apache.poi.ooxml;
     requires org.apache.poi.scratchpad;
 
+    requires org.glassfish.tyrus.client;
+    requires org.glassfish.tyrus.core;
+    requires org.glassfish.tyrus.container.grizzly.client;
+    requires org.glassfish.tyrus.server;
+
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
     exports it.auties.whatsapp.model.action;
     exports it.auties.whatsapp.model.business;
-    exports it.auties.whatsapp.model.button;
     exports it.auties.whatsapp.model.chat;
     exports it.auties.whatsapp.model.contact;
     exports it.auties.whatsapp.model.info;
@@ -53,4 +57,9 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.poll;
     exports it.auties.whatsapp.model.mobile;
     exports it.auties.whatsapp.model.interactive;
+    exports it.auties.whatsapp.model.button.base;
+    exports it.auties.whatsapp.model.button.misc;
+    exports it.auties.whatsapp.model.button.template.hydrated;
+    exports it.auties.whatsapp.model.button.template.hsm;
+    exports it.auties.whatsapp.model.button.template;
 }

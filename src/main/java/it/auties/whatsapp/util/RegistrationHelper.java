@@ -76,7 +76,7 @@ public class RegistrationHelper {
 
     private void checkResponse(HttpResponse<String> result) {
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        Validate.isTrue(response.status().isSuccessful(), "Invalid response: %s".formatted(result));
+        Validate.isTrue(response.status().isSuccessful(), "Invalid response, status code %s: %s".formatted(result.statusCode(), result.body()));
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {

@@ -1,6 +1,7 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.misc;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,17 +12,18 @@ import lombok.extern.jackson.Jacksonized;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
- * A model class that represents the text of a button
+ * A model class that represents the selection of a row
  */
 @AllArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ButtonText implements ProtobufMessage {
+@ProtobufName("SingleSelectReply")
+public class SingleSelectReplyButton implements ProtobufMessage {
     /**
-     * The text of this button
+     * The id of the selected row
      */
     @ProtobufProperty(index = 1, type = STRING)
-    private String content;
+    private String rowId;
 }

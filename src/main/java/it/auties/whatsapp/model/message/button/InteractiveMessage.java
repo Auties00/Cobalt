@@ -1,18 +1,13 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.interactive.InteractiveCollection;
-import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
-import it.auties.whatsapp.model.interactive.InteractiveShop;
-import it.auties.whatsapp.model.button.TemplateFormatter;
+import it.auties.whatsapp.model.button.template.TemplateFormatter;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.interactive.*;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.interactive.InteractiveBody;
-import it.auties.whatsapp.model.interactive.InteractiveFooter;
-import it.auties.whatsapp.model.interactive.InteractiveHeader;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;

@@ -1,13 +1,17 @@
 package it.auties.whatsapp.test;
 
 import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.HistoryLength;
+import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.model.button.*;
+import it.auties.whatsapp.model.button.base.Button;
+import it.auties.whatsapp.model.button.base.ButtonText;
+import it.auties.whatsapp.model.button.misc.ButtonRow;
+import it.auties.whatsapp.model.button.misc.ButtonSection;
+import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -77,7 +81,7 @@ public class ButtonsTest implements Listener {
             }
             api = Whatsapp.webBuilder()
                     .lastConnection()
-                    .historyLength(HistoryLength.ZERO)
+                    .historyLength(WebHistoryLength.ZERO)
                     .build()
                     .addListener(this)
                     .connect()
@@ -204,7 +208,10 @@ public class ButtonsTest implements Listener {
     }
 
     private List<Button> createButtons() {
-        return IntStream.range(0, 3).mapToObj("Button %s"::formatted).map(Button::of).toList();
+        return IntStream.range(0, 3)
+                .mapToObj(index -> ButtonText.of("Button %s".formatted(index)))
+                .map(Button::of)
+                .toList();
     }
 
     @Test
@@ -244,10 +251,7 @@ public class ButtonsTest implements Listener {
                 .footer("A nice footer")
                 .buttons(List.of(quickReplyButton, urlButton, callButton))
                 .build();
-        var message = HighlyStructuredMessage.builder()
-                .templateMessage(TemplateMessage.of(fourRowTemplate))
-                .build();
-        api.sendMessage(contact, message).join();
+        api.sendMessage(contact, TemplateMessage.of(fourRowTemplate)).join();
         log("Sent template message");
     }
 

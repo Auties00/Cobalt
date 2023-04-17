@@ -6,7 +6,11 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.model.button.*;
+import it.auties.whatsapp.model.button.base.Button;
+import it.auties.whatsapp.model.button.base.ButtonText;
+import it.auties.whatsapp.model.button.misc.ButtonRow;
+import it.auties.whatsapp.model.button.misc.ButtonSection;
+import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatMute;
@@ -631,7 +635,10 @@ public class RunCITest implements Listener {
     }
 
     private List<Button> createButtons() {
-        return IntStream.range(0, 3).mapToObj("Button %s"::formatted).map(Button::of).toList();
+        return IntStream.range(0, 3)
+                .mapToObj(index -> ButtonText.of("Button %s".formatted(index)))
+                .map(Button::of)
+                .toList();
     }
 
     @Test

@@ -1,6 +1,5 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedCallButton implements ProtobufMessage {
+public non-sealed class HydratedCallButton implements HydratedButton {
     /**
      * The text of this button
      */
@@ -30,4 +29,9 @@ public class HydratedCallButton implements ProtobufMessage {
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String phoneNumber;
+
+    @Override
+    public HydratedButtonType buttonType() {
+        return HydratedButtonType.CALL;
+    }
 }

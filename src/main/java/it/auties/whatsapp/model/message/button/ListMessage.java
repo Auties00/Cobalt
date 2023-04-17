@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.button;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.button.ButtonSection;
+import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.ProductListInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;

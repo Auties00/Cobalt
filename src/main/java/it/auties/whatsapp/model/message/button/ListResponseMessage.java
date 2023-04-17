@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.button.SingleSelectReplyButton;
+import it.auties.whatsapp.model.button.misc.SingleSelectReplyButton;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;

@@ -106,9 +106,9 @@ public sealed class MobileRegistrationBuilder {
          *
          * @return the same instance for chaining
          */
-        public CompletableFuture<Whatsapp> sendVerificationCode(long phoneNumber, Supplier<String> handler) {
+        public CompletableFuture<Whatsapp> verify(long phoneNumber, Supplier<String> handler) {
             store.phoneNumber(PhoneNumber.of(phoneNumber));
-            return sendVerificationCode(handler);
+            return verify(handler);
         }
 
         /**
@@ -116,8 +116,8 @@ public sealed class MobileRegistrationBuilder {
          *
          * @return the same instance for chaining
          */
-        public CompletableFuture<Whatsapp> sendVerificationCode(Supplier<String> handler) {
-            return sendVerificationCode(AsyncVerificationCodeSupplier.of(handler));
+        public CompletableFuture<Whatsapp> verify(Supplier<String> handler) {
+            return verify(AsyncVerificationCodeSupplier.of(handler));
         }
 
         /**
@@ -125,9 +125,9 @@ public sealed class MobileRegistrationBuilder {
          *
          * @return the same instance for chaining
          */
-        public CompletableFuture<Whatsapp> sendVerificationCode(long phoneNumber, AsyncVerificationCodeSupplier handler) {
+        public CompletableFuture<Whatsapp> verify(long phoneNumber, AsyncVerificationCodeSupplier handler) {
             store.phoneNumber(PhoneNumber.of(phoneNumber));
-            return sendVerificationCode(handler);
+            return verify(handler);
         }
 
 
@@ -136,7 +136,7 @@ public sealed class MobileRegistrationBuilder {
          *
          * @return the same instance for chaining
          */
-        public CompletableFuture<Whatsapp> sendVerificationCode(AsyncVerificationCodeSupplier handler) {
+        public CompletableFuture<Whatsapp> verify(AsyncVerificationCodeSupplier handler) {
             return RegistrationHelper.sendVerificationCode(store, keys, handler)
                     .thenApply(ignored -> new Whatsapp(store, keys));
         }

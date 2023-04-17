@@ -3,7 +3,7 @@ package it.auties.whatsapp.socket;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.HistoryLength;
+import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.Handshake;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
@@ -90,7 +90,7 @@ class AuthHandler {
             return null;
         }
 
-        if (socketHandler.store().historyLength() == HistoryLength.ONE_YEAR) {
+        if (socketHandler.store().historyLength() == WebHistoryLength.ONE_YEAR) {
             return WebInfoWebSubPlatform.WIN_STORE;
         }
 
@@ -154,8 +154,8 @@ class AuthHandler {
 
         return Companion.builder()
                 .os(socketHandler.store().name())
-                .platformType(socketHandler.store().historyLength() == HistoryLength.ONE_YEAR ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
-                .requireFullSync(socketHandler.store().historyLength() == HistoryLength.ONE_YEAR)
+                .platformType(socketHandler.store().historyLength() == WebHistoryLength.ONE_YEAR ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
+                .requireFullSync(socketHandler.store().historyLength() == WebHistoryLength.ONE_YEAR)
                 .build();
     }
 

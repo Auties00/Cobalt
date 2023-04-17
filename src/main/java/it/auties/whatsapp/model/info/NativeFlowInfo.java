@@ -1,6 +1,8 @@
 package it.auties.whatsapp.model.info;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.model.button.base.ButtonBody;
+import it.auties.whatsapp.model.button.base.ButtonBodyType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +19,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class NativeFlowInfo implements Info {
+public final class NativeFlowInfo implements ButtonBody, Info {
     /**
      * The name of the flow
      */
@@ -29,4 +31,9 @@ public final class NativeFlowInfo implements Info {
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String parameters;
+
+    @Override
+    public ButtonBodyType bodyType() {
+        return ButtonBodyType.NATIVE_FLOW;
+    }
 }

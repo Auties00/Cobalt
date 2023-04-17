@@ -1,8 +1,6 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,23 +10,28 @@ import lombok.extern.jackson.Jacksonized;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
- * A model class that represents a quick reply button
+ * A model class that represents a hydrated url button
  */
 @AllArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class QuickReplyButton implements ProtobufMessage {
+public final class HydratedURLButton implements HydratedButton {
     /**
      * The text of this button
      */
     @ProtobufProperty(index = 1, type = STRING)
-    private HighlyStructuredMessage text;
+    private String text;
 
     /**
-     * The id of this button
+     * The url of this button
      */
     @ProtobufProperty(index = 2, type = STRING)
-    private String id;
+    private String url;
+
+    @Override
+    public HydratedButtonType buttonType() {
+        return HydratedButtonType.URL;
+    }
 }

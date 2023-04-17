@@ -38,6 +38,7 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -61,6 +62,12 @@ public final class Store extends Controller<Store> {
      * The default executor
      */
     private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
+
+    /**
+     * The version used by this session
+     */
+    @Setter
+    private InetSocketAddress proxy;
 
     /**
      * The version used by this session
@@ -284,7 +291,7 @@ public final class Store extends Controller<Store> {
     @Setter
     @Default
     @NonNull
-    private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
+    private WebHistoryLength historyLength = WebHistoryLength.THREE_MONTHS;
 
     /**
      * The handler to use when printing out the qr coe
@@ -704,7 +711,7 @@ public final class Store extends Controller<Store> {
         var chat = findChatByJid(info.chatJid())
                 .orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
         info.key().chat(chat);
-        if(info.fromMe() && !Objects.equals(info.senderJid().user(), jid.user())){
+        if(info.fromMe() && jid != null && !Objects.equals(info.senderJid().user(), jid.user())){
             info.key().senderJid(jid.toWhatsappJid());
         }
         info.key().senderJid().ifPresent(senderJid -> attributeSender(info, senderJid));
@@ -1060,5 +1067,14 @@ public final class Store extends Controller<Store> {
         }
 
         return version;
+    }
+
+    /**
+     * Returns the proxy used by this session
+     *
+     * @return a non-null optional
+     */
+    public Optional<InetSocketAddress> proxy() {
+        return Optional.ofNullable(proxy);
     }
 }

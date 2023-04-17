@@ -38,17 +38,17 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection() {
-        return newConnection(UUID.randomUUID());
+        return knownConnection(UUID.randomUUID());
     }
 
     /**
      * Creates a new connection using a supplied uuid
-     * If a connection was serialized in the past with that uuid, it will be retreived, otherwise a new one will be started
+     * If a connection was serialized in the past with that uuid, it will be retrieved, otherwise a new one will be started
      *
      * @param uuid the non-null uuid to use
      * @return a non-null options selector
      */
-    public T newConnection(@NonNull UUID uuid) {
+    public T knownConnection(@NonNull UUID uuid) {
         return createConnection(uuid, ConnectionType.NEW);
     }
 

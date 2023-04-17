@@ -4,11 +4,12 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.HistoryLength;
+import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedTemplateButton;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.chat.Chat.EndOfHistoryTransferType;
 import it.auties.whatsapp.model.contact.Contact;
@@ -82,7 +83,7 @@ class MessageHandler {
         return Caffeine.newBuilder().expireAfterWrite(duration).build();
     }
 
-    protected CompletableFuture<Void> encode(MessageSendRequest request) {
+    protected synchronized CompletableFuture<Void> encode(MessageSendRequest request) {
         return runner.runAsync(() -> encodeMessageNode(request)
                 .thenRunAsync(() -> attributeOutgoingMessage(request))
                 .exceptionallyAsync(throwable -> onEncodeError(request, throwable)));
@@ -196,22 +197,39 @@ class MessageHandler {
         }
 
         if(request.info().message().content() instanceof ButtonMessage buttonMessage) {
-            if(buttonMessage.type() == MessageType.HIGHLY_STRUCTURED){
-                body.add(Node.ofAttributes("hsm", Map.of()));
+            if(buttonMessage instanceof TemplateMessage templateMessage){
+                var features =  templateMessage.content()
+                        .hydratedButtons()
+                        .stream()
+                        .map(HydratedTemplateButton::button)
+                        .flatMap(Optional::stream)
+                        .map(entry -> Node.ofAttributes(
+                                "feature",
+                                Map.of(
+                                        "name", entry.buttonType().name().toLowerCase(Locale.ROOT) + "_button"
+                                )
+                        ))
+                        .toList();
+                body.add(Node.ofChildren(
+                        "hsm",
+                        Map.of(
+                                "category", "NON_TRANSACTIONAL",
+                                "tag", templateMessage.id(),
+                                "buttons", 1,
+                                "v", 1
+                        ),
+                        Node.ofChildren(
+                                "capabilities",
+                                features
+                        )
+                ));
             }else {
                 var type = getButtonType(request.info().message());
                 if (type != null) {
+                    var args = getButtonArgs(buttonMessage);
                     body.add(Node.ofChildren(
                             "biz",
-                            Map.of(
-                                    "host_storage", 1,
-                                    "privacy_mode_ts", Clock.nowSeconds(),
-                                    "actual_actors", 2
-                            ),
-                            Node.ofChildren(
-                                    type,
-                                    getButtonArgs(buttonMessage)
-                            )
+                            Node.ofAttributes(type, args)
                     ));
                 }
             }
@@ -220,9 +238,11 @@ class MessageHandler {
         var attributes = Attributes.ofNullable(request.additionalAttributes())
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
+                .put("t", request.info().timestampSeconds())
                 .put("type", "text")
                 .put("category", "peer", request::peer)
                 .put("duration", "900", () -> request.info().message().type() == MessageType.LIVE_LOCATION)
+                .put("device_fanout", false, () -> request.info().message().type() == MessageType.TEMPLATE)
                 .toMap();
         return Node.ofChildren("message", attributes, body);
     }
@@ -402,7 +422,7 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public void decode(Node node) {
+    public synchronized void decode(Node node) {
         try {
             var businessName = getBusinessName(node);
             var encrypted = node.findNodes("enc");
@@ -453,8 +473,10 @@ class MessageHandler {
 
     private Map<String, Object> getButtonArgs(ButtonMessage buttonMessage) {
         return switch (buttonMessage) {
-            case HighlyStructuredMessage ignored -> Map.of("category", "");
-            case ListMessage listMessage -> Map.of("v", "2", "type", listMessage.listType().name().toLowerCase());
+            case ListMessage listMessage -> Map.of(
+                    "v", 2,
+                    "type", listMessage.listType().name().toLowerCase()
+            );
             default -> Map.of();
         };
     }
@@ -766,7 +788,7 @@ class MessageHandler {
 
     private boolean isSyncComplete(HistorySync history) {
         return history.progress() == 100
-                && socketHandler.store().historyLength() == HistoryLength.THREE_MONTHS ? history.syncType() == RECENT : history.syncType() == FULL;
+                && socketHandler.store().historyLength() == WebHistoryLength.THREE_MONTHS ? history.syncType() == RECENT : history.syncType() == FULL;
     }
 
     private void onMessageDeleted(MessageInfo info, MessageInfo message) {
@@ -817,7 +839,7 @@ class MessageHandler {
     }
 
     private void handleInitialBootstrap(HistorySync history) {
-        if(socketHandler.store().historyLength() != HistoryLength.ZERO){
+        if(socketHandler.store().historyLength() != WebHistoryLength.ZERO){
             historyCache.addAll(history.conversations());
         }
 
@@ -826,7 +848,7 @@ class MessageHandler {
     }
 
     private void handleChatsSync(HistorySync history, boolean forceDone) {
-        if(socketHandler.store().historyLength() == HistoryLength.ZERO){
+        if(socketHandler.store().historyLength() == WebHistoryLength.ZERO){
             return;
         }
 

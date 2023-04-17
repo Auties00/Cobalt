@@ -2,17 +2,17 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.button.FourRowTemplateTitle;
-import it.auties.whatsapp.model.button.FourRowTemplateTitleType;
-import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import lombok.*;
@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNullElse;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ImageMessage extends MediaMessage implements InteractiveHeaderAttachment, ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class ImageMessage extends MediaMessage implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     /**
      * The upload url of the encoded image that this object wraps
      */
@@ -214,8 +214,8 @@ public final class ImageMessage extends MediaMessage implements InteractiveHeade
     }
 
     @Override
-    public FourRowTemplateTitleType titleType() {
-        return FourRowTemplateTitleType.IMAGE;
+    public HighlyStructuredFourRowTemplateTitleType titleType() {
+        return HighlyStructuredFourRowTemplateTitleType.IMAGE;
     }
 
     @Override

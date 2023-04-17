@@ -10,6 +10,7 @@ import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.glassfish.tyrus.client.ClientManager;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -31,15 +32,16 @@ import static it.auties.whatsapp.util.Spec.Whatsapp.*;
 @RequiredArgsConstructor
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
+    protected final InetSocketAddress proxy;
     protected final Executor executor;
     protected UUID uuid;
     protected SocketListener listener;
     protected boolean closed;
 
-    static SocketSession of(ClientType clientType, Executor socketService) {
+    static SocketSession of(ClientType clientType, InetSocketAddress proxy, Executor socketService) {
         return switch (clientType) {
-            case WEB_CLIENT -> new WebSocketSession(socketService);
-            case APP_CLIENT -> new AppSocketSession(socketService);
+            case WEB_CLIENT -> new WebSocketSession(proxy, socketService);
+            case APP_CLIENT -> new AppSocketSession(proxy, socketService);
         };
     }
 
@@ -67,8 +69,8 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     public final static class WebSocketSession extends SocketSession {
         private Session session;
 
-        public WebSocketSession(Executor executor) {
-            super(executor);
+        public WebSocketSession(InetSocketAddress proxy, Executor executor) {
+            super(proxy, executor);
         }
 
         @Override
@@ -76,7 +78,13 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
             return CompletableFuture.runAsync(() -> {
                 try {
                     super.connect(listener);
-                    ContainerProvider.getWebSocketContainer().connectToServer(this, WEB_ENDPOINT);
+                    var client = ClientManager.createClient();
+                    if(proxy != null) {
+                        client.getProperties().put(ClientManager.WLS_PROXY_HOST, proxy.getHostString());
+                        client.getProperties().put(ClientManager.WLS_PROXY_PORT, String.valueOf(proxy.getPort()));
+                    }
+                    client.setDefaultMaxSessionIdleTimeout(0);
+                    client.connectToServer(this, WEB_ENDPOINT);
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot connect to host", exception);
                 } catch (DeploymentException exception) {
@@ -172,8 +180,8 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         private Socket socket;
 
-        public AppSocketSession(Executor executor) {
-            super(executor);
+        public AppSocketSession(InetSocketAddress proxy, Executor executor) {
+            super(proxy, executor);
         }
 
         @Override
@@ -185,7 +193,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
             return CompletableFuture.runAsync(() -> {
                 try {
                     super.connect(listener);
-                    this.socket = new Socket();
+                    this.socket = new Socket(proxy.getHostString(), proxy.getPort());
                     socket.setKeepAlive(true);
                     socket.connect(new InetSocketAddress(APP_ENDPOINT_HOST, APP_ENDPOINT_PORT));
                     executor.execute(this::readMessages);

@@ -22,8 +22,8 @@ import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
-import it.auties.whatsapp.model.button.FourRowTemplate;
-import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.companion.CompanionLinkResult;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -577,9 +577,9 @@ public class Whatsapp {
                     && buttonsMessage.header().isPresent()
                     && buttonsMessage.header().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
             case TemplateMessage templateMessage && templateMessage.format().isPresent() -> switch (templateMessage.format().get()) {
-                case FourRowTemplate fourRowTemplate
-                        && fourRowTemplate.title().isPresent()
-                        && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
+                        && highlyStructuredFourRowTemplate.title().isPresent()
+                        && highlyStructuredFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
                 case HydratedFourRowTemplate hydratedFourRowTemplate
                         && hydratedFourRowTemplate.title().isPresent()
                         && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
