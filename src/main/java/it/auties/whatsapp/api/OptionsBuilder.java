@@ -6,7 +6,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.Version;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
@@ -100,7 +100,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T proxy(InetSocketAddress proxy) {
+    public T proxy(URI proxy) {
         store.proxy(proxy);
         return (T) this;
     }

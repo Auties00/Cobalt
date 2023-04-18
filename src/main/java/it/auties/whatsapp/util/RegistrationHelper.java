@@ -9,6 +9,8 @@ import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;
 
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -80,7 +82,7 @@ public class RegistrationHelper {
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
-        var client = HttpClient.newHttpClient();
+        var client = createClient(store);
         var request = HttpRequest.newBuilder()
                 .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
                 .GET()
@@ -88,6 +90,15 @@ public class RegistrationHelper {
                 .header("User-Agent", Whatsapp.MOBILE_UA.formatted(store.version()))
                 .build();
         return client.sendAsync(request, BodyHandlers.ofString());
+    }
+
+    private HttpClient createClient(Store store) {
+        var clientBuilder = HttpClient.newBuilder();
+        store.proxy().ifPresent(proxy -> {
+            clientBuilder.proxy(ProxySelector.of(new InetSocketAddress(proxy.getHost(), proxy.getPort())));
+            clientBuilder.authenticator(new ProxyAuthenticator());
+        });
+        return clientBuilder.build();
     }
 
     @SafeVarargs
