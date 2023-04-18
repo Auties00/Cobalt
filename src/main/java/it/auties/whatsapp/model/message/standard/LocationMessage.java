@@ -1,10 +1,10 @@
 package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.button.FourRowTemplateTitle;
-import it.auties.whatsapp.model.button.FourRowTemplateTitleType;
-import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -29,7 +29,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class LocationMessage extends ContextualMessage implements ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class LocationMessage extends ContextualMessage implements ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     /**
      * The latitude of the location that this message wraps
      */
@@ -107,8 +107,8 @@ public final class LocationMessage extends ContextualMessage implements ButtonsM
     }
 
     @Override
-    public FourRowTemplateTitleType titleType() {
-        return FourRowTemplateTitleType.LOCATION;
+    public HighlyStructuredFourRowTemplateTitleType titleType() {
+        return HighlyStructuredFourRowTemplateTitleType.LOCATION;
     }
 
     @Override

@@ -1,7 +1,8 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.template.hsm;
 
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.model.button.template.TemplateFormatter;
 import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
 import it.auties.whatsapp.model.message.button.TemplateFormatterType;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
@@ -31,38 +32,38 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("TemplateMessage.FourRowTemplate")
-public final class FourRowTemplate implements TemplateFormatter {
+public final class HighlyStructuredFourRowTemplate implements TemplateFormatter {
     /**
      * The document title of this row. This property is defined only if
-     * {@link FourRowTemplate#titleType()} == {@link FourRowTemplateTitleType#DOCUMENT}.
+     * {@link HighlyStructuredFourRowTemplate#titleType()} == {@link HighlyStructuredFourRowTemplateTitleType#DOCUMENT}.
      */
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage titleDocument;
 
     /**
      * The highly structured title of this row. This property is defined only if
-     * {@link FourRowTemplate#titleType()} == {@link FourRowTemplateTitleType#HIGHLY_STRUCTURED}.
+     * {@link HighlyStructuredFourRowTemplate#titleType()} == {@link HighlyStructuredFourRowTemplateTitleType#HIGHLY_STRUCTURED}.
      */
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage titleHighlyStructured;
 
     /**
      * The image title of this row. This property is defined only if
-     * {@link FourRowTemplate#titleType()} == {@link FourRowTemplateTitleType#IMAGE}.
+     * {@link HighlyStructuredFourRowTemplate#titleType()} == {@link HighlyStructuredFourRowTemplateTitleType#IMAGE}.
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage titleImage;
 
     /**
      * The video title of this row This property is defined only if
-     * {@link FourRowTemplate#titleType()} == {@link FourRowTemplateTitleType#VIDEO}.
+     * {@link HighlyStructuredFourRowTemplate#titleType()} == {@link HighlyStructuredFourRowTemplateTitleType#VIDEO}.
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage titleVideo;
 
     /**
      * The location title of this row. This property is defined only if
-     * {@link FourRowTemplate#titleType()} == {@link FourRowTemplateTitleType#LOCATION}.
+     * {@link HighlyStructuredFourRowTemplate#titleType()} == {@link HighlyStructuredFourRowTemplateTitleType#LOCATION}.
      */
     @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
     private LocationMessage titleLocation;
@@ -82,8 +83,8 @@ public final class FourRowTemplate implements TemplateFormatter {
     /**
      * The buttons of this row
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, implementation = ButtonTemplate.class, repeated = true)
-    private List<ButtonTemplate> buttons;
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = HighlyStructuredButtonTemplate.class, repeated = true)
+    private List<HighlyStructuredButtonTemplate> buttons;
 
     /**
      * Constructs a new builder to create a four row template
@@ -94,11 +95,11 @@ public final class FourRowTemplate implements TemplateFormatter {
      * @return a non-null new template
      */
     @Builder(builderClassName = "FourRowTemplateSimpleBuilder", builderMethodName = "simpleBuilder")
-    private static FourRowTemplate customBuilder(FourRowTemplateTitle title, HighlyStructuredMessage content, HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
+    private static HighlyStructuredFourRowTemplate customBuilder(HighlyStructuredFourRowTemplateTitle title, HighlyStructuredMessage content, HighlyStructuredMessage footer, List<HighlyStructuredButtonTemplate> buttons) {
         if(buttons != null) {
             IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
         }
-        var builder = FourRowTemplate.builder().content(content).footer(footer).buttons(buttons);
+        var builder = HighlyStructuredFourRowTemplate.builder().content(content).footer(footer).buttons(buttons);
         switch (title){
             case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);
             case HighlyStructuredMessage highlyStructuredMessage -> builder.titleHighlyStructured(highlyStructuredMessage);
@@ -115,9 +116,9 @@ public final class FourRowTemplate implements TemplateFormatter {
      *
      * @return a non-null title type
      */
-    public FourRowTemplateTitleType titleType() {
-        return title().map(FourRowTemplateTitle::titleType)
-                .orElse(FourRowTemplateTitleType.NONE);
+    public HighlyStructuredFourRowTemplateTitleType titleType() {
+        return title().map(HighlyStructuredFourRowTemplateTitle::titleType)
+                .orElse(HighlyStructuredFourRowTemplateTitleType.NONE);
     }
 
     /**
@@ -125,7 +126,7 @@ public final class FourRowTemplate implements TemplateFormatter {
      *
      * @return an optional
      */
-    public Optional<FourRowTemplateTitle> title() {
+    public Optional<HighlyStructuredFourRowTemplateTitle> title() {
         if (titleDocument != null) {
             return Optional.of(titleDocument);
         }

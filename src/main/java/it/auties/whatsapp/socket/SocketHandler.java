@@ -1,7 +1,9 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;
+import it.auties.whatsapp.api.SocketEvent;
+import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.Decoder;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
@@ -34,7 +36,6 @@ import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.util.Clock;
-import jakarta.websocket.ContainerProvider;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -43,7 +44,9 @@ import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -52,12 +55,6 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
 public class SocketHandler implements SocketListener {
-    private static final int MANUAL_INITIAL_PULL_TIMEOUT = 5;
-
-    static {
-        ContainerProvider.getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
-    }
-
     private SocketSession session;
 
     @NonNull
@@ -206,7 +203,7 @@ public class SocketHandler implements SocketListener {
             return loginFuture;
         }
 
-        this.session = SocketSession.of(store.clientType(), store.socketExecutor());
+        this.session = SocketSession.of(store.clientType(), store.proxy().orElse(null), store.socketExecutor());
         return session.connect(this)
                 .thenCompose(ignored -> loginFuture);
     }

@@ -1,7 +1,6 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.template.hydrated;
 
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +19,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedQuickReplyButton implements ProtobufMessage {
+public non-sealed class HydratedQuickReplyButton implements HydratedButton {
     /**
      * The text of this button
      */
@@ -41,5 +40,10 @@ public class HydratedQuickReplyButton implements ProtobufMessage {
      */
     public static HydratedQuickReplyButton of(@NonNull String text) {
         return new HydratedQuickReplyButton(text, Bytes.ofRandom(6).toHex());
+    }
+
+    @Override
+    public HydratedButtonType buttonType() {
+        return HydratedButtonType.QUICK_REPLY;
     }
 }

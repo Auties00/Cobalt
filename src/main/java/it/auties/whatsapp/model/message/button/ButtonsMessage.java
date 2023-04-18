@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.button.Button;
+import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
@@ -15,6 +15,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -109,7 +110,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
                 .body(body)
                 .footer(footer)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .buttons(requireNonNullElseGet(buttons, List::of));
+                .buttons(requireNonNullElseGet(buttons, ArrayList::new));
         switch (header){
             case DocumentMessage documentMessage -> builder.headerDocument(documentMessage).headerType(HeaderType.DOCUMENT);
             case ImageMessage imageMessage -> builder.headerImage(imageMessage).headerType(HeaderType.IMAGE);

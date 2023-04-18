@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.misc;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;

@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.button.Button;
+import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
@@ -65,7 +65,7 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
                 .content());
         return ButtonsResponseMessage.builder()
                 .buttonId(button.id())
-                .buttonText(button.text().content())
+                .buttonText(button.bodyText().content())
                 .contextInfo(ContextInfo.of(quoted))
                 .build();
     }

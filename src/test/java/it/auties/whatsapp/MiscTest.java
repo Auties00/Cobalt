@@ -1,7 +1,11 @@
 package it.auties.whatsapp;
 
+import it.auties.whatsapp.util.Json;
+
+import java.net.InetSocketAddress;
+
 public class MiscTest {
     public static void main(String[] args) {
-        System.out.println(new String(new byte[]{99, 97, 116, 97, 108, 111, 103}));
+        System.out.println(Json.writeValueAsString(InetSocketAddress.createUnresolved("localhost", 8080)));
     }
 }

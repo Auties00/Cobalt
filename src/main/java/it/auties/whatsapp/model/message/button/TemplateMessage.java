@@ -3,9 +3,9 @@ package it.auties.whatsapp.model.message.button;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.button.FourRowTemplate;
-import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
-import it.auties.whatsapp.model.button.TemplateFormatter;
+import it.auties.whatsapp.model.button.template.TemplateFormatter;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -50,8 +50,8 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * Four row template. This property is defined only if {@link TemplateMessage#formatType()} ==
      * {@link TemplateFormatterType#FOUR_ROW}.
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = FourRowTemplate.class)
-    private FourRowTemplate fourRowTemplateFormat;
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = HighlyStructuredFourRowTemplate.class)
+    private HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat;
 
     /**
      * Hydrated four row template. This property is defined only if
@@ -90,7 +90,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * @return a non-null template message
      */
     public static TemplateMessage of(@NonNull HydratedFourRowTemplate template, ContextInfo contextInfo) {
-        return of(template, FourRowTemplate.of(), contextInfo);
+        return of(template, HighlyStructuredFourRowTemplate.of(), contextInfo);
     }
 
     /**
@@ -106,7 +106,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
                 .content(content)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new));
         switch (formatter) {
-            case FourRowTemplate fourRowTemplate -> builder.fourRowTemplateFormat(fourRowTemplate);
+            case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate -> builder.highlyStructuredFourRowTemplateFormat(highlyStructuredFourRowTemplate);
             case HydratedFourRowTemplate hydratedFourRowTemplate ->
                     builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
             case InteractiveMessage interactiveMessage -> builder.interactiveMessageFormat(interactiveMessage);
@@ -139,8 +139,8 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * @return an optional
      */
     public Optional<TemplateFormatter> format() {
-        if (fourRowTemplateFormat != null) {
-            return Optional.of(fourRowTemplateFormat);
+        if (highlyStructuredFourRowTemplateFormat != null) {
+            return Optional.of(highlyStructuredFourRowTemplateFormat);
         }
         if (hydratedFourRowTemplateFormat != null) {
             return Optional.of(hydratedFourRowTemplateFormat);
@@ -156,8 +156,8 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      *
      * @return an optional
      */
-    public Optional<FourRowTemplate> fourRowTemplateFormat() {
-        return Optional.ofNullable(fourRowTemplateFormat);
+    public Optional<HighlyStructuredFourRowTemplate> highlyStructuredFourRowTemplateFormat() {
+        return Optional.ofNullable(highlyStructuredFourRowTemplateFormat);
     }
 
     /**

@@ -1,7 +1,8 @@
-package it.auties.whatsapp.model.button;
+package it.auties.whatsapp.model.button.template.hydrated;
 
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.model.button.template.TemplateFormatter;
 import it.auties.whatsapp.model.message.button.TemplateFormatterType;
 import it.auties.whatsapp.model.message.standard.*;
 import lombok.AllArgsConstructor;
@@ -86,7 +87,7 @@ public final class HydratedFourRowTemplate implements TemplateFormatter {
      * The buttons of this row
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = HydratedTemplateButton.class, repeated = true)
-    private List<HydratedTemplateButton> buttons;
+    private List<HydratedTemplateButton> hydratedButtons;
 
     /**
      * Constructs a new builder to create a hydrated four row template
@@ -100,7 +101,7 @@ public final class HydratedFourRowTemplate implements TemplateFormatter {
     @Builder(builderClassName = "HydratedFourRowTemplateSimpleBuilder", builderMethodName = "simpleBuilder")
     private static HydratedFourRowTemplate customBuilder(HydratedFourRowTemplateTitle title, String body, String footer, List<HydratedTemplateButton> buttons, String id) {
         IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
-        var builder = HydratedFourRowTemplate.builder().body(body).footer(footer).buttons(buttons).templateId(id);
+        var builder = HydratedFourRowTemplate.builder().body(body).footer(footer).hydratedButtons(buttons).templateId(id);
         switch (title){
             case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);
             case TextMessage textMessage -> builder.titleText(textMessage.text());

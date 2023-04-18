@@ -6,6 +6,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.Version;
 
+import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
@@ -90,6 +91,17 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T socketExecutor(Executor socketExecutor) {
         store.socketExecutor(socketExecutor);
+        return (T) this;
+    }
+
+    /**
+     * Sets the proxy to use for the socket
+     *
+     * @return the same instance for chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T proxy(InetSocketAddress proxy) {
+        store.proxy(proxy);
         return (T) this;
     }
 }

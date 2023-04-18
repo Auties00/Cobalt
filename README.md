@@ -14,9 +14,9 @@ It can be used to work with:
 
 2. Whatsapp Mobile App
 
-   This functionality is still being developed.
-   Right now it's in alpha.
-   Currently only message sending and
+   This functionality is currently in beta.
+   The documentation is expanding, but some functions may still be undocumented. 
+   Most functions have been reversed engineered, but some may still not work. 
 
 ### Donations
 
@@ -51,7 +51,7 @@ In short, if you use this library without a malicious intent, you will never get
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.2.3</version>
+    <version>3.3.0</version>
 </dependency>
 ```
 
@@ -59,12 +59,12 @@ In short, if you use this library without a malicious intent, you will never get
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.2.3'
+   implementation 'com.github.auties00:whatsappweb4j:3.3.0'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.2.3")
+   implementation("com.github.auties00:whatsappweb4j:3.3.0")
    ```
 
 ### Examples
@@ -102,44 +102,129 @@ Remember to handle them as your application will terminate without doing anythin
 Please do not open redundant issues on GitHub because of this.
 
 ### How to create a connection
+Here are two examples:
+- Web 
+    ```java
+      Whatsapp.webBuilder()
+                .newConnection()
+                .build()
+                .addLoggedInListener(() -> System.out.println("Connected"))
+                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
+                .connect()
+                .join();
+    ```
+- Mobile
+    ```java
+      Whatsapp.mobileBuilder()
+                .newConnection()
+                .unregistered()
+                .register(yourPhoneNumber, () -> {
+                   System.out.println("Enter OTP: ");
+                   return new Scanner(System.in).nextLine().trim();
+                })
+                .join()
+                .addLoggedInListener(() -> System.out.println("Connected"))
+                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
+                .connect()
+                .join();
+    ```
 
-The most important class of this API is Whatsapp, an interface between your application and WhatsappWeb's socket.
+If you want to understand this code, read the following walkthrough.
+To create a new connection, start by creating a builder with the api you need:
+- Web
+    ```java
+    Whatsapp.webBuilder()
+    ```
+- Mobile
+  ```java
+    Whatsapp.mobileBuilder()
+  ```
+If you want to use a custom serializer, specify it:
+  ```java
+  .serializer(new CustomControllerSerializer())
+  ```  
+Now select the type of connection that you need:
+- Create a fresh connection
+  ```java
+  .newConnection(someUuid)
+  ```   
+- Retrieve the first connection that was serialized if available, otherwise create a new one
+  ```java
+  .firstConnection()
+  ```
+- Retrieve the last connection that was serialized if available, otherwise create a new one
+  ```java
+  .lastConnection()
+  ```
+- Retrieve a connection by id if available, otherwise create a new one
+  ```java
+  .knownConnection(someUuid)
+  ```
+You can now customize the API with these options:
+- name - The device's name for Whatsapp Web, the push name for Whatsapp's Mobile (Serialized)
+  ```java
+  .name("Some Custom Name :)")
+  ```
+- version - The version of Whatsapp to use (Serialized)
+  ```java
+  .version(new Version("x.xx.xx"))
+  ```
+- autodetectListeners - Whether listeners annotated with `@RegisterListener` should automatically be registered (Serialized)
+  ```java
+  .autodetectListeners(true)
+  ```
+- textPreviewSetting - Whether a media preview should be generated for text messages containing links (Serialized)
+  ```java
+  .textPreviewSetting(TextPreviewSetting.ENABLED_WITH_INFERENCE)
+  ```
+- errorHandler - The error handler to use for this session (Not serialized, specify this every time)
+  ```java
+  .errorHandler(ErrorHandler.toTerminal())
+  ```
+- proxy - The proxy to use for the socket connection (Serialized)
+  ```java
+  .proxy(someProxy)
+  ```
+- socketExecutor - The custom executor to handle the socket asynchronously (Not serialized, specify this every time)
+  ```java
+  .socketExecutor(someCustomExecutor)
+  ```
+If you are using the web api you can also set these options:
+- historyLength: The amount of messages to sync from the companion device (Serialized)
+  ```java
+  .historyLength(WebHistoryLength.THREE_MONTHS)
+  ```
+Otherwise, if you are using the mobile api, select the registration status of your session:
+- Creates a new session from a registered phone number: this means that the OTP was already sent to Whatsapp
+  ```java
+  .registered()
+  ```
+- Creates a new session from an unverified phone number: this means that the OTP was already sent to the companion as an SMS/Call, but that it hasn't been sent to Whatsapp yet
+  ```java
+  .unverified()
+  ```
+  Finally, use:
+  ```java
+  .verify(this::getOTPLogic)
+  ```
+  to verify the account (this doesn't create a connection to Whatsapp's Socket, it uses the HTTP api)
+- Creates a new session from an unregistered phone number: this means that the OTP wasn't sent to the companion as an SMS/Call and that it wasn't forwarded Whatsapp
+  ```java
+  .unregistered()
+  ```
+  Finally, use:
+  ```java
+  .register(phoneNumber, this::getOTPLogic)
+  ```
+  to register the account (this doesn't create a connection to Whatsapp's Socket, it uses the HTTP api)
 
-You can create a new connection directly:
-```java
-var api = Whatsapp.newConnection();
-```
-
-If you need, you can supply a custom set of options:
-```java
-var options = WhatsappOptions.defaultOptions(); // Set the options you need using the wither or the builder
-var api = Whatsapp.newConnection(options);
-```
-
-If a connection was already created previously, use any of these methods instead depending on your needs:
-```java
-var apiByOptions = Whatsapp.newConnection(options); // Finds a connection by using options
-var latestApi = Whatsapp.lastConnection(); // Finds the latest connection that was opened
-var firstApi = Whatsapp.firstConnection(); // Finds the first connection that was opened
-var allKnownApis = Whatsapp.streamConnections(); // Streams all the known connections
-```
-> **_IMPORTANT:_**  If no previous session exists or if the id doesn't match a known connection, a new one will be created silently
-
-### How to open a connection
-
-To open the connection to Whatsapp use the connect method.
-This method returns a CompletableFuture that will be completed when a connection is established.
-So, by calling the join method which awaits a future, we are waiting for the connection to be established:
-```java
-api.connect().join();
-```
-If you also want to wait for the connection to be closed, use:
-```java
-api.connect()
-        .join()
-        .awaitDisconnection();
-```
-Any code after `awaitDisconnection`will not be called until the connection is closed.
+Finally, use
+  ```java
+  .connect()
+  ```
+to connect to Whatsapp.
+Remember to handle the result using, for example, `join` to await the connection's result.
+If you want the current thread to wait for the connection to be closed, use `awaitDisconnection`.
 
 ### How to close a connection
 
@@ -194,7 +279,7 @@ Listeners can be used either as:
    api.addListener(new MyListener());
    ```
 
-   Or to register it automatically using the @RegisterListener annotation:
+   Or to register it automatically using the `@RegisterListener` annotation:
 
    ```java
    import it.auties.whatsapp.listener.RegisterListener;
@@ -259,21 +344,15 @@ Listeners can be used either as:
 In the original version of WhatsappWeb, chats, contacts and messages could be queried at any from Whatsapp's servers.
 The multi-device implementation, instead, sends all of this information progressively when the connection is initialized for the first time and doesn't allow any subsequent queries to access the latter.
 In practice, this means that this data needs to be serialized somewhere.
+The same is true for the mobile api.
 
 By default, this library serializes data regarding a session at `$HOME/.whatsapp4j/[web|mobile]/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
 The latter is serialized every time a modification occurs to the model, while the store is serialized everytime a ping is sent by the socket to the server.
 Both are serialized when the socket is closed.
 
-If your application needs to serialize data in a different way, for example in a database create a custom implementation of ControllerDeserializer and/or ControllerSerializer.
-Then make sure to specify your implementation in the options:
-```java
-var options = WebOptions.builder()
-        .serializer(new YourCustomSerializer()) // Use a custom serializer or new DefaultControllerSerializer() for the default one
-        .deserializer(new YourCustomDeserializer()) // Use a custom deserializer or new DefaultControllerSerializer() for the default one
-        .build();
-var api = Whatsapp.newConnection(options); // Any named constructor can be used
-```
-This works for the mobile api as well.
+If your application needs to serialize data in a different way, for example in a database create a custom implementation of ControllerSerializer.
+Then make sure to specify your implementation in the `Whatsapp` builder.
+This is explained in the "How to create a connection" section.
 
 ### How to handle session disconnects
 
@@ -332,7 +411,7 @@ Or the contacts:
 var contacts = store.contacts();
 ```
 
-Or even the media status:
+Or even the status:
 
 ```java
 var status = store.status();
@@ -376,25 +455,31 @@ Data can also be easily queried by using these methods:
     var chat = store.findStatusBySender(contact);
     ```  
 
-### How to access companion and cryptographic data
+### How to query other data
+
+To access information about the companion device:
+```java
+var companion = store.jid();
+```
+This object is a jid like any other, but it has the device field filled to distinguish it from the main one.
+Instead, if you only need the phone number:
+```java
+var phoneNumber = store.jid().toPhoneNumber();
+```
+All the settings and metadata about the companion is available inside the Store class
+```java
+var store = api.store();
+```
+Explore of the available methods!
+
+### How to query cryptographic data
 
 Access keys store associated with a connection by calling the keys method:
 ```java
 var keys = api.keys();
 ```
-
 There are several methods to access and query cryptographic data, but as it's only necessary for advanced users, 
-please check the javadocs if this is what you need. 
-
-To access information about the companion device:
-```java
-var companion = store.userCompanionJid();
-```
-This object is a jid like any other, but it has the device field filled to distinguish it from the main one.
-Instead, if you only need the phone number:
-```java
-var phoneNumber = store.userCompanionJid().toPhoneNumber();
-```
+please check the javadocs if this is what you need.
 
 ### How to send messages
 
@@ -606,15 +691,15 @@ All types of messages supported by Whatsapp are supported by this library:
 
   - Template button
      ```java
-     var quickReplyButton = HydratedButtonTemplate.of(HydratedQuickReplyButton.of("Click me!")); // Create a quick reply button
-     var urlButton = HydratedButtonTemplate.of(HydratedURLButton.of("Search it", "https://google.com")); // Create an url button
-     var callButton = HydratedButtonTemplate.of(HydratedCallButton.of("Call me", "some_phone_number")); // Create a call button
-     var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder() // Create a new template builder
+     var highlyStructuredQuickReplyButton = HydratedButtonTemplate.of(HydratedQuickReplyButton.of("Click me!")); // Create a quick reply button
+     var highlyStructuredUrlButton = HydratedButtonTemplate.of(HydratedURLButton.of("Search it", "https://google.com")); // Create an url button
+     var highlyStructuredCallButton = HydratedButtonTemplate.of(HydratedCallButton.of("Call me", "some_phone_number")); // Create a call button
+     var highlyStructuredFourRowTemplate = HydratedFourRowTemplate.simpleBuilder() // Create a new template builder
            .title(TextMessage.of("A nice title")) // Set the title
            .body("A nice body") // Set the body
-           .buttons(List.of(quickReplyButton, urlButton, callButton)) // Set the buttons
+           .buttons(List.of(highlyStructuredQuickReplyButton, highlyStructuredUrlButton, highlyStructuredCallButton)) // Set the buttons
            .build(); // Create the template
-     var templateMessage = TemplateMessage.of(fourRowTemplate); // Create a template message
+     var templateMessage = TemplateMessage.of(highlyStructuredFourRowTemplate); // Create a template message
      api.sendMessage(contact, templateMessage);
     ```
 
@@ -817,61 +902,61 @@ var starredMessages = chat.starredMessages(); // All the starred messages in a c
 ##### Mute a chat
 
 ``` java
-var future = api.mute(chat);  // A future for the request
+var future = api.mute(chat);
 ```
 
 ##### Unmute a chat
 
 ``` java
-var future = api.mute(chat);  // A future for the request
+var future = api.mute(chat);
 ```
 
 ##### Archive a chat
 
 ``` java
-var future = api.archive(chat);  // A future for the request
+var future = api.archive(chat);
 ```
 
 ##### Unarchive a chat
 
 ``` java
-var future = api.unarchive(chat);  // A future for the request
+var future = api.unarchive(chat);
 ```
 
 ##### Change ephemeral message status in a chat
 
 ``` java
-var future = api.changeEphemeralTimer(chat,  ChatEphemeralTimer.ONE_WEEK);  // A future for the request
+var future = api.changeEphemeralTimer(chat,  ChatEphemeralTimer.ONE_WEEK);
 ```   
 
 ##### Mark a chat as read
 
 ``` java
-var future = api.markAsRead(chat);  // A future for the request
+var future = api.markAsRead(chat);
 ```   
 
 ##### Mark a chat as unread
 
 ``` java
-var future = api.markAsUnread(chat);  // A future for the request
+var future = api.markAsUnread(chat);
 ```   
 
 ##### Pin a chat
 
 ``` java
-var future = api.pin(chat);  // A future for the request
+var future = api.pin(chat);
 ``` 
 
 ##### Unpin a chat
 
 ``` java
-var future = api.unpin(chat);  // A future for the request
+var future = api.unpin(chat);
 ```
 
 ##### Clear a chat
 
 ``` java
-var future = api.clear(chat);  // A future for the request
+var future = api.clear(chat);
 ```
 
 > **_IMPORTANT:_** This method is experimental and may not work
@@ -879,7 +964,7 @@ var future = api.clear(chat);  // A future for the request
 ##### Delete a chat
 
 ``` java
-var future = api.delete(chat);  // A future for the request
+var future = api.delete(chat);
 ```
 
 > **_IMPORTANT:_** This method is experimental and may not work
@@ -889,25 +974,25 @@ var future = api.delete(chat);  // A future for the request
 ##### Add a contact to a group
 
 ``` java
-var future = api.addGroupParticipant(group, contact);  // A future for the request
+var future = api.addGroupParticipant(group, contact);
 ```
 
 ##### Remove a contact from a group
 
 ``` java
-var future = api.removeGroupParticipant(group, contact);  // A future for the request
+var future = api.removeGroupParticipant(group, contact);
 ```
 
 ##### Promote a contact to admin in a group
 
 ``` java
-var future = api.promoteGroupParticipant(group, contact);  // A future for the request
+var future = api.promoteGroupParticipant(group, contact);
 ```
 
 ##### Demote a contact to user in a group
 
 ``` java
-var future = api.demoteGroupParticipant(group, contact);  // A future for the request
+var future = api.demoteGroupParticipant(group, contact);
 ```
 
 ### Change the metadata or settings of a group
@@ -915,31 +1000,31 @@ var future = api.demoteGroupParticipant(group, contact);  // A future for the re
 ##### Change group's name/subject
 
 ``` java
-var future = api.changeGroupSubject(group, newName);  // A future for the request
+var future = api.changeGroupSubject(group, newName);
 ```
 
 ##### Change or remove group's description
 
 ``` java
-var future = api.changeGroupDescription(group, newDescription);  // A future for the request
+var future = api.changeGroupDescription(group, newDescription);
 ```
 
 ##### Change who can send messages in a group
 
 ``` java
-var future = api.changeWhoCanSendMessages(group, GroupPolicy.ANYONE);  // A future for the request
+var future = api.changeWhoCanSendMessages(group, GroupPolicy.ANYONE);
 ```
 
 ##### Change who can edit the metadata/settings in a group
 
 ``` java
-var future = api.changeWhoCanEditInfo(group, GroupPolicy.ANYONE);  // A future for the request
+var future = api.changeWhoCanEditInfo(group, GroupPolicy.ANYONE);
 ```
 
 ##### Change or remove the picture of a group
 
 ``` java
-var future = api.changeGroupPicture(group, img);  // A future for the request
+var future = api.changeGroupPicture(group, img);
 ```
 
 ### Other group related methods
@@ -947,31 +1032,53 @@ var future = api.changeGroupPicture(group, img);  // A future for the request
 ##### Create a group
 
 ``` java
-var future = api.createGroup("A nice name :)", friend, friend2);  // A future for the request
+var future = api.createGroup("A nice name :)", friend, friend2);
 ```
 
 ##### Leave a group
 
 ``` java
-var future = api.leaveGroup(group);  // A future for the request
+var future = api.leaveGroup(group);
 ```
 
 ##### Query a group's invite code
 
 ``` java
-var future = api.queryGroupInviteCode(group);  // A future for the request
+var future = api.queryGroupInviteCode(group);
 ```
 
 ##### Revoke a group's invite code
 
 ``` java
-var future = api.revokeGroupInviteCode(group);  // A future for the request
+var future = api.revokeGroupInviteCode(group);
 ```
 
 ##### Query a group's invite code
 
 ``` java
-var future = api.acceptGroupInvite(inviteCode);  // A future for the request
+var future = api.acceptGroupInvite(inviteCode);
+```
+
+### Companions (Mobile api only)
+
+### Link a companion
+
+``` java
+var future = api.linkCompanion(qrCode);
+```
+
+### Unlink a companion
+
+``` java
+var future = api.unlinkCompanion(companionJid);
+```
+
+### Unlink all companions
+
+``` java
+var future = api.unlinkCompanions();
 ```
 
 Some methods may not be listed here, all contributions are welcomed to this documentation!
+Some methods may not be supported on the mobile api, please report them so I can fix them.
+Ideally I'd like all of them to work.
