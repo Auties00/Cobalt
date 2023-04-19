@@ -26,11 +26,7 @@ open module it.auties.whatsapp4j {
     requires org.apache.pdfbox;
     requires org.apache.poi.ooxml;
     requires org.apache.poi.scratchpad;
-
     requires org.glassfish.tyrus.client;
-    requires org.glassfish.tyrus.core;
-    requires org.glassfish.tyrus.container.grizzly.client;
-    requires org.glassfish.tyrus.server;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

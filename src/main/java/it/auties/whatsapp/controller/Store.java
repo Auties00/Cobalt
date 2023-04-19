@@ -30,6 +30,7 @@ import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.ProxyAuthenticator;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
@@ -38,7 +39,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -67,7 +67,7 @@ public final class Store extends Controller<Store> {
      * The version used by this session
      */
     @Setter
-    private InetSocketAddress proxy;
+    private URI proxy;
 
     /**
      * The version used by this session
@@ -1070,11 +1070,30 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Sets the proxy used by this session
+     *
+     * @return the same instance
+     */
+    public Store proxy(URI proxy) {
+        if(proxy == null){
+            this.proxy = null;
+            return this;
+        }
+
+        if(proxy.getUserInfo() != null){
+            ProxyAuthenticator.register(proxy);
+        }
+
+        this.proxy = proxy;
+        return this;
+    }
+
+    /**
      * Returns the proxy used by this session
      *
      * @return a non-null optional
      */
-    public Optional<InetSocketAddress> proxy() {
+    public Optional<URI> proxy() {
         return Optional.ofNullable(proxy);
     }
 }

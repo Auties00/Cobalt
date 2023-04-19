@@ -5,24 +5,24 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.socket.SocketSession.AppSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession;
 import it.auties.whatsapp.socket.SocketSession.WebSocketSession.OriginPatcher;
+import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Validate;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.glassfish.tyrus.client.ClientManager;
+import org.glassfish.tyrus.client.ClientProperties;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
+import java.net.Proxy.Type;
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -32,13 +32,17 @@ import static it.auties.whatsapp.util.Spec.Whatsapp.*;
 @RequiredArgsConstructor
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
-    protected final InetSocketAddress proxy;
+    static {
+        Authenticator.setDefault(new ProxyAuthenticator());
+    }
+
+    protected final URI proxy;
     protected final Executor executor;
     protected UUID uuid;
     protected SocketListener listener;
     protected boolean closed;
 
-    static SocketSession of(ClientType clientType, InetSocketAddress proxy, Executor socketService) {
+    static SocketSession of(ClientType clientType, URI proxy, Executor socketService) {
         return switch (clientType) {
             case WEB_CLIENT -> new WebSocketSession(proxy, socketService);
             case APP_CLIENT -> new AppSocketSession(proxy, socketService);
@@ -69,7 +73,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     public final static class WebSocketSession extends SocketSession {
         private Session session;
 
-        public WebSocketSession(InetSocketAddress proxy, Executor executor) {
+        public WebSocketSession(URI proxy, Executor executor) {
             super(proxy, executor);
         }
 
@@ -80,8 +84,11 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                     super.connect(listener);
                     var client = ClientManager.createClient();
                     if(proxy != null) {
-                        client.getProperties().put(ClientManager.WLS_PROXY_HOST, proxy.getHostString());
-                        client.getProperties().put(ClientManager.WLS_PROXY_PORT, String.valueOf(proxy.getPort()));
+                        client.getProperties().put(ClientProperties.PROXY_URI, proxy.toString());
+                        if(proxy.getUserInfo() != null){
+                            var info = Base64.getEncoder().encodeToString(proxy.getUserInfo().getBytes(StandardCharsets.UTF_8));
+                            client.getProperties().put(ClientProperties.PROXY_HEADERS, Map.of("Proxy-Authorization", "Basic %s".formatted(info)));
+                        }
                     }
                     client.setDefaultMaxSessionIdleTimeout(0);
                     client.connectToServer(this, WEB_ENDPOINT);
@@ -180,7 +187,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         private Socket socket;
 
-        public AppSocketSession(InetSocketAddress proxy, Executor executor) {
+        public AppSocketSession(URI proxy, Executor executor) {
             super(proxy, executor);
         }
 
@@ -193,7 +200,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
             return CompletableFuture.runAsync(() -> {
                 try {
                     super.connect(listener);
-                    this.socket = new Socket(proxy.getHostString(), proxy.getPort());
+                    this.socket = new Socket(getProxy());
                     socket.setKeepAlive(true);
                     socket.connect(new InetSocketAddress(APP_ENDPOINT_HOST, APP_ENDPOINT_PORT));
                     executor.execute(this::readMessages);
@@ -202,6 +209,33 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                     throw new UncheckedIOException("Cannot connect to host", exception);
                 }
             }, executor);
+        }
+
+        @SuppressWarnings("DataFlowIssue")
+        private Proxy getProxy() {
+            if (proxy == null) {
+                return Proxy.NO_PROXY;
+            }
+
+            var scheme = proxy.getScheme();
+            Validate.isTrue(scheme != null, "Invalid proxy, expected a scheme: %s".formatted(proxy));
+            var host = proxy.getHost();
+            Validate.isTrue(host != null, "Invalid proxy, expected a host: %s".formatted(proxy));
+            var port = getProxyPort(scheme)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid proxy, expected a port: %s".formatted(proxy)));
+            return switch (scheme) {
+                case "http", "https" -> new Proxy(Type.HTTP, new InetSocketAddress(host, port));
+                case "socks4", "socks5" -> new Proxy(Type.SOCKS, new InetSocketAddress(host, port));
+                default -> throw new IllegalStateException("Unexpected scheme: " + scheme);
+            };
+        }
+
+        private OptionalInt getProxyPort(String scheme) {
+            return proxy.getPort() != -1 ? OptionalInt.of(proxy.getPort()) : switch (scheme) {
+                case "http" -> OptionalInt.of(80);
+                case "https" -> OptionalInt.of(443);
+                default -> OptionalInt.empty();
+            };
         }
 
         @Override
