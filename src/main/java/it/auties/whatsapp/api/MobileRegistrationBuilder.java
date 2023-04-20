@@ -69,7 +69,7 @@ public sealed class MobileRegistrationBuilder {
          * @return a future
          */
         public CompletableFuture<Whatsapp> register(long phoneNumber, @NonNull VerificationCodeMethod method, @NonNull AsyncVerificationCodeSupplier handler) {
-            return RegistrationHelper.registerPhoneNumber(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, handler, method)
+            return keys.registered() ? CompletableFuture.completedFuture(new Whatsapp(store, keys)) : RegistrationHelper.registerPhoneNumber(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, handler, method)
                     .thenApply(ignored -> new Whatsapp(store, keys));
         }
 
@@ -91,7 +91,7 @@ public sealed class MobileRegistrationBuilder {
          * @return a future
          */
         public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber, @NonNull VerificationCodeMethod method) {
-            return RegistrationHelper.requestVerificationCode(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, method)
+            return keys.registered() ? CompletableFuture.completedFuture(new Unverified(store, keys)) : RegistrationHelper.requestVerificationCode(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, method)
                     .thenApply(ignored -> new Unverified(store, keys));
         }
     }

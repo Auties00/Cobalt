@@ -252,7 +252,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 } catch (IOException exception) {
                     throw new UncheckedIOException("Cannot close connection to host", exception);
                 }
-            });
+            }, executor);
         }
 
         @Override
@@ -285,13 +285,13 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                     input.readFully(message);
                     listener.onMessage(message);
                 }
-            }catch (SocketException exception) {
-                closeResources();
-            }catch (IOException exception) {
-                listener.onError(exception);
+            }catch (Throwable throwable) {
+                listener.onError(throwable);
+            }finally {
+                if(!closed) {
+                    closeResources();
+                }
             }
-
-            closeResources();
         }
 
         private int decodeLength(DataInputStream input) {
@@ -310,6 +310,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
             if(executor instanceof ExecutorService service) {
                 service.shutdownNow();
             }
+
             listener.onClose();
         }
     }
