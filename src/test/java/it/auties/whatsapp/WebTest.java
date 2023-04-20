@@ -8,11 +8,9 @@ public class WebTest {
     public static void main(String[] args) {
         var whatsapp = Whatsapp.webBuilder()
                 .lastConnection()
-                .historyLength(WebHistoryLength.ZERO)
+                .historyLength(WebHistoryLength.ONE_YEAR)
                 .build()
-                .addLoggedInListener(api -> {
-                    System.out.printf("Connected: %s%n", api.store().privacySettings());
-                })
+                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

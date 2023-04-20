@@ -96,7 +96,6 @@
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
         <protoc.version>1.22</protoc.version>
-        <tyrus.version>2.1.0</tyrus.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.9.0</junit.version>
         <jna.version>5.12.1</jna.version>
@@ -253,11 +252,6 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.tyrus</groupId>
-            <artifactId>tyrus-server</artifactId>
-            <version>${tyrus.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
