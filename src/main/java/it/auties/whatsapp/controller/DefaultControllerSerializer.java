@@ -12,14 +12,12 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +26,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -334,19 +331,21 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         private void writeSync(Object input) {
             try {
                 semaphore.acquire();
-                var serialized = SMILE.writeValueAsBytes(input);
-                var compressedStream = new ByteArrayOutputStream(serialized.length);
-                try (compressedStream) {
-                    try (var zipStream = new GZIPOutputStream(compressedStream, 65536)) {
-                        zipStream.write(serialized);
-                    }
-                }
-                if(Files.notExists(file.getParent())) {
-                    Files.createDirectories(file.getParent());
-                }
-                Files.write(file, compressedStream.toByteArray(), StandardOpenOption.CREATE);
-            } catch (IOException exception){
-                throw new UncheckedIOException("Cannot complete file write", exception);
+                // TODO: Code this again as it's memory leaking
+                // var serialized = SMILE.writeValueAsBytes(input);
+                //                try (var compressedStream = new ByteArrayOutputStream(serialized.length)) {
+                //                    try (var zipStream = new GZIPOutputStream(new ByteArrayOutputStream(serialized.length))) {
+                //                        zipStream.write(serialized);
+                //                    }
+                //
+                //                    if(Files.notExists(file.getParent())) {
+                //                        Files.createDirectories(file.getParent());
+                //                    }
+                //
+                //                    Files.write(file, compressedStream.toByteArray(), StandardOpenOption.CREATE);
+                //                }
+                // } catch (IOException exception){
+                //     throw new UncheckedIOException("Cannot complete file write", exception);
             }catch (InterruptedException exception){
                 throw new RuntimeException("Cannot acquire lock", exception);
             }finally {

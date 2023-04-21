@@ -66,7 +66,6 @@ public final class Store extends Controller<Store> {
     /**
      * The version used by this session
      */
-    @Setter
     private URI proxy;
 
     /**
@@ -678,6 +677,16 @@ public final class Store extends Controller<Store> {
     public Chat addChatDirect(Chat chat) {
         chats.put(chat.jid(), chat);
         return chat;
+    }
+
+    /**
+     * Removes a chat from memory
+     *
+     * @param chatJid the chat to remove
+     * @return the chat that was deleted wrapped by an optional
+     */
+    public Optional<Chat> removeChat(@NonNull ContactJid chatJid) {
+        return Optional.ofNullable(chats.remove(chatJid));
     }
 
     /**

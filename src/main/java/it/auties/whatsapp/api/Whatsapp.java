@@ -619,6 +619,13 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> mark(@NonNull T chat, boolean read) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            store().findChatByJid(chat.toJid())
+                    .ifPresent(entry -> entry.markedAsUnread(read));
+            return CompletableFuture.completedFuture(chat);
+        }
+
         var range = createRange(chat, false);
         var markAction = MarkChatAsReadAction.of(read, range);
         var syncAction = ActionValueSync.of(markAction);
@@ -1283,6 +1290,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> mute(@NonNull T chat, @NonNull ChatMute mute) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            store().findChatByJid(chat)
+                    .ifPresent(entry -> entry.mute(mute));
+            return CompletableFuture.completedFuture(chat);
+        }
+
         var muteAction = MuteAction.of(true, mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ? mute.endTimeStamp() * 1000L : mute.endTimeStamp(), false);
         var syncAction = ActionValueSync.of(muteAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
@@ -1296,6 +1310,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> unmute(@NonNull T chat) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            store().findChatByJid(chat)
+                    .ifPresent(entry -> entry.mute(ChatMute.notMuted()));
+            return CompletableFuture.completedFuture(chat);
+        }
+
         var muteAction = MuteAction.of(false, null, false);
         var syncAction = ActionValueSync.of(muteAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
@@ -1396,6 +1417,13 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> pin(T chat, boolean pin) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            store().findChatByJid(chat)
+                    .ifPresent(entry -> entry.pinnedTimestampSeconds(pin ? (int) Clock.nowSeconds() : 0));
+            return CompletableFuture.completedFuture(chat);
+        }
+
         var pinAction = PinAction.of(pin);
         var syncAction = ActionValueSync.of(pinAction);
         var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 5, chat.toJid().toString());
@@ -1413,6 +1441,12 @@ public class Whatsapp {
     }
 
     private CompletableFuture<MessageInfo> star(MessageInfo info, boolean star) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            info.starred(star);
+            return CompletableFuture.completedFuture(info);
+        }
+
         var starAction = StarAction.of(star);
         var syncAction = ActionValueSync.of(starAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
@@ -1453,6 +1487,13 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> archive(T chat, boolean archive) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            store().findChatByJid(chat)
+                    .ifPresent(entry -> entry.archived(archive));
+            return CompletableFuture.completedFuture(chat);
+        }
+
         var range = createRange(chat, false);
         var archiveAction = ArchiveChatAction.of(archive, range);
         var syncAction = ActionValueSync.of(archiveAction);
@@ -1498,6 +1539,13 @@ public class Whatsapp {
                     .build();
             return socketHandler.sendMessage(request).thenApplyAsync(ignored -> info);
         }
+
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            info.chat().removeMessage(info);
+            return CompletableFuture.completedFuture(info);
+        }
+
         var range = createRange(info.chatJid(), false);
         var deleteMessageAction = DeleteMessageForMeAction.of(false, info.timestampSeconds());
         var syncAction = ActionValueSync.of(deleteMessageAction);
@@ -1514,6 +1562,12 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> delete(@NonNull T chat) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            store().removeChat(chat.toJid());
+            return CompletableFuture.completedFuture(chat);
+        }
+
         var range = createRange(chat.toJid(), false);
         var deleteChatAction = DeleteChatAction.of(range);
         var syncAction = ActionValueSync.of(deleteChatAction);
@@ -1530,6 +1584,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> clear(@NonNull T chat, boolean keepStarredMessages) {
+        if(store().clientType() == ClientType.APP_CLIENT){
+            // TODO: Send notification to companions
+            store().findChatByJid(chat.toJid())
+                    .ifPresent(Chat::removeMessages);
+            return CompletableFuture.completedFuture(chat);
+        }
+
         var known = store().findChatByJid(chat);
         var range = createRange(chat.toJid(), true);
         var clearChatAction = ClearChatAction.of(range);

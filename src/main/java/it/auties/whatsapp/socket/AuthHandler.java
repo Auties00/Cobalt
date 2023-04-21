@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
 import it.auties.whatsapp.model.signal.auth.Companion.CompanionPropsPlatformType;
 import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMethod;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
-import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Spec;
 import lombok.RequiredArgsConstructor;
@@ -64,10 +63,6 @@ class AuthHandler {
                 .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                 .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                 .userAgent(createUserAgent());
-        if(socketHandler.store().clientType() == ClientType.WEB_CLIENT){
-            builder.webInfo(new WebInfo(getWebPlatform()));
-        }
-
         var result = finishUserPayload(builder);
         return Protobuf.writeMessage(result);
     }
@@ -76,25 +71,13 @@ class AuthHandler {
         var mobile = socketHandler.store().clientType() == ClientType.APP_CLIENT;
         return UserAgent.builder()
                 .appVersion(socketHandler.store().version())
-                .osVersion(Spec.Whatsapp.MOBILE_OS_VERSION)
-                .device(Spec.Whatsapp.MOBILE_DEVICE)
-                .manufacturer(Spec.Whatsapp.MOBILE_DEVICE_MANUFACTURER)
-                .platform(mobile ? Spec.Whatsapp.MOBILE_OS_TYPE : UserAgentPlatform.WEB)
-                .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
+                .osVersion(mobile ? Spec.Whatsapp.MOBILE_OS_VERSION : null)
+                .device(mobile ? Spec.Whatsapp.MOBILE_DEVICE : null)
+                .manufacturer(mobile ? Spec.Whatsapp.MOBILE_DEVICE_MANUFACTURER : null)
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
+                .platform(mobile ? Spec.Whatsapp.MOBILE_OS_TYPE : UserAgentPlatform.WINDOWS)
+                .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                 .build();
-    }
-
-    private WebInfoWebSubPlatform getWebPlatform() {
-        if (socketHandler.store().clientType() != ClientType.WEB_CLIENT) {
-            return null;
-        }
-
-        if (socketHandler.store().historyLength() == WebHistoryLength.ONE_YEAR) {
-            return WebInfoWebSubPlatform.WIN_STORE;
-        }
-
-        return WebInfoWebSubPlatform.WEB_BROWSER;
     }
 
     private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {

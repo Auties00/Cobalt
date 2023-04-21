@@ -61,7 +61,7 @@ import java.util.stream.IntStream;
 // I repeat: DO NOT RUN THIS CI LOCALLY ON A BRAND-NEW NUMBER OR IT WILL GET BANNED
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class RunCITest implements Listener {
+public class RunWebCITest implements Listener {
     @SuppressWarnings("HttpUrlsUsage")
     private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 

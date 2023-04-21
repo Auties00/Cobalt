@@ -203,7 +203,7 @@ public class SocketHandler implements SocketListener {
             return loginFuture;
         }
 
-        this.session = SocketSession.of(store.clientType(), store.proxy().orElse(null), store.socketExecutor());
+        this.session = new SocketSession(store.proxy().orElse(null), store.socketExecutor());
         return session.connect(this)
                 .thenCompose(ignored -> loginFuture);
     }

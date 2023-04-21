@@ -1,7 +1,6 @@
 open module it.auties.whatsapp4j {
     requires static lombok;
     requires transitive java.desktop;
-    requires jakarta.websocket.client;
     requires java.net.http;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
@@ -26,7 +25,6 @@ open module it.auties.whatsapp4j {
     requires org.apache.pdfbox;
     requires org.apache.poi.ooxml;
     requires org.apache.poi.scratchpad;
-    requires org.glassfish.tyrus.client;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
