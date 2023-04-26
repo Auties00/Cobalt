@@ -1,14 +1,10 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import it.auties.map.SimpleMapModule;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
@@ -27,14 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
-import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
-import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
 
@@ -266,18 +254,6 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private record SmileFile(Path file, Semaphore semaphore) {
         private final static ConcurrentHashMap<Path, SmileFile> instances = new ConcurrentHashMap<>();
-        private final static ObjectMapper SMILE = new SmileMapper()
-                .registerModule(new Jdk8Module())
-                .registerModule(new SimpleMapModule())
-                .registerModule(new JavaTimeModule())
-                .setSerializationInclusion(NON_DEFAULT)
-                .enable(WRITE_ENUMS_USING_INDEX)
-                .enable(FAIL_ON_EMPTY_BEANS)
-                .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
-                .disable(FAIL_ON_UNKNOWN_PROPERTIES)
-                .setVisibility(ALL, ANY)
-                .setVisibility(GETTER, NONE)
-                .setVisibility(IS_GETTER, NONE);
 
         private static synchronized SmileFile of(@NonNull Path file){
             var knownInstance = instances.get(file);
@@ -312,7 +288,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 return Optional.empty();
             }
             var stream = Files.newInputStream(file);
-            return Optional.of(SMILE.readValue(new GZIPInputStream(stream), reference));
+            return Optional.of(Smile.readValue(new GZIPInputStream(stream), reference));
         }
 
         private void write(Object input, boolean async) {
@@ -330,22 +306,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
         private void writeSync(Object input) {
             try {
+                if(input == null){
+                    return;
+                }
+
                 semaphore.acquire();
-                // TODO: Code this again as it's memory leaking
-                // var serialized = SMILE.writeValueAsBytes(input);
-                //                try (var compressedStream = new ByteArrayOutputStream(serialized.length)) {
-                //                    try (var zipStream = new GZIPOutputStream(new ByteArrayOutputStream(serialized.length))) {
-                //                        zipStream.write(serialized);
-                //                    }
-                //
-                //                    if(Files.notExists(file.getParent())) {
-                //                        Files.createDirectories(file.getParent());
-                //                    }
-                //
-                //                    Files.write(file, compressedStream.toByteArray(), StandardOpenOption.CREATE);
-                //                }
-                // } catch (IOException exception){
-                //     throw new UncheckedIOException("Cannot complete file write", exception);
             }catch (InterruptedException exception){
                 throw new RuntimeException("Cannot acquire lock", exception);
             }finally {

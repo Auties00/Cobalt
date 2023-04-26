@@ -33,7 +33,7 @@ import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.HmacValidationException;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
@@ -678,6 +678,7 @@ class StreamHandler {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return;
         }
+        socketHandler.keys().serialize(true);
         socketHandler.store().serialize(true);
         socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
                         .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));

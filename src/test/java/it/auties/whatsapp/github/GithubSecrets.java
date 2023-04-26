@@ -6,7 +6,7 @@ import com.goterl.lazysodium.utils.LibraryLoader;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.utils.ConfigUtils;
-import it.auties.whatsapp.utils.Smile;
+import it.auties.whatsapp.util.Smile;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;

@@ -27,11 +27,11 @@ public class Exceptions {
         return Arrays.copyOfRange(stackTrace, 3, stackTrace.length);
     }
 
-    public Path save(Throwable throwable) {
-        return save(DEFAULT_DIRECTORY, throwable);
+    public void save(Throwable throwable) {
+        save(DEFAULT_DIRECTORY, throwable);
     }
 
-    public Path save(Path directory, Throwable throwable) {
+    public void save(Path directory, Throwable throwable) {
         try {
             var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
             var path = directory.resolve("%s-%s.txt".formatted(actual.getMessage(), UUID.randomUUID()));
@@ -39,7 +39,6 @@ public class Exceptions {
             var stackTracePrinter = new PrintWriter(stackTraceWriter);
             actual.printStackTrace(stackTracePrinter);
             Files.writeString(path, stackTraceWriter.toString(), StandardOpenOption.CREATE);
-            return path;
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot serialize exception. Here is the non-serialized stack trace", exception);
         }

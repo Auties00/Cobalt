@@ -20,6 +20,11 @@ public record PhoneNumber(long number, @NonNull CountryCode countryCode) {
     }
 
     public ContactJid toJid(){
-        return ContactJid.of("%s%s".formatted(countryCode.prefix(), number));
+        return ContactJid.of(toString());
+    }
+
+    @Override
+    public String toString() {
+        return "%s%s".formatted(countryCode.prefix(), number);
     }
 }

@@ -4,6 +4,7 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.NonNull;
