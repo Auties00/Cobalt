@@ -9,7 +9,6 @@ import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
-import it.auties.whatsapp.model.button.template.hydrated.HydratedTemplateButton;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.chat.Chat.EndOfHistoryTransferType;
 import it.auties.whatsapp.model.contact.Contact;
@@ -198,18 +197,18 @@ class MessageHandler {
 
         if(request.info().message().content() instanceof ButtonMessage buttonMessage) {
             if(buttonMessage instanceof TemplateMessage templateMessage){
-                var features =  templateMessage.content()
-                        .hydratedButtons()
-                        .stream()
-                        .map(HydratedTemplateButton::button)
-                        .flatMap(Optional::stream)
-                        .map(entry -> Node.ofAttributes(
-                                "feature",
-                                Map.of(
-                                        "name", entry.buttonType().name().toLowerCase(Locale.ROOT) + "_button"
-                                )
-                        ))
-                        .toList();
+                // var features =  templateMessage.content()
+                //                        .hydratedButtons()
+                //                        .stream()
+                //                        .map(HydratedTemplateButton::button)
+                //                        .flatMap(Optional::stream)
+                //                        .map(entry -> Node.ofAttributes(
+                //                                "feature",
+                //                                Map.of(
+                //                                        "name", entry.buttonType().name().toLowerCase(Locale.ROOT) + "_button"
+                //                                )
+                //                        ))
+                //                        .toList();
                 body.add(Node.ofChildren(
                         "hsm",
                         Map.of(
@@ -219,8 +218,8 @@ class MessageHandler {
                                 "v", 1
                         ),
                         Node.ofChildren(
-                                "capabilities",
-                                features
+                                "capabilities" //,
+                                // features
                         )
                 ));
             }else {
@@ -534,7 +533,6 @@ class MessageHandler {
             var key = keyBuilder.id(id).build();
             if(isSelfMessage(key)){
                 socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
-                socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
             }
 
@@ -544,7 +542,6 @@ class MessageHandler {
                 }
 
                 socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
-                socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
             }
 
@@ -557,7 +554,6 @@ class MessageHandler {
                 }
 
                 socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
-                socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
                 return;
             }
 
@@ -575,7 +571,6 @@ class MessageHandler {
             var category = infoNode.attributes().getString("category");
             saveMessage(info, category, offline);
             socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
-            socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
             socketHandler.onReply(info);
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
@@ -716,7 +711,6 @@ class MessageHandler {
 
     private void onProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
         handleProtocolMessage(info, protocolMessage);
-        socketHandler.store().serialize(true);
         if (!peer) {
             return;
         }
@@ -788,7 +782,7 @@ class MessageHandler {
 
     private boolean isSyncComplete(HistorySync history) {
         return history.progress() == 100
-                && socketHandler.store().historyLength() == WebHistoryLength.THREE_MONTHS ? history.syncType() == RECENT : history.syncType() == FULL;
+                && socketHandler.store().historyLength() == WebHistoryLength.STANDARD ? history.syncType() == RECENT : history.syncType() == FULL;
     }
 
     private void onMessageDeleted(MessageInfo info, MessageInfo message) {

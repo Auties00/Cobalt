@@ -25,7 +25,7 @@ import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.utils.ConfigUtils;
-import it.auties.whatsapp.utils.Smile;
+import it.auties.whatsapp.util.Smile;
 import lombok.SneakyThrows;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;

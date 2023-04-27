@@ -9,7 +9,7 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
-import it.auties.whatsapp.util.HmacValidationException;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;

@@ -129,7 +129,7 @@ public class Version implements ProtobufMessage {
         //        } catch (Throwable throwable) {
         //            return DEFAULT_MOBILE_VERSION;
         //        }
-        return new Version("2.22.24.81");
+        return new Version("2.23.7.1");
     }
 
     public byte[] toHash() {

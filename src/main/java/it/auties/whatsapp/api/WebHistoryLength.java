@@ -12,12 +12,15 @@ public enum WebHistoryLength {
     ZERO,
 
     /**
-     * Three months worth of chat
+     * This is the default setting for the web client
+     * This is also the recommended setting
      */
-    THREE_MONTHS,
+    STANDARD,
 
     /**
-     * One year worth of chats
+     * This will contain most of your messages
+     * Unless you 100% know what you are doing don't use this
+     * It consumes a lot of system resources
      */
-    ONE_YEAR,
+    EXTENDED,
 }

@@ -40,7 +40,11 @@ public enum PrivacySettingType {
     /**
      * Refers to whether read receipts should be sent and received for messages
      */
-    READ_RECEIPTS("readreceipts", Set.of(PrivacySettingValue.EVERYONE, PrivacySettingValue.NOBODY));
+    READ_RECEIPTS("readreceipts", Set.of(PrivacySettingValue.EVERYONE, PrivacySettingValue.NOBODY)),
+    /**
+     * Refers to who can add you to a call
+     */
+    CALL_ADD("calladd", Set.of(PrivacySettingValue.EVERYONE, PrivacySettingValue.CONTACTS, PrivacySettingValue.CONTACTS_EXCEPT, PrivacySettingValue.NOBODY));
 
     @Getter
     private final String data;

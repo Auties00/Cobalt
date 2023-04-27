@@ -290,7 +290,7 @@ public final class Store extends Controller<Store> {
     @Setter
     @Default
     @NonNull
-    private WebHistoryLength historyLength = WebHistoryLength.THREE_MONTHS;
+    private WebHistoryLength historyLength = WebHistoryLength.STANDARD;
 
     /**
      * The handler to use when printing out the qr coe
@@ -477,10 +477,7 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     public Optional<Chat> findChatByJid(ContactJidProvider jid) {
-        return jid == null ? Optional.empty() : chats.values()
-                .parallelStream()
-                .filter(chat -> chat.jid().user().equals(jid.toJid().user()))
-                .findAny();
+        return jid == null ? Optional.empty() : Optional.ofNullable(chats.get(jid.toJid()));
     }
 
     /**
@@ -506,7 +503,9 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     public Optional<Chat> findChatBy(@NonNull Function<Chat, Boolean> function) {
-        return chats.values().stream().filter(function::apply).findFirst();
+        return chats.values().parallelStream()
+                .filter(function::apply)
+                .findFirst();
     }
 
     /**
@@ -526,7 +525,10 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     public Set<Chat> findChatsBy(@NonNull Function<Chat, Boolean> function) {
-        return chats.values().stream().filter(function::apply).collect(Collectors.toUnmodifiableSet());
+        return chats.values()
+                .stream()
+                .filter(function::apply)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -841,7 +843,10 @@ public final class Store extends Controller<Store> {
      * @return an immutable collection
      */
     public List<Chat> chats() {
-        return chats.values().stream().sorted(Comparator.comparingLong((Chat chat) -> chat.timestampSeconds()).reversed()).toList();
+        return chats.values()
+                .stream()
+                .sorted(Comparator.comparingLong((Chat chat) -> chat.timestampSeconds()).reversed())
+                .toList();
     }
 
     /**

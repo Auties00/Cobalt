@@ -16,6 +16,6 @@ public class OrderedAsyncTaskRunner {
         if(lastFuture == null){
             return;
         }
-        lastFuture.cancel(false);
+        lastFuture.cancel(true);
     }
 }

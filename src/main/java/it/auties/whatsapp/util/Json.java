@@ -21,10 +21,10 @@ import static java.lang.System.Logger.Level.ERROR;
 
 @UtilityClass
 public class Json {
-    private final ObjectMapper JSON;
+    private final ObjectMapper json;
     static {
         try {
-            JSON = new ObjectMapper().registerModule(new Jdk8Module())
+            json = new ObjectMapper().registerModule(new Jdk8Module())
                     .registerModule(new SimpleMapModule())
                     .registerModule(new JavaTimeModule())
                     .setSerializationInclusion(NON_DEFAULT)
@@ -49,7 +49,7 @@ public class Json {
 
     public String writeValueAsString(Object object, boolean pretty){
         try {
-            var writer = pretty ? JSON.writerWithDefaultPrettyPrinter() : JSON.writer();
+            var writer = pretty ? json.writerWithDefaultPrettyPrinter() : json.writer();
             return writer.writeValueAsString(object);
         }catch (IOException exception){
             throw new UncheckedIOException("Cannot write json", exception);
@@ -58,7 +58,7 @@ public class Json {
 
     public <T> T readValue(String value, Class<T> clazz){
         try {
-            return JSON.readValue(value, clazz);
+            return json.readValue(value, clazz);
         }catch (IOException exception){
             throw new UncheckedIOException("Cannot read json", exception);
         }
@@ -66,7 +66,7 @@ public class Json {
 
     public <T> T readValue(String value, TypeReference<T> clazz){
         try {
-            return JSON.readValue(value, clazz);
+            return json.readValue(value, clazz);
         }catch (IOException exception){
             throw new UncheckedIOException("Cannot read json", exception);
         }

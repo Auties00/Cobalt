@@ -1,7 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.util.Exceptions;
-import it.auties.whatsapp.util.HmacValidationException;
+import it.auties.whatsapp.exception.HmacValidationException;
 import lombok.NonNull;
 
 import java.nio.file.Path;

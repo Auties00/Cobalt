@@ -72,7 +72,7 @@ class AuthHandler {
         return UserAgent.builder()
                 .appVersion(socketHandler.store().version())
                 .osVersion(mobile ? Spec.Whatsapp.MOBILE_OS_VERSION : null)
-                .device(mobile ? Spec.Whatsapp.MOBILE_DEVICE : null)
+                .device(mobile ? Spec.Whatsapp.MOBILE_DEVICE_MODEL : null)
                 .manufacturer(mobile ? Spec.Whatsapp.MOBILE_DEVICE_MANUFACTURER : null)
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .platform(mobile ? Spec.Whatsapp.MOBILE_OS_TYPE : UserAgentPlatform.WINDOWS)
@@ -137,8 +137,8 @@ class AuthHandler {
 
         return Companion.builder()
                 .os(socketHandler.store().name())
-                .platformType(socketHandler.store().historyLength() == WebHistoryLength.ONE_YEAR ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
-                .requireFullSync(socketHandler.store().historyLength() == WebHistoryLength.ONE_YEAR)
+                .platformType(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
+                .requireFullSync(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED)
                 .build();
     }
 

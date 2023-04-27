@@ -56,4 +56,5 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.button.template.hydrated;
     exports it.auties.whatsapp.model.button.template.hsm;
     exports it.auties.whatsapp.model.button.template;
+    exports it.auties.whatsapp.exception;
 }
