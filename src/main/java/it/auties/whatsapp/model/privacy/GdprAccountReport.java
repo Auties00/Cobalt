@@ -18,7 +18,7 @@ public sealed interface GdprAccountReport {
      * @return a non-null gdpr request
      */
     static Pending ofPending(long timestamp) {
-        return new Pending(Clock.parseSeconds(timestamp).orElse(ZonedDateTime.now().plusDays(3)));
+        return new Pending(timestamp <= 0 ? ZonedDateTime.now().plusDays(3) : Clock.parseSeconds(timestamp));
     }
 
     /**

@@ -5,7 +5,9 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.request.Node;
 import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -15,15 +17,19 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a participant of a group.
- *
- * @param jid  the non-null jid of the participant
- * @param role non-null role of the participant
  */
 @Builder
-public record GroupParticipant(
-        @ProtobufProperty(index = 1, type = STRING, name = "userJid") @NonNull ContactJid jid,
-        @ProtobufProperty(index = 2, type = MESSAGE, name = "rank") GroupRole role) implements ProtobufMessage {
-    public GroupParticipant(ContactJid jid, GroupRole role) {
+@Data
+@Accessors(fluent = true)
+public final class GroupParticipant implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = STRING, name = "userJid")
+    @NonNull
+    private final ContactJid jid;
+
+    @ProtobufProperty(index = 2, type = MESSAGE, name = "rank")
+    private GroupRole role;
+
+    public GroupParticipant(@NonNull ContactJid jid, GroupRole role) {
         this.jid = jid;
         this.role = Objects.requireNonNullElse(role, GroupRole.USER);
     }

@@ -67,7 +67,7 @@ public class KeepInChat implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> serverTimestamp(){
+    public ZonedDateTime serverTimestamp(){
         return Clock.parseSeconds(serverTimestampSeconds);
     }
 
@@ -76,7 +76,7 @@ public class KeepInChat implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> clientTimestamp(){
+    public ZonedDateTime clientTimestamp(){
         return Clock.parseMilliseconds(clientTimestampInMilliseconds);
     }
 }

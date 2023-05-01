@@ -9,7 +9,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
-import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.INT64;
@@ -40,7 +39,7 @@ public final class DeleteMessageForMeAction implements Action {
      *
      * @return an optional
      */
-    public Optional<ZonedDateTime> messageTimestamp() {
+    public ZonedDateTime messageTimestamp() {
         return Clock.parseSeconds(messageTimestampSeconds);
     }
 

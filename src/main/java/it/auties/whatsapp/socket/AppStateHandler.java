@@ -144,11 +144,15 @@ class AppStateHandler {
     }
 
     private boolean isSyncComplete() {
-        return Arrays.stream(PatchType.values()).allMatch(this::isSyncComplete);
+        return Arrays.stream(PatchType.values())
+                .allMatch(this::isSyncComplete);
     }
 
     private boolean isSyncComplete(PatchType entry) {
-        return socketHandler.keys().findHashStateByName(entry).filter(type -> type.version() > 0).isPresent();
+        return socketHandler.keys()
+                .findHashStateByName(entry)
+                .filter(type -> type.version() > 0)
+                .isPresent();
     }
 
     private Void onPullError(boolean initial, Throwable exception) {
@@ -329,7 +333,7 @@ class AppStateHandler {
 
     private Chat createChat(MessageIndexInfo messageIndex) {
         var chat = messageIndex.chatJid().orElseThrow();
-        return socketHandler.store().addChat(chat);
+        return socketHandler.store().addNewChat(chat);
     }
 
     private Contact createContact(MessageIndexInfo messageIndex) {

@@ -106,7 +106,7 @@ public final class PollUpdateMessage implements Message {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> senderTimestamp() {
+    public ZonedDateTime senderTimestamp() {
         return Clock.parseSeconds(senderTimestampMilliseconds);
     }
 

@@ -26,7 +26,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Accessors(fluent = true)
 public final class RequestPaymentMessage implements PaymentMessage {
     /**
-     * The currency countryCode for {@link RequestPaymentMessage#amount}. Follows the ISO-4217 Standard. For
+     * The currency code for {@link RequestPaymentMessage#amount}. Follows the ISO-4217 Standard. For
      * a list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
      */
     @ProtobufProperty(index = 1, type = STRING)

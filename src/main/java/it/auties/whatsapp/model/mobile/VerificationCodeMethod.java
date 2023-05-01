@@ -19,7 +19,7 @@ public enum VerificationCodeMethod {
      */
     NONE("none"),
     /**
-     * An SMS containing the countryCode will be sent to the associated phone number
+     * An SMS containing the code will be sent to the associated phone number
      */
     SMS("sms"),
     /**

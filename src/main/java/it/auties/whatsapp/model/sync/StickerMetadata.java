@@ -98,7 +98,7 @@ public final class StickerMetadata implements ProtobufMessage, AttachmentProvide
      *
      * @return an optional
      */
-    public Optional<ZonedDateTime> lastStickerSent() {
+    public ZonedDateTime lastStickerSent() {
         return Clock.parseSeconds(lastStickerSentSeconds);
     }
 

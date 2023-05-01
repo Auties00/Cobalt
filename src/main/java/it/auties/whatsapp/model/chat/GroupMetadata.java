@@ -96,13 +96,15 @@ public class GroupMetadata implements ProtobufMessage {
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
         var subjectAuthor = node.attributes().getJid("s_o").orElse(null);
-        var subjectTimestamp = Clock.parseSeconds(node.attributes().getLong("s_t")).orElse(ZonedDateTime.now());
-        var foundationTimestamp = Clock.parseSeconds(node.attributes().getLong("creation")).orElse(ZonedDateTime.now());
+        var subjectTimestampSeconds = node.attributes().getLong("s_t");
+        var subjectTimestamp = subjectTimestampSeconds <= 0 ? ZonedDateTime.now() : Clock.parseSeconds(subjectTimestampSeconds);
+        var foundationTimestampSeconds = node.attributes().getLong("creation");
+        var foundationTimestamp = subjectTimestampSeconds <= 0 ? ZonedDateTime.now() :Clock.parseSeconds(foundationTimestampSeconds);
         var founder = node.attributes().getJid("creator").orElse(null);
         var policies = new HashMap<GroupSetting, GroupPolicy>();
         policies.put(SEND_MESSAGES, GroupPolicy.of(node.hasNode("restrict")));
         policies.put(EDIT_GROUP_INFO, GroupPolicy.of(node.hasNode("announce")));
-
+        policies.put(APPROVE_NEW_PARTICIPANTS, GroupPolicy.of(node.hasNode("membership_approval_mode")));
         var description = node.findNode("description")
                 .flatMap(parent -> parent.findNode("body"))
                 .map(GroupMetadata::parseDescription)
@@ -113,20 +115,13 @@ public class GroupMetadata implements ProtobufMessage {
                 .orElse(null);
         var community = node.findNode("parent")
                 .isPresent();
-        if(community){
-            var adminAddCommunity = node.findNode("member_add_mode")
-                    .flatMap(Node::contentAsString)
-                    .filter("admin_add"::equals)
-                    .isPresent();
-            policies.put(ADD_COMMUNITY_MEMBER, GroupPolicy.of(adminAddCommunity));
-        }
         var openCommunity = node.findNode("parent")
                 .filter(entry -> entry.attributes().hasKey("default_membership_approval_mode", "request_required"))
                 .isEmpty();
         var ephemeral = node.findNode("ephemeral")
                 .map(Node::attributes)
                 .map(attributes -> attributes.getLong("expiration"))
-                .flatMap(Clock::parseSeconds)
+                .map(Clock::parseSeconds)
                 .orElse(null);
         var participants = node.findNodes("participant")
                 .stream()

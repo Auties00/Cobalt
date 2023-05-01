@@ -3,13 +3,8 @@ package it.auties.whatsapp.util;
 import lombok.experimental.UtilityClass;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Optional;
-
-import static java.time.Instant.ofEpochMilli;
-import static java.time.Instant.ofEpochSecond;
-import static java.time.ZoneId.systemDefault;
-import static java.time.ZonedDateTime.ofInstant;
 
 @UtilityClass
 public class Clock {
@@ -21,19 +16,15 @@ public class Clock {
         return Instant.now().toEpochMilli();
     }
 
-    public Optional<ZonedDateTime> parseSeconds(Integer input) {
+    public ZonedDateTime parseSeconds(Integer input) {
         return parseSeconds(input.longValue());
     }
 
-    public Optional<ZonedDateTime> parseSeconds(Long input) {
-        return Optional.ofNullable(input)
-                .filter(time -> time != 0)
-                .map(time -> ofInstant(ofEpochSecond(time), systemDefault()));
+    public ZonedDateTime parseSeconds(long input) {
+        return input <= 0 ? ZonedDateTime.now() : ZonedDateTime.ofInstant(Instant.ofEpochSecond(input), ZoneId.systemDefault());
     }
 
-    public Optional<ZonedDateTime> parseMilliseconds(Long input) {
-        return Optional.ofNullable(input)
-                .filter(time -> time != 0)
-                .map(time -> ofInstant(ofEpochMilli(time), systemDefault()));
+    public ZonedDateTime parseMilliseconds(long input) {
+        return input <= 0 ? ZonedDateTime.now() : ZonedDateTime.ofInstant(Instant.ofEpochMilli(input), ZoneId.systemDefault());
     }
 }

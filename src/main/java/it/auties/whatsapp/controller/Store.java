@@ -48,7 +48,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -232,14 +231,6 @@ public final class Store extends Controller<Store> {
     @JsonIgnore
     @Default
     private final KeySetView<Listener, Boolean> listeners = ConcurrentHashMap.newKeySet();
-
-    /**
-     * Request counter
-     */
-    @NonNull
-    @JsonIgnore
-    @Default
-    private AtomicLong counter = new AtomicLong();
 
     /**
      * The request tag, used to create messages
@@ -678,17 +669,19 @@ public final class Store extends Controller<Store> {
      * @param chatJid the chat to add
      * @return the input chat
      */
-    public Chat addChat(@NonNull ContactJid chatJid) {
-        return addChat(Chat.ofJid(chatJid));
+    public Chat addNewChat(@NonNull ContactJid chatJid) {
+        var chat = Chat.ofJid(chatJid);
+        addChat(chat);
+        return chat;
     }
 
     /**
      * Adds a chat in memory
      *
      * @param chat the chat to add
-     * @return the input chat
+     * @return the old chat, if present
      */
-    public Chat addChat(@NonNull Chat chat) {
+    public Optional<Chat> addChat(@NonNull Chat chat) {
         chat.messages().forEach(this::attribute);
         if (chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
             var contact = findContactByJid(chat.jid())
@@ -723,11 +716,10 @@ public final class Store extends Controller<Store> {
      * Adds a chat in memory without executing any check
      *
      * @param chat the chat to add
-     * @return the input chat
+     * @return the old chat, if present
      */
-    public Chat addChatDirect(Chat chat) {
-        chats.put(chat.jid(), chat);
-        return chat;
+    public Optional<Chat> addChatDirect(Chat chat) {
+        return Optional.ofNullable(chats.put(chat.jid(), chat));
     }
 
     /**
@@ -769,7 +761,7 @@ public final class Store extends Controller<Store> {
      */
     public MessageInfo attribute(@NonNull MessageInfo info) {
         var chat = findChatByJid(info.chatJid())
-                .orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
+                .orElseGet(() -> addNewChat(info.chatJid()));
         info.key().chat(chat);
         if(info.fromMe() && jid != null && !Objects.equals(info.senderJid().user(), jid.user())){
             info.key().senderJid(jid.toWhatsappJid());
@@ -791,7 +783,7 @@ public final class Store extends Controller<Store> {
     }
 
     private void attributeContextChat(ContextInfo contextInfo, ContactJid chatJid) {
-        var chat = findChatByJid(chatJid).orElseGet(() -> addChat(Chat.ofJid(chatJid)));
+        var chat = findChatByJid(chatJid).orElseGet(() -> addNewChat(chatJid));
         contextInfo.quotedMessageChat(chat);
     }
 
@@ -904,7 +896,7 @@ public final class Store extends Controller<Store> {
      * @return a non-null String
      */
     public String nextTag() {
-        return "%s-%s".formatted(tag, counter.getAndIncrement());
+        return UUID.randomUUID().toString();
     }
 
     /**

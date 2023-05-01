@@ -89,7 +89,7 @@ public final class PaymentOrderMessage extends ContextualMessage implements Paym
     private long amount;
 
     /**
-     * The currency countryCode for {@link PaymentOrderMessage#amount}. Follows the ISO-4217 Standard. For a
+     * The currency code for {@link PaymentOrderMessage#amount}. Follows the ISO-4217 Standard. For a
      * list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
      */
     @ProtobufProperty(index = 11, type = STRING)

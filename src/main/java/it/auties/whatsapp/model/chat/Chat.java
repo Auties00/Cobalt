@@ -24,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -166,13 +167,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @ProtobufProperty(implementation = GroupParticipant.class, index = 20, name = "participant", repeated = true, type = MESSAGE)
     @Default
-    private List<GroupParticipant> participants = new ArrayList<>();
+    private Map<ContactJid, GroupParticipant> participants = new ConcurrentHashMap<>();
 
     /**
      * The participants that used to be in this chat, if it's a group
      */
     @Default
-    private List<PastParticipant> pastParticipants = new ArrayList<>();
+    private Map<ContactJid, PastParticipant> pastParticipants = new ConcurrentHashMap<>();
 
     /**
      * The token of this chat
@@ -184,7 +185,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The timestamp of the token of this chat
      */
     @ProtobufProperty(index = 22, type = UINT64)
-    private long tokenTimestamp;
+    private long tokenTimestampSeconds;
 
     /**
      * The public identity key of this chat
@@ -225,7 +226,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The timestamp of the sender of the token of this chat
      */
     @ProtobufProperty(index = 28, type = UINT64)
-    private long tokenSenderTimestamp;
+    private long tokenSenderTimestampSeconds;
 
     /**
      * Whether this chat was suspended and therefore cannot be accessed anymore
@@ -243,13 +244,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The timestamp at which the chat, if a group, was created
      */
     @ProtobufProperty(index = 31, name = "createdAt", type = UINT64)
-    private long createdAt;
+    private long foundationTimestampSeconds;
 
     /**
      * The user who created this chat, if a group
      */
     @ProtobufProperty(index = 32, name = "createdBy", type = STRING)
-    private ContactJid createdBy;
+    private ContactJid founder;
 
     /**
      * The description of this chat, if a group
@@ -476,7 +477,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-empty optional if the chat is pinned
      */
-    public Optional<ZonedDateTime> pinnedTimestamp() {
+    public ZonedDateTime pinnedTimestamp() {
         return Clock.parseSeconds(pinnedTimestampSeconds);
     }
 
@@ -486,7 +487,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-empty optional if this field is populated
      */
-    public Optional<ZonedDateTime> timestamp() {
+    public ZonedDateTime timestamp() {
         return Clock.parseSeconds(timestampSeconds);
     }
 
@@ -496,7 +497,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */
-    public Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
+    public ZonedDateTime ephemeralMessagesToggleTime() {
         return Clock.parseSeconds(ephemeralMessagesToggleTime);
     }
 
@@ -604,7 +605,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-null list of messages
      */
     public Collection<MessageInfo> starredMessages() {
-
         return historySyncMessages.stream()
                 .filter(MessageInfo::starred)
                 .toList();
@@ -624,8 +624,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-null optional value
      */
-    public Optional<ZonedDateTime> tokenTimestamp() {
-        return Clock.parseSeconds(tokenTimestamp);
+    public ZonedDateTime tokenTimestamp() {
+        return Clock.parseSeconds(tokenTimestampSeconds);
     }
 
     /**
@@ -642,8 +642,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-null optional value
      */
-    public Optional<ZonedDateTime> tokenSenderTimestamp() {
-        return Clock.parseSeconds(tokenTimestamp);
+    public ZonedDateTime tokenSenderTimestamp() {
+        return Clock.parseSeconds(tokenSenderTimestampSeconds);
     }
 
     /**
@@ -651,21 +651,25 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-null optional value
      */
-    public Optional<ZonedDateTime> createdAt() {
-        return Clock.parseSeconds(createdAt);
+    public ZonedDateTime foundationTimestamp() {
+        return Clock.parseSeconds(foundationTimestampSeconds);
     }
 
     /**
      * Returns the contact who created this chat if it's a group
+     * This method only works if {@link Whatsapp#queryGroupMetadata(ContactJidProvider)} has been called before on this chat.
+     * By default, all groups that have been used in the last two weeks wil be synced automatically
      *
      * @return a non-null optional value
      */
-    public Optional<ContactJid> createdBy() {
-        return Optional.ofNullable(createdBy);
+    public Optional<ContactJid> founder() {
+        return Optional.ofNullable(founder);
     }
 
     /**
      * Returns the description of this chat if it's a group
+     * This method only works if {@link Whatsapp#queryGroupMetadata(ContactJidProvider)} has been called before on this chat.
+     * By default, all groups that have been used in the last two weeks wil be synced automatically
      *
      * @return a non-null optional value
      */
@@ -815,6 +819,108 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Returns an immutable list representing the participants of this chat if it's a group
+     *
+     * @return a non-null collection
+     */
+    public Collection<GroupParticipant> participants() {
+        return participants.values();
+    }
+
+    /**
+     * Adds a participant to this chat
+     *
+     * @param jid the non-null jid of the participant
+     * @param role the role of the participant
+     * @return the old value associated with the provided jid
+     */
+    public Optional<GroupParticipant> addParticipant(@NonNull ContactJid jid, GroupRole role){
+        return Optional.ofNullable(participants.put(jid, new GroupParticipant(jid, role)));
+    }
+
+    /**
+     * Adds a participant to this chat
+     *
+     * @param participant the non-null participant
+     * @return the old value associated with the provided jid
+     */
+    public Optional<GroupParticipant> addParticipant(@NonNull GroupParticipant participant){
+        return Optional.ofNullable(participants.put(participant.jid(), participant));
+    }
+
+    /**
+     * Removes a participant from this chat
+     *
+     * @param jid the non-null jid of the participant
+     * @return the old value associated with the provided jid
+     */
+    public Optional<GroupParticipant> removeParticipant(@NonNull ContactJid jid){
+        return Optional.ofNullable(participants.remove(jid));
+    }
+
+    /**
+     * Finds a participant by jid
+     * This method only works if {@link Whatsapp#queryGroupMetadata(ContactJidProvider)} has been called before on this chat.
+     * By default, all groups that have been used in the last two weeks wil be synced automatically
+     *
+     * @param jid the non-null jid of the participant
+     * @return the participant, if present
+     */
+    public Optional<GroupParticipant> findParticipant(@NonNull ContactJid jid){
+        return Optional.ofNullable(participants.get(jid));
+    }
+
+    /**
+     * Returns an immutable list representing the pastParticipants of this chat if it's a group
+     *
+     * @return a non-null collection
+     */
+    public Collection<PastParticipant> pastParticipants() {
+        return pastParticipants.values();
+    }
+
+    /**
+     * Adds a past participant
+     *
+     * @param participant the non-null jid of the past participant
+     * @return the old value associated with the provided jid
+     */
+    public Optional<PastParticipant> addPastParticipant(@NonNull PastParticipant participant){
+        return Optional.ofNullable(pastParticipants.put(participant.jid(), participant));
+    }
+
+    /**
+     * Adds a collection of past participants
+     *
+     * @param pastParticipants the non-null list of past participants
+     */
+    public void addPastParticipants(List<PastParticipant> pastParticipants) {
+        for(var pastParticipant : pastParticipants){
+            this.pastParticipants.put(pastParticipant.jid(), pastParticipant);
+        }
+    }
+
+    /**
+     * Removes a past participant
+     *
+     * @param jid the non-null jid of the past participant
+     * @return the old value associated with the provided jid
+     */
+    public Optional<PastParticipant> removePastParticipant(@NonNull ContactJid jid){
+        return Optional.ofNullable(pastParticipants.remove(jid));
+    }
+
+    /**
+     * Finds a past participant by jid
+     *
+     * @param jid the non-null jid of the past participant
+     * @return the past participant, if present
+     */
+    public Optional<PastParticipant> findPastParticipant(@NonNull ContactJid jid){
+        return Optional.ofNullable(pastParticipants.get(jid));
+    }
+
+    /**
      * Checks if this chat is equal to another chat
      *
      * @param other the chat
@@ -852,7 +958,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an int
      */
     public int fullHashCode() {
-        int result = Objects.hash(jid, newJid, oldJid, timestampSeconds, historySyncMessages, unreadMessagesCount, readOnly, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTime, endOfHistoryTransferType, name, notSpam, archived, disappearInitiator, markedAsUnread, participants, pastParticipants, tokenTimestamp, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, tokenSenderTimestamp, suspended, terminated, createdAt, createdBy, description, support, parentGroup, defaultSubGroup, parentGroupJid, displayName, pnJid, shareOwnPn, pnhDuplicateLidThread, lidJid, presences, participantsPreKeys);
+        int result = Objects.hash(jid, newJid, oldJid, timestampSeconds, historySyncMessages, unreadMessagesCount, readOnly, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTime, endOfHistoryTransferType, name, notSpam, archived, disappearInitiator, markedAsUnread, participants, pastParticipants, tokenTimestampSeconds, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, tokenSenderTimestampSeconds, suspended, terminated, foundationTimestampSeconds, founder, description, support, parentGroup, defaultSubGroup, parentGroupJid, displayName, pnJid, shareOwnPn, pnhDuplicateLidThread, lidJid, presences, participantsPreKeys);
         result = 31 * result + Arrays.hashCode(token);
         result = 31 * result + Arrays.hashCode(identityKey);
         result = 31 * result + historySyncMessages.size();
@@ -861,7 +967,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
 
     @Override
     public String toString() {
-        return "Chat{" + "uuid=" + uuid + ", jid=" + jid + ", newJid=" + newJid + ", oldJid=" + oldJid + ", timestampSeconds=" + timestampSeconds + ", messages=" + historySyncMessages + ", unreadMessagesCount=" + unreadMessagesCount + ", readOnly=" + readOnly + ", endOfHistoryTransfer=" + endOfHistoryTransfer + ", ephemeralMessageDuration=" + ephemeralMessageDuration + ", ephemeralMessagesToggleTime=" + ephemeralMessagesToggleTime + ", endOfHistoryTransferType=" + endOfHistoryTransferType + ", name='" + name + '\'' + ", notSpam=" + notSpam + ", archived=" + archived + ", disappearInitiator=" + disappearInitiator + ", markedAsUnread=" + markedAsUnread + ", participants=" + participants + ", pastParticipants=" + pastParticipants + ", token=" + Arrays.toString(token) + ", tokenTimestamp=" + tokenTimestamp + ", identityKey=" + Arrays.toString(identityKey) + ", pinnedTimestampSeconds=" + pinnedTimestampSeconds + ", mute=" + mute + ", wallpaper=" + wallpaper + ", mediaVisibility=" + mediaVisibility + ", tokenSenderTimestamp=" + tokenSenderTimestamp + ", suspended=" + suspended + ", terminated=" + terminated + ", createdAt=" + createdAt + ", createdBy=" + createdBy + ", description='" + description + '\'' + ", support=" + support + ", parentGroup=" + parentGroup + ", defaultSubGroup=" + defaultSubGroup + ", parentGroupJid=" + parentGroupJid + ", displayName='" + displayName + '\'' + ", pnJid=" + pnJid + ", shareOwnPn=" + shareOwnPn + ", pnhDuplicateLidThread=" + pnhDuplicateLidThread + ", lidJid=" + lidJid + ", presences=" + presences + ", participantsPreKeys=" + participantsPreKeys + '}';
+        return "Chat{" + "uuid=" + uuid + ", jid=" + jid + ", newJid=" + newJid + ", oldJid=" + oldJid + ", timestampSeconds=" + timestampSeconds + ", messages=" + historySyncMessages + ", unreadMessagesCount=" + unreadMessagesCount + ", readOnly=" + readOnly + ", endOfHistoryTransfer=" + endOfHistoryTransfer + ", ephemeralMessageDuration=" + ephemeralMessageDuration + ", ephemeralMessagesToggleTime=" + ephemeralMessagesToggleTime + ", endOfHistoryTransferType=" + endOfHistoryTransferType + ", name='" + name + '\'' + ", notSpam=" + notSpam + ", archived=" + archived + ", disappearInitiator=" + disappearInitiator + ", markedAsUnread=" + markedAsUnread + ", participants=" + participants + ", pastParticipants=" + pastParticipants + ", token=" + Arrays.toString(token) + ", tokenTimestamp=" + tokenTimestampSeconds + ", identityKey=" + Arrays.toString(identityKey) + ", pinnedTimestampSeconds=" + pinnedTimestampSeconds + ", mute=" + mute + ", wallpaper=" + wallpaper + ", mediaVisibility=" + mediaVisibility + ", tokenSenderTimestamp=" + tokenSenderTimestampSeconds + ", suspended=" + suspended + ", terminated=" + terminated + ", createdAt=" + foundationTimestampSeconds + ", createdBy=" + founder + ", description='" + description + '\'' + ", support=" + support + ", parentGroup=" + parentGroup + ", defaultSubGroup=" + defaultSubGroup + ", parentGroupJid=" + parentGroupJid + ", displayName='" + displayName + '\'' + ", pnJid=" + pnJid + ", shareOwnPn=" + shareOwnPn + ", pnhDuplicateLidThread=" + pnhDuplicateLidThread + ", lidJid=" + lidJid + ", presences=" + presences + ", participantsPreKeys=" + participantsPreKeys + '}';
     }
 
     /**
@@ -889,6 +995,12 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Internal implementation to deserialize messages
      */
     public static class ChatBuilder {
+        public ChatBuilder participants(Collection<GroupParticipant> participants){
+            this.participants$set = true;
+            this.participants$value = participants.stream().collect(Collectors.toConcurrentMap(GroupParticipant::jid, Function.identity()));
+            return this;
+        }
+
         public ChatBuilder historySyncMessages(ConcurrentLinkedDeque<HistorySyncMessage> messages) {
             this.historySyncMessages$value = messages.stream()
                     .sorted(Comparator.comparing(HistorySyncMessage::messageOrderId))

@@ -437,11 +437,25 @@ public class SocketHandler implements SocketListener {
         return sendWithNoResponse(node);
     }
 
-    public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group) {
+    public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJidProvider group) {
         var body = Node.ofAttributes("query", Map.of("request", "interactive"));
-        return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
-                        .orElseThrow(() -> new NoSuchElementException("Missing group node: %s".formatted(node))))
-                .thenApplyAsync(GroupMetadata::of);
+        return sendQuery(group.toJid(), "get", "w:g2", body)
+                .thenApplyAsync(response -> handleGroupMetadata(group, response));
+    }
+
+    private GroupMetadata handleGroupMetadata(ContactJidProvider group, Node response) {
+        var metadata = response.findNode("group")
+                .map(GroupMetadata::of)
+                .orElseThrow(() -> new NoSuchElementException("Erroneous response: %s".formatted(response)));
+        var chat = group instanceof Chat entry ? entry : store.findChatByJid(group).orElse(null);
+        if(chat != null) {
+            metadata.founder().ifPresent(chat::founder);
+            chat.foundationTimestampSeconds(metadata.foundationTimestamp().toEpochSecond());
+            metadata.description().ifPresent(chat::description);
+            chat.participants().addAll(metadata.participants());
+        }
+
+        return metadata;
     }
 
     public CompletableFuture<Node> sendQuery(ContactJid to, String method, String category, Node... body) {

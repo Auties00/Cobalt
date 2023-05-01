@@ -26,7 +26,7 @@ public enum GroupSetting implements ProtobufMessage {
     /**
      * Who can add new members to the community
      */
-    ADD_COMMUNITY_MEMBER("member_add_mode");
+    APPROVE_NEW_PARTICIPANTS("membership_approval_mode");
 
     /**
      * The name of the setting linked to this enumerated constant

@@ -43,6 +43,7 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +58,7 @@ import static it.auties.whatsapp.util.Spec.Signal.*;
 
 class MessageHandler {
     private static final int MAX_ATTEMPTS = 3;
+    private static final int WEEKS_GROUP_METADATA_SYNC = 2;
 
     private final SocketHandler socketHandler;
     private final OrderedAsyncTaskRunner runner;
@@ -66,6 +68,8 @@ class MessageHandler {
     private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
     private final Set<Chat> historyCache;
     private final Logger logger;
+    private final DeferredTaskRunner deferredTaskRunner;
+    private final Set<ContactJid> attributedGroups;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -74,8 +78,10 @@ class MessageHandler {
         this.pastParticipantsQueue = new ConcurrentHashMap<>();
         this.retries = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
+        this.attributedGroups = ConcurrentHashMap.newKeySet();
         this.runner = new OrderedAsyncTaskRunner();
         this.logger = System.getLogger("MessageHandler");
+        this.deferredTaskRunner = new DeferredTaskRunner();
     }
 
     private <K, V> Cache<K, V> createCache(Duration duration) {
@@ -796,7 +802,10 @@ class MessageHandler {
             case INITIAL_STATUS_V3 -> handleInitialStatus(history);
             case PUSH_NAME -> handlePushNames(history);
             case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
-            case RECENT, FULL -> handleChatsSync(history, false);
+            case RECENT, FULL -> {
+                deferredTaskRunner.execute();
+                handleChatsSync(history, false);
+            }
             case NON_BLOCKING_DATA -> handleNonBlockingData(history);
         }
     }
@@ -865,10 +874,21 @@ class MessageHandler {
         for (var chat : history.conversations()) {
             var pastParticipants = pastParticipantsQueue.remove(chat.jid());
             if (pastParticipants != null) {
-                chat.pastParticipants().addAll(pastParticipants);
+                chat.addPastParticipants(pastParticipants);
             }
+            if(shouldSyncGroupMetadata(chat)){
+                attributedGroups.add(chat.jid());
+                deferredTaskRunner.schedule(() -> socketHandler.queryGroupMetadata(chat));
+            }
+
             store.addChat(chat);
         }
+    }
+
+    private boolean shouldSyncGroupMetadata(Chat chat) {
+        return chat.isGroup()
+                && !attributedGroups.contains(chat.jid())
+                && chat.timestamp().until(ZonedDateTime.now(), ChronoUnit.WEEKS) < WEEKS_GROUP_METADATA_SYNC;
     }
 
     private void handleNonBlockingData(HistorySync history) {

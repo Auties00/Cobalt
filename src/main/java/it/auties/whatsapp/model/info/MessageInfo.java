@@ -457,7 +457,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> timestamp() {
+    public ZonedDateTime timestamp() {
         return Clock.parseSeconds(timestampSeconds);
     }
 
@@ -466,7 +466,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> revokeTimestamp() {
+    public ZonedDateTime revokeTimestamp() {
         return Clock.parseSeconds(revokeTimestampSeconds);
     }
 

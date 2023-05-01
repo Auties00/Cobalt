@@ -76,7 +76,7 @@ public class MessageReceipt implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> deliveredTimestamp() {
+    public ZonedDateTime deliveredTimestamp() {
         return Clock.parseSeconds(deliveredTimestampSeconds);
     }
 
@@ -85,7 +85,7 @@ public class MessageReceipt implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> readTimestamp() {
+    public ZonedDateTime readTimestamp() {
         return Clock.parseSeconds(readTimestampSeconds);
     }
 
@@ -94,7 +94,7 @@ public class MessageReceipt implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public Optional<ZonedDateTime> playedTimestamp() {
+    public ZonedDateTime playedTimestamp() {
         return Clock.parseSeconds(playedTimestampSeconds);
     }
 
