@@ -80,7 +80,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return null;
         }
         for (var server : Server.values()) {
-            jid = jid.replaceAll("@%s".formatted(server), "");
+            jid = jid.replace("@%s".formatted(server), "");
         }
         return jid;
     }
