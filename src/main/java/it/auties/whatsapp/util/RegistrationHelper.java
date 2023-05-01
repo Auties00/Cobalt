@@ -2,45 +2,30 @@ package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.request.Attributes;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
 import java.security.Security;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.util.*;
+import java.util.Base64;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 import java.util.stream.Collectors;
-import java.util.zip.ZipFile;
 
 @UtilityClass
 public class RegistrationHelper {
@@ -102,7 +87,8 @@ public class RegistrationHelper {
 
     private void checkResponse(HttpResponse<String> result) {
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        Validate.isTrue(response.status().isSuccessful(), "Invalid response, status code %s: %s".formatted(result.statusCode(), result.body()));
+        Validate.isTrue(response.status().isSuccessful(),
+                "Invalid response, status code %s: %s", RegistrationException.class, result.statusCode(), result.body());
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
@@ -120,18 +106,18 @@ public class RegistrationHelper {
     private String getUserAgent(Store store) {
         return "WhatsApp/%s %s/%s Device/%s-%s".formatted(
                 store.version(),
-                getMobileOsName(),
-                Spec.Whatsapp.MOBILE_OS_VERSION,
-                Spec.Whatsapp.MOBILE_DEVICE_MANUFACTURER,
-                Spec.Whatsapp.MOBILE_DEVICE_MODEL
+                getMobileOsName(store.osType()),
+                store.osVersion(),
+                store.manufacturer(),
+                store.model()
         );
     }
 
-    private Object getMobileOsName() {
-        return switch (Whatsapp.MOBILE_OS_TYPE) {
+    private Object getMobileOsName(UserAgentPlatform platform) {
+        return switch (platform) {
             case ANDROID -> "Android";
             case IOS -> "iOS";
-            default -> throw new IllegalStateException("Unsupported mobile os: " + Whatsapp.MOBILE_OS_TYPE);
+            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
 
@@ -147,8 +133,6 @@ public class RegistrationHelper {
     @SafeVarargs
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
         Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
-        var token = getToken(store.phoneNumber());
-        System.out.println(token);
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().countryCode().prefix())
                 .put("in", store.phoneNumber().number())
@@ -167,9 +151,9 @@ public class RegistrationHelper {
                 .put("simnum", "1")
                 .put("hasinrc", "1")
                 .put("pid", ProcessHandle.current().pid())
-                .put("rc", Whatsapp.MOBILE_RELEASE_CHANNEL.index())
+                .put("rc", store.releaseChannel().index())
                 .put("id", keys.identityId())
-                .put("token", token)
+                .put("token", TokenHelper.getToken(String.valueOf(store.phoneNumber().number()), store.osType()))
                 .toMap();
     }
 
@@ -178,94 +162,5 @@ public class RegistrationHelper {
                 .stream()
                 .map(entry -> "%s=%s".formatted(entry.getKey(), entry.getValue()))
                 .collect(Collectors.joining("&"));
-    }
-
-    private String getToken(PhoneNumber phoneNumber){
-        try {
-            var mac = Mac.getInstance("HMACSHA1");
-            mac.init(getTokenKey());
-            var apk = getWhatsappApk();
-            for(var cert : getCertificates(apk)){
-                mac.update(cert.getEncoded());
-            }
-            var tempFile = Files.createTempFile("whatsapp", ".apk");
-            Files.write(tempFile, apk);
-            var zipFile = new ZipFile(tempFile.toFile());
-            var zipEntry = zipFile.getEntry("classes.dex");
-            var zipStream = zipFile.getInputStream(zipEntry);
-            var messageDigest = MessageDigest.getInstance("MD5");
-            var messageResult = new byte[8192];
-            while (true) {
-                int read2 = zipStream.read(messageResult);
-                if (read2 <= 0) {
-                    break;
-                }
-                messageDigest.update(messageResult, 0, read2);
-            }
-            zipFile.close();
-            mac.update(messageDigest.digest());
-            mac.update(String.valueOf(phoneNumber.number()).getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().encodeToString(mac.doFinal());
-        }catch (IOException | GeneralSecurityException throwable){
-            throw new RuntimeException("Cannot compute mobile token", throwable);
-        }
-    }
-
-    private byte[] getWhatsappApk() {
-        try {
-            return new URL(Whatsapp.MOBILE_DOWNLOAD_URL)
-                    .openStream()
-                    .readAllBytes();
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot download whatsapp apk", exception);
-        }
-    }
-
-    private SecretKey getTokenKey() {
-        try(var out = new ByteArrayOutputStream()) {
-            out.write("com.whatsapp".getBytes(StandardCharsets.UTF_8));
-            try(var resourceAsStream = ClassLoader.getSystemResource("about_logo.png").openStream()) {
-                var bArr = new byte[8192];
-                var read = resourceAsStream.read(bArr);
-                while (true) {
-                    if (read != -1) {
-                        out.write(bArr, 0, read);
-                        read = resourceAsStream.read(bArr);
-                    }else {
-                        break;
-                    }
-                }
-            }
-
-            var result = out.toByteArray();
-            var whatsappLogoChars = new char[result.length];
-            for (int i3 = 0; i3 < result.length; i3++) {
-                whatsappLogoChars[i3] = (char) result[i3];
-            }
-            var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT");
-            var key = new PBEKeySpec(whatsappLogoChars, Base64.getDecoder().decode(Whatsapp.MOBILE_SALT), 128, 512);
-            return factory.generateSecret(key);
-        }catch (IOException | GeneralSecurityException exception){
-            throw new RuntimeException("Cannot load key", exception);
-        }
-    }
-
-    public List<Certificate> getCertificates(byte[] jarBytes) {
-        try {
-            var certificates = new ArrayList<Certificate>();
-            var certFactory = CertificateFactory.getInstance("X.509");
-            try (var jarStream = new JarInputStream(new ByteArrayInputStream(jarBytes))) {
-                JarEntry jarEntry;
-                while ((jarEntry = jarStream.getNextJarEntry()) != null) {
-                    if (jarEntry.getName().endsWith(".RSA") || jarEntry.getName().endsWith(".DSA")) {
-                        certificates.addAll(certFactory.generateCertificates(jarStream));
-                    }
-                }
-            }
-
-            return certificates;
-        }catch (IOException | GeneralSecurityException exception){
-            throw new RuntimeException("Cannot extract certificates from APK", exception);
-        }
     }
 }

@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.info.MessageInfo.StubType;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
@@ -812,6 +813,7 @@ class StreamHandler {
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store().jid(companion);
+        socketHandler.store().phoneNumber(PhoneNumber.of(Long.parseLong(companion.user())));
         socketHandler.store().isBusiness(isBusiness);
         socketHandler.store().addContact(Contact.ofJid(socketHandler.store().jid().toWhatsappJid()));
     }

@@ -28,9 +28,12 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.ProxyAuthenticator;
+import it.auties.whatsapp.util.Spec;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
@@ -331,11 +334,53 @@ public final class Store extends Controller<Store> {
     private boolean autodetectListeners = true;
 
     /**
-     * The phone number of this device
+     * The release channel to use when connecting to Whatsapp
+     * This should allow the use of beta features
+     */
+    @Getter
+    @Setter
+    @NonNull
+    @Default
+    private UserAgentReleaseChannel releaseChannel = UserAgentReleaseChannel.RELEASE;
+
+    /**
+     * The phone number of the associated companion
      */
     @Getter
     @Setter
     private PhoneNumber phoneNumber;
+
+    /**
+     * The operating system of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private UserAgentPlatform osType;
+
+    /**
+     * The operating system's version of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private String osVersion;
+
+    /**
+     * The model of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private String model;
+
+    /**
+     * The manufacturer of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private String manufacturer;
 
     /**
      * Returns the store saved in memory or constructs a new clean instance
@@ -391,6 +436,10 @@ public final class Store extends Controller<Store> {
         return Store.builder()
                 .serializer(serializer)
                 .clientType(clientType)
+                .osType(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE)
+                .osVersion(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_VERSION : Spec.Whatsapp.DEFAULT_MOBILE_OS_VERSION)
+                .model(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MODEL : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MODEL)
+                .manufacturer(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .build();
     }

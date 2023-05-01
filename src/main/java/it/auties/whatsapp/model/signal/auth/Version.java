@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.protobuf.base.ProtobufType.UINT32;
+import static it.auties.whatsapp.util.Spec.Whatsapp.MOBILE_UPDATE_URL;
 import static it.auties.whatsapp.util.Spec.Whatsapp.WEB_UPDATE_URL;
 import static java.lang.Integer.parseInt;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -102,34 +103,28 @@ public class Version implements ProtobufMessage {
                     .build();
             var response = client.send(request, ofString());
             var model = Json.readValue(response.body(), AppVersionResponse.class);
-            return new Version(model.currentVersion());
+            return cachedWebVersion = new Version(model.currentVersion());
         } catch (Throwable throwable) {
             throw new RuntimeException("Cannot fetch latest web version", throwable);
         }
     }
 
     private static Version getLatestMobileVersion() {
-        // TODO: Find a way to make this dynamic
-        //     private static final Pattern MOBILE_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )(.*)(?=\\) Requires IOS)");
-        //        try {
-        //            var client = HttpClient.newHttpClient();
-        //            var request = HttpRequest.newBuilder()
-        //                    .GET()
-        //                    .header("Accept-Language", "en;q=0.8")
-        //                    .uri(URI.create(MOBILE_DOWNLOAD_URL))
-        //                    .build();
-        //            var response = client.send(request, ofString());
-        //            return MOBILE_VERSION_PATTERN.matcher(response.body())
-        //                    .results()
-        //                    .findFirst()
-        //                    .map(MatchResult::group)
-        //                    .map("2.%s"::formatted)
-        //                    .map(Version::new)
-        //                    .orElse(DEFAULT_MOBILE_VERSION);
-        //        } catch (Throwable throwable) {
-        //            return DEFAULT_MOBILE_VERSION;
-        //        }
-        return new Version("2.23.7.1");
+        try {
+            if(cachedMobileVersion != null){
+                return cachedMobileVersion;
+            }
+
+            var client = HttpClient.newHttpClient();
+            var request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(MOBILE_UPDATE_URL))
+                    .build();
+            var response = client.send(request, ofString());
+            return cachedMobileVersion = new Version(response.body());
+        } catch (Throwable throwable) {
+            throw new RuntimeException("Cannot fetch latest web version", throwable);
+        }
     }
 
     public byte[] toHash() {

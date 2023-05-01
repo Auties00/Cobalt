@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
 import it.auties.whatsapp.model.signal.auth.Companion.CompanionPropsPlatformType;
 import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMethod;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Spec;
 import lombok.RequiredArgsConstructor;
@@ -71,12 +70,12 @@ class AuthHandler {
         var mobile = socketHandler.store().clientType() == ClientType.APP_CLIENT;
         return UserAgent.builder()
                 .appVersion(socketHandler.store().version())
-                .osVersion(mobile ? Spec.Whatsapp.MOBILE_OS_VERSION : null)
-                .device(mobile ? Spec.Whatsapp.MOBILE_DEVICE_MODEL : null)
-                .manufacturer(mobile ? Spec.Whatsapp.MOBILE_DEVICE_MANUFACTURER : null)
+                .osVersion(mobile ? socketHandler.store().osVersion() : null)
+                .device(mobile ? socketHandler.store().model() : null)
+                .manufacturer(mobile ? socketHandler.store().manufacturer() : null)
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
-                .platform(mobile ? Spec.Whatsapp.MOBILE_OS_TYPE : UserAgentPlatform.WINDOWS)
-                .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
+                .platform(socketHandler.store().osType())
+                .releaseChannel(socketHandler.store().releaseChannel())
                 .build();
     }
 
