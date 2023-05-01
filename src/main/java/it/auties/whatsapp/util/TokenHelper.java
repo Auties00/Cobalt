@@ -20,7 +20,6 @@ import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.HexFormat;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -29,21 +28,9 @@ public class TokenHelper {
     public String getToken(String phoneNumber, UserAgentPlatform platform){
        return switch (platform){
            case ANDROID -> getAndroidToken(phoneNumber);
-           case IOS -> getIOSToken(phoneNumber);
+           case IOS -> throw new UnsupportedOperationException("Token generation for IOS is not supported"); // TODO: add support for ios token generation
            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
        };
-    }
-
-    private String getIOSToken(String phoneNumber) {
-        try {
-            var mac = Mac.getInstance("MD5");
-            mac.update(HexFormat.of().parseHex("0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM"));
-            mac.update(HexFormat.of().parseHex("a200e8c6b58fda4c7d569aacfa2119a7"));
-            mac.update(phoneNumber.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(mac.doFinal());
-        }catch (GeneralSecurityException throwable){
-            throw new RuntimeException("Cannot compute IOS token", throwable);
-        }
     }
 
     private String getAndroidToken(String phoneNumber){
@@ -58,7 +45,7 @@ public class TokenHelper {
             mac.update(phoneNumber.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().encodeToString(mac.doFinal());
         }catch (GeneralSecurityException throwable){
-            throw new RuntimeException("Cannot compute Android token", throwable);
+            throw new RuntimeException("Cannot compute mobile token", throwable);
         }
     }
 

@@ -92,7 +92,6 @@ public class RegistrationHelper {
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
-        System.out.println(getUserAgent(store));
         var client = createClient(store);
         var request = HttpRequest.newBuilder()
                 .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
