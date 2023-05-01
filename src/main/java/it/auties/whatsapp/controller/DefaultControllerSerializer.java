@@ -22,6 +22,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
@@ -255,6 +256,14 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private record SmileFile(Path file, Semaphore semaphore) {
         private final static ConcurrentHashMap<Path, SmileFile> instances = new ConcurrentHashMap<>();
 
+        private SmileFile {
+            try {
+                Files.createDirectories(file.getParent());
+            } catch (IOException exception) {
+                throw new UncheckedIOException("Cannot create smile file", exception);
+            }
+        }
+
         private static synchronized SmileFile of(@NonNull Path file){
             var knownInstance = instances.get(file);
             if (knownInstance != null) {
@@ -264,14 +273,6 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             var instance = new SmileFile(file, new Semaphore(1));
             instances.put(file, instance);
             return instance;
-        }
-
-        private SmileFile {
-            try {
-                Files.createDirectories(file.getParent());
-            } catch (IOException exception) {
-                throw new UncheckedIOException("Cannot create smile file", exception);
-            }
         }
 
         private <T> Optional<T> read(Class<T> clazz) throws IOException {
@@ -287,8 +288,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             if (Files.notExists(file)) {
                 return Optional.empty();
             }
-            var stream = Files.newInputStream(file);
-            return Optional.of(Smile.readValue(new GZIPInputStream(stream), reference));
+            try(var input = new GZIPInputStream( Files.newInputStream(file))) {
+                return Optional.of(Smile.readValue(input, reference));
+            }
         }
 
         private void write(Object input, boolean async) {
@@ -297,11 +299,10 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 return;
             }
 
-            CompletableFuture.runAsync(() -> writeSync(input))
-                    .exceptionallyAsync(throwable -> {
-                        throwable.printStackTrace();
-                        return null;
-                    });
+            CompletableFuture.runAsync(() -> writeSync(input)).exceptionallyAsync(throwable -> {
+                throwable.printStackTrace();
+                return null;
+            });
         }
 
         private void writeSync(Object input) {
@@ -311,6 +312,12 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 }
 
                 semaphore.acquire();
+                try(var stream = new GZIPOutputStream(Files.newOutputStream(file))) {
+                    Smile.writeValueAsBytes(stream, input);
+                    stream.flush();
+                }
+            } catch (IOException exception){
+                throw new UncheckedIOException("Cannot complete file write", exception);
             }catch (InterruptedException exception){
                 throw new RuntimeException("Cannot acquire lock", exception);
             }finally {

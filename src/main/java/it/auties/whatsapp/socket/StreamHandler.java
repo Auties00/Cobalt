@@ -679,8 +679,6 @@ class StreamHandler {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return;
         }
-        socketHandler.keys().serialize(true);
-        socketHandler.store().serialize(true);
         socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
                         .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
         socketHandler.onSocketEvent(SocketEvent.PING);

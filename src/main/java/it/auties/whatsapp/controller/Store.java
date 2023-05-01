@@ -1055,18 +1055,6 @@ public final class Store extends Controller<Store> {
         return Optional.ofNullable(deviceKeyIndexes.put(companion, keyId));
     }
 
-
-    public void dispose() {
-        serialize(false);
-        mediaConnectionLatch.countDown();
-        mediaConnectionLatch = new CountDownLatch(1);
-    }
-
-    @Override
-    public void serialize(boolean async) {
-        serializer.serializeStore(this, async);
-    }
-
     /**
      * Returns an immutable collection of listeners
      *
@@ -1158,5 +1146,16 @@ public final class Store extends Controller<Store> {
      */
     public Optional<URI> proxy() {
         return Optional.ofNullable(proxy);
+    }
+
+    public void dispose() {
+        serialize(false);
+        mediaConnectionLatch.countDown();
+        mediaConnectionLatch = new CountDownLatch(1);
+    }
+
+    @Override
+    public void serialize(boolean async) {
+        serializer.serializeStore(this, async);
     }
 }

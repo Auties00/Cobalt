@@ -8,7 +8,7 @@ public class WebTest {
     public static void main(String[] args) {
         var whatsapp = Whatsapp.webBuilder()
                 .lastConnection()
-                .historyLength(WebHistoryLength.EXTENDED)
+                .historyLength(WebHistoryLength.STANDARD)
                 .build()
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))

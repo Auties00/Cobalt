@@ -387,7 +387,6 @@ public final class Keys extends Controller<Keys> {
      */
     public Keys putSession(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
-        serialize(true);
         return this;
     }
 
@@ -400,7 +399,6 @@ public final class Keys extends Controller<Keys> {
      */
     public Keys putState(@NonNull PatchType patchType, @NonNull LTHashState state) {
         hashStates.put(patchType, state);
-        serialize(true);
         return this;
     }
 
@@ -412,7 +410,6 @@ public final class Keys extends Controller<Keys> {
      */
     public Keys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
         appStateKeys.addAll(keys);
-        serialize(true);
         return this;
     }
 
@@ -424,7 +421,6 @@ public final class Keys extends Controller<Keys> {
      */
     public Keys addPreKey(SignalPreKeyPair preKey) {
         preKeys.add(preKey);
-        serialize(true);
         return this;
     }
 
@@ -493,7 +489,6 @@ public final class Keys extends Controller<Keys> {
      */
     public Keys companionIdentity(SignedDeviceIdentity companionIdentity) {
         this.companionIdentity = companionIdentity;
-        serialize(true);
         return this;
     }
 
