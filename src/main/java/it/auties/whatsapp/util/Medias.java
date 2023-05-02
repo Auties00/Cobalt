@@ -69,6 +69,10 @@ public class Medias {
         }
     }
 
+    public Optional<byte[]> download(String imageUrl) {
+        return download(URI.create(imageUrl));
+    }
+
     public Optional<byte[]> download(URI imageUri) {
         try {
             if (imageUri == null) {

@@ -12,7 +12,6 @@ import javax.crypto.spec.PBEKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
@@ -51,9 +50,8 @@ public class TokenHelper {
 
     private WhatsappApk getWhatsappData() {
         try {
-            var apk = new URL(Whatsapp.MOBILE_DOWNLOAD_URL)
-                    .openStream()
-                    .readAllBytes();
+            var apk = Medias.download(Whatsapp.MOBILE_DOWNLOAD_URL)
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot read apk at %s".formatted(Whatsapp.MOBILE_DOWNLOAD_URL)));
             var certFactory = CertificateFactory.getInstance("X.509");
             var certificates = new ArrayList<Certificate>();
             byte[] md5Hash = null;
