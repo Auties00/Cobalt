@@ -1,55 +1,61 @@
-  private void calculateHash(MessageInfo info, boolean recipient) {
-        socketHandler.queryCompanionDevices().join();
-        var identityKeys = new ArrayList<byte[]>();
-        var indexes = new ArrayList<Integer>();
-        populateIdentityKeys(identityKeys, indexes, recipient);
-        var concatenatedIdentityKeys = Bytes.of(identityKeys.toArray(byte[][]::new)).toByteArray();
-        var identityHash = Sha256.calculate(concatenatedIdentityKeys);
-        var participantHash = Arrays.copyOf(identityHash, 10); // get this from md_icdc_hash_length: Math.max(e, 8)
-        var messageMetadata = info.message().deviceInfo().deviceListMetadata();
-        if(recipient) {
-            messageMetadata.recipientKeyHash(participantHash);
-            messageMetadata.recipientTimestamp(info.timestampSeconds());
-            return;
-        }
+Conver this code to Java:
+  function getToken(phone) {
+    // Ok, most of this code is bullshit since it'll generate the same code
+    // everytime, the only variable step is the last one. Still, the
+    // registration is something that will be done only once per installation
+    // and leaving it this way it should be easier to fix when WA change their
+    // registration code again.
+    // Just remember to NOT include this file on the general file!
 
-        messageMetadata.senderKeyHash(participantHash);
-        if(indexes.size() != store().userCompanionDevices().size()) {
-            messageMetadata.senderKeyIndexes(indexes);
-        }
-        messageMetadata.senderTimestamp(info.timestampSeconds());
+    var classesMd5 = atob("r4WQV17nVTl3+uFlF9mvEg==");
+    var prefix = atob("Y29tLndoYXRzYXBw");
+    var signature = atob(
+      ""
+    );
+    var k =
+      CryptoJS.enc.Base64.parse("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
+
+    // And this is the biggest bullshit part... I know it's ugly, but it's easier and faster than reading this from a file.
+    var f =
+      CoSeMe.utils.bytesFromLatin1(atob(
+                                     ""
+      )
+    );
+
+    var KEY = CoSeMe.utils.bytesFromLatin1("The piano has been drinking");
+
+    // We xor this file because apparently the final f is copyrighted
+    var count = 0;
+    var l = f.length;
+    for (var i=0; i < l; i++) {
+      f[i] = f[i] ^ KEY[count++];
+      if (count == KEY.length - 1) {
+        count = 0;
+      }
     }
 
-    private void populateIdentityKeys(List<byte[]> identityKeys, List<Integer> indexes, boolean recipient) {
-        for (var entry : store().userCompanionDeviceKeyIndexes().entrySet()) {
-            var session = keys().findSessionByAddress(entry.getKey().toSignalAddress());
-            if (session.isEmpty()) {
-                continue;
-            }
+    var d = CryptoJS.enc.Latin1.parse(
+              prefix + CoSeMe.utils.latin1FromBytes(f)
+            );
 
-            var key = session.get()
-                    .currentState()
-                    .map(SessionState::remoteIdentityKey)
-                    .map(KeyHelper::withoutHeader);
-            if (key.isEmpty()) {
-                continue;
-            }
+    var key2 = CryptoJS.PBKDF2(d, k, {
+                                 keySize: (80*8) / 32,
+                                 iterations: 128
+                               }).toString(CryptoJS.enc.UInt8Array);
 
-            indexes.add(entry.getValue());
-            identityKeys.add(key.get());
-        }
-        if (!recipient) {
-            identityKeys.add(keys().identityKeyPair().publicKey());
-            indexes.add(store().userCompanionDeviceKeyIndexes().get(store().userCompanionJid()));
-        }
-        identityKeys.sort((first, second) -> {
-            for (var index = 0; index < first.length; index++) {
-                var firstValue = Byte.toUnsignedInt(first[index]);
-                var secondValue = Byte.toUnsignedInt(second[index]);
-                if (firstValue != secondValue) {
-                    return firstValue - secondValue;
-                }
-            }
-            return first.length - second.length;
-        });
+    var opad = new Uint8Array(64);
+    var ipad = new Uint8Array(64);
+    for (i = 0; i < 64; i++) {
+      opad[i] = 0x5C ^ key2[i];
+      ipad[i] = 0x36 ^ key2[i];
     }
+    ipad = CryptoJS.enc.UInt8Array.parse(ipad);
+    opad = CryptoJS.enc.UInt8Array.parse(opad);
+
+    // And this is why I said this is bullshit. For all practical senses,
+    // everything up to this point could just be a nifty constant... So we do a
+    // lot of hand wriggling to generate the same value every time. Yay us!
+    var data = CryptoJS.enc.Latin1.parse(signature + classesMd5 + phone);
+
+    return CryptoJS.SHA1(opad.concat(CryptoJS.SHA1(ipad.concat(data)))).toString(CryptoJS.enc.Base64);
+  }

@@ -39,7 +39,7 @@ public final class SubscriptionAction implements Action {
      *
      * @return an optional
      */
-    public Optional<ZonedDateTime> messageTimestamp() {
+    public ZonedDateTime messageTimestamp() {
         return Clock.parseSeconds(expirationDateSeconds);
     }
 

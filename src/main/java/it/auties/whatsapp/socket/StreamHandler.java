@@ -1,5 +1,6 @@
 package it.auties.whatsapp.socket;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.serialization.performance.Protobuf;
@@ -9,8 +10,10 @@ import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.chat.GroupRole;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
@@ -21,6 +24,7 @@ import it.auties.whatsapp.model.info.MessageInfo.StubType;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
@@ -33,12 +37,12 @@ import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.exception.HmacValidationException;
-import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -64,8 +68,8 @@ class StreamHandler {
 
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
-    private ScheduledExecutorService service;
     private final AtomicBoolean badMac;
+    private ScheduledExecutorService service;
 
     protected StreamHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -283,7 +287,7 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Missing from in notification"));
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
-                .orElseGet(() -> socketHandler.store().addChat(fromJid));
+                .orElseGet(() -> socketHandler.store().addNewChat(fromJid));
         var timestamp = node.attributes().getLong("t");
         if (fromChat.isGroup()) {
             addMessageForGroupStubType(fromChat, StubType.GROUP_CHANGE_ICON, timestamp, node);
@@ -319,7 +323,7 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
-                .orElseGet(() -> socketHandler.store().addChat(fromJid));
+                .orElseGet(() -> socketHandler.store().addNewChat(fromJid));
         addMessageForGroupStubType(fromChat, stubType, timestamp, node);
     }
 
@@ -343,21 +347,42 @@ class StreamHandler {
         socketHandler.store().attribute(message);
         chat.addNewMessage(message);
         socketHandler.onNewMessage(message, false);
+        if(participantJid == null){
+            return;
+        }
+
+        handleGroupStubType(chat, stubType, participantJid);
+    }
+
+    private void handleGroupStubType(Chat chat, StubType stubType, ContactJid participantJid) {
+        switch (stubType){
+            case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
+            case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
+            case GROUP_PARTICIPANT_PROMOTE -> chat.findParticipant(participantJid)
+                    .ifPresent(participant -> participant.role(GroupRole.ADMIN));
+            case GROUP_PARTICIPANT_DEMOTE -> chat.removeParticipant(participantJid)
+                    .ifPresent(participant -> participant.role(GroupRole.USER));
+        }
     }
 
     private List<String> getStubTypeParameters(Node metadata) {
-        var attributes  = new ArrayList<String>();
-        attributes.add(Json.writeValueAsString(metadata.attributes().toMap()));
-        for(var child : metadata.children()){
-            var data = child.attributes();
-            if(data.isEmpty()){
-                continue;
+        try {
+            var mapper = new ObjectMapper();
+            var attributes  = new ArrayList<String>();
+            attributes.add(mapper.writeValueAsString(metadata.attributes().toMap()));
+            for(var child : metadata.children()){
+                var data = child.attributes();
+                if(data.isEmpty()){
+                    continue;
+                }
+
+                attributes.add(mapper.writeValueAsString(data.toMap()));
             }
 
-            attributes.add(Json.writeValueAsString(data.toMap()));
+            return Collections.unmodifiableList(attributes);
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot encode stub parameters", exception);
         }
-
-        return Collections.unmodifiableList(attributes);
     }
 
     private void handleEncryptNotification(Node node) {
@@ -678,8 +703,6 @@ class StreamHandler {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return;
         }
-        socketHandler.keys().serialize(true);
-        socketHandler.store().serialize(true);
         socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
                         .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
         socketHandler.onSocketEvent(SocketEvent.PING);
@@ -812,6 +835,7 @@ class StreamHandler {
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store().jid(companion);
+        socketHandler.store().phoneNumber(PhoneNumber.of(Long.parseLong(companion.user())));
         socketHandler.store().isBusiness(isBusiness);
         socketHandler.store().addContact(Contact.ofJid(socketHandler.store().jid().toWhatsappJid()));
     }

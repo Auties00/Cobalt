@@ -40,7 +40,7 @@ public final class GroupInviteMessage extends ContextualMessage {
     private ContactJid group;
 
     /**
-     * The invite countryCode of this message
+     * The invite code of this message
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String code;
@@ -99,7 +99,7 @@ public final class GroupInviteMessage extends ContextualMessage {
      *
      * @return a non-null optional wrapping a zoned date time
      */
-    public Optional<ZonedDateTime> expiration() {
+    public ZonedDateTime expiration() {
         return Clock.parseSeconds(expiration);
     }
 

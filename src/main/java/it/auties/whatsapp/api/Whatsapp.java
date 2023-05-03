@@ -25,6 +25,7 @@ import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.*;
+import it.auties.whatsapp.model.chat.PastParticipant.LeaveReason;
 import it.auties.whatsapp.model.companion.CompanionLinkResult;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
@@ -233,7 +234,7 @@ public class Whatsapp {
 
     /**
      * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous
-     * saved credentials. The next time the API is used, the QR countryCode will need to be scanned again.
+     * saved credentials. The next time the API is used, the QR code will need to be scanned again.
      *
      * @return a future
      */
@@ -611,7 +612,7 @@ public class Whatsapp {
                 .description("WhatsApp Group Invite")
                 .title(groupInviteMessage.groupName())
                 .previewType(NONE)
-                .thumbnail(readURI(preview))
+                .thumbnail(Medias.download(preview).orElse(null))
                 .matchedText(url)
                 .canonicalUrl(url)
                 .build();
@@ -648,19 +649,8 @@ public class Whatsapp {
         return first.width() * first.height() > second.width() * second.height() ? first : second;
     }
 
-    private byte[] readURI(URI preview) {
-        try {
-            if (preview == null) {
-                return null;
-            }
-            return preview.toURL().openConnection().getInputStream().readAllBytes();
-        } catch (Throwable throwable) {
-            return null;
-        }
-    }
-
     private ActionMessageRangeSync createRange(ContactJidProvider chat, boolean allMessages) {
-        var known = store().findChatByJid(chat.toJid()).orElseGet(() -> socketHandler.store().addChat(chat.toJid()));
+        var known = store().findChatByJid(chat.toJid()).orElseGet(() -> socketHandler.store().addNewChat(chat.toJid()));
         return new ActionMessageRangeSync(known, allMessages);
     }
 
@@ -875,7 +865,7 @@ public class Whatsapp {
     }
 
     /**
-     * Queries the invite countryCode of a group
+     * Queries the invite code of a group
      *
      * @param chat the target group
      * @return a CompletableFuture
@@ -887,13 +877,13 @@ public class Whatsapp {
 
     private static String parseInviteCode(Node result) {
         return result.findNode("invite")
-                .orElseThrow(() -> new NoSuchElementException("Missing invite countryCode in invite response"))
+                .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite response"))
                 .attributes()
                 .getRequiredString("code");
     }
 
     /**
-     * Revokes the invite countryCode of a group
+     * Revokes the invite code of a group
      *
      * @param chat the target group
      * @return a CompletableFuture
@@ -916,7 +906,7 @@ public class Whatsapp {
     private Optional<Chat> parseAcceptInvite(Node result) {
         return result.findNode("group")
                 .flatMap(group -> group.attributes().getJid("jid"))
-                .map(jid -> store().findChatByJid(jid).orElseGet(() -> socketHandler.store().addChat(jid)));
+                .map(jid -> store().findChatByJid(jid).orElseGet(() -> socketHandler.store().addNewChat(jid)));
     }
 
     /**
@@ -979,32 +969,6 @@ public class Whatsapp {
         return executeActionOnGroupParticipant(group, GroupAction.PROMOTE, contacts);
     }
 
-    private CompletableFuture<List<ContactJid>> executeActionOnGroupParticipant(ContactJidProvider group, GroupAction action, ContactJidProvider... jids) {
-        var body = Arrays.stream(jids)
-                .map(ContactJidProvider::toJid)
-                .map(jid -> Node.ofAttributes("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
-                .map(innerBody -> Node.ofChildren(action.data(), innerBody))
-                .toArray(Node[]::new);
-        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenApplyAsync(result -> parseGroupActionResponse(result, action));
-    }
-
-    private ContactJid checkGroupParticipantJid(ContactJid jid, String errorMessage) {
-        Validate.isTrue(Objects.equals(jid.toWhatsappJid(), store().jid().toWhatsappJid()), errorMessage);
-        return jid;
-    }
-
-    private List<ContactJid> parseGroupActionResponse(Node result, GroupAction action) {
-        return result.findNode(action.data())
-                .orElseThrow(() -> new NoSuchElementException("An erroneous group operation was executed"))
-                .findNodes("participant")
-                .stream()
-                .filter(participant -> !participant.attributes().hasKey("error"))
-                .map(participant -> participant.attributes().getJid("jid"))
-                .flatMap(Optional::stream)
-                .toList();
-    }
-
     /**
      * Demotes any number of contacts to admin in a group
      *
@@ -1038,6 +1002,54 @@ public class Whatsapp {
         return executeActionOnGroupParticipant(group, GroupAction.REMOVE, contacts);
     }
 
+    private CompletableFuture<List<ContactJid>> executeActionOnGroupParticipant(ContactJidProvider group, GroupAction action, ContactJidProvider... jids) {
+        var body = Arrays.stream(jids)
+                .map(ContactJidProvider::toJid)
+                .map(jid -> Node.ofAttributes("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
+                .map(innerBody -> Node.ofChildren(action.data(), innerBody))
+                .toArray(Node[]::new);
+        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenApplyAsync(result -> parseGroupActionResponse(result, group, action));
+    }
+
+    private ContactJid checkGroupParticipantJid(ContactJid jid, String errorMessage) {
+        Validate.isTrue(Objects.equals(jid.toWhatsappJid(), store().jid().toWhatsappJid()), errorMessage);
+        return jid;
+    }
+
+    private List<ContactJid> parseGroupActionResponse(Node result, ContactJidProvider groupJid, GroupAction action) {
+        var results = result.findNode(action.data())
+                .orElseThrow(() -> new NoSuchElementException("An erroneous group operation was executed"))
+                .findNodes("participant")
+                .stream()
+                .filter(participant -> !participant.attributes().hasKey("error"))
+                .map(participant -> participant.attributes().getJid("jid"))
+                .flatMap(Optional::stream)
+                .toList();
+        var chat = groupJid instanceof Chat entry ? entry : socketHandler.store()
+                .findChatByJid(groupJid)
+                .orElse(null);
+        if (chat != null) {
+            results.forEach(entry -> handleGroupAction(action, chat, entry));
+        }
+
+        return results;
+    }
+
+    private void handleGroupAction(GroupAction action, Chat chat, ContactJid entry) {
+        switch (action) {
+            case ADD -> chat.addParticipant(entry, GroupRole.USER);
+            case REMOVE -> {
+                chat.removeParticipant(entry);
+                chat.addPastParticipant(new PastParticipant(entry, LeaveReason.REMOVED, Clock.nowSeconds()));
+            }
+            case PROMOTE -> chat.findParticipant(entry)
+                    .ifPresent(participant -> participant.role(GroupRole.ADMIN));
+            case DEMOTE -> chat.findParticipant(entry)
+                    .ifPresent(participant -> participant.role(GroupRole.USER));
+        }
+    }
+
     /**
      * Changes the name of a group
      *
@@ -1065,7 +1077,7 @@ public class Whatsapp {
                 .thenApplyAsync(ignored -> group);
     }
 
-    private CompletableFuture<Node> changeGroupDescription(ContactJidProvider group, String description, String descriptionId) {
+    private CompletableFuture<Void> changeGroupDescription(ContactJidProvider group, String description, String descriptionId) {
         var descriptionNode = Optional.ofNullable(description)
                 .map(content -> Node.of("body", content.getBytes(StandardCharsets.UTF_8)))
                 .orElse(null);
@@ -1075,7 +1087,18 @@ public class Whatsapp {
                 .put("prev", descriptionId, () -> descriptionId != null)
                 .toMap();
         var body = Node.ofChildren("description", attributes, descriptionNode);
-        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body);
+        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenRunAsync(() -> onDescriptionSet(group, description));
+    }
+
+    private void onDescriptionSet(ContactJidProvider groupJid, String description) {
+        if (groupJid instanceof Chat chat) {
+            chat.description(description);
+            return;
+        }
+
+        var group = socketHandler.store().findChatByJid(groupJid);
+        group.ifPresent(chat -> chat.description(description));
     }
 
     /**
@@ -1120,7 +1143,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeGroupPicture(@NonNull T group, URI image) {
-        return changeGroupPicture(group, readURI(image));
+        return changeGroupPicture(group, image == null ? null : Medias.download(image)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid uri: %s".formatted(image))));
     }
 
     /**
@@ -1218,7 +1242,24 @@ public class Whatsapp {
      */
     public <T extends ContactJidProvider> CompletableFuture<T> leaveGroup(@NonNull T group) {
         var body = Node.ofChildren("leave", Node.ofAttributes("group", Map.of("id", group.toJid())));
-        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
+                .thenApplyAsync(ignored -> handleLeaveGroup(group));
+    }
+
+    private <T extends ContactJidProvider> T handleLeaveGroup(T group) {
+        var chat = group instanceof Chat entry ? entry : socketHandler.store()
+                .findChatByJid(group)
+                .orElse(null);
+        if(chat != null) {
+            var pastParticipant = PastParticipant.builder()
+                    .jid(socketHandler.store().jid().toWhatsappJid())
+                    .reason(LeaveReason.REMOVED)
+                    .timestampSeconds(Clock.nowSeconds())
+                    .build();
+            chat.addPastParticipant(pastParticipant);
+        }
+
+        return group;
     }
 
     /**

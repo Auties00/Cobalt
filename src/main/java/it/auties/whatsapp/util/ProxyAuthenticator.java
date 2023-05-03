@@ -18,7 +18,7 @@ public class ProxyAuthenticator extends Authenticator {
     }
 
     public static void register(@NonNull URI uri){
-        credentials.put("%s://%s:%s".formatted(uri.getScheme(), uri.getHost(), uri.getPort()), uri);
+        credentials.put("%s:%s".formatted(uri.getHost(), uri.getPort()), uri);
     }
 
     @Override
@@ -27,8 +27,7 @@ public class ProxyAuthenticator extends Authenticator {
             return super.getPasswordAuthentication();
         }
 
-        var host = "%s://%s:%s".formatted(getRequestingScheme(), getRequestingHost(), getRequestingPort());
-        var info = credentials.get(host);
+        var info = credentials.get("%s:%s".formatted(getRequestingHost(), getRequestingPort()));
         if(info == null) {
             return super.getPasswordAuthentication();
         }

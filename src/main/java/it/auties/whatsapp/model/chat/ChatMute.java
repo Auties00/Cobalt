@@ -125,7 +125,7 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * @return a non-empty optional date if {@link ChatMute#endTimeStamp} > 0
      */
     public Optional<ZonedDateTime> end() {
-        return Clock.parseSeconds(endTimeStamp);
+        return endTimeStamp > 0 ? Optional.of(Clock.parseSeconds(endTimeStamp)) : Optional.empty();
     }
 
     @ProtobufConverter

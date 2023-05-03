@@ -7,11 +7,11 @@ import lombok.NonNull;
 import java.time.ZonedDateTime;
 import java.util.NoSuchElementException;
 
-public record ContactStatusResponse(@NonNull String status,
-                                    @NonNull ZonedDateTime timestamp) implements ResponseWrapper {
+public record ContactStatusResponse(@NonNull String status, @NonNull ZonedDateTime timestamp) implements ResponseWrapper {
     public ContactStatusResponse(@NonNull Node source) {
-        this(source.contentAsString()
-                .orElseThrow(() -> new NoSuchElementException("Missing status")), Clock.parseSeconds(source.attributes()
-                .getLong("t")).orElse(ZonedDateTime.now()));
+        this(
+                source.contentAsString().orElseThrow(() -> new NoSuchElementException("Missing status")),
+                Clock.parseSeconds(source.attributes().getLong("t"))
+        );
     }
 }

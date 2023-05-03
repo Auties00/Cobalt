@@ -549,7 +549,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .name(group.name()) // Set the name of the group
             .groupJid(group.jid())) // Set the jid of the group
             .inviteExpiration(ZonedDateTime.now().plusDays(3).toEpochSecond()) // Set the expiration of this invite
-            .inviteCode(inviteCode) // Set the countryCode of the group
+            .inviteCode(inviteCode) // Set the code of the group
             .build(); // Create the message
     api.sendMessage(chat, groupInvite); 
     ```

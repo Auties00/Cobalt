@@ -3,7 +3,9 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unregistered;
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unverified;
 import it.auties.whatsapp.controller.ControllerSerializer;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.util.Validate;
+import lombok.NonNull;
 
 import java.util.UUID;
 
@@ -11,6 +13,46 @@ import java.util.UUID;
 public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuilder> {
     public MobileOptionsBuilder(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType) {
         super(connectionUuid, serializer, connectionType, ClientType.APP_CLIENT);
+    }
+
+    /**
+     * Set the operating system of the associated companion
+     *
+     * @return the same instance for chaining
+     */
+    private MobileOptionsBuilder osType(@NonNull UserAgentPlatform osType){
+        store.osType(osType);
+        return this;
+    }
+
+    /**
+     * Set the operating system's version of the associated companion
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder osVersion(@NonNull String osVersion){
+        store.osVersion(osVersion);
+        return this;
+    }
+
+    /**
+     * Set the model of the associated companion
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder model(@NonNull String model){
+        store.model(model);
+        return this;
+    }
+
+    /**
+     * Set the manufacturer of the associated companion
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder manufacturer(@NonNull String manufacturer){
+        store.manufacturer(manufacturer);
+        return this;
     }
 
     /**

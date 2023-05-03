@@ -28,9 +28,12 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.ProxyAuthenticator;
+import it.auties.whatsapp.util.Spec;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
@@ -45,7 +48,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -231,14 +233,6 @@ public final class Store extends Controller<Store> {
     private final KeySetView<Listener, Boolean> listeners = ConcurrentHashMap.newKeySet();
 
     /**
-     * Request counter
-     */
-    @NonNull
-    @JsonIgnore
-    @Default
-    private AtomicLong counter = new AtomicLong();
-
-    /**
      * The request tag, used to create messages
      */
     @NonNull
@@ -331,11 +325,53 @@ public final class Store extends Controller<Store> {
     private boolean autodetectListeners = true;
 
     /**
-     * The phone number of this device
+     * The release channel to use when connecting to Whatsapp
+     * This should allow the use of beta features
+     */
+    @Getter
+    @Setter
+    @NonNull
+    @Default
+    private UserAgentReleaseChannel releaseChannel = UserAgentReleaseChannel.RELEASE;
+
+    /**
+     * The phone number of the associated companion
      */
     @Getter
     @Setter
     private PhoneNumber phoneNumber;
+
+    /**
+     * The operating system of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private UserAgentPlatform osType;
+
+    /**
+     * The operating system's version of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private String osVersion;
+
+    /**
+     * The model of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private String model;
+
+    /**
+     * The manufacturer of the associated companion
+     */
+    @Getter
+    @Setter
+    @NonNull
+    private String manufacturer;
 
     /**
      * Returns the store saved in memory or constructs a new clean instance
@@ -391,6 +427,10 @@ public final class Store extends Controller<Store> {
         return Store.builder()
                 .serializer(serializer)
                 .clientType(clientType)
+                .osType(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE)
+                .osVersion(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_VERSION : Spec.Whatsapp.DEFAULT_MOBILE_OS_VERSION)
+                .model(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MODEL : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MODEL)
+                .manufacturer(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .build();
     }
@@ -629,17 +669,19 @@ public final class Store extends Controller<Store> {
      * @param chatJid the chat to add
      * @return the input chat
      */
-    public Chat addChat(@NonNull ContactJid chatJid) {
-        return addChat(Chat.ofJid(chatJid));
+    public Chat addNewChat(@NonNull ContactJid chatJid) {
+        var chat = Chat.ofJid(chatJid);
+        addChat(chat);
+        return chat;
     }
 
     /**
      * Adds a chat in memory
      *
      * @param chat the chat to add
-     * @return the input chat
+     * @return the old chat, if present
      */
-    public Chat addChat(@NonNull Chat chat) {
+    public Optional<Chat> addChat(@NonNull Chat chat) {
         chat.messages().forEach(this::attribute);
         if (chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
             var contact = findContactByJid(chat.jid())
@@ -674,11 +716,10 @@ public final class Store extends Controller<Store> {
      * Adds a chat in memory without executing any check
      *
      * @param chat the chat to add
-     * @return the input chat
+     * @return the old chat, if present
      */
-    public Chat addChatDirect(Chat chat) {
-        chats.put(chat.jid(), chat);
-        return chat;
+    public Optional<Chat> addChatDirect(Chat chat) {
+        return Optional.ofNullable(chats.put(chat.jid(), chat));
     }
 
     /**
@@ -720,7 +761,7 @@ public final class Store extends Controller<Store> {
      */
     public MessageInfo attribute(@NonNull MessageInfo info) {
         var chat = findChatByJid(info.chatJid())
-                .orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
+                .orElseGet(() -> addNewChat(info.chatJid()));
         info.key().chat(chat);
         if(info.fromMe() && jid != null && !Objects.equals(info.senderJid().user(), jid.user())){
             info.key().senderJid(jid.toWhatsappJid());
@@ -742,7 +783,7 @@ public final class Store extends Controller<Store> {
     }
 
     private void attributeContextChat(ContextInfo contextInfo, ContactJid chatJid) {
-        var chat = findChatByJid(chatJid).orElseGet(() -> addChat(Chat.ofJid(chatJid)));
+        var chat = findChatByJid(chatJid).orElseGet(() -> addNewChat(chatJid));
         contextInfo.quotedMessageChat(chat);
     }
 
@@ -855,7 +896,7 @@ public final class Store extends Controller<Store> {
      * @return a non-null String
      */
     public String nextTag() {
-        return "%s-%s".formatted(tag, counter.getAndIncrement());
+        return UUID.randomUUID().toString();
     }
 
     /**
@@ -1006,18 +1047,6 @@ public final class Store extends Controller<Store> {
         return Optional.ofNullable(deviceKeyIndexes.put(companion, keyId));
     }
 
-
-    public void dispose() {
-        serialize(false);
-        mediaConnectionLatch.countDown();
-        mediaConnectionLatch = new CountDownLatch(1);
-    }
-
-    @Override
-    public void serialize(boolean async) {
-        serializer.serializeStore(this, async);
-    }
-
     /**
      * Returns an immutable collection of listeners
      *
@@ -1109,5 +1138,16 @@ public final class Store extends Controller<Store> {
      */
     public Optional<URI> proxy() {
         return Optional.ofNullable(proxy);
+    }
+
+    public void dispose() {
+        serialize(false);
+        mediaConnectionLatch.countDown();
+        mediaConnectionLatch = new CountDownLatch(1);
+    }
+
+    @Override
+    public void serialize(boolean async) {
+        serializer.serializeStore(this, async);
     }
 }

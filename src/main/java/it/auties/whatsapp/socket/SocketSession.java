@@ -2,7 +2,6 @@ package it.auties.whatsapp.socket;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.util.ProxyAuthenticator;
-import it.auties.whatsapp.util.Validate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
@@ -11,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.*;
 import java.net.Proxy.Type;
+import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -51,17 +51,14 @@ public class SocketSession {
         }, executor);
     }
 
-    @SuppressWarnings("DataFlowIssue")
     private Proxy getProxy() {
         if (proxy == null) {
             return Proxy.NO_PROXY;
         }
 
-        var scheme = proxy.getScheme();
-        Validate.isTrue(scheme != null, "Invalid proxy, expected a scheme: %s".formatted(proxy));
-        var host = proxy.getHost();
-        Validate.isTrue(host != null, "Invalid proxy, expected a host: %s".formatted(proxy));
-        var port = getProxyPort(scheme).orElseThrow(() -> new IllegalArgumentException("Invalid proxy, expected a port: %s".formatted(proxy)));
+        var scheme = Objects.requireNonNull(proxy.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(proxy));
+        var host = Objects.requireNonNull(proxy.getHost(), "Invalid proxy, expected a host: %s".formatted(proxy));
+        var port = getProxyPort(scheme).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(proxy)));
         return switch (scheme) {
             case "http", "https" -> new Proxy(Type.HTTP, new InetSocketAddress(host, port));
             case "socks4", "socks5" -> new Proxy(Type.SOCKS, new InetSocketAddress(host, port));

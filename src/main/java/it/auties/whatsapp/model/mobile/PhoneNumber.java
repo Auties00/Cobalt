@@ -19,12 +19,16 @@ public record PhoneNumber(long number, @NonNull CountryCode countryCode) {
         }
     }
 
+    public String prefix() {
+        return countryCode.prefix();
+    }
+
     public ContactJid toJid(){
         return ContactJid.of(toString());
     }
 
     @Override
     public String toString() {
-        return "%s%s".formatted(countryCode.prefix(), number);
+        return "%s%s".formatted(prefix(), number);
     }
 }

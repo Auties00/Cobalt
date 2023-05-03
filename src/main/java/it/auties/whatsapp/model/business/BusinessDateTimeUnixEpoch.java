@@ -33,7 +33,7 @@ public final class BusinessDateTimeUnixEpoch implements BusinessDateTimeValue {
      *
      * @return an optional
      */
-    public Optional<ZonedDateTime> timestamp() {
+    public ZonedDateTime timestamp() {
         return Clock.parseSeconds(timestampSeconds);
     }
 
