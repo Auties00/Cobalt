@@ -29,7 +29,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      *
      * @return the same instance for chaining
      */
-    public WebOptionsBuilder historyLength(@NonNull QrHandler qrHandler) {
+    public WebOptionsBuilder qrHandler(@NonNull QrHandler qrHandler) {
         store.qrHandler(qrHandler);
         return this;
     }

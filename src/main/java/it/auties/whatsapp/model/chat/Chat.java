@@ -1001,6 +1001,12 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             return this;
         }
 
+        public ChatBuilder participants(Map<ContactJid, GroupParticipant> participants) {
+            this.participants$set = true;
+            this.participants$value = participants;
+            return this;
+        }
+
         public ChatBuilder historySyncMessages(ConcurrentLinkedDeque<HistorySyncMessage> messages) {
             this.historySyncMessages$value = messages.stream()
                     .sorted(Comparator.comparing(HistorySyncMessage::messageOrderId))

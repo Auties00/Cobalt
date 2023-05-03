@@ -96,8 +96,8 @@
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
         <protoc.version>1.22</protoc.version>
-        <lombok.version>1.18.24</lombok.version>
-        <junit.version>5.9.0</junit.version>
+        <lombok.version>1.18.26</lombok.version>
+        <junit.version>5.9.2</junit.version>
         <jna.version>5.12.1</jna.version>
         <jackson.version>2.14.2</jackson.version>
         <jackson.modules.version>2.14.2</jackson.modules.version>
