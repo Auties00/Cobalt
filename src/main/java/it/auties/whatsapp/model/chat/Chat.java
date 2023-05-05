@@ -995,12 +995,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Internal implementation to deserialize messages
      */
     public static class ChatBuilder {
-        public ChatBuilder participants(Collection<GroupParticipant> participants){
-            this.participants$set = true;
-            this.participants$value = participants.stream().collect(Collectors.toConcurrentMap(GroupParticipant::jid, Function.identity()));
-            return this;
-        }
-
         public ChatBuilder participants(Map<ContactJid, GroupParticipant> participants) {
             this.participants$set = true;
             this.participants$value = participants;
