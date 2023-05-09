@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.protobuf.base.ProtobufType.UINT32;
-import static it.auties.whatsapp.util.Spec.Whatsapp.MOBILE_UPDATE_URL;
 import static it.auties.whatsapp.util.Spec.Whatsapp.WEB_UPDATE_URL;
 import static java.lang.Integer.parseInt;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -110,21 +109,7 @@ public class Version implements ProtobufMessage {
     }
 
     private static Version getLatestMobileVersion() {
-        try {
-            if(cachedMobileVersion != null){
-                return cachedMobileVersion;
-            }
-
-            var client = HttpClient.newHttpClient();
-            var request = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(URI.create(MOBILE_UPDATE_URL))
-                    .build();
-            var response = client.send(request, ofString());
-            return cachedMobileVersion = new Version(response.body());
-        } catch (Throwable throwable) {
-            throw new RuntimeException("Cannot fetch latest web version", throwable);
-        }
+        return new Version("2.23.9.71");
     }
 
     public byte[] toHash() {

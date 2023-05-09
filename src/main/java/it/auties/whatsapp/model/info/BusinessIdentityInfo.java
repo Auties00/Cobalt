@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessActorsType;
@@ -23,7 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("BizIdentityInfo")
-public final class BusinessIdentityInfo implements Info {
+public final class BusinessIdentityInfo implements Info, ProtobufMessage {
     /**
      * The level of verification of this account
      */

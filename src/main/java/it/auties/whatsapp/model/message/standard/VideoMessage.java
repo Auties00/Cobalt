@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -266,7 +267,7 @@ public final class VideoMessage extends MediaMessage implements InteractiveHeade
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("Attribution")
-    public enum VideoMessageAttribution {
+    public enum VideoMessageAttribution implements ProtobufMessage {
         /**
          * No source was specified
          */

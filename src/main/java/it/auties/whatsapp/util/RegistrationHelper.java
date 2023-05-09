@@ -23,7 +23,6 @@ import java.security.Security;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -59,6 +58,7 @@ public class RegistrationHelper {
                 Map.entry("reason", ""),
                 Map.entry("hasav", "1")
         );
+        System.out.println(codeOptions);
         return sendRegistrationRequest(store,"/code", codeOptions)
                 .thenAcceptAsync(RegistrationHelper::checkResponse)
                 .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
@@ -134,7 +134,6 @@ public class RegistrationHelper {
 
     @SafeVarargs
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
-        Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().countryCode().prefix())
                 .put("in", store.phoneNumber().number())

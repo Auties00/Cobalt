@@ -31,7 +31,7 @@ public class DNSSource implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("DNSResolutionMethod")
-    public enum DNSSourceDNSResolutionMethod {
+    public enum DNSSourceDNSResolutionMethod implements ProtobufMessage{
         SYSTEM(0),
         GOOGLE(1),
         HARDCODED(2),

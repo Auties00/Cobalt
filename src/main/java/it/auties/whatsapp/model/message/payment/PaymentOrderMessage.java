@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -106,7 +107,7 @@ public final class PaymentOrderMessage extends ContextualMessage implements Paym
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("OrderStatus")
-    public enum OrderMessageOrderStatus {
+    public enum OrderMessageOrderStatus implements ProtobufMessage {
         /**
          * Inquiry
          */
@@ -126,7 +127,7 @@ public final class PaymentOrderMessage extends ContextualMessage implements Paym
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum OrderSurface {
+    public enum OrderSurface implements ProtobufMessage{
         /**
          * Catalog
          */

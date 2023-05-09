@@ -3,7 +3,7 @@ package it.auties.whatsapp.socket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;

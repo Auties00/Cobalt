@@ -4,8 +4,10 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.experimental.Accessors;
 
 @AllArgsConstructor
+@Accessors(fluent = true)
 @ProtobufName("KeepType")
 public enum KeepInChatType implements ProtobufMessage {
     UNKNOWN(0),

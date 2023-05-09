@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.product.ProductListHeaderImage;
@@ -23,7 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ProductListInfo implements Info {
+public final class ProductListInfo implements Info, ProtobufMessage {
     /**
      * The products that this message wraps
      */

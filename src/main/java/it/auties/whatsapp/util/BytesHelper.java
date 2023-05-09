@@ -1,7 +1,6 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import lombok.SneakyThrows;

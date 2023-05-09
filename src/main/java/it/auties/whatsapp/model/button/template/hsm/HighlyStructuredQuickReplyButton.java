@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
@@ -22,7 +23,7 @@ public final class HighlyStructuredQuickReplyButton implements HighlyStructuredB
     /**
      * The text of this button
      */
-    @ProtobufProperty(index = 1, type = STRING)
+    @ProtobufProperty(index = 1, type = MESSAGE)
     private HighlyStructuredMessage text;
 
     /**

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessAccountType;
 import it.auties.whatsapp.model.business.BusinessStorageType;
@@ -19,7 +20,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessAccountInfo implements Info {
+public final class BusinessAccountInfo implements Info, ProtobufMessage {
     /**
      * The facebook jid
      */

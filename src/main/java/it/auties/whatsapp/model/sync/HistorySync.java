@@ -69,7 +69,7 @@ public class HistorySync implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("HistorySyncType")
-    public enum Type {
+    public enum Type implements ProtobufMessage{
         INITIAL_BOOTSTRAP(0),
         INITIAL_STATUS_V3(1),
         FULL(2),

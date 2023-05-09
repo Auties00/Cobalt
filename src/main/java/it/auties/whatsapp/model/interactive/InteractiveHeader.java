@@ -182,7 +182,7 @@ public class InteractiveHeader implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum AttachmentType {
+    public enum AttachmentType implements ProtobufMessage{
         /**
          * No attachment
          */

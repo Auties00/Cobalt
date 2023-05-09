@@ -41,7 +41,7 @@ public class Companion implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("PlatformType")
-    public enum CompanionPropsPlatformType {
+    public enum CompanionPropsPlatformType implements ProtobufMessage{
         UNKNOWN(0),
         CHROME(1),
         FIREFOX(2),

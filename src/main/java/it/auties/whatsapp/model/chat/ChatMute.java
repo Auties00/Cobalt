@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
 import it.auties.protobuf.base.ProtobufConverter;
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.Instant;
@@ -14,7 +13,7 @@ import java.util.Optional;
  * @param endTimeStamp the end date of the mute associated with this object stored as second since
  *                     {@link Instant#EPOCH}
  */
-public record ChatMute(long endTimeStamp) implements ProtobufMessage {
+public record ChatMute(long endTimeStamp) {
     /**
      * Not muted flag
      */
@@ -66,8 +65,8 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * Do not use this method, reserved for protobuf
      */
     @ProtobufConverter
-    public static ChatMute ofProtobuf(Object object){
-        return muted((Long) object);
+    public static ChatMute ofProtobuf(long object){
+        return muted(object);
     }
 
     /**
@@ -137,7 +136,7 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * The constants of this enumerated type describe the various types of mute a {@link ChatMute} can
      * describe
      */
-    public enum Type implements ProtobufMessage {
+    public enum Type {
         /**
          * This constant describes a {@link ChatMute} that holds a seconds greater than 0 Simply put,
          * {@link ChatMute#endTimeStamp()} > 0

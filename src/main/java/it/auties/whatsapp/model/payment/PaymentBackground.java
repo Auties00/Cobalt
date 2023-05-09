@@ -53,7 +53,7 @@ public class PaymentBackground implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("Type")
-    public enum PaymentBackgroundType {
+    public enum PaymentBackgroundType implements ProtobufMessage{
         UNKNOWN(0),
         DEFAULT(1);
         

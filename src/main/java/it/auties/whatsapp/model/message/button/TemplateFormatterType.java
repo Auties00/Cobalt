@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -13,7 +14,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum TemplateFormatterType {
+public enum TemplateFormatterType implements ProtobufMessage {
     /**
      * No format
      */

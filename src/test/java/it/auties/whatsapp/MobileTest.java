@@ -1,12 +1,14 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
+import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 
 public class MobileTest {
-    public static void main(String[] args) {
+    @Test
+    public void run() {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         Whatsapp.mobileBuilder()
                 .lastConnection()

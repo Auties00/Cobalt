@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
@@ -19,7 +20,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("Call")
-public final class CallInfo implements Info {
+public final class CallInfo implements Info, ProtobufMessage {
     /**
      * The key of this call
      */

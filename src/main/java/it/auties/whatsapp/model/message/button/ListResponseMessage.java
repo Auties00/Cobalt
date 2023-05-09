@@ -6,7 +6,6 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -43,7 +42,6 @@ public final class ListResponseMessage extends ButtonReplyMessage {
      * The context info of this message
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = ContextInfo.class)
-    @Builder.Default
     private ContextInfo contextInfo;
 
     /**

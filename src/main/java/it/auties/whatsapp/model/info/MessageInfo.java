@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
@@ -37,7 +38,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("WebMessageInfo")
-public final class MessageInfo implements Info, MessageMetadataProvider {
+public final class MessageInfo implements Info, ProtobufMessage, MessageMetadataProvider {
     /**
      * The MessageKey of this message
      */
@@ -584,7 +585,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum StubType {
+    public enum StubType implements ProtobufMessage {
         UNKNOWN(0, List.of("unknown")),
         REVOKE(1, List.of("revoked")),
         CIPHERTEXT(2, List.of("ciphertext")),

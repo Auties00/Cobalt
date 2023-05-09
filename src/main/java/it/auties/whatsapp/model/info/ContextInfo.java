@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
@@ -28,7 +29,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Accessors(fluent = true)
 @ToString(exclude = "quotedMessageChat")
-public final class ContextInfo implements Info {
+public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * The jid of the message that this ContextualMessage quotes
      */
@@ -171,7 +172,7 @@ public final class ContextInfo implements Info {
     /**
      * Action link
      */
-    @ProtobufProperty(index = 33, type = STRING)
+    @ProtobufProperty(index = 33, type = MESSAGE)
     private ActionLink actionLink;
 
     /**

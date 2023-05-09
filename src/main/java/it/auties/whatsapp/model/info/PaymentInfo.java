@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -25,7 +26,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class PaymentInfo implements Info {
+public final class PaymentInfo implements Info, ProtobufMessage {
     /**
      * The currency of this transaction
      */
@@ -114,7 +115,7 @@ public final class PaymentInfo implements Info {
     @Accessors(fluent = true)
     @Deprecated
     @ProtobufName("Currency")
-    public enum PaymentInfoCurrency {
+    public enum PaymentInfoCurrency implements ProtobufMessage {
         /**
          * Unknown currency
          */
@@ -140,7 +141,7 @@ public final class PaymentInfo implements Info {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("Status")
-    public enum PaymentInfoStatus {
+    public enum PaymentInfoStatus implements ProtobufMessage{
         /**
          * Unknown status
          */
@@ -201,7 +202,7 @@ public final class PaymentInfo implements Info {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("TxnStatus")
-    public enum PaymentInfoTxnStatus {
+    public enum PaymentInfoTxnStatus implements ProtobufMessage{
         UNKNOWN(0),
         PENDING_SETUP(1),
         PENDING_RECEIVER_SETUP(2),

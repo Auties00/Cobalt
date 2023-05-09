@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.misc.ButtonSection;
@@ -89,7 +90,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("ListType")
-    public enum Type {
+    public enum Type implements ProtobufMessage {
         /**
          * Unknown
          */

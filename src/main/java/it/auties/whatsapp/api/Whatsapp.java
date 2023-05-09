@@ -12,7 +12,7 @@ import it.auties.curve25519.Curve25519;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;

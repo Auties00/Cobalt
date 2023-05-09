@@ -2,7 +2,7 @@ package it.auties.whatsapp.socket;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.*;

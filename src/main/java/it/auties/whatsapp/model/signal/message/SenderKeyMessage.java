@@ -4,7 +4,7 @@ import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Spec;
 import lombok.AllArgsConstructor;

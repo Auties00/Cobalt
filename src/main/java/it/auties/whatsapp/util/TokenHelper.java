@@ -64,7 +64,7 @@ public class TokenHelper {
                     } else if (zipEntry.getName().equals("classes.dex")) {
                         md5Hash = MD5.calculate(zipStream.readAllBytes());
                     } else if (zipEntry.getName().contains("about_logo.png") && secretKey == null) {
-                        secretKey = getSecretKey(zipStream);
+                        secretKey = getSecretKey(zipStream.readAllBytes());
                     }
                 }
             }
@@ -75,10 +75,10 @@ public class TokenHelper {
         }
     }
 
-    private SecretKey getSecretKey(ZipInputStream zipStream) throws IOException, GeneralSecurityException {
+    private SecretKey getSecretKey(byte[] resource) throws IOException, GeneralSecurityException {
         try(var out = new ByteArrayOutputStream()) {
             out.write("com.whatsapp".getBytes(StandardCharsets.UTF_8));
-            out.write(zipStream.readAllBytes());
+            out.write(resource);
             var result = out.toByteArray();
             var whatsappLogoChars = new char[result.length];
             for (var i = 0; i < result.length; i++) {

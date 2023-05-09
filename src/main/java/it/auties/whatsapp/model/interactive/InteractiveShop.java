@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.interactive;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
@@ -55,7 +56,7 @@ public final class InteractiveShop implements InteractiveMessageContent {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("Surface")
-    public enum SurfaceType {
+    public enum SurfaceType implements ProtobufMessage {
         /**
          * Unknown
          */

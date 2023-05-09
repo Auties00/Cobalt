@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -44,7 +45,7 @@ public final class PaymentInviteMessage implements PaymentMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("ServiceType")
-    public enum PaymentInviteMessageServiceType {
+    public enum PaymentInviteMessageServiceType implements ProtobufMessage {
         /**
          * Unknown service provider
          */

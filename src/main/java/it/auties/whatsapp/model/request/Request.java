@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.request;
 
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;

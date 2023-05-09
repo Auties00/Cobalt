@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
@@ -20,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class AdReplyInfo implements Info {
+public final class AdReplyInfo implements Info, ProtobufMessage {
     /**
      * The name of the advertiser that served the original companion
      */
@@ -52,7 +53,7 @@ public final class AdReplyInfo implements Info {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("MediaType")
-    public enum AdReplyInfoMediaType {
+    public enum AdReplyInfoMediaType implements ProtobufMessage {
         /**
          * Unknown type
          */

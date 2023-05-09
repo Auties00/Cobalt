@@ -5,7 +5,6 @@ import ezvcard.VCard;
 import ezvcard.VCardVersion;
 import ezvcard.property.Telephone;
 import it.auties.protobuf.base.ProtobufConverter;
-import it.auties.protobuf.base.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -25,7 +24,7 @@ import java.util.stream.Stream;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ContactCard implements ProtobufMessage {
+public class ContactCard {
     private static final String BUSINESS_NAME_PROPERTY = "X-WA-BIZ-NAME";
     private static final String PHONE_NUMBER_PROPERTY = "WAID";
     private static final String DEFAULT_NUMBER_TYPE = "CELL";
@@ -54,8 +53,8 @@ public class ContactCard implements ProtobufMessage {
      * Do not use this method, reserved for protobuf
      */
     @ProtobufConverter
-    public static ContactCard ofProtobuf(Object vcard) {
-        return vcard == null ? null : of((String) vcard);
+    public static ContactCard ofProtobuf(String vcard) {
+        return vcard == null ? null : of(vcard);
     }
 
     /**
@@ -116,7 +115,7 @@ public class ContactCard implements ProtobufMessage {
      * @return a non-null String
      */
     @ProtobufConverter
-    public Object toValue() {
+    public String toValue() {
         return toString();
     }
 

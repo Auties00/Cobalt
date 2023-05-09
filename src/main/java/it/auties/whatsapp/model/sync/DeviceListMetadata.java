@@ -26,7 +26,7 @@ public class DeviceListMetadata implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = UINT64)
     private Long senderTimestamp;
 
-    @ProtobufProperty(index = 3, type = UINT32, repeated = true, packed = true)
+    @ProtobufProperty(index = 3, type = UINT32, repeated = true)
     private List<Integer> senderKeyIndexes;
 
     @ProtobufProperty(index = 8, type = BYTES)
@@ -35,6 +35,6 @@ public class DeviceListMetadata implements ProtobufMessage {
     @ProtobufProperty(index = 9, type = UINT64)
     private Long recipientTimestamp;
 
-    @ProtobufProperty(index = 10, type = UINT32, repeated = true, packed = true)
+    @ProtobufProperty(index = 10, type = UINT32, repeated = true)
     private List<Integer> recipientKeyIndexes;
 }

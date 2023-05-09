@@ -24,6 +24,6 @@ public class AppStateSyncKeyFingerprint implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = UINT32)
     private Integer currentIndex;
 
-    @ProtobufProperty(index = 3, type = UINT32, repeated = true, packed = true)
+    @ProtobufProperty(index = 3, type = UINT32, repeated = true)
     private List<Integer> deviceIndexes;
 }

@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.contact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.base.ProtobufConverter;
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -18,7 +17,7 @@ import java.util.Objects;
  */
 @Builder
 @With
-public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufMessage, ContactJidProvider {
+public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ContactJidProvider {
     /**
      * Default constructor
      */
@@ -120,12 +119,12 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * Do not use this method, reserved for protobuf
      */
     @ProtobufConverter
-    public static ContactJid ofProtobuf(Object input) {
-        return input == null ? null : of((String) input);
+    public static ContactJid ofProtobuf(String input) {
+        return input == null ? null : of(input);
     }
 
     @ProtobufConverter
-    public Object toValue() {
+    public String toValue() {
         return toString();
     }
 

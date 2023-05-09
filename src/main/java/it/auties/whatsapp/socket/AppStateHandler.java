@@ -1,7 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;

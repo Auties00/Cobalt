@@ -55,6 +55,70 @@
             </activation>
             <build>
                 <plugins>
+                    <!-- Attach the sourcecode -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${maven.source.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Delombok the project to prepare for javadoc generation -->
+                    <plugin>
+                        <groupId>com.github.auties00</groupId>
+                        <artifactId>delombok-plugin</artifactId>
+                        <version>${delombok.plugin.version}</version>
+                        <configuration>
+                            <rootDirectory>${project.build.sourceDirectory}</rootDirectory>
+                            <outputDirectory>${delombok.output}</outputDirectory>
+                            <excludedFiles>
+                                <excludedFile>module-info.java</excludedFile>
+                            </excludedFiles>
+                            <parameters>
+                                <encoding>UTF-8</encoding>
+                            </parameters>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>delombok</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Generate and attach javadocs from delomboked source -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven.javadoc.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <sourcepath>${delombok.output}</sourcepath>
+                            <release>${java.version}</release>
+                            <failOnError>true</failOnError>
+                            <additionalOptions>--enable-preview</additionalOptions>
+                            <show>private</show>
+                            <debug>true</debug>
+                            <verbose>true</verbose>
+                        </configuration>
+                    </plugin>
+
                     <!-- Sign the artifacts -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -77,6 +141,19 @@
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+
+                    <!-- Deploy the result-->
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${maven.nexus.plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -114,6 +191,7 @@
         <libphonenumber.version>8.13.7</libphonenumber.version>
         <pdfbox.version>2.0.27</pdfbox.version>
         <poi.version>5.2.3</poi.version>
+        <protobuf.plugin.version>2.0</protobuf.plugin.version>
         <delombok.plugin.version>1.18.24.1</delombok.plugin.version>
         <delombok.input>${project.basedir}/src/main/java</delombok.input>
         <delombok.output>${project.build.directory}/delombok</delombok.output>
@@ -121,6 +199,22 @@
 
     <build>
         <plugins>
+            <!-- Instrument protobuf classes-->
+            <plugin>
+                <groupId>com.github.auties00</groupId>
+                <artifactId>protobuf-serialization-plugin</artifactId>
+                <version>${protobuf.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>protobuf</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>protobuf</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Compile the project-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -136,11 +230,6 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
-                        </annotationProcessorPath>
-                        <annotationProcessorPath>
-                            <groupId>com.github.auties00</groupId>
-                            <artifactId>protobuf-serializer-performance</artifactId>
-                            <version>${protoc.version}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <compilerArgs>
@@ -164,83 +253,6 @@
                 </dependencies>
                 <configuration>
                     <argLine>--enable-preview</argLine>
-                </configuration>
-            </plugin>
-
-            <!-- Attach the sourcecode -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${maven.source.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Delombok the project to prepare for javadoc generation -->
-            <plugin>
-                <groupId>com.github.auties00</groupId>
-                <artifactId>delombok-plugin</artifactId>
-                <version>${delombok.plugin.version}</version>
-                <configuration>
-                    <rootDirectory>${project.build.sourceDirectory}</rootDirectory>
-                    <outputDirectory>${delombok.output}</outputDirectory>
-                    <excludedFiles>
-                        <excludedFile>module-info.java</excludedFile>
-                    </excludedFiles>
-                    <parameters>
-                        <encoding>UTF-8</encoding>
-                    </parameters>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>process-sources</phase>
-                        <goals>
-                            <goal>delombok</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Generate and attach javadocs from delomboked source -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven.javadoc.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <sourcepath>${delombok.output}</sourcepath>
-                    <release>${java.version}</release>
-                    <failOnError>true</failOnError>
-                    <additionalOptions>--enable-preview</additionalOptions>
-                    <show>private</show>
-                    <debug>true</debug>
-                    <verbose>true</verbose>
-                </configuration>
-            </plugin>
-
-            <!-- Deploy the result-->
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${maven.nexus.plugin.version}</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
         </plugins>
@@ -270,7 +282,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-serializer-performance</artifactId>
+            <artifactId>protobuf-base</artifactId>
             <version>${protoc.version}</version>
         </dependency>
         <dependency>

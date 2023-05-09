@@ -1,10 +1,12 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
+import org.junit.jupiter.api.Test;
 
 // Just used for testing locally
 public class WebForMobileTest {
-    public static void main(String[] args) {
+    @Test
+    public void run() {
         var whatsapp = Whatsapp.webBuilder()
                 .newConnection()
                 .build()

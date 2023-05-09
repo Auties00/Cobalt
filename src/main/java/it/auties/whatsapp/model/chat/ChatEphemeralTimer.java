@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufConverter;
-import it.auties.protobuf.base.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -16,7 +15,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ChatEphemeralTimer implements ProtobufMessage {
+public enum ChatEphemeralTimer {
     /**
      * ChatEphemeralTimer with duration of 0 days.
      */
@@ -42,6 +41,11 @@ public enum ChatEphemeralTimer implements ProtobufMessage {
      */
     @Getter
     private final Duration period;
+
+    @ProtobufConverter
+    public static ChatEphemeralTimer ofProtobuf(int value){
+        return of(value);
+    }
 
     /**
      * Factory method for creating a ChatEphemeralTimer instance based on the specified value.

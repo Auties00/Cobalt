@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.signal.sender;
 
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.util.Spec;
 import lombok.Builder;
@@ -11,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 
 @Builder
 @Jacksonized
-public record SenderMessageKey(int iteration, byte[] seed, byte[] iv, byte[] cipherKey) implements ProtobufMessage {
+public record SenderMessageKey(int iteration, byte[] seed, byte[] iv, byte[] cipherKey) {
     public SenderMessageKey(int iteration, byte[] seed) {
         this(iteration, seed, createIv(seed), createCipherKey(seed));
     }

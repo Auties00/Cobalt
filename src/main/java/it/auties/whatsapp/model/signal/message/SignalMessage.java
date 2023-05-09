@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.signal.message;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

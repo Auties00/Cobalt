@@ -178,7 +178,7 @@ public final class TextMessage extends ContextualMessage implements ButtonsMessa
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("FontType")
-    public enum TextMessageFontType {
+    public enum TextMessageFontType implements ProtobufMessage{
         /**
          * Sans Serif
          */
@@ -220,7 +220,7 @@ public final class TextMessage extends ContextualMessage implements ButtonsMessa
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("PreviewType")
-    public enum TextMessagePreviewType {
+    public enum TextMessagePreviewType implements ProtobufMessage{
         /**
          * No preview
          */

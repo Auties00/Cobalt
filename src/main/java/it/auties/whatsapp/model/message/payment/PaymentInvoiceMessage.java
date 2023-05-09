@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
@@ -130,7 +131,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum AttachmentType {
+    public enum AttachmentType implements ProtobufMessage {
         /**
          * Image
          */

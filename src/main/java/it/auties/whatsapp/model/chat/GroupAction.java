@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.chat;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.Contact;
 
@@ -9,7 +8,7 @@ import it.auties.whatsapp.model.contact.Contact;
  * {@link Contact} in a {@link Chat}. Said chat should be a group: {@link Chat#isGroup()}. Said
  * actions can be executed using various methods in {@link Whatsapp}.
  */
-public enum GroupAction implements ProtobufMessage {
+public enum GroupAction {
     /**
      * Adds a contact to a group
      */

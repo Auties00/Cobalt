@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.contact;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -14,7 +13,7 @@ import java.util.Optional;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ContactStatus implements ProtobufMessage {
+public enum ContactStatus {
     /**
      * When the contact is online
      */

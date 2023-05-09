@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.sync.DeviceListMetadata;
 import lombok.AllArgsConstructor;
@@ -18,7 +19,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class DeviceContextInfo implements Info {
+public final class DeviceContextInfo implements Info, ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DeviceListMetadata.class)
     @Default
     private DeviceListMetadata deviceListMetadata = new DeviceListMetadata();

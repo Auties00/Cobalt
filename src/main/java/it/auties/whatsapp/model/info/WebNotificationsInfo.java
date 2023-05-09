@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class WebNotificationsInfo implements Info {
+public final class WebNotificationsInfo implements Info, ProtobufMessage {
     @ProtobufProperty(index = 2, type = UINT64)
     private long timestamp;
 

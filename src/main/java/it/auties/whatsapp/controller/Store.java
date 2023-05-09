@@ -2,7 +2,7 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.crypto.Hkdf;

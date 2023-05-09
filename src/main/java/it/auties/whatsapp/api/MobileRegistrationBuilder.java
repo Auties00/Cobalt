@@ -8,6 +8,7 @@ import it.auties.whatsapp.util.RegistrationHelper;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -137,6 +138,7 @@ public sealed class MobileRegistrationBuilder {
          * @return the same instance for chaining
          */
         public CompletableFuture<Whatsapp> verify(AsyncVerificationCodeSupplier handler) {
+            Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
             return RegistrationHelper.sendVerificationCode(store, keys, handler)
                     .thenApply(ignored -> new Whatsapp(store, keys));
         }
