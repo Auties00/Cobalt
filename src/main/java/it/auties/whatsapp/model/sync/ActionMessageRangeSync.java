@@ -42,7 +42,15 @@ public class ActionMessageRangeSync implements ProtobufMessage {
     }
 
     private List<SyncActionMessage> createMessages(Chat chat, boolean allMessages) {
-        return allMessages ? chat.messages().stream().map(this::createActionMessage).toList() : chat.newestMessage()
+        if (allMessages) {
+            return chat.messages()
+                    .stream()
+                    .map(HistorySyncMessage::message)
+                    .map(this::createActionMessage)
+                    .toList();
+        }
+
+        return chat.newestMessage()
                 .map(this::createActionMessage)
                 .stream()
                 .toList();

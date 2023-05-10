@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
@@ -27,7 +26,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static java.util.Objects.requireNonNullElse;
@@ -88,7 +86,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
     @NonNull
     @Default
-    private final ConcurrentLinkedDeque<MessageInfo> historySyncMessages = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<HistorySyncMessage> historySyncMessages = new ConcurrentLinkedDeque<>();
 
     /**
      * The number of unread messages in this chat. If this field is negative, this chat is marked as
@@ -424,7 +422,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         }
 
         var iterator = historySyncMessages.iterator();
-        return IntStream.range(0, unreadMessagesCount).mapToObj(i -> iterator.next()).toList();
+        return historySyncMessages.stream()
+                .limit(unreadMessagesCount())
+                .map(HistorySyncMessage::message)
+                .toList();
     }
 
     /**
@@ -507,7 +508,18 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> newestMessage() {
-        return Optional.ofNullable(historySyncMessages.peekLast());
+        return Optional.ofNullable(historySyncMessages.peekLast())
+                .map(HistorySyncMessage::message);
+    }
+
+    /**
+     * Returns an optional value containing the first message in chronological terms for this chat
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> oldestMessage() {
+        return Optional.ofNullable(historySyncMessages.peekFirst())
+                .map(HistorySyncMessage::message);
     }
 
     /**
@@ -517,60 +529,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> newestStandardMessage() {
-        return historySyncMessages.stream()
-                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                .reduce((first, second) -> second);
-
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat
-     * sent from you
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> newestMessageFromMe() {
-        return historySyncMessages.stream()
-                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                .filter(MessageInfo::fromMe)
-                .reduce((first, second) -> second);
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat
-     * with type server
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> newestServerMessage() {
-        return historySyncMessages.stream()
-                .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
-                .reduce((first, second) -> second);
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> oldestMessage() {
-
-        return Optional.ofNullable(historySyncMessages.peekFirst());
-
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat
-     * sent from you
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> oldestMessageFromMe() {
-
-        return historySyncMessages.stream()
-                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                .filter(MessageInfo::fromMe)
-                .findFirst();
+        return findMessageBy(this::isStandardMessage, true);
     }
 
     /**
@@ -580,10 +539,45 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestStandardMessage() {
+        return findMessageBy(this::isStandardMessage, false);
+    }
 
-        return historySyncMessages.stream()
-                .filter(info -> !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub())
-                .findFirst();
+    private boolean isStandardMessage(MessageInfo info) {
+        return !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub();
+    }
+
+    /**
+     * Returns an optional value containing the latest message in chronological terms for this chat
+     * sent from you
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> newestMessageFromMe() {
+        return findMessageBy(this::isMessageFromMe, true);
+    }
+
+    /**
+     * Returns an optional value containing the first message in chronological terms for this chat
+     * sent from you
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> oldestMessageFromMe() {
+        return findMessageBy(this::isMessageFromMe, false);
+    }
+
+    private boolean isMessageFromMe(MessageInfo info) {
+        return !info.message().hasCategory(MessageCategory.SERVER) && !info.hasStub() && info.fromMe();
+    }
+
+    /**
+     * Returns an optional value containing the latest message in chronological terms for this chat
+     * with type server
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> newestServerMessage() {
+        return findMessageBy(this::isServerMessage, true);
     }
 
     /**
@@ -593,11 +587,25 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestServerMessage() {
-
-        return historySyncMessages.stream()
-                .filter(info -> info.message().hasCategory(MessageCategory.SERVER) || info.hasStub())
-                .findFirst();
+        return findMessageBy(this::isServerMessage, false);
     }
+
+    private boolean isServerMessage(MessageInfo info) {
+        return info.message().hasCategory(MessageCategory.SERVER) || info.hasStub();
+    }
+
+    private Optional<MessageInfo> findMessageBy(Function<MessageInfo, Boolean> filter, boolean newest) {
+        var descendingIterator = newest ? historySyncMessages.descendingIterator() : historySyncMessages.iterator();
+        while (descendingIterator.hasNext()){
+            var info = descendingIterator.next().message();
+            if(filter.apply(info)){
+                return Optional.ofNullable(info);
+            }
+        }
+
+        return Optional.empty();
+    }
+
 
     /**
      * Returns all the starred messages in this chat
@@ -606,6 +614,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Collection<MessageInfo> starredMessages() {
         return historySyncMessages.stream()
+                .map(HistorySyncMessage::message)
                 .filter(MessageInfo::starred)
                 .toList();
     }
@@ -702,7 +711,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @param newMessages the non-null messages to add
      */
-    public void addMessages(@NonNull Collection<MessageInfo> newMessages) {
+    public void addMessages(@NonNull Collection<HistorySyncMessage> newMessages) {
         historySyncMessages.addAll(newMessages);
     }
 
@@ -711,7 +720,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @param oldMessages the non-null messages to add
      */
-    public void addOldMessages(@NonNull Collection<MessageInfo> oldMessages) {
+    public void addOldMessages(@NonNull Collection<HistorySyncMessage> oldMessages) {
         oldMessages.forEach(historySyncMessages::addFirst);
     }
 
@@ -722,10 +731,11 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was added
      */
     public boolean addNewMessage(@NonNull MessageInfo info) {
-        if (historySyncMessages.contains(info)) {
+        var sync = new HistorySyncMessage(info, historySyncMessages.size());
+        if (historySyncMessages.contains(sync)) {
             return false;
         }
-        historySyncMessages.add(info);
+        historySyncMessages.add(sync);
         updateChatTimestamp(info);
         return true;
     }
@@ -736,7 +746,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param info the message to add to the chat
      * @return whether the message was added
      */
-    public boolean addOldMessage(@NonNull MessageInfo info) {
+    public boolean addOldMessage(@NonNull HistorySyncMessage info) {
         historySyncMessages.addFirst(info);
         return true;
     }
@@ -748,8 +758,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull MessageInfo info) {
-
-        var result = historySyncMessages.remove(info);
+        var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.message().id(), info.id()));
         refreshChatTimestamp();
         return result;
     }
@@ -761,8 +770,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
-
-        var result = historySyncMessages.removeIf(predicate);
+        var result = historySyncMessages.removeIf(entry -> predicate.test(entry.message()));
         refreshChatTimestamp();
         return result;
     }
@@ -792,30 +800,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns an immutable list of all the messages in this chat
-     *
-     * @return a non-null collection
-     */
-    @JsonGetter
-    public Collection<MessageInfo> messages() {
-        return Collections.unmodifiableCollection(historySyncMessages);
-    }
-
-    /**
      * Returns an immutable list of messages wrapped in history syncs
      * This is useful for the proto
      *
      * @return a non-null collection
      */
-    public Collection<HistorySyncMessage> historySyncMessages(){
-        var iterator = historySyncMessages.iterator();
-        var syncs = new ArrayList<HistorySyncMessage>(historySyncMessages.size());
-        var index = 0;
-        while(iterator.hasNext()) {
-            syncs.add(new HistorySyncMessage(iterator.next(), index++));
-        }
-
-        return Collections.unmodifiableList(syncs);
+    public Collection<HistorySyncMessage> messages(){
+        return Collections.unmodifiableCollection(historySyncMessages);
     }
 
     /**
@@ -997,23 +988,15 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public static class ChatBuilder {
         public ChatBuilder participants(Collection<GroupParticipant> participants){
             this.participants$set = true;
-            this.participants$value = participants.stream().collect(Collectors.toConcurrentMap(GroupParticipant::jid, Function.identity()));
+            this.participants$value = participants.stream()
+                    .collect(Collectors.toConcurrentMap(GroupParticipant::jid, Function.identity()));
             return this;
         }
 
-        public ChatBuilder historySyncMessages(ConcurrentLinkedDeque<HistorySyncMessage> messages) {
-            this.historySyncMessages$value = messages.stream()
-                    .sorted(Comparator.comparing(HistorySyncMessage::messageOrderId))
-                    .map(HistorySyncMessage::message)
-                    .collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
-            this.historySyncMessages$set = true;
-            return this;
-        }
-
-        @JsonSetter("historySyncMessages")
-        public ChatBuilder messages(@NonNull ConcurrentLinkedDeque<MessageInfo> messages) {
-            this.historySyncMessages$value = messages;
-            this.historySyncMessages$set = true;
+        @JsonSetter("participants")
+        public ChatBuilder participants(Map<ContactJid, GroupParticipant> participants){
+            this.participants$set = true;
+            this.participants$value = participants;
             return this;
         }
     }

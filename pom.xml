@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.3.1</version>
+    <version>3.4.0</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -172,7 +172,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>1.22</protoc.version>
+        <protoc.version>2.0</protoc.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.9.0</junit.version>
         <jna.version>5.12.1</jna.version>

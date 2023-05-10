@@ -3,10 +3,12 @@ package it.auties.whatsapp;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
+import org.junit.jupiter.api.Test;
 
 // Just used for testing locally
 public class WebTest {
-    public static void main(String[] args) {
+    @Test
+    public void run() {
         var whatsapp = Whatsapp.webBuilder()
                 .lastConnection()
                 .historyLength(WebHistoryLength.STANDARD)

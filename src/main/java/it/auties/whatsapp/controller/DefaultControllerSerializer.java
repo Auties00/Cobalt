@@ -35,7 +35,6 @@ import static java.lang.System.Logger.Level.WARNING;
 public class DefaultControllerSerializer implements ControllerSerializer {
     private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsapp4j/");
     private static final String CHAT_PREFIX = "chat_";
-    private static final Map<ContactJid, Integer> hashCodesMap = new ConcurrentHashMap<>();
 
     private final Path baseDirectory;
     private final Logger logger;
@@ -114,24 +113,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         var path = getDirectoryFromType(store.clientType()).resolve("%s/store.smile".formatted(store.uuid()));
         var preferences = SmileFile.of(path);
         preferences.write(store, async);
-        store.chats()
-                .stream()
-                .filter(this::updateHash)
-                .forEach(chat -> serializeChat(store, chat, async));
-    }
-
-    private boolean updateHash(Chat entry) {
-        var lastHashCode = hashCodesMap.get(entry.jid());
-        var newHashCode = entry.fullHashCode();
-        if (lastHashCode == null) {
-            hashCodesMap.put(entry.jid(), newHashCode);
-            return true;
+        for (var chat : store.chats()) {
+            serializeChat(store, chat, async);
         }
-        if (newHashCode == lastHashCode) {
-            return false;
-        }
-        hashCodesMap.put(entry.jid(), newHashCode);
-        return true;
     }
 
     private void serializeChat(Store store, Chat chat, boolean async) {
@@ -223,9 +207,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private void deserializeChat(Store baseStore, Path entry) {
         try {
             var chatPreferences = SmileFile.of(entry);
-            var chat = chatPreferences.read(Chat.class).orElseThrow();
+            var chat = chatPreferences.read(Chat.class)
+                    .orElseThrow();
             baseStore.addChatDirect(chat);
-            hashCodesMap.put(chat.jid(), chat.fullHashCode());
         } catch (IOException exception) {
             var chatName = entry.getFileName().toString().replaceFirst(CHAT_PREFIX, "").replace(".smile", "");
             logger.log(ERROR, "Chat %s is corrupted, resetting it".formatted(chatName), exception);
@@ -236,7 +220,6 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             }
             var result = Chat.ofJid(ContactJid.of(chatName));
             baseStore.addChatDirect(result);
-            hashCodesMap.put(result.jid(), result.fullHashCode());
         }
     }
 

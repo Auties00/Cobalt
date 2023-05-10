@@ -689,8 +689,9 @@ class MessageHandler {
         if (info.chat().archived() && socketHandler.store().unarchiveChats()) {
             info.chat().archived(false);
         }
-        info.sender().ifPresent(sender -> sender.lastSeen(ZonedDateTime.now()));
-        info.sender().filter(this::isTyping).ifPresent(sender -> sender.lastKnownPresence(ContactStatus.AVAILABLE));
+        info.sender()
+                .filter(this::isTyping)
+                .ifPresent(sender -> socketHandler.onUpdateChatPresence(ContactStatus.AVAILABLE, sender, info.chat()));
         if (!info.ignore() && !info.fromMe()) {
             info.chat().unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
         }
@@ -900,15 +901,8 @@ class MessageHandler {
     private void handlePastParticipants(PastParticipants pastParticipants) {
         socketHandler.store()
                 .findChatByJid(pastParticipants.groupJid())
-                .ifPresentOrElse(chat -> addPastParticipants(pastParticipants, chat), () -> queuePastParticipants(pastParticipants));
-    }
-
-    private void addPastParticipants(PastParticipants pastParticipants, Chat chat) {
-        chat.pastParticipants().addAll(pastParticipants.pastParticipants());
-    }
-
-    private void queuePastParticipants(PastParticipants pastParticipants) {
-        pastParticipantsQueue.put(pastParticipants.groupJid(), pastParticipants.pastParticipants());
+                .ifPresentOrElse(chat -> chat.addPastParticipants(pastParticipants.pastParticipants()),
+                        () ->  pastParticipantsQueue.put(pastParticipants.groupJid(), pastParticipants.pastParticipants()));
     }
 
     @SafeVarargs

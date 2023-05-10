@@ -1,7 +1,9 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -506,6 +508,7 @@ public final class Store extends Controller<Store> {
         }
         return chat.messages()
                 .parallelStream()
+                .map(HistorySyncMessage::message)
                 .filter(message -> Objects.equals(message.key().id(), id))
                 .findAny();
     }
@@ -751,6 +754,16 @@ public final class Store extends Controller<Store> {
     public Contact addContact(@NonNull Contact contact) {
         contacts.put(contact.jid(), contact);
         return contact;
+    }
+
+    /**
+     * Attributes a message Usually used by the socket handler
+     *
+     * @param historySyncMessage a non-null message
+     * @return the same incoming message
+     */
+    public MessageInfo attribute(@NonNull HistorySyncMessage historySyncMessage) {
+        return attribute(historySyncMessage.message());
     }
 
     /**
@@ -1117,14 +1130,12 @@ public final class Store extends Controller<Store> {
      *
      * @return the same instance
      */
+    @JsonSetter
     public Store proxy(URI proxy) {
-        if(proxy == null){
-            this.proxy = null;
-            return this;
-        }
-
-        if(proxy.getUserInfo() != null){
+        if(proxy != null && proxy.getUserInfo() != null){
             ProxyAuthenticator.register(proxy);
+        }else if(proxy == null && this.proxy != null && this.proxy.getUserInfo() != null){
+            ProxyAuthenticator.unregister(this.proxy);
         }
 
         this.proxy = proxy;

@@ -141,15 +141,9 @@ class StreamHandler {
     }
 
     private void updateContactPresence(ContactJid chatJid, ContactStatus status, Contact contact) {
-        if (status == contact.lastKnownPresence()) {
-            return;
-        }
-        contact.lastKnownPresence(status);
-        contact.lastSeen(ZonedDateTime.now());
-        socketHandler.store().findChatByJid(chatJid).ifPresent(chat -> {
-            chat.presences().put(contact.jid(), status);
-            socketHandler.onUpdateChatPresence(status, contact, chat);
-        });
+        socketHandler.store()
+                .findChatByJid(chatJid)
+                .ifPresent(chat -> socketHandler.onUpdateChatPresence(status, contact, chat));
     }
 
     private void digestReceipt(Node node) {

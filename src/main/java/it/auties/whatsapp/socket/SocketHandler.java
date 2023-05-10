@@ -43,6 +43,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -535,6 +536,13 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void onUpdateChatPresence(ContactStatus status, Contact contact, Chat chat) {
+        contact.lastKnownPresence(status);
+        if (status == contact.lastKnownPresence()) {
+            return;
+        }
+
+        chat.presences().put(contact.jid(), status);
+        contact.lastSeen(ZonedDateTime.now());
         callListenersAsync(listener -> {
             listener.onContactPresence(whatsapp, chat, contact, status);
             listener.onContactPresence(chat, contact, status);

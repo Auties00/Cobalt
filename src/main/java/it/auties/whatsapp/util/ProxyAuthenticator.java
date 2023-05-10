@@ -21,13 +21,14 @@ public class ProxyAuthenticator extends Authenticator {
         credentials.put("%s:%s".formatted(uri.getHost(), uri.getPort()), uri);
     }
 
+    public static void unregister(@NonNull URI uri){
+        credentials.remove("%s:%s".formatted(uri.getHost(), uri.getPort()));
+    }
+
     @Override
     protected PasswordAuthentication getPasswordAuthentication() {
-        if(getRequestorType() != RequestorType.PROXY){
-            return super.getPasswordAuthentication();
-        }
-
-        var info = credentials.get("%s:%s".formatted(getRequestingHost(), getRequestingPort()));
+        var host = "%s:%s".formatted(getRequestingHost(), getRequestingPort());
+        var info = credentials.get(host);
         if(info == null) {
             return super.getPasswordAuthentication();
         }

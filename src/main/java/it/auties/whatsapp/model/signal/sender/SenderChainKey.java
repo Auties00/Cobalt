@@ -1,13 +1,12 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.crypto.Hmac;
 import lombok.Builder;
 import lombok.extern.jackson.Jacksonized;
 
 @Builder
 @Jacksonized
-public record SenderChainKey(int iteration, byte[] seed) implements ProtobufMessage {
+public record SenderChainKey(int iteration, byte[] seed) {
     private static final byte[] MESSAGE_KEY_SEED = {0x01};
     private static final byte[] CHAIN_KEY_SEED = {0x02};
 
