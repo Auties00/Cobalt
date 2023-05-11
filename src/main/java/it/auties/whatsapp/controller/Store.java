@@ -779,8 +779,13 @@ public final class Store extends Controller<Store> {
         if(info.fromMe() && jid != null && !Objects.equals(info.senderJid().user(), jid.user())){
             info.key().senderJid(jid.toWhatsappJid());
         }
-        info.key().senderJid().ifPresent(senderJid -> attributeSender(info, senderJid));
-        info.message().contentWithContext().map(ContextualMessage::contextInfo).ifPresent(this::attributeContext);
+        info.key()
+                .senderJid()
+                .ifPresent(senderJid -> attributeSender(info, senderJid));
+        info.message()
+                .contentWithContext()
+                .map(ContextualMessage::contextInfo)
+                .ifPresent(this::attributeContext);
         processMessage(info);
         return info;
     }

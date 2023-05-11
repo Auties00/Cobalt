@@ -155,6 +155,9 @@ public class SocketHandler implements SocketListener {
                     .thenRunAsync(() -> state(SocketState.CONNECTED));
             return;
         }
+        if(keys.readKey() == null){
+            return;
+        }
         var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey().toByteArray());
         var decoder = new Decoder();
         var node = decoder.readNode(plainText);

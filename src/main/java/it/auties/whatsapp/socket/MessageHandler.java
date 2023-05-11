@@ -247,7 +247,7 @@ class MessageHandler {
                 .put("type", "text")
                 .put("category", "peer", request::peer)
                 .put("duration", "900", () -> request.info().message().type() == MessageType.LIVE_LOCATION)
-                .put("device_fanout", false, () -> request.info().message().type() == MessageType.TEMPLATE)
+                .put("device_fanout", false, () -> request.info().message().type() == MessageType.BUTTONS)
                 .toMap();
         return Node.ofChildren("message", attributes, body);
     }
