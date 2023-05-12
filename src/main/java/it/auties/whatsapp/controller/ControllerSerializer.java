@@ -1,6 +1,7 @@
 package it.auties.whatsapp.controller;
 
 import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import lombok.NonNull;
 
 import java.util.LinkedList;
@@ -43,7 +44,15 @@ public interface ControllerSerializer {
      * @param type the non-null type of client
      * @return a non-null linked list
      */
-    LinkedList<UUID> findIds(@NonNull ClientType type);
+    LinkedList<UUID> listIds(@NonNull ClientType type);
+
+    /**
+     * Returns all the known IDs
+     *
+     * @param type the non-null type of client
+     * @return a non-null linked list
+     */
+    LinkedList<PhoneNumber> listPhoneNumbers(@NonNull ClientType type);
 
     /**
      * Serializes the keys
@@ -55,6 +64,15 @@ public interface ControllerSerializer {
     Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id);
 
     /**
+     * Serializes the keys
+     *
+     * @param type the non-null type of client
+     * @param phoneNumber the phone number of the keys
+     * @return a non-null keys
+     */
+    Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber);
+
+    /**
      * Serializes the store
      *
      * @param type the non-null type of client
@@ -62,6 +80,25 @@ public interface ControllerSerializer {
      * @return a non-null store
      */
     Optional<Store> deserializeStore(@NonNull ClientType type, UUID id);
+
+    /**
+     * Serializes the store
+     *
+     * @param type        the non-null type of client
+     * @param phoneNumber the phone number of the store
+     * @return a non-null store
+     */
+    Optional<Store> deserializeStore(@NonNull ClientType type, long phoneNumber);
+
+    /**
+     * Creates a link between the session store and the phone number
+     * This may not be implemented
+     *
+     * @param store a non-null store
+     */
+    default void linkPhoneNumber(@NonNull Store store) {
+
+    }
 
     /**
      * Attributes the store asynchronously. This method is optionally used to load asynchronously

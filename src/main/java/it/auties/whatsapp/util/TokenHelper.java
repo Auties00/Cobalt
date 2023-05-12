@@ -19,20 +19,32 @@ import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HexFormat;
+import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 @UtilityClass
 public class TokenHelper {
-    public String getToken(String phoneNumber, UserAgentPlatform platform){
-       return switch (platform){
-           case ANDROID -> getAndroidToken(phoneNumber);
-           case IOS -> throw new UnsupportedOperationException("Token generation for IOS is not supported"); // TODO: add support for ios token generation
-           default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
-       };
+    // TODO: This is temporary
+    private final String IOS_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM4174c0243f5277a5d7720ce842cc4ae6";
+
+    private volatile WhatsappApk cachedApk;
+
+    public CompletableFuture<String> getToken(long phoneNumber, UserAgentPlatform platform) {
+        return CompletableFuture.supplyAsync(() -> switch (platform) {
+            case ANDROID -> getAndroidToken(String.valueOf(phoneNumber));
+            case IOS -> getIosToken(String.valueOf(phoneNumber));
+            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
+        });
     }
 
-    private String getAndroidToken(String phoneNumber){
+    private String getIosToken(String phoneNumber) {
+        var token = IOS_TOKEN + phoneNumber;
+        return HexFormat.of().formatHex(MD5.calculate(token.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private String getAndroidToken(String phoneNumber) {
         try {
             var whatsappData = getWhatsappData();
             var mac = Mac.getInstance("HMACSHA1");
@@ -43,13 +55,17 @@ public class TokenHelper {
             mac.update(whatsappData.md5Hash());
             mac.update(phoneNumber.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().encodeToString(mac.doFinal());
-        }catch (GeneralSecurityException throwable){
+        } catch (GeneralSecurityException throwable) {
             throw new RuntimeException("Cannot compute mobile token", throwable);
         }
     }
 
-    private WhatsappApk getWhatsappData() {
+    private synchronized WhatsappApk getWhatsappData() {
         try {
+            if(cachedApk != null){
+                return cachedApk;
+            }
+
             var apk = Medias.download(Whatsapp.MOBILE_DOWNLOAD_URL)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot read apk at %s".formatted(Whatsapp.MOBILE_DOWNLOAD_URL)));
             var certFactory = CertificateFactory.getInstance("X.509");
@@ -69,14 +85,14 @@ public class TokenHelper {
                 }
             }
 
-            return new WhatsappApk(md5Hash, secretKey, certificates);
-        }catch (IOException | GeneralSecurityException exception){
+            return cachedApk = new WhatsappApk(md5Hash, secretKey, certificates);
+        } catch (IOException | GeneralSecurityException exception) {
             throw new RuntimeException("Cannot extract certificates from APK", exception);
         }
     }
 
     private SecretKey getSecretKey(byte[] resource) throws IOException, GeneralSecurityException {
-        try(var out = new ByteArrayOutputStream()) {
+        try (var out = new ByteArrayOutputStream()) {
             out.write("com.whatsapp".getBytes(StandardCharsets.UTF_8));
             out.write(resource);
             var result = out.toByteArray();

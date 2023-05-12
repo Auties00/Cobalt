@@ -22,6 +22,11 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
         this.keys = Keys.of(connectionUuid, connectionType, clientType, serializer);
     }
 
+    public OptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
+        this.store = Store.of(phoneNumber, connectionType, clientType, serializer);
+        this.keys = Keys.of(phoneNumber, connectionType, clientType, serializer);
+    }
+
     /**
      * Sets the name to provide to Whatsapp during the authentication process
      * The web api will display this name in the devices section, while the mobile api will show it to the people you send messages to

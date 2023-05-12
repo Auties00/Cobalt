@@ -6,7 +6,17 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.NonNull;
 
+import java.util.Optional;
+
 public record PhoneNumber(long number, @NonNull CountryCode countryCode) {
+    public static Optional<PhoneNumber> ofNullable(Long phoneNumber) {
+        if(phoneNumber == null){
+            return Optional.empty();
+        }
+
+        return Optional.of(PhoneNumber.of(phoneNumber));
+    }
+
     @JsonCreator
     public static PhoneNumber of(long phoneNumber) {
         try {

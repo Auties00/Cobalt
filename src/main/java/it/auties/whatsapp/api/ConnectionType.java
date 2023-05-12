@@ -12,6 +12,12 @@ public enum ConnectionType {
     NEW,
 
     /**
+     * Creates a new connection using a unique identifier
+     * If the connection doesn't exist, an {@link it.auties.whatsapp.exception.UnknownSessionException} will be thrown
+     */
+    KNOWN,
+
+    /**
      * Creates a new connection from the first session that was serialized
      * If no connection is available, a new one will be created
      */

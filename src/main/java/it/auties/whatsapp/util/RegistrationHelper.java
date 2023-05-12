@@ -47,21 +47,21 @@ public class RegistrationHelper {
             return CompletableFuture.completedFuture(null);
         }
 
-        var codeOptions = getRegistrationOptions(
-                store,
-                keys,
+        return requestVerificationCodeOptions(store, keys, method)
+                .thenComposeAsync(attrs -> sendRegistrationRequest(store,"/code", attrs))
+                .thenAcceptAsync(RegistrationHelper::checkResponse)
+                .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
+    }
+
+    private static CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method) {
+        return getRegistrationOptions(store, keys,
                 Map.entry("mcc", store.phoneNumber().countryCode().mcc()),
                 Map.entry("mnc", store.phoneNumber().countryCode().mnc()),
                 Map.entry("sim_mcc", "000"),
                 Map.entry("sim_mnc", "000"),
                 Map.entry("method", method.type()),
                 Map.entry("reason", ""),
-                Map.entry("hasav", "1")
-        );
-        System.out.println(codeOptions);
-        return sendRegistrationRequest(store,"/code", codeOptions)
-                .thenAcceptAsync(RegistrationHelper::checkResponse)
-                .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
+                Map.entry("hasav", "1"));
     }
 
     public CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, Supplier<CompletableFuture<String>> handler) {
@@ -81,8 +81,8 @@ public class RegistrationHelper {
     }
 
     private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code) {
-        var registerOptions = getRegistrationOptions(store, keys, Map.entry("code", code.replaceAll("-", "")));
-        return sendRegistrationRequest(store, "/register", registerOptions)
+        return getRegistrationOptions(store, keys, Map.entry("code", code.replaceAll("-", "")))
+                .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/register", attrs))
                 .thenAcceptAsync(RegistrationHelper::checkResponse);
     }
 
@@ -90,8 +90,11 @@ public class RegistrationHelper {
         Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
                 "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        Validate.isTrue(response.status().isSuccessful(),
-                "Invalid response: %s", RegistrationException.class, result.body());
+        if(response.status().isSuccessful()){
+            return;
+        }
+
+        throw new RegistrationException("Invalid response: %s".formatted(result.body()));
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
@@ -133,28 +136,34 @@ public class RegistrationHelper {
     }
 
     @SafeVarargs
-    private Map<String, Object> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
+    private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
+        return TokenHelper.getToken(store.phoneNumber().number(), store.osType())
+                .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
+    }
+
+    private Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().countryCode().prefix())
                 .put("in", store.phoneNumber().number())
+                .put("Rc", store.releaseChannel().index())
                 .put("lg", "en")
                 .put("lc", "GB")
                 .put("mistyped", "6")
                 .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
                 .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
+                .put("e_keytype", "BQ")
                 .put("e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
-                .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
+                .put("e_skey_id", "AAAA")
                 .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
                 .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
                 .put("fdid", keys.phoneId())
+                .put("network_ratio_type", "1")
                 .put("expid", keys.deviceId())
-                .put("network_radio_type", "1")
                 .put("simnum", "1")
                 .put("hasinrc", "1")
                 .put("pid", ProcessHandle.current().pid())
-                .put("rc", store.releaseChannel().index())
                 .put("id", keys.identityId())
-                .put("token", TokenHelper.getToken(String.valueOf(store.phoneNumber().number()), store.osType()))
+                .put("token", token)
                 .toMap();
     }
 

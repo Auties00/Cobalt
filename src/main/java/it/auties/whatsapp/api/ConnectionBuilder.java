@@ -16,8 +16,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @SuppressWarnings("unused")
 public class ConnectionBuilder<T extends OptionsBuilder<T>> {
-    private static final ControllerSerializer DEFAULT_SERIALIZER = new DefaultControllerSerializer();
-
     private final ClientType clientType;
     private ControllerSerializer serializer;
 
@@ -38,18 +36,49 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection() {
-        return knownConnection(UUID.randomUUID());
+        return newConnection(null);
+    }
+
+    /**
+     * Creates a new connection using a unique identifier
+     *
+     * @param uuid the nullable uuid to use to create the connection
+     * @return a non-null options selector
+     */
+    public T newConnection(UUID uuid) {
+        return createConnection(uuid, ConnectionType.NEW);
+    }
+
+    /**
+     * Creates a new connection using a random uuid
+     *
+     * @param phoneNumber the nullable uuid to use to create the connection
+     * @return a non-null options selector
+     */
+    public T newConnection(long phoneNumber) {
+        return createConnection(phoneNumber, ConnectionType.NEW);
     }
 
     /**
      * Creates a new connection using a supplied uuid
-     * If a connection was serialized in the past with that uuid, it will be retrieved, otherwise a new one will be started
+     * If a connection was serialized in the past with that uuid, it will be retrieved, otherwise a {@link it.auties.whatsapp.exception.UnknownSessionException} will be thrown
      *
      * @param uuid the non-null uuid to use
      * @return a non-null options selector
      */
     public T knownConnection(@NonNull UUID uuid) {
-        return createConnection(uuid, ConnectionType.NEW);
+        return createConnection(uuid, ConnectionType.KNOWN);
+    }
+
+    /**
+     * Creates a new connection using a supplied phone number
+     * If a connection was serialized in the past with that uuid, it will be retrieved, otherwise a {@link it.auties.whatsapp.exception.UnknownSessionException} will be thrown
+     *
+     * @param phoneNumber the non-null phone number
+     * @return a non-null options selector
+     */
+    public T knownConnection(long phoneNumber) {
+        return createConnection(phoneNumber, ConnectionType.KNOWN);
     }
 
     /**
@@ -76,9 +105,19 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
     private T createConnection(UUID uuid, ConnectionType connectionType) {
         return (T) switch (clientType) {
             case WEB_CLIENT ->
-                    new WebOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DEFAULT_SERIALIZER), connectionType);
+                    new WebOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
             case APP_CLIENT ->
-                    new MobileOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DEFAULT_SERIALIZER), connectionType);
+                    new MobileOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private T createConnection(long phoneNumber, ConnectionType connectionType) {
+        return (T) switch (clientType) {
+            case WEB_CLIENT ->
+                    new WebOptionsBuilder(phoneNumber, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
+            case APP_CLIENT ->
+                    new MobileOptionsBuilder(phoneNumber, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
         };
     }
 }

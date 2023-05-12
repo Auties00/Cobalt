@@ -15,6 +15,11 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
         super(connectionUuid, serializer, connectionType, ClientType.APP_CLIENT);
     }
 
+    public MobileOptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType) {
+        super(phoneNumber, serializer, connectionType, ClientType.WEB_CLIENT);
+    }
+
+
     /**
      * Set the operating system of the associated companion
      *
@@ -52,6 +57,16 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder manufacturer(@NonNull String manufacturer){
         store.manufacturer(manufacturer);
+        return this;
+    }
+
+    /**
+     * Set whether the registered account is a business account
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder business(boolean business){
+        store.business(business);
         return this;
     }
 

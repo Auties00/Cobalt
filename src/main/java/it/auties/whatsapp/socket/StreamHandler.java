@@ -830,7 +830,7 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store().jid(companion);
         socketHandler.store().phoneNumber(PhoneNumber.of(Long.parseLong(companion.user())));
-        socketHandler.store().isBusiness(isBusiness);
+        socketHandler.store().business(isBusiness);
         socketHandler.store().addContact(Contact.ofJid(socketHandler.store().jid().toWhatsappJid()));
     }
 

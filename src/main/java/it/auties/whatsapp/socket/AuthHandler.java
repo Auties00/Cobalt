@@ -76,6 +76,8 @@ class AuthHandler {
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .platform(socketHandler.store().osType())
                 .releaseChannel(socketHandler.store().releaseChannel())
+                .mcc("000")
+                .mnc("000")
                 .build();
     }
 

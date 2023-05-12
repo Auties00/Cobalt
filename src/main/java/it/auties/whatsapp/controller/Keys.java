@@ -6,6 +6,7 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.ConnectionType;
 import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.exception.UnknownSessionException;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -20,6 +21,7 @@ import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Validate;
 import lombok.AccessLevel;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -209,24 +211,102 @@ public final class Keys extends Controller<Keys> {
      * @param uuid           the uuid of the session to create, can be null
      * @param connectionType the non-null connection type
      * @param clientType     the non-null type of the client
+     * @return a non-null instance
+     */
+    public static Keys of(UUID uuid, @NonNull ConnectionType connectionType, @NonNull ClientType clientType) {
+        return of(uuid, connectionType, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the keys saved in memory or constructs a new clean instance
+     *
+     * @param uuid           the uuid of the session to create, can be null
+     * @param connectionType the non-null connection type
+     * @param clientType     the non-null type of the client
      * @param serializer     the non-null serializer
      * @return a non-null instance
      */
-    public static Keys of(UUID uuid, ConnectionType connectionType, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+    public static Keys of(UUID uuid, @NonNull ConnectionType connectionType, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return switch (connectionType) {
-            case NEW -> {
-                var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-                yield of(sessionUuid, clientType, serializer);
-            }
-            case FIRST -> {
-                var sessionUuid = Objects.requireNonNullElseGet(serializer.findIds(clientType).peekFirst(), UUID::randomUUID);
-                yield of(sessionUuid, clientType, serializer);
-            }
-            case LAST -> {
-                var sessionUuid = Objects.requireNonNullElseGet(serializer.findIds(clientType).peekLast(), UUID::randomUUID);
-                yield of(sessionUuid, clientType, serializer);
-            }
+            case NEW -> of(uuid, clientType, serializer, false);
+            case KNOWN -> of(uuid, clientType, serializer, true);
+            case FIRST -> of(serializer.listIds(clientType).peekFirst(), clientType, serializer, false);
+            case LAST -> of(serializer.listIds(clientType).peekLast(), clientType, serializer, false);
         };
+    }
+
+    /**
+     * Returns the keys saved in memory or constructs a new clean instance
+     *
+     * @param phoneNumber    the phone number of the session to load, can be null
+     * @param connectionType the non-null connection type
+     * @param clientType     the non-null type of the client
+     * @return a non-null instance
+     */
+    public static Keys of(Long phoneNumber, @NonNull ConnectionType connectionType, @NonNull ClientType clientType) {
+        return of(phoneNumber, connectionType, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the keys saved in memory or constructs a new clean instance
+     *
+     * @param phoneNumber    the phone number of the session to load, can be null
+     * @param connectionType the non-null connection type
+     * @param clientType     the non-null type of the client
+     * @param serializer     the non-null serializer
+     * @return a non-null instance
+     */
+    public static Keys of(Long phoneNumber, @NonNull ConnectionType connectionType, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return switch (connectionType) {
+            case NEW -> of(phoneNumber, clientType, serializer, false);
+            case KNOWN -> of(phoneNumber, clientType, serializer, true);
+            case FIRST -> of(serializer.listIds(clientType).peekFirst(), clientType, serializer, false);
+            case LAST -> of(serializer.listIds(clientType).peekLast(), clientType, serializer, false);
+        };
+    }
+
+    /**
+     * Returns the store saved in memory or constructs a new clean instance
+     *
+     * @param phoneNumber the phone number of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param required    whether an exception should be thrown if the connection doesn't exist
+     * @return a non-null store
+     */
+    public static Keys of(Long phoneNumber, @NonNull ClientType clientType, boolean required) {
+        return of(phoneNumber, clientType, DefaultControllerSerializer.instance(), required);
+    }
+
+    /**
+     * Returns the store saved in memory or constructs a new clean instance
+     *
+     * @param phoneNumber the phone number of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer
+     * @param required    whether an exception should be thrown if the connection doesn't exist
+     * @return a non-null store
+     */
+    public static Keys of(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
+        if(phoneNumber == null){
+            Validate.isTrue(!required, UnknownSessionException.class);
+            return of((UUID) null, clientType, serializer, false);
+        }
+
+        return serializer.deserializeKeys(clientType, phoneNumber)
+                .orElseThrow(() -> new UnknownSessionException(phoneNumber))
+                .serializer(serializer);
+    }
+
+    /**
+     * Returns the keys saved in memory or constructs a new clean instance
+     *
+     * @param uuid       the non-null uuid of the session
+     * @param clientType the non-null type of the client
+     * @param required   whether an exception should be thrown if the connection doesn't exist
+     * @return a non-null store
+     */
+    public static Keys of(UUID uuid, @NonNull ClientType clientType, boolean required) {
+        return of(uuid, clientType, DefaultControllerSerializer.instance(), required);
     }
 
     /**
@@ -235,12 +315,29 @@ public final class Keys extends Controller<Keys> {
      * @param uuid       the non-null uuid of the session
      * @param clientType the non-null type of the client
      * @param serializer the non-null serializer
+     * @param required   whether an exception should be thrown if the connection doesn't exist
      * @return a non-null store
      */
-    public static Keys of(@NonNull UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return serializer.deserializeKeys(clientType, uuid)
-                .map(keys -> keys.serializer(serializer))
+    public static Keys of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
+        Validate.isTrue(uuid != null || !required, UnknownSessionException.class);
+        var result = serializer.deserializeKeys(clientType, uuid);
+        if(required && result.isEmpty()){
+            throw new UnknownSessionException(uuid);
+        }
+
+        return result.map(keys -> keys.serializer(serializer))
                 .orElseGet(() -> random(uuid, clientType, serializer));
+    }
+
+    /**
+     * Returns a new instance of random keys
+     *
+     * @param uuid the uuid of the session to create, can be null
+     * @param clientType the non-null type of the client
+     * @return a non-null instance
+     */
+    public static Keys random(UUID uuid, @NonNull ClientType clientType) {
+        return random(uuid, clientType, DefaultControllerSerializer.instance());
     }
 
     /**

@@ -15,8 +15,7 @@ public class Spec {
         public static final URI WEB_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
         public static final String APP_ENDPOINT_HOST = "g.whatsapp.net";
         public static final int APP_ENDPOINT_PORT = 443;
-        public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
-        public static final String MOBILE_UPDATE_URL = "https://raw.githubusercontent.com/Auties00/Whatsapp4j/master/assets/mobile.version";
+        public static final String UPDATE_URL = "https://api.whatsversion.com/";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         private static final String WHATSAPP_HEADER = "WA";
         private static final byte[] WEB_VERSION = new byte[]{6, Tokens.DICTIONARY_VERSION};
