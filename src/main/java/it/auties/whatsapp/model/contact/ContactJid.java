@@ -200,7 +200,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     /**
-     * Converts this jid to a non-formatted phone number
+     * Converts this jid to a non-formatted phone numberWithoutPrefix
      *
      * @return a non-null String
      */

@@ -23,6 +23,7 @@ open module it.auties.whatsapp4j {
     requires org.apache.pdfbox;
     requires org.apache.poi.ooxml;
     requires org.apache.poi.scratchpad;
+    requires net.dongliu.apkparser;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

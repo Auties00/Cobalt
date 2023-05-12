@@ -768,7 +768,7 @@ public class Whatsapp {
     }
 
     /**
-     * Executes a query to determine whether any number of users have an account on Whatsapp
+     * Executes a query to determine whether any numberWithoutPrefix of users have an account on Whatsapp
      *
      * @param contacts the contacts to check
      * @return a CompletableFuture that wraps a non-null map
@@ -959,7 +959,7 @@ public class Whatsapp {
     }
 
     /**
-     * Promotes any number of contacts to admin in a group
+     * Promotes any numberWithoutPrefix of contacts to admin in a group
      *
      * @param group    the target group
      * @param contacts the target contacts
@@ -970,7 +970,7 @@ public class Whatsapp {
     }
 
     /**
-     * Demotes any number of contacts to admin in a group
+     * Demotes any numberWithoutPrefix of contacts to admin in a group
      *
      * @param group    the target group
      * @param contacts the target contacts
@@ -981,7 +981,7 @@ public class Whatsapp {
     }
 
     /**
-     * Adds any number of contacts to a group
+     * Adds any numberWithoutPrefix of contacts to a group
      *
      * @param group    the target group
      * @param contacts the target contact/s
@@ -992,7 +992,7 @@ public class Whatsapp {
     }
 
     /**
-     * Removes any number of contacts from group
+     * Removes any numberWithoutPrefix of contacts from group
      *
      * @param group    the target group
      * @param contacts the target contact/s
@@ -1263,7 +1263,7 @@ public class Whatsapp {
     }
 
     /**
-     * Links any number of groups to a community
+     * Links any numberWithoutPrefix of groups to a community
      *
      * @param community the non-null community where the groups will be added
      * @param groups the non-null groups to add
@@ -1740,7 +1740,7 @@ public class Whatsapp {
     /**
      * Query the catalog of this business
      *
-     * @param productsLimit the maximum number of products to query
+     * @param productsLimit the maximum numberWithoutPrefix of products to query
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(int productsLimit) {
@@ -1751,7 +1751,7 @@ public class Whatsapp {
      * Query the catalog of a business
      *
      * @param contact       the business
-     * @param productsLimit the maximum number of products to query
+     * @param productsLimit the maximum numberWithoutPrefix of products to query
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(@NonNull ContactJidProvider contact, int productsLimit) {
@@ -1792,7 +1792,7 @@ public class Whatsapp {
     /**
      * Query the collections of this business
      *
-     * @param collectionsLimit the maximum number of collections to query
+     * @param collectionsLimit the maximum numberWithoutPrefix of collections to query
      * @return a CompletableFuture
      */
     public CompletableFuture<?> queryBusinessCollections(int collectionsLimit) {
@@ -1803,7 +1803,7 @@ public class Whatsapp {
      * Query the collections of a business
      *
      * @param contact          the business
-     * @param collectionsLimit the maximum number of collections to query
+     * @param collectionsLimit the maximum numberWithoutPrefix of collections to query
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCollectionEntry>> queryBusinessCollections(@NonNull ContactJidProvider contact, int collectionsLimit) {

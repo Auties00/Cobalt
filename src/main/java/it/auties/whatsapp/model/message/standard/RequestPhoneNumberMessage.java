@@ -15,7 +15,7 @@ import lombok.extern.jackson.Jacksonized;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
- * A model class that represents a message holding a request for a phone number inside Still needs
+ * A model class that represents a message holding a request for a phone numberWithoutPrefix inside Still needs
  * to be implemented by Whatsapp
  */
 @AllArgsConstructor

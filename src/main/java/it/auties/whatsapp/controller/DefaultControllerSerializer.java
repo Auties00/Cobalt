@@ -107,7 +107,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         try {
             return Files.getLastModifiedTime(path);
         } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot get last modification date", exception);
+            return FileTime.fromMillis(0);
         }
     }
 
@@ -173,7 +173,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     @Override
     public Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id) {
-        return deserializeKeysFromId(type, Objects.toString(id));
+        return deserializeKeysFromId(type, id.toString());
     }
 
     @Override
@@ -193,7 +193,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     @Override
     public Optional<Store> deserializeStore(@NonNull ClientType type, UUID id) {
-        return deserializeStoreFromId(type, Objects.toString(id));
+        return deserializeStoreFromId(type, id.toString());
     }
 
     @Override
@@ -235,13 +235,17 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     @Override
     public void deleteSession(@NonNull ClientType type, UUID id) {
-        var folderPath = getSession(type, Objects.toString(id));
+        var folderPath = getSession(type, id.toString());
         deleteDirectory(folderPath.toFile());
     }
 
     @Override
     public void linkPhoneNumber(@NonNull Store store) {
         try {
+            if(store.phoneNumber() == null){
+                return;
+            }
+
             var link = getSession(store.clientType(), store.phoneNumber().toString());
             if(Files.exists(link)){
                 return;
@@ -249,7 +253,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             var original = getSession(store.clientType(), store.uuid().toString());
             Files.createSymbolicLink(link, original);
         } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot create link between store and phone number", exception);
+            throw new UncheckedIOException("Cannot create link between store and phone numberWithoutPrefix", exception);
         }
     }
 

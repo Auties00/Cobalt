@@ -15,7 +15,7 @@ public class Spec {
         public static final URI WEB_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
         public static final String APP_ENDPOINT_HOST = "g.whatsapp.net";
         public static final int APP_ENDPOINT_PORT = 443;
-        public static final String UPDATE_URL = "https://api.whatsversion.com/";
+        public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         private static final String WHATSAPP_HEADER = "WA";
         private static final byte[] WEB_VERSION = new byte[]{6, Tokens.DICTIONARY_VERSION};
@@ -30,10 +30,14 @@ public class Spec {
         public static final int THUMBNAIL_HEIGHT = 339;
         public static final String MOBILE_DOWNLOAD_URL = "https://www.whatsapp.com/android/current/WhatsApp.apk";
         public static final String MOBILE_SALT = "PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN";
-        public static final String DEFAULT_MOBILE_OS_VERSION = "8.0.0";
-        public static final String DEFAULT_MOBILE_DEVICE_MODEL = "star2lte";
-        public static final String DEFAULT_MOBILE_DEVICE_MANUFACTURER = "samsung";
-        public static final UserAgentPlatform DEFAULT_MOBILE_OS_TYPE = UserAgentPlatform.ANDROID;
+        // public static final String DEFAULT_MOBILE_OS_VERSION = "8.0.0";
+        // public static final String DEFAULT_MOBILE_DEVICE_MODEL = "star2lte";
+        // public static final String DEFAULT_MOBILE_DEVICE_MANUFACTURER = "samsung";
+        // public static final UserAgentPlatform DEFAULT_MOBILE_OS_TYPE = UserAgentPlatform.ANDROID;
+        public static final String DEFAULT_MOBILE_OS_VERSION = "15.3.1";
+        public static final String DEFAULT_MOBILE_DEVICE_MODEL = "iPhone_7";
+        public static final String DEFAULT_MOBILE_DEVICE_MANUFACTURER = "Apple";
+        public static final UserAgentPlatform DEFAULT_MOBILE_OS_TYPE = UserAgentPlatform.IOS;
         public static final String DEFAULT_WEB_OS_VERSION = "10.0";
         public static final String DEFAULT_WEB_DEVICE_MODEL = "Surface Laptop Studio";
         public static final String DEFAULT_WEB_DEVICE_MANUFACTURER = "Microsoft";

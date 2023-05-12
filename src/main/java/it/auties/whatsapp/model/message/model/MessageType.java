@@ -166,7 +166,7 @@ public enum MessageType {
      */
     POLL_UPDATE,
     /**
-     * Request phone number
+     * Request phone numberWithoutPrefix
      */
     REQUEST_PHONE_NUMBER,
     /**

@@ -28,7 +28,7 @@ public class BusinessAccountLinkInfo implements ProtobufMessage {
     private long businessId;
 
     /**
-     * The phone number of this link
+     * The phone numberWithoutPrefix of this link
      */
     @ProtobufProperty(index = 2, name = "whatsappAcctNumber", type = STRING)
     private String phoneNumber;

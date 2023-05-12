@@ -98,24 +98,21 @@ public class RegistrationHelper {
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
-        var client = createClient(store);
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
-                .GET()
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .header("User-Agent", getUserAgent(store))
-                .build();
-        return client.sendAsync(request, BodyHandlers.ofString());
+        return getUserAgent(store).thenComposeAsync(userAgent -> {
+            var client = createClient(store);
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
+                    .GET()
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .header("User-Agent", userAgent)
+                    .build();
+            return client.sendAsync(request, BodyHandlers.ofString());
+        });
     }
 
-    private String getUserAgent(Store store) {
-        return "WhatsApp/%s %s/%s Device/%s-%s".formatted(
-                store.version(),
-                getMobileOsName(store.osType()),
-                store.osVersion(),
-                store.manufacturer(),
-                store.model()
-        );
+    private CompletableFuture<String> getUserAgent(Store store) {
+        return store.version()
+                .thenApplyAsync(version -> "WhatsApp/%s %s/%s Device/%s-%s".formatted(version, getMobileOsName(store.osType()), store.osVersion(), store.manufacturer(), store.model()));
     }
 
     private Object getMobileOsName(UserAgentPlatform platform) {
@@ -137,15 +134,15 @@ public class RegistrationHelper {
 
     @SafeVarargs
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
-        return TokenHelper.getToken(store.phoneNumber().number(), store.osType())
+        return MetadataHelper.getToken(store.phoneNumber().numberWithoutPrefix(), store.osType())
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().countryCode().prefix())
-                .put("in", store.phoneNumber().number())
-                .put("Rc", store.releaseChannel().index())
+                .put("in", store.phoneNumber().numberWithoutPrefix())
+                .put("rc", store.releaseChannel().index())
                 .put("lg", "en")
                 .put("lc", "GB")
                 .put("mistyped", "6")

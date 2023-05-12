@@ -25,7 +25,7 @@ public non-sealed class HydratedCallButton implements HydratedButton {
     private String text;
 
     /**
-     * The phone number of this button
+     * The phone numberWithoutPrefix of this button
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String phoneNumber;

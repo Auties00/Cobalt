@@ -60,14 +60,14 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
 
     /**
      * The nullable new unique jid for this Chat. This field is not null when a contact changes phone
-     * number and connects their new phone number with Whatsapp.
+     * numberWithoutPrefix and connects their new phone numberWithoutPrefix with Whatsapp.
      */
     @ProtobufProperty(index = 3, type = STRING)
     private final ContactJid newJid;
 
     /**
-     * The nullable old jid for this Chat. This field is not null when a contact changes phone number
-     * and connects their new phone number with Whatsapp.
+     * The nullable old jid for this Chat. This field is not null when a contact changes phone numberWithoutPrefix
+     * and connects their new phone numberWithoutPrefix with Whatsapp.
      */
     @ProtobufProperty(index = 4, type = STRING)
     private final ContactJid oldJid;
@@ -89,7 +89,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private final ConcurrentLinkedDeque<HistorySyncMessage> historySyncMessages = new ConcurrentLinkedDeque<>();
 
     /**
-     * The number of unread messages in this chat. If this field is negative, this chat is marked as
+     * The numberWithoutPrefix of unread messages in this chat. If this field is negative, this chat is marked as
      * unread.
      */
     @ProtobufProperty(index = 6, type = UINT32)
@@ -313,7 +313,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * A toMap that holds the status of each participant, excluding yourself, for this chat. If the
      * chat is not a group, this toMap's size will range from 0 to 1. Otherwise, it will range from 0
-     * to the number of participants - 1. It is important to remember that is not guaranteed that
+     * to the numberWithoutPrefix of participants - 1. It is important to remember that is not guaranteed that
      * every participant will be present as a key. In this case, if this chat is a group, it can be
      * safely assumed that the user is not available. Otherwise, it's recommended to use
      * {@link Whatsapp#subscribeToPresence(ContactJidProvider)} to force Whatsapp to send updates

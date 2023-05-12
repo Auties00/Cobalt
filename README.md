@@ -558,7 +558,7 @@ All types of messages supported by Whatsapp are supported by this library:
     ```java
      var vcard = ContactCard.builder() // Create a new vcard
             .name("A nice friend") // Set the name of the contact
-            .phoneNumber(contact) // Set the phone number of the contact
+            .phoneNumber(contact) // Set the phone numberWithoutPrefix of the contact
             .build(); // Create the vcard
     var contactMessage = ContactMessage.builder()  // Create a new contact message
             .name("A nice friend") // Set the display name of the contact
@@ -777,7 +777,7 @@ All types of messages supported by Whatsapp are supported by this library:
            .media(urlMedia) // Set the document of this message
            .title("A nice pdf") // Set the title of the document
            .fileName("pdf-test.pdf") // Set the name of the document
-           .pageCount(1) // Set the number of pages of the document
+           .pageCount(1) // Set the numberWithoutPrefix of pages of the document
            .build(); // Create the message
      api.sendMessage(chat,  document);
      ```

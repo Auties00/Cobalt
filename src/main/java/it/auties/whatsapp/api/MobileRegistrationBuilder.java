@@ -27,9 +27,9 @@ public sealed class MobileRegistrationBuilder {
         }
 
         /**
-         * Registers a phone number by asking for a verification code and then sending it to Whatsapp
+         * Registers a phone numberWithoutPrefix by asking for a verification code and then sending it to Whatsapp
          *
-         * @param phoneNumber a phone number(include the prefix)
+         * @param phoneNumber a phone numberWithoutPrefix(include the prefix)
          * @param handler the non-null method to use to get the verification code
          * @return a future
          */
@@ -38,9 +38,9 @@ public sealed class MobileRegistrationBuilder {
         }
 
         /**
-         * Registers a phone number by asking for a verification code and then sending it to Whatsapp
+         * Registers a phone numberWithoutPrefix by asking for a verification code and then sending it to Whatsapp
          *
-         * @param phoneNumber a phone number(include the prefix)
+         * @param phoneNumber a phone numberWithoutPrefix(include the prefix)
          * @param handler the non-null method to use to get the verification code
          * @param method the non-null verification method to use
          * @return a future
@@ -51,9 +51,9 @@ public sealed class MobileRegistrationBuilder {
 
 
         /**
-         * Registers a phone number by asking for a verification code and then sending it to Whatsapp
+         * Registers a phone numberWithoutPrefix by asking for a verification code and then sending it to Whatsapp
          *
-         * @param phoneNumber a phone number(include the prefix)
+         * @param phoneNumber a phone numberWithoutPrefix(include the prefix)
          * @param handler the non-null method to use to get the verification code
          * @return a future
          */
@@ -62,9 +62,9 @@ public sealed class MobileRegistrationBuilder {
         }
 
         /**
-         * Registers a phone number by asking for a verification code and then sending it to Whatsapp
+         * Registers a phone numberWithoutPrefix by asking for a verification code and then sending it to Whatsapp
          *
-         * @param phoneNumber a phone number(include the prefix)
+         * @param phoneNumber a phone numberWithoutPrefix(include the prefix)
          * @param handler the non-null method to use to get the verification code
          * @param method the non-null verification method to use
          * @return a future
@@ -77,7 +77,7 @@ public sealed class MobileRegistrationBuilder {
         /**
          * Asks Whatsapp for a one-time-password to start the registration process
          *
-         * @param phoneNumber a phone number(include the prefix)
+         * @param phoneNumber a phone numberWithoutPrefix(include the prefix)
          * @return a future
          */
         public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber) {
@@ -87,7 +87,7 @@ public sealed class MobileRegistrationBuilder {
         /**
          * Asks Whatsapp for a one-time-password to start the registration process
          *
-         * @param phoneNumber a phone number(include the prefix)
+         * @param phoneNumber a phone numberWithoutPrefix(include the prefix)
          * @param method the non-null verification method to use
          * @return a future
          */
@@ -138,7 +138,7 @@ public sealed class MobileRegistrationBuilder {
          * @return the same instance for chaining
          */
         public CompletableFuture<Whatsapp> verify(AsyncVerificationCodeSupplier handler) {
-            Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
+            Objects.requireNonNull(store.phoneNumber(), "Missing phone numberWithoutPrefix: please specify it");
             return RegistrationHelper.sendVerificationCode(store, keys, handler)
                     .thenApply(ignored -> new Whatsapp(store, keys));
         }

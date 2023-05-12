@@ -13,9 +13,8 @@ public class MobileTest {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         Whatsapp.mobileBuilder()
                 .lastConnection()
-                .business(true)
                 .unregistered()
-                .register(17154086027L, VerificationCodeMethod.CALL,  MobileTest::onScanCode)
+                .register(393495089819L, VerificationCodeMethod.CALL,  MobileTest::onScanCode)
                 .join()
                 .addLoggedInListener(MobileTest::onConnected)
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

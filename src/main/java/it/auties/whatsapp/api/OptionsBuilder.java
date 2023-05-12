@@ -9,6 +9,7 @@ import it.auties.whatsapp.model.signal.auth.Version;
 import lombok.NonNull;
 
 import java.net.URI;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
@@ -18,13 +19,24 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     protected Keys keys;
 
     public OptionsBuilder(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType){
-        this.store = Store.of(connectionUuid, connectionType, clientType, serializer);
-        this.keys = Keys.of(connectionUuid, connectionType, clientType, serializer);
+        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, clientType);
+        this.store = Store.of(uuid, null, clientType, serializer, connectionType == ConnectionType.KNOWN);
+        this.keys = Keys.of(uuid, null, clientType, serializer, connectionType == ConnectionType.KNOWN);
     }
 
     public OptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
-        this.store = Store.of(phoneNumber, connectionType, clientType, serializer);
-        this.keys = Keys.of(phoneNumber, connectionType, clientType, serializer);
+        var uuid = getCorrectUuid(null, serializer, connectionType, clientType);
+        this.store = Store.of(uuid, phoneNumber, clientType, serializer, connectionType == ConnectionType.KNOWN);
+        this.keys = Keys.of(uuid, phoneNumber, clientType, serializer, connectionType == ConnectionType.KNOWN);
+    }
+
+    private static UUID getCorrectUuid(UUID uuid, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
+        return switch (connectionType){
+            case NEW -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
+            case KNOWN -> uuid;
+            case FIRST -> Objects.requireNonNullElseGet(serializer.listIds(clientType).peekFirst(), () -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID));
+            case LAST -> Objects.requireNonNullElseGet(serializer.listIds(clientType).peekLast(), () -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID));
+        };
     }
 
     /**

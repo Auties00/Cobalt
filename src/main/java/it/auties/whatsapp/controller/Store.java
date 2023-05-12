@@ -335,7 +335,7 @@ public final class Store extends Controller<Store> {
     private UserAgentReleaseChannel releaseChannel = UserAgentReleaseChannel.RELEASE;
 
     /**
-     * The phone number of the associated companion
+     * The phone numberWithoutPrefix of the associated companion
      */
     @Getter
     private PhoneNumber phoneNumber;
@@ -375,130 +375,36 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param uuid           the uuid of the session to load, can be null
-     * @param connectionType the non-null connection type
-     * @param clientType     the non-null type of the client
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, @NonNull ConnectionType connectionType, @NonNull ClientType clientType) {
-        return of(uuid, connectionType, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param uuid           the uuid of the session to load, can be null
-     * @param connectionType the non-null connection type
-     * @param clientType     the non-null type of the client
-     * @param serializer     the non-null serializer
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, @NonNull ConnectionType connectionType, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return switch (connectionType) {
-            case NEW -> of(uuid, clientType, serializer, false);
-            case KNOWN -> of(Objects.requireNonNull(uuid), clientType, serializer, true);
-            case FIRST -> of(serializer.listIds(clientType).peekFirst(), clientType, serializer, false);
-            case LAST -> of(serializer.listIds(clientType).peekLast(), clientType, serializer, false);
-        };
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param connectionType the non-null connection type
-     * @param clientType     the non-null type of the client
-     * @return a non-null store
-     */
-    public static Store of(Long phoneNumber, @NonNull ConnectionType connectionType, @NonNull ClientType clientType) {
-        return of(phoneNumber, connectionType, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param connectionType the non-null connection type
-     * @param clientType     the non-null type of the client
-     * @param serializer     the non-null serializer
-     * @return a non-null store
-     */
-    public static Store of(Long phoneNumber, @NonNull ConnectionType connectionType, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return switch (connectionType) {
-            case NEW -> of(phoneNumber, clientType, serializer, false);
-            case KNOWN -> of(phoneNumber, clientType, serializer, true);
-            case FIRST -> of(serializer.listIds(clientType).peekFirst(), clientType, serializer, false);
-            case LAST -> of(serializer.listIds(clientType).peekLast(), clientType, serializer, false);
-        };
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param phoneNumber the non-null phone number of the session to load
+     * @param phoneNumber the non-null phone numberWithoutPrefix of the session to load
      * @param clientType  the non-null type of the client
+     * @param required whether the session needs to exist
      * @return a non-null store
      */
-    public static Store of(Long phoneNumber, @NonNull ClientType clientType, boolean required) {
-        return of(phoneNumber, clientType, DefaultControllerSerializer.instance(), required);
+    public static Store of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, boolean required) {
+        return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance(), required);
     }
 
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param phoneNumber the non-null phone number of the session to load
+     * @param phoneNumber the non-null phone numberWithoutPrefix of the session to load
      * @param clientType  the non-null type of the client
      * @param serializer  the non-null serializer
+     * @param required whether the session needs to exist
      * @return a non-null store
      */
-    public static Store of(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
-        if(phoneNumber == null){
-            Validate.isTrue(!required, UnknownSessionException.class);
-            return of((UUID) null, clientType, serializer, false);
-        }
-
-        var result = serializer.deserializeStore(clientType, phoneNumber);
+    public static Store of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
+        Validate.isTrue(uuid != null || phoneNumber != null || !required, UnknownSessionException.class);
+        var result = phoneNumber == null ? serializer.deserializeStore(clientType, uuid) : serializer.deserializeStore(clientType, phoneNumber);
         if(required && result.isEmpty()){
-            throw new UnknownSessionException(phoneNumber);
-        }
+            if(phoneNumber != null) {
+                throw new UnknownSessionException(phoneNumber);
+            }
 
-        var store = result.map(entry -> entry.serializer(serializer))
-                .orElseGet(() -> random(UUID.randomUUID(), clientType, serializer));
-        serializer.attributeStore(store); // Run async
-        return store;
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param uuid       the uuid of the session, can be null
-     * @param clientType the non-null type of the client
-     * @param required   whether an exception should be thrown if the connection doesn't exist
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, @NonNull ClientType clientType, boolean required) {
-        return of(uuid, clientType, DefaultControllerSerializer.instance(), required);
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param uuid       the uuid of the session, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @param required   whether an exception should be thrown if the connection doesn't exist
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
-        Validate.isTrue(uuid != null || !required, UnknownSessionException.class);
-        var id = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-        var result = serializer.deserializeStore(clientType, uuid);
-        if(required && result.isEmpty()){
             throw new UnknownSessionException(uuid);
         }
-
         var store = result.map(entry -> entry.serializer(serializer))
-                .orElseGet(() -> random(uuid, clientType, serializer));
+                .orElseGet(() -> random(uuid, phoneNumber, clientType, serializer));
         serializer.attributeStore(store); // Run async
         return store;
     }
@@ -507,53 +413,19 @@ public final class Store extends Controller<Store> {
      * Constructs a new default instance of WhatsappStore
      *
      * @param uuid        the uuid of the session to create, can be null(a random one will be used)
+     * @param phoneNumber the phone numberWithoutPrefix of the session to create, can be null(it will be attributed later)
      * @param clientType  the non-null type of the client
      * @return a non-null store
      */
-    public static Store random(UUID uuid, @NonNull ClientType clientType) {
-        return random(uuid, clientType, DefaultControllerSerializer.instance());
+    public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType) {
+        return random(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
     }
 
     /**
      * Constructs a new default instance of WhatsappStore
      *
      * @param uuid        the uuid of the session to create, can be null(a random one will be used)
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @return a non-null store
-     */
-    public static Store random(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return random(uuid, null, clientType, serializer);
-    }
-
-    /**
-     * Constructs a new default instance of WhatsappStore
-     *
-     * @param phoneNumber the phone number of the session to create, can be null(it will be attributed later)
-     * @param clientType  the non-null type of the client
-     * @return a non-null store
-     */
-    public static Store random(Long phoneNumber, @NonNull ClientType clientType) {
-        return random(phoneNumber, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Constructs a new default instance of WhatsappStore
-     *
-     * @param phoneNumber the phone number of the session to create, can be null(it will be attributed later)
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @return a non-null store
-     */
-    public static Store random(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return random(null, phoneNumber, clientType, serializer);
-    }
-
-    /**
-     * Constructs a new default instance of WhatsappStore
-     *
-     * @param uuid        the uuid of the session to create, can be null(a random one will be used)
-     * @param phoneNumber the phone number of the session to create, can be null(it will be attributed later)
+     * @param phoneNumber the phone numberWithoutPrefix of the session to create, can be null(it will be attributed later)
      * @param clientType  the non-null type of the client
      * @param serializer  the non-null serializer
      * @return a non-null store
@@ -1260,12 +1132,11 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null version
      */
-    public Version version(){
-        if(version == null){
-            this.version = Version.latest(clientType, osType, releaseChannel, business);
-        }
-
-        return version;
+    public CompletableFuture<Version> version(){
+        return switch (clientType){
+            case WEB_CLIENT -> MetadataHelper.getWebVersion();
+            case APP_CLIENT -> MetadataHelper.getMobileVersion(osType);
+        };
     }
 
     /**
@@ -1286,7 +1157,7 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * Sets the phone number used by this session
+     * Sets the phone numberWithoutPrefix used by this session
      *
      * @return the same instance
      */
