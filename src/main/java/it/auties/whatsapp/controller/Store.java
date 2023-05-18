@@ -17,6 +17,7 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
@@ -454,7 +455,15 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     public Optional<Contact> findContactByJid(ContactJidProvider jid) {
-        return jid == null ? Optional.empty() : Optional.ofNullable(contacts.get(jid.toJid()));
+        if (jid == null) {
+            return Optional.empty();
+        }
+
+        if (jid instanceof Contact contact) {
+            return Optional.of(contact);
+        }
+
+        return Optional.ofNullable(contacts.get(jid.toJid()));
     }
 
     /**
@@ -821,11 +830,13 @@ public final class Store extends Controller<Store> {
     }
 
     private void processMessage(MessageInfo info) {
-        switch (info.message().content()) {
-            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
-            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-            default -> {}
+        Message content = info.message().content();
+        if (Objects.requireNonNull(content) instanceof PollCreationMessage pollCreationMessage) {
+            handlePollCreation(info, pollCreationMessage);
+        } else if (content instanceof PollUpdateMessage pollUpdateMessage) {
+            handlePollUpdate(info, pollUpdateMessage);
+        } else if (content instanceof ReactionMessage reactionMessage) {
+            handleReactionMessage(info, reactionMessage);
         }
     }
 

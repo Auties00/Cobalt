@@ -353,50 +353,86 @@ public class MessageContainer implements ProtobufMessage {
      */
     public static <T extends Message> MessageContainerBuilder builder(@NonNull T message) {
         var builder = MessageContainer.builder();
-        switch(message) {
-            case EmptyMessage ignored -> {}
-            case SenderKeyDistributionMessage senderKeyDistribution -> builder.senderKeyDistributionMessage(senderKeyDistribution);
-            case ImageMessage image -> builder.imageMessage(image);
-            case ContactMessage contact -> builder.contactMessage(contact);
-            case LocationMessage location -> builder.locationMessage(location);
-            case TextMessage text -> builder.textMessage(text);
-            case DocumentMessage document -> builder.documentMessage(document);
-            case AudioMessage audio -> builder.audioMessage(audio);
-            case VideoMessage video -> builder.videoMessage(video);
-            case ProtocolMessage protocol -> builder.protocolMessage(protocol);
-            case ContactsArrayMessage contactsArray -> builder.contactsArrayMessage(contactsArray);
-            case HighlyStructuredMessage highlyStructured -> builder.highlyStructuredMessage(highlyStructured);
-            case SendPaymentMessage sendPayment -> builder.sendPaymentMessage(sendPayment);
-            case LiveLocationMessage liveLocation -> builder.liveLocationMessage(liveLocation);
-            case RequestPaymentMessage requestPayment -> builder.requestPaymentMessage(requestPayment);
-            case DeclinePaymentRequestMessage declinePaymentRequest -> builder.declinePaymentRequestMessage(declinePaymentRequest);
-            case CancelPaymentRequestMessage cancelPaymentRequest -> builder.cancelPaymentRequestMessage(cancelPaymentRequest);
-            case it.auties.whatsapp.model.message.button.TemplateMessage template -> builder.templateMessage(template);
-            case StickerMessage sticker -> builder.stickerMessage(sticker);
-            case GroupInviteMessage groupInvite -> builder.groupInviteMessage(groupInvite);
-            case TemplateReplyMessage templateButtonReply -> builder.templateReplyMessage(templateButtonReply);
-            case ProductMessage product -> builder.productMessage(product);
-            case DeviceSyncMessage deviceSync -> builder.deviceSyncMessage(deviceSync);
-            case ListMessage buttonsList -> builder.listMessage(buttonsList);
-            case PaymentOrderMessage order -> builder.orderMessage(order);
-            case ListResponseMessage listResponse -> builder.listResponseMessage(listResponse);
-            case PaymentInvoiceMessage invoice -> builder.invoiceMessage(invoice);
-            case ButtonsMessage buttons -> builder.buttonsMessage(buttons);
-            case ButtonsResponseMessage buttonsResponse -> builder.buttonsResponseMessage(buttonsResponse);
-            case PaymentInviteMessage paymentInvite -> builder.paymentInviteMessage(paymentInvite);
-            case InteractiveMessage interactive -> builder.interactiveMessage(interactive);
-            case ReactionMessage reaction -> builder.reactionMessage(reaction);
-            case StickerSyncRMRMessage stickerSync -> builder.stickerSyncMessage(stickerSync);
-            case DeviceSentMessage deviceSent -> builder.deviceSentMessage(deviceSent);
-            case InteractiveResponseMessage interactiveResponseMessage ->
-                    builder.interactiveResponseMessage(interactiveResponseMessage);
-            case PollCreationMessage pollCreationMessage -> builder.pollCreationMessage(pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(pollUpdateMessage);
-            case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(keepInChatMessage);
-            case RequestPhoneNumberMessage requestPhoneNumberMessage ->
-                    builder.requestPhoneNumberMessage(requestPhoneNumberMessage);
-            case EncryptedReactionMessage encReactionMessage -> builder.encryptedReactionMessage(encReactionMessage);
-            default -> throw new IllegalStateException("Unsupported message: " + message);
+        if (message instanceof SenderKeyDistributionMessage senderKeyDistribution) {
+            builder.senderKeyDistributionMessage(senderKeyDistribution);
+        } else if (message instanceof ImageMessage image) {
+            builder.imageMessage(image);
+        } else if (message instanceof ContactMessage contact) {
+            builder.contactMessage(contact);
+        } else if (message instanceof LocationMessage location) {
+            builder.locationMessage(location);
+        } else if (message instanceof TextMessage text) {
+            builder.textMessage(text);
+        } else if (message instanceof DocumentMessage document) {
+            builder.documentMessage(document);
+        } else if (message instanceof AudioMessage audio) {
+            builder.audioMessage(audio);
+        } else if (message instanceof VideoMessage video) {
+            builder.videoMessage(video);
+        } else if (message instanceof ProtocolMessage protocol) {
+            builder.protocolMessage(protocol);
+        } else if (message instanceof ContactsArrayMessage contactsArray) {
+            builder.contactsArrayMessage(contactsArray);
+        } else if (message instanceof HighlyStructuredMessage highlyStructured) {
+            builder.highlyStructuredMessage(highlyStructured);
+        } else if (message instanceof SendPaymentMessage sendPayment) {
+            builder.sendPaymentMessage(sendPayment);
+        } else if (message instanceof LiveLocationMessage liveLocation) {
+            builder.liveLocationMessage(liveLocation);
+        } else if (message instanceof RequestPaymentMessage requestPayment) {
+            builder.requestPaymentMessage(requestPayment);
+        } else if (message instanceof DeclinePaymentRequestMessage declinePaymentRequest) {
+            builder.declinePaymentRequestMessage(declinePaymentRequest);
+        } else if (message instanceof CancelPaymentRequestMessage cancelPaymentRequest) {
+            builder.cancelPaymentRequestMessage(cancelPaymentRequest);
+        } else if (message instanceof TemplateMessage template) {
+            builder.templateMessage(template);
+        } else if (message instanceof StickerMessage sticker) {
+            builder.stickerMessage(sticker);
+        } else if (message instanceof GroupInviteMessage groupInvite) {
+            builder.groupInviteMessage(groupInvite);
+        } else if (message instanceof TemplateReplyMessage templateButtonReply) {
+            builder.templateReplyMessage(templateButtonReply);
+        } else if (message instanceof ProductMessage product) {
+            builder.productMessage(product);
+        } else if (message instanceof DeviceSyncMessage deviceSync) {
+            builder.deviceSyncMessage(deviceSync);
+        } else if (message instanceof ListMessage buttonsList) {
+            builder.listMessage(buttonsList);
+        } else if (message instanceof PaymentOrderMessage order) {
+            builder.orderMessage(order);
+        } else if (message instanceof ListResponseMessage listResponse) {
+            builder.listResponseMessage(listResponse);
+        } else if (message instanceof PaymentInvoiceMessage invoice) {
+            builder.invoiceMessage(invoice);
+        } else if (message instanceof ButtonsMessage buttons) {
+            builder.buttonsMessage(buttons);
+        } else if (message instanceof ButtonsResponseMessage buttonsResponse) {
+            builder.buttonsResponseMessage(buttonsResponse);
+        } else if (message instanceof PaymentInviteMessage paymentInvite) {
+            builder.paymentInviteMessage(paymentInvite);
+        } else if (message instanceof InteractiveMessage interactive) {
+            builder.interactiveMessage(interactive);
+        } else if (message instanceof ReactionMessage reaction) {
+            builder.reactionMessage(reaction);
+        } else if (message instanceof StickerSyncRMRMessage stickerSync) {
+            builder.stickerSyncMessage(stickerSync);
+        } else if (message instanceof DeviceSentMessage deviceSent) {
+            builder.deviceSentMessage(deviceSent);
+        } else if (message instanceof InteractiveResponseMessage interactiveResponseMessage) {
+            builder.interactiveResponseMessage(interactiveResponseMessage);
+        } else if (message instanceof PollCreationMessage pollCreationMessage) {
+            builder.pollCreationMessage(pollCreationMessage);
+        } else if (message instanceof PollUpdateMessage pollUpdateMessage) {
+            builder.pollUpdateMessage(pollUpdateMessage);
+        } else if (message instanceof KeepInChatMessage keepInChatMessage) {
+            builder.keepInChatMessage(keepInChatMessage);
+        } else if (message instanceof RequestPhoneNumberMessage requestPhoneNumberMessage) {
+            builder.requestPhoneNumberMessage(requestPhoneNumberMessage);
+        } else if (message instanceof EncryptedReactionMessage encReactionMessage) {
+            builder.encryptedReactionMessage(encReactionMessage);
+        } else {
+            throw new IllegalStateException("Unsupported message: " + message);
         }
         return builder;
     }

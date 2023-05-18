@@ -114,24 +114,24 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     }
 
     /**
-     * Sets the proxy to use for the socket
-     *
-     * @return the same instance for chaining
-     */
-    @SuppressWarnings("unchecked")
-    public T proxy(@NonNull URI proxy) {
-        store.proxy(proxy);
-        return (T) this;
-    }
-
-    /**
      * Sets the release channel
      *
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T proxy(@NonNull UserAgentReleaseChannel releaseChannel) {
+    public T releaseChannel(@NonNull UserAgentReleaseChannel releaseChannel) {
         store.releaseChannel(releaseChannel);
+        return (T) this;
+    }
+
+    /**
+     * Sets the proxy to use for the socket
+     *
+     * @return the same instance for chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T proxy(URI proxy) {
+        store.proxy(proxy);
         return (T) this;
     }
 }

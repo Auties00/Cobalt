@@ -44,11 +44,12 @@ public class HighlyStructuredButtonTemplate implements ProtobufMessage {
      */
     public static HighlyStructuredButtonTemplate of(HighlyStructuredButton highlyStructuredButton) {
         var builder = HighlyStructuredButtonTemplate.builder();
-        switch (highlyStructuredButton){
-            case HighlyStructuredCallButton structuredCallButton -> builder.highlyStructuredCallButton(structuredCallButton);
-            case HighlyStructuredQuickReplyButton structuredQuickReplyButton -> builder.highlyStructuredQuickReplyButton(structuredQuickReplyButton);
-            case HighlyStructuredURLButton highlyStructuredURLButton -> builder.highlyStructuredUrlButton(highlyStructuredURLButton);
-            case null -> {}
+        if (highlyStructuredButton instanceof HighlyStructuredCallButton structuredCallButton) {
+            builder.highlyStructuredCallButton(structuredCallButton);
+        } else if (highlyStructuredButton instanceof HighlyStructuredQuickReplyButton structuredQuickReplyButton) {
+            builder.highlyStructuredQuickReplyButton(structuredQuickReplyButton);
+        } else if (highlyStructuredButton instanceof HighlyStructuredURLButton highlyStructuredURLButton) {
+            builder.highlyStructuredUrlButton(highlyStructuredURLButton);
         }
         return builder.build();
     }

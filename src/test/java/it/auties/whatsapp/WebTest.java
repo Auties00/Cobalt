@@ -15,6 +15,7 @@ public class WebTest {
                 .build()
                 .addLoggedInListener(api -> {
                     System.out.printf("Connected: %s%n", api.store().privacySettings());
+                    System.out.println("Result: " + api.queryName(ContactJid.of("393440996717")).join());
                     api.queryGroupMetadata(ContactJid.of("393495089819-1623404452@g.us"));
                 })
                 .addNewMessageListener(message -> System.out.println(message.toJson()))

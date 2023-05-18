@@ -42,11 +42,12 @@ public final class HydratedTemplateButton implements ProtobufMessage {
      */
     public static HydratedTemplateButton of(HydratedButton button) {
         var builder = HydratedTemplateButton.builder();
-        switch (button){
-            case HydratedQuickReplyButton hydratedQuickReplyButton -> builder.quickReplyButton(hydratedQuickReplyButton);
-            case HydratedURLButton hydratedURLButton -> builder.urlButton(hydratedURLButton);
-            case HydratedCallButton hydratedCallButton -> builder.callButton(hydratedCallButton);
-            case null -> {}
+        if (button instanceof HydratedQuickReplyButton hydratedQuickReplyButton) {
+            builder.quickReplyButton(hydratedQuickReplyButton);
+        } else if (button instanceof HydratedURLButton hydratedURLButton) {
+            builder.urlButton(hydratedURLButton);
+        } else if (button instanceof HydratedCallButton hydratedCallButton) {
+            builder.callButton(hydratedCallButton);
         }
         return builder.build();
     }

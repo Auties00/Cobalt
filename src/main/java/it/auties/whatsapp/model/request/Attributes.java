@@ -164,11 +164,13 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     private int parseInt(Object value) {
-        return switch (value) {
-            case Number number -> number.intValue();
-            case String string -> Integer.parseInt(string);
-            default -> throw new IllegalStateException("Unexpected value: " + value);
-        };
+        if (value instanceof Number number) {
+            return number.intValue();
+        } else if (value instanceof String string) {
+            return Integer.parseInt(string);
+        } else {
+            throw new IllegalStateException("Unexpected value: " + value);
+        }
     }
 
     /**
@@ -192,12 +194,15 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     private long parseLong(Object value) {
-        return switch (value) {
-            case Number number -> number.longValue();
-            case String string -> Long.parseLong(string);
-            default -> throw new IllegalStateException("Unexpected value: " + value);
-        };
+        if (requireNonNull(value) instanceof Number number) {
+            return number.longValue();
+        } else if (value instanceof String string) {
+            return Long.parseLong(string);
+        } else {
+            throw new IllegalStateException("Unexpected value: " + value);
+        }
     }
+    
 
     /**
      * Gets a non-null value as a string by key in the wrapped toMap. If the key doesn't exist,
@@ -263,12 +268,15 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     private boolean parseBool(Object value) {
-        return switch (value) {
-            case Boolean bool -> bool;
-            case String string -> Boolean.parseBoolean(string);
-            default -> throw new IllegalStateException("Unexpected value: " + value);
-        };
+        if (requireNonNull(value) instanceof Boolean bool) {
+            return bool;
+        } else if (value instanceof String string) {
+            return Boolean.parseBoolean(string);
+        } else {
+            throw new IllegalStateException("Unexpected value: " + value);
+        }
     }
+    
 
     /**
      * Gets an optional value as a ContactJid by key in the wrapped toMap
@@ -281,11 +289,13 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     private ContactJid parseJid(Object value) {
-        return switch (value) {
-            case ContactJid jid -> jid;
-            case String encodedJid -> ContactJid.of(encodedJid);
-            default -> throw new IllegalStateException("Unexpected value: " + value);
-        };
+        if (value instanceof ContactJid jid) {
+            return jid;
+        } else if (value instanceof String encodedJid) {
+            return ContactJid.of(encodedJid);
+        } else {
+            throw new IllegalStateException("Unexpected value: " + value);
+        }
     }
 
     /**

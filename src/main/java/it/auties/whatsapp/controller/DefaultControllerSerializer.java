@@ -247,10 +247,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             }
 
             var link = getSession(store.clientType(), store.phoneNumber().toString());
-            if(Files.exists(link)){
-                return;
-            }
+            Files.deleteIfExists(link);
             var original = getSession(store.clientType(), store.uuid().toString());
+            Files.createDirectories(original);
             Files.createSymbolicLink(link, original);
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot create link between store and phone numberWithoutPrefix", exception);

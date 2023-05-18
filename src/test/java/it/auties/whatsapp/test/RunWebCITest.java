@@ -1,7 +1,9 @@
 package it.auties.whatsapp.test;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.DisconnectReason;
+import it.auties.whatsapp.api.Emojy;
+import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
@@ -32,12 +34,11 @@ import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
-import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
-import it.auties.whatsapp.util.Smile;
 import lombok.SneakyThrows;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
@@ -49,7 +50,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -85,7 +89,8 @@ public class RunWebCITest implements Listener {
         }
         loadConfig();
         createLatch();
-        future = api.connect().thenComposeAsync(Whatsapp::onDisconnected);
+        future = api.connect()
+                .thenComposeAsync(Whatsapp::onDisconnected);
         latch.await();
     }
 
@@ -97,23 +102,15 @@ public class RunWebCITest implements Listener {
                 skip = true;
                 return;
             }
-            api = Whatsapp.mobileBuilder()
-                    .newConnection()
-                    .unregistered()
-                    .register(17154086027L, this::onScanCode)
-                    .join()
-                    .addListener(this);
+            api = Whatsapp.webBuilder()
+                    .lastConnection()
+                    .build();
+            api.addListener(this);
             return;
         }
         log("Detected github actions environment");
         api = new Whatsapp(loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
         api.addListener(this);
-    }
-
-    private CompletableFuture<String> onScanCode() {
-        System.out.println("Enter OTP: ");
-        var scanner = new Scanner(System.in);
-        return CompletableFuture.completedFuture(scanner.nextLine().trim());
     }
 
     @SneakyThrows
@@ -193,7 +190,7 @@ public class RunWebCITest implements Listener {
         }
         log("Changing privacy settings...");
         for(var settingType : PrivacySettingType.values()){
-            for(var settingValue : PrivacySettingValue.values()){
+            for(var settingValue : settingType.supportedValues()){
                 try{
                     log("Changing privacy setting %s to %s...", settingType, settingValue);
                     api.changePrivacySetting(settingType, settingValue, contact).join();

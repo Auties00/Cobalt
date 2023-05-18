@@ -5,10 +5,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The constants of this enumerated type describe the various types of settings that a user can
@@ -44,7 +41,7 @@ public enum PrivacySettingType {
     /**
      * Refers to who can add you to a call
      */
-    CALL_ADD("calladd", Set.of(PrivacySettingValue.EVERYONE, PrivacySettingValue.CONTACTS, PrivacySettingValue.CONTACTS_EXCEPT, PrivacySettingValue.NOBODY));
+    CALL_ADD("calladd", Set.of(PrivacySettingValue.EVERYONE));
 
     @Getter
     private final String data;
@@ -53,6 +50,10 @@ public enum PrivacySettingType {
 
     public static Optional<PrivacySettingType> of(String id) {
         return Arrays.stream(values()).filter(entry -> Objects.equals(entry.data(), id)).findFirst();
+    }
+
+    public Set<PrivacySettingValue> supportedValues() {
+        return Collections.unmodifiableSet(values);
     }
 
     public boolean isSupported(@NonNull PrivacySettingValue value){

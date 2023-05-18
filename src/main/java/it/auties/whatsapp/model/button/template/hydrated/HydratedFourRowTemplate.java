@@ -102,13 +102,16 @@ public final class HydratedFourRowTemplate implements TemplateFormatter {
     private static HydratedFourRowTemplate customBuilder(HydratedFourRowTemplateTitle title, String body, String footer, List<HydratedTemplateButton> buttons, String id) {
         IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
         var builder = HydratedFourRowTemplate.builder().body(body).footer(footer).hydratedButtons(buttons).templateId(id);
-        switch (title){
-            case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);
-            case TextMessage textMessage -> builder.titleText(textMessage.text());
-            case ImageMessage imageMessage -> builder.titleImage(imageMessage);
-            case VideoMessage videoMessage -> builder.titleVideo(videoMessage);
-            case LocationMessage locationMessage -> builder.titleLocation(locationMessage);
-            case null -> {}
+        if (title instanceof DocumentMessage documentMessage) {
+            builder.titleDocument(documentMessage);
+        } else if (title instanceof TextMessage textMessage) {
+            builder.titleText(textMessage.text());
+        } else if (title instanceof ImageMessage imageMessage) {
+            builder.titleImage(imageMessage);
+        } else if (title instanceof VideoMessage videoMessage) {
+            builder.titleVideo(videoMessage);
+        } else if (title instanceof LocationMessage locationMessage) {
+            builder.titleLocation(locationMessage);
         }
         return builder.build();
     }

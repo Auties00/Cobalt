@@ -105,11 +105,12 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
                 .id(Bytes.ofRandom(6).toHex())
                 .content(content)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new));
-        switch (formatter) {
-            case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate -> builder.highlyStructuredFourRowTemplateFormat(highlyStructuredFourRowTemplate);
-            case HydratedFourRowTemplate hydratedFourRowTemplate ->
-                    builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
-            case InteractiveMessage interactiveMessage -> builder.interactiveMessageFormat(interactiveMessage);
+        if (formatter instanceof HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate) {
+            builder.highlyStructuredFourRowTemplateFormat(highlyStructuredFourRowTemplate);
+        } else if (formatter instanceof HydratedFourRowTemplate hydratedFourRowTemplate) {
+            builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
+        } else if (formatter instanceof InteractiveMessage interactiveMessage) {
+            builder.interactiveMessageFormat(interactiveMessage);
         }
         return builder.build();
     }

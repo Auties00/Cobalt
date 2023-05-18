@@ -68,10 +68,10 @@ public final class Button implements ProtobufMessage {
      */
     public static Button of(@NonNull String id, ButtonBody body) {
         var builder = Button.builder().id(id);
-        switch (body){
-            case ButtonText buttonText -> builder.bodyText(buttonText).bodyType(ButtonBodyType.TEXT);
-            case NativeFlowInfo flowInfo -> builder.bodyNativeFlow(flowInfo).bodyType(ButtonBodyType.NATIVE_FLOW);
-            case null -> {}
+        if (body instanceof ButtonText buttonText) {
+            builder.bodyText(buttonText).bodyType(ButtonBodyType.TEXT);
+        } else if (body instanceof NativeFlowInfo flowInfo) {
+            builder.bodyNativeFlow(flowInfo).bodyType(ButtonBodyType.NATIVE_FLOW);
         }
 
         return builder.build();

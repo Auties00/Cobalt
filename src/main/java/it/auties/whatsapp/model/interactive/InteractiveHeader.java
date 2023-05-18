@@ -84,16 +84,14 @@ public class InteractiveHeader implements ProtobufMessage {
         var builder = InteractiveHeader.builder()
                 .title(title)
                 .subtitle(subtitle);
-        switch (attachment){
-            case DocumentMessage documentMessage -> builder.attachmentDocument(documentMessage)
-                    .mediaAttachment(true);
-            case ImageMessage imageMessage -> builder.attachmentImage(imageMessage)
-                    .mediaAttachment(true);
-            case InteractiveHeaderThumbnail productHeaderThumbnail -> builder.attachmentThumbnail(productHeaderThumbnail.thumbnail())
-                    .mediaAttachment(true);
-            case VideoMessage videoMessage -> builder.attachmentVideo(videoMessage)
-                    .mediaAttachment(true);
-            case null -> {}
+        if (attachment instanceof DocumentMessage documentMessage) {
+            builder.attachmentDocument(documentMessage).mediaAttachment(true);
+        } else if (attachment instanceof ImageMessage imageMessage) {
+            builder.attachmentImage(imageMessage).mediaAttachment(true);
+        } else if (attachment instanceof InteractiveHeaderThumbnail productHeaderThumbnail) {
+            builder.attachmentThumbnail(productHeaderThumbnail.thumbnail()).mediaAttachment(true);
+        } else if (attachment instanceof VideoMessage videoMessage) {
+            builder.attachmentVideo(videoMessage).mediaAttachment(true);
         }
         return builder.build();
     }

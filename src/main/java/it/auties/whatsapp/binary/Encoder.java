@@ -182,19 +182,26 @@ public class Encoder {
     }
 
     private void write(Object input) {
-        switch (input) {
-            case null -> this.buffer = buffer.append(LIST_EMPTY.data());
-            case String str -> writeString(str);
-            case Boolean bool -> writeString(Boolean.toString(bool));
-            case Number number -> writeString(number.toString());
-            case byte[] bytes -> writeBytes(bytes);
-            case ContactJid jid -> writeJid(jid);
-            case Collection<?> collection -> writeList(collection);
-            case Enum<?> serializable -> writeString(Objects.toString(serializable));
-            case Node ignored ->
-                    throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
-            default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass()
-                    .getName(), input));
+        if (input == null) {
+            this.buffer = buffer.append(LIST_EMPTY.data());
+        } else if (input instanceof String str) {
+            writeString(str);
+        } else if (input instanceof Boolean bool) {
+            writeString(Boolean.toString(bool));
+        } else if (input instanceof Number number) {
+            writeString(number.toString());
+        } else if (input instanceof byte[] bytes) {
+            writeBytes(bytes);
+        } else if (input instanceof ContactJid jid) {
+            writeJid(jid);
+        } else if (input instanceof Collection<?> collection) {
+            writeList(collection);
+        } else if (input instanceof Enum<?> serializable) {
+            writeString(Objects.toString(serializable));
+        } else if (input instanceof Node) {
+            throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
+        } else {
+            throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
         }
     }
 

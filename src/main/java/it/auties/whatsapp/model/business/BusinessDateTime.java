@@ -42,10 +42,13 @@ public final class BusinessDateTime implements BusinessLocalizableParameterValue
      * @return a non-null date time
      */
     public static BusinessDateTime of(@NonNull BusinessDateTimeValue dateComponent) {
-        return switch (dateComponent){
-            case BusinessDateTimeComponent businessDateTimeComponent -> new BusinessDateTime(businessDateTimeComponent, null);
-            case BusinessDateTimeUnixEpoch businessDateTimeUnixEpoch -> new BusinessDateTime(null, businessDateTimeUnixEpoch);
-        };
+        if (dateComponent instanceof BusinessDateTimeComponent businessDateTimeComponent) {
+            return new BusinessDateTime(businessDateTimeComponent, null);
+        } else if (dateComponent instanceof BusinessDateTimeUnixEpoch businessDateTimeUnixEpoch) {
+            return new BusinessDateTime(null, businessDateTimeUnixEpoch);
+        }else {
+            throw new IllegalArgumentException();
+        }
     }
     
     /**

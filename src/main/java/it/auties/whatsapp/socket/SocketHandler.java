@@ -123,13 +123,7 @@ public class SocketHandler implements SocketListener {
 
     private void callListenersAsync(Consumer<Listener> consumer) {
         var service = getOrCreateListenersService();
-        store.listeners().forEach(listener -> service.execute(() -> {
-            try {
-                consumer.accept(listener);
-            }catch (Throwable throwable){
-                handleFailure(UNKNOWN, throwable);
-            }
-        }));
+        store.listeners().forEach(listener -> service.execute(() -> invokeListenerSafe(consumer, listener)));
     }
 
     @Override
@@ -632,9 +626,17 @@ public class SocketHandler implements SocketListener {
         var service = getOrCreateListenersService();
         var futures = store.listeners()
                 .stream()
-                .map(listener -> CompletableFuture.runAsync(() -> consumer.accept(listener), service))
+                .map(listener -> CompletableFuture.runAsync(() -> invokeListenerSafe(consumer, listener), service))
                 .toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();
+    }
+
+    private void invokeListenerSafe(Consumer<Listener> consumer, Listener listener) {
+        try {
+            consumer.accept(listener);
+        }catch (Throwable throwable){
+            handleFailure(UNKNOWN, throwable);
+        }
     }
 
     protected void onChats() {

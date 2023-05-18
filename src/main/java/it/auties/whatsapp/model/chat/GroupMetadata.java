@@ -131,12 +131,15 @@ public class GroupMetadata implements ProtobufMessage {
     }
 
     private static String parseDescription(Node wrapper) {
-        return switch (wrapper.content()) {
-            case null -> null;
-            case String string -> string;
-            case byte[] bytes -> new String(bytes, StandardCharsets.UTF_8);
-            default -> throw new IllegalArgumentException("Illegal body type: %s".formatted(wrapper.content().getClass().getName()));
-        };
+        if (wrapper.content() == null) {
+            return null;
+        } else if (wrapper.content() instanceof String string) {
+            return string;
+        } else if (wrapper.content() instanceof byte[] bytes) {
+            return new String(bytes, StandardCharsets.UTF_8);
+        } else {
+            throw new IllegalArgumentException("Illegal body type: %s".formatted(wrapper.content().getClass().getName()));
+        }
     }
 
     /**

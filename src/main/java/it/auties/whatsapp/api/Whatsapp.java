@@ -12,7 +12,6 @@ import it.auties.curve25519.Curve25519;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
-import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -50,12 +49,10 @@ import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
-import it.auties.whatsapp.model.request.Attributes;
-import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.request.ReplyHandler;
+import it.auties.whatsapp.model.request.*;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
+import it.auties.whatsapp.model.response.MexQueryResult;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.sync.*;
@@ -441,18 +438,19 @@ public class Whatsapp {
         info.key().chatJid(info.chatJid().toWhatsappJid());
         info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toWhatsappJid());
         fixEphemeralMessage(info);
-        switch (info.message().content()) {
-            case MediaMessage mediaMessage -> {
-                return attributeMediaMessage(mediaMessage);
-            }
-            case ButtonMessage buttonMessage -> {
-                return attributeButtonMessage(info, buttonMessage);
-            }
-            case TextMessage textMessage -> attributeTextMessage(textMessage);
-            case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(info, pollUpdateMessage);
-            case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
-            default -> {}
+        var content = info.message().content();
+        if (content instanceof MediaMessage mediaMessage) {
+            return attributeMediaMessage(mediaMessage);
+        } else if (content instanceof ButtonMessage buttonMessage) {
+            return attributeButtonMessage(info, buttonMessage);
+        } else if (content instanceof TextMessage textMessage) {
+            attributeTextMessage(textMessage);
+        } else if (content instanceof PollCreationMessage pollCreationMessage) {
+            attributePollCreationMessage(info, pollCreationMessage);
+        } else if (content instanceof PollUpdateMessage pollUpdateMessage) {
+            attributePollUpdateMessage(info, pollUpdateMessage);
+        } else if (content instanceof GroupInviteMessage groupInviteMessage) {
+            attributeGroupInviteMessage(info, groupInviteMessage);
         }
 
         return CompletableFuture.completedFuture(null);
@@ -573,25 +571,31 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Void> attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
-        return switch (buttonMessage) {
-            case ButtonsMessage buttonsMessage
-                    && buttonsMessage.header().isPresent()
-                    && buttonsMessage.header().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-            case TemplateMessage templateMessage && templateMessage.format().isPresent() -> switch (templateMessage.format().get()) {
-                case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
-                        && highlyStructuredFourRowTemplate.title().isPresent()
-                        && highlyStructuredFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-                case HydratedFourRowTemplate hydratedFourRowTemplate
-                        && hydratedFourRowTemplate.title().isPresent()
-                        && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-                default ->  CompletableFuture.completedFuture(null);
-            };
-            case InteractiveMessage interactiveMessage
-                    && interactiveMessage.header().isPresent()
-                    && interactiveMessage.header().get().attachment().isPresent()
-                    && interactiveMessage.header().get().attachment().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-            default -> CompletableFuture.completedFuture(null);
-        };
+        if (buttonMessage instanceof ButtonsMessage buttonsMessage
+                && buttonsMessage.header().isPresent()
+                && buttonsMessage.header().get() instanceof MediaMessage mediaMessage) {
+            return attributeMediaMessage(mediaMessage);
+        } else if (buttonMessage instanceof TemplateMessage templateMessage && templateMessage.format().isPresent()) {
+            var templateFormatter = templateMessage.format().get();
+            if (templateFormatter instanceof HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
+                    && highlyStructuredFourRowTemplate.title().isPresent()
+                    && highlyStructuredFourRowTemplate.title().get() instanceof MediaMessage mediaMessage) {
+                return attributeMediaMessage(mediaMessage);
+            } else if (templateFormatter instanceof HydratedFourRowTemplate hydratedFourRowTemplate
+                    && hydratedFourRowTemplate.title().isPresent()
+                    && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage) {
+                return attributeMediaMessage(mediaMessage);
+            }else {
+                return CompletableFuture.completedFuture(null);
+            }
+        } else if (buttonMessage instanceof InteractiveMessage interactiveMessage
+                && interactiveMessage.header().isPresent()
+                && interactiveMessage.header().get().attachment().isPresent()
+                && interactiveMessage.header().get().attachment().get() instanceof MediaMessage mediaMessage) {
+            return attributeMediaMessage(mediaMessage);
+        } else {
+             return CompletableFuture.completedFuture(null);
+        }
     }
 
     // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
@@ -790,10 +794,37 @@ public class Whatsapp {
     /**
      * Queries the block list
      *
-     * @return a CompletableFuture that wraps a non-null list of ContactJid
+     * @return a CompletableFuture
      */
     public CompletableFuture<List<ContactJid>> queryBlockList() {
         return socketHandler.queryBlockList();
+    }
+
+    /**
+     * Queries the display name of a contact
+     *
+     * @param contactJid the non-null contact
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Optional<String>> queryName(@NonNull ContactJidProvider contactJid) {
+        // Node[description=iq, attributes={xmlns=w:mex, id=35054.39324-378, to=s.whatsapp.net, type=get}, content=[Node[description=query, content=[123, 34, 113, 117, 101, 114, 121, 73, 100, 34, 58, 34, 54, 52, 50, 48, 52, 53, 51, 52, 55, 52, 54, 51, 51, 54, 50, 52, 34, 44, 34, 118, 97, 114, 105, 97, 98, 108, 101, 115, 34, 58, 123, 34, 117, 115, 101, 114, 115, 34, 58, 91, 123, 34, 117, 115, 101, 114, 95, 105, 100, 34, 58, 34, 51, 57, 51, 51, 57, 54, 49, 51, 57, 56, 52, 54, 34, 125, 93, 44, 34, 117, 112, 100, 97, 116, 101, 115, 34, 58, 91, 34, 83, 84, 65, 84, 85, 83, 34, 93, 125, 125]]]]
+        //Sent Binary Message: Node[description=iq, attributes={xmlns=encrypt, i
+        var contact = store().findContactByJid(contactJid);
+        if(contact.isPresent()){
+            return CompletableFuture.completedFuture(Optional.ofNullable(contact.get().chosenName()));
+        }
+
+        var query = new MexQueryRequest(List.of(new MexQueryRequest.User(contactJid.toJid().user())), List.of("STATUS"));
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Json.writeValueAsBytes(query)))
+                .thenApplyAsync(this::parseNameResponse);
+    }
+
+    private Optional<String> parseNameResponse(Node result) {
+        return result.findNode("result")
+                .flatMap(Node::contentAsString)
+                .map(json -> Json.readValue(json, MexQueryResult.class))
+                .map(MexQueryResult::data)
+                .map(String::valueOf);
     }
 
     /**
@@ -1013,7 +1044,7 @@ public class Whatsapp {
     }
 
     private ContactJid checkGroupParticipantJid(ContactJid jid, String errorMessage) {
-        Validate.isTrue(Objects.equals(jid.toWhatsappJid(), store().jid().toWhatsappJid()), errorMessage);
+        Validate.isTrue(!Objects.equals(jid.toWhatsappJid(), store().jid().toWhatsappJid()), errorMessage);
         return jid;
     }
 
@@ -1231,7 +1262,7 @@ public class Whatsapp {
         return Optional.ofNullable(result)
                 .flatMap(node -> node.findNode("error"))
                 .map(Node::toString)
-                .orElse("unknown");
+                .orElseGet(() -> Objects.toString(result));
     }
 
     /**

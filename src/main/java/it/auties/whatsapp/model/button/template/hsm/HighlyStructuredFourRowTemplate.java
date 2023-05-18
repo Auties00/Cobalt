@@ -100,13 +100,16 @@ public final class HighlyStructuredFourRowTemplate implements TemplateFormatter 
             IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
         }
         var builder = HighlyStructuredFourRowTemplate.builder().content(content).footer(footer).buttons(buttons);
-        switch (title){
-            case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);
-            case HighlyStructuredMessage highlyStructuredMessage -> builder.titleHighlyStructured(highlyStructuredMessage);
-            case ImageMessage imageMessage -> builder.titleImage(imageMessage);
-            case VideoMessage videoMessage -> builder.titleVideo(videoMessage);
-            case LocationMessage locationMessage -> builder.titleLocation(locationMessage);
-            case null -> {}
+        if (title instanceof DocumentMessage documentMessage) {
+            builder.titleDocument(documentMessage);
+        } else if (title instanceof HighlyStructuredMessage highlyStructuredMessage) {
+            builder.titleHighlyStructured(highlyStructuredMessage);
+        } else if (title instanceof ImageMessage imageMessage) {
+            builder.titleImage(imageMessage);
+        } else if (title instanceof VideoMessage videoMessage) {
+            builder.titleVideo(videoMessage);
+        } else if (title instanceof LocationMessage locationMessage) {
+            builder.titleLocation(locationMessage);
         }
         return builder.build();
     }

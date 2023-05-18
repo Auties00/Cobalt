@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import it.auties.map.SimpleMapModule;
 import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
@@ -25,7 +24,6 @@ public class Json {
     static {
         try {
             json = new ObjectMapper().registerModule(new Jdk8Module())
-                    .registerModule(new SimpleMapModule())
                     .registerModule(new JavaTimeModule())
                     .setSerializationInclusion(NON_DEFAULT)
                     .enable(FAIL_ON_EMPTY_BEANS)
@@ -38,6 +36,14 @@ public class Json {
             var logger = System.getLogger("Json");
             logger.log(ERROR, "An exception occurred while initializing json", throwable);
             throw new RuntimeException("Cannot initialize json", throwable);
+        }
+    }
+
+    public byte[] writeValueAsBytes(Object object){
+        try {
+            return json.writer().writeValueAsBytes(object);
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot write json", exception);
         }
     }
 

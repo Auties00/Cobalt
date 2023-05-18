@@ -111,13 +111,18 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
                 .footer(footer)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .buttons(requireNonNullElseGet(buttons, ArrayList::new));
-        switch (header){
-            case DocumentMessage documentMessage -> builder.headerDocument(documentMessage).headerType(HeaderType.DOCUMENT);
-            case ImageMessage imageMessage -> builder.headerImage(imageMessage).headerType(HeaderType.IMAGE);
-            case LocationMessage locationMessage -> builder.headerLocation(locationMessage).headerType(HeaderType.LOCATION);
-            case TextMessage textMessage -> builder.headerText(textMessage.text()).headerType(HeaderType.TEXT);
-            case VideoMessage videoMessage -> builder.headerVideo(videoMessage).headerType(HeaderType.VIDEO);
-            case null -> builder.headerType(HeaderType.EMPTY);
+        if (header instanceof DocumentMessage documentMessage) {
+            builder.headerDocument(documentMessage).headerType(HeaderType.DOCUMENT);
+        } else if (header instanceof ImageMessage imageMessage) {
+            builder.headerImage(imageMessage).headerType(HeaderType.IMAGE);
+        } else if (header instanceof LocationMessage locationMessage) {
+            builder.headerLocation(locationMessage).headerType(HeaderType.LOCATION);
+        } else if (header instanceof TextMessage textMessage) {
+            builder.headerText(textMessage.text()).headerType(HeaderType.TEXT);
+        } else if (header instanceof VideoMessage videoMessage) {
+            builder.headerVideo(videoMessage).headerType(HeaderType.VIDEO);
+        } else if (header == null) {
+            builder.headerType(HeaderType.EMPTY);
         }
         return builder.build();
     }

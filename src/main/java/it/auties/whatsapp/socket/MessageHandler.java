@@ -477,34 +477,48 @@ class MessageHandler {
     }
 
     private Map<String, Object> getButtonArgs(ButtonMessage buttonMessage) {
-        return switch (buttonMessage) {
-            case ListMessage listMessage -> Map.of(
-                    "v", 2,
-                    "type", listMessage.listType().name().toLowerCase()
-            );
-            default -> Map.of();
-        };
+        if (Objects.requireNonNull(buttonMessage) instanceof ListMessage listMessage) {
+            return Map.of("v", 2, "type", listMessage.listType().name().toLowerCase());
+        }else {
+            return Map.of();
+        }
     }
 
-    private String getMediaType(MessageContainer container){
-        return switch (container.content()){
-            case ImageMessage ignored -> "image";
-            case VideoMessage videoMessage -> videoMessage.gifPlayback() ? "gif" : "video";
-            case AudioMessage audioMessage -> audioMessage.voiceMessage() ? "ptt" : "audio";
-            case ContactMessage ignored -> "vcard";
-            case DocumentMessage ignored -> "document";
-            case ContactsArrayMessage ignored -> "contact_array";
-            case LiveLocationMessage ignored -> "livelocation";
-            case StickerMessage ignored -> "sticker";
-            case ListMessage ignored -> "list";
-            case ListResponseMessage ignored -> "list_response";
-            case ButtonsResponseMessage ignored -> "buttons_response";
-            case PaymentOrderMessage ignored -> "order";
-            case ProductMessage ignored -> "product";
-            case NativeFlowResponseMessage ignored -> "native_flow_response";
-            case ButtonsMessage buttonsMessage -> buttonsMessage.headerType().hasMedia() ? buttonsMessage.headerType().name().toLowerCase() : null;
-            default -> null;
-        };
+    private String getMediaType(MessageContainer container) {
+        var content = container.content();
+        if (content instanceof ImageMessage) {
+            return "image";
+        } else if (content instanceof VideoMessage videoMessage) {
+            return videoMessage.gifPlayback() ? "gif" : "video";
+        } else if (content instanceof AudioMessage audioMessage) {
+            return audioMessage.voiceMessage() ? "ptt" : "audio";
+        } else if (content instanceof ContactMessage) {
+            return "vcard";
+        } else if (content instanceof DocumentMessage) {
+            return "document";
+        } else if (content instanceof ContactsArrayMessage) {
+            return "contact_array";
+        } else if (content instanceof LiveLocationMessage) {
+            return "livelocation";
+        } else if (content instanceof StickerMessage) {
+            return "sticker";
+        } else if (content instanceof ListMessage) {
+            return "list";
+        } else if (content instanceof ListResponseMessage) {
+            return "list_response";
+        } else if (content instanceof ButtonsResponseMessage) {
+            return "buttons_response";
+        } else if (content instanceof PaymentOrderMessage) {
+            return "order";
+        } else if (content instanceof ProductMessage) {
+            return "product";
+        } else if (content instanceof NativeFlowResponseMessage) {
+            return "native_flow_response";
+        } else if (content instanceof ButtonsMessage buttonsMessage) {
+            return buttonsMessage.headerType().hasMedia() ? buttonsMessage.headerType().name().toLowerCase() : null;
+        } else {
+            return null;
+        }
     }
 
     private void decodeMessage(Node infoNode, Node messageNode, String businessName) {

@@ -132,11 +132,13 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
      * @return an optional
      */
     public Optional<String> contentAsString() {
-        return Optional.ofNullable(switch (content) {
-            case String string -> string;
-            case byte[] bytes -> new String(bytes, StandardCharsets.UTF_8);
-            case null, default -> null;
-        });
+        if (content instanceof String string) {
+            return Optional.of(string);
+        } else if (content instanceof byte[] bytes) {
+            return Optional.of(new String(bytes, StandardCharsets.UTF_8));
+        } else {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -175,11 +177,13 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
      */
     @SuppressWarnings("unused")
     public Optional<Boolean> contentAsBoolean() {
-        return Optional.ofNullable(switch (content) {
-            case String string -> Boolean.parseBoolean(string.toLowerCase(Locale.ROOT));
-            case byte[] bytes -> Boolean.parseBoolean(new String(bytes, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT));
-            case null, default -> null;
-        });
+        if (content instanceof String string) {
+            return Optional.of(Boolean.parseBoolean(string.toLowerCase(Locale.ROOT)));
+        } else if (content instanceof byte[] bytes) {
+            return Optional.of(Boolean.parseBoolean(new String(bytes, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT)));
+        } else {
+            return Optional.empty();
+        }
     }
 
     /**

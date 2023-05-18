@@ -51,9 +51,10 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
     public static BusinessLocalizableParameter of(String defaultValue, @NonNull BusinessLocalizableParameterValue parameter) {
         var builder = BusinessLocalizableParameter.builder()
                 .defaultValue(defaultValue);
-        switch (parameter){
-            case BusinessCurrency businessCurrency -> builder.parameterCurrency(businessCurrency);
-            case BusinessDateTime businessDateTime -> builder.parameterDateTime(businessDateTime);
+        if (parameter instanceof BusinessCurrency businessCurrency) {
+            builder.parameterCurrency(businessCurrency);
+        } else if (parameter instanceof BusinessDateTime businessDateTime) {
+            builder.parameterDateTime(businessDateTime);
         }
         return builder.build();
     }

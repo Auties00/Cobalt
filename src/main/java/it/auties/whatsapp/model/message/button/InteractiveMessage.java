@@ -88,11 +88,12 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
                 .body(InteractiveBody.of(body))
                 .footer(InteractiveFooter.of(footer))
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new));
-        switch (content){
-            case InteractiveShop interactiveShop -> builder.contentShop(interactiveShop);
-            case InteractiveCollection interactiveCollection -> builder.contentCollection(interactiveCollection);
-            case InteractiveNativeFlow interactiveNativeFlow -> builder.contentNativeFlow(interactiveNativeFlow);
-            case null -> {}
+        if (content instanceof InteractiveShop interactiveShop) {
+            builder.contentShop(interactiveShop);
+        } else if (content instanceof InteractiveCollection interactiveCollection) {
+            builder.contentCollection(interactiveCollection);
+        } else if (content instanceof InteractiveNativeFlow interactiveNativeFlow) {
+            builder.contentNativeFlow(interactiveNativeFlow);
         }
         return builder.build();
     }

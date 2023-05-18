@@ -128,53 +128,74 @@ public class ActionValueSync implements ProtobufMessage {
     @SuppressWarnings("PatternVariableHidesField")
     private ActionValueSync(@NonNull Action action) {
         this.timestamp = Clock.nowSeconds();
-        switch (action) {
-            case StarAction starAction -> this.starAction = starAction;
-            case ContactAction contactAction -> this.contactAction = contactAction;
-            case MuteAction muteAction -> this.muteAction = muteAction;
-            case PinAction pinAction -> this.pinAction = pinAction;
-            case QuickReplyAction quickReplyAction -> this.quickReplyAction = quickReplyAction;
-            case RecentStickerWeightsAction recentStickerWeightsAction ->
-                    this.recentStickerWeightsAction = recentStickerWeightsAction;
-            case RecentEmojiWeightsAction recentEmojiWeightsAction ->
-                    this.recentEmojiWeightsAction = recentEmojiWeightsAction;
-            case LabelEditAction labelEditAction -> this.labelEditAction = labelEditAction;
-            case LabelAssociationAction labelAssociationAction -> this.labelAssociationAction = labelAssociationAction;
-            case ArchiveChatAction archiveChatAction -> this.archiveChatAction = archiveChatAction;
-            case DeleteMessageForMeAction deleteMessageForMeAction ->
-                    this.deleteMessageForMeAction = deleteMessageForMeAction;
-            case MarkChatAsReadAction markChatAsReadAction -> this.markChatAsReadAction = markChatAsReadAction;
-            case ClearChatAction clearChatAction -> this.clearChatAction = clearChatAction;
-            case DeleteChatAction deleteChatAction -> this.deleteChatAction = deleteChatAction;
-            case FavoriteStickerAction favoriteStickerAction -> this.favoriteStickerAction = favoriteStickerAction;
-            case AndroidUnsupportedActions androidUnsupportedActions ->
-                    this.androidUnsupportedActions = androidUnsupportedActions;
-            case AgentAction agentAction -> this.agentAction = agentAction;
-            case ChatAssignmentAction chatAssignmentAction -> this.chatAssignmentAction = chatAssignmentAction;
-            case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction ->
-                    this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
-            case NuxAction nuxAction -> this.nuxAction = nuxAction;
-            case PrimaryVersionAction primaryVersionAction -> this.primaryVersionAction = primaryVersionAction;
-            case RemoveRecentStickerAction removeRecentStickerAction ->
-                    this.removeRecentStickerAction = removeRecentStickerAction;
-            case StickerAction stickerAction -> this.stickerAction = stickerAction;
-            case SubscriptionAction subscriptionAction -> this.subscriptionAction = subscriptionAction;
-            case TimeFormatAction timeFormatAction -> this.timeFormatAction = timeFormatAction;
-            case UserStatusMuteAction userStatusMuteAction -> this.userStatusMuteAction = userStatusMuteAction;
+        if (action instanceof StarAction starAction) {
+            this.starAction = starAction;
+        } else if (action instanceof ContactAction contactAction) {
+            this.contactAction = contactAction;
+        } else if (action instanceof MuteAction muteAction) {
+            this.muteAction = muteAction;
+        } else if (action instanceof PinAction pinAction) {
+            this.pinAction = pinAction;
+        } else if (action instanceof QuickReplyAction quickReplyAction) {
+            this.quickReplyAction = quickReplyAction;
+        } else if (action instanceof RecentStickerWeightsAction recentStickerWeightsAction) {
+            this.recentStickerWeightsAction = recentStickerWeightsAction;
+        } else if (action instanceof RecentEmojiWeightsAction recentEmojiWeightsAction) {
+            this.recentEmojiWeightsAction = recentEmojiWeightsAction;
+        } else if (action instanceof LabelEditAction labelEditAction) {
+            this.labelEditAction = labelEditAction;
+        } else if (action instanceof LabelAssociationAction labelAssociationAction) {
+            this.labelAssociationAction = labelAssociationAction;
+        } else if (action instanceof ArchiveChatAction archiveChatAction) {
+            this.archiveChatAction = archiveChatAction;
+        } else if (action instanceof DeleteMessageForMeAction deleteMessageForMeAction) {
+            this.deleteMessageForMeAction = deleteMessageForMeAction;
+        } else if (action instanceof MarkChatAsReadAction markChatAsReadAction) {
+            this.markChatAsReadAction = markChatAsReadAction;
+        } else if (action instanceof ClearChatAction clearChatAction) {
+            this.clearChatAction = clearChatAction;
+        } else if (action instanceof DeleteChatAction deleteChatAction) {
+            this.deleteChatAction = deleteChatAction;
+        } else if (action instanceof FavoriteStickerAction favoriteStickerAction) {
+            this.favoriteStickerAction = favoriteStickerAction;
+        } else if (action instanceof AndroidUnsupportedActions androidUnsupportedActions) {
+            this.androidUnsupportedActions = androidUnsupportedActions;
+        } else if (action instanceof AgentAction agentAction) {
+            this.agentAction = agentAction;
+        } else if (action instanceof ChatAssignmentAction chatAssignmentAction) {
+            this.chatAssignmentAction = chatAssignmentAction;
+        } else if (action instanceof ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction) {
+            this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
+        } else if (action instanceof NuxAction nuxAction) {
+            this.nuxAction = nuxAction;
+        } else if (action instanceof PrimaryVersionAction primaryVersionAction) {
+            this.primaryVersionAction = primaryVersionAction;
+        } else if (action instanceof RemoveRecentStickerAction removeRecentStickerAction) {
+            this.removeRecentStickerAction = removeRecentStickerAction;
+        } else if (action instanceof StickerAction stickerAction) {
+            this.stickerAction = stickerAction;
+        } else if (action instanceof SubscriptionAction subscriptionAction) {
+            this.subscriptionAction = subscriptionAction;
+        } else if (action instanceof TimeFormatAction timeFormatAction) {
+            this.timeFormatAction = timeFormatAction;
+        } else if (action instanceof UserStatusMuteAction userStatusMuteAction) {
+            this.userStatusMuteAction = userStatusMuteAction;
         }
     }
 
     @SuppressWarnings("PatternVariableHidesField")
     private ActionValueSync(@NonNull Setting setting) {
         this.timestamp = Clock.nowSeconds();
-        switch (setting) {
-            case SecurityNotificationSetting securityNotificationSetting ->
-                    this.securityNotificationSetting = securityNotificationSetting;
-            case PushNameSetting pushNameSetting -> this.pushNameSetting = pushNameSetting;
-            case LocaleSetting localeSetting -> this.localeSetting = localeSetting;
-            case UnarchiveChatsSetting unarchiveChatsSetting -> this.unarchiveChatsSetting = unarchiveChatsSetting;
-            default ->
-                    throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
+        if (setting instanceof SecurityNotificationSetting securityNotificationSetting) {
+            this.securityNotificationSetting = securityNotificationSetting;
+        } else if (setting instanceof PushNameSetting pushNameSetting) {
+            this.pushNameSetting = pushNameSetting;
+        } else if (setting instanceof LocaleSetting localeSetting) {
+            this.localeSetting = localeSetting;
+        } else if (setting instanceof UnarchiveChatsSetting unarchiveChatsSetting) {
+            this.unarchiveChatsSetting = unarchiveChatsSetting;
+        } else {
+            throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
         }
     }
 

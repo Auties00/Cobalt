@@ -105,19 +105,22 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
     private byte[] encryptMessage(Keys keys) {
         var encodedBody = body();
-        var body = switch (encodedBody) {
-            case byte[] bytes -> bytes;
-            case Node node -> {
-                var encoder = new Encoder();
-                yield encoder.encode(node);
-            }
-            default ->
-                    throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
-        };
+        var body = getBody(encodedBody);
         if (keys.writeKey() == null) {
             return body;
         }
         return AesGmc.encrypt(keys.writeCounter(true), body, keys.writeKey().toByteArray());
+    }
+
+    private byte[] getBody(Object encodedBody) {
+        if (encodedBody instanceof byte[] bytes) {
+            return bytes;
+        } else if (encodedBody instanceof Node node) {
+            var encoder = new Encoder();
+            return encoder.encode(node);
+        } else {
+            throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
+        }
     }
 
     private void onSendSuccess(Store store, boolean response) {

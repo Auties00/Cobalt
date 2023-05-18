@@ -121,11 +121,14 @@ public class Decoder {
     }
 
     private ContactJid readJidPair() {
-        return switch (read(true)) {
-            case String encoded -> ContactJid.of(encoded, Server.of(readString()));
-            case null -> ContactJid.ofServer(Server.of(readString()));
-            default -> throw new RuntimeException("Invalid jid type");
-        };
+        var read = read(true);
+        if (read instanceof String encoded) {
+            return ContactJid.of(encoded, Server.of(readString()));
+        } else if (read == null) {
+            return ContactJid.ofServer(Server.of(readString()));
+        } else {
+            throw new RuntimeException("Invalid jid type");
+        }
     }
 
     private ContactJid readCompanionJid() {
