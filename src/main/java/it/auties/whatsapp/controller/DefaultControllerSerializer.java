@@ -247,7 +247,10 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             }
 
             var link = getSession(store.clientType(), store.phoneNumber().toString());
-            Files.deleteIfExists(link);
+            if(Files.exists(link)){
+                return;
+            }
+
             var original = getSession(store.clientType(), store.uuid().toString());
             Files.createDirectories(original);
             Files.createSymbolicLink(link, original);
