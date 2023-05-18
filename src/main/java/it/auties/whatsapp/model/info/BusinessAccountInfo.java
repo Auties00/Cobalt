@@ -28,7 +28,7 @@ public final class BusinessAccountInfo implements Info, ProtobufMessage {
     private long facebookId;
 
     /**
-     * The account phone numberWithoutPrefix
+     * The account phone number
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String accountNumber;
