@@ -28,7 +28,7 @@ public class Hkdf {
 
     public byte[][] deriveSecrets(byte[] input, byte[] salt, byte[] info, int chunks) {
         Validate.isTrue(salt.length == KEY_LENGTH, "Incorrect salt codeLength: %s", salt.length);
-        Validate.isTrue(chunks >= 1 && chunks <= 3, "Incorrect numberWithoutPrefix of chunks: %s", chunks);
+        Validate.isTrue(chunks >= 1 && chunks <= 3, "Incorrect number of chunks: %s", chunks);
         var prk = Hmac.calculateSha256(input, salt);
         var result = Bytes.newBuffer(KEY_LENGTH).append(info).append(1).toByteArray();
         var signed = new byte[chunks][];

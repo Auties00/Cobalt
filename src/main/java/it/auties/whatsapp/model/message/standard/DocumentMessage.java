@@ -142,7 +142,7 @@ public final class DocumentMessage extends MediaMessage implements InteractiveHe
      * @param mimeType    the mime type of the new message, by default
      *                    {@link MediaMessageType#defaultMimeType()}
      * @param title       the title of the document that the new message wraps
-     * @param pageCount   the numberWithoutPrefix of pages of the document that the new message wraps
+     * @param pageCount   the number of pages of the document that the new message wraps
      * @param thumbnail   the thumbnail of the document that the new message wraps
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message

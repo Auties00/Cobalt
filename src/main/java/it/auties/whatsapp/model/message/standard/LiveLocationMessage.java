@@ -62,7 +62,7 @@ public final class LiveLocationMessage extends ContextualMessage {
     private String caption;
 
     /**
-     * This property probably refers to the numberWithoutPrefix of updates that this live location message.
+     * This property probably refers to the number of updates that this live location message.
      */
     @ProtobufProperty(index = 7, type = UINT64)
     private long sequenceNumber;

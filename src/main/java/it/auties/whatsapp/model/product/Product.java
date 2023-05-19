@@ -69,7 +69,7 @@ public class Product implements ProtobufMessage {
     private String url;
 
     /**
-     * The numberWithoutPrefix of images for this product
+     * The number of images for this product
      */
     @ProtobufProperty(index = 9, type = UINT32)
     private int productImageCount;

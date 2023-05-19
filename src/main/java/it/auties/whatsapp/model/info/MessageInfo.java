@@ -124,7 +124,7 @@ public final class MessageInfo implements Info, ProtobufMessage, MessageMetadata
     private boolean urlText;
 
     /**
-     * Url numberWithoutPrefix
+     * Url number
      */
     @ProtobufProperty(index = 23, type = BOOL)
     private boolean urlNumber;

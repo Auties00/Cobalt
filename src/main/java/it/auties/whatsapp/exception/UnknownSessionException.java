@@ -15,7 +15,7 @@ public class UnknownSessionException extends RuntimeException{
     }
 
     public UnknownSessionException(UUID uuid) {
-        super("Missing session for phone numberWithoutPrefix");
+        super("Missing session for phone number");
         this.uuid = uuid;
     }
 

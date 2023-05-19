@@ -67,7 +67,7 @@ public interface ControllerSerializer {
      * Serializes the keys
      *
      * @param type the non-null type of client
-     * @param phoneNumber the phone numberWithoutPrefix of the keys
+     * @param phoneNumber the phone number of the keys
      * @return a non-null keys
      */
     Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber);
@@ -85,13 +85,13 @@ public interface ControllerSerializer {
      * Serializes the store
      *
      * @param type        the non-null type of client
-     * @param phoneNumber the phone numberWithoutPrefix of the store
+     * @param phoneNumber the phone number of the store
      * @return a non-null store
      */
     Optional<Store> deserializeStore(@NonNull ClientType type, long phoneNumber);
 
     /**
-     * Creates a link between the session store and the phone numberWithoutPrefix
+     * Creates a link between the session store and the phone number
      * This may not be implemented
      *
      * @param store a non-null store

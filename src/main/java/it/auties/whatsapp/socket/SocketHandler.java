@@ -46,6 +46,7 @@ import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -56,6 +57,9 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
 public class SocketHandler implements SocketListener {
+    private static final Set<UUID> connectedUuids = ConcurrentHashMap.newKeySet();
+    private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
+
     private SocketSession session;
 
     @NonNull
@@ -91,6 +95,14 @@ public class SocketHandler implements SocketListener {
     private CompletableFuture<Void> logoutFuture;
 
     private ExecutorService listenersService;
+
+    public static boolean isConnected(@NonNull UUID uuid){
+        return connectedUuids.contains(uuid);
+    }
+
+    public static boolean isConnected(long phoneNumber){
+        return connectedPhoneNumbers.contains(phoneNumber);
+    }
 
     public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Store store, @NonNull Keys keys) {
         this.whatsapp = whatsapp;
@@ -134,7 +146,6 @@ public class SocketHandler implements SocketListener {
         }
         this.state = SocketState.WAITING;
         onSocketEvent(SocketEvent.OPEN);
-        authHandler.createHandshake();
         var clientHello = new ClientHello(keys.ephemeralKeyPair().publicKey());
         var handshakeMessage = new HandshakeMessage(clientHello);
         Request.of(handshakeMessage)
@@ -145,8 +156,9 @@ public class SocketHandler implements SocketListener {
     @Override
     public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
-            authHandler.loginSocket(session, message)
-                    .thenRunAsync(() -> state(SocketState.CONNECTED));
+            authHandler.login(session, message)
+                    .thenApplyAsync(result -> result ? state(SocketState.CONNECTED) : null)
+                    .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
             return;
         }
         if(keys.readKey() == null){
@@ -203,7 +215,15 @@ public class SocketHandler implements SocketListener {
 
         this.session = new SocketSession(store.proxy().orElse(null), store.socketExecutor());
         return session.connect(this)
+                .thenRunAsync(this::markConnected)
                 .thenCompose(ignored -> loginFuture);
+    }
+
+    protected void markConnected() {
+        connectedUuids.add(store.uuid());
+        if(store.phoneNumber() != null) {
+            connectedPhoneNumbers.add(store.phoneNumber().number());
+        }
     }
 
     public CompletableFuture<Void> loginFuture(){
@@ -599,6 +619,10 @@ public class SocketHandler implements SocketListener {
 
     protected void onDisconnected(DisconnectReason loggedOut) {
         if(loggedOut != DisconnectReason.RECONNECTING) {
+            connectedUuids.remove(store.uuid());
+            if(store.phoneNumber() != null) {
+                connectedPhoneNumbers.remove(store.phoneNumber().number());
+            }
             if(loginFuture != null && !loginFuture.isDone()){
                 loginFuture.complete(null);
             }
@@ -778,7 +802,6 @@ public class SocketHandler implements SocketListener {
 
     private void dispose() {
         onSocketEvent(SocketEvent.CLOSE);
-        authHandler.dispose();
         streamHandler.dispose();
         messageHandler.dispose();
         appStateHandler.dispose();

@@ -12,6 +12,7 @@ import it.auties.curve25519.Curve25519;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
+import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -42,6 +43,7 @@ import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage.ProtocolMessageType;
 import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType;
 import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
@@ -57,6 +59,7 @@ import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.HistorySyncNotification.Type;
+import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.util.*;
@@ -81,18 +84,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static it.auties.bytes.Bytes.ofRandom;
-import static it.auties.whatsapp.binary.PatchType.REGULAR_HIGH;
-import static it.auties.whatsapp.binary.PatchType.REGULAR_LOW;
-import static it.auties.whatsapp.model.contact.ContactJid.Server.BROADCAST;
-import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
-import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.NONE;
-import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.VIDEO;
-import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
-import static it.auties.whatsapp.util.Spec.Whatsapp.*;
-import static java.util.Objects.requireNonNullElse;
-import static java.util.Objects.requireNonNullElseGet;
-
 /**
  * A class used to interface a user to WhatsappWeb's WebSocket
  */
@@ -114,8 +105,27 @@ public class Whatsapp {
             return;
         }
 
-
         store().addListeners(ListenerScanner.scan(this));
+    }
+
+    /**
+     * Checks if a connection exists
+     *
+     * @param uuid the non-null uuid
+     * @return a boolean
+     */
+    public static boolean isConnected(@NonNull UUID uuid) {
+        return SocketHandler.isConnected(uuid);
+    }
+
+    /**
+     * Checks if a connection exists
+     *
+     * @param phoneNumber the non-null phone number
+     * @return a boolean
+     */
+    public static boolean isConnected(long phoneNumber) {
+        return SocketHandler.isConnected(phoneNumber);
     }
 
     /**
@@ -416,7 +426,7 @@ public class Whatsapp {
                 .key(key)
                 .message(message)
                 .timestampSeconds(Clock.nowSeconds())
-                .broadcast(chat.toJid().hasServer(BROADCAST))
+                .broadcast(chat.toJid().hasServer(Server.BROADCAST))
                 .build();
         return sendMessage(info);
     }
@@ -512,11 +522,11 @@ public class Whatsapp {
                 .map(LinkPreviewMedia::uri)
                 .orElse(null);
         textMessage.matchedText(uri);
-        textMessage.canonicalUrl(requireNonNullElse(videoUri, match.result().uri()).toString());
+        textMessage.canonicalUrl(Objects.requireNonNullElse(videoUri, match.result().uri()).toString());
         textMessage.thumbnail(Medias.download(imageUri).orElse(null));
         textMessage.description(match.result().siteDescription());
         textMessage.title(match.result().title());
-        textMessage.previewType(videoUri != null ? VIDEO : NONE);
+        textMessage.previewType(videoUri != null ? TextMessagePreviewType.VIDEO : TextMessagePreviewType.NONE);
     }
 
     private CompletableFuture<Void> attributeMediaMessage(MediaMessage mediaMessage) {
@@ -534,7 +544,7 @@ public class Whatsapp {
     }
 
     private void attributePollCreationMessage(MessageInfo info, PollCreationMessage pollCreationMessage) {
-        var pollEncryptionKey = requireNonNullElseGet(pollCreationMessage.encryptionKey(), KeyHelper::senderKey);
+        var pollEncryptionKey = Objects.requireNonNullElseGet(pollCreationMessage.encryptionKey(), KeyHelper::senderKey);
         pollCreationMessage.encryptionKey(pollEncryptionKey);
         info.messageSecret(pollEncryptionKey);
         info.message().deviceInfo().messageSecret(pollEncryptionKey);
@@ -546,7 +556,7 @@ public class Whatsapp {
         if (pollUpdateMessage.encryptedMetadata() != null) {
             return;
         }
-        var iv = ofRandom(12).toByteArray();
+        var iv = Bytes.ofRandom(12).toByteArray();
         var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(), store().jid().toWhatsappJid());
         var encryptedOptions = pollUpdateMessage.votes().stream().map(entry -> Sha256.calculate(entry.name())).toList();
         var pollUpdateEncryptedOptions = Protobuf.writeMessage(PollUpdateEncryptedOptions.of(encryptedOptions));
@@ -615,7 +625,7 @@ public class Whatsapp {
                 .text(groupInviteMessage.caption() != null ? "%s: %s".formatted(groupInviteMessage.caption(), url) : url)
                 .description("WhatsApp Group Invite")
                 .title(groupInviteMessage.groupName())
-                .previewType(NONE)
+                .previewType(TextMessagePreviewType.NONE)
                 .thumbnail(Medias.download(preview).orElse(null))
                 .matchedText(url)
                 .canonicalUrl(url)
@@ -634,7 +644,7 @@ public class Whatsapp {
         var range = createRange(chat, false);
         var markAction = MarkChatAsReadAction.of(read, range);
         var syncAction = ActionValueSync.of(markAction);
-        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid().toString());
+        var request = PatchRequest.of(PatchType.REGULAR_LOW, syncAction, Operation.SET, 3, chat.toJid().toString());
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -772,7 +782,7 @@ public class Whatsapp {
     }
 
     /**
-     * Executes a query to determine whether any numberWithoutPrefix of users have an account on Whatsapp
+     * Executes a query to determine whether any number of users have an account on Whatsapp
      *
      * @param contacts the contacts to check
      * @return a CompletableFuture that wraps a non-null map
@@ -807,8 +817,6 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<String>> queryName(@NonNull ContactJidProvider contactJid) {
-        // Node[description=iq, attributes={xmlns=w:mex, id=35054.39324-378, to=s.whatsapp.net, type=get}, content=[Node[description=query, content=[123, 34, 113, 117, 101, 114, 121, 73, 100, 34, 58, 34, 54, 52, 50, 48, 52, 53, 51, 52, 55, 52, 54, 51, 51, 54, 50, 52, 34, 44, 34, 118, 97, 114, 105, 97, 98, 108, 101, 115, 34, 58, 123, 34, 117, 115, 101, 114, 115, 34, 58, 91, 123, 34, 117, 115, 101, 114, 95, 105, 100, 34, 58, 34, 51, 57, 51, 51, 57, 54, 49, 51, 57, 56, 52, 54, 34, 125, 93, 44, 34, 117, 112, 100, 97, 116, 101, 115, 34, 58, 91, 34, 83, 84, 65, 84, 85, 83, 34, 93, 125, 125]]]]
-        //Sent Binary Message: Node[description=iq, attributes={xmlns=encrypt, i
         var contact = store().findContactByJid(contactJid);
         if(contact.isPresent()){
             return CompletableFuture.completedFuture(Optional.ofNullable(contact.get().chosenName()));
@@ -990,7 +998,7 @@ public class Whatsapp {
     }
 
     /**
-     * Promotes any numberWithoutPrefix of contacts to admin in a group
+     * Promotes any number of contacts to admin in a group
      *
      * @param group    the target group
      * @param contacts the target contacts
@@ -1001,7 +1009,7 @@ public class Whatsapp {
     }
 
     /**
-     * Demotes any numberWithoutPrefix of contacts to admin in a group
+     * Demotes any number of contacts to admin in a group
      *
      * @param group    the target group
      * @param contacts the target contacts
@@ -1012,7 +1020,7 @@ public class Whatsapp {
     }
 
     /**
-     * Adds any numberWithoutPrefix of contacts to a group
+     * Adds any number of contacts to a group
      *
      * @param group    the target group
      * @param contacts the target contact/s
@@ -1023,7 +1031,7 @@ public class Whatsapp {
     }
 
     /**
-     * Removes any numberWithoutPrefix of contacts from group
+     * Removes any number of contacts from group
      *
      * @param group    the target group
      * @param contacts the target contact/s
@@ -1250,7 +1258,7 @@ public class Whatsapp {
         Arrays.stream(contacts)
                 .map(contact -> Node.ofAttributes("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
                 .forEach(children::add);
-        var body = Node.ofChildren("create", Map.of("subject", subject, "key", ofRandom(12).toHex()), children);
+        var body = Node.ofChildren("create", Map.of("subject", subject, "key", Bytes.ofRandom(12).toHex()), children);
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
@@ -1294,7 +1302,7 @@ public class Whatsapp {
     }
 
     /**
-     * Links any numberWithoutPrefix of groups to a community
+     * Links any number of groups to a community
      *
      * @param community the non-null community where the groups will be added
      * @param groups the non-null groups to add
@@ -1371,7 +1379,7 @@ public class Whatsapp {
 
         var muteAction = MuteAction.of(true, mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ? mute.endTimeStamp() * 1000L : mute.endTimeStamp(), false);
         var syncAction = ActionValueSync.of(muteAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
+        var request = PatchRequest.of(PatchType.REGULAR_HIGH, syncAction, Operation.SET, 2, chat.toJid().toString());
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1391,7 +1399,7 @@ public class Whatsapp {
 
         var muteAction = MuteAction.of(false, null, false);
         var syncAction = ActionValueSync.of(muteAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
+        var request = PatchRequest.of(PatchType.REGULAR_HIGH, syncAction, Operation.SET, 2, chat.toJid().toString());
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1498,7 +1506,7 @@ public class Whatsapp {
 
         var pinAction = PinAction.of(pin);
         var syncAction = ActionValueSync.of(pinAction);
-        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 5, chat.toJid().toString());
+        var request = PatchRequest.of(PatchType.REGULAR_LOW, syncAction, Operation.SET, 5, chat.toJid().toString());
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1521,7 +1529,7 @@ public class Whatsapp {
 
         var starAction = StarAction.of(star);
         var syncAction = ActionValueSync.of(starAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
+        var request = PatchRequest.of(PatchType.REGULAR_HIGH, syncAction, Operation.SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
     }
@@ -1531,7 +1539,7 @@ public class Whatsapp {
     }
 
     private String participantToFlag(MessageInfo info) {
-        return info.chatJid().hasServer(GROUP) && !info.fromMe() ? info.senderJid().toString() : "0";
+        return info.chatJid().hasServer(Server.GROUP) && !info.fromMe() ? info.senderJid().toString() : "0";
     }
 
     private String booleanToInt(boolean keepStarredMessages) {
@@ -1569,7 +1577,7 @@ public class Whatsapp {
         var range = createRange(chat, false);
         var archiveAction = ArchiveChatAction.of(archive, range);
         var syncAction = ActionValueSync.of(archiveAction);
-        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid().toString());
+        var request = PatchRequest.of(PatchType.REGULAR_LOW, syncAction, Operation.SET, 3, chat.toJid().toString());
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1597,7 +1605,7 @@ public class Whatsapp {
                     .protocolType(ProtocolMessage.ProtocolMessageType.REVOKE)
                     .key(info.key())
                     .build();
-            var sender = info.chat().toJid().hasServer(GROUP) ? store().jid() : null;
+            var sender = info.chat().toJid().hasServer(Server.GROUP) ? store().jid() : null;
             var key = MessageKey.builder().chatJid(info.chatJid()).fromMe(true).senderJid(sender).build();
             var revokeInfo = MessageInfo.builder()
                     .senderJid(sender)
@@ -1621,7 +1629,7 @@ public class Whatsapp {
         var range = createRange(info.chatJid(), false);
         var deleteMessageAction = DeleteMessageForMeAction.of(false, info.timestampSeconds());
         var syncAction = ActionValueSync.of(deleteMessageAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
+        var request = PatchRequest.of(PatchType.REGULAR_HIGH, syncAction, Operation.SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
     }
@@ -1643,7 +1651,7 @@ public class Whatsapp {
         var range = createRange(chat.toJid(), false);
         var deleteChatAction = DeleteChatAction.of(range);
         var syncAction = ActionValueSync.of(deleteChatAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid().toString(), "1");
+        var request = PatchRequest.of(PatchType.REGULAR_HIGH, syncAction, Operation.SET, 6, chat.toJid().toString(), "1");
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1667,7 +1675,7 @@ public class Whatsapp {
         var range = createRange(chat.toJid(), true);
         var clearChatAction = ClearChatAction.of(range);
         var syncAction = ActionValueSync.of(clearChatAction);
-        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
+        var request = PatchRequest.of(PatchType.REGULAR_HIGH, syncAction, Operation.SET, 6, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1682,7 +1690,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<String> changeBusinessAttribute(String key, String value) {
-        return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.of(key, requireNonNullElse(value, "").getBytes(StandardCharsets.UTF_8))))
+        return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.of(key, Objects.requireNonNullElse(value, "").getBytes(StandardCharsets.UTF_8))))
                 .thenAcceptAsync(result -> checkBusinessAttributeConflict(key, value, result))
                 .thenApplyAsync(ignored -> value);
     }
@@ -1771,7 +1779,7 @@ public class Whatsapp {
     /**
      * Query the catalog of this business
      *
-     * @param productsLimit the maximum numberWithoutPrefix of products to query
+     * @param productsLimit the maximum number of products to query
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(int productsLimit) {
@@ -1782,7 +1790,7 @@ public class Whatsapp {
      * Query the catalog of a business
      *
      * @param contact       the business
-     * @param productsLimit the maximum numberWithoutPrefix of products to query
+     * @param productsLimit the maximum number of products to query
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(@NonNull ContactJidProvider contact, int productsLimit) {
@@ -1823,7 +1831,7 @@ public class Whatsapp {
     /**
      * Query the collections of this business
      *
-     * @param collectionsLimit the maximum numberWithoutPrefix of collections to query
+     * @param collectionsLimit the maximum number of collections to query
      * @return a CompletableFuture
      */
     public CompletableFuture<?> queryBusinessCollections(int collectionsLimit) {
@@ -1834,7 +1842,7 @@ public class Whatsapp {
      * Query the collections of a business
      *
      * @param contact          the business
-     * @param collectionsLimit the maximum numberWithoutPrefix of collections to query
+     * @param collectionsLimit the maximum number of collections to query
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCollectionEntry>> queryBusinessCollections(@NonNull ContactJidProvider contact, int collectionsLimit) {
@@ -1956,8 +1964,8 @@ public class Whatsapp {
      */
     public CompletableFuture<GroupMetadata> createCommunity(@NonNull String subject, String body) {
         var entry = Node.ofChildren("create", Map.of("subject", subject), Node.ofChildren("description", Map.of("id", socketHandler.store()
-                .nextTag()), Node.of("body", requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))), Node.ofAttributes("parent", Map.of("default_membership_approval_mode", "request_required")));
-        return socketHandler.sendQuery(GROUP.toJid(), "set", "w:g2", entry)
+                .nextTag()), Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))), Node.ofAttributes("parent", Map.of("default_membership_approval_mode", "request_required")));
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", entry)
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
                         .orElseThrow(() -> new NoSuchElementException("Missing community response, something went wrong: %s".formatted(findErrorNode(response)))))
@@ -2014,7 +2022,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<CompanionLinkResult> linkCompanion(@NonNull String qrCodeData){
-        if(store().linkedDevices().size() > MAX_COMPANIONS){
+        if(store().linkedDevices().size() > Spec.Whatsapp.MAX_COMPANIONS){
             return CompletableFuture.completedFuture(CompanionLinkResult.MAX_DEVICES_ERROR);
         }
 
@@ -2031,7 +2039,7 @@ public class Whatsapp {
                 .timestamp(timestamp)
                 .build();
         var deviceIdentityBytes = Protobuf.writeMessage(deviceIdentity);
-        var accountSignatureMessage = Bytes.of(ACCOUNT_SIGNATURE_HEADER)
+        var accountSignatureMessage = Bytes.of(Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER)
                 .append(deviceIdentityBytes)
                 .append(advIdentity)
                 .toByteArray();
@@ -2057,7 +2065,7 @@ public class Whatsapp {
                 .validIndexes(knownDevices)
                 .build();
         var keyIndexListBytes = Protobuf.writeMessage(keyIndexList);
-        var deviceSignatureMessage = Bytes.of(DEVICE_MOBILE_SIGNATURE_HEADER)
+        var deviceSignatureMessage = Bytes.of(Spec.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER)
                 .append(keyIndexListBytes)
                 .toByteArray();
         var keyAccountSignature = Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true);

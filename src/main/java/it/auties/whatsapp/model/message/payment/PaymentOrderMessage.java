@@ -42,7 +42,7 @@ public final class PaymentOrderMessage extends ContextualMessage implements Paym
     private byte[] thumbnail;
 
     /**
-     * The total numberWithoutPrefix of items that was ordered
+     * The total number of items that was ordered
      */
     @ProtobufProperty(index = 3, type = UINT32)
     private int itemCount;

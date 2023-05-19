@@ -208,7 +208,7 @@ public final class Keys extends Controller<Keys> {
      * Returns the keys saved in memory or constructs a new clean instance
      *
      * @param uuid       the non-null uuid of the session
-     * @param phoneNumber the phone numberWithoutPrefix of the session to load, can be null
+     * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType the non-null type of the client
      * @param required   whether an exception should be thrown if the connection doesn't exist
      * @return a non-null store
@@ -221,7 +221,7 @@ public final class Keys extends Controller<Keys> {
      * Returns the keys saved in memory or constructs a new clean instance
      *
      * @param uuid       the non-null uuid of the session
-     * @param phoneNumber the phone numberWithoutPrefix of the session to load, can be null
+     * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType the non-null type of the client
      * @param serializer the non-null serializer
      * @param required   whether an exception should be thrown if the connection doesn't exist

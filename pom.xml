@@ -171,7 +171,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>2.0</protoc.version>
+        <protoc.version>2.0.1</protoc.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.9.0</junit.version>
         <jna.version>5.12.1</jna.version>
@@ -190,7 +190,6 @@
         <libphonenumber.version>8.13.7</libphonenumber.version>
         <pdfbox.version>2.0.27</pdfbox.version>
         <poi.version>5.2.3</poi.version>
-        <protobuf.plugin.version>2.0</protobuf.plugin.version>
         <delombok.plugin.version>1.18.24.1</delombok.plugin.version>
         <delombok.input>${project.basedir}/src/main/java</delombok.input>
         <delombok.output>${project.build.directory}/delombok</delombok.output>
@@ -202,7 +201,7 @@
             <plugin>
                 <groupId>com.github.auties00</groupId>
                 <artifactId>protobuf-serialization-plugin</artifactId>
-                <version>${protobuf.plugin.version}</version>
+                <version>${protoc.version}</version>
                 <executions>
                     <execution>
                         <id>protobuf</id>

@@ -71,10 +71,10 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
     }
 
     /**
-     * Creates a new connection using a supplied phone numberWithoutPrefix
+     * Creates a new connection using a supplied phone number
      * If a connection was serialized in the past with that uuid, it will be retrieved, otherwise a {@link it.auties.whatsapp.exception.UnknownSessionException} will be thrown
      *
-     * @param phoneNumber the non-null phone numberWithoutPrefix
+     * @param phoneNumber the non-null phone number
      * @return a non-null options selector
      */
     public T knownConnection(long phoneNumber) {

@@ -8,6 +8,8 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+// TODO: Write a custom implementation of Socket that supports a custom proxy
+// It could take a while
 public class ProxyAuthenticator extends Authenticator {
     private final static Map<String, URI> credentials;
 

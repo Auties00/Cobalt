@@ -19,11 +19,11 @@ public enum VerificationCodeMethod {
      */
     NONE("none"),
     /**
-     * An SMS containing the code will be sent to the associated phone numberWithoutPrefix
+     * An SMS containing the code will be sent to the associated phone number
      */
     SMS("sms"),
     /**
-     * A call will be received from the associated phone numberWithoutPrefix
+     * A call will be received from the associated phone number
      */
     CALL("voice");
 

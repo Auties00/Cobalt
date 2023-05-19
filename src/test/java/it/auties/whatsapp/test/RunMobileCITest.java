@@ -61,7 +61,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 // IMPORTANT !!!!
-// If you run this CI on a brand-new numberWithoutPrefix it will 99% ban it because it adds a person to a group which is considered spam
+// If you run this CI on a brand-new number it will 99% ban it because it adds a person to a group which is considered spam
 // I repeat: DO NOT RUN THIS CI LOCALLY ON A BRAND-NEW NUMBER OR IT WILL GET BANNED
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)

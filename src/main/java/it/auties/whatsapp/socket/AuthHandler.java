@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
+import it.auties.protobuf.base.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.Handshake;
@@ -14,52 +15,68 @@ import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Spec;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
 class AuthHandler {
     private final SocketHandler socketHandler;
-    private Handshake handshake;
 
-    protected void createHandshake() {
-        this.handshake = new Handshake(socketHandler.keys());
-        handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
-    }
-
-    protected CompletableFuture<Void> loginSocket(SocketSession session, byte[] message) {
+    protected CompletableFuture<Boolean> login(SocketSession session, byte[] message) {
         try {
-            var serverHello = Protobuf.readMessage(message, HandshakeMessage.class).serverHello();
-            handshake.updateHash(serverHello.ephemeral());
-            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
+            var serverHello = readHandshake(message);
+            if(serverHello.isEmpty()){
+                return CompletableFuture.completedFuture(false);
+            }
+
+            var handshake = new Handshake(socketHandler.keys());
+            handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
+            handshake.updateHash(serverHello.get().ephemeral());
+            var sharedEphemeral = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys()
                     .ephemeralKeyPair()
                     .privateKey());
             handshake.mixIntoKey(sharedEphemeral);
-            var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
+            var decodedStaticText = handshake.cipher(serverHello.get().staticText(), false);
             var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys()
                     .ephemeralKeyPair()
                     .privateKey());
             handshake.mixIntoKey(sharedStatic);
-            handshake.cipher(serverHello.payload(), false);
+            handshake.cipher(serverHello.get().payload(), false);
             var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
-            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
+            var sharedPrivate = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys()
                     .noiseKeyPair()
                     .privateKey());
             handshake.mixIntoKey(sharedPrivate);
-            return createUserPayload().thenApplyAsync(userPayload -> createHandshakeMessage(encodedKey, userPayload))
-                    .thenComposeAsync(handshakeMessage -> sendHandshake(session, handshakeMessage));
+            return createUserPayload()
+                    .thenApplyAsync(userPayload -> createHandshakeMessage(handshake, encodedKey, userPayload))
+                    .thenComposeAsync(result -> sendHandshake(session, handshake, result));
         }catch (Throwable throwable){
             return CompletableFuture.failedFuture(throwable);
         }
     }
 
-    private CompletableFuture<Void> sendHandshake(SocketSession session, HandshakeMessage handshakeMessage) {
-        return Request.of(handshakeMessage)
-                .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
-                .thenRunAsync(socketHandler.keys()::clearReadWriteKey)
-                .thenRunAsync(handshake::finish);
+    private Optional<ServerHello> readHandshake(byte[] message) {
+        try {
+            var handshakeMessage = Protobuf.readMessage(message, HandshakeMessage.class);
+            return Optional.ofNullable(handshakeMessage.serverHello());
+        }catch (ProtobufDeserializationException exception){
+            return Optional.empty();
+        }
     }
 
-    private HandshakeMessage createHandshakeMessage(byte[] encodedKey, byte[] userPayload) {
+    private CompletableFuture<Boolean> sendHandshake(SocketSession session, Handshake handshake, HandshakeMessage handshakeMessage) {
+        return Request.of(handshakeMessage)
+                .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
+                .thenApplyAsync(result -> onHandshakeSent(handshake));
+    }
+
+    private boolean onHandshakeSent(Handshake handshake) {
+        socketHandler.keys().clearReadWriteKey();
+        handshake.finish();
+        return true;
+    }
+
+    private HandshakeMessage createHandshakeMessage(Handshake handshake, byte[] encodedKey, byte[] userPayload) {
         var encodedPayload = handshake.cipher(userPayload, true);
         var clientFinish = new ClientFinish(encodedKey, encodedPayload);
         return new HandshakeMessage(clientFinish);
@@ -166,9 +183,5 @@ class AuthHandler {
                 .platformType(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
                 .requireFullSync(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED)
                 .build();
-    }
-
-    protected void dispose() {
-        handshake = null;
     }
 }

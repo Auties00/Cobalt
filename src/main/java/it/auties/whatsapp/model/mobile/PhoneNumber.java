@@ -17,15 +17,19 @@ public record PhoneNumber(@NonNull CountryCode countryCode, long numberWithoutPr
         return Optional.of(PhoneNumber.of(phoneNumber));
     }
 
+    public static PhoneNumber of(String phoneNumber) {
+        return of(Long.parseLong(phoneNumber));
+    }
+
     @JsonCreator
     public static PhoneNumber of(long phoneNumber) {
         try {
             var parsed = PhoneNumberUtil.getInstance().parse("+%s".formatted(phoneNumber), null);
             return CountryCode.ofPrefix(String.valueOf(parsed.getCountryCode()))
                     .map(countryCode -> new PhoneNumber(countryCode, parsed.getNationalNumber()))
-                    .orElseThrow(() -> new IllegalArgumentException("Cannot parse phone numberWithoutPrefix %s".formatted(phoneNumber)));
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot parse phone number %s".formatted(phoneNumber)));
         } catch (NumberFormatException | NumberParseException exception) {
-            throw new IllegalArgumentException("Cannot parse phone numberWithoutPrefix %s".formatted(phoneNumber), exception);
+            throw new IllegalArgumentException("Cannot parse phone number %s".formatted(phoneNumber), exception);
         }
     }
 

@@ -298,7 +298,7 @@ public class MessageContainer implements ProtobufMessage {
     private FutureMessageContainer documentWithCaptionMessage;
 
     /**
-     * Request phone numberWithoutPrefix
+     * Request phone number
      */
     @ProtobufProperty(index = 54, name = "requestPhoneNumberMessage", type = MESSAGE)
     private RequestPhoneNumberMessage requestPhoneNumberMessage;

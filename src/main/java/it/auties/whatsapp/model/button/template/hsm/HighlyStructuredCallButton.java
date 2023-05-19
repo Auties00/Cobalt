@@ -26,7 +26,7 @@ public final class HighlyStructuredCallButton implements HighlyStructuredButton 
     private HighlyStructuredMessage text;
 
     /**
-     * The phone numberWithoutPrefix
+     * The phone number
      */
     @ProtobufProperty(index = 2, type = MESSAGE)
     private HighlyStructuredMessage phoneNumber;

@@ -12,7 +12,7 @@ public enum ClientType {
     WEB_CLIENT,
 
     /**
-     * A standalone client that requires an SMS code sent to the companion's phone numberWithoutPrefix on log-in
+     * A standalone client that requires an SMS code sent to the companion's phone number on log-in
      * Reversed from <a href="https://github.com/tgalal/yowsup/issues/2910">KaiOS Mobile App</a>
      */
     APP_CLIENT

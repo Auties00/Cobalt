@@ -42,7 +42,7 @@ public class Version implements ProtobufMessage {
     @JsonCreator
     public Version(@NonNull String version) {
         var tokens = version.split("\\.", 5);
-        Validate.isTrue(tokens.length <= 5, "Invalid numberWithoutPrefix of tokens for version %s: %s", version, tokens);
+        Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s", version, tokens);
         if (tokens.length > 0) {
             this.primary = parseInt(tokens[0]);
         }
