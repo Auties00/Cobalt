@@ -10,11 +10,10 @@ import java.util.concurrent.CompletableFuture;
 public class MobileTest {
     @Test
     public void run() {
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         Whatsapp.mobileBuilder()
                 .lastConnection()
                 .unregistered()
-                .register(393495089819L, VerificationCodeMethod.CALL,  MobileTest::onScanCode)
+                .register(393495089819L, VerificationCodeMethod.SMS,  MobileTest::onScanCode)
                 .join()
                 .addLoggedInListener(MobileTest::onConnected)
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

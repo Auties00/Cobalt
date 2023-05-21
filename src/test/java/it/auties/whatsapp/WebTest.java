@@ -5,7 +5,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import org.junit.jupiter.api.Test;
 
-// Just used for testing locally
+ // Just used for testing locally
 public class WebTest {
     @Test
     public void run() {

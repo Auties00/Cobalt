@@ -8,6 +8,7 @@ import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;
 import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.CertificateMeta;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -20,6 +21,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.Security;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HexFormat;
@@ -29,6 +31,10 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 @UtilityClass
 public class MetadataHelper {
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     // TODO: This is temporary
     private final String IOS_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM4174c0243f5277a5d7720ce842cc4ae6";
 
@@ -104,7 +110,7 @@ public class MetadataHelper {
                         .map(CertificateMeta::getData)
                         .toList();
                 var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
-                var secretKey = getSecretKey(apkFile.getFileData("res/drawable-hdpi-v4/about_logo.png"));
+                var secretKey = getSecretKey(apkFile.getFileData("res/drawable-hdpi/about_logo.png"));
                 var version = new Version(apkFile.getApkMeta().getVersionName());
                 return cachedApk = new WhatsappApk(version, md5Hash, secretKey, certificates);
             }

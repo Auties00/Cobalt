@@ -136,7 +136,7 @@ public final class Keys extends Controller<Keys> {
      */
     @Getter
     @Default
-    private String identityId = KeyHelper.identityId();
+    private String recoveryToken = KeyHelper.identityId();
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process

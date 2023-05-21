@@ -26,7 +26,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     private MobileOptionsBuilder osType(@NonNull UserAgentPlatform osType){
-        store.osType(osType);
+        store.os(osType);
         return this;
     }
 

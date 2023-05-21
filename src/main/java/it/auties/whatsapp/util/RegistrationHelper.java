@@ -6,10 +6,9 @@ import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.request.Attributes;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
+import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -19,20 +18,16 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.security.Security;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @UtilityClass
 public class RegistrationHelper {
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     public CompletableFuture<Void> registerPhoneNumber(Store store, Keys keys, Supplier<CompletableFuture<String>> handler, VerificationCodeMethod method) {
         if (method == VerificationCodeMethod.NONE) {
             return sendVerificationCode(store, keys, handler);
@@ -105,21 +100,36 @@ public class RegistrationHelper {
                     .GET()
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .header("User-Agent", userAgent)
+                    .header("WaMsysRequest", "1")
+                    .header("request_token", UUID.randomUUID().toString())
                     .build();
+            System.out.println(params);
             return client.sendAsync(request, BodyHandlers.ofString());
         });
     }
 
     private CompletableFuture<String> getUserAgent(Store store) {
         return store.version()
-                .thenApplyAsync(version -> "WhatsApp/%s %s/%s Device/%s-%s".formatted(version, getMobileOsName(store.osType()), store.osVersion(), store.manufacturer(), store.model()));
+                .thenApplyAsync(version -> getUserAgent(store, version));
     }
 
-    private Object getMobileOsName(UserAgentPlatform platform) {
-        return switch (platform) {
+    private String getUserAgent(Store store, Version version) {
+        var osName = getMobileOsName(store);
+        var osVersion = store.osVersion();
+        var manufacturer = store.manufacturer();
+        var model = store.model();
+        return "WhatsApp/%s %s/%s Device/%s-%s".formatted(version, osName, osVersion, manufacturer, model);
+    }
+
+    private String getMobileOsName(Store store) {
+        if (store.business()) {
+            return "SMBA";
+        }
+
+        return switch (store.os()) {
             case ANDROID -> "Android";
             case IOS -> "iOS";
-            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
+            default -> throw new IllegalStateException("Unsupported mobile os: " + store.os());
         };
     }
 
@@ -134,17 +144,18 @@ public class RegistrationHelper {
 
     @SafeVarargs
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
-        return MetadataHelper.getToken(store.phoneNumber().numberWithoutPrefix(), store.osType())
+        return MetadataHelper.getToken(store.phoneNumber().numberWithoutPrefix(), store.os())
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 
+    // TODO: Add backup token, locale and language
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().countryCode().prefix())
                 .put("in", store.phoneNumber().numberWithoutPrefix())
                 .put("rc", store.releaseChannel().index())
                 .put("lg", "en")
-                .put("lc", "GB")
+                .put("lc", "GB") // Locale
                 .put("mistyped", "6")
                 .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
                 .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
@@ -159,7 +170,7 @@ public class RegistrationHelper {
                 .put("simnum", "1")
                 .put("hasinrc", "1")
                 .put("pid", ProcessHandle.current().pid())
-                .put("id", keys.identityId())
+                .put("id", keys.recoveryToken())
                 .put("token", token)
                 .toMap();
     }

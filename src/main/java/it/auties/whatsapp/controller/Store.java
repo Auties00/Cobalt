@@ -346,7 +346,7 @@ public final class Store extends Controller<Store> {
     @Getter
     @Setter
     @NonNull
-    private UserAgentPlatform osType;
+    private UserAgentPlatform os;
 
     /**
      * The operating system's version of the associated companion
@@ -435,7 +435,7 @@ public final class Store extends Controller<Store> {
                 .serializer(serializer)
                 .clientType(clientType)
                 .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
-                .osType(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE)
+                .os(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE)
                 .osVersion(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_VERSION : Spec.Whatsapp.DEFAULT_MOBILE_OS_VERSION)
                 .model(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MODEL : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MODEL)
                 .manufacturer(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
@@ -1145,7 +1145,7 @@ public final class Store extends Controller<Store> {
     public CompletableFuture<Version> version(){
         return switch (clientType){
             case WEB_CLIENT -> MetadataHelper.getWebVersion();
-            case APP_CLIENT -> MetadataHelper.getMobileVersion(osType);
+            case APP_CLIENT -> MetadataHelper.getMobileVersion(os);
         };
     }
 

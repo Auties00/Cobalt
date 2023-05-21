@@ -10,6 +10,7 @@ import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
 import it.auties.whatsapp.model.signal.auth.Companion.CompanionPropsPlatformType;
 import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMethod;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Spec;
@@ -113,11 +114,23 @@ class AuthHandler {
                 .device(mobile ? socketHandler.store().model() : null)
                 .manufacturer(mobile ? socketHandler.store().manufacturer() : null)
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
-                .platform(socketHandler.store().osType())
+                .platform(getPlatform())
                 .releaseChannel(socketHandler.store().releaseChannel())
                 .mcc("000")
                 .mnc("000")
                 .build();
+    }
+
+    private UserAgentPlatform getPlatform() {
+        if(!socketHandler.store().business()){
+            return socketHandler.store().os();
+        }
+
+        return switch (socketHandler.store().os()){
+            case ANDROID -> UserAgentPlatform.SMB_ANDROID;
+            case IOS -> UserAgentPlatform.SMB_IOS;
+            default -> throw new IllegalStateException("Unexpected platform: " + socketHandler.store().os());
+        };
     }
 
     private CompletableFuture<ClientPayload> finishUserPayload(ClientPayloadBuilder builder) {
