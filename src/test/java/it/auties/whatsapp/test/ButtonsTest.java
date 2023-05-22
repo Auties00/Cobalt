@@ -68,7 +68,7 @@ public class ButtonsTest implements Listener {
             return;
         }
         loadConfig();
-        future = api.connect().thenComposeAsync(Whatsapp::onDisconnected);
+        future = api.connectAndAwait();
         latch.await();
     }
 

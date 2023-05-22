@@ -170,6 +170,16 @@ public class Whatsapp {
     }
 
     /**
+     * Connects to Whatsapp
+     *
+     * @return a future
+     */
+    public CompletableFuture<Void> connectAndAwait(){
+        return socketHandler.connect()
+                .thenCompose(ignored -> socketHandler.logoutFuture());
+    }
+
+    /**
      * Returns whether the connection is active or not
      *
      * @return a boolean
@@ -197,15 +207,6 @@ public class Whatsapp {
     }
 
     /**
-     * Returns a future that is resolved when this connection is closed either by yourself or by Whatsapp(reconnects don't count as disconnects)
-     *
-     * @return a future
-     */
-    public CompletableFuture<Void> onLoggedIn() {
-        return socketHandler.logoutFuture();
-    }
-
-    /**
      * Disconnects from Whatsapp Web's WebSocket if a previous connection exists
      *
      * @return a future
@@ -215,19 +216,10 @@ public class Whatsapp {
     }
 
     /**
-     * Returns a future that is resolved when this connection is closed either by yourself or by Whatsapp(reconnects don't count as disconnects)
-     *
-     * @return a future
-     */
-    public CompletableFuture<Void> onDisconnected() {
-        return socketHandler.logoutFuture();
-    }
-
-    /**
      * Waits for this connection to close
      */
     public void awaitDisconnection() {
-        onDisconnected().join();
+        socketHandler.logoutFuture().join();
     }
 
     /**

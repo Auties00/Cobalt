@@ -1145,7 +1145,7 @@ public final class Store extends Controller<Store> {
     public CompletableFuture<Version> version(){
         return switch (clientType){
             case WEB_CLIENT -> MetadataHelper.getWebVersion();
-            case APP_CLIENT -> MetadataHelper.getMobileVersion(os);
+            case APP_CLIENT -> MetadataHelper.getMobileVersion(os, business);
         };
     }
 

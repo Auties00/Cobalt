@@ -144,11 +144,11 @@ public class RegistrationHelper {
 
     @SafeVarargs
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
-        return MetadataHelper.getToken(store.phoneNumber().numberWithoutPrefix(), store.os())
+        return MetadataHelper.getToken(store.phoneNumber().numberWithoutPrefix(), store.os(), store.business())
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 
-    // TODO: Add backup token, locale and language
+    // TODO: Add backup token, locale and language and expid
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().countryCode().prefix())
@@ -166,9 +166,9 @@ public class RegistrationHelper {
                 .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
                 .put("fdid", keys.phoneId())
                 .put("network_ratio_type", "1")
-                .put("expid", keys.deviceId())
                 .put("simnum", "1")
                 .put("hasinrc", "1")
+                .put("expid", keys.deviceId())
                 .put("pid", ProcessHandle.current().pid())
                 .put("id", keys.recoveryToken())
                 .put("token", token)

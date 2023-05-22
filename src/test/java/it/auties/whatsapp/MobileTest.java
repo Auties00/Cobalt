@@ -11,9 +11,9 @@ public class MobileTest {
     @Test
     public void run() {
         Whatsapp.mobileBuilder()
-                .lastConnection()
+                .newConnection()
                 .unregistered()
-                .register(393495089819L, VerificationCodeMethod.SMS,  MobileTest::onScanCode)
+                .register(393495089819L, VerificationCodeMethod.CALL,  MobileTest::onScanCode)
                 .join()
                 .addLoggedInListener(MobileTest::onConnected)
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
