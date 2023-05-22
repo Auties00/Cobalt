@@ -52,6 +52,10 @@ public class AesGmc {
         return cipher(iv, input, key, additionalData, true);
     }
 
+    public byte[] encrypt(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key) {
+        return cipher(iv, input, key, null, true);
+    }
+
     public byte[] decrypt(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData) {
         return cipher(iv, input, key, additionalData, false);
     }

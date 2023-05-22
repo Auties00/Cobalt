@@ -324,6 +324,16 @@ public final class Store extends Controller<Store> {
     @Default
     private boolean autodetectListeners = true;
 
+
+    /**
+     * Whether acknowledgements should be sent for incoming messages
+     * If this option is set to true, you will not receive notifications on your companion
+     */
+    @Getter
+    @Setter
+    @Default
+    private boolean acknowledgeMessages = true;
+
     /**
      * The release channel to use when connecting to Whatsapp
      * This should allow the use of beta features

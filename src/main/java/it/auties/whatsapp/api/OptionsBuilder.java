@@ -134,4 +134,16 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
         store.proxy(proxy);
         return (T) this;
     }
+
+    /**
+     * Whether acknowledgements should be sent for incoming messages
+     * If this option is set to true, you will not receive notifications on your companion
+     *
+     * @return the same instance for chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T acknowledgeMessages(boolean acknowledgeMessages) {
+        store.acknowledgeMessages(acknowledgeMessages);
+        return (T) this;
+    }
 }

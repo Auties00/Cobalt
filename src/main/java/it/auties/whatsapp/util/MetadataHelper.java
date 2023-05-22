@@ -35,9 +35,6 @@ public class MetadataHelper {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    // TODO: This is temporary
-    private final String IOS_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM4174c0243f5277a5d7720ce842cc4ae6";
-
     private volatile Version webVersion;
     private volatile WhatsappApk cachedApk;
     private volatile WhatsappApk cachedBusinessApk;
@@ -70,16 +67,16 @@ public class MetadataHelper {
     }
 
     public CompletableFuture<String> getToken(long phoneNumber, UserAgentPlatform platform, boolean business) {
-        return CompletableFuture.supplyAsync(() -> switch (platform) {
-            case ANDROID -> getAndroidToken(String.valueOf(phoneNumber), business);
-            case IOS -> getIosToken(String.valueOf(phoneNumber));
+        return switch (platform) {
+            case ANDROID -> CompletableFuture.supplyAsync(() -> getAndroidToken(String.valueOf(phoneNumber), business));
+            case IOS -> getMobileVersion(platform, business).thenApply(version -> getIosToken(phoneNumber, version));
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
-        });
+        };
     }
 
-    private String getIosToken(String phoneNumber) {
-        var token = IOS_TOKEN + phoneNumber;
-        return HexFormat.of().formatHex(MD5.calculate(token.getBytes(StandardCharsets.UTF_8)));
+    private String getIosToken(long phoneNumber, Version version) {
+        var token = Whatsapp.MOBILE_IOS_STATIC + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
+        return HexFormat.of().formatHex(MD5.calculate(token));
     }
 
     private String getAndroidToken(String phoneNumber, boolean business) {
@@ -160,7 +157,7 @@ public class MetadataHelper {
                 whatsappLogoChars[i] = (char) result[i];
             }
             var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT");
-            var key = new PBEKeySpec(whatsappLogoChars, Whatsapp.MOBILE_SALT, 128, 512);
+            var key = new PBEKeySpec(whatsappLogoChars, Whatsapp.MOBILE_ANDROID_SALT, 128, 512);
             return factory.generateSecret(key);
         }
     }

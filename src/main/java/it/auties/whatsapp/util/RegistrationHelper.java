@@ -1,12 +1,16 @@
 package it.auties.whatsapp.util;
 
+import it.auties.bytes.Bytes;
+import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;
 
@@ -18,6 +22,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -95,15 +100,19 @@ public class RegistrationHelper {
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
         return getUserAgent(store).thenComposeAsync(userAgent -> {
             var client = createClient(store);
+            var encodedParams = toFormParams(params);
+            var keypair = SignalKeyPair.random();
+            var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
+            var buffer = AesGmc.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
+            var enc = Base64.getUrlEncoder().encodeToString(Bytes.of(keypair.publicKey(), buffer).toByteArray());
             var request = HttpRequest.newBuilder()
-                    .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
+                    .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, enc)))
                     .GET()
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .header("User-Agent", userAgent)
                     .header("WaMsysRequest", "1")
                     .header("request_token", UUID.randomUUID().toString())
                     .build();
-            System.out.println(params);
             return client.sendAsync(request, BodyHandlers.ofString());
         });
     }
@@ -117,18 +126,14 @@ public class RegistrationHelper {
         var osName = getMobileOsName(store);
         var osVersion = store.osVersion();
         var manufacturer = store.manufacturer();
-        var model = store.model();
+        var model = store.model().replaceAll(" ", "_");
         return "WhatsApp/%s %s/%s Device/%s-%s".formatted(version, osName, osVersion, manufacturer, model);
     }
 
     private String getMobileOsName(Store store) {
-        if (store.business()) {
-            return "SMBA";
-        }
-
         return switch (store.os()) {
-            case ANDROID -> "Android";
-            case IOS -> "iOS";
+            case ANDROID -> store.business() ? "SMBA" : "Android";
+            case IOS -> store.business() ? "SMBI" : "iOS";
             default -> throw new IllegalStateException("Unsupported mobile os: " + store.os());
         };
     }
