@@ -1,5 +1,6 @@
 package it.auties.whatsapp.util;
 
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
@@ -15,7 +16,6 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -148,18 +148,16 @@ public class MetadataHelper {
     }
 
     private SecretKey getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
-        try (var out = new ByteArrayOutputStream()) {
-            out.write(packageName.getBytes(StandardCharsets.UTF_8));
-            out.write(resource);
-            var result = out.toByteArray();
-            var whatsappLogoChars = new char[result.length];
-            for (var i = 0; i < result.length; i++) {
-                whatsappLogoChars[i] = (char) result[i];
-            }
-            var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT");
-            var key = new PBEKeySpec(whatsappLogoChars, Whatsapp.MOBILE_ANDROID_SALT, 128, 512);
-            return factory.generateSecret(key);
+        var result = Bytes.of(packageName)
+                .append(resource)
+                .toByteArray();
+        var whatsappLogoChars = new char[result.length];
+        for (var i = 0; i < result.length; i++) {
+            whatsappLogoChars[i] = (char) result[i];
         }
+        var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT");
+        var key = new PBEKeySpec(whatsappLogoChars, Whatsapp.MOBILE_ANDROID_SALT, 128, 512);
+        return factory.generateSecret(key);
     }
 
     private record WhatsappApk(Version version, byte[] md5Hash, SecretKey secretKey, Collection<byte[]> certificates) {

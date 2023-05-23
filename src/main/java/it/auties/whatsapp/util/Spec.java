@@ -37,6 +37,11 @@ public class Spec {
         public static final String DEFAULT_MOBILE_DEVICE_MODEL = "iPhone_7";
         public static final String DEFAULT_MOBILE_DEVICE_MANUFACTURER = "Apple";
         public static final UserAgentPlatform DEFAULT_MOBILE_OS_TYPE = UserAgentPlatform.IOS;
+        public static final byte[] MOBILE_SALT = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
+        // public static final String DEFAULT_MOBILE_OS_VERSION = "8.0.0";
+        // public static final String DEFAULT_MOBILE_DEVICE_MODEL = "star2lte";
+        // public static final String DEFAULT_MOBILE_DEVICE_MANUFACTURER = "samsung";
+        // public static final UserAgentPlatform DEFAULT_MOBILE_OS_TYPE = UserAgentPlatform.ANDROID;
         public static final String DEFAULT_WEB_OS_VERSION = "10.0";
         public static final String DEFAULT_WEB_DEVICE_MODEL = "Surface Laptop Studio";
         public static final String DEFAULT_WEB_DEVICE_MANUFACTURER = "Microsoft";

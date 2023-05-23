@@ -12,7 +12,6 @@ public class MobileTest {
     public void run() {
         Whatsapp.mobileBuilder()
                 .newConnection()
-                .business(true)
                 .unregistered()
                 .register(17154086027L, VerificationCodeMethod.CALL,  MobileTest::onScanCode)
                 .join()
