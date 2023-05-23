@@ -2,12 +2,14 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -24,6 +26,11 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     @NonNull
     @Getter
     protected UUID uuid;
+
+    /**
+     * The phone number of the associated companion
+     */
+    private PhoneNumber phoneNumber;
 
     /**
      * The serializer instance to use
@@ -72,6 +79,27 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     }
 
     /**
+     * Returns the phone number of this controller
+     *
+     * @return an optional
+     */
+    public Optional<PhoneNumber> phoneNumber() {
+        return Optional.ofNullable(phoneNumber);
+    }
+
+    /**
+     * Sets the phone number used by this session
+     *
+     * @return the same instance
+     */
+    @SuppressWarnings("unchecked")
+    public T phoneNumber(@NonNull PhoneNumber phoneNumber){
+        this.phoneNumber = phoneNumber;
+        serializer.linkPhoneNumber(this);
+        return (T) this;
+    }
+
+    /**
      * Converts this controller to a json. Useful when debugging.
      *
      * @return a non-null string
@@ -84,6 +112,6 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * Deletes the current session
      */
     public void deleteSession() {
-        serializer.deleteSession(clientType, uuid);
+        serializer.deleteSession(this);
     }
 }

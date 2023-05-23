@@ -3,6 +3,7 @@ package it.auties.whatsapp.socket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
@@ -544,7 +545,13 @@ class StreamHandler {
     private void digestError(Node node) {
         if (node.hasNode("bad-mac")) {
             badMac.set(true);
-            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
+            var unresolvedNodes = socketHandler.store()
+                    .pendingRequests()
+                    .stream()
+                    .map(Request::body)
+                    .map(Objects::toString)
+                    .collect(Collectors.joining("\n"));
+            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac, unresolved nodes:\n%s".formatted(unresolvedNodes)));
             return;
         }
         var statusCode = node.attributes().getInt("code");
@@ -574,8 +581,7 @@ class StreamHandler {
             sendPreKeys();
         }
 
-        var executor = (ScheduledExecutorService) getOrCreateService();
-        executor.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
+        schedulePing();
         createMediaConnection(0, null);
         var loggedInFuture = queryInitialInfo()
                 .thenRunAsync(this::onInitialInfo)
@@ -593,6 +599,15 @@ class StreamHandler {
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, chatsFuture)
                 .thenRunAsync(socketHandler::onChats);
+    }
+
+    private synchronized void schedulePing(){
+        if (service != null && !service.isShutdown()) {
+            return;
+        }
+
+        service = Executors.newSingleThreadScheduledExecutor();
+        service.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
     }
 
     private void onInitialInfo() {
@@ -627,6 +642,10 @@ class StreamHandler {
     }
 
     private void updateSelfPresence() {
+        if(!socketHandler.store().automaticPresenceUpdates()){
+            return;
+        }
+
         socketHandler.sendWithNoResponse(Node.ofAttributes("presence", Map.of("type", "available")));
         socketHandler.store()
                 .findContactByJid(socketHandler.store().jid().toWhatsappJid())
@@ -841,13 +860,5 @@ class StreamHandler {
             service.shutdownNow();
         }
         badMac.set(false);
-    }
-
-    private synchronized ScheduledExecutorService getOrCreateService(){
-        if(service == null){
-            service = Executors.newSingleThreadScheduledExecutor();
-        }
-
-        return service;
     }
 }

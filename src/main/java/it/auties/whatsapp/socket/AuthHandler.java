@@ -5,6 +5,7 @@ import it.auties.protobuf.base.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.Handshake;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
@@ -16,6 +17,7 @@ import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Spec;
 import lombok.RequiredArgsConstructor;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -135,7 +137,10 @@ class AuthHandler {
 
     private CompletableFuture<ClientPayload> finishUserPayload(ClientPayloadBuilder builder) {
         if(socketHandler.store().clientType() == ClientType.APP_CLIENT){
-            var phoneNumber = socketHandler.store().phoneNumber();
+            var phoneNumber = socketHandler.store()
+                    .phoneNumber()
+                    .map(PhoneNumber::number)
+                    .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
             var result = builder.sessionId(socketHandler.keys().registrationId())
                     .shortConnect(true)
                     .connectAttemptCount(0)
@@ -143,7 +148,7 @@ class AuthHandler {
                     .dnsSource(getDnsSource())
                     .passive(false)
                     .pushName(socketHandler.store().name())
-                    .username(Long.parseLong(phoneNumber.toJid().user()))
+                    .username(phoneNumber)
                     .build();
             return CompletableFuture.completedFuture(result);
         }

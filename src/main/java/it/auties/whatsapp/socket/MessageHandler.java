@@ -2,7 +2,6 @@ package it.auties.whatsapp.socket;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.*;
@@ -47,18 +46,19 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
-import static it.auties.whatsapp.model.sync.HistorySync.Type.FULL;
 import static it.auties.whatsapp.model.sync.HistorySync.Type.RECENT;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 class MessageHandler {
     private static final int MAX_ATTEMPTS = 3;
     private static final int WEEKS_GROUP_METADATA_SYNC = 2;
+    private static final int HISTORY_SYNC_TIMEOUT = 10;
 
     private final SocketHandler socketHandler;
     private final OrderedAsyncTaskRunner runner;
@@ -70,6 +70,7 @@ class MessageHandler {
     private final Logger logger;
     private final DeferredTaskRunner deferredTaskRunner;
     private final Set<ContactJid> attributedGroups;
+    private CompletableFuture<?> historySyncTask;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -199,45 +200,6 @@ class MessageHandler {
         if (!request.peer() && hasPreKeyMessage(preKeys)) {
             var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
             body.add(Node.of("device-identity", identity));
-        }
-
-        if(request.info().message().content() instanceof ButtonMessage buttonMessage) {
-            if(buttonMessage instanceof TemplateMessage templateMessage){
-                // var features =  templateMessage.content()
-                //                        .hydratedButtons()
-                //                        .stream()
-                //                        .map(HydratedTemplateButton::button)
-                //                        .flatMap(Optional::stream)
-                //                        .map(entry -> Node.ofAttributes(
-                //                                "feature",
-                //                                Map.of(
-                //                                        "name", entry.buttonType().name().toLowerCase(Locale.ROOT) + "_button"
-                //                                )
-                //                        ))
-                //                        .toList();
-                body.add(Node.ofChildren(
-                        "hsm",
-                        Map.of(
-                                "category", "NON_TRANSACTIONAL",
-                                "tag", templateMessage.id(),
-                                "buttons", 1,
-                                "v", 1
-                        ),
-                        Node.ofChildren(
-                                "capabilities" //,
-                                // features
-                        )
-                ));
-            }else {
-                var type = getButtonType(request.info().message());
-                if (type != null) {
-                    var args = getButtonArgs(buttonMessage);
-                    body.add(Node.ofChildren(
-                            "biz",
-                            Node.ofAttributes(type, args)
-                    ));
-                }
-            }
         }
 
         var attributes = Attributes.ofNullable(request.additionalAttributes())
@@ -464,24 +426,6 @@ class MessageHandler {
                 .put("mediatype", mediaType, Objects::nonNull)
                 .toMap();
         return Node.of("enc", attributes, groupMessage.message());
-    }
-
-    private String getButtonType(MessageContainer container){
-        return switch (container.type()){
-            case BUTTONS -> "buttons";
-            case INTERACTIVE_RESPONSE -> "interactive_response";
-            case LIST -> "list";
-            case LIST_RESPONSE -> "list_response";
-            default -> null;
-        };
-    }
-
-    private Map<String, Object> getButtonArgs(ButtonMessage buttonMessage) {
-        if (Objects.requireNonNull(buttonMessage) instanceof ListMessage listMessage) {
-            return Map.of("v", 2, "type", listMessage.listType().name().toLowerCase());
-        }else {
-            return Map.of();
-        }
     }
 
     private String getMediaType(MessageContainer container) {
@@ -791,19 +735,19 @@ class MessageHandler {
     private void onHistoryNotification(MessageInfo info, HistorySync history) {
         handleHistorySync(history);
         if (history.progress() != null) {
-            if(isSyncComplete(history)) {
-                handleChatsSync(history, true);
-            }
-
+            scheduleTimeoutSync(history);
             socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == RECENT);
         }
 
         socketHandler.sendSyncReceipt(info, "hist_sync");
     }
 
-    private boolean isSyncComplete(HistorySync history) {
-        return history.progress() == 100
-                && socketHandler.store().historyLength() == WebHistoryLength.STANDARD ? history.syncType() == RECENT : history.syncType() == FULL;
+    private void scheduleTimeoutSync(HistorySync history) {
+        var executor = CompletableFuture.delayedExecutor(HISTORY_SYNC_TIMEOUT, TimeUnit.SECONDS);
+        if(historySyncTask != null){
+            historySyncTask.cancel(true);
+        }
+        this.historySyncTask = CompletableFuture.runAsync(() -> handleChatsSync(history, true), executor);
     }
 
     private void onMessageDeleted(MessageInfo info, MessageInfo message) {
@@ -921,7 +865,10 @@ class MessageHandler {
 
     @SafeVarargs
     private <T> List<T> toSingleList(List<T>... all) {
-        return Stream.of(all).filter(Objects::nonNull).flatMap(Collection::stream).toList();
+        return Stream.of(all)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .toList();
     }
 
     protected void dispose() {
@@ -930,6 +877,7 @@ class MessageHandler {
         devicesCache.invalidateAll();
         historyCache.clear();
         runner.cancel();
+        historySyncTask = null;
     }
 
     private record MessageDecodeResult(byte[] message, Throwable error) {

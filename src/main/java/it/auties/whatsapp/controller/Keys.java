@@ -6,6 +6,7 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.exception.UnknownSessionException;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -207,10 +208,10 @@ public final class Keys extends Controller<Keys> {
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
-     * @param uuid       the non-null uuid of the session
+     * @param uuid        the  uuid of the session, can be null
      * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param required   whether an exception should be thrown if the connection doesn't exist
+     * @param clientType  the non-null type of the client
+     * @param required    whether an exception should be thrown if the connection doesn't exist
      * @return a non-null store
      */
     public static Keys of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, boolean required) {
@@ -220,11 +221,11 @@ public final class Keys extends Controller<Keys> {
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
-     * @param uuid       the non-null uuid of the session
+     * @param uuid        the non-null uuid of the session, can be null
      * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @param required   whether an exception should be thrown if the connection doesn't exist
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer
+     * @param required    whether an exception should be thrown if the connection doesn't exist
      * @return a non-null store
      */
     public static Keys of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
@@ -240,7 +241,7 @@ public final class Keys extends Controller<Keys> {
         }
 
         return result.map(keys -> keys.serializer(serializer))
-                .orElseGet(() -> random(id, clientType, serializer));
+                .orElseGet(() -> random(id, phoneNumber, clientType, serializer));
     }
 
     /**
@@ -250,8 +251,8 @@ public final class Keys extends Controller<Keys> {
      * @param clientType the non-null type of the client
      * @return a non-null instance
      */
-    public static Keys random(UUID uuid, @NonNull ClientType clientType) {
-        return random(uuid, clientType, DefaultControllerSerializer.instance());
+    public static Keys random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType) {
+        return random(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
     }
 
     /**
@@ -262,8 +263,9 @@ public final class Keys extends Controller<Keys> {
      * @param serializer the non-null serializer
      * @return a non-null instance
      */
-    public static Keys random(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+    public static Keys random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         var result = Keys.builder()
+                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
                 .serializer(serializer)
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .clientType(clientType)

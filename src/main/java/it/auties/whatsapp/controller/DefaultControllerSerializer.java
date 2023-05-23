@@ -9,6 +9,7 @@ import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,7 +21,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -40,7 +40,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private final Path baseDirectory;
     private final Logger logger;
-    private final AtomicReference<CompletableFuture<Void>> deserializer;
+    private final Map<UUID, CompletableFuture<Void>> attributeStoreSerializers;
     private LinkedList<UUID> cachedUuids;
     private LinkedList<PhoneNumber> cachedPhoneNumbers;
 
@@ -63,14 +63,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     public DefaultControllerSerializer(@NonNull Path baseDirectory) {
         this.baseDirectory = baseDirectory;
         this.logger = System.getLogger("DefaultSerializer");
+        this.attributeStoreSerializers = new ConcurrentHashMap<>();
         try {
             Files.createDirectories(baseDirectory);
+            Validate.isTrue(Files.isDirectory(baseDirectory), "Expected a directory as base path: %s", baseDirectory);
         } catch (IOException exception) {
             logger.log(WARNING, "Cannot create base directory at %s: %s".formatted(baseDirectory, exception.getMessage()));
         }
-
-        Validate.isTrue(Files.isDirectory(baseDirectory), "Expected a directory as base path: %s", baseDirectory);
-        this.deserializer = new AtomicReference<>();
     }
 
     @Override
@@ -134,10 +133,6 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             cachedUuids.add(keys.uuid());
         }
 
-        var task = deserializer.get();
-        if (task != null && !task.isDone()) {
-            return;
-        }
         var path = getSessionFile(keys.clientType(), keys.uuid().toString(), "keys.smile");
         var preferences = SmileFile.of(path);
         preferences.write(keys, async);
@@ -149,26 +144,34 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             cachedUuids.add(store.uuid());
         }
 
-        if (cachedPhoneNumbers != null && !cachedPhoneNumbers.contains(store.phoneNumber())) {
-            cachedPhoneNumbers.add(store.phoneNumber());
+        var phoneNumber = store.phoneNumber().orElse(null);
+        if (cachedPhoneNumbers != null && !cachedPhoneNumbers.contains(phoneNumber)) {
+            cachedPhoneNumbers.add(phoneNumber);
         }
 
-        var task = deserializer.get();
+        var task = attributeStoreSerializers.get(store.uuid());
         if (task != null && !task.isDone()) {
             return;
         }
         var path = getSessionFile(store, "store.smile");
         var preferences = SmileFile.of(path);
         preferences.write(store, async);
-        for (var chat : store.chats()) {
-            serializeChat(store, chat, async);
+        if(async){
+            store.chats().forEach(chat -> serializeChat(store, chat));
+            return;
         }
+
+        var futures = store.chats()
+                .stream()
+                .map(chat -> serializeChat(store, chat))
+                .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures).join();
     }
 
-    private void serializeChat(Store store, Chat chat, boolean async) {
+    private CompletableFuture<Void> serializeChat(Store store, Chat chat) {
         var path = getSessionFile(store, "%s%s.smile".formatted(CHAT_PREFIX, chat.uuid()));
         var preferences = SmileFile.of(path);
-        preferences.write(chat, async);
+        return preferences.write(chat, true);
     }
 
     @Override
@@ -213,11 +216,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     @Override
     public synchronized CompletableFuture<Void> attributeStore(Store store) {
-        var oldTask = deserializer.get();
+        var oldTask = attributeStoreSerializers.get(store.uuid());
         if (oldTask != null) {
             return oldTask;
         }
-        var directory = getSessionFile(store.clientType(), store.uuid().toString(), "keys.smile");
+        var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
         if (Files.notExists(directory)) {
             return CompletableFuture.completedFuture(null);
         }
@@ -226,7 +229,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                     .map(entry -> CompletableFuture.runAsync(() -> deserializeChat(store, entry)))
                     .toArray(CompletableFuture[]::new);
             var result = CompletableFuture.allOf(futures);
-            deserializer.set(result);
+            attributeStoreSerializers.put(store.uuid(), result);
             return result;
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot deserialize store", exception);
@@ -234,21 +237,27 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public void deleteSession(@NonNull ClientType type, UUID id) {
-        var folderPath = getSession(type, id.toString());
+    public void deleteSession(@NonNull Controller<?> controller) {
+        var folderPath = getSessionDirectory(controller.clientType(), controller.uuid().toString());
         deleteDirectory(folderPath.toFile());
+        var phoneNumber = controller.phoneNumber().orElse(null);
+        if(phoneNumber == null){
+            return;
+        }
+        var linkedFolderPath = getSessionDirectory(controller.clientType(), phoneNumber.toString());
+        deleteDirectory(linkedFolderPath.toFile());
     }
 
     @Override
-    public void linkPhoneNumber(@NonNull Store store) {
+    public void linkPhoneNumber(@NonNull Controller<?> controller) {
         try {
-            if(store.phoneNumber() == null){
+            var phoneNumber = controller.phoneNumber().orElse(null);
+            if(phoneNumber == null){
                 return;
             }
-
-            var link = getSession(store.clientType(), store.phoneNumber().toString());
+            var link = getSessionDirectory(controller.clientType(), phoneNumber.toString());
             Files.deleteIfExists(link);
-            var original = getSession(store.clientType(), store.uuid().toString());
+            var original = getSessionDirectory(controller.clientType(), controller.uuid().toString());
             Files.createDirectories(original);
             Files.createSymbolicLink(link, original);
         } catch (IOException exception) {
@@ -317,7 +326,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         return directory;
     }
 
-    private Path getSession(ClientType clientType, String uuid) {
+    private Path getSessionDirectory(ClientType clientType, String uuid) {
         return getHome(clientType).resolve(uuid);
     }
 
@@ -326,11 +335,12 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Path getSessionFile(ClientType clientType, String uuid, String fileName) {
-        return getSession(clientType, uuid).resolve(fileName);
+        return getSessionDirectory(clientType, uuid).resolve(fileName);
     }
 
     private record SmileFile(Path file, Semaphore semaphore) {
         private final static ConcurrentHashMap<Path, SmileFile> instances = new ConcurrentHashMap<>();
+        private static final Logger logger = System.getLogger("SmileFile");
 
         private SmileFile {
             try {
@@ -369,14 +379,14 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             }
         }
 
-        private void write(Object input, boolean async) {
+        private CompletableFuture<Void> write(Object input, boolean async) {
             if (!async) {
                 writeSync(input);
-                return;
+                return CompletableFuture.completedFuture(null);
             }
 
-            CompletableFuture.runAsync(() -> writeSync(input)).exceptionallyAsync(throwable -> {
-                throwable.printStackTrace();
+            return CompletableFuture.runAsync(() -> writeSync(input)).exceptionallyAsync(throwable -> {
+                logger.log(ERROR, "Cannot serialize smile file", throwable);
                 return null;
             });
         }
@@ -388,9 +398,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 }
 
                 semaphore.acquire();
-                try (var stream = new GZIPOutputStream(Files.newOutputStream(file))) {
-                    Smile.writeValueAsBytes(stream, input);
-                    stream.flush();
+                try(var byteArrayOutputStream = new ByteArrayOutputStream()) {
+                    try (var stream = new GZIPOutputStream(byteArrayOutputStream)) {
+                        Smile.writeValueAsBytes(stream, input);
+                        Files.write(file, byteArrayOutputStream.toByteArray());
+                    }
                 }
             } catch (IOException exception) {
                 throw new UncheckedIOException("Cannot complete file write", exception);

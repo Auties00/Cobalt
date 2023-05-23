@@ -143,7 +143,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T acknowledgeMessages(boolean acknowledgeMessages) {
-        store.acknowledgeMessages(acknowledgeMessages);
+        store.automaticPresenceUpdates(acknowledgeMessages);
         return (T) this;
     }
 }

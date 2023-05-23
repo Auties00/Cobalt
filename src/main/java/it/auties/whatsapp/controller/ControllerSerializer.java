@@ -31,14 +31,6 @@ public interface ControllerSerializer {
     void serializeStore(Store store, boolean async);
 
     /**
-     * Deletes a session
-     *
-     * @param type the non-null type of client
-     * @param id   the id of the session to delete
-     */
-    void deleteSession(ClientType type, UUID id);
-
-    /**
      * Returns all the known IDs
      *
      * @param type the non-null type of client
@@ -84,7 +76,7 @@ public interface ControllerSerializer {
     /**
      * Serializes the store
      *
-     * @param type        the non-null type of client
+     * @param type the non-null type of client
      * @param phoneNumber the phone number of the store
      * @return a non-null store
      */
@@ -94,11 +86,18 @@ public interface ControllerSerializer {
      * Creates a link between the session store and the phone number
      * This may not be implemented
      *
-     * @param store a non-null store
+     * @param controller a non-null controller
      */
-    default void linkPhoneNumber(@NonNull Store store) {
+    default void linkPhoneNumber(@NonNull Controller<?> controller) {
 
     }
+
+    /**
+     * Deletes a session
+     *
+     * @param controller the non-null controller
+     */
+    void deleteSession(@NonNull Controller<?> controller);
 
     /**
      * Attributes the store asynchronously. This method is optionally used to load asynchronously

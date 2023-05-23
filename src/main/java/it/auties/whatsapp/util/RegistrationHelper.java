@@ -53,10 +53,10 @@ public class RegistrationHelper {
                 .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
     }
 
-    private static CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method) {
+    private CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method) {
         return getRegistrationOptions(store, keys,
-                Map.entry("mcc", store.phoneNumber().countryCode().mcc()),
-                Map.entry("mnc", store.phoneNumber().countryCode().mnc()),
+                Map.entry("mcc", store.phoneNumber().get().countryCode().mcc()),
+                Map.entry("mnc", store.phoneNumber().get().countryCode().mnc()),
                 Map.entry("sim_mcc", "000"),
                 Map.entry("sim_mnc", "000"),
                 Map.entry("method", method.type()),
@@ -73,7 +73,7 @@ public class RegistrationHelper {
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
         keys.registered(registered);
         if(registered){
-            store.jid(store.phoneNumber().toJid());
+            store.jid(store.phoneNumber().get().toJid());
             store.addLinkedDevice(store.jid(), 0);
         }
         keys.serialize(true);
@@ -149,15 +149,15 @@ public class RegistrationHelper {
 
     @SafeVarargs
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
-        return MetadataHelper.getToken(store.phoneNumber().numberWithoutPrefix(), store.os(), store.business())
+        return MetadataHelper.getToken(store.phoneNumber().get().numberWithoutPrefix(), store.os(), store.business())
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 
     // TODO: Add backup token, locale and language and expid
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
-                .put("cc", store.phoneNumber().countryCode().prefix())
-                .put("in", store.phoneNumber().numberWithoutPrefix())
+                .put("cc", store.phoneNumber().get().countryCode().prefix())
+                .put("in", store.phoneNumber().get().numberWithoutPrefix())
                 .put("rc", store.releaseChannel().index())
                 .put("lg", "en")
                 .put("lc", "GB") // Locale
