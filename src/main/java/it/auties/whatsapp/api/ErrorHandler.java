@@ -69,7 +69,7 @@ public interface ErrorHandler {
             if(printer != null) {
                 printer.accept(throwable);
             }
-            if (location == INITIAL_APP_STATE_SYNC || (location == CRYPTOGRAPHY && type != ClientType.APP_CLIENT) || (location == MESSAGE && throwable instanceof HmacValidationException)) {
+            if (location == INITIAL_APP_STATE_SYNC || (location == CRYPTOGRAPHY && type != ClientType.MOBILE) || (location == MESSAGE && throwable instanceof HmacValidationException)) {
                 logger.log(WARNING, "Socket failure at %s".formatted(location));
                 return Result.RESTORE;
             }

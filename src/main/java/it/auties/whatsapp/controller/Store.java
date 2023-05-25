@@ -77,6 +77,14 @@ public final class Store extends Controller<Store> {
     private Version version;
 
     /**
+     * Whether the session is online for other users
+     */
+    @Getter
+    @Setter
+    @Default
+    private boolean online = false;
+
+    /**
      * The locale of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
@@ -327,7 +335,7 @@ public final class Store extends Controller<Store> {
 
     /**
      * Whether updates about the presence of the session should be sent automatically to Whatsapp
-     * For example, when the bot is started, by the default the status of the status of the companion is changed to online.
+     * For example, when the bot is started, the status of the companion is changed to available if this option is enabled
      */
     @Getter
     @Setter
@@ -437,14 +445,16 @@ public final class Store extends Controller<Store> {
      * @return a non-null store
      */
     public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        var phone = PhoneNumber.ofNullable(phoneNumber).orElse(null);
         var result = Store.builder()
                 .serializer(serializer)
                 .clientType(clientType)
-                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
-                .os(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE)
-                .osVersion(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_OS_VERSION : Spec.Whatsapp.DEFAULT_MOBILE_OS_VERSION)
-                .model(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MODEL : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MODEL)
-                .manufacturer(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
+                .jid(phone == null ? null : phone.toJid())
+                .phoneNumber(phone)
+                .os(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE)
+                .osVersion(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_VERSION : Spec.Whatsapp.DEFAULT_MOBILE_OS_VERSION)
+                .model(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MODEL : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MODEL)
+                .manufacturer(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .build();
         if(phoneNumber != null){
@@ -616,7 +626,10 @@ public final class Store extends Controller<Store> {
      * @return an immutable collection
      */
     public Collection<MessageInfo> status() {
-        return status.values().stream().flatMap(Collection::stream).collect(Collectors.toUnmodifiableSet());
+        return status.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -626,7 +639,9 @@ public final class Store extends Controller<Store> {
      * @return a non-null immutable list
      */
     public Collection<MessageInfo> findStatusBySender(ContactJidProvider jid) {
-        return Optional.ofNullable(status.get(jid.toJid())).map(Collections::unmodifiableCollection).orElseGet(Set::of);
+        return Optional.ofNullable(status.get(jid.toJid()))
+                .map(Collections::unmodifiableCollection)
+                .orElseGet(Set::of);
     }
 
     /**
@@ -899,7 +914,7 @@ public final class Store extends Controller<Store> {
                 .toList();
         originalPollMessage.selectedOptionsMap().put(modificationSenderJid, selectedOptions);
         pollUpdateMessage.votes(selectedOptions);
-        var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowInMilliseconds());
+        var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowMilliseconds());
         info.pollUpdates().add(update);
     }
 
@@ -1085,7 +1100,7 @@ public final class Store extends Controller<Store> {
      * @return an unmodifiable list
      */
     public Collection<ContactJid> linkedDevices(){
-        return deviceKeyIndexes.keySet();
+        return Collections.unmodifiableCollection(deviceKeyIndexes.keySet());
     }
 
     /**
@@ -1098,6 +1113,24 @@ public final class Store extends Controller<Store> {
      */
     public Optional<Integer> addLinkedDevice(@NonNull ContactJid companion, int keyId){
         return Optional.ofNullable(deviceKeyIndexes.put(companion, keyId));
+    }
+
+    /**
+     * Removes a companion
+     * Only use this method in the mobile api
+     *
+     * @param companion a non-null companion
+     * @return the nullable old key
+     */
+    public Optional<Integer> removeLinkedCompanion(@NonNull ContactJid companion){
+        return Optional.ofNullable(deviceKeyIndexes.remove(companion));
+    }
+
+    /**
+     * Removes all linked companion
+     */
+    public void removeLinkedCompanions(){
+        deviceKeyIndexes.clear();
     }
 
     /**
@@ -1159,8 +1192,8 @@ public final class Store extends Controller<Store> {
      */
     public CompletableFuture<Version> version(){
         return switch (clientType){
-            case WEB_CLIENT -> MetadataHelper.getWebVersion();
-            case APP_CLIENT -> MetadataHelper.getMobileVersion(os, business);
+            case WEB -> MetadataHelper.getWebVersion();
+            case MOBILE -> MetadataHelper.getMobileVersion(os, business);
         };
     }
 

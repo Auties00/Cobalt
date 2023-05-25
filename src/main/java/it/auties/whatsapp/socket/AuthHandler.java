@@ -106,7 +106,7 @@ class AuthHandler {
     private CompletableFuture<UserAgent> createUserAgent() {
         return socketHandler.store()
                 .version()
-                .thenApplyAsync(version -> createUserAgent(version, socketHandler.store().clientType() == ClientType.APP_CLIENT));
+                .thenApplyAsync(version -> createUserAgent(version, socketHandler.store().clientType() == ClientType.MOBILE));
     }
 
     private UserAgent createUserAgent(Version version, boolean mobile) {
@@ -136,7 +136,7 @@ class AuthHandler {
     }
 
     private CompletableFuture<ClientPayload> finishUserPayload(ClientPayloadBuilder builder) {
-        if(socketHandler.store().clientType() == ClientType.APP_CLIENT){
+        if(socketHandler.store().clientType() == ClientType.MOBILE){
             var phoneNumber = socketHandler.store()
                     .phoneNumber()
                     .map(PhoneNumber::number)
@@ -182,7 +182,7 @@ class AuthHandler {
                     .signatureId(socketHandler.keys().signedKeyPair().encodedId())
                     .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
                     .signature(socketHandler.keys().signedKeyPair().signature());
-            if (socketHandler.store().clientType() == ClientType.WEB_CLIENT) {
+            if (socketHandler.store().clientType() == ClientType.WEB) {
                 var props = Protobuf.writeMessage(createCompanionProps());
                 companion.companion(props);
             }
@@ -192,7 +192,7 @@ class AuthHandler {
     }
 
     private Companion createCompanionProps() {
-        if (socketHandler.store().clientType() != ClientType.WEB_CLIENT) {
+        if (socketHandler.store().clientType() != ClientType.WEB) {
             return null;
         }
 

@@ -1,6 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.protobuf.base.ProtobufDeserializationException;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufSerializationException;
 
 public class Protobuf {
@@ -14,7 +15,7 @@ public class Protobuf {
         }
     }
 
-    public static <T> byte[] writeMessage(T object) {
+    public static byte[] writeMessage(ProtobufMessage object) {
         try {
             var method = object.getClass().getMethod("toEncodedProtobuf");
             return (byte[]) method.invoke(object);

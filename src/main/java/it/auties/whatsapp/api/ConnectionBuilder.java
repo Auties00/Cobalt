@@ -104,9 +104,9 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
     @SuppressWarnings("unchecked")
     private T createConnection(UUID uuid, ConnectionType connectionType) {
         return (T) switch (clientType) {
-            case WEB_CLIENT ->
+            case WEB ->
                     new WebOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
-            case APP_CLIENT ->
+            case MOBILE ->
                     new MobileOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
         };
     }
@@ -114,9 +114,9 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
     @SuppressWarnings("unchecked")
     private T createConnection(long phoneNumber, ConnectionType connectionType) {
         return (T) switch (clientType) {
-            case WEB_CLIENT ->
+            case WEB ->
                     new WebOptionsBuilder(phoneNumber, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
-            case APP_CLIENT ->
+            case MOBILE ->
                     new MobileOptionsBuilder(phoneNumber, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
         };
     }

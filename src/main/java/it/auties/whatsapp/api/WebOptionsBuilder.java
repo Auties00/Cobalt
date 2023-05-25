@@ -10,11 +10,11 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     private Whatsapp whatsapp;
 
     public WebOptionsBuilder(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(connectionUuid, serializer, connectionType, ClientType.WEB_CLIENT);
+        super(connectionUuid, serializer, connectionType, ClientType.WEB);
     }
 
     public WebOptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(phoneNumber, serializer, connectionType, ClientType.WEB_CLIENT);
+        super(phoneNumber, serializer, connectionType, ClientType.WEB);
     }
 
     /**

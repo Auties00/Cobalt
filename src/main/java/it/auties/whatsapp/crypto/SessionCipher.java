@@ -2,6 +2,7 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
@@ -9,7 +10,6 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
-import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
@@ -23,7 +23,6 @@ import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
 import static it.auties.whatsapp.util.Spec.Signal.*;
-import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
@@ -102,10 +101,10 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         return decrypt(message.signalMessage(), state);
     }
 
-    private Session createSession() {
+    private Optional<Session> createSession() {
         var newSession = new Session();
         keys.putSession(address, newSession);
-        return newSession;
+        return Optional.of(newSession);
     }
 
     public byte[] decrypt(SignalMessage message) {
@@ -178,11 +177,12 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     private Session loadSession() {
-        return loadSession(() -> null);
+        return loadSession(() -> keys.findSessionByAddress(new SessionAddress(address.name(), 0)));
     }
 
-    private Session loadSession(Supplier<Session> defaultSupplier) {
+    private Session loadSession(Supplier<Optional<Session>> defaultSupplier) {
         return keys.findSessionByAddress(address)
-                .orElseGet(() -> requireNonNull(defaultSupplier.get(), "Missing session for %s".formatted(address)));
+                .or(defaultSupplier)
+                .orElseThrow(() -> new NoSuchElementException("Missing session for: %s".formatted(address)));
     }
 }

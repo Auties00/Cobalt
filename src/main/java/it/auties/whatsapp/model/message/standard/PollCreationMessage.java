@@ -63,7 +63,7 @@ public final class PollCreationMessage extends ContextualMessage {
     private Map<String, PollOption> selectableOptionsHashesMap = new ConcurrentHashMap<>();
 
     /**
-     * The toMap of the options selected by each person that can vote in this poll
+     * The map of the options selected by each person that can vote in this poll
      */
     @Default
     private Map<ContactJid, List<PollOption>> selectedOptionsMap = new ConcurrentHashMap<>();
@@ -103,7 +103,7 @@ public final class PollCreationMessage extends ContextualMessage {
      * Returns an unmodifiable list of the options that a contact voted in this poll
      *
      * @param contact the non-null contact that voted in this poll
-     * @return a non-null unmodifiable toMap
+     * @return a non-null unmodifiable map
      */
     public List<PollOption> selectedOptions(@NonNull ContactJidProvider contact) {
         return Optional.of(selectedOptionsMap.get(contact.toJid()))

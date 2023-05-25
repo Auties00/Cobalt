@@ -21,14 +21,14 @@ It can be used to work with:
 ### Donations
 
 If you like my work, you can become a sponsor here on GitHub or tip me on [Paypal](https://www.paypal.com/paypalme/my/profile).
+
+If you prefer crypto, this is my eth address: 0xA7842cDb100fb91718961153149C86e4F4030a76
+
 I can also work on sponsored features and/or projects!
 
 ### Java version
 
 This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/), the latest LTS.
-Remember to enable preview features as they are required.
-If you don't know how, there are many tutorials available online.
-Please don't open any issue because of this. 
 
 ### Optimizing memory usage
 

@@ -4,19 +4,16 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Spec;
-import lombok.SneakyThrows;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public record PatchRequest(PatchType type, ActionValueSync sync, String index, int version,
-                           Operation operation) {
+public record PatchRequest(PatchType type, ActionValueSync sync, String index, int version, Operation operation) {
     public static PatchRequest of(PatchType type, ActionValueSync sync, Operation operation) {
         return of(type, sync, operation, Spec.Signal.CURRENT_VERSION);
     }
 
-    @SneakyThrows
     public static PatchRequest of(PatchType type, ActionValueSync sync, Operation operation, int version, String... args) {
         var index = Json.writeValueAsString(createArguments(sync, args));
         return new PatchRequest(type, sync, index, version, operation);

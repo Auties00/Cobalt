@@ -45,7 +45,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
     }
 
     /**
-     * Constructs a Node that provides a non-null tag, a non-null toMap of attributes and a nullable
+     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable
      * content
      *
      * @param description a non-null String that describes the data that this object holds
@@ -59,7 +59,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
     }
 
     /**
-     * Constructs a Node that provides a non-null tag and a non-null toMap of attributes
+     * Constructs a Node that provides a non-null tag and a non-null map of attributes
      *
      * @param description a non-null String that describes the data that this object holds
      * @param attributes  a non-null Map that describes the metadata of this object
@@ -101,7 +101,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
     }
 
     /**
-     * Constructs a Node that provides a non-null tag, a non-null toMap of attributes and a nullable
+     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable
      * var-args of children
      *
      * @param description a non-null String that describes the data that this object holds
@@ -114,7 +114,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
     }
 
     /**
-     * Constructs a Node that provides a non-null tag, a non-null toMap of attributes and a nullable
+     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable
      * var-args of children
      *
      * @param description a non-null String that describes the data that this object holds

@@ -6,6 +6,7 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.exception.UnknownSessionException;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
@@ -142,7 +143,6 @@ public final class Keys extends Controller<Keys> {
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
-    @Getter
     private SignedDeviceIdentity companionIdentity;
 
     /**
@@ -157,10 +157,10 @@ public final class Keys extends Controller<Keys> {
      */
     @NonNull
     @Default
-    private ArrayList<AppStateSyncKey> appStateKeys = new ArrayList<>();
+    private Map<ContactJid, LinkedList<AppStateSyncKey>> appStateKeys = new ConcurrentHashMap<>();
 
     /**
-     * Sessions toMap
+     * Sessions map
      */
     @NonNull
     @Default
@@ -269,7 +269,7 @@ public final class Keys extends Controller<Keys> {
                 .serializer(serializer)
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .clientType(clientType)
-                .prologue(clientType == ClientType.WEB_CLIENT ? Spec.Whatsapp.WEB_PROLOGUE : Spec.Whatsapp.APP_PROLOGUE)
+                .prologue(clientType == ClientType.WEB ? Spec.Whatsapp.WEB_PROLOGUE : Spec.Whatsapp.APP_PROLOGUE)
                 .build();
         result.signedKeyPair(SignalSignedKeyPair.of(result.registrationId(), result.identityKeyPair()));
         result.serialize(true);
@@ -351,11 +351,13 @@ public final class Keys extends Controller<Keys> {
     /**
      * Queries the app state key that matches {@code id}
      *
-     * @param id the non-null id to search
+     * @param jid the non-null jid of the app key
+     * @param id  the non-null id to search
      * @return a non-null Optional app state dataSync key
      */
-    public Optional<AppStateSyncKey> findAppKeyById(byte[] id) {
-        return appStateKeys.stream()
+    public Optional<AppStateSyncKey> findAppKeyById(@NonNull ContactJid jid, byte[] id) {
+        return Objects.requireNonNull(appStateKeys.get(jid), "Missing keys")
+                .stream()
                 .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId().keyId(), id))
                 .findFirst();
     }
@@ -418,11 +420,12 @@ public final class Keys extends Controller<Keys> {
     /**
      * Adds the provided keys to the app state keys
      *
+     * @param jid the non-null jid of the app key
      * @param keys the keys to add
      * @return this
      */
-    public Keys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
-        appStateKeys.addAll(keys);
+    public Keys addAppKeys(@NonNull ContactJid jid, @NonNull Collection<AppStateSyncKey> keys) {
+        appStateKeys.put(jid, new LinkedList<>(keys));
         return this;
     }
 
@@ -471,21 +474,9 @@ public final class Keys extends Controller<Keys> {
      *
      * @return a non-null app key
      */
-    public AppStateSyncKey appKey() {
-        if(appStateKeys.isEmpty()){
-            throw new NoSuchElementException("No keys available");
-        }
-
-        return appStateKeys.get(appStateKeys.size() - 1);
-    }
-
-    /**
-     * Returns whether any app key is available
-     *
-     * @return a boolean
-     */
-    public boolean hasAppKeys() {
-        return !appStateKeys.isEmpty();
+    public AppStateSyncKey getLatestAppKey(@NonNull ContactJid jid) {
+        var keys = Objects.requireNonNull(appStateKeys.get(jid), "Missing keys");
+        return keys.getLast();
     }
 
     @JsonSetter
@@ -503,6 +494,16 @@ public final class Keys extends Controller<Keys> {
     public Keys companionIdentity(SignedDeviceIdentity companionIdentity) {
         this.companionIdentity = companionIdentity;
         return this;
+    }
+
+    /**
+     * Returns the companion identity of this session
+     * Only available for web sessions
+     *
+     * @return an optional
+     */
+    public Optional<SignedDeviceIdentity> companionIdentity(){
+        return Optional.ofNullable(companionIdentity);
     }
 
     @Override

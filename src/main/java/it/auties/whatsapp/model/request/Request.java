@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.request;
 
 import it.auties.bytes.Bytes;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
@@ -67,7 +68,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     /**
      * Constructs a new request with the provided body expecting a response
      */
-    public static Request of(@NonNull Object body) {
+    public static Request of(@NonNull ProtobufMessage body) {
         return new Request(null, null, Protobuf.writeMessage(body));
     }
 

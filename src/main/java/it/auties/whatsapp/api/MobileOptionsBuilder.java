@@ -12,11 +12,11 @@ import java.util.UUID;
 @SuppressWarnings("unused")
 public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuilder> {
     public MobileOptionsBuilder(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(connectionUuid, serializer, connectionType, ClientType.APP_CLIENT);
+        super(connectionUuid, serializer, connectionType, ClientType.MOBILE);
     }
 
     public MobileOptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(phoneNumber, serializer, connectionType, ClientType.WEB_CLIENT);
+        super(phoneNumber, serializer, connectionType, ClientType.WEB);
     }
 
 

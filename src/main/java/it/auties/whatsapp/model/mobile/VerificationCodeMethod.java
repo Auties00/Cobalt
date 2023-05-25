@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
 import java.util.Arrays;
 
 /**
- * The constants of this enumerated type describe the various types of verification that can be used to receive the OTP required for an {@link ClientType#APP_CLIENT}
+ * The constants of this enumerated type describe the various types of verification that can be used to receive the OTP required for an {@link ClientType#MOBILE}
  */
 @AllArgsConstructor
 @Accessors(fluent = true)

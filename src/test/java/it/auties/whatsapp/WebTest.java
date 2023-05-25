@@ -2,7 +2,6 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
 import org.junit.jupiter.api.Test;
 
  // Just used for testing locally
@@ -13,11 +12,7 @@ public class WebTest {
                 .lastConnection()
                 .historyLength(WebHistoryLength.STANDARD)
                 .build()
-                .addLoggedInListener(api -> {
-                    System.out.printf("Connected: %s%n", api.store().privacySettings());
-                    System.out.println("Result: " + api.queryName(ContactJid.of("393440996717")).join());
-                    api.queryGroupMetadata(ContactJid.of("393495089819-1623404452@g.us"));
-                })
+                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

@@ -229,8 +229,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null {@link SessionAddress}
      */
     public SessionAddress toSignalAddress() {
-        var name = toString().split("@", 2)[0];
-        return new SessionAddress(name, 0);
+        return new SessionAddress(user(), device());
     }
 
     /**

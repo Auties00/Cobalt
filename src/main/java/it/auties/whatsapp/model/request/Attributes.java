@@ -16,13 +16,13 @@ import static java.util.Map.ofEntries;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A utility class that wraps a toMap and provides easy methods to interact with its content
+ * A utility class that wraps a map and provides easy methods to interact with its content
  *
- * @param toMap the non-null wrapped toMap
+ * @param map the non-null wrapped map
  */
 public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     /**
-     * Constructs a new toMap using the non-null provided entries
+     * Constructs a new map using the non-null provided entries
      *
      * @param entries the non-null entries
      * @return a new instance of Attributes
@@ -33,9 +33,9 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Constructs a new toMap using the provided nullable toMap
+     * Constructs a new map using the provided nullable map
      *
-     * @param map the nullable existing toMap
+     * @param map the nullable existing map
      * @return a new instance of Attributes
      */
     public static Attributes ofNullable(Map<String, Object> map) {
@@ -44,9 +44,9 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Constructs a new toMap using the provided non-null toMap
+     * Constructs a new map using the provided non-null map
      *
-     * @param map the non-null existing toMap
+     * @param map the non-null existing map
      * @return a new instance of Attributes
      */
     public static Attributes of(@NonNull Map<String, Object> map) {
@@ -54,7 +54,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Checks whether a non-null key exists in this toMap
+     * Checks whether a non-null key exists in this map
      *
      * @param key the non-null key
      * @return a boolean
@@ -75,7 +75,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Inserts a key-value pair in the wrapped toMap
+     * Inserts a key-value pair in the wrapped map
      *
      * @param key        the non-null key
      * @param value      the nullable value
@@ -92,7 +92,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Inserts a key-value pair in the wrapped toMap
+     * Inserts a key-value pair in the wrapped map
      *
      * @param key        the non-null key
      * @param value      the nullable value
@@ -107,7 +107,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Inserts a key-value pair in the wrapped toMap
+     * Inserts a key-value pair in the wrapped map
      *
      * @param key   the non-null key
      * @param value the nullable value
@@ -119,7 +119,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value by key in the wrapped toMap
+     * Gets a value by key in the wrapped map
      *
      * @param key          the non-null key
      * @param defaultValue the non-null default value
@@ -132,7 +132,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value by key in the wrapped toMap
+     * Gets a value by key in the wrapped map
      *
      * @param key   the non-null key
      * @param clazz the non-null type of the value that is returned
@@ -144,7 +144,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value as an int by key in the wrapped toMap
+     * Gets a value as an int by key in the wrapped map
      *
      * @param key the non-null key
      * @return the non-null value
@@ -154,7 +154,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value as an int by key in the wrapped toMap
+     * Gets a value as an int by key in the wrapped map
      *
      * @param key the non-null key
      * @return the non-null value
@@ -174,7 +174,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value as a long by key in the wrapped toMap
+     * Gets a value as a long by key in the wrapped map
      *
      * @param key the non-null key
      * @return the non-null value
@@ -184,7 +184,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value as a long by key in the wrapped toMap
+     * Gets a value as a long by key in the wrapped map
      *
      * @param key the non-null key
      * @return the non-null value
@@ -205,7 +205,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     
 
     /**
-     * Gets a non-null value as a string by key in the wrapped toMap. If the key doesn't exist,
+     * Gets a non-null value as a string by key in the wrapped map. If the key doesn't exist,
      * unknown is returned.
      *
      * @param key the non-null key
@@ -216,7 +216,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value as a string by key in the wrapped toMap. If the value is null, defaultValue is
+     * Gets a value as a string by key in the wrapped map. If the value is null, defaultValue is
      * returned.
      *
      * @param key the non-null key
@@ -227,7 +227,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a nullable value as a string by key in the wrapped toMap
+     * Gets a nullable value as a string by key in the wrapped map
      *
      * @param key the non-null key
      * @return the nullable value
@@ -237,7 +237,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a non-null value as a string by key in the wrapped toMap. Throws an exception if the key
+     * Gets a non-null value as a string by key in the wrapped map. Throws an exception if the key
      * doesn't exist.
      *
      * @param key the non-null key
@@ -248,7 +248,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets an optional value as a string by key in the wrapped toMap
+     * Gets an optional value as a string by key in the wrapped map
      *
      * @param key the non-null key
      * @return a non-null optional
@@ -258,7 +258,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Gets a value as a boolean by key in the wrapped toMap
+     * Gets a value as a boolean by key in the wrapped map
      *
      * @param key the non-null key
      * @return a boolean
@@ -279,7 +279,7 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     
 
     /**
-     * Gets an optional value as a ContactJid by key in the wrapped toMap
+     * Gets an optional value as a ContactJid by key in the wrapped map
      *
      * @param key the non-null key
      * @return a non-null optional

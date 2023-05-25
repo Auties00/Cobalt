@@ -292,7 +292,11 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {
-        return appStateHandler.push(request);
+        return appStateHandler.push(store.jid(), request);
+    }
+
+    public CompletableFuture<Void> pushPatch(ContactJid jid, PatchRequest request) {
+        return appStateHandler.push(jid, request);
     }
 
     public void pullPatch(PatchType... patchTypes) {
@@ -481,7 +485,7 @@ public class SocketHandler implements SocketListener {
             metadata.founder().ifPresent(chat::founder);
             chat.foundationTimestampSeconds(metadata.foundationTimestamp().toEpochSecond());
             metadata.description().ifPresent(chat::description);
-            chat.participants().addAll(metadata.participants());
+            chat.addParticipants(metadata.participants());
         }
 
         return metadata;
@@ -491,25 +495,22 @@ public class SocketHandler implements SocketListener {
         return sendQuery(null, to, method, category, null, body);
     }
 
-    protected void sendSyncReceipt(MessageInfo info, String type) {
-        if (store.jid() == null) {
-            return;
-        }
-        var receipt = Node.ofAttributes("receipt",
-                Map.of("to", ContactJid.of(store.jid().user(), ContactJid.Server.USER), "type", type, "id", info.key().id()));
-        sendWithNoResponse(receipt);
-    }
-
     public void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
         if (messages.isEmpty()) {
             return;
         }
         var attributes = Attributes.of()
                 .put("id", messages.get(0))
-                .put("t", Clock.nowSeconds() / 1000)
+                .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
                 .put("to", jid)
-                .put("type", type, Objects::nonNull)
-                .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
+                .put("type", type, Objects::nonNull);
+        if(Objects.equals(type, "sender") && jid.hasServer(Server.WHATSAPP)){
+            attributes.put("recipient", jid);
+            attributes.put("to", participant);
+        }else {
+            attributes.put("to", jid);
+            attributes.put("participant", participant, Objects::nonNull);
+        }
         var receipt = Node.ofChildren("receipt", attributes.toMap(), toMessagesNode(messages));
         sendWithNoResponse(receipt);
     }
@@ -519,7 +520,8 @@ public class SocketHandler implements SocketListener {
             return null;
         }
         return messages.subList(1, messages.size())
-                .stream().map(id -> Node.ofAttributes("item", Map.of("id", id)))
+                .stream()
+                .map(id -> Node.ofAttributes("item", Map.of("id", id)))
                 .toList();
     }
 
@@ -531,7 +533,6 @@ public class SocketHandler implements SocketListener {
         var recipient = node.attributes().getNullableString("recipient");
         var type = node.attributes()
                 .getOptionalString("type")
-                .filter(ignored -> !node.hasDescription("message"))
                 .orElse(null);
         var attributes = Attributes.of()
                 .put("id", node.id())
@@ -541,8 +542,7 @@ public class SocketHandler implements SocketListener {
                 .put("recipient", recipient, Objects::nonNull)
                 .put("type", type, Objects::nonNull)
                 .toMap();
-        var receipt = Node.ofAttributes("ack", attributes);
-        sendWithNoResponse(receipt);
+        sendWithNoResponse(Node.ofAttributes("ack", attributes));
     }
 
     protected void onMetadata(Map<String, String> properties) {
@@ -798,8 +798,8 @@ public class SocketHandler implements SocketListener {
     protected void onDevices(LinkedHashMap<ContactJid, Integer> devices) {
         store().deviceKeyIndexes(devices);
         callListenersAsync(listener -> {
-            listener.onCompanionDevices(whatsapp, devices.keySet());
-            listener.onCompanionDevices(devices.keySet());
+            listener.onLinkedDevices(whatsapp, devices.keySet());
+            listener.onLinkedDevices(devices.keySet());
         });
     }
 

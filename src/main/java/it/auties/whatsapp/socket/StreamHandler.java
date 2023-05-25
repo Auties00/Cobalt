@@ -554,6 +554,14 @@ class StreamHandler {
             socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac, unresolved nodes:\n%s".formatted(unresolvedNodes)));
             return;
         }
+
+        // TODO: This is to fix Node[description=stream:error, content=[Node[description=ack, attributes={id=3EB04EF705C35A660AC5, type=text, class=message}]]]
+        // Should be actually fixed
+        if(node.hasNode("ack")){
+            socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            return;
+        }
+
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
             case 515, 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
@@ -586,7 +594,7 @@ class StreamHandler {
         var loggedInFuture = queryInitialInfo()
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        if(socketHandler.store().clientType() == ClientType.APP_CLIENT){
+        if(socketHandler.store().clientType() == ClientType.MOBILE){
             socketHandler.store().initialSync(true);
         }
 
@@ -621,7 +629,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> queryInitialInfo() {
         updateSelfPresence();
-        if(socketHandler.store().clientType() == ClientType.APP_CLIENT) {
+        if(socketHandler.store().clientType() == ClientType.MOBILE) {
             socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.ofAttributes("config", Map.of("version", 1)));
         }else {
             socketHandler.sendQuery("get", "w", Node.of("props"))
@@ -646,7 +654,9 @@ class StreamHandler {
             return;
         }
 
-        socketHandler.sendWithNoResponse(Node.ofAttributes("presence", Map.of("type", "available")));
+        socketHandler.sendWithNoResponse(Node.ofAttributes("presence", Map.of("type", "available")))
+                .thenRun(() -> socketHandler.store().online(true))
+                .exceptionally(exception -> socketHandler.handleFailure(STREAM, exception));
         socketHandler.store()
                 .findContactByJid(socketHandler.store().jid().toWhatsappJid())
                 .ifPresent(entry -> entry.lastKnownPresence(ContactStatus.AVAILABLE).lastSeen(ZonedDateTime.now()));

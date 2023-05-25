@@ -16,6 +16,7 @@ import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -181,7 +182,16 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     @Override
     public Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber) {
-        return deserializeKeysFromId(type, String.valueOf(phoneNumber));
+        var file = getSessionDirectory(type, String.valueOf(phoneNumber));
+        if(Files.notExists(file)){
+            return Optional.empty();
+        }
+
+        try {
+            return deserializeKeysFromId(type, Files.readString(file));
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot read %s".formatted(phoneNumber), exception);
+        }
     }
 
     private Optional<Keys> deserializeKeysFromId(ClientType type, String id) {
@@ -201,7 +211,16 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     @Override
     public Optional<Store> deserializeStore(@NonNull ClientType type, long phoneNumber) {
-        return deserializeStoreFromId(type, String.valueOf(phoneNumber));
+        var file = getSessionDirectory(type, String.valueOf(phoneNumber));
+        if(Files.notExists(file)){
+            return Optional.empty();
+        }
+
+        try {
+            return deserializeStoreFromId(type, Files.readString(file));
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot read %s".formatted(phoneNumber), exception);
+        }
     }
 
     private Optional<Store> deserializeStoreFromId(ClientType type, String id) {
@@ -256,12 +275,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 return;
             }
             var link = getSessionDirectory(controller.clientType(), phoneNumber.toString());
-            Files.deleteIfExists(link);
-            var original = getSessionDirectory(controller.clientType(), controller.uuid().toString());
-            Files.createDirectories(original);
-            Files.createSymbolicLink(link, original);
+            Files.writeString(link, controller.uuid().toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot create link between store and phone number", exception);
+            logger.log(WARNING, "Cannot link phone number to uuid", exception);
         }
     }
 
@@ -314,7 +330,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Path getHome(ClientType type) {
-        var directory = baseDirectory.resolve(type == ClientType.APP_CLIENT ? "mobile" : "web");
+        var directory = baseDirectory.resolve(type == ClientType.MOBILE ? "mobile" : "web");
         if (!Files.exists(directory)) {
             try {
                 Files.createDirectories(directory);

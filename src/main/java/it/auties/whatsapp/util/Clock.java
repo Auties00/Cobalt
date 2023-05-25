@@ -12,7 +12,7 @@ public class Clock {
         return Instant.now().getEpochSecond();
     }
 
-    public long nowInMilliseconds() {
+    public long nowMilliseconds() {
         return Instant.now().toEpochMilli();
     }
 

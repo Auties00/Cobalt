@@ -642,7 +642,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param devices  the non-null devices
      */
-    default void onCompanionDevices(Whatsapp whatsapp, Collection<ContactJid> devices){
+    default void onLinkedDevices(Whatsapp whatsapp, Collection<ContactJid> devices){
 
     }
 
@@ -651,7 +651,7 @@ public interface Listener {
      *
      * @param devices  the non-null devices
      */
-    default void onCompanionDevices(Collection<ContactJid> devices){
+    default void onLinkedDevices(Collection<ContactJid> devices){
 
     }
 }
