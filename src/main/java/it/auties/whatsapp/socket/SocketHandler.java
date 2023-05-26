@@ -291,12 +291,12 @@ public class SocketHandler implements SocketListener {
         };
     }
 
-    public CompletableFuture<Void> pushPatch(PatchRequest request) {
-        return appStateHandler.push(store.jid(), request);
+    public CompletableFuture<Void> pushPatch(PatchType type, PatchRequest request) {
+        return appStateHandler.push(type, store.jid(), List.of(request));
     }
 
-    public CompletableFuture<Void> pushPatch(ContactJid jid, PatchRequest request) {
-        return appStateHandler.push(jid, request);
+    public CompletableFuture<Void> pushPatches(PatchType type, ContactJid jid, List<PatchRequest> requests) {
+        return appStateHandler.push(type, jid, requests);
     }
 
     public void pullPatch(PatchType... patchTypes) {
@@ -796,7 +796,6 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void onDevices(LinkedHashMap<ContactJid, Integer> devices) {
-        store().deviceKeyIndexes(devices);
         callListenersAsync(listener -> {
             listener.onLinkedDevices(whatsapp, devices.keySet());
             listener.onLinkedDevices(devices.keySet());

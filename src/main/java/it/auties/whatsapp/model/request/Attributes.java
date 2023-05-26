@@ -100,7 +100,19 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
      * @return the calling instance
      */
     public Attributes put(@NonNull String key, Object value, @NonNull BooleanSupplier... conditions) {
-        if (Arrays.stream(conditions).allMatch(BooleanSupplier::getAsBoolean)) {
+        return put(key, value, Arrays.stream(conditions).allMatch(BooleanSupplier::getAsBoolean));
+    }
+
+    /**
+     * Inserts a key-value pair in the wrapped map
+     *
+     * @param key       the non-null key
+     * @param value     the nullable value
+     * @param condition the condition that must be met to insert the value
+     * @return the calling instance
+     */
+    public Attributes put(@NonNull String key, Object value, boolean condition) {
+        if (condition) {
             toMap.put(key, value);
         }
         return this;

@@ -13,7 +13,6 @@ public enum ConnectionType {
 
     /**
      * Creates a new connection using a unique identifier
-     * If the connection doesn't exist, an {@link it.auties.whatsapp.exception.UnknownSessionException} will be thrown
      */
     KNOWN,
 

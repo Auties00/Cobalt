@@ -6,6 +6,8 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 
 import java.net.URI;
@@ -13,24 +15,13 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
+@AllArgsConstructor(access = AccessLevel.PACKAGE)
 @SuppressWarnings("unused")
 public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOptionsBuilder, WebOptionsBuilder {
     protected Store store;
     protected Keys keys;
 
-    public OptionsBuilder(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType){
-        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, clientType);
-        this.store = Store.of(uuid, null, clientType, serializer, connectionType == ConnectionType.KNOWN);
-        this.keys = Keys.of(uuid, null, clientType, serializer, connectionType == ConnectionType.KNOWN);
-    }
-
-    public OptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
-        var uuid = getCorrectUuid(null, serializer, connectionType, clientType);
-        this.store = Store.of(uuid, phoneNumber, clientType, serializer, connectionType == ConnectionType.KNOWN);
-        this.keys = Keys.of(uuid, phoneNumber, clientType, serializer, connectionType == ConnectionType.KNOWN);
-    }
-
-    private static UUID getCorrectUuid(UUID uuid, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
+    protected static UUID getCorrectUuid(UUID uuid, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
         return switch (connectionType){
             case NEW -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
             case KNOWN -> uuid;
@@ -48,7 +39,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T name(@NonNull String name) {
-        store.name(name);
+        if(store != null) {
+            store.name(name);
+        }
         return (T) this;
     }
 
@@ -62,7 +55,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T version(@NonNull Version version) {
-        store.version(version);
+        if(store != null) {
+            store.version(version);
+        }
         return (T) this;
     }
 
@@ -74,7 +69,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T autodetectListeners(boolean autodetectListeners) {
-        store.autodetectListeners(autodetectListeners);
+        if(store != null) {
+            store.autodetectListeners(autodetectListeners);
+        }
         return (T) this;
     }
 
@@ -86,7 +83,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T textPreviewSetting(@NonNull TextPreviewSetting textPreviewSetting) {
-        store.textPreviewSetting(textPreviewSetting);
+        if(store != null) {
+            store.textPreviewSetting(textPreviewSetting);
+        }
         return (T) this;
     }
 
@@ -97,7 +96,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T errorHandler(@NonNull ErrorHandler errorHandler) {
-        store.errorHandler(errorHandler);
+        if(store != null) {
+            store.errorHandler(errorHandler);
+        }
         return (T) this;
     }
 
@@ -109,7 +110,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T socketExecutor(@NonNull Executor socketExecutor) {
-        store.socketExecutor(socketExecutor);
+        if(store != null) {
+            store.socketExecutor(socketExecutor);
+        }
         return (T) this;
     }
 
@@ -120,7 +123,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T releaseChannel(@NonNull UserAgentReleaseChannel releaseChannel) {
-        store.releaseChannel(releaseChannel);
+        if(store != null) {
+            store.releaseChannel(releaseChannel);
+        }
         return (T) this;
     }
 
@@ -131,7 +136,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T proxy(URI proxy) {
-        store.proxy(proxy);
+        if(store != null) {
+            store.proxy(proxy);
+        }
         return (T) this;
     }
 
@@ -143,7 +150,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T acknowledgeMessages(boolean acknowledgeMessages) {
-        store.automaticPresenceUpdates(acknowledgeMessages);
+        if(store != null) {
+            store.automaticPresenceUpdates(acknowledgeMessages);
+        }
         return (T) this;
     }
 }

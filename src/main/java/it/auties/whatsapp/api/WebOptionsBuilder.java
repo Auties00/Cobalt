@@ -1,20 +1,51 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.ControllerSerializer;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
 import lombok.NonNull;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @SuppressWarnings("unused")
 public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     private Whatsapp whatsapp;
 
-    public WebOptionsBuilder(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(connectionUuid, serializer, connectionType, ClientType.WEB);
+    WebOptionsBuilder(Store store, Keys keys) {
+        super(store, keys);
     }
 
-    public WebOptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(phoneNumber, serializer, connectionType, ClientType.WEB);
+    static Optional<WebOptionsBuilder> of(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
+        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.WEB);
+        var required = connectionType == ConnectionType.KNOWN;
+        var store = Store.of(uuid, null, ClientType.WEB, serializer, required);
+        if(required && store.isEmpty()){
+            return Optional.empty();
+        }
+
+        var keys = Keys.of(uuid, null, ClientType.WEB, serializer, required);
+        if(required && keys.isEmpty()){
+            return Optional.empty();
+        }
+
+        return Optional.of(new WebOptionsBuilder(store.get(), keys.get()));
+    }
+
+    static Optional<WebOptionsBuilder> of(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType){
+        var uuid = getCorrectUuid(null, serializer, connectionType, ClientType.WEB);
+        var required = connectionType == ConnectionType.KNOWN;
+        var store = Store.of(uuid, phoneNumber, ClientType.WEB, serializer, required);
+        if(required && store.isEmpty()){
+            return Optional.empty();
+        }
+
+        var keys = Keys.of(uuid, phoneNumber, ClientType.WEB, serializer, required);
+        if(required && keys.isEmpty()){
+            return Optional.empty();
+        }
+
+        return Optional.of(new WebOptionsBuilder(store.get(), keys.get()));
     }
 
     /**

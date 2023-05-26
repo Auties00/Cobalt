@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * how this could be used, contributions are welcomed.
  */
 @AllArgsConstructor
-@NoArgsConstructor(staticName = "of")
+@NoArgsConstructor
 @Data
 @Builder
 @Jacksonized

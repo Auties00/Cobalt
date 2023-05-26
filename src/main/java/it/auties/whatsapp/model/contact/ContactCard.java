@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 /**
  * A model class to represent and build the vcard of a contact
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Value
 @Builder
 @Jacksonized
@@ -72,7 +72,7 @@ public class ContactCard {
                 .filter(ContactCard::isValidPhoneNumber)
                 .collect(Collectors.toUnmodifiableMap(ContactCard::getPhoneType, ContactCard::getPhoneValue, ContactCard::joinPhoneNumbers));
         var businessName = parsed.getExtendedProperty(BUSINESS_NAME_PROPERTY);
-        return ContactCard.of(version, name, phoneNumbers, businessName != null ? businessName.getValue() : null);
+        return new ContactCard(version, name, phoneNumbers, businessName != null ? businessName.getValue() : null);
     }
 
     private static boolean isValidPhoneNumber(Telephone entry) {

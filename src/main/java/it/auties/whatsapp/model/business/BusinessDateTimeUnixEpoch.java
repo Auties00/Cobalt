@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 /**
  * A model class that represents a time as a unix epoch
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model class that represents a time
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

@@ -18,7 +18,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 /**
  * A model class that represents a message holding a contact inside
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
 @Jacksonized

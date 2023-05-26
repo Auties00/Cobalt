@@ -14,7 +14,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 /**
  * A model class that represents a time a localizable name
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

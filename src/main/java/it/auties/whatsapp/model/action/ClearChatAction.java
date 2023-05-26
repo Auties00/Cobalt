@@ -15,7 +15,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model clas that represents a cleared chat
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

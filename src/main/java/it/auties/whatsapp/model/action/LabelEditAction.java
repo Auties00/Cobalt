@@ -12,7 +12,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 /**
  * A model clas that represents an edit to a label
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model clas that represents a new read status for a chat
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

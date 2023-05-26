@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
  * A model class that represents a message that refers to a message sent by the device paired with
  * the active WhatsappWeb session to dataSync.
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Jacksonized

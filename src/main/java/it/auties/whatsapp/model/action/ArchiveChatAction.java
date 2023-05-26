@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model clas that represents an archived chat
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

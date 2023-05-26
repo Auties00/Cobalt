@@ -1,61 +1,55 @@
-Conver this code to Java:
-  function getToken(phone) {
-    // Ok, most of this code is bullshit since it'll generate the same code
-    // everytime, the only variable step is the last one. Still, the
-    // registration is something that will be done only once per installation
-    // and leaving it this way it should be easier to fix when WA change their
-    // registration code again.
-    // Just remember to NOT include this file on the general file!
-
-    var classesMd5 = atob("r4WQV17nVTl3+uFlF9mvEg==");
-    var prefix = atob("Y29tLndoYXRzYXBw");
-    var signature = atob(
-      ""
-    );
-    var k =
-      CryptoJS.enc.Base64.parse("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
-
-    // And this is the biggest bullshit part... I know it's ugly, but it's easier and faster than reading this from a file.
-    var f =
-      CoSeMe.utils.bytesFromLatin1(atob(
-                                     ""
-      )
-    );
-
-    var KEY = CoSeMe.utils.bytesFromLatin1("The piano has been drinking");
-
-    // We xor this file because apparently the final f is copyrighted
-    var count = 0;
-    var l = f.length;
-    for (var i=0; i < l; i++) {
-      f[i] = f[i] ^ KEY[count++];
-      if (count == KEY.length - 1) {
-        count = 0;
-      }
-    }
-
-    var d = CryptoJS.enc.Latin1.parse(
-              prefix + CoSeMe.utils.latin1FromBytes(f)
-            );
-
-    var key2 = CryptoJS.PBKDF2(d, k, {
-                                 keySize: (80*8) / 32,
-                                 iterations: 128
-                               }).toString(CryptoJS.enc.UInt8Array);
-
-    var opad = new Uint8Array(64);
-    var ipad = new Uint8Array(64);
-    for (i = 0; i < 64; i++) {
-      opad[i] = 0x5C ^ key2[i];
-      ipad[i] = 0x36 ^ key2[i];
-    }
-    ipad = CryptoJS.enc.UInt8Array.parse(ipad);
-    opad = CryptoJS.enc.UInt8Array.parse(opad);
-
-    // And this is why I said this is bullshit. For all practical senses,
-    // everything up to this point could just be a nifty constant... So we do a
-    // lot of hand wriggling to generate the same value every time. Yay us!
-    var data = CryptoJS.enc.Latin1.parse(signature + classesMd5 + phone);
-
-    return CryptoJS.SHA1(opad.concat(CryptoJS.SHA1(ipad.concat(data)))).toString(CryptoJS.enc.Base64);
-  }
+04-05 18:05:28.367 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <iq to='s.whatsapp.net' xmlns='w:sync:app:state' type='set' id='0de'><delete_all_data/></iq>
+04-05 18:05:28.516 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <iq from='s.whatsapp.net' type='result' id='0de'/>
+04-05 18:05:28.559 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <iq to='s.whatsapp.net' id='0df' xmlns='md' type='set'><pair-device><ref>2@p2XBc2GkfTrRa7WH3Ji7kWvllNueKlJ45mdCZKUi4ymIC3UylYmBgWd7d1rkIE8iAvEXKggWNnawCw==</ref><pub-key>%04%b7%ea%80%25r%15%97-%ef%8a%c3%e1%9c%a9y%a7IvM%bc%e9%b6GRMW%a8%d2B%18]</pub-key><device-identity>%0at%0a%0e%08%a4%de%ff%9a%04%10%c7%b1%c3%a3%06%18%01%12%20N*";H%b3%e9%ea%13R%16wv%90%a9%a9%dc%fb%8c%13%b3.%84%b8%9el%dd%f0ku%c9%1c%1a@%bf]%b6%b21A@%d8%fa%82%cbN%a30%e5%a0%d8:%efl%a0&%a5%cc%d0%d8%ea%99:%eb(%9f%c1%d0%cdC%97L%8b%0f!%fc%9d%0cN%fc%81%bc%07\%07op%0eg%1d"Q7_FB>%06%12%20%9c%db%c3%8c%d9%96%25%be%85X%b5%86%92%05%06!8%e5W]%01?VM%f00%f3,%cb%b4uA</device-identity><key-index-list ts='1685117127'>%0a%12%08%a4%de%ff%9a%04%10%c7%b1%c3%a3%06%18%01"%02%00%01%12@%95E%07%9aD%12%97%ee%e9%dc%08%ce%e0P%d2%be\%f1-B%e2%09%92'%14BO%0ch%ce%fcZ%92%94%f63?%deJ%a4b%89sG-%ff%f2%94%d1%d3_%92\%b7`%90%25%ec8,r%83%ec%01</key-index-list></pair-device></iq>
+04-05 18:05:29.088 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <iq from='s.whatsapp.net' type='result' id='0df'><companion-props>%0a%07Windows%12%02%08%0a%18%01%20%00*%06%18%af%ac%1b%20%01</companion-props><device jid='9819:36@s.whatsapp.net'/></iq>
+04-05 18:05:31.128 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <notification from='9819@s.whatsapp.net' type='account_sync' id='3191494141' t='1685117131'><devices dhash='2:N+3Qk/DG'><device jid='9819@s.whatsapp.net'/><device jid='9819:36@s.whatsapp.net' key-index='1'/><key-index-list ts='1685117127'>%0a%12%08%a4%de%ff%9a%04%10%c7%b1%c3%a3%06%18%01"%02%00%01%12@%95E%07%9aD%12%97%ee%e9%dc%08%ce%e0P%d2%be\%f1-B%e2%09%92'%14BO%0ch%ce%fcZ%92%94%f63?%deJ%a4b%89sG-%ff%f2%94%d1%d3_%92\%b7`%90%25%ec8,r%83%ec%01</key-index-list></devices></notification>
+04-05 18:05:31.131 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='3191494141' to='9819@s.whatsapp.net' class='notification' type='account_sync'/>
+04-05 18:05:31.392 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <iq id='0e0' xmlns='encrypt' type='get' to='s.whatsapp.net'><key><user jid='9819:36@s.whatsapp.net'/></key></iq>
+04-05 18:05:31.566 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <iq from='s.whatsapp.net' type='result' id='0e0'><list><user jid='9819:36@s.whatsapp.net' t='1685117131'><device-identity>%0a%0e%08%a4%de%ff%9a%04%10%c7%b1%c3%a3%06%18%01%1a@%bf]%b6%b21A@%d8%fa%82%cbN%a30%e5%a0%d8:%efl%a0&%a5%cc%d0%d8%ea%99:%eb(%9f%c1%d0%cdC%97L%8b%0f!%fc%9d%0cN%fc%81%bc%07\%07op%0eg%1d"Q7_FB>%06"@A%e3P%cdz%db%ab%ebb%ce%ddx%05%1740x%c3%905Z%a95B%f5/%13%a9%aa%16%04%0c%12%95%bfm%d7n%96%d1%20%d0\%c1%e8%e0J>_)<%b1%8c%f4%88N%b9%c0%c9'%a5%8cB%86</device-identity><registration>%00%00%04%eb</registration><type>%05</type><identity>%01%ee%ab%bc%98%bf]J%adI9%82%983w%c3v%af%87%e8%0f}%ea%9b%ce%f89%a7%cfK%a4U</identity><skey><id>%00%00%01</id><value>%9b%1f%94%89o%94%88@Lj+U%11[p%06%92%9f%0f%b5}m%db+;%87x%98%den}g</value><signature>%80%e4%0ew%1c%1f%98%b2~%9a%0f0%91V%96%e0%dd%c7%8c%98>%1e}JG~%d5;%1b%c8CDP%0aXA`j%c3{%fd%da%a9%dcg^%fd%e7%d9X%be%00%b2O=%1c%97%20:%fc%03%ea[%8c</signature></skey><key><id>%00%00%1c</id><value>%1bO%a8%a4B%c6P%ba%8a%7f%84%e0VW]H%02%15%88n%e68%0bW\h%d1%1a%b7%8bku</value></key></user></list></iq>
+04-05 18:05:31.604 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='32693583BE483A67BA21D0494A7039CC' category='peer'><enc v='2' type='pkmsg'>149 bytes</enc></message>
+04-05 18:05:31.609 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='CDBBBE75839345E22D1BFDC76493516B' category='peer' push_priority='high'><enc v='2' type='pkmsg'>214 bytes</enc></message>
+04-05 18:05:31.717 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='32693583BE483A67BA21D0494A7039CC' t='1685117132'/>
+04-05 18:05:31.718 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='CDBBBE75839345E22D1BFDC76493516B' t='1685117132'/>
+04-05 18:05:31.925 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='9DC68C5A2EA9DBA20B91C88523A5CF58' category='peer'><enc v='2' type='pkmsg'>407 bytes</enc></message>
+04-05 18:05:31.984 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='70609B8590CDAB0FC3F922E123FC00B7' category='peer'><enc v='2' type='pkmsg'>407 bytes</enc></message>
+04-05 18:05:32.002 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='4D8C7D4C70F1AB25523C1DC7DD810DC7' category='peer'><enc v='2' type='pkmsg'>423 bytes</enc></message>
+04-05 18:05:32.016 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <iq to='s.whatsapp.net' xmlns='w:sync:app:state' type='set' id='0e1'><sync data_namespace='3'><collection name='critical_unblock_low' order='0'><patch>%1a%9e%02%0a%20%c2%14%e7k%db%db0%94%1f%fa%1aV%e8%a9<2%c3%b1Y%91:-@%fb%1c%c60%f1h%d1%a8o%12%8c%01/v/t62.31695-24/35161294_579275964320120_5283456916535888719_n.enc?ccb=11-4&oh=01_AdQlkmhv5xgS_-m8RboAcWhOJijnQM2HRShSH7ceSIg5CA&oe=64984154%1a$GM6EGAJ4iRQy2Q4CAE-LM5gSnFJJbs97AAAA%20%92j*%20k%fd%c5r%18S%a4%d1%202%9a%e6D%e8%9f%9e%86$N&%d4~%a4%04%80`%85%ae`%d9%d5%042%20%f1%9fZQq%ce%10%13%e1%10-%f0%e1%ba%d5;%0a]Ma%11%f6%9e91l%fcSP%04%c0%af"%20%1cxV/%f0%ae%fe!@Sl%18%d9%94%07cE%cb%db%88%e2'%05%b7e%8c\r%0f%cc1'*%20%92g%25%914%e1M%f3%ce%04%f8%d1j%f8%c6{%e6%ae%af%11;W%84oT%0ap1%e5%9ba%fd2%08%0a%06%00%00%00%00%d7R@%00</patch></collection><collection name='critical_block' order='1'><patch>%12%97%01%08%00%12%92%01%0a"%0a%20#K%99%f1[%13%f8_4%c0N%afBV%b5%8e%f8l%f6%e1%ceK%c6%a4%1a%a2%b3%fc%c0%d6'%ab%12b%0a`*%0f%ab%1f%9b%09%80%ea%a3,<%8d%00>%9e8%fbh%0eV%a2-9%bf`Y%f3|%cf%19%25%11%18Oz%13%1e%a0mp%d9%82%8d%a7%f5}%a7%9e\F%e9;C%d7%8f%1f%11L%05~}%eaUn%0bf&a%ad%25g%a2%85%8f%8f5`%efki%8c%d8%19[t%03%f4q%d2%d1%c1%90E%bc4?%1a%08%0a%06%00%00%00%00%d7R%12%a7%01%08%00%12%a2%01%0a"%0a%20%9d'W%cc%eb%ddU%b9%f7%f19I%89s%dbP%e6%d2{%f9%11>%d1%8f%e8\%e9&A%cd^%b8%12r%0ap%e0%14%f7%1fR%1e%dcKJY%16*%0a%8e%b7-S%95%e4%a2%d3XS%8as%8bH%97t%16%9b%11%dc%95%83%f2%8c^%c2%8e:%ce%09`%914E%ad"%9aHTjZ5%df%00%b7%a4%fc%cd%e2W%10I%af%83%f3%19%ba%ef%11l%aa&%a7%14%15%92*u%8a%15%ef%fe%b8%9c%fe%a9w%d5%f0%deN%06%17%bb%c9%b3%efJ%25%e8%1e%8dc%0b'%87%af~k%1a%08%0a%06%00%00%00%00%d7R"%20\%c1%eb%b7%17%f4%a7%9a%be%af%d0%d9%b9%be%cbr%e5n%01%17%dd%10f%0b!'%d70%10%85%c6l*%20%b6%03x%c7CcV3%9fk%e7%dfP%0d%d0%d7x?%0a%9c%d3t%f1V%e5h%87+%b6%1c%a1l2%08%0a%06%00%00%00%00%d7R@%00</patch></collection></sync></iq>
+04-05 18:05:32.040 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='9DC68C5A2EA9DBA20B91C88523A5CF58' t='1685117132'/>
+04-05 18:05:32.041 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='32693583BE483A67BA21D0494A7039CC' t='1685117132'/>
+04-05 18:05:32.051 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='32693583BE483A67BA21D0494A7039CC' to='9819:36@s.whatsapp.net' class='receipt' type='peer_msg'/>
+04-05 18:05:32.060 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='CDBBBE75839345E22D1BFDC76493516B' t='1685117132'/>
+04-05 18:05:32.068 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='CDBBBE75839345E22D1BFDC76493516B' to='9819:36@s.whatsapp.net' class='receipt' type='peer_msg'/>
+04-05 18:05:32.098 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='70609B8590CDAB0FC3F922E123FC00B7' t='1685117132'/>
+04-05 18:05:32.115 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='4D8C7D4C70F1AB25523C1DC7DD810DC7' t='1685117132'/>
+04-05 18:05:32.225 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='9DC68C5A2EA9DBA20B91C88523A5CF58' t='1685117132'/>
+04-05 18:05:32.227 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='9DC68C5A2EA9DBA20B91C88523A5CF58' to='9819:36@s.whatsapp.net' class='receipt' type='peer_msg'/>
+04-05 18:05:32.297 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='70609B8590CDAB0FC3F922E123FC00B7' t='1685117132'/>
+04-05 18:05:32.302 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='70609B8590CDAB0FC3F922E123FC00B7' to='9819:36@s.whatsapp.net' class='receipt' type='peer_msg'/>
+04-05 18:05:32.303 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='4D8C7D4C70F1AB25523C1DC7DD810DC7' t='1685117132'/>
+04-05 18:05:32.306 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='4D8C7D4C70F1AB25523C1DC7DD810DC7' to='9819:36@s.whatsapp.net' class='receipt' type='peer_msg'/>
+04-05 18:05:32.350 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <iq from='s.whatsapp.net' type='result' id='0e1'><sync><collection name='critical_block' version='1'/><collection name='critical_unblock_low' version='1'/></sync></iq>
+04-05 18:05:32.401 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <iq to='s.whatsapp.net' xmlns='w:sync:app:state' type='set' id='0e2'><sync data_namespace='3'><collection name='regular_low' order='1'><patch>%12%97%01%08%00%12%92%01%0a"%0a%20k%10u%c0%c7%a2#w%ad%09%96%bf%bd%fe%934?%a9X%04%97%dc%e1V,%ffP%91%d0%18%0b%a0%12b%0a`I%e2J%eeY%9f%99@%c0%a2%e1i%c5%95%1d%88%06%b1%d6h%a7%bb%9b%7f5%b2%17C%f2O<%e7%f5%a8%c2%b8%bf%f8%05%a3%84,B%ba~%05%de%a3%987%b9%d9+%99TQ%f2o%85^%ea%c9%9cf%1c0%06%f0%9e%b3%cb%d9%13%dep%fdV%e1%b4%19%e6w%1d%b8VG%e2j%f4%c3%f3%f3%e3%86:%ab%1a%08%0a%06%00%00%00%00%d7R%12%a7%01%08%00%12%a2%01%0a"%0a%20-%81%e4U%0f%b9%87%8f%e8%a5|%b1W,%0e%bcO%c4W%cf%f7%f2%f73LW%08e%95%a7!%c5%12r%0ap]%25%d5}%edj3f%1c%05%b6%ca%a7%bbc%f2%fd;XL%db%ca%9eY%f0%94}%99%cfv+%16$%0b%c6f%19%1e[%25;%d7%bf%d0%f7%95%dd0%8f%f9%dc%c2Y[A%d3Dk%df%96%9f%96^%b8%81%0cB%19%b9%d2%b6%08%f9%ed/%dd%e6%aar%db%d5GQ?%89%96%8dZ"%02G%b1%ee%c2%20%1e%cacx%0ae%dd=aj%17%f4%d0"%f6{%d5%1a%08%0a%06%00%00%00%00%d7R%12%a7%01%08%00%12%a2%01%0a"%0a%20%cc%ed%fe%c1IW9%f00xl(:%afl%b3%9f%13%16%d2D%edK|h%f1&%e5&%99%04j%12r%0ap&~%d6J%c0gr%98%9a_X6%e1%deyS)%8fO%e8Ls%cbk%dc%a8%fc%f5znU%f4-nD%99Z%a8%8a=%f5d%182%b5%f8%91H%088%b3%08%85i%d0%f2%1b%aag%a4`%e6/`f%e0%87%11a%a8%a56G"%12*%bd%00%0by%f5%8dmH%ba%cd#%c2%1a>%84%d1_%f4H%a0%ed>u#M%b4u%18^%8f%97%96%a5B%a7%ea%1a%08%0a%06%00%00%00%00%d7R%12%a7%01%08%00%12%a2%01%0a"%0a%20%d4%e7%84%c3%8a%f9X%f0>%be_%9f%d5%a4I%d6d%bb%d0/%e5%b4%08%f0[%9c3%90(%cfyW%12r%0ap%0a[%d5%ea%b6L"=%af%18T%aew%a3%a4]*+H%91%186%bb%f7%d4%8aZ%c6%05%13%af%b1%acNl3D%d6%f0%a6h%95%17%175%92`/%1c3%d5%8a%c1%8c%98%f2%aa%93\fz%b3%d4%0a%c1%f0%900%1a%ca)%1d%8a%1fX%d8n%a3,!%a2m%e3%a5%ec%cd%ed%90>%06U%882%16X%a7%1b-=I`%d9%b4h%ff%20)%a7%c3^u%c8%1a%08%0a%06%00%00%00%00%d7R%12%97%01%08%00%12%92%01%0a"%0a%20%fd?55%13m%b7%de~%f6G%97%b6%90%cacX%97g%d6%d4%18.{%8fk%a3%ca%e3%a0i%0c%12b%0a`6%84%07%82%acKK%a7%c9%e1):%85LEj%ad%aeA%07k2j7%e72%d9%b5%b8%ae%d9x"]%14e%04?%cd%be%f6V%1f%86C%f5/%ad'%25%abi=%15%d9d%f5?p%88%e7>E%9c%b9'%8f%ce%ee%f8u;c%f8.%be|t=%a67%e34%eb\%eb%8dz;{%c4%eb%b5%d2%ed%f1%1a%08%0a%06%00%00%00%00%d7R"%20&J%f6%c5%9b%08%12P%a8]R*E+%da%df%f4%8aW_%cf%b8/`t5%89%a5%a1\f%ab*%20%cc%f1%f3%82Tu%c8";%9e3g%f5S-%af%d0%08%0b%88%f1l%1c%c4%e0%00%ed%c6%f4%e8%ac%9f2%08%0a%06%00%00%00%00%d7R@%00</patch></collection><collection name='regular' order='1'><patch>%12%c9%02%08%00%12%c4%02%0a"%0a%20%06%d9%d7%bb%08%acx%a6%83.%b6+%04L8%ac(%e9V%f7%07-%d5%b3ntNI%20%a8%0d/%12%93%02%0a%90%02%0e%df%a9%afAh^%d2%16c%14%89%fc%06%06%8b0%d2%b8$%f0%d0$Q%f4OO%84a3%e2%82s%25n%c3^vG%e7%8fda%91%fe%fd%be%dbm%d8%ce%baq%88%d5/%93%bav%04%f7%b3%1ew%afr]%1ei%af%10%ee.%9b%a8/%af%cf6%c2%d1?%8f%beO%bf%c1%15%f1%b3D<%9f%87%c7%e5@_%09Q%eex%af%070g%8a^%0e%0b%cd%96/kaC%86wP~%9c%a7%06@%00%a1%84%8c%c8w3G%b5D$%cb%1e%c3%d3%96?%e1%c5%f4%e3%e3%8b%c8%a0IZm%d5%e8J[%81%10%b8q%a9%bb%8a%b0`A%82%86W%a9v0b%0b%ef%a7%fb%81"&%a5%cb7%d5%03%be%88g-%da%b8d%ef%0b%87%f7%e5%d8Gl(%10O,T%a9%f5%b5%c7,%914%09E%08ObeC%09jI%0bmh%db%1c%0b%dc%0a%f9%ec%10%a3%8fmh%de%03R%8c%b9sP%0f%c1P%ae)%e9%8b%a7"P%f9%ba%99%cd%c1%0b%f5%e4%ba%a4%df%968{{%db%b3%83%1a%08%0a%06%00%00%00%00%d7R"%20%87%ffP=%8d%1a%8e%10%bafh&S%80^bm.Q%ea%fa%cbwb_X{z%8a%af%c1%bb*%20+%06%85%c1o}%10%f8%bc%c4N%02S%8e%e9%ab%e2%18%8c%da%db%ef%1aK%a7I%da%e3%cd%a9%1e22%08%0a%06%00%00%00%00%d7R@%00</patch></collection></sync></iq>
+04-05 18:05:32.402 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='65B3DB7C079189084A384FC8EAED3DED' category='peer'><enc v='2' type='pkmsg'>407 bytes</enc></message>
+04-05 18:05:32.463 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <presence type='probe' to='9819:36@s.whatsapp.net'/>
+04-05 18:05:32.514 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='65B3DB7C079189084A384FC8EAED3DED' t='1685117132'/>
+04-05 18:05:32.777 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <presence from='9819:36@s.whatsapp.net' type='unavailable' last='none'/>
+04-05 18:05:32.778 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <iq from='s.whatsapp.net' type='result' id='0e2'><sync><collection name='regular' version='1'/><collection name='regular_low' version='1'/></sync></iq>
+04-05 18:05:34.082 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='hist_sync' id='65B3DB7C079189084A384FC8EAED3DED' t='1685117134'/>
+04-05 18:05:34.084 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='hist_sync' id='9DC68C5A2EA9DBA20B91C88523A5CF58' t='1685117134'/>
+04-05 18:05:34.085 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='65B3DB7C079189084A384FC8EAED3DED' t='1685117134'/>
+04-05 18:05:34.086 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='hist_sync' id='4D8C7D4C70F1AB25523C1DC7DD810DC7' t='1685117134'/>
+04-05 18:05:34.086 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='hist_sync' id='70609B8590CDAB0FC3F922E123FC00B7' t='1685117134'/>
+04-05 18:05:34.089 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='65B3DB7C079189084A384FC8EAED3DED' to='9819:36@s.whatsapp.net' class='receipt' type='peer_msg'/>
+04-05 18:05:34.091 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='9DC68C5A2EA9DBA20B91C88523A5CF58' to='9819:36@s.whatsapp.net' class='receipt' type='hist_sync'/>
+04-05 18:05:34.092 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='4D8C7D4C70F1AB25523C1DC7DD810DC7' to='9819:36@s.whatsapp.net' class='receipt' type='hist_sync'/>
+04-05 18:05:34.093 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='65B3DB7C079189084A384FC8EAED3DED' to='9819:36@s.whatsapp.net' class='receipt' type='hist_sync'/>
+04-05 18:05:34.095 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='70609B8590CDAB0FC3F922E123FC00B7' to='9819:36@s.whatsapp.net' class='receipt' type='hist_sync'/>
+04-05 18:05:34.618 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='29F64BA6B206650A7B6A858AC6175819' category='peer'><enc v='2' type='pkmsg'>407 bytes</enc></message>
+04-05 18:05:34.840 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <message to='9819:36@s.whatsapp.net' type='text' id='42406CF8173AA1FC706C21DA1CB530E6' category='peer'><enc v='2' type='pkmsg'>423 bytes</enc></message>
+04-05 18:05:34.936 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='29F64BA6B206650A7B6A858AC6175819' t='1685117135'/>
+04-05 18:05:34.951 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <ack from='9819:36@s.whatsapp.net' class='message' id='42406CF8173AA1FC706C21DA1CB530E6' t='1685117135'/>
+04-05 18:05:36.340 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='29F64BA6B206650A7B6A858AC6175819' t='1685117136'/>
+04-05 18:05:36.342 10712 18336 D WhatsApp: LL_D W [324:ReaderThread] RECV <receipt from='9819:36@s.whatsapp.net' type='peer_msg' id='42406CF8173AA1FC706C21DA1CB530E6' t='1685117136'/>
+04-05 18:05:36.345 10712 10872 D WhatsApp: LL_D W [284:WriterThread] SEND <ack id='29F64BA6B206650A7B6A858AC6175819' to='9819:36@s.whatsapp.net' class='receipt' type='peer_msg'/>
+^C^C
+C:\Users\alaut>

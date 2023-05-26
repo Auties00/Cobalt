@@ -12,7 +12,7 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 /**
  * A model clas that represents a label association
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

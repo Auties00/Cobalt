@@ -15,7 +15,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model clas that represents a deleted chat
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

@@ -15,7 +15,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model class that holds a payload about a business account.
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

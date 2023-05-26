@@ -1,0 +1,49 @@
+    public static Keys of(UUID uuid, long phoneNumber, byte[] publicKey, byte[] privateKey, byte[] messagePublicKey, byte[] messagePrivateKey, byte[] registrationId) {
+        var result = Keys.builder()
+                .registered(true)
+                .serializer(DefaultControllerSerializer.instance())
+                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
+                .noiseKeyPair(new SignalKeyPair(publicKey, privateKey))
+                .identityKeyPair(new SignalKeyPair(messagePublicKey, messagePrivateKey))
+                .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
+                .clientType(ClientType.MOBILE)
+                .prologue(Spec.Whatsapp.APP_PROLOGUE)
+                .build();
+        result.signedKeyPair(SignalSignedKeyPair.of(result.registrationId(), result.identityKeyPair()));
+        result.serialize(true);
+        return result;
+    }
+
+    package it.auties.whatsapp;
+
+    import it.auties.whatsapp.api.ClientType;
+    import it.auties.whatsapp.api.Whatsapp;
+    import it.auties.whatsapp.controller.Keys;
+    import it.auties.whatsapp.controller.Store;
+    import org.junit.jupiter.api.Test;
+
+    import java.util.Base64;
+    import java.util.UUID;
+
+    public class RestoreTest {
+        @Test
+        public void run() {
+            var phoneNumber = 14503019330L;
+            var publicKey = Base64.getDecoder().decode("m/iiyYEMoc7PhoiW+5PBS60C9t/uuZtniTIYTtoeXmQ=");
+            var privateKey = Base64.getDecoder().decode("aAMkq65qbBY3UIdQDsI37J2mKjqT6rD8uByGMtq170Y=");
+            var messagePublicKey = Base64.getDecoder().decode("dmhDFN5c0VP8GgENgPtNRuoiPOhyJSghT9gb+BHp1HM=");
+            var messagePrivateKey = Base64.getDecoder().decode("cKXULyosPRYYTfFVJ8LxcXDvoCKXHty3mE9LW8OuKEg=");
+            var registrationId = Base64.getDecoder().decode("MTQ1MDMwMTkzMzAjBi63b9D1HTv1mjWdhDqpYKZLV18=");
+            var uuid = UUID.randomUUID();
+            var store = Store.of(uuid, phoneNumber, ClientType.MOBILE, false);
+            var keys = Keys.of(uuid, phoneNumber, publicKey, privateKey, messagePublicKey, messagePrivateKey, registrationId);
+            Whatsapp.of(store, keys)
+                    .connect()
+                    .join()
+                    .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
+                    .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
+                    .connect()
+                    .join()
+                    .awaitDisconnection();
+        }
+    }

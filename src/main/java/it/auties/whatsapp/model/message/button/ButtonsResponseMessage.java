@@ -20,7 +20,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  * A model class that represents a message that contains a response to a previous
  * {@link ButtonsMessage}
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)

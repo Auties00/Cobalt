@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 /**
  * A model clas that represents a new mute status for a chat
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

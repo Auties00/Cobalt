@@ -159,7 +159,7 @@ class MessageHandler {
             return socketHandler.send(encodedMessageNode);
         }
 
-        var deviceMessage = DeviceSentMessage.of(request.info().chatJid().toString(), request.info().message(), null);
+        var deviceMessage = new DeviceSentMessage(request.info().chatJid().toString(), request.info().message(), null);
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
         return getDevices(knownDevices, true, request.force())
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
@@ -811,7 +811,7 @@ class MessageHandler {
                 .findContactByJid(jid)
                 .orElseGet(() -> createNewContact(jid));
         contact.chosenName(pushName.name());
-        var action = ContactAction.of(pushName.name(), null, null);
+        var action = new ContactAction(pushName.name(), null, null);
         socketHandler.onAction(action, MessageIndexInfo.of("contact", jid, null, true));
     }
 

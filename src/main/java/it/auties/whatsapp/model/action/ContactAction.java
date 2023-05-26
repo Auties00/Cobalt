@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 /**
  * A model clas that represents a new contact push name
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

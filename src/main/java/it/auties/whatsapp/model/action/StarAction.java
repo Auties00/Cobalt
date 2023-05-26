@@ -12,7 +12,7 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 /**
  * A model clas that represents a new star status for a message
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model class that represents a message to decline a {@link RequestPaymentMessage}.
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder

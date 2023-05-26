@@ -723,7 +723,7 @@ public class RunMobileCITest implements Listener {
         }
         log("Sending contact message...");
         var vcard = ContactCard.builder().name("A nice contact").phoneNumber(contact).build();
-        var contactMessage = ContactMessage.of("A nice contact", vcard);
+        var contactMessage = new ContactMessage("A nice contact", vcard);
         var response = api.sendMessage(contact, contactMessage).join();
         log("Sent contact: %s", response);
     }
@@ -895,8 +895,8 @@ public class RunMobileCITest implements Listener {
             return;
         }
 
-        var pollOptionFirst = PollOption.of("First");
-        var pollOptionSecond = PollOption.of("Second");
+        var pollOptionFirst = new PollOption("First");
+        var pollOptionSecond = new PollOption("Second");
         var pollMessage = PollCreationMessage.of("Example poll", List.of(pollOptionFirst, pollOptionSecond));
         var pollInfo = api.sendMessage(contact, pollMessage).join();
         var firstUpdate = PollUpdateMessage.of(pollInfo, List.of(pollOptionFirst));
@@ -933,7 +933,7 @@ public class RunMobileCITest implements Listener {
                 .stream()
                 .map(Chat::messages)
                 .flatMap(Collection::stream)
-                .map(HistorySyncMessage::message)
+                .map(HistorySyncMessage::messageInfo)
                 .filter(info -> !info.fromMe() && info.message().category() == MessageCategory.MEDIA)
                 .limit(30)
                 .map(info -> api.downloadMedia(info).thenApply(ignored -> success.incrementAndGet()).exceptionallyAsync(ignored -> fail.incrementAndGet()))

@@ -15,7 +15,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  * A model class that represents an option in a
  * {@link it.auties.whatsapp.model.message.standard.PollCreationMessage}
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized

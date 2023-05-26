@@ -18,7 +18,7 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
 /**
  * A model class that represents the cypher data to decode the votes of a user inside {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage}
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized

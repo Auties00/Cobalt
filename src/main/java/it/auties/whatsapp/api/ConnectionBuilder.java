@@ -6,6 +6,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -46,7 +47,7 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection(UUID uuid) {
-        return createConnection(uuid, ConnectionType.NEW);
+        return createConnection(uuid, ConnectionType.NEW).get();
     }
 
     /**
@@ -56,29 +57,7 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection(long phoneNumber) {
-        return createConnection(phoneNumber, ConnectionType.NEW);
-    }
-
-    /**
-     * Creates a new connection using a supplied uuid
-     * If a connection was serialized in the past with that uuid, it will be retrieved, otherwise a {@link it.auties.whatsapp.exception.UnknownSessionException} will be thrown
-     *
-     * @param uuid the non-null uuid to use
-     * @return a non-null options selector
-     */
-    public T knownConnection(@NonNull UUID uuid) {
-        return createConnection(uuid, ConnectionType.KNOWN);
-    }
-
-    /**
-     * Creates a new connection using a supplied phone number
-     * If a connection was serialized in the past with that uuid, it will be retrieved, otherwise a {@link it.auties.whatsapp.exception.UnknownSessionException} will be thrown
-     *
-     * @param phoneNumber the non-null phone number
-     * @return a non-null options selector
-     */
-    public T knownConnection(long phoneNumber) {
-        return createConnection(phoneNumber, ConnectionType.KNOWN);
+        return createConnection(phoneNumber, ConnectionType.NEW).get();
     }
 
     /**
@@ -88,7 +67,7 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T firstConnection() {
-        return createConnection(null, ConnectionType.FIRST);
+        return createConnection(null, ConnectionType.FIRST).get();
     }
 
     /**
@@ -98,26 +77,44 @@ public class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T lastConnection() {
-        return createConnection(null, ConnectionType.LAST);
+        return createConnection(null, ConnectionType.LAST).get();
+    }
+
+    /**
+     * Creates a new connection using a supplied uuid
+     *
+     * @param uuid the non-null uuid to use
+     * @return a non-null options selector
+     */
+    public Optional<T> knownConnection(@NonNull UUID uuid) {
+        return createConnection(uuid, ConnectionType.KNOWN);
+    }
+
+    /**
+     * Creates a new connection using a supplied phone number
+     *
+     * @param phoneNumber the non-null phone number
+     * @return a non-null options selector
+     */
+    public Optional<T> knownConnection(long phoneNumber) {
+        return createConnection(phoneNumber, ConnectionType.KNOWN);
     }
 
     @SuppressWarnings("unchecked")
-    private T createConnection(UUID uuid, ConnectionType connectionType) {
-        return (T) switch (clientType) {
-            case WEB ->
-                    new WebOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
-            case MOBILE ->
-                    new MobileOptionsBuilder(uuid, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
+    private Optional<T> createConnection(UUID uuid, ConnectionType connectionType) {
+        var serializer = Objects.requireNonNullElse(this.serializer, DefaultControllerSerializer.instance());
+        return (Optional<T>) switch (clientType) {
+            case WEB -> WebOptionsBuilder.of(uuid, serializer, connectionType);
+            case MOBILE -> MobileOptionsBuilder.of(uuid, serializer, connectionType);
         };
     }
 
     @SuppressWarnings("unchecked")
-    private T createConnection(long phoneNumber, ConnectionType connectionType) {
-        return (T) switch (clientType) {
-            case WEB ->
-                    new WebOptionsBuilder(phoneNumber, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
-            case MOBILE ->
-                    new MobileOptionsBuilder(phoneNumber, Objects.requireNonNullElse(serializer, DefaultControllerSerializer.instance()), connectionType);
+    private Optional<T> createConnection(long phoneNumber, ConnectionType connectionType) {
+        var serializer = Objects.requireNonNullElse(this.serializer, DefaultControllerSerializer.instance());
+        return (Optional<T>) switch (clientType) {
+            case WEB -> WebOptionsBuilder.of(phoneNumber, serializer, connectionType);
+            case MOBILE -> MobileOptionsBuilder.of(phoneNumber, serializer, connectionType);
         };
     }
 }

@@ -12,7 +12,7 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 /**
  * A model clas that represents unsupported actions for android
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @Data
 @Builder
 @Jacksonized

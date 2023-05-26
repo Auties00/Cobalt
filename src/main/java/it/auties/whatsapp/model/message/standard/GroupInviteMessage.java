@@ -25,7 +25,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 /**
  * A model class that represents a message holding a whatsapp group invite inside
  */
-@AllArgsConstructor(staticName = "of")
+@AllArgsConstructor
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)

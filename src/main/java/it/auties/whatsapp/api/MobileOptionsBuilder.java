@@ -3,30 +3,61 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unregistered;
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unverified;
 import it.auties.whatsapp.controller.ControllerSerializer;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
-import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @SuppressWarnings("unused")
 public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuilder> {
-    public MobileOptionsBuilder(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(connectionUuid, serializer, connectionType, ClientType.MOBILE);
+    MobileOptionsBuilder(Store store, Keys keys) {
+        super(store, keys);
     }
 
-    public MobileOptionsBuilder(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType) {
-        super(phoneNumber, serializer, connectionType, ClientType.WEB);
+    static Optional<MobileOptionsBuilder> of(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
+        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.MOBILE);
+        var required = connectionType == ConnectionType.KNOWN;
+        var store = Store.of(uuid, null, ClientType.MOBILE, serializer, required);
+        if(required && store.isEmpty()){
+            return Optional.empty();
+        }
+
+        var keys = Keys.of(uuid, null, ClientType.MOBILE, serializer, required);
+        if(required && keys.isEmpty()){
+            return Optional.empty();
+        }
+
+        return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
     }
 
+    static Optional<MobileOptionsBuilder> of(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType){
+        var uuid = getCorrectUuid(null, serializer, connectionType, ClientType.MOBILE);
+        var required = connectionType == ConnectionType.KNOWN;
+        var store = Store.of(uuid, null, ClientType.MOBILE, serializer, required);
+        if(required && store.isEmpty()){
+            return Optional.empty();
+        }
+
+        var keys = Keys.of(uuid, null, ClientType.MOBILE, serializer, required);
+        if(required && keys.isEmpty()){
+            return Optional.empty();
+        }
+
+        return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
+    }
 
     /**
      * Set the operating system of the associated companion
      *
      * @return the same instance for chaining
      */
-    private MobileOptionsBuilder osType(@NonNull UserAgentPlatform osType){
-        store.os(osType);
+    public MobileOptionsBuilder osType(@NonNull UserAgentPlatform osType){
+        if(store != null) {
+            store.os(osType);
+        }
         return this;
     }
 
@@ -36,7 +67,9 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder osVersion(@NonNull String osVersion){
-        store.osVersion(osVersion);
+        if(store != null) {
+            store.osVersion(osVersion);
+        }
         return this;
     }
 
@@ -46,7 +79,9 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder model(@NonNull String model){
-        store.model(model);
+        if(store != null) {
+            store.model(model);
+        }
         return this;
     }
 
@@ -56,7 +91,9 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder manufacturer(@NonNull String manufacturer){
-        store.manufacturer(manufacturer);
+        if(store != null) {
+            store.manufacturer(manufacturer);
+        }
         return this;
     }
 
@@ -66,7 +103,9 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder business(boolean business){
-        store.business(business);
+        if(store != null) {
+            store.business(business);
+        }
         return this;
     }
 
@@ -75,12 +114,14 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * This means that the verification code has already been sent to Whatsapp
      * If this is not the case, an exception will be thrown
      *
-     * @throws IllegalStateException if the session is not registered
-     * @return a non-null selector
+     * @return a non-null optional of whatsapp
      */
-    public Whatsapp registered() {
-        Validate.isTrue(keys.registered(), "Expected session to be already registered", IllegalStateException.class);
-        return new Whatsapp(store, keys);
+    public Optional<Whatsapp> registered() {
+        if(!keys.registered()){
+            return Optional.empty();
+        }
+
+        return Optional.of(new Whatsapp(store, keys));
     }
 
     /**

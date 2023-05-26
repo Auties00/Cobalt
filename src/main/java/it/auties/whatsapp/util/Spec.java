@@ -48,6 +48,7 @@ public class Spec {
         public static final UserAgentPlatform DEFAULT_WEB_OS_TYPE = UserAgentPlatform.WINDOWS;
         public static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
         public static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
+        public static final int COMPANION_PAIRING_TIMEOUT = 10;
     }
 
     public final static class Signal {
