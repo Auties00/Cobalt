@@ -45,7 +45,7 @@ public class ActionMessageRangeSync implements ProtobufMessage {
         if (allMessages) {
             return chat.messages()
                     .stream()
-                    .map(HistorySyncMessage::message)
+                    .map(HistorySyncMessage::messageInfo)
                     .map(this::createActionMessage)
                     .toList();
         }

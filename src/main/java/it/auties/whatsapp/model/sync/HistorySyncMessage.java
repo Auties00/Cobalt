@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 @ProtobufName("HistorySyncMsg")
 public class HistorySyncMessage implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageInfo.class)
-    private MessageInfo message;
+    private MessageInfo messageInfo;
 
     @ProtobufProperty(index = 2, type = UINT64)
     private long messageOrderId;

@@ -424,7 +424,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         var iterator = historySyncMessages.iterator();
         return historySyncMessages.stream()
                 .limit(unreadMessagesCount())
-                .map(HistorySyncMessage::message)
+                .map(HistorySyncMessage::messageInfo)
                 .toList();
     }
 
@@ -509,7 +509,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> newestMessage() {
         return Optional.ofNullable(historySyncMessages.peekLast())
-                .map(HistorySyncMessage::message);
+                .map(HistorySyncMessage::messageInfo);
     }
 
     /**
@@ -519,7 +519,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> oldestMessage() {
         return Optional.ofNullable(historySyncMessages.peekFirst())
-                .map(HistorySyncMessage::message);
+                .map(HistorySyncMessage::messageInfo);
     }
 
     /**
@@ -597,7 +597,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private Optional<MessageInfo> findMessageBy(Function<MessageInfo, Boolean> filter, boolean newest) {
         var descendingIterator = newest ? historySyncMessages.descendingIterator() : historySyncMessages.iterator();
         while (descendingIterator.hasNext()){
-            var info = descendingIterator.next().message();
+            var info = descendingIterator.next().messageInfo();
             if(filter.apply(info)){
                 return Optional.ofNullable(info);
             }
@@ -614,7 +614,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Collection<MessageInfo> starredMessages() {
         return historySyncMessages.stream()
-                .map(HistorySyncMessage::message)
+                .map(HistorySyncMessage::messageInfo)
                 .filter(MessageInfo::starred)
                 .toList();
     }
@@ -758,7 +758,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull MessageInfo info) {
-        var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.message().id(), info.id()));
+        var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.messageInfo().id(), info.id()));
         refreshChatTimestamp();
         return result;
     }
@@ -770,7 +770,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return whether the message was removed
      */
     public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
-        var result = historySyncMessages.removeIf(entry -> predicate.test(entry.message()));
+        var result = historySyncMessages.removeIf(entry -> predicate.test(entry.messageInfo()));
         refreshChatTimestamp();
         return result;
     }
