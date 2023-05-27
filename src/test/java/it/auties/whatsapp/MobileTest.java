@@ -27,7 +27,7 @@ public class MobileTest {
     private static void onConnected(Whatsapp api) {
         System.out.println("Connected to mobile api");
         api.unlinkCompanions().join();
-        api.linkCompanion("2@pPq4IaRpVjqShvan3fr/2p82vdr2docObSY1Pd2GhokUhsKKn2sOlbDjjzCQ2PTKMCuOowpBDB12Ig==,wK+/Bxa1Z55vzjMQYQnmaOxI/BM9rEDCg9bQrezShzw=,QHwS7C3DfgfFZj4nl2lDXLFXmEyKVBk9ZJuUCtD2qjY=,zge1ZtIz5kPzJsss6HqIigGJt0m88buTz+Xn7Zxy2sk=")
+        api.linkCompanion("2@TgG+fmDzN2g5bvJrcbt8IKbLaxgicWSHI8pF9WYJXhX1hGCP/RiAiJsjKJDNmsSjkDTMsbNBb1NHfg==,5lBcuqkIjoJPYrQB8HOson1xKvwShXLzIFTjYtrZ0kw=,ZMAvonat2EAKMvjdSePPrwlAR/jbZk31FMcioWtwxSQ=,i4+khF4NBD0NMp2VYItWXMDzWWiIIkzwx2bHcXCA6bk=")
                 .join();
     }
 
