@@ -983,13 +983,13 @@ public class Whatsapp {
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changePresence(@NonNull T chat, @NonNull ContactStatus presence) {
         if(presence == ContactStatus.COMPOSING || presence == ContactStatus.RECORDING){
-            var node = Node.ofChildren("chatstate", Map.of("to", chat.toJid()), Node.of(presence.data()));
+            var node = Node.ofChildren("chatstate", Map.of("from", store().jid(), "to", chat.toJid()), Node.of(presence.data()));
             return socketHandler.sendWithNoResponse(node)
                     .thenAcceptAsync(socketHandler -> updateSelfPresence(chat, presence))
                     .thenApplyAsync(ignored -> chat);
         }
 
-        var node = Node.ofAttributes("presence", Map.of("to", chat.toJid(), "type", presence.data(), "name", store().name()));
+        var node = Node.ofAttributes("presence", Map.of("type", presence.data(), "name", store().name()));
         return socketHandler.sendWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updateSelfPresence(chat, presence))
                 .thenApplyAsync(ignored -> chat);
