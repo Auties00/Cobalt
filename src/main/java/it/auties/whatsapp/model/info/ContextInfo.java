@@ -201,7 +201,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
 
     private ContextInfo(@NonNull MessageMetadataProvider quotedMessage) {
         this.quotedMessageId = quotedMessage.id();
-        this.quotedMessageSenderJid = quotedMessage.sender().map(Contact::jid).orElse(null);
+        this.quotedMessageSenderJid = quotedMessage.senderJid();
         this.quotedMessageSender = quotedMessage.sender().orElse(null);
         this.quotedMessageChatJid = quotedMessage.chat().jid();
         this.quotedMessageChat = quotedMessage.chat();

@@ -171,7 +171,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>2.0.1</protoc.version>
+        <protoc.version>2.0.2</protoc.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.9.0</junit.version>
         <jna.version>5.12.1</jna.version>

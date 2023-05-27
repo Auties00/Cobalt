@@ -32,7 +32,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.info. ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.media.AttachmentType;

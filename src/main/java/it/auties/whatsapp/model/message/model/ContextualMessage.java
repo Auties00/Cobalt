@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.*;
@@ -36,7 +35,7 @@ public sealed abstract class ContextualMessage implements Message permits Button
      * The context info of this message
      */
     @ProtobufProperty(index = 17, type = MESSAGE, implementation = ContextInfo.class)
-    private ContextInfo contextInfo;
+    protected ContextInfo contextInfo;
 
     /**
      * Returns the context info of this message or an empty instance
@@ -54,10 +53,5 @@ public sealed abstract class ContextualMessage implements Message permits Button
      */
     public boolean hasContextInfo(){
         return contextInfo != null;
-    }
-
-    @JsonGetter
-    private ContextInfo contextInfoJson(){
-        return contextInfo;
     }
 }

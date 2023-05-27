@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import org.junit.jupiter.api.Test;
 
- // Just used for testing locally
+// Just used for testing locally
 public class WebTest {
     @Test
     public void run() {
@@ -13,7 +13,7 @@ public class WebTest {
                 .historyLength(WebHistoryLength.STANDARD)
                 .build()
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
-                .addNewMessageListener(message -> System.out.println(message.toJson()))
+                .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
