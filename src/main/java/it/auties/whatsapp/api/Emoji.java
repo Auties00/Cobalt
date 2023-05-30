@@ -3,12 +3,12 @@ package it.auties.whatsapp.api;
 import lombok.AllArgsConstructor;
 
 /**
- * A list of all emojys supported by Whatsapp
+ * A list of all emojis supported by Whatsapp
  * <a href="https://unicode.org/emoji/charts/full-emoji-list.html">Source</a>
  */
 @AllArgsConstructor
 @SuppressWarnings("SpellCheckingInspection")
-public enum Emojy {
+public enum Emoji {
     GRINNING_FACE("😀"),
     GRINNING_FACE_WITH_BIG_EYES("😃"),
     GRINNING_FACE_WITH_SMILING_EYES("😄"),
