@@ -12,7 +12,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
-import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 

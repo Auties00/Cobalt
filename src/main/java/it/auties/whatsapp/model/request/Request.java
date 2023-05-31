@@ -2,13 +2,13 @@ package it.auties.whatsapp.model.request;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.socket.SocketSession;
 import it.auties.whatsapp.util.Exceptions;
+import it.auties.whatsapp.util.Protobuf;
 import lombok.NonNull;
 
 import java.io.IOException;

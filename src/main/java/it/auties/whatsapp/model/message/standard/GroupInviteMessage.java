@@ -18,7 +18,6 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 
