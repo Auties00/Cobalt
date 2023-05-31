@@ -7,7 +7,6 @@ import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
-import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.chat.Chat.EndOfHistoryTransferType;
 import it.auties.whatsapp.model.contact.Contact;
@@ -22,6 +21,7 @@ import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
+import it.auties.whatsapp.model.message.server.ProtocolMessage.ProtocolMessageType;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.request.Attributes;
@@ -34,6 +34,8 @@ import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
+import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
+import it.auties.whatsapp.model.sync.AppStateSyncKeyShare;
 import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
@@ -362,9 +364,8 @@ class MessageHandler {
 
     protected void parseSessions(Node node) {
         node.findNode("list")
-                .map(entry -> entry.findNodes("user"))
-                .stream()
-                .flatMap(Collection::stream)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot parse sessions: " + node))
+                .findNodes("user")
                 .forEach(this::parseSession);
     }
 
@@ -415,8 +416,7 @@ class MessageHandler {
         return node.findNode("verified_name")
                 .flatMap(Node::contentAsBytes)
                 .map(bytes -> Protobuf.readMessage(bytes, BusinessVerifiedNameCertificate.class))
-                .map(certificate -> Protobuf.readMessage(certificate.details(), BusinessVerifiedNameDetails.class))
-                .map(BusinessVerifiedNameDetails::name);
+                .map(certificate -> certificate.details().name());
     }
 
     private Node createMessageNode(MessageSendRequest request, CipheredMessageResult groupMessage) {
@@ -497,16 +497,13 @@ class MessageHandler {
             }
             var key = keyBuilder.id(id).build();
             if(isSelfMessage(key)){
-                socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
+                sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }
 
             if (messageNode == null) {
-                if(sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null)){
-                    return;
-                }
-
-                socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
+                sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null);
+                sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }
 
@@ -514,11 +511,8 @@ class MessageHandler {
             var encodedMessage = messageNode.contentAsBytes().orElse(null);
             var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
             if (decodedMessage.hasError()) {
-                if(sendRetryReceipt(timestamp, id, from, recipient, participant, type, encodedMessage, decodedMessage)){
-                    return;
-                }
-
-                socketHandler.sendReceipt(key.chatJid(), key.senderJid().orElse(key.chatJid()), List.of(key.id()), null);
+                sendRetryReceipt(timestamp, id, from, recipient, participant, type, encodedMessage, decodedMessage);
+                sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }
 
@@ -534,29 +528,30 @@ class MessageHandler {
             attributeMessageReceipt(info);
             socketHandler.store().attribute(info);
             saveMessage(info, offline);
-            sendReceipt(infoNode, info);
+            sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
             socketHandler.onReply(info);
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
         }
     }
 
-    private void sendReceipt(Node infoNode, MessageInfo info) {
-        var chatJid = info.chatJid();
-        var senderJid = info.key()
-                .senderJid()
-                .orElseGet(() -> info.fromMe() ? chatJid : null);
+    private void sendReceipt(Node infoNode, String id, ContactJid chatJid, ContactJid senderJid, boolean fromMe) {
+        if(fromMe && senderJid == null){
+            senderJid = chatJid;
+        }
+
         var category = infoNode.attributes().getString("category");
-        var receiptType = getReceiptType(category, info);
-        socketHandler.sendReceipt(chatJid, senderJid, List.of(info.key().id()), receiptType);
+        var receiptType = getReceiptType(category, fromMe);
+        socketHandler.sendReceipt(chatJid, senderJid, List.of(id), receiptType);
+        socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
     }
 
-    private String getReceiptType(String category, MessageInfo info) {
+    private String getReceiptType(String category, boolean fromMe) {
         if(Objects.equals(category, "peer")){
             return "peer_msg";
         }
 
-        if(info.fromMe()){
+        if(fromMe){
             return "sender";
         }
 
@@ -574,20 +569,20 @@ class MessageHandler {
                 && !key.senderJid().get().hasAgent();
     }
 
-    private boolean sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant, String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
+    private void sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant, String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
         if(encodedMessage != null) {
             logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage == null ? "unknown error" : decodedMessage.error().getMessage()));
         }
 
         if(socketHandler.store().clientType() == ClientType.MOBILE){
-            return false;
+            return;
         }
 
         var attempts = retries.getOrDefault(id, 0);
         if (attempts >= MAX_ATTEMPTS) {
             var cause = decodedMessage != null ? decodedMessage.error() : new RuntimeException("This message is not available");
             socketHandler.handleFailure(MESSAGE, new RuntimeException("Cannot decrypt message with type %s inside %s from %s".formatted(Objects.requireNonNullElse(type, "unknown"), from, Objects.requireNonNullElse(participant, from)), cause));
-            return false;
+            return;
         }
 
         var retryAttributes = Attributes.of()
@@ -603,7 +598,6 @@ class MessageHandler {
                 attempts > 1 || encodedMessage == null ? createPreKeyNode() : null);
         socketHandler.sendWithNoResponse(retryNode);
         retries.put(id, attempts + 1);
-        return true;
     }
 
     private MessageDecodeResult decodeMessageBytes(String type, byte[] encodedMessage, ContactJid from, ContactJid participant) {
@@ -710,7 +704,28 @@ class MessageHandler {
             case APP_STATE_SYNC_KEY_SHARE -> onAppStateSyncKeyShare(protocolMessage);
             case REVOKE -> onMessageRevoked(info, protocolMessage);
             case EPHEMERAL_SETTING -> onEphemeralSettings(info, protocolMessage);
+            case APP_STATE_SYNC_KEY_REQUEST -> createAppStateKeysMessage(info.senderJid(), protocolMessage.appStateSyncKeyRequest().keyIds());
         }
+    }
+
+    private void createAppStateKeysMessage(ContactJid companion, List<AppStateSyncKeyId> appStateSyncKeyIds) {
+        if(!socketHandler.store().linkedDevices().contains(companion)){
+            return;
+        }
+
+        var keys = appStateSyncKeyIds.stream()
+                .map(entry -> socketHandler.keys().findAppKeyById(companion, entry.keyId()))
+                .flatMap(Optional::stream)
+                .toList();
+        var appStateSyncKeyShare = AppStateSyncKeyShare.builder()
+                .keys(keys)
+                .build();
+        var result = ProtocolMessage.builder()
+                .protocolType(ProtocolMessageType.APP_STATE_SYNC_KEY_SHARE)
+                .appStateSyncKeyShare(appStateSyncKeyShare)
+                .build();
+        socketHandler.sendPeerMessage(companion, result)
+                .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
     }
 
     private void onEphemeralSettings(MessageInfo info, ProtocolMessage protocolMessage) {

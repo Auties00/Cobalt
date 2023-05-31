@@ -6,10 +6,10 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.exception.RegistrationException;
+import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.request.Attributes;
-import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;
@@ -71,7 +71,7 @@ public class RegistrationHelper {
     }
 
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
-        keys.registered(registered);
+        keys.registrationStatus(RegistrationStatus.REGISTERED);
         if(registered){
             store.jid(store.phoneNumber().get().toJid());
             store.addLinkedDevice(store.jid(), 0);
@@ -98,36 +98,29 @@ public class RegistrationHelper {
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
-        return getUserAgent(store).thenComposeAsync(userAgent -> {
-            var client = createClient(store);
-            var encodedParams = toFormParams(params);
-            var keypair = SignalKeyPair.random();
-            var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
-            var buffer = AesGmc.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
-            var enc = Base64.getUrlEncoder().encodeToString(Bytes.of(keypair.publicKey(), buffer).toByteArray());
-            var request = HttpRequest.newBuilder()
-                    .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, enc)))
-                    .GET()
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .header("User-Agent", userAgent)
-                    .header("WaMsysRequest", "1")
-                    .header("request_token", UUID.randomUUID().toString())
-                    .build();
-            return client.sendAsync(request, BodyHandlers.ofString());
-        });
+        var client = createClient(store);
+        var encodedParams = toFormParams(params);
+        var keypair = SignalKeyPair.random();
+        var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
+        var buffer = AesGmc.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
+        var enc = Base64.getUrlEncoder().encodeToString(Bytes.of(keypair.publicKey(), buffer).toByteArray());
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, enc)))
+                .GET()
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("User-Agent", getUserAgent(store))
+                .header("WaMsysRequest", "1")
+                .header("request_token", UUID.randomUUID().toString())
+                .build();
+        return client.sendAsync(request, BodyHandlers.ofString());
     }
 
-    private CompletableFuture<String> getUserAgent(Store store) {
-        return store.version()
-                .thenApplyAsync(version -> getUserAgent(store, version));
-    }
-
-    private String getUserAgent(Store store, Version version) {
+    private String getUserAgent(Store store) {
         var osName = getMobileOsName(store);
         var osVersion = store.osVersion();
         var manufacturer = store.manufacturer();
         var model = store.model().replaceAll(" ", "_");
-        return "WhatsApp/%s %s/%s Device/%s-%s".formatted(version, osName, osVersion, manufacturer, model);
+        return "WhatsApp/%s %s/%s Device/%s-%s".formatted(store.version(), osName, osVersion, manufacturer, model);
     }
 
     private String getMobileOsName(Store store) {
@@ -166,7 +159,7 @@ public class RegistrationHelper {
                 .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
                 .put("e_keytype", "BQ")
                 .put("e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
-                .put("e_skey_id", "AAAA")
+                .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
                 .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
                 .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
                 .put("fdid", keys.phoneId())

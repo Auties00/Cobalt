@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.business;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.util.Protobuf;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,4 +39,8 @@ public class BusinessVerifiedNameCertificate implements ProtobufMessage {
      */
     @ProtobufProperty(index = 3, type = BYTES)
     private byte[] serverSignature;
+
+    public BusinessVerifiedNameDetails details(){
+        return Protobuf.readMessage(details, BusinessVerifiedNameDetails.class);
+    }
 }

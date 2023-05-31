@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.setting.LocaleSetting;
 import it.auties.whatsapp.model.setting.PushNameSetting;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.model.sync.*;
+import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 
@@ -48,45 +49,59 @@ class AppStateHandler {
         this.runner = new OrderedAsyncTaskRunner();
     }
 
-    protected CompletableFuture<Void> push(@NonNull PatchType type, @NonNull ContactJid jid, @NonNull List<PatchRequest> patches) {
+    protected CompletableFuture<Void> push(@NonNull ContactJid jid, @NonNull List<PatchRequest> patches) {
         if(socketHandler.store().clientType() == ClientType.MOBILE){
-            return runner.runAsync(() -> sendPush(jid, createPushRequest(type, jid, patches))
+            return runner.runAsync(() -> sendPush(jid, createPushRequests(jid, patches), false)
                     .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
                     .orTimeout(TIMEOUT, TimeUnit.SECONDS));
         }
-        
-        return runner.runAsync(() -> pullUninterruptedly(jid, List.of(type)))
-                .thenCompose(ignored -> sendPush(jid, createPushRequest(type, jid, patches)))
+
+        var types = patches.stream()
+                .map(PatchRequest::type)
+                .collect(Collectors.toUnmodifiableSet());
+        return runner.runAsync(() -> pullUninterruptedly(jid, types))
+                .thenCompose(ignored -> sendPush(jid, createPushRequests(jid, patches), true))
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
                 .orTimeout(TIMEOUT, TimeUnit.SECONDS);
     }
 
-    private PushRequest createPushRequest(PatchType type, ContactJid jid, List<PatchRequest> patches) {
+    private List<PushRequest> createPushRequests(ContactJid jid, List<PatchRequest> patches) {
+        return patches.stream()
+                .map(entry -> createPushRequest(jid, patches, entry))
+                .toList();
+    }
+
+    private PushRequest createPushRequest(ContactJid jid, List<PatchRequest> patches, PatchRequest request) {
         var oldState = socketHandler.keys()
-                .findHashStateByName(jid, type)
-                .orElseGet(() -> new LTHashState(type));
+                .findHashStateByName(jid, request.type())
+                .orElseGet(() -> new LTHashState(request.type()));
         var newState = oldState.copy();
         var key = socketHandler.keys().getLatestAppKey(jid);
         var mutationKeys = MutationKeys.of(key.keyData().keyData());
         var syncId = new KeyId(key.keyId().keyId());
         var mutations = patches.stream()
+                .map(PatchRequest::entries)
+                .flatMap(Collection::stream)
                 .map(patch -> createMutation(patch, mutationKeys, key, newState, syncId))
                 .toList();
-        var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(), type, mutationKeys.snapshotMacKey());
+        var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(), request.type(), mutationKeys.snapshotMacKey());
         var valueMac = mutations.stream()
-                .map(entry -> newState.indexValueMap().get(Base64.getEncoder().encodeToString(entry.record().index().blob())))
+                .map(MutationResult::valueMac)
                 .reduce(new byte[0], (first, second) -> Bytes.of(first, second).toByteArray());
-        var patchMac = generatePatchMac(snapshotMac, valueMac, newState.version(), type, mutationKeys.patchMacKey());
+        var patchMac = generatePatchMac(snapshotMac, valueMac, newState.version(), request.type(), mutationKeys.patchMacKey());
+        var syncs = mutations.stream()
+                .map(MutationResult::sync)
+                .toList();
         var sync = PatchSync.builder()
                 .patchMac(patchMac)
                 .snapshotMac(snapshotMac)
                 .keyId(syncId)
-                .mutations(mutations)
+                .mutations(syncs)
                 .build();
-        return new PushRequest(type, oldState, newState, sync);
+        return new PushRequest(request.type(), oldState, newState, sync);
     }
 
-    private MutationSync createMutation(PatchRequest patch, MutationKeys mutationKeys, AppStateSyncKey key, LTHashState newState, KeyId syncId) {
+    private MutationResult createMutation(PatchEntry patch, MutationKeys mutationKeys, AppStateSyncKey key, LTHashState newState, KeyId syncId) {
         var index = patch.index().getBytes(StandardCharsets.UTF_8);
         var actionData = ActionDataSync.builder()
                 .index(index)
@@ -110,41 +125,51 @@ class AppStateHandler {
                 .keyId(syncId)
                 .build();
         newState.indexValueMap().put(Bytes.of(indexMac).toBase64(), valueMac);
-        return MutationSync.builder()
+        var sync = MutationSync.builder()
                 .operation(patch.operation())
                 .record(record)
                 .build();
+        return new MutationResult(sync, valueMac);
     }
 
-    private CompletableFuture<Void> sendPush(ContactJid jid, PushRequest request) {
+    private record MutationResult(MutationSync sync, byte[] valueMac){
+
+    }
+
+    private CompletableFuture<Void> sendPush(ContactJid jid, List<PushRequest> requests, boolean readPatches) {
         var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
+        var body = requests.stream()
+                .map(request -> createPushRequestNode(request, mobile))
+                .toList();
+        var syncAttributes = Attributes.of()
+                .put("data_namespace", 3, mobile)
+                .toMap();
+        var sync = Node.ofChildren("sync", syncAttributes, body);
+        return socketHandler.sendQuery("set", "w:sync:app:state", sync)
+                .thenRunAsync(() -> onPush(jid, requests, readPatches));
+    }
+
+    private Node createPushRequestNode(PushRequest request, boolean mobile) {
         var collectionAttributes = Attributes.of()
                 .put("name", request.type())
                 .put("version", request.newState().version() - 1, !mobile)
                 .put("return_snapshot", false, !mobile)
                 .put("order", request.type() != PatchType.CRITICAL_UNBLOCK_LOW ? "1" : "0", mobile)
                 .toMap();
-        var body = Node.ofChildren("collection",
-                collectionAttributes,
-                Node.of("patch", Protobuf.writeMessage(request.sync())));
-        var syncAttributes = Attributes.of()
-                .put("data_namespace", 3, mobile)
-                .toMap();
-        var sync = Node.ofChildren("sync", syncAttributes, body);
-        return socketHandler.sendQuery("set", "w:sync:app:state", sync)
-                .thenAcceptAsync(this::parseSyncRequest)
-                .thenRunAsync(() -> onPush(jid, request));
+        return Node.ofChildren("collection", collectionAttributes, Node.of("patch", Protobuf.writeMessage(request.sync())));
     }
 
-    private void onPush(ContactJid jid, PushRequest request) {
-        socketHandler.keys().putState(jid, request.newState());
-        handleSyncRequest(jid, request);
-    }
+    private void onPush(ContactJid jid, List<PushRequest> requests, boolean readPatches) {
+        requests.forEach(request -> {
+            socketHandler.keys().putState(jid, request.newState());
+            if (!readPatches) {
+                return;
+            }
 
-    private void handleSyncRequest(ContactJid jid, PushRequest request) {
-        var patches = List.of(request.sync().withVersion(new VersionSync(request.newState().version())));
-        var results = decodePatches(jid, request.type(), patches, request.oldState());
-        results.records().forEach(entry -> processActions(request.type(), entry));
+            var patches = List.of(request.sync().withVersion(new VersionSync(request.newState().version())));
+            var results = decodePatches(jid, request.type(), patches, request.oldState());
+            results.records().forEach(entry -> processActions(request.type(), entry));
+        });
     }
 
     protected void pull(PatchType... patchTypes) {
@@ -153,7 +178,7 @@ class AppStateHandler {
             return;
         }
 
-        runner.runAsync(() -> pullUninterruptedly(socketHandler.store().jid(), Arrays.asList(patchTypes)).thenAcceptAsync(success -> onPull(false, success))
+        runner.runAsync(() -> pullUninterruptedly(socketHandler.store().jid(), Set.of(patchTypes)).thenAcceptAsync(success -> onPull(false, success))
                 .exceptionallyAsync(exception -> onPullError(false, exception)));
     }
 
@@ -162,7 +187,7 @@ class AppStateHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return pullUninterruptedly(socketHandler.store().jid(), Arrays.asList(PatchType.values()))
+        return pullUninterruptedly(socketHandler.store().jid(), Set.of(PatchType.values()))
                 .thenAcceptAsync(success -> onPull(true, success))
                 .exceptionallyAsync(exception -> onPullError(true, exception));
     }
@@ -195,7 +220,7 @@ class AppStateHandler {
         return socketHandler.handleFailure(PULL_APP_STATE, exception);
     }
 
-    private CompletableFuture<Boolean> pullUninterruptedly(ContactJid jid, List<PatchType> patchTypes) {
+    private CompletableFuture<Boolean> pullUninterruptedly(ContactJid jid, Set<PatchType> patchTypes) {
         var tempStates = new HashMap<PatchType, LTHashState>();
         var nodes = getPullNodes(jid, patchTypes, tempStates);
         return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
@@ -205,11 +230,11 @@ class AppStateHandler {
                 .orTimeout(TIMEOUT, TimeUnit.SECONDS);
     }
 
-    private CompletableFuture<Boolean> handlePullResult(ContactJid jid, List<PatchType> remaining) {
+    private CompletableFuture<Boolean> handlePullResult(ContactJid jid, Set<PatchType> remaining) {
         return remaining.isEmpty() ? CompletableFuture.completedFuture(true) : pullUninterruptedly(jid, remaining);
     }
 
-    private List<Node> getPullNodes(ContactJid jid, List<PatchType> patchTypes, Map<PatchType, LTHashState> tempStates) {
+    private List<Node> getPullNodes(ContactJid jid, Set<PatchType> patchTypes, Map<PatchType, LTHashState> tempStates) {
         return patchTypes.stream()
                 .map(name -> createStateWithVersion(jid, name))
                 .peek(state -> tempStates.put(state.name(), state))
@@ -223,7 +248,7 @@ class AppStateHandler {
                 .orElseGet(() -> new LTHashState(name));
     }
 
-    private List<PatchType> decodeSyncs(ContactJid jid, Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
+    private Set<PatchType> decodeSyncs(ContactJid jid, Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
         return records.stream()
                 .map(record -> {
                     var chunk = decodeSync(jid, record, tempStates);
@@ -232,7 +257,7 @@ class AppStateHandler {
                 })
                 .filter(PatchChunk::hasMore)
                 .map(PatchChunk::patchType)
-                .toList();
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private PatchChunk decodeSync(ContactJid jid, SnapshotSyncRecord record, Map<PatchType, LTHashState> tempStates) {
@@ -281,7 +306,9 @@ class AppStateHandler {
             return Optional.empty();
         }
         var more = sync.attributes().getBoolean("has_more_patches");
-        var snapshotSync = sync.findNode("snapshot").flatMap(this::decodeSnapshot).orElse(null);
+        var snapshotSync = sync.findNode("snapshot")
+                .flatMap(this::decodeSnapshot)
+                .orElse(null);
         var versionCode = sync.attributes().getInt("version");
         var patches = sync.findNode("patches")
                 .orElse(sync)

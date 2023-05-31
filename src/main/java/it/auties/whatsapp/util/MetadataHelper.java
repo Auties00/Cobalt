@@ -17,10 +17,15 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.Security;
 import java.security.cert.CertificateException;
@@ -35,11 +40,23 @@ public class MetadataHelper {
         Security.addProvider(new BouncyCastleProvider());
     }
 
+    private static final Path CACHED_APKS = Path.of(System.getProperty("user.home") + "/.whatsapp4j/apks");
+    private static final Logger LOGGER =  System.getLogger("Metadata");
+
     private volatile Version webVersion;
     private volatile WhatsappApk cachedApk;
     private volatile WhatsappApk cachedBusinessApk;
 
-    public CompletableFuture<Version> getWebVersion() {
+    public CompletableFuture<Version> getVersion(UserAgentPlatform platform, boolean business) {
+        return switch (platform) {
+            case WEB, WINDOWS, MACOS -> getWebVersion();
+            case ANDROID -> getWhatsappData(business).thenApply(WhatsappApk::version);
+            case IOS -> CompletableFuture.completedFuture(new Version("2.22.24.81")); // TODO: Add support for dynamic version fetching
+            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
+        };
+    }
+
+    private CompletableFuture<Version> getWebVersion() {
         try{
             if (webVersion != null) {
                 return CompletableFuture.completedFuture(webVersion);
@@ -58,20 +75,17 @@ public class MetadataHelper {
         }
     }
 
-    public CompletableFuture<Version> getMobileVersion(UserAgentPlatform platform, boolean business) {
-        return CompletableFuture.supplyAsync(() -> switch (platform) {
-            case ANDROID -> getWhatsappData(business).version();
-            case IOS -> new Version("2.22.24.81"); // TODO: Add support for dynamic version fetching
-            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
-        });
-    }
-
     public CompletableFuture<String> getToken(long phoneNumber, UserAgentPlatform platform, boolean business) {
         return switch (platform) {
-            case ANDROID -> CompletableFuture.supplyAsync(() -> getAndroidToken(String.valueOf(phoneNumber), business));
-            case IOS -> getMobileVersion(platform, business).thenApply(version -> getIosToken(phoneNumber, version));
+            case ANDROID -> getAndroidToken(String.valueOf(phoneNumber), business);
+            case IOS -> getIosToken(phoneNumber, platform, business);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
+    }
+
+    private CompletableFuture<String> getIosToken(long phoneNumber, UserAgentPlatform platform, boolean business) {
+        return getVersion(platform, business)
+                .thenApply(version -> getIosToken(phoneNumber, version));
     }
 
     private String getIosToken(long phoneNumber, Version version) {
@@ -79,41 +93,84 @@ public class MetadataHelper {
         return HexFormat.of().formatHex(MD5.calculate(token));
     }
 
-    private String getAndroidToken(String phoneNumber, boolean business) {
+    private CompletableFuture<String> getAndroidToken(String phoneNumber, boolean business) {
+        return getWhatsappData(business)
+                .thenApplyAsync(whatsappData -> getAndroidToken(phoneNumber, whatsappData));
+    }
+
+    private String getAndroidToken(String phoneNumber, WhatsappApk whatsappData) {
         try {
-            var whatsappData = getWhatsappData(business);
             var mac = Mac.getInstance("HMACSHA1");
             mac.init(whatsappData.secretKey());
             whatsappData.certificates().forEach(mac::update);
             mac.update(whatsappData.md5Hash());
             mac.update(phoneNumber.getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().encodeToString(mac.doFinal());
+            return URLEncoder.encode(Base64.getEncoder().encodeToString(mac.doFinal()), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException throwable) {
             throw new RuntimeException("Cannot compute mobile token", throwable);
         }
     }
 
-    private synchronized WhatsappApk getWhatsappData(boolean business) {
+    private synchronized CompletableFuture<WhatsappApk> getWhatsappData(boolean business) {
+        if(!business && cachedApk != null){
+            return CompletableFuture.completedFuture(cachedApk);
+        }
+
+        if(business && cachedBusinessApk != null){
+            return CompletableFuture.completedFuture(cachedBusinessApk);
+        }
+
+        return getCachedApk(business)
+                .map(apk -> CompletableFuture.completedFuture(getWhatsappData(apk, business)))
+                .orElseGet(() -> downloadWhatsappData(business));
+    }
+
+    private CompletableFuture<WhatsappApk> downloadWhatsappData(boolean business) {
+        return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_DOWNLOAD_URL : Whatsapp.MOBILE_DOWNLOAD_URL)
+                .thenApplyAsync(result -> onWhatsappDownloaded(business, result));
+    }
+
+    private WhatsappApk onWhatsappDownloaded(boolean business, byte[] result) {
+        cacheApk(business, result);
+        return getWhatsappData(result, business);
+    }
+
+    private static void cacheApk(boolean business, byte[] result) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                var file = CACHED_APKS.resolve(business ? "wa.apk" : "w4b.apk");
+                Files.createDirectories(file.getParent());
+                Files.write(file, result);
+            }catch (Throwable throwable){
+                LOGGER.log(Level.WARNING, "Cannot cache apk locally", throwable);
+            }
+        });
+    }
+
+    private Optional<byte[]> getCachedApk(boolean business){
         try {
-            if(!business && cachedApk != null){
-                return cachedApk;
+            var file = CACHED_APKS.resolve(business ? "wa.apk" : "w4b.apk");
+            if(Files.notExists(file)){
+                return Optional.empty();
             }
 
-            if(business && cachedBusinessApk != null){
-                return cachedBusinessApk;
+            return Optional.of(Files.readAllBytes(file));
+        }catch (Throwable throwable){
+            return Optional.empty();
+        }
+    }
+
+    private static WhatsappApk getWhatsappData(byte[] apk, boolean business) {
+        try (var apkFile = new ByteArrayApkFile(apk)) {
+            var version = new Version(apkFile.getApkMeta().getVersionName());
+            var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
+            var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
+            var certificates = getCertificates(apkFile);
+            if (business) {
+                return cachedBusinessApk = new WhatsappApk(version, md5Hash, secretKey, certificates);
             }
 
-            var url = business ? Whatsapp.MOBILE_BUSINESS_DOWNLOAD_URL : Whatsapp.MOBILE_DOWNLOAD_URL;
-            var apk = Medias.download(url)
-                    .orElseThrow(() -> new IllegalArgumentException("Cannot read apk at %s".formatted(url)));
-            try (var apkFile = new ByteArrayApkFile(apk)) {
-                var version = new Version(apkFile.getApkMeta().getVersionName());
-                var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
-                var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
-                var certificates = getCertificates(apkFile);
-                return business ? (cachedBusinessApk = new WhatsappApk(version, md5Hash, secretKey, certificates))
-                        : (cachedApk = new WhatsappApk(version, md5Hash, secretKey, certificates));
-            }
+            return cachedApk = new WhatsappApk(version, md5Hash, secretKey, certificates);
         } catch (IOException | GeneralSecurityException exception) {
             throw new RuntimeException("Cannot extract certificates from APK", exception);
         }

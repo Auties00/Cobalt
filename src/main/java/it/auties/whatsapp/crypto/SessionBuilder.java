@@ -109,7 +109,16 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
                 .orElseThrow(() -> new NoSuchElementException("Cannot find signed pre key with id %s".formatted(message.signedPreKeyId())));
         session.closeCurrentState();
-        var nextState = createState(false, preKeyPair != null ? preKeyPair.toGenericKeyPair() : null, signedPreKeyPair.toGenericKeyPair(), message.identityKey(), message.baseKey(), null, message.registrationId(), message.version());
+        var nextState = createState(
+                false,
+                preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
+                signedPreKeyPair == null ? null : signedPreKeyPair.toGenericKeyPair(),
+                message.identityKey(),
+                message.baseKey(),
+                null,
+                message.registrationId(),
+                message.version()
+        );
         session.addState(nextState);
     }
 }

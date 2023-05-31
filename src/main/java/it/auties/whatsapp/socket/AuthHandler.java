@@ -50,9 +50,8 @@ class AuthHandler {
                     .noiseKeyPair()
                     .privateKey());
             handshake.mixIntoKey(sharedPrivate);
-            return createUserPayload()
-                    .thenApplyAsync(userPayload -> createHandshakeMessage(handshake, encodedKey, userPayload))
-                    .thenComposeAsync(result -> sendHandshake(session, handshake, result));
+            var handshakeMessage = createHandshakeMessage(handshake, encodedKey, encodeUserPayload());
+            return sendHandshake(session, handshake, handshakeMessage);
         }catch (Throwable throwable){
             return CompletableFuture.failedFuture(throwable);
         }
@@ -85,15 +84,10 @@ class AuthHandler {
         return new HandshakeMessage(clientFinish);
     }
 
-    private CompletableFuture<byte[]> createUserPayload() {
-        return createUserAgent()
-                .thenComposeAsync(this::encodeUserPayload);
-    }
-
-    private CompletableFuture<byte[]> encodeUserPayload(UserAgent userAgent) {
+    private byte[] encodeUserPayload() {
+        var userAgent = createUserAgent();
         var builder = createUserPayloadBuilder(userAgent);
-        return finishUserPayload(builder)
-                .thenApplyAsync(Protobuf::writeMessage);
+        return Protobuf.writeMessage(finishUserPayload(builder));
     }
 
     public ClientPayloadBuilder createUserPayloadBuilder(UserAgent userAgent){
@@ -103,15 +97,10 @@ class AuthHandler {
                 .userAgent(userAgent);
     }
 
-    private CompletableFuture<UserAgent> createUserAgent() {
-        return socketHandler.store()
-                .version()
-                .thenApplyAsync(version -> createUserAgent(version, socketHandler.store().clientType() == ClientType.MOBILE));
-    }
-
-    private UserAgent createUserAgent(Version version, boolean mobile) {
+    private UserAgent createUserAgent() {
+        var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
         return UserAgent.builder()
-                .appVersion(version)
+                .appVersion(socketHandler.store().version())
                 .osVersion(mobile ? socketHandler.store().osVersion() : null)
                 .device(mobile ? socketHandler.store().model() : null)
                 .manufacturer(mobile ? socketHandler.store().manufacturer() : null)
@@ -135,34 +124,36 @@ class AuthHandler {
         };
     }
 
-    private CompletableFuture<ClientPayload> finishUserPayload(ClientPayloadBuilder builder) {
-        if(socketHandler.store().clientType() == ClientType.MOBILE){
-            var phoneNumber = socketHandler.store()
-                    .phoneNumber()
-                    .map(PhoneNumber::number)
-                    .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
-            var result = builder.sessionId(socketHandler.keys().registrationId())
-                    .shortConnect(true)
-                    .connectAttemptCount(0)
-                    .device(0)
-                    .dnsSource(getDnsSource())
-                    .passive(false)
-                    .pushName(socketHandler.store().name())
-                    .username(phoneNumber)
-                    .build();
-            return CompletableFuture.completedFuture(result);
-        }
+    private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
+        return switch (socketHandler.store().clientType()){
+            case MOBILE -> {
+                var phoneNumber = socketHandler.store()
+                        .phoneNumber()
+                        .map(PhoneNumber::number)
+                        .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
+                yield builder.sessionId(socketHandler.keys().registrationId())
+                        .shortConnect(true)
+                        .connectAttemptCount(0)
+                        .device(0)
+                        .dnsSource(getDnsSource())
+                        .passive(false)
+                        .pushName(socketHandler.store().name())
+                        .username(phoneNumber)
+                        .build();
+            }
+            case WEB -> {
+                if (socketHandler.store().jid() != null) {
+                    yield builder.username(Long.parseLong(socketHandler.store().jid().user()))
+                            .passive(true)
+                            .device(socketHandler.store().jid().device())
+                            .build();
+                }
 
-        if (socketHandler.store().jid() != null) {
-            var result = builder.username(Long.parseLong(socketHandler.store().jid().user()))
-                    .passive(true)
-                    .device(socketHandler.store().jid().device())
-                    .build();
-            return CompletableFuture.completedFuture(result);
-        }
-
-        return createRegisterData()
-                .thenApplyAsync(data -> builder.regData(data).passive(false).build());
+                yield builder.regData(createRegisterData())
+                        .passive(false)
+                        .build();
+            }
+        };
     }
 
     private DNSSource getDnsSource() {
@@ -172,23 +163,21 @@ class AuthHandler {
                 .build();
     }
 
-    private CompletableFuture<CompanionData> createRegisterData() {
-        return socketHandler.store().version().thenApplyAsync(version -> {
-            var companion = CompanionData.builder()
-                    .buildHash(version.toHash())
-                    .id(socketHandler.keys().encodedRegistrationId())
-                    .keyType(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
-                    .identifier(socketHandler.keys().identityKeyPair().publicKey())
-                    .signatureId(socketHandler.keys().signedKeyPair().encodedId())
-                    .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
-                    .signature(socketHandler.keys().signedKeyPair().signature());
-            if (socketHandler.store().clientType() == ClientType.WEB) {
-                var props = Protobuf.writeMessage(createCompanionProps());
-                companion.companion(props);
-            }
+    private CompanionData createRegisterData() {
+        var companion = CompanionData.builder()
+                .buildHash(socketHandler.store().version().toHash())
+                .id(socketHandler.keys().encodedRegistrationId())
+                .keyType(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
+                .identifier(socketHandler.keys().identityKeyPair().publicKey())
+                .signatureId(socketHandler.keys().signedKeyPair().encodedId())
+                .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
+                .signature(socketHandler.keys().signedKeyPair().signature());
+        if (socketHandler.store().clientType() == ClientType.WEB) {
+            var props = Protobuf.writeMessage(createCompanionProps());
+            companion.companion(props);
+        }
 
-            return companion.build();
-        });
+        return companion.build();
     }
 
     private Companion createCompanionProps() {

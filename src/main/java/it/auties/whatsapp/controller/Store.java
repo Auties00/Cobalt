@@ -6,6 +6,7 @@ import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.contact.Contact;
@@ -72,7 +73,6 @@ public final class Store extends Controller<Store> {
     /**
      * The version used by this session
      */
-    @Setter
     private Version version;
 
     /**
@@ -106,6 +106,48 @@ public final class Store extends Controller<Store> {
     @Getter
     @Setter
     private boolean business;
+
+    /**
+     * The address of this account, if it's a business account
+     */
+    @Setter
+    private String businessAddress;
+
+    /**
+     * The longitude of this account's location, if it's a business account
+     */
+    @Setter
+    private Long businessLongitude;
+
+    /**
+     * The latitude of this account's location, if it's a business account
+     */
+    @Setter
+    private Long businessLatitude;
+
+    /**
+     * The description of this account, if it's a business account
+     */
+    @Setter
+    private String businessDescription;
+
+    /**
+     * The website of this account, if it's a business account
+     */
+    @Setter
+    private String businessWebsite;
+
+    /**
+     * The email of this account, if it's a business account
+     */
+    @Setter
+    private String businessEmail;
+
+    /**
+     * The category of this account, if it's a business account
+     */
+    @Setter
+    private BusinessCategory businessCategory;
 
     /**
      * The hash of the companion associated with this session
@@ -463,12 +505,13 @@ public final class Store extends Controller<Store> {
      */
     public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         var phone = PhoneNumber.ofNullable(phoneNumber).orElse(null);
+        var os = clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE;
         var result = Store.builder()
                 .serializer(serializer)
                 .clientType(clientType)
                 .jid(phone == null ? null : phone.toJid())
                 .phoneNumber(phone)
-                .os(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE)
+                .os(os)
                 .osVersion(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_VERSION : Spec.Whatsapp.DEFAULT_MOBILE_OS_VERSION)
                 .model(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MODEL : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MODEL)
                 .manufacturer(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
@@ -1203,15 +1246,27 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Sets the version of this session
+     *
+     * @param version the non-null version
+     * @return a non-null version
+     */
+    public Store version(@NonNull Version version){
+        this.version = version;
+        return this;
+    }
+
+    /**
      * Returns the version of this object
      *
      * @return a non-null version
      */
-    public CompletableFuture<Version> version(){
-        return switch (clientType){
-            case WEB -> MetadataHelper.getWebVersion();
-            case MOBILE -> MetadataHelper.getMobileVersion(os, business);
-        };
+    public Version version(){
+        if(version == null){
+            this.version = MetadataHelper.getVersion(os, business).join();
+        }
+
+        return version;
     }
 
     /**
@@ -1247,6 +1302,69 @@ public final class Store extends Controller<Store> {
      */
     public Optional<UserAgentPlatform> companionOs() {
         return Optional.ofNullable(companionOs);
+    }
+
+    /**
+     * The address of this account, if it's a business account
+     *
+     * @return an optional
+     */
+    public Optional<String> businessAddress(){
+        return Optional.ofNullable(businessAddress);
+    }
+
+    /**
+     * The longitude of this account's location, if it's a business account
+     *
+     * @return an optional
+     */
+    public Optional<Long> businessLongitude(){
+        return Optional.ofNullable(businessLongitude);
+    }
+
+    /**
+     * The latitude of this account's location, if it's a business account
+     *
+     * @return an optional
+     */
+    public Optional<Long> businessLatitude(){
+        return Optional.ofNullable(businessLatitude);
+    }
+
+    /**
+     * The description of this account, if it's a business account
+     *
+     * @return an optional
+     */
+    public Optional<String> businessDescription(){
+        return Optional.ofNullable(businessDescription);
+    }
+
+    /**
+     * The website of this account, if it's a business account
+     *
+     * @return an optional
+     */
+    public Optional<String> businessWebsite(){
+        return Optional.ofNullable(businessWebsite);
+    }
+
+    /**
+     * The email of this account, if it's a business account
+     *
+     * @return an optional
+     */
+    public Optional<String> businessEmail(){
+        return Optional.ofNullable(businessEmail);
+    }
+
+    /**
+     * The category of this account, if it's a business account
+     *
+     * @return an optional
+     */
+    public Optional<BusinessCategory> businessCategory(){
+        return Optional.ofNullable(businessCategory);
     }
 
     public void dispose() {

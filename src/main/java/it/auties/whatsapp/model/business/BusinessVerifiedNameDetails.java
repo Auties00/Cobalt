@@ -49,5 +49,5 @@ public class BusinessVerifiedNameDetails implements ProtobufMessage {
      * The timestamp when this certificate was issued
      */
     @ProtobufProperty(index = 10, type = UINT64)
-    private long issueTime;
+    private Long issueTime;
 }

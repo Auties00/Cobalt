@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,5 +67,25 @@ public final class MuteAction implements Action {
     @Override
     public String indexName() {
         return "mute";
+    }
+
+    /**
+     * The version of this action
+     *
+     * @return a non-null string
+     */
+    @Override
+    public int version() {
+        return 2;
+    }
+
+    /**
+     * The type of this action
+     *
+     * @return a non-null string
+     */
+    @Override
+    public PatchType type() {
+        return null;
     }
 }

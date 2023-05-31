@@ -3,6 +3,7 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.util.RegistrationHelper;
 import lombok.AllArgsConstructor;
@@ -70,8 +71,8 @@ public sealed class MobileRegistrationBuilder {
          * @return a future
          */
         public CompletableFuture<Whatsapp> register(long phoneNumber, @NonNull VerificationCodeMethod method, @NonNull AsyncVerificationCodeSupplier handler) {
-            return keys.registered() ? CompletableFuture.completedFuture(new Whatsapp(store, keys)) : RegistrationHelper.registerPhoneNumber(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, handler, method)
-                    .thenApply(ignored -> new Whatsapp(store, keys));
+            return keys.registrationStatus() == RegistrationStatus.UNREGISTERED ? RegistrationHelper.registerPhoneNumber(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, handler, method)
+                    .thenApply(ignored -> new Whatsapp(store, keys)) : CompletableFuture.completedFuture(new Whatsapp(store, keys));
         }
 
         /**
@@ -92,8 +93,8 @@ public sealed class MobileRegistrationBuilder {
          * @return a future
          */
         public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber, @NonNull VerificationCodeMethod method) {
-            return keys.registered() ? CompletableFuture.completedFuture(new Unverified(store, keys)) : RegistrationHelper.requestVerificationCode(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, method)
-                    .thenApply(ignored -> new Unverified(store, keys));
+            return keys.registrationStatus() == RegistrationStatus.UNREGISTERED ? RegistrationHelper.requestVerificationCode(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, method)
+                    .thenApply(ignored -> new Unverified(store, keys)) : CompletableFuture.completedFuture(new Unverified(store, keys));
         }
     }
 

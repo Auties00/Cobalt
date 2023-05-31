@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.sync.RecentStickerWeight;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -35,6 +36,26 @@ public final class RecentStickerWeightsAction implements Action {
      */
     @Override
     public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action: no index name");
+        throw new UnsupportedOperationException("Cannot send action");
+    }
+
+    /**
+     * Always throws an exception as this action cannot be serialized
+     *
+     * @return an exception
+     */
+    @Override
+    public int version() {
+        throw new UnsupportedOperationException("Cannot send action");
+    }
+
+    /**
+     * Always throws an exception as this action cannot be serialized
+     *
+     * @return an exception
+     */
+    @Override
+    public PatchType type() {
+        throw new UnsupportedOperationException("Cannot send action");
     }
 }

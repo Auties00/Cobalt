@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.whatsapp.binary.PatchType;
 
 /**
  * A model interface that represents an action
@@ -10,7 +11,20 @@ public sealed interface Action extends ProtobufMessage permits AgentAction, Andr
      * The name of this action
      *
      * @return a non-null string
-     * @throws UnsupportedOperationException if this action cannot be serialized
      */
     String indexName();
+
+    /**
+     * The version of this action
+     *
+     * @return a non-null int
+     */
+    int version();
+
+    /**
+     * The type of this action
+     *
+     * @return a non-null type
+     */
+    PatchType type();
 }

@@ -654,4 +654,25 @@ public interface Listener {
     default void onLinkedDevices(Collection<ContactJid> devices){
 
     }
+
+    /**
+     * Called when an OTP is requested from a new device
+     * Only works on the mobile API
+     *
+     * @param code the registration code
+     */
+    default void onRegistrationCode(long code){
+
+    }
+
+    /**
+     * Called when an OTP is requested from a new device
+     * Only works on the mobile API
+     *
+     * @param whatsapp an instance to the calling api
+     * @param code the registration code
+     */
+    default void onRegistrationCode(Whatsapp whatsapp, long code){
+
+    }
 }

@@ -28,8 +28,11 @@ import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
+import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,12 +46,16 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 @UtilityClass
 public class Medias {
-    private final HttpClient CLIENT = HttpClient.newHttpClient();
+    private final HttpClient CLIENT = HttpClient.newBuilder()
+            .version(Version.HTTP_1_1)
+            .followRedirects(Redirect.ALWAYS)
+            .build();
     private final int PROFILE_PIC_SIZE = 640;
     private final String DEFAULT_HOST = "mmg.whatsapp.net";
     private final int THUMBNAIL_SIZE = 32;
     private final int RANDOM_FILE_NAME_LENGTH = 8;
     private final Map<String, Path> CACHE = new ConcurrentHashMap<>();
+    private final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36";
 
     public byte[] getProfilePic(byte[] file) {
         try {
@@ -73,15 +80,34 @@ public class Medias {
         return download(URI.create(imageUrl));
     }
 
+    public CompletableFuture<byte[]> downloadAsync(String imageUrl) {
+        return downloadAsync(URI.create(imageUrl));
+    }
+
     public Optional<byte[]> download(URI imageUri) {
+        return downloadAsync(imageUri)
+                .thenApplyAsync(Optional::ofNullable)
+                .exceptionally(ignored -> Optional.empty())
+                .join();
+    }
+
+    public CompletableFuture<byte[]> downloadAsync(URI imageUri) {
         try {
             if (imageUri == null) {
-                return Optional.empty();
+                return CompletableFuture.completedFuture(null);
             }
-            var bytes = imageUri.toURL().openConnection().getInputStream().readAllBytes();
-            return Optional.of(bytes);
-        } catch (IOException exception) {
-            return Optional.empty();
+
+            var request = HttpRequest.newBuilder()
+                    .uri(imageUri)
+                    .header("User-Agent", USER_AGENT)
+                    .GET()
+                    .build();
+            return CLIENT.sendAsync(request, BodyHandlers.ofByteArray())
+                    .thenCompose(response -> response.statusCode() != HttpURLConnection.HTTP_OK
+                            ? CompletableFuture.failedFuture(new IllegalArgumentException("Erroneous status code: " + response.statusCode()))
+                            : CompletableFuture.completedFuture(response.body()));
+        } catch (Throwable exception) {
+            return CompletableFuture.failedFuture(exception);
         }
     }
 

@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +11,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
-import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.INT64;
@@ -51,5 +51,25 @@ public final class SubscriptionAction implements Action {
     @Override
     public String indexName() {
         return "subscription";
+    }
+
+    /**
+     * The version of this action
+     *
+     * @return a non-null string
+     */
+    @Override
+    public int version() {
+        return 1;
+    }
+
+    /**
+     * The type of this action
+     *
+     * @return a non-null string
+     */
+    @Override
+    public PatchType type() {
+        return null;
     }
 }

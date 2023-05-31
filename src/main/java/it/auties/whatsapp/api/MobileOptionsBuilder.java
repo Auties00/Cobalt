@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.MobileRegistrationBuilder.Unverified;
 import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import lombok.NonNull;
 
@@ -117,7 +118,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null optional of whatsapp
      */
     public Optional<Whatsapp> registered() {
-        if(!keys.registered()){
+        if(keys.registrationStatus() == RegistrationStatus.UNREGISTERED){
             return Optional.empty();
         }
 

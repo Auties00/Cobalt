@@ -3,6 +3,9 @@ package it.auties.whatsapp.model.business;
 import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
 /**
  * A model class that represents a business category
  *
@@ -18,7 +21,7 @@ public record BusinessCategory(@NonNull String id, @NonNull String name) {
      */
     public static BusinessCategory of(@NonNull Node node) {
         var id = node.attributes().getRequiredString("id");
-        var name = node.contentAsString().orElseThrow();
+        var name = URLDecoder.decode(node.contentAsString().orElseThrow(), StandardCharsets.UTF_8);
         return new BusinessCategory(id, name);
     }
 }
