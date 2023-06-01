@@ -81,6 +81,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -95,22 +96,9 @@ import java.util.stream.Stream;
 @Accessors(fluent = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Whatsapp {
+    private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
+
     protected final SocketHandler socketHandler;
-
-    /**
-     * Creates a new instance of the api from a store and keys
-     *
-     * @param store          a non-null store
-     * @param keys           the non-null keys
-     */
-    public Whatsapp(@NonNull Store store, @NonNull Keys keys) {
-        this.socketHandler = new SocketHandler(this, store, keys);
-        if(store.autodetectListeners()){
-            return;
-        }
-
-        store().addListeners(ListenerScanner.scan(this));
-    }
 
     /**
      * Checks if a connection exists
@@ -132,6 +120,15 @@ public class Whatsapp {
         return SocketHandler.isConnected(phoneNumber);
     }
 
+    private Whatsapp(@NonNull Store store, @NonNull Keys keys) {
+        this.socketHandler = new SocketHandler(this, store, keys);
+        if(store.autodetectListeners()){
+            return;
+        }
+
+        store().addListeners(ListenerScanner.scan(this));
+    }
+
     /**
      * Creates a new instance from a store and keys
      *
@@ -140,7 +137,17 @@ public class Whatsapp {
      * @return a non-null instance
      */
     public static Whatsapp of(@NonNull Store store, @NonNull Keys keys){
-        return new Whatsapp(store, keys);
+        Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUIDs for store and keys don't match");
+        var knownInstance = instances.get(store.uuid());
+        if(knownInstance != null){
+            return knownInstance;
+        }
+
+        var result = Whatsapp.of(store, keys);
+        result.socketHandler()
+                .logoutFuture()
+                .thenRunAsync(() -> instances.remove(store.uuid()));
+        return result;
     }
 
     /**
@@ -170,6 +177,7 @@ public class Whatsapp {
      */
     public synchronized CompletableFuture<Whatsapp> connect(){
         return socketHandler.connect()
+                .thenRunAsync(() -> instances.put(store().uuid(), this))
                 .thenApply(ignored -> this);
     }
 
@@ -180,6 +188,7 @@ public class Whatsapp {
      */
     public synchronized CompletableFuture<Void> connectAndAwait(){
         return socketHandler.connect()
+                .thenRunAsync(() -> instances.put(store().uuid(), this))
                 .thenCompose(ignored -> socketHandler.logoutFuture());
     }
 
@@ -215,7 +224,7 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public CompletableFuture<Void> disconnect() {
+    public synchronized CompletableFuture<Void> disconnect() {
         return socketHandler.disconnect(DisconnectReason.DISCONNECTED);
     }
 
@@ -245,9 +254,11 @@ public class Whatsapp {
         if (store().jid() == null) {
             return socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
         }
+
         var metadata = Map.of("jid", store().jid(), "reason", "user_initiated");
         var device = Node.ofAttributes("remove-companion-device", metadata);
-        return socketHandler.sendQuery("set", "md", device).thenRun(() -> {});
+        return socketHandler.sendQuery("set", "md", device)
+                .thenRun(() -> {});
     }
 
     /**
@@ -374,7 +385,7 @@ public class Whatsapp {
      * @param message  the non-null message
      * @param reaction the reaction to send, null if you want to remove the reaction. If a string that
      *                 isn't an emoji supported by Whatsapp is used, it will not get displayed
-     *                 correctly. Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emojy)} if
+     *                 correctly. Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emoji)} if
      *                 you need a typed emojy enum.
      * @return a CompletableFuture
      */

@@ -77,7 +77,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      */
     public Whatsapp build() {
         if (whatsapp == null) {
-            this.whatsapp = new Whatsapp(store, keys);
+            this.whatsapp = Whatsapp.of(store, keys);
         }
 
         return whatsapp;

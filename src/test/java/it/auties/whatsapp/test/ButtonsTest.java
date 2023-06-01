@@ -90,7 +90,7 @@ public class ButtonsTest implements Listener {
             return;
         }
         log("Detected github actions environment");
-        api = new Whatsapp(loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
+        api = Whatsapp.of(loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
         api.addListener(this);
     }
 

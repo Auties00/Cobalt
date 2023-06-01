@@ -75,7 +75,7 @@ public sealed class MobileRegistrationBuilder {
             keys.phoneNumber(number);
             store.phoneNumber(number);
             return keys.registrationStatus() == RegistrationStatus.UNREGISTERED ? RegistrationHelper.registerPhoneNumber(store, keys, handler, method)
-                    .thenApply(ignored -> new Whatsapp(store, keys)) : CompletableFuture.completedFuture(new Whatsapp(store, keys));
+                    .thenApply(ignored -> Whatsapp.of(store, keys)) : CompletableFuture.completedFuture(Whatsapp.of(store, keys));
         }
 
         /**
@@ -149,7 +149,7 @@ public sealed class MobileRegistrationBuilder {
         public CompletableFuture<Whatsapp> verify(AsyncVerificationCodeSupplier handler) {
             Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
             return RegistrationHelper.sendVerificationCode(store, keys, handler)
-                    .thenApply(ignored -> new Whatsapp(store, keys));
+                    .thenApply(ignored -> Whatsapp.of(store, keys));
         }
     }
 }

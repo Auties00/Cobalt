@@ -207,7 +207,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
             return Optional.empty();
         }
 
-        return Optional.of(new Whatsapp(store, keys));
+        return Optional.of(Whatsapp.of(store, keys));
     }
 
     /**
