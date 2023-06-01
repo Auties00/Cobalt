@@ -71,7 +71,10 @@ public sealed class MobileRegistrationBuilder {
          * @return a future
          */
         public CompletableFuture<Whatsapp> register(long phoneNumber, @NonNull VerificationCodeMethod method, @NonNull AsyncVerificationCodeSupplier handler) {
-            return keys.registrationStatus() == RegistrationStatus.UNREGISTERED ? RegistrationHelper.registerPhoneNumber(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, handler, method)
+            var number = PhoneNumber.of(phoneNumber);
+            keys.phoneNumber(number);
+            store.phoneNumber(number);
+            return keys.registrationStatus() == RegistrationStatus.UNREGISTERED ? RegistrationHelper.registerPhoneNumber(store, keys, handler, method)
                     .thenApply(ignored -> new Whatsapp(store, keys)) : CompletableFuture.completedFuture(new Whatsapp(store, keys));
         }
 
@@ -93,7 +96,10 @@ public sealed class MobileRegistrationBuilder {
          * @return a future
          */
         public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber, @NonNull VerificationCodeMethod method) {
-            return keys.registrationStatus() == RegistrationStatus.UNREGISTERED ? RegistrationHelper.requestVerificationCode(store.phoneNumber(PhoneNumber.of(phoneNumber)), keys, method)
+            var number = PhoneNumber.of(phoneNumber);
+            keys.phoneNumber(number);
+            store.phoneNumber(number);
+            return keys.registrationStatus() == RegistrationStatus.UNREGISTERED ? RegistrationHelper.requestVerificationCode(store, keys, method)
                     .thenApply(ignored -> new Unverified(store, keys)) : CompletableFuture.completedFuture(new Unverified(store, keys));
         }
     }
@@ -109,7 +115,9 @@ public sealed class MobileRegistrationBuilder {
          * @return the same instance for chaining
          */
         public CompletableFuture<Whatsapp> verify(long phoneNumber, Supplier<String> handler) {
-            store.phoneNumber(PhoneNumber.of(phoneNumber));
+            var number = PhoneNumber.of(phoneNumber);
+            keys.phoneNumber(number);
+            store.phoneNumber(number);
             return verify(handler);
         }
 
