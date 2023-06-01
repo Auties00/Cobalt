@@ -950,6 +950,11 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Boolean> changePresence(boolean available) {
+        var status = socketHandler.store().online();
+        if(status == available){
+            return CompletableFuture.completedFuture(status);
+        }
+
         var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
         var node = Node.ofAttributes("presence", Map.of("type", presence.data(), "name", store().name()));
         return socketHandler.sendWithNoResponse(node)
@@ -978,22 +983,31 @@ public class Whatsapp {
     /**
      * Changes your presence for a specific chat
      *
-     * @param chat     the target chat
+     * @param chatJid  the target chat
      * @param presence the new status
      * @return a CompletableFuture
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> changePresence(@NonNull T chat, @NonNull ContactStatus presence) {
+    public <T extends ContactJidProvider> CompletableFuture<T> changePresence(@NonNull T chatJid, @NonNull ContactStatus presence) {
+        var alreadySet = store().findChatByJid(chatJid)
+                .map(Chat::presences)
+                .map(entry -> entry.get(store().jid().toWhatsappJid()))
+                .filter(entry -> entry == presence)
+                .isPresent();
+        if(alreadySet){
+            return CompletableFuture.completedFuture(chatJid);
+        }
+
         if(presence == ContactStatus.COMPOSING || presence == ContactStatus.RECORDING){
-            var node = Node.ofChildren("chatstate", Map.of("from", store().jid(), "to", chat.toJid()), Node.of(presence.data()));
+            var node = Node.ofChildren("chatstate", Map.of("from", store().jid(), "to", chatJid.toJid()), Node.of(presence.data()));
             return socketHandler.sendWithNoResponse(node)
-                    .thenAcceptAsync(socketHandler -> updateSelfPresence(chat, presence))
-                    .thenApplyAsync(ignored -> chat);
+                    .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence))
+                    .thenApplyAsync(ignored -> chatJid);
         }
 
         var node = Node.ofAttributes("presence", Map.of("type", presence.data(), "name", store().name()));
         return socketHandler.sendWithNoResponse(node)
-                .thenAcceptAsync(socketHandler -> updateSelfPresence(chat, presence))
-                .thenApplyAsync(ignored -> chat);
+                .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence))
+                .thenApplyAsync(ignored -> chatJid);
     }
 
     /**

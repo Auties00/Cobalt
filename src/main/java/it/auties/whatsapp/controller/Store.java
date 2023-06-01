@@ -596,10 +596,13 @@ public final class Store extends Controller<Store> {
         if (provider == null || id == null) {
             return Optional.empty();
         }
-        var chat = provider instanceof Chat value ? value : findChatByJid(provider.toJid()).orElse(null);
+
+        var chat = findChatByJid(provider.toJid())
+                .orElse(null);
         if (chat == null) {
             return Optional.empty();
         }
+
         return chat.messages()
                 .parallelStream()
                 .map(HistorySyncMessage::messageInfo)
@@ -614,7 +617,15 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     public Optional<Chat> findChatByJid(ContactJidProvider jid) {
-        return jid == null ? Optional.empty() : Optional.ofNullable(chats.get(jid.toJid()));
+        if (jid == null) {
+            return Optional.empty();
+        }
+
+        if (jid instanceof Chat chat) {
+            return Optional.of(chat);
+        }
+
+        return Optional.ofNullable(chats.get(jid.toJid()));
     }
 
     /**
