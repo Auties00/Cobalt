@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>17</java.version>
-        <whatsapp4j.version>3.4.1</whatsapp4j.version>
+        <whatsapp4j.version>3.4.2</whatsapp4j.version>
     </properties>
 
     <build>
