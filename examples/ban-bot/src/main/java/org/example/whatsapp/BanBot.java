@@ -5,17 +5,17 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 
-import java.util.concurrent.ExecutionException;
-
 // This is the main class of our bot
 public class BanBot {
-    public static void main(String... args) throws ExecutionException, InterruptedException {
+    public static void main(String... args) {
         // Create a new instance of WhatsappAPI
-        Whatsapp.lastConnection()
+        Whatsapp.webBuilder()
+                .lastConnection()
+                .build()
                 .addLoggedInListener(() -> System.out.println("Connected!"))
                 .addNewMessageListener(BanBot::onMessage)
-                .connect()
-                .get();
+                .connectAndAwait()
+                .join();
     }
 
     private static void onMessage(Whatsapp api, MessageInfo info) {

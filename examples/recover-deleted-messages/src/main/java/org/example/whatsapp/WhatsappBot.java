@@ -3,17 +3,17 @@ package org.example.whatsapp;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
 
-import java.util.concurrent.ExecutionException;
-
 // This is the main class of our bot
 public class WhatsappBot {
-    public static void main(String... args) throws ExecutionException, InterruptedException {
+    public static void main(String... args) {
         // Create a new instance of WhatsappAPI
-        Whatsapp.lastConnection()
+        Whatsapp.webBuilder()
+                .lastConnection()
+                .build()
                 .addLoggedInListener(() -> System.out.println("Connected!"))
                 .addMessageDeletedListener(WhatsappBot::onMessageDeleted)
-                .connect()
-                .get();
+                .connectAndAwait()
+                .join();
     }
 
     private static void onMessageDeleted(MessageInfo message, boolean everyone) {

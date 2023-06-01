@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 // This is the main class of our bot
@@ -34,13 +33,15 @@ public class TesterBot {
             """;
     private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
 
-    public static void main(String... args) throws ExecutionException, InterruptedException {
+    public static void main(String... args) {
         // Create a new instance of WhatsappAPI
-        Whatsapp.lastConnection()
+        Whatsapp.webBuilder()
+                .lastConnection()
+                .build()
                 .addLoggedInListener(() -> System.out.println("Connected!"))
                 .addNewMessageListener(TesterBot::onNewMessage)
-                .connect()
-                .get();
+                .connectAndAwait()
+                .join();
     }
 
     private static void onNewMessage(Whatsapp api, MessageInfo info) {
