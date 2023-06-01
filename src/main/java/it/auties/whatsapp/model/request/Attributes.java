@@ -18,7 +18,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A utility class that wraps a map and provides easy methods to interact with its content
  *
- * @param map the non-null wrapped map
+ * @param toMap the non-null wrapped map
  */
 public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     /**
