@@ -143,10 +143,8 @@ public class Whatsapp {
             return knownInstance;
         }
 
-        var result = Whatsapp.of(store, keys);
-        result.socketHandler()
-                .logoutFuture()
-                .thenRunAsync(() -> instances.remove(store.uuid()));
+        var result = new Whatsapp(store, keys);
+        result.addDisconnectedListener(reason -> instances.remove(store.uuid()));
         return result;
     }
 
