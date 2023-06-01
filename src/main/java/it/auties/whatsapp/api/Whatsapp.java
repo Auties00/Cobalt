@@ -384,7 +384,7 @@ public class Whatsapp {
      * @param reaction the reaction to send, null if you want to remove the reaction. If a string that
      *                 isn't an emoji supported by Whatsapp is used, it will not get displayed
      *                 correctly. Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emoji)} if
-     *                 you need a typed emojy enum.
+     *                 you need a typed emoji enum.
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, String reaction) {

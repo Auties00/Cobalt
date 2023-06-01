@@ -787,14 +787,14 @@ All types of messages supported by Whatsapp are supported by this library:
 
     ```java
     var someMessage = ...; // The message to react to
-    api.sendReaction(someMessage, Emojy.RED_HEART); // Use the Emojy class for a list of all Emojys
+    api.sendReaction(someMessage, Emoji.RED_HEART); // Use the Emoji class for a list of all Emojis
     ```
 
     - Remove a reaction
 
     ```java
     var someMessage = ...; // The message to react to
-    api.removeReaction(someMessage); // Use the Emojy class for a list of all Emojys
+    api.removeReaction(someMessage); // Use the Emoji class for a list of all Emojis
     ```
 
 ### How to wait for replies
