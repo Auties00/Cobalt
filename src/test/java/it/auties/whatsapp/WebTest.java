@@ -1,6 +1,5 @@
 package it.auties.whatsapp;
 
-import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +9,6 @@ public class WebTest {
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
                 .lastConnection()
-                .historyLength(WebHistoryLength.STANDARD)
                 .build()
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
@@ -20,7 +18,7 @@ public class WebTest {
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addActionListener((action, info) -> System.out.printf("New action: %s, info: %s%n", action, info))
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
-                .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact.name(), chat.name(), status.name()))
+                .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact, chat.name(), status.name()))
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
                 .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))

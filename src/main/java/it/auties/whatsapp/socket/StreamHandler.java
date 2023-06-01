@@ -124,9 +124,7 @@ class StreamHandler {
             var participantJid = node.attributes()
                     .getJid("participant")
                     .orElse(chatJid);
-            socketHandler.store()
-                    .findContactByJid(participantJid)
-                    .ifPresent(contact -> updateContactPresence(chatJid, getUpdateType(node), contact));
+            updateContactPresence(chatJid, getUpdateType(node), participantJid);
         });
     }
 
@@ -146,7 +144,7 @@ class StreamHandler {
                 .orElse(ContactStatus.AVAILABLE);
     }
 
-    private void updateContactPresence(ContactJid chatJid, ContactStatus status, Contact contact) {
+    private void updateContactPresence(ContactJid chatJid, ContactStatus status, ContactJid contact) {
         socketHandler.store()
                 .findChatByJid(chatJid)
                 .ifPresent(chat -> socketHandler.onUpdateChatPresence(status, contact, chat));
@@ -699,7 +697,15 @@ class StreamHandler {
 
     private CompletableFuture<Void> queryInitialInfo() {
         return queryRequiredInfo()
-                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false)));
+                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryLinkedDevices(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false)));
+    }
+
+    private CompletableFuture<Node> queryLinkedDevices(){
+        if(!socketHandler.store().business()){
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"));
     }
 
     private CompletableFuture<Void> queryRequiredInfo() {

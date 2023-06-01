@@ -205,6 +205,22 @@ public final class Keys extends Controller<Keys> {
     @Setter
     private Bytes writeKey, readKey;
 
+    public static Keys of(UUID uuid, long phoneNumber, byte[] publicKey, byte[] privateKey, byte[] messagePublicKey, byte[] messagePrivateKey, byte[] registrationId) {
+        var result = Keys.builder()
+                .serializer(DefaultControllerSerializer.instance())
+                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
+                .noiseKeyPair(new SignalKeyPair(publicKey, privateKey))
+                .identityKeyPair(new SignalKeyPair(messagePublicKey, messagePrivateKey))
+                .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
+                .clientType(ClientType.MOBILE)
+                .prologue(Spec.Whatsapp.APP_PROLOGUE)
+                .registrationStatus(RegistrationStatus.REGISTERED)
+                .build();
+        result.signedKeyPair(SignalSignedKeyPair.of(result.registrationId(), result.identityKeyPair()));
+        result.serialize(true);
+        return result;
+    }
+
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *

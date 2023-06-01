@@ -694,7 +694,7 @@ public class Whatsapp {
      * @param reaction the reaction to send, null if you want to remove the reaction
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, Emojy reaction) {
+    public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, Emoji reaction) {
         return sendReaction(message, Objects.toString(reaction));
     }
 
@@ -1976,7 +1976,7 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public CompletableFuture<Whatsapp> unlinkCompanions(){
+    public CompletableFuture<Whatsapp> unlinkDevices(){
         return socketHandler.sendQuery("set", "md", Node.ofAttributes("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
                 .thenRun(() -> store().removeLinkedCompanions())
                 .thenApply(ignored -> this);
@@ -1988,7 +1988,7 @@ public class Whatsapp {
      * @param companion the non-null companion to unlink
      * @return a future
      */
-    public CompletableFuture<Whatsapp> unlinkCompanion(@NonNull ContactJid companion){
+    public CompletableFuture<Whatsapp> unlinkDevice(@NonNull ContactJid companion){
         Validate.isTrue(companion.hasAgent(), "Expected companion, got jid without agent: %s", companion);
         return socketHandler.sendQuery("set", "md", Node.ofAttributes("remove-companion-device", Map.of("jid", companion, "reason", "user_initiated")))
                 .thenRun(() -> store().removeLinkedCompanion(companion))
@@ -2001,7 +2001,7 @@ public class Whatsapp {
      * @param qrCode the non-null qr code as an image
      * @return a future
      */
-    public CompletableFuture<CompanionLinkResult> linkCompanion(byte @NonNull [] qrCode){
+    public CompletableFuture<CompanionLinkResult> linkDevice(byte @NonNull [] qrCode){
         try {
             var inputStream = new ByteArrayInputStream(qrCode);
             var luminanceSource = new BufferedImageLuminanceSource(ImageIO.read(inputStream));
@@ -2009,7 +2009,7 @@ public class Whatsapp {
             var binaryBitmap = new BinaryBitmap(hybridBinarizer);
             var reader = new QRCodeReader();
             var result = reader.decode(binaryBitmap);
-            return linkCompanion(result.getText());
+            return linkDevice(result.getText());
         }catch (IOException | NotFoundException | ChecksumException | FormatException exception){
             throw new IllegalArgumentException("Cannot read qr code", exception);
         }
@@ -2021,8 +2021,9 @@ public class Whatsapp {
      * @param qrCodeData the non-null qr code as a String
      * @return a future
      */
-    public CompletableFuture<CompanionLinkResult> linkCompanion(@NonNull String qrCodeData){
-        if(store().linkedDevices().size() > Spec.Whatsapp.MAX_COMPANIONS){
+    public CompletableFuture<CompanionLinkResult> linkDevice(@NonNull String qrCodeData) {
+        var maxDevices = getMaxLinkedDevices();
+        if (store().linkedDevices().size() > maxDevices) {
             return CompletableFuture.completedFuture(CompanionLinkResult.MAX_DEVICES_ERROR);
         }
 
@@ -2032,11 +2033,6 @@ public class Whatsapp {
         var publicKey = Base64.getDecoder().decode(qrCodeParts[1]);
         var advIdentity = Base64.getDecoder().decode(qrCodeParts[2]);
         var identityKey = Base64.getDecoder().decode(qrCodeParts[3]);
-        return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("delete_all_data"))
-                .thenComposeAsync(ignored -> linkCompanion(ref, advIdentity, identityKey, publicKey));
-    }
-
-    private CompletableFuture<CompanionLinkResult> linkCompanion(String ref, byte[] advIdentity, byte[] identityKey, byte[] publicKey) {
         var timestamp = Clock.nowSeconds();
         var deviceIdentity = DeviceIdentity.builder()
                 .rawId(KeyHelper.agent())
@@ -2084,6 +2080,19 @@ public class Whatsapp {
                         Node.of("device-identity", Protobuf.writeMessage(deviceIdentityHmac)),
                         Node.of("key-index-list", Map.of("ts", timestamp), Protobuf.writeMessage(signedKeyIndexList))))
                 .thenComposeAsync(result -> handleCompanionPairing(result, deviceIdentity.keyIndex()));
+    }
+
+    private int getMaxLinkedDevices() {
+        var maxDevices = socketHandler.store().properties().get("linked_device_max_count");
+        if(maxDevices == null){
+            return Spec.Whatsapp.MAX_COMPANIONS;
+        }
+
+        try {
+            return Integer.parseInt(maxDevices);
+        }catch (NumberFormatException exception){
+            return Spec.Whatsapp.MAX_COMPANIONS;
+        }
     }
 
     private CompletableFuture<CompanionLinkResult> handleCompanionPairing(Node result, int keyId) {

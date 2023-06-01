@@ -47,6 +47,6 @@ public record PhoneNumber(@NonNull CountryCode countryCode, long numberWithoutPr
 
     @Override
     public String toString() {
-        return "%s%s".formatted(prefix(), numberWithoutPrefix);
+        return String.valueOf(number());
     }
 }

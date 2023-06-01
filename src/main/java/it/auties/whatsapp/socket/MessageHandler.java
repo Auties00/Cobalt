@@ -669,7 +669,7 @@ class MessageHandler {
         }
         info.sender()
                 .filter(this::isTyping)
-                .ifPresent(sender -> socketHandler.onUpdateChatPresence(ContactStatus.AVAILABLE, sender, info.chat()));
+                .ifPresent(sender -> socketHandler.onUpdateChatPresence(ContactStatus.AVAILABLE, sender.jid(), info.chat()));
         if (!info.ignore() && !info.fromMe()) {
             info.chat().unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
         }
@@ -698,7 +698,6 @@ class MessageHandler {
     }
 
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage) {
-        System.out.println("Received protocol: " + protocolMessage);
         switch (protocolMessage.protocolType()) {
             case HISTORY_SYNC_NOTIFICATION -> onHistorySyncNotification(info, protocolMessage);
             case APP_STATE_SYNC_KEY_SHARE -> onAppStateSyncKeyShare(protocolMessage);

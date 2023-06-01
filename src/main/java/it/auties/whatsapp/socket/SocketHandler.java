@@ -576,17 +576,21 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onUpdateChatPresence(ContactStatus status, Contact contact, Chat chat) {
-        contact.lastKnownPresence(status);
-        if (status == contact.lastKnownPresence()) {
-            return;
+    protected void onUpdateChatPresence(ContactStatus status, ContactJid contactJid, Chat chat) {
+        var contact = store.findContactByJid(contactJid);
+        if(contact.isPresent()) {
+            contact.get().lastKnownPresence(status);
+            if (status == contact.get().lastKnownPresence()) {
+                return;
+            }
+
+            contact.get().lastSeen(ZonedDateTime.now());
         }
 
-        chat.presences().put(contact.jid(), status);
-        contact.lastSeen(ZonedDateTime.now());
+        chat.presences().put(contactJid, status);
         callListenersAsync(listener -> {
-            listener.onContactPresence(whatsapp, chat, contact, status);
-            listener.onContactPresence(chat, contact, status);
+            listener.onContactPresence(whatsapp, chat, contactJid, status);
+            listener.onContactPresence(chat, contactJid, status);
         });
     }
 

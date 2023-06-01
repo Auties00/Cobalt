@@ -2,7 +2,7 @@ package it.auties.whatsapp.test;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.Emojy;
+import it.auties.whatsapp.api.Emoji;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -914,7 +914,7 @@ public class RunMobileCITest implements Listener {
         if (skip) {
             return;
         }
-        for (var emojy : Emojy.values()) {
+        for (var emojy : Emoji.values()) {
             api.sendMessage(contact, emojy.name()).thenAcceptAsync(message -> api.sendReaction(message, emojy)).join();
         }
     }

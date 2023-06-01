@@ -1,18 +1,4 @@
-    public static Keys of(UUID uuid, long phoneNumber, byte[] publicKey, byte[] privateKey, byte[] messagePublicKey, byte[] messagePrivateKey, byte[] registrationId) {
-        var result = Keys.builder()
-                .registered(true)
-                .serializer(DefaultControllerSerializer.instance())
-                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
-                .noiseKeyPair(new SignalKeyPair(publicKey, privateKey))
-                .identityKeyPair(new SignalKeyPair(messagePublicKey, messagePrivateKey))
-                .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
-                .clientType(ClientType.MOBILE)
-                .prologue(Spec.Whatsapp.APP_PROLOGUE)
-                .build();
-        result.signedKeyPair(SignalSignedKeyPair.of(result.registrationId(), result.identityKeyPair()));
-        result.serialize(true);
-        return result;
-    }
+
 
     package it.auties.whatsapp;
 

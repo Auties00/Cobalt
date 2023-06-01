@@ -94,7 +94,7 @@ public class RegistrationHelper {
             return;
         }
 
-        throw new RegistrationException("Invalid response: %s".formatted(result.body()));
+        throw new RegistrationException(response);
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {

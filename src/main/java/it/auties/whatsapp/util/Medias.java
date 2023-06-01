@@ -55,7 +55,7 @@ public class Medias {
     private final int THUMBNAIL_SIZE = 32;
     private final int RANDOM_FILE_NAME_LENGTH = 8;
     private final Map<String, Path> CACHE = new ConcurrentHashMap<>();
-    private final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36";
+    private final String USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
 
     public byte[] getProfilePic(byte[] file) {
         try {
@@ -92,6 +92,10 @@ public class Medias {
     }
 
     public CompletableFuture<byte[]> downloadAsync(URI imageUri) {
+        return downloadAsync(imageUri, true);
+    }
+
+    public CompletableFuture<byte[]> downloadAsync(URI imageUri, boolean userAgent) {
         try {
             if (imageUri == null) {
                 return CompletableFuture.completedFuture(null);
@@ -99,15 +103,20 @@ public class Medias {
 
             var request = HttpRequest.newBuilder()
                     .uri(imageUri)
-                    .header("User-Agent", USER_AGENT)
-                    .GET()
-                    .build();
-            return CLIENT.sendAsync(request, BodyHandlers.ofByteArray())
-                    .thenCompose(response -> response.statusCode() != HttpURLConnection.HTTP_OK
-                            ? CompletableFuture.failedFuture(new IllegalArgumentException("Erroneous status code: " + response.statusCode()))
-                            : CompletableFuture.completedFuture(response.body()));
+                    .GET();
+            if(userAgent){
+                request.header("User-Agent", USER_AGENT);
+            }
+            return CLIENT.sendAsync(request.build(), BodyHandlers.ofByteArray()).thenCompose(response -> {
+                if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+                    return userAgent ? downloadAsync(imageUri, false)
+                            : CompletableFuture.failedFuture(new IllegalArgumentException("Erroneous status code: " + response.statusCode()));
+                }
+
+                return CompletableFuture.completedFuture(response.body());
+            });
         } catch (Throwable exception) {
-            return CompletableFuture.failedFuture(exception);
+            return userAgent ? downloadAsync(imageUri, false) : CompletableFuture.failedFuture(exception);
         }
     }
 

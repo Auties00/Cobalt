@@ -18,14 +18,21 @@ public enum VerificationCodeMethod {
      * Do not ask for a new verification code as you already have one
      */
     NONE("none"),
+
     /**
      * An SMS containing the code will be sent to the associated phone number
      */
     SMS("sms"),
+
     /**
      * A call will be received from the associated phone number
      */
-    CALL("voice");
+    CALL("voice"),
+
+    /**
+     * A message containing the OTP will be sent via Whatsapp to an active device
+     */
+    WHATSAPP("email_otp");
 
     @Getter
     private final String type;
