@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.MobileRegistrationBuilder.Unverified;
 import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import lombok.NonNull;
@@ -99,13 +100,97 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
     }
 
     /**
-     * Set whether the registered account is a business account
+     * Sets whether the registered account is a business account
      *
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder business(boolean business){
         if(store != null) {
             store.business(business);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the business' address
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder businessAddress(String businessAddress) {
+        if(store != null) {
+            store.businessAddress(businessAddress);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the business' address longitude
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder businessLongitude(Long businessLongitude) {
+        if(store != null) {
+            store.businessLongitude(businessLongitude);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the business' address latitude
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder businessLatitude(Long businessLatitude) {
+        if(store != null) {
+            store.businessLatitude(businessLatitude);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the business' description
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder businessDescription(String businessDescription) {
+        if(store != null) {
+            store.businessDescription(businessDescription);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the business' website
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder businessWebsite(String businessWebsite) {
+        if(store != null) {
+            store.businessWebsite(businessWebsite);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the business' email
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder businessEmail(String businessEmail) {
+        if(store != null) {
+            store.businessEmail(businessEmail);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the business' category
+     *
+     * @return the same instance for chaining
+     */
+    public MobileOptionsBuilder businessCategory(BusinessCategory businessCategory) {
+        if(store != null) {
+            store.businessCategory(businessCategory);
         }
         return this;
     }
