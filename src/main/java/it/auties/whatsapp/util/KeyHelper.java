@@ -92,6 +92,6 @@ public class KeyHelper {
     }
 
     public byte[] appKeyId(){
-        return BytesHelper.intToBytes(ThreadLocalRandom.current().nextInt(1, 100), 6);
+        return BytesHelper.intToBytes(ThreadLocalRandom.current().nextInt(19000, 20000), 6);
     }
 }

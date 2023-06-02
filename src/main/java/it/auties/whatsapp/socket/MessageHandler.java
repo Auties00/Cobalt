@@ -21,7 +21,6 @@ import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
-import it.auties.whatsapp.model.message.server.ProtocolMessage.ProtocolMessageType;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.request.Attributes;
@@ -34,8 +33,6 @@ import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
-import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
-import it.auties.whatsapp.model.sync.AppStateSyncKeyShare;
 import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
@@ -646,6 +643,7 @@ class MessageHandler {
     }
 
     private void saveMessage(MessageInfo info, boolean offline) {
+        System.out.println("Info: " + info);
         if(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
             handleDistributionMessage(distributionMessage, info.senderJid());
         }
@@ -703,28 +701,7 @@ class MessageHandler {
             case APP_STATE_SYNC_KEY_SHARE -> onAppStateSyncKeyShare(protocolMessage);
             case REVOKE -> onMessageRevoked(info, protocolMessage);
             case EPHEMERAL_SETTING -> onEphemeralSettings(info, protocolMessage);
-            case APP_STATE_SYNC_KEY_REQUEST -> createAppStateKeysMessage(info.senderJid(), protocolMessage.appStateSyncKeyRequest().keyIds());
         }
-    }
-
-    private void createAppStateKeysMessage(ContactJid companion, List<AppStateSyncKeyId> appStateSyncKeyIds) {
-        if(!socketHandler.store().linkedDevices().contains(companion)){
-            return;
-        }
-
-        var keys = appStateSyncKeyIds.stream()
-                .map(entry -> socketHandler.keys().findAppKeyById(companion, entry.keyId()))
-                .flatMap(Optional::stream)
-                .toList();
-        var appStateSyncKeyShare = AppStateSyncKeyShare.builder()
-                .keys(keys)
-                .build();
-        var result = ProtocolMessage.builder()
-                .protocolType(ProtocolMessageType.APP_STATE_SYNC_KEY_SHARE)
-                .appStateSyncKeyShare(appStateSyncKeyShare)
-                .build();
-        socketHandler.sendPeerMessage(companion, result)
-                .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
     }
 
     private void onEphemeralSettings(MessageInfo info, ProtocolMessage protocolMessage) {

@@ -13,28 +13,13 @@ public class MobileTest {
         Whatsapp.mobileBuilder()
                 .lastConnection()
                 .unregistered()
-                .register(16059009994L, VerificationCodeMethod.WHATSAPP,  MobileTest::onScanCode)
+                .register(16059009994L, VerificationCodeMethod.SMS,  MobileTest::onScanCode)
                 .join()
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addLoggedInListener(mobileApi -> {
-                    Whatsapp.webBuilder()
-                            .newConnection()
-                            .qrHandler(mobileApi::linkDevice)
-                            .build()
-                            .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
-                            .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
-                            .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
-                            .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
-                            .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
-                            .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
-                            .addActionListener((action, info) -> System.out.printf("New action: %s, info: %s%n", action, info))
-                            .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
-                            .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact, chat.name(), status.name()))
-                            .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
-                            .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
-                            .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
-                            .connect();
+                    mobileApi.unlinkDevices().join();
+                    mobileApi.linkDevice("2@X8qrznvWJ2KV6OXvIsByVMRupWYlDY9eML0JSUvq3VBvjJvQUIQKCs90LPPiEyvH/d4rVbUdh2pceA==,Q+c/d7VJI/1B6sT5z2QXcABAStlzkcTyf+v63ttTFDM=,3xRkGBd3Q31ndO86YNqqOlrx20/wAfheV4WmkaJEQhg=,WzYN4v9a8LkPf0eRyWYTEqs1QG39UIR/E/l2JVnYA9Y=");
                 })
                 .connectAndAwait()
                 .join();

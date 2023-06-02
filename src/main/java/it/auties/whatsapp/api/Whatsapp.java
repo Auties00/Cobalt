@@ -2056,6 +2056,11 @@ public class Whatsapp {
         var publicKey = Base64.getDecoder().decode(qrCodeParts[1]);
         var advIdentity = Base64.getDecoder().decode(qrCodeParts[2]);
         var identityKey = Base64.getDecoder().decode(qrCodeParts[3]);
+        return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("delete_all_data"))
+                .thenComposeAsync(ignored -> linkDevice(advIdentity, identityKey, ref, publicKey));
+    }
+
+    private CompletableFuture<CompanionLinkResult> linkDevice(byte[] advIdentity, byte[] identityKey, String ref, byte[] publicKey) {
         var timestamp = Clock.nowSeconds();
         var deviceIdentity = DeviceIdentity.builder()
                 .rawId(KeyHelper.agent())
@@ -2078,8 +2083,7 @@ public class Whatsapp {
                 .hmac(Hmac.calculateSha256(signedDeviceIdentityBytes, identityKey))
                 .details(signedDeviceIdentityBytes)
                 .build();
-        var knownDevices = store()
-                .linkedDevices()
+        var knownDevices = store().linkedDevices()
                 .stream()
                 .map(ContactJid::agent)
                 .toList();
@@ -2317,7 +2321,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<ProtocolMessage> createAppStateKeysMessage(ContactJid companion) {
-        var preKeys = IntStream.range(0, 30)
+        var preKeys = IntStream.range(0, 1)
                 .mapToObj(index -> createAppKey(companion, index))
                 .toList();
         keys().addAppKeys(companion, preKeys);
@@ -2331,9 +2335,22 @@ public class Whatsapp {
         return CompletableFuture.completedFuture(result);
     }
 
+    // [AppStateSyncKey(
+    //      keyId=AppStateSyncKeyId(keyId=[0, 0, 0, 0, 77, 94]),
+    //      keyData=AppStateSyncKeyData(
+    //          keyData=[-46, 10, 82, -122, 84, -46, 17, -76, -10, -73, 100, -44, -31, 96, -116, -86, -117, -29, 14, -50, 72, 60, 84, -29, 44, 8, -91, 86, -62, -103, 111, -120],
+    //          fingerprint=AppStateSyncKeyFingerprint(
+    //              rawId=883110372,
+    //              currentIndex=1,
+    //              deviceIndexes=[0, 1]
+    //          ),
+    //          timestamp=1685700411601
+    //          )
+    //      )
+    // ]
     private AppStateSyncKey createAppKey(ContactJid jid, int index) {
         return AppStateSyncKey.builder()
-                .keyId(new AppStateSyncKeyId(BytesHelper.intToBytes(index, 6)))
+                .keyId(new AppStateSyncKeyId(KeyHelper.appKeyId()))
                 .keyData(createAppKeyData(jid, index))
                 .build();
     }
@@ -2342,20 +2359,15 @@ public class Whatsapp {
         return AppStateSyncKeyData.builder()
                 .keyData(SignalKeyPair.random().publicKey())
                 .fingerprint(createAppKeyFingerprint(jid, index))
-                .timestamp(Clock.nowSeconds())
+                .timestamp(Clock.nowMilliseconds())
                 .build();
     }
 
     private AppStateSyncKeyFingerprint createAppKeyFingerprint(ContactJid jid, int index) {
-        var indexes = store().linkedDevices()
-                .stream()
-                .map(ContactJid::device)
-                .collect(Collectors.toList());
-        indexes.add(0);
         return AppStateSyncKeyFingerprint.builder()
-                .rawId(index)
+                .rawId(KeyHelper.senderKeyId())
                 .currentIndex(index)
-                .deviceIndexes(indexes)
+                .deviceIndexes(new ArrayList<>(store().linkedDevicesKeys().values()))
                 .build();
     }
 
