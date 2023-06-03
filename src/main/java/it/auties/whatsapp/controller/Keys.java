@@ -205,6 +205,9 @@ public final class Keys extends Controller<Keys> {
     @Setter
     private Bytes writeKey, readKey;
 
+    /**
+     * Experimental method
+     */
     public static Keys of(UUID uuid, long phoneNumber, byte[] publicKey, byte[] privateKey, byte[] messagePublicKey, byte[] messagePrivateKey, byte[] registrationId) {
         var result = Keys.builder()
                 .serializer(DefaultControllerSerializer.instance())
@@ -222,53 +225,105 @@ public final class Keys extends Controller<Keys> {
     }
 
     /**
-     * Returns the keys saved in memory or constructs a new clean instance
+     * Returns the Keys saved in memory or constructs a new clean instance
      *
-     * @param uuid        the  uuid of the session, can be null
-     * @param phoneNumber the phone number of the session to load, can be null
+     * @param uuid        the uuid of the session to load, can be null
      * @param clientType  the non-null type of the client
-     * @return a non-null store
+     * @return a non-null Keys
      */
-    public static Optional<Keys> of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType) {
-        return of(uuid, phoneNumber, clientType, false);
+    public static Keys of(UUID uuid, @NonNull ClientType clientType) {
+        return of(uuid, clientType, DefaultControllerSerializer.instance());
     }
 
     /**
-     * Returns the keys saved in memory or constructs a new clean instance
+     * Returns the Keys saved in memory or constructs a new clean instance
      *
-     * @param uuid        the  uuid of the session, can be null
-     * @param phoneNumber the phone number of the session to load, can be null
+     * @param uuid        the uuid of the session to load, can be null
      * @param clientType  the non-null type of the client
-     * @param required    whether an exception should be thrown if the connection doesn't exist
-     * @return a non-null store
+     * @param serializer  the non-null serializer              
+     * @return a non-null Keys
      */
-    public static Optional<Keys> of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, boolean required) {
-        return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance(), required);
+    public static Keys of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return ofNullable(uuid, clientType, serializer)
+                .orElseGet(() -> random(uuid, null, clientType, serializer));
     }
 
     /**
-     * Returns the keys saved in memory or constructs a new clean instance
+     * Returns the Keys saved in memory or returns an empty optional
      *
-     * @param uuid        the non-null uuid of the session, can be null
+     * @param uuid        the uuid of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null Keys
+     */
+    public static Optional<Keys> ofNullable(UUID uuid, @NonNull ClientType clientType) {
+        return ofNullable(uuid, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the Keys saved in memory or returns an empty optional
+     *
+     * @param uuid        the uuid of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer
+     * @return a non-null Keys
+     */
+    public static Optional<Keys> ofNullable(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        if(uuid == null){
+            return Optional.empty();
+        }
+
+        return serializer.deserializeKeys(clientType, uuid);
+    }
+
+    /**
+     * Returns the Keys saved in memory or constructs a new clean instance
+     *
+     * @param phoneNumber the phone number of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null Keys
+     */
+    public static Keys of(long phoneNumber, @NonNull ClientType clientType) {
+        return of(phoneNumber, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the Keys saved in memory or constructs a new clean instance
+     *
+     * @param phoneNumber the phone number of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer              
+     * @return a non-null Keys
+     */
+    public static Keys of(long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return ofNullable(phoneNumber, clientType, serializer)
+                .orElseGet(() -> random(null, phoneNumber, clientType, serializer));
+    }
+
+    /**
+     * Returns the Keys saved in memory or returns an empty optional
+     *
+     * @param phoneNumber the phone number of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null Keys
+     */
+    public static Optional<Keys> ofNullable(Long phoneNumber, @NonNull ClientType clientType) {
+        return ofNullable(phoneNumber, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the Keys saved in memory or returns an empty optional
+     *
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
      * @param serializer  the non-null serializer
-     * @param required    whether an exception should be thrown if the connection doesn't exist
-     * @return a non-null store
+     * @return a non-null Keys
      */
-    public static Optional<Keys> of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
-        if (uuid == null && phoneNumber == null && required) {
+    public static Optional<Keys> ofNullable(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        if(phoneNumber == null){
             return Optional.empty();
         }
 
-        var id = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-        var result = phoneNumber != null ? serializer.deserializeKeys(clientType, phoneNumber) : serializer.deserializeKeys(clientType, id);
-        if (required && result.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return result.map(keys -> keys.serializer(serializer))
-                .or(() -> Optional.of(random(id, phoneNumber, clientType, serializer)));
+        return serializer.deserializeKeys(clientType, phoneNumber);
     }
 
     /**

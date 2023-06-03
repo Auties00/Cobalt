@@ -12,11 +12,6 @@ public enum ConnectionType {
     NEW,
 
     /**
-     * Creates a new connection using a unique identifier
-     */
-    KNOWN,
-
-    /**
      * Creates a new connection from the first session that was serialized
      * If no connection is available, a new one will be created
      */

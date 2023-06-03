@@ -432,54 +432,109 @@ public final class Store extends Controller<Store> {
     private String manufacturer;
 
     /**
-     * Returns the store saved in memory or constructs a new clean instance if {@code !required}
+     * Returns the store saved in memory or constructs a new clean instance
      *
      * @param uuid        the uuid of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null store
+     */
+    public static Store of(UUID uuid, @NonNull ClientType clientType) {
+        return of(uuid, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the store saved in memory or constructs a new clean instance
+     *
+     * @param uuid        the uuid of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer              
+     * @return a non-null store
+     */
+    public static Store of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return ofNullable(uuid, clientType, serializer)
+                .orElseGet(() -> random(uuid, null, clientType, serializer));
+    }
+
+    /**
+     * Returns the store saved in memory or returns an empty optional
+     *
+     * @param uuid        the uuid of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null store
+     */
+    public static Optional<Store> ofNullable(UUID uuid, @NonNull ClientType clientType) {
+        return ofNullable(uuid, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the store saved in memory or returns an empty optional
+     *
+     * @param uuid        the uuid of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer
+     * @return a non-null store
+     */
+    public static Optional<Store> ofNullable(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        if(uuid == null){
+            return Optional.empty();
+        }
+
+        var store = serializer.deserializeStore(clientType, uuid);
+        store.ifPresent(serializer::attributeStore);
+        return store;
+    }
+
+    /**
+     * Returns the store saved in memory or constructs a new clean instance
+     *
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
      * @return a non-null store
      */
-    public static Optional<Store> of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType) {
-        return of(uuid, phoneNumber, clientType, false);
+    public static Store of(long phoneNumber, @NonNull ClientType clientType) {
+        return of(phoneNumber, clientType, DefaultControllerSerializer.instance());
     }
-
+    
     /**
-     * Returns the store saved in memory or constructs a new clean instance if {@code !required}
+     * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param uuid        the uuid of the session to load, can be null
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
-     * @param required    whether the session needs to exist
+     * @param serializer  the non-null serializer              
      * @return a non-null store
      */
-    public static Optional<Store> of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, boolean required) {
-        return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance(), required);
+    public static Store of(long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return ofNullable(phoneNumber, clientType, serializer)
+                .orElseGet(() -> random(null, phoneNumber, clientType, serializer));
     }
 
     /**
-     * Returns the store saved in memory or constructs a new clean instance if {@code !required}
+     * Returns the store saved in memory or returns an empty optional
      *
-     * @param uuid        the uuid of the session to load, can be null
+     * @param phoneNumber the phone number of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null store
+     */
+    public static Optional<Store> ofNullable(Long phoneNumber, @NonNull ClientType clientType) {
+        return ofNullable(phoneNumber, clientType, DefaultControllerSerializer.instance());
+    }
+    
+    /**
+     * Returns the store saved in memory or returns an empty optional
+     *
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
      * @param serializer  the non-null serializer
-     * @param required    whether the session needs to exist
      * @return a non-null store
      */
-    public static Optional<Store> of(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, boolean required) {
-        if (uuid == null && phoneNumber == null && required) {
+    public static Optional<Store> ofNullable(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        if(phoneNumber == null){
             return Optional.empty();
         }
-
-        var result = phoneNumber == null ? serializer.deserializeStore(clientType, uuid) : serializer.deserializeStore(clientType, phoneNumber);
-        if(required && result.isEmpty()){
-            return Optional.empty();
-        }
-
-        var store = result.map(entry -> entry.serializer(serializer))
-                .orElseGet(() -> random(uuid, phoneNumber, clientType, serializer));
-        serializer.attributeStore(store); // Run async
-        return Optional.of(store);
+        
+        var store = serializer.deserializeStore(clientType, phoneNumber);
+        store.ifPresent(serializer::attributeStore);
+        return store;
     }
 
     /**

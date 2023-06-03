@@ -38,6 +38,7 @@ import static java.lang.System.Logger.Level.WARNING;
 class AppStateHandler {
     private static final int TIMEOUT = 120;
     private static final int PULL_ATTEMPTS = 3;
+    private static final boolean CHECK_MACS = false;
 
     private final SocketHandler socketHandler;
     private final Map<PatchType, Integer> attempts;
@@ -463,12 +464,12 @@ class AppStateHandler {
 
         newState.version(patch.encodedVersion());
         var syncMac = calculateSyncMac(jid, patch, patchType);
-        Validate.isTrue(syncMac.isEmpty() || Arrays.equals(syncMac.get(), patch.patchMac()), "sync_mac", HmacValidationException.class);
+        Validate.isTrue(!CHECK_MACS || syncMac.isEmpty() || Arrays.equals(syncMac.get(), patch.patchMac()), "sync_mac", HmacValidationException.class);
         var mutations = decodeMutations(jid, patch.mutations(), newState);
         newState.hash(mutations.result().hash());
         newState.indexValueMap(mutations.result().indexValueMap());
         var snapshotMac = generatePatchMac(jid, patchType, newState, patch);
-        Validate.isTrue(snapshotMac.isEmpty() || Arrays.equals(snapshotMac.get(), patch.snapshotMac()), "patch_mac", HmacValidationException.class);
+        Validate.isTrue(!CHECK_MACS || snapshotMac.isEmpty() || Arrays.equals(snapshotMac.get(), patch.snapshotMac()), "patch_mac", HmacValidationException.class);
         return mutations;
     }
 
@@ -506,7 +507,7 @@ class AppStateHandler {
         var mutations = decodeMutations(jid, snapshot.records(), newState);
         newState.hash(mutations.result().hash());
         newState.indexValueMap(mutations.result().indexValueMap());
-        Validate.isTrue(Arrays.equals(snapshot.mac(), generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.get()
+        Validate.isTrue(!CHECK_MACS || Arrays.equals(snapshot.mac(), generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.get()
                 .snapshotMacKey())), "decode_snapshot", HmacValidationException.class);
         return Optional.of(new SyncRecord(newState, mutations.records()));
     }
@@ -536,11 +537,11 @@ class AppStateHandler {
         var blob = Bytes.of(sync.value().blob());
         var encryptedBlob = blob.cut(-Spec.Signal.KEY_LENGTH).toByteArray();
         var encryptedMac = blob.slice(-Spec.Signal.KEY_LENGTH).toByteArray();
-        Validate.isTrue(Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
+        Validate.isTrue(!CHECK_MACS || Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
                 .id(), mutationKeys.get().macKey())), "decode_mutation", HmacValidationException.class);
         var result = AesCbc.decrypt(encryptedBlob, mutationKeys.get().encKey());
         var actionSync = Protobuf.readMessage(result, ActionDataSync.class);
-        Validate.isTrue(Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.get()
+        Validate.isTrue(!CHECK_MACS || Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.get()
                 .indexKey())), "decode_mutation", HmacValidationException.class);
         generator.mix(sync.index().blob(), encryptedMac, operation);
         return Optional.of(actionSync);

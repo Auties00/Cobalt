@@ -24,7 +24,6 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     protected static UUID getCorrectUuid(UUID uuid, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
         return switch (connectionType){
             case NEW -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-            case KNOWN -> uuid;
             case FIRST -> Objects.requireNonNullElseGet(serializer.listIds(clientType).peekFirst(), () -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID));
             case LAST -> Objects.requireNonNullElseGet(serializer.listIds(clientType).peekLast(), () -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID));
         };

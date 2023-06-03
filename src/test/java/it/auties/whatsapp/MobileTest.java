@@ -1,6 +1,7 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import org.junit.jupiter.api.Test;
 
@@ -13,14 +14,20 @@ public class MobileTest {
         Whatsapp.mobileBuilder()
                 .lastConnection()
                 .unregistered()
-                .register(16059009994L, VerificationCodeMethod.SMS,  MobileTest::onScanCode)
+                .register(16059009994L, VerificationCodeMethod.SMS ,  MobileTest::onScanCode)
                 .join()
+                .addLoggedInListener(api -> {
+                    api.unlinkDevices().join();
+                    new Thread(() -> {
+                        while (true){
+                            var qr = new Scanner(System.in).nextLine().trim();
+                            System.out.println("Result: " + api.linkDevice(qr).join());
+                            api.sendMessage(ContactJid.of("393495089819"), "Mobile").join();
+                        }
+                    }).start();
+                })
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
-                .addLoggedInListener(mobileApi -> {
-                    mobileApi.unlinkDevices().join();
-                    mobileApi.linkDevice("2@X8qrznvWJ2KV6OXvIsByVMRupWYlDY9eML0JSUvq3VBvjJvQUIQKCs90LPPiEyvH/d4rVbUdh2pceA==,Q+c/d7VJI/1B6sT5z2QXcABAStlzkcTyf+v63ttTFDM=,3xRkGBd3Q31ndO86YNqqOlrx20/wAfheV4WmkaJEQhg=,WzYN4v9a8LkPf0eRyWYTEqs1QG39UIR/E/l2JVnYA9Y=");
-                })
                 .connectAndAwait()
                 .join();
     }

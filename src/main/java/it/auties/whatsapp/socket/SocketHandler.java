@@ -863,7 +863,7 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> queryCompanionDevices() {
-        return messageHandler.getDevices(List.of(store.jid().toWhatsappJid()), true, false)
+        return messageHandler.getDevices(List.of(store.jid().toWhatsappJid()), true)
                 .thenCompose(values -> messageHandler.querySessions(values, false));
     }
 

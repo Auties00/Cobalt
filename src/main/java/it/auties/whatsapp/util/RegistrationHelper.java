@@ -80,16 +80,20 @@ public class RegistrationHelper {
         store.serialize(true);
     }
 
+    @SuppressWarnings("unchecked")
     private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code) {
-        return getRegistrationOptions(store, keys, Map.entry("code", code.replaceAll("-", "")))
+        Entry<String, Object>[] data = code != null ? new Entry[]{Map.entry("code", code.replaceAll("-", "").trim())} : new Entry[0];
+        return getRegistrationOptions(store, keys, data)
                 .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/register", attrs))
                 .thenAcceptAsync(RegistrationHelper::checkResponse);
     }
 
     private void checkResponse(HttpResponse<String> result) {
+        System.out.println(result.body());
         Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
                 "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+        System.out.println(response);
         if(response.status().isSuccessful()){
             return;
         }

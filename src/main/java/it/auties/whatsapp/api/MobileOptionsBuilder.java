@@ -15,41 +15,44 @@ import java.util.UUID;
 
 @SuppressWarnings("unused")
 public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuilder> {
-    MobileOptionsBuilder(Store store, Keys keys) {
+    private MobileOptionsBuilder(Store store, Keys keys) {
         super(store, keys);
     }
 
-    static Optional<MobileOptionsBuilder> of(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
+    static MobileOptionsBuilder of(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
         var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.MOBILE);
-        var required = connectionType == ConnectionType.KNOWN;
-        var store = Store.of(uuid, null, ClientType.MOBILE, serializer, required);
-        if(required && store.isEmpty()){
-            return Optional.empty();
-        }
+        var store = Store.of(uuid, ClientType.MOBILE, serializer);
+        var keys = Keys.of(uuid, ClientType.MOBILE, serializer);
+        return new MobileOptionsBuilder(store, keys);
+    }
 
-        var keys = Keys.of(uuid, null, ClientType.MOBILE, serializer, required);
-        if(required && keys.isEmpty()){
+    static Optional<MobileOptionsBuilder> ofNullable(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
+        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.MOBILE);
+        var store = Store.ofNullable(uuid, ClientType.MOBILE, serializer);
+        var keys = Keys.ofNullable(uuid, ClientType.MOBILE, serializer);
+        if(store.isEmpty() || keys.isEmpty()){
             return Optional.empty();
         }
 
         return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
     }
 
-    static Optional<MobileOptionsBuilder> of(long phoneNumber, ControllerSerializer serializer, ConnectionType connectionType){
-        var uuid = getCorrectUuid(null, serializer, connectionType, ClientType.MOBILE);
-        var required = connectionType == ConnectionType.KNOWN;
-        var store = Store.of(uuid, null, ClientType.MOBILE, serializer, required);
-        if(required && store.isEmpty()){
-            return Optional.empty();
-        }
+    static MobileOptionsBuilder of(long phoneNumber, ControllerSerializer serializer){
+        var store = Store.of(phoneNumber, ClientType.MOBILE, serializer);
+        var keys = Keys.of(phoneNumber, ClientType.MOBILE, serializer);
+        return new MobileOptionsBuilder(store, keys);
+    }
 
-        var keys = Keys.of(uuid, null, ClientType.MOBILE, serializer, required);
-        if(required && keys.isEmpty()){
+    static Optional<MobileOptionsBuilder> ofNullable(Long phoneNumber, ControllerSerializer serializer){
+        var store = Store.ofNullable(phoneNumber, ClientType.MOBILE, serializer);
+        var keys = Keys.ofNullable(phoneNumber, ClientType.MOBILE, serializer);
+        if(store.isEmpty() || keys.isEmpty()){
             return Optional.empty();
         }
 
         return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
     }
+
 
     /**
      * Set the operating system of the associated companion

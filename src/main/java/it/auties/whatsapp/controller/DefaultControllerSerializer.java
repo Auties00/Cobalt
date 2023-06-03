@@ -198,7 +198,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         try {
             var path = getSessionFile(type, id, "keys.smile");
             var preferences = SmileFile.of(path);
-            return preferences.read(Keys.class);
+            var result = preferences.read(Keys.class);
+            result.ifPresent(entry -> entry.serializer(this));
+            return result;
         } catch (IOException exception) {
             throw new UncheckedIOException("Corrupted keys", exception);
         }
@@ -227,7 +229,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         try {
             var path = getSessionFile(type, id, "store.smile");
             var preferences = SmileFile.of(path);
-            return preferences.read(Store.class);
+            var store = preferences.read(Store.class);
+            store.ifPresent(entry -> entry.serializer(this));
+            return store;
         } catch (IOException exception) {
             throw new UncheckedIOException("Corrupted store", exception);
         }

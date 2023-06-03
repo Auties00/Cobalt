@@ -137,7 +137,7 @@ public class Whatsapp {
      * @return a non-null instance
      */
     public static Whatsapp of(@NonNull Store store, @NonNull Keys keys){
-        Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUIDs for store and keys don't match");
+        Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUIDs for store and keys don't match: %s != %s", store.uuid(), keys.uuid());
         var knownInstance = instances.get(store.uuid());
         if(knownInstance != null){
             return knownInstance;
