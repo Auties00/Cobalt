@@ -1,5 +1,5 @@
 # Cobalt
-Whatsapp4j has been renamed to Cobalt to comly with an official request coming from Whatsapp.
+Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
 To be clear, this library is not affiliated with Whatsapp LLC in any way.
 This is a personal project that I mantain in my free time
 
