@@ -17,7 +17,7 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     api.unlinkDevices().join();
-                    api.linkDevice("2@uyVBue6H+nnQqE+IIRSOPB/HkWSaRdI8g8bJ/HhrwMJNww4SDwR/hpedtfH5Xk+ZBfT7fFW5hlLuKw==,7Fl6JuW6xHfq40f7EaHrqhePRZ9rzWpVQMv6xLc/MBM=,gAH3Oy7vFBDVbNV4QJ9/E+55vIDrnDK79Cdr+es2ghI=,005r3gGnvXuMw2PzXW9nhUaDc98zwbZE50KWlvpbaNQ=,1").join();
+                    api.linkDevice("2@kjV3Lb98eje2swonZQIoDshZT6RhbLj27VFYnPF7djHIj+1zgnB1vEoZ/tNpjh0xa2lEo8ZszJj1gg==,5cxuFqgOzHyWB4uERAfZ2HGMsoVlwlpew0tnn9U60U8=,Z0BgyPBYjqwTmW/i0SZVEmT1eAOcH4WNO3P1bEGu7ls=,ceY0eUev6bFM8gaWmzEjFycIivvlZKdFePWNhG3P9Xk=,1").join();
                 })
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))

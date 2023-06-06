@@ -2323,7 +2323,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Void> sendAppStateKeysMessage(ContactJid companion) {
-        var preKeys = IntStream.range(0, 1)
+        var preKeys = IntStream.range(0, 10)
                 .mapToObj(index -> createAppKey(companion, index))
                 .toList();
         keys().addAppKeys(companion, preKeys);
@@ -2352,11 +2352,12 @@ public class Whatsapp {
                 .build();
     }
 
+    // FIXME: ModernProtobuf bug with UINT32 packed values
     private AppStateSyncKeyFingerprint createAppKeyFingerprint(ContactJid jid, int index) {
         return AppStateSyncKeyFingerprint.builder()
                 .rawId(KeyHelper.senderKeyId())
                 .currentIndex(index)
-                .deviceIndexes(new ArrayList<>(store().linkedDevicesKeys().values()))
+                // .deviceIndexes(new ArrayList<>(store().linkedDevicesKeys().values()))
                 .build();
     }
 
