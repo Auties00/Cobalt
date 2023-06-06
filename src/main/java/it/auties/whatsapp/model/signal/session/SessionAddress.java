@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.util.Validate;
 
+import java.util.Objects;
+
 public record SessionAddress(String name, int id) {
     @JsonCreator
     public static SessionAddress of(String serialized) {
@@ -16,5 +18,10 @@ public record SessionAddress(String name, int id) {
     @Override
     public String toString() {
         return "%s:%s".formatted(name(), id());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, id);
     }
 }

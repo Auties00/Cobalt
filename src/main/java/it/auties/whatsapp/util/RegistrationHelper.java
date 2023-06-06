@@ -89,11 +89,9 @@ public class RegistrationHelper {
     }
 
     private void checkResponse(HttpResponse<String> result) {
-        System.out.println(result.body());
         Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
                 "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        System.out.println(response);
         if(response.status().isSuccessful()){
             return;
         }

@@ -697,15 +697,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> queryInitialInfo() {
         return queryRequiredInfo()
-                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryLinkedDevices(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false)));
-    }
-
-    private CompletableFuture<Node> queryLinkedDevices(){
-        if(!socketHandler.store().business()){
-            return CompletableFuture.completedFuture(null);
-        }
-
-        return socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"));
+                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false)));
     }
 
     private CompletableFuture<Void> queryRequiredInfo() {
@@ -726,6 +718,12 @@ class StreamHandler {
                 socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.ofAttributes("config", Map.of("version", 1)))
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                 socketHandler.store().locale(Objects.requireNonNullElse(socketHandler.store().locale(), "en-US"));
+                socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.ofAttributes("clean", Map.of("timestamp", 0, "type", "account_sync")))
+                        .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+                if(socketHandler.store().business()){
+                    socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
+                            .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+                }
                 yield requiredFuture;
             }
         };
@@ -759,7 +757,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return socketHandler.sendWithNoResponse(Node.ofAttributes("presence", Map.of("type", "available")))
+        return socketHandler.sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", socketHandler.store().name(), "type", "available")))
                 .thenRun(this::onPresenceUpdated)
                 .exceptionally(exception -> socketHandler.handleFailure(STREAM, exception));
     }

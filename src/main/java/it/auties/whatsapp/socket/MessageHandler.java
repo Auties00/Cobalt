@@ -38,9 +38,7 @@ import java.lang.System.Logger.Level;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,12 +52,12 @@ class MessageHandler {
     private static final int HISTORY_SYNC_TIMEOUT = 10;
 
     private final SocketHandler socketHandler;
-    private final OrderedAsyncTaskRunner runner;
     private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
     private final Set<Chat> historyCache;
     private final Logger logger;
     private final DeferredTaskRunner deferredTaskRunner;
     private final Set<ContactJid> attributedGroups;
+    private ExecutorService executor;
     private CompletableFuture<?> historySyncTask;
 
     protected MessageHandler(SocketHandler socketHandler) {
@@ -67,15 +65,29 @@ class MessageHandler {
         this.pastParticipantsQueue = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.attributedGroups = ConcurrentHashMap.newKeySet();
-        this.runner = new OrderedAsyncTaskRunner();
         this.logger = System.getLogger("MessageHandler");
         this.deferredTaskRunner = new DeferredTaskRunner();
     }
 
+    private synchronized ExecutorService getOrCreateMessageService(){
+        if(executor == null || executor.isShutdown()){
+            executor = Executors.newSingleThreadExecutor();
+        }
+
+        return executor;
+    }
+
+
     protected synchronized CompletableFuture<Void> encode(MessageSendRequest request) {
-        return runner.runAsync(() -> encodeMessageNode(request)
-                .thenRunAsync(() -> attributeOutgoingMessage(request))
-                .exceptionallyAsync(throwable -> onEncodeError(request, throwable)));
+        var future = new CompletableFuture<Void>();
+        getOrCreateMessageService().execute(() -> {
+            encodeMessageNode(request)
+                    .thenRunAsync(() -> attributeOutgoingMessage(request))
+                    .exceptionallyAsync(throwable -> onEncodeError(request, throwable))
+                    .join();
+            future.complete(null);
+        });
+        return future;
     }
 
     private CompletableFuture<Node> encodeMessageNode(MessageSendRequest request) {
@@ -186,13 +198,20 @@ class MessageHandler {
         var attributes = Attributes.ofNullable(request.additionalAttributes())
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
-                .put("t", request.info().timestampSeconds())
+                .put("t", request.info().timestampSeconds(), !request.peer())
                 .put("type", "text")
                 .put("category", "peer", request::peer)
-                .put("duration", "900", () -> request.info().message().type() == MessageType.LIVE_LOCATION)
-                .put("device_fanout", false, () -> request.info().message().type() == MessageType.BUTTONS)
+                .put("duration", "900", request.info().message().type() == MessageType.LIVE_LOCATION)
+                .put("device_fanout", false, request.info().message().type() == MessageType.BUTTONS)
+                .put("push_priority", "high", isAppStateKeyShare(request))
                 .toMap();
         return Node.ofChildren("message", attributes, body);
+    }
+
+    private boolean isAppStateKeyShare(MessageSendRequest request) {
+        return request.peer()
+                && request.info().message().content() instanceof ProtocolMessage protocolMessage
+                && protocolMessage.protocolType() == ProtocolMessage.ProtocolMessageType.APP_STATE_SYNC_KEY_SHARE;
     }
 
     private boolean hasPreKeyMessage(List<Node> participants) {
@@ -346,22 +365,25 @@ class MessageHandler {
         var key = node.findNode("key")
                 .flatMap(SignalSignedKeyPair::of)
                 .orElse(null);
+        System.out.println("Generating identity for " +  jid);
         var builder = new SessionBuilder(jid.toSignalAddress(), socketHandler.keys());
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
     public synchronized void decode(Node node) {
-        try {
-            var businessName = getBusinessName(node);
-            var encrypted = node.findNodes("enc");
-            if (node.hasNode("unavailable") && !node.hasNode("enc")) {
-                decodeMessage(node, null, businessName);
-                return;
+        getOrCreateMessageService().execute(() -> {
+            try {
+                var businessName = getBusinessName(node);
+                var encrypted = node.findNodes("enc");
+                if (node.hasNode("unavailable") && !node.hasNode("enc")) {
+                    decodeMessage(node, null, businessName);
+                    return;
+                }
+                encrypted.forEach(message -> decodeMessage(node, message, businessName));
+            } catch (Throwable throwable) {
+                socketHandler.handleFailure(MESSAGE, throwable);
             }
-            encrypted.forEach(message -> decodeMessage(node, message, businessName));
-        } catch (Throwable throwable) {
-            socketHandler.handleFailure(MESSAGE, throwable);
-        }
+        });
     }
 
     private String getBusinessName(Node node) {
@@ -795,7 +817,9 @@ class MessageHandler {
 
     protected void dispose() {
         historyCache.clear();
-        runner.cancel();
+        if(executor != null && !executor.isShutdown()) {
+            executor.shutdownNow();
+        }
         historySyncTask = null;
     }
 

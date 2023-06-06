@@ -1,7 +1,6 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import org.junit.jupiter.api.Test;
 
@@ -18,13 +17,7 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     api.unlinkDevices().join();
-                    new Thread(() -> {
-                        while (true){
-                            var qr = new Scanner(System.in).nextLine().trim();
-                            System.out.println("Result: " + api.linkDevice(qr).join());
-                            api.sendMessage(ContactJid.of("393495089819"), "Mobile").join();
-                        }
-                    }).start();
+                    api.linkDevice("2@uyVBue6H+nnQqE+IIRSOPB/HkWSaRdI8g8bJ/HhrwMJNww4SDwR/hpedtfH5Xk+ZBfT7fFW5hlLuKw==,7Fl6JuW6xHfq40f7EaHrqhePRZ9rzWpVQMv6xLc/MBM=,gAH3Oy7vFBDVbNV4QJ9/E+55vIDrnDK79Cdr+es2ghI=,005r3gGnvXuMw2PzXW9nhUaDc98zwbZE50KWlvpbaNQ=,1").join();
                 })
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))

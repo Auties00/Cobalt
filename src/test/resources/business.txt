@@ -278,7 +278,15 @@ adb shell logcat | findstr WhatsApp:
 06-01 17:41:58.147 24853 24939 D WhatsApp: LL_D W [140:WriterThread] SEND <presence type='available'/>
 06-01 17:41:58.167 24853 24939 D WhatsApp: LL_D W [140:WriterThread] SEND <iq id='079' xmlns='w:p' type='get' to='s.whatsapp.net'><ping/></iq>
 06-01 17:41:58.287 24853 26307 D WhatsApp: LL_D W [183:ReaderThread] RECV <iq from='s.whatsapp.net' type='result' id='079' t='1685634119'/>
-06-01 17:41:58.370 24853 24939 D WhatsApp: LL_D W [140:WriterThread] SEND <iq to='s.whatsapp.net' id='07a' xmlns='md' type='set'><pair-device><ref>2@4afVkz2qtT3PMUVcKaP8p1GlB72kEJIha6GbWGMIjH46hBPvq/7fSYScf3NIUP7tNFOYKbFVveIDCQ==</ref><pub-key>%92%e2uJ%fc%1a*%80%da%abJMC%b1%c5%91%91%bf%0f%b1%d2%b3C%e8%20o%e2%96%0cY=2</pub-key><device-identity>%0at%0a%0e%08%b5%f3%81%8e%06%10%c7%f8%e2%a3%06%18%01%12%20%fe%16%fdv%00xJF%fd~%ed%8f%1a<%bf%1d%92%d3%e4%c8%86-`%83=P%ef*Z%9b%ae%20%1a@%a3G%c4_%f6%09%88%a7+>4%bb^%ef?%f4%aa%b0%fc%20%f4%d1%06*%88%07%18%c3%17%d7%13%19i%83%17W%de%99%ec%cd7%9f%85%e4%b0%8c%8b,%b1%fd%b6%85%13kZ%0e%953'%1c%a8%d4%c3%00%12%20o?%ce%b9%85$y&[.>g%94wk{q0Y%cc%08%07%80}%de%967%03%15%e8%94j</device-identity><key-index-list ts='1685634119'>%0a%12%08%b5%f3%81%8e%06%10%c7%f8%e2%a3%06%18%01"%02%00%01%12@%ed[%18%9b%fdRC3O%fe*%97%84w%ec%9c4F,%f8%15%bfL%b9%80%a5%b3%b1@%0a%ebh%15%9e%f6%ad%c1%83yfj%8ee%1e%83%13I%d74%15V%af%04?%ff(%81%d8$)%c7z%af%0e</key-index-list></pair-device></iq>
+06-01 17:41:58.370 24853 24939 D WhatsApp: LL_D W [140:WriterThread]
+<iq to='s.whatsapp.net' id='07a' xmlns='md' type='set'>
+    <pair-device>
+        <ref>2@4afVkz2qtT3PMUVcKaP8p1GlB72kEJIha6GbWGMIjH46hBPvq/7fSYScf3NIUP7tNFOYKbFVveIDCQ==</ref>
+        <pub-key>%92%e2uJ%fc%1a*%80%da%abJMC%b1%c5%91%91%bf%0f%b1%d2%b3C%e8%20o%e2%96%0cY=2</pub-key>
+        <device-identity>%0at%0a%0e%08%b5%f3%81%8e%06%10%c7%f8%e2%a3%06%18%01%12%20%fe%16%fdv%00xJF%fd~%ed%8f%1a<%bf%1d%92%d3%e4%c8%86-`%83=P%ef*Z%9b%ae%20%1a@%a3G%c4_%f6%09%88%a7+>4%bb^%ef?%f4%aa%b0%fc%20%f4%d1%06*%88%07%18%c3%17%d7%13%19i%83%17W%de%99%ec%cd7%9f%85%e4%b0%8c%8b,%b1%fd%b6%85%13kZ%0e%953'%1c%a8%d4%c3%00%12%20o?%ce%b9%85$y&[.>g%94wk{q0Y%cc%08%07%80}%de%967%03%15%e8%94j</device-identity>
+        <key-index-list ts='1685634119'>%0a%12%08%b5%f3%81%8e%06%10%c7%f8%e2%a3%06%18%01"%02%00%01%12@%ed[%18%9b%fdRC3O%fe*%97%84w%ec%9c4F,%f8%15%bfL%b9%80%a5%b3%b1@%0a%ebh%15%9e%f6%ad%c1%83yfj%8ee%1e%83%13I%d74%15V%af%04?%ff(%81%d8$)%c7z%af%0e</key-index-list>
+    </pair-device>
+</iq>
 06-01 17:41:59.580 24853 26307 D WhatsApp: LL_D W [183:ReaderThread] RECV <iq from='s.whatsapp.net' type='result' id='07a'><companion-props>%0a%07Windows%12%02%08%0a%18%01%20%00*%06%18%af%ac%1b%20%01</companion-props><device jid='9994:25@s.whatsapp.net'/></iq>
 06-01 17:42:00.388 24853 26307 D WhatsApp: LL_D W [183:ReaderThread] RECV <notification from='9994@s.whatsapp.net' type='devices' id='2765987871' t='1685634118'><update hash='G+7m'/></notification>
 06-01 17:42:00.403 24853 24939 D WhatsApp: LL_D W [140:WriterThread] SEND <ack id='2765987871' to='9994@s.whatsapp.net' class='notification' type='devices'/>

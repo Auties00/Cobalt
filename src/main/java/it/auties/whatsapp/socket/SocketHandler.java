@@ -773,7 +773,6 @@ public class SocketHandler implements SocketListener {
         store().name(newName);
     }
 
-
     private void onUserNameChange(String newName, String oldName) {
         callListenersAsync(listener -> {
             listener.onUserNameChange(whatsapp, oldName, newName);

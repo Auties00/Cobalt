@@ -956,7 +956,7 @@ public class Whatsapp {
         }
 
         var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
-        var node = Node.ofAttributes("presence", Map.of("type", presence.data(), "name", store().name()));
+        var node = Node.ofAttributes("presence", Map.of("name", store().name(), "type", presence.data()));
         return socketHandler.sendWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updateSelfPresence(null, presence))
                 .thenApplyAsync(ignored -> available);
@@ -2061,11 +2061,10 @@ public class Whatsapp {
     }
 
     private CompletableFuture<CompanionLinkResult> linkDevice(byte[] advIdentity, byte[] identityKey, String ref, byte[] publicKey) {
-        var timestamp = Clock.nowSeconds();
         var deviceIdentity = DeviceIdentity.builder()
                 .rawId(KeyHelper.agent())
                 .keyIndex(KeyHelper.keyIndex())
-                .timestamp(timestamp)
+                .timestamp(Clock.nowSeconds())
                 .build();
         var deviceIdentityBytes = Protobuf.writeMessage(deviceIdentity);
         var accountSignatureMessage = Bytes.of(Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER)
@@ -2105,7 +2104,7 @@ public class Whatsapp {
                         Node.of("ref", ref),
                         Node.of("pub-key", publicKey),
                         Node.of("device-identity", Protobuf.writeMessage(deviceIdentityHmac)),
-                        Node.of("key-index-list", Map.of("ts", timestamp), Protobuf.writeMessage(signedKeyIndexList))))
+                        Node.of("key-index-list", Map.of("ts", Clock.nowSeconds()), Protobuf.writeMessage(signedKeyIndexList))))
                 .thenComposeAsync(result -> handleCompanionPairing(result, deviceIdentity.keyIndex()));
     }
 
@@ -2159,10 +2158,13 @@ public class Whatsapp {
     private CompletableFuture<CompanionLinkResult> handleCompanionEncrypt(Node result, ContactJid companion, int keyId) {
         store().addLinkedDevice(companion, keyId);
         socketHandler.parseSessions(result);
-        var messages = Stream.of(createInitialSecurityMessage(), createAppStateKeysMessage(companion), createInitialNullMessage(), createInitialStatusMessage(), createPushNamesMessage(), createInitialBootstrapMessage(), createRecentMessage())
-                .map(future -> future.thenCompose(message -> socketHandler.sendPeerMessage(companion, message)))
-                .toArray(CompletableFuture[]::new);
-        return CompletableFuture.allOf(messages)
+        return sendInitialSecurityMessage(companion)
+                .thenComposeAsync(ignore -> sendAppStateKeysMessage(companion))
+                .thenComposeAsync(ignore -> sendInitialNullMessage(companion))
+                .thenComposeAsync(ignore -> sendInitialStatusMessage(companion))
+                .thenComposeAsync(ignore -> sendPushNamesMessage(companion))
+                .thenComposeAsync(ignore -> sendInitialBootstrapMessage(companion))
+                .thenComposeAsync(ignore -> sendRecentMessage(companion))
                 .thenComposeAsync(ignored -> syncCompanionState(companion))
                 .thenApplyAsync(ignored -> CompanionLinkResult.SUCCESS);
     }
@@ -2255,15 +2257,15 @@ public class Whatsapp {
         return PatchEntry.of(sync, Operation.SET, 2, contact.jid().toString());
     }
 
-    private CompletableFuture<ProtocolMessage> createRecentMessage() {
+    private CompletableFuture<Void> sendRecentMessage(ContactJid jid) {
         var pushNames = HistorySync.builder()
                 .conversations(List.of())
                 .syncType(HistorySync.Type.RECENT)
                 .build();
-        return createHistoryProtocolMessage(pushNames, Type.PUSH_NAME);
+        return sendHistoryProtocolMessage(jid, pushNames, Type.PUSH_NAME);
     }
 
-    private CompletableFuture<ProtocolMessage> createPushNamesMessage() {
+    private CompletableFuture<Void> sendPushNamesMessage(ContactJid jid) {
         var pushNamesData = store()
                 .contacts()
                 .stream()
@@ -2274,18 +2276,18 @@ public class Whatsapp {
                 .pushNames(pushNamesData)
                 .syncType(HistorySync.Type.PUSH_NAME)
                 .build();
-        return createHistoryProtocolMessage(pushNames, Type.PUSH_NAME);
+        return sendHistoryProtocolMessage(jid, pushNames, Type.PUSH_NAME);
     }
 
-    private CompletableFuture<ProtocolMessage> createInitialStatusMessage() {
+    private CompletableFuture<Void> sendInitialStatusMessage(ContactJid jid) {
         var initialStatus = HistorySync.builder()
                 .statusV3Messages(new ArrayList<>(store().status()))
                 .syncType(HistorySync.Type.INITIAL_STATUS_V3)
                 .build();
-        return createHistoryProtocolMessage(initialStatus, Type.INITIAL_STATUS_V3);
+        return sendHistoryProtocolMessage(jid, initialStatus, Type.INITIAL_STATUS_V3);
     }
 
-    private CompletableFuture<ProtocolMessage> createInitialBootstrapMessage() {
+    private CompletableFuture<Void> sendInitialBootstrapMessage(ContactJid jid) {
         var chats = store().chats()
                 .stream()
                 .toList();
@@ -2293,10 +2295,10 @@ public class Whatsapp {
                 .conversations(chats)
                 .syncType(HistorySync.Type.INITIAL_BOOTSTRAP)
                 .build();
-        return createHistoryProtocolMessage(initialBootstrap, Type.INITIAL_BOOTSTRAP);
+        return sendHistoryProtocolMessage(jid, initialBootstrap, Type.INITIAL_BOOTSTRAP);
     }
 
-    private CompletableFuture<ProtocolMessage> createInitialNullMessage() {
+    private CompletableFuture<Void> sendInitialNullMessage(ContactJid jid) {
         var pastParticipants = store().chats()
                 .stream()
                 .map(this::getPastParticipants)
@@ -2306,7 +2308,7 @@ public class Whatsapp {
                 .syncType(HistorySync.Type.NON_BLOCKING_DATA)
                 .pastParticipants(pastParticipants)
                 .build();
-        return createHistoryProtocolMessage(initialBootstrap, null);
+        return sendHistoryProtocolMessage(jid, initialBootstrap, null);
     }
 
     private PastParticipants getPastParticipants(Chat chat) {
@@ -2320,7 +2322,7 @@ public class Whatsapp {
                 .build();
     }
 
-    private CompletableFuture<ProtocolMessage> createAppStateKeysMessage(ContactJid companion) {
+    private CompletableFuture<Void> sendAppStateKeysMessage(ContactJid companion) {
         var preKeys = IntStream.range(0, 1)
                 .mapToObj(index -> createAppKey(companion, index))
                 .toList();
@@ -2332,22 +2334,9 @@ public class Whatsapp {
                 .protocolType(ProtocolMessageType.APP_STATE_SYNC_KEY_SHARE)
                 .appStateSyncKeyShare(appStateSyncKeyShare)
                 .build();
-        return CompletableFuture.completedFuture(result);
+        return socketHandler.sendPeerMessage(companion, result);
     }
 
-    // [AppStateSyncKey(
-    //      keyId=AppStateSyncKeyId(keyId=[0, 0, 0, 0, 77, 94]),
-    //      keyData=AppStateSyncKeyData(
-    //          keyData=[-46, 10, 82, -122, 84, -46, 17, -76, -10, -73, 100, -44, -31, 96, -116, -86, -117, -29, 14, -50, 72, 60, 84, -29, 44, 8, -91, 86, -62, -103, 111, -120],
-    //          fingerprint=AppStateSyncKeyFingerprint(
-    //              rawId=883110372,
-    //              currentIndex=1,
-    //              deviceIndexes=[0, 1]
-    //          ),
-    //          timestamp=1685700411601
-    //          )
-    //      )
-    // ]
     private AppStateSyncKey createAppKey(ContactJid jid, int index) {
         return AppStateSyncKey.builder()
                 .keyId(new AppStateSyncKeyId(KeyHelper.appKeyId()))
@@ -2371,18 +2360,19 @@ public class Whatsapp {
                 .build();
     }
 
-    private CompletableFuture<ProtocolMessage> createInitialSecurityMessage() {
+    private CompletableFuture<Void> sendInitialSecurityMessage(ContactJid jid) {
         var protocolMessage = ProtocolMessage.builder()
                 .protocolType(ProtocolMessageType.INITIAL_SECURITY_NOTIFICATION_SETTING_SYNC)
                 .initialSecurityNotificationSettingSync(new InitialSecurityNotificationSettingSync(true))
                 .build();
-        return CompletableFuture.completedFuture(protocolMessage);
+        return socketHandler.sendPeerMessage(jid, protocolMessage);
     }
 
-    private CompletableFuture<ProtocolMessage> createHistoryProtocolMessage(HistorySync historySync, HistorySyncNotification.Type type) {
+    private CompletableFuture<Void> sendHistoryProtocolMessage(ContactJid jid, HistorySync historySync, HistorySyncNotification.Type type) {
         var syncBytes = Protobuf.writeMessage(historySync);
         return Medias.upload(syncBytes, AttachmentType.HISTORY_SYNC, store().mediaConnection())
-                .thenApplyAsync(upload -> createHistoryProtocolMessage(upload, type));
+                .thenApplyAsync(upload -> createHistoryProtocolMessage(upload, type))
+                .thenComposeAsync(result -> socketHandler.sendPeerMessage(jid, result));
     }
 
     private ProtocolMessage createHistoryProtocolMessage(MediaFile upload, HistorySyncNotification.Type type) {

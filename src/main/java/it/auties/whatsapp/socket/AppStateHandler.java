@@ -28,6 +28,8 @@ import lombok.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,28 +44,46 @@ class AppStateHandler {
 
     private final SocketHandler socketHandler;
     private final Map<PatchType, Integer> attempts;
-    private final OrderedAsyncTaskRunner runner;
+    private ExecutorService executor;
+
+    private synchronized ExecutorService getOrCreateAppService(){
+        if(executor == null || executor.isShutdown()){
+            executor = Executors.newSingleThreadExecutor();
+        }
+
+        return executor;
+    }
 
     protected AppStateHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.attempts = new HashMap<>();
-        this.runner = new OrderedAsyncTaskRunner();
     }
 
     protected CompletableFuture<Void> push(@NonNull ContactJid jid, @NonNull List<PatchRequest> patches) {
+        var executor = getOrCreateAppService();
+        var future = new CompletableFuture<Void>();
         if(socketHandler.store().clientType() == ClientType.MOBILE){
-            return runner.runAsync(() -> sendPush(jid, createPushRequests(jid, patches), false)
-                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
-                    .orTimeout(TIMEOUT, TimeUnit.SECONDS));
+            executor.execute(() -> {
+                sendPush(jid, createPushRequests(jid, patches), false)
+                        .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
+                        .orTimeout(TIMEOUT, TimeUnit.SECONDS)
+                        .join();
+                future.complete(null);
+            });
+            return future;
         }
 
         var types = patches.stream()
                 .map(PatchRequest::type)
                 .collect(Collectors.toUnmodifiableSet());
-        return runner.runAsync(() -> pullUninterruptedly(jid, types))
-                .thenCompose(ignored -> sendPush(jid, createPushRequests(jid, patches), true))
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
-                .orTimeout(TIMEOUT, TimeUnit.SECONDS);
+        executor.execute(() -> {
+            pullUninterruptedly(jid, types)
+                    .thenCompose(ignored -> sendPush(jid, createPushRequests(jid, patches), true))
+                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
+                    .orTimeout(TIMEOUT, TimeUnit.SECONDS);
+            future.complete(null);
+        });
+        return future;
     }
 
     private List<PushRequest> createPushRequests(ContactJid jid, List<PatchRequest> patches) {
@@ -175,11 +195,11 @@ class AppStateHandler {
 
     protected void pull(PatchType... patchTypes) {
         if (patchTypes == null || patchTypes.length == 0) {
-            CompletableFuture.completedFuture(null);
             return;
         }
 
-        runner.runAsync(() -> pullUninterruptedly(socketHandler.store().jid(), Set.of(patchTypes)).thenAcceptAsync(success -> onPull(false, success))
+        getOrCreateAppService().execute(() -> pullUninterruptedly(socketHandler.store().jid(), Set.of(patchTypes))
+                .thenAcceptAsync(success -> onPull(false, success))
                 .exceptionallyAsync(exception -> onPullError(false, exception)));
     }
 
@@ -375,7 +395,6 @@ class AppStateHandler {
             } else if (action instanceof TimeFormatAction timeFormatAction) {
                 socketHandler.store().twentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
             }
-            System.out.println("Action type: " + type);
             socketHandler.onAction(action, messageIndex);
         }
         var setting = value.setting();
@@ -389,7 +408,6 @@ class AppStateHandler {
             } else if (setting instanceof UnarchiveChatsSetting unarchiveChatsSetting) {
                 socketHandler.store().unarchiveChats(unarchiveChatsSetting.unarchiveChats());
             }
-            System.out.println("Setting type: " + type);
             socketHandler.onSetting(setting);
         }
         var features = mutation.value().primaryFeature();
@@ -573,7 +591,9 @@ class AppStateHandler {
 
     protected void dispose() {
         attempts.clear();
-        runner.cancel();
+        if(executor != null && !executor.isShutdown()) {
+            executor.shutdownNow();
+        }
     }
 
     private record SyncRecord(LTHashState state, List<ActionDataSync> records) {
