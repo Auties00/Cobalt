@@ -19,12 +19,12 @@ public sealed interface Action extends ProtobufMessage permits AgentAction, Andr
      *
      * @return a non-null int
      */
-    int version();
+    int actionVersion();
 
     /**
      * The type of this action
      *
      * @return a non-null type
      */
-    PatchType type();
+    PatchType actionType();
 }

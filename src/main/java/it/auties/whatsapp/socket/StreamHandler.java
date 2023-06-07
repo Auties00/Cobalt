@@ -5,7 +5,6 @@ import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
@@ -113,7 +112,7 @@ class StreamHandler {
             socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             return;
         }
-        socketHandler.handleFailure(Location.STREAM, new RuntimeException("Stream error: %s".formatted(node)));
+        socketHandler.disconnect(DisconnectReason.RECONNECTING);
     }
 
     private void digestChatState(Node node) {

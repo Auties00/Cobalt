@@ -67,7 +67,7 @@ public final class QuickReplyAction implements Action {
      * @return a non-null string
      */
     @Override
-    public int version() {
+    public int actionVersion() {
         return 2;
     }
 
@@ -77,7 +77,7 @@ public final class QuickReplyAction implements Action {
      * @return a non-null string
      */
     @Override
-    public PatchType type() {
+    public PatchType actionType() {
         return null;
     }
 }

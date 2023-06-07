@@ -1,6 +1,7 @@
 package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.contact.ContactJid;
 import org.junit.jupiter.api.Test;
 
 // Just used for testing locally
@@ -8,10 +9,14 @@ public class WebTest {
     @Test
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
-                .lastConnection()
+                .newConnection()
+                .qrHandler(System.out::println)
                 .build()
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
-                .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
+                .addNewMessageListener((api, message, offline) -> {
+                    System.out.println(message.toJson());
+                    api.sendMessage(ContactJid.of("393495089819"), "Hello World", message).join();
+                })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))

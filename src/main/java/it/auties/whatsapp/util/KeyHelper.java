@@ -83,15 +83,11 @@ public class KeyHelper {
         return secureRandom.nextInt(0, 2147483647);
     }
 
-    public int agent(){
-        return ThreadLocalRandom.current().nextInt(1, 100);
+    public int agent() {
+        return ThreadLocalRandom.current().nextInt(800_000_000, 900_000_000);
     }
 
-    public int keyIndex(){
-        return ThreadLocalRandom.current().nextInt(1, 10);
-    }
-
-    public byte[] appKeyId(){
+    public byte[] appKeyId() {
         return BytesHelper.intToBytes(ThreadLocalRandom.current().nextInt(19000, 20000), 6);
     }
 }

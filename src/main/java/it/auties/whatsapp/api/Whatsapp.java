@@ -2063,7 +2063,7 @@ public class Whatsapp {
     private CompletableFuture<CompanionLinkResult> linkDevice(byte[] advIdentity, byte[] identityKey, String ref, byte[] publicKey) {
         var deviceIdentity = DeviceIdentity.builder()
                 .rawId(KeyHelper.agent())
-                .keyIndex(KeyHelper.keyIndex())
+                .keyIndex(store().linkedDevices().size() + 1)
                 .timestamp(Clock.nowSeconds())
                 .build();
         var deviceIdentityBytes = Protobuf.writeMessage(deviceIdentity);
@@ -2084,12 +2084,12 @@ public class Whatsapp {
                 .build();
         var knownDevices = store().linkedDevices()
                 .stream()
-                .map(ContactJid::agent)
+                .map(ContactJid::device)
                 .toList();
         var keyIndexList = KeyIndexList.builder()
                 .rawId(deviceIdentity.rawId())
                 .timestamp(deviceIdentity.timestamp())
-                .validIndexes(knownDevices)
+                // .validIndexes(knownDevices)
                 .build();
         var keyIndexListBytes = Protobuf.writeMessage(keyIndexList);
         var deviceSignatureMessage = Bytes.of(Spec.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER)
@@ -2104,7 +2104,7 @@ public class Whatsapp {
                         Node.of("ref", ref),
                         Node.of("pub-key", publicKey),
                         Node.of("device-identity", Protobuf.writeMessage(deviceIdentityHmac)),
-                        Node.of("key-index-list", Map.of("ts", Clock.nowSeconds()), Protobuf.writeMessage(signedKeyIndexList))))
+                        Node.of("key-index-list", Map.of("ts", deviceIdentity.timestamp()), Protobuf.writeMessage(signedKeyIndexList))))
                 .thenComposeAsync(result -> handleCompanionPairing(result, deviceIdentity.keyIndex()));
     }
 

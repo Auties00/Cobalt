@@ -45,7 +45,7 @@ public final class RecentEmojiWeightsAction implements Action {
      * @return an exception
      */
     @Override
-    public int version() {
+    public int actionVersion() {
         throw new UnsupportedOperationException("Cannot send action");
     }
 
@@ -55,7 +55,7 @@ public final class RecentEmojiWeightsAction implements Action {
      * @return an exception
      */
     @Override
-    public PatchType type() {
+    public PatchType actionType() {
         throw new UnsupportedOperationException("Cannot send action");
     }
 }

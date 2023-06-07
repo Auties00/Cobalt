@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,11 +41,16 @@ import static java.lang.System.Logger.Level.WARNING;
 class AppStateHandler {
     private static final int TIMEOUT = 120;
     private static final int PULL_ATTEMPTS = 3;
-    private static final boolean CHECK_MACS = false;
+    private static final boolean CHECK_MACS = true;
 
     private final SocketHandler socketHandler;
     private final Map<PatchType, Integer> attempts;
     private ExecutorService executor;
+
+    protected AppStateHandler(SocketHandler socketHandler) {
+        this.socketHandler = socketHandler;
+        this.attempts = new HashMap<>();
+    }
 
     private synchronized ExecutorService getOrCreateAppService(){
         if(executor == null || executor.isShutdown()){
@@ -54,110 +60,42 @@ class AppStateHandler {
         return executor;
     }
 
-    protected AppStateHandler(SocketHandler socketHandler) {
-        this.socketHandler = socketHandler;
-        this.attempts = new HashMap<>();
+    protected CompletableFuture<Void> push(@NonNull ContactJid jid, @NonNull List<PatchRequest> patches) {
+        return runPushTask(() -> {
+            var pullOperation = switch (socketHandler.store().clientType()){
+                case MOBILE -> CompletableFuture.completedFuture(null);
+                case WEB -> pullUninterruptedly(jid, getPatchesTypes(patches));
+            };
+            return pullOperation.thenComposeAsync(ignored -> sendPush(jid, patches, true))
+                    .orTimeout(TIMEOUT, TimeUnit.SECONDS)
+                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable));
+        });
     }
 
-    protected CompletableFuture<Void> push(@NonNull ContactJid jid, @NonNull List<PatchRequest> patches) {
-        var executor = getOrCreateAppService();
-        var future = new CompletableFuture<Void>();
-        if(socketHandler.store().clientType() == ClientType.MOBILE){
-            executor.execute(() -> {
-                sendPush(jid, createPushRequests(jid, patches), false)
-                        .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
-                        .orTimeout(TIMEOUT, TimeUnit.SECONDS)
-                        .join();
-                future.complete(null);
-            });
-            return future;
-        }
-
-        var types = patches.stream()
+    private Set<PatchType> getPatchesTypes(List<PatchRequest> patches) {
+        return patches.stream()
                 .map(PatchRequest::type)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private CompletableFuture<Void> runPushTask(Supplier<CompletableFuture<?>> task){
+        var executor = getOrCreateAppService();
+        var future = new CompletableFuture<Void>();
         executor.execute(() -> {
-            pullUninterruptedly(jid, types)
-                    .thenCompose(ignored -> sendPush(jid, createPushRequests(jid, patches), true))
-                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable))
-                    .orTimeout(TIMEOUT, TimeUnit.SECONDS);
-            future.complete(null);
+            try {
+                task.get().join();
+                future.complete(null);
+            }catch (Throwable throwable){
+                future.completeExceptionally(throwable);
+            }
         });
         return future;
     }
 
-    private List<PushRequest> createPushRequests(ContactJid jid, List<PatchRequest> patches) {
-        return patches.stream()
-                .map(entry -> createPushRequest(jid, patches, entry))
+    private CompletableFuture<Void> sendPush(ContactJid jid, List<PatchRequest> patches, boolean readPatches) {
+        var requests = patches.stream()
+                .map(entry -> createPushRequest(jid, entry))
                 .toList();
-    }
-
-    private PushRequest createPushRequest(ContactJid jid, List<PatchRequest> patches, PatchRequest request) {
-        var oldState = socketHandler.keys()
-                .findHashStateByName(jid, request.type())
-                .orElseGet(() -> new LTHashState(request.type()));
-        var newState = oldState.copy();
-        var key = socketHandler.keys().getLatestAppKey(jid);
-        var mutationKeys = MutationKeys.of(key.keyData().keyData());
-        var syncId = new KeyId(key.keyId().keyId());
-        var mutations = patches.stream()
-                .map(PatchRequest::entries)
-                .flatMap(Collection::stream)
-                .map(patch -> createMutation(patch, mutationKeys, key, newState, syncId))
-                .toList();
-        var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(), request.type(), mutationKeys.snapshotMacKey());
-        var valueMac = mutations.stream()
-                .map(MutationResult::valueMac)
-                .reduce(new byte[0], (first, second) -> Bytes.of(first, second).toByteArray());
-        var patchMac = generatePatchMac(snapshotMac, valueMac, newState.version(), request.type(), mutationKeys.patchMacKey());
-        var syncs = mutations.stream()
-                .map(MutationResult::sync)
-                .toList();
-        var sync = PatchSync.builder()
-                .patchMac(patchMac)
-                .snapshotMac(snapshotMac)
-                .keyId(syncId)
-                .mutations(syncs)
-                .build();
-        return new PushRequest(request.type(), oldState, newState, sync);
-    }
-
-    private MutationResult createMutation(PatchEntry patch, MutationKeys mutationKeys, AppStateSyncKey key, LTHashState newState, KeyId syncId) {
-        var index = patch.index().getBytes(StandardCharsets.UTF_8);
-        var actionData = ActionDataSync.builder()
-                .index(index)
-                .value(patch.sync())
-                .padding(new byte[0])
-                .version(patch.version())
-                .build();
-        var encoded = Protobuf.writeMessage(actionData);
-        var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());
-        var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
-        var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
-        var generator = new LTHash(newState);
-        generator.mix(indexMac, valueMac, patch.operation());
-        var result = generator.finish();
-        newState.hash(result.hash());
-        newState.indexValueMap(result.indexValueMap());
-        newState.version(newState.version() + 1);
-        var record = RecordSync.builder()
-                .index(new IndexSync(indexMac))
-                .value(new ValueSync(Bytes.of(encrypted, valueMac).toByteArray()))
-                .keyId(syncId)
-                .build();
-        newState.indexValueMap().put(Bytes.of(indexMac).toBase64(), valueMac);
-        var sync = MutationSync.builder()
-                .operation(patch.operation())
-                .record(record)
-                .build();
-        return new MutationResult(sync, valueMac);
-    }
-
-    private record MutationResult(MutationSync sync, byte[] valueMac){
-
-    }
-
-    private CompletableFuture<Void> sendPush(ContactJid jid, List<PushRequest> requests, boolean readPatches) {
         var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
         var body = requests.stream()
                 .map(request -> createPushRequestNode(request, mobile))
@@ -170,14 +108,75 @@ class AppStateHandler {
                 .thenRunAsync(() -> onPush(jid, requests, readPatches));
     }
 
+    private PushRequest createPushRequest(ContactJid jid, PatchRequest request) {
+        var oldState = socketHandler.keys()
+                .findHashStateByName(jid, request.type())
+                .orElseGet(() -> new LTHashState(request.type()));
+        var newState = oldState.copy();
+        var key = socketHandler.keys().getLatestAppKey(jid);
+        var mutationKeys = MutationKeys.of(key.keyData().keyData());
+        var syncId = new KeyId(key.keyId().keyId());
+        var mutations = request.entries()
+                .stream()
+                .map(patch -> createMutationSync(patch, mutationKeys, key, syncId))
+                .toList();
+        var newStateGenerator = new LTHash(newState);
+        mutations.forEach(mutation -> newStateGenerator.mix(mutation.indexMac(), mutation.valueMac(), mutation.operation()));
+        var result = newStateGenerator.finish();
+        newState.hash(result.hash());
+        newState.indexValueMap(result.indexValueMap());
+        newState.version(newState.version() + 1);
+        var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(), request.type(), mutationKeys.snapshotMacKey());
+        var concatValueMac = mutations.stream()
+                .map(MutationResult::valueMac)
+                .toArray(byte[][]::new);
+        var patchMac = generatePatchMac(snapshotMac, concatValueMac, newState.version(), request.type(), mutationKeys.patchMacKey());
+        var syncs = mutations.stream()
+                .map(MutationResult::sync)
+                .toList();
+        var sync = PatchSync.builder()
+                .patchMac(patchMac)
+                .snapshotMac(snapshotMac)
+                .keyId(syncId)
+                .mutations(syncs)
+                .build();
+        return new PushRequest(request.type(), oldState, newState, sync);
+    }
+
+    private MutationResult createMutationSync(PatchEntry patch, MutationKeys mutationKeys, AppStateSyncKey key, KeyId syncId) {
+        var index = patch.index().getBytes(StandardCharsets.UTF_8);
+        var actionData = ActionDataSync.builder()
+                .index(index)
+                .value(patch.sync())
+                .padding(new byte[0])
+                .version(patch.version())
+                .build();
+        var encoded = Protobuf.writeMessage(actionData);
+        var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());
+        var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
+        var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
+        var record = RecordSync.builder()
+                .index(new IndexSync(indexMac))
+                .value(new ValueSync(Bytes.of(encrypted, valueMac).toByteArray()))
+                .keyId(syncId)
+                .build();
+        var sync = MutationSync.builder()
+                .operation(patch.operation())
+                .record(record)
+                .build();
+        return new MutationResult(sync, indexMac, valueMac, patch.operation());
+    }
+
     private Node createPushRequestNode(PushRequest request, boolean mobile) {
+        var version = request.oldState().version();
         var collectionAttributes = Attributes.of()
                 .put("name", request.type())
-                .put("version", request.newState().version() - 1, !mobile)
+                .put("version", version, !mobile)
                 .put("return_snapshot", false, !mobile)
                 .put("order", request.type() != PatchType.CRITICAL_UNBLOCK_LOW ? "1" : "0", mobile)
                 .toMap();
-        return Node.ofChildren("collection", collectionAttributes, Node.of("patch", Protobuf.writeMessage(request.sync())));
+        return Node.ofChildren("collection", collectionAttributes,
+                Node.of("patch", Protobuf.writeMessage(request.sync())));
     }
 
     private void onPush(ContactJid jid, List<PushRequest> requests, boolean readPatches) {
@@ -189,7 +188,7 @@ class AppStateHandler {
 
             var patches = List.of(request.sync().withVersion(new VersionSync(request.newState().version())));
             var results = decodePatches(jid, request.type(), patches, request.oldState());
-            results.records().forEach(entry -> processActions(request.type(), entry));
+            results.records().forEach(this::processActions);
         });
     }
 
@@ -273,7 +272,7 @@ class AppStateHandler {
         return records.stream()
                 .map(record -> {
                     var chunk = decodeSync(jid, record, tempStates);
-                    chunk.records().forEach(entry -> processActions(record.patchType(), entry));
+                    chunk.records().forEach(this::processActions);
                     return chunk;
                 })
                 .filter(PatchChunk::hasMore)
@@ -361,7 +360,7 @@ class AppStateHandler {
         return Optional.of(patchSync);
     }
 
-    private void processActions(PatchType type, ActionDataSync mutation) {
+    private void processActions(ActionDataSync mutation) {
         var value = mutation.value();
         if (value == null) {
             return;
@@ -481,12 +480,12 @@ class AppStateHandler {
         }
 
         newState.version(patch.encodedVersion());
-        var syncMac = calculateSyncMac(jid, patch, patchType);
+        var syncMac = calculatePatchMac(jid, patch, patchType);
         Validate.isTrue(!CHECK_MACS || syncMac.isEmpty() || Arrays.equals(syncMac.get(), patch.patchMac()), "sync_mac", HmacValidationException.class);
         var mutations = decodeMutations(jid, patch.mutations(), newState);
         newState.hash(mutations.result().hash());
         newState.indexValueMap(mutations.result().indexValueMap());
-        var snapshotMac = generatePatchMac(jid, patchType, newState, patch);
+        var snapshotMac = calculateSnapshotMac(jid, patchType, newState, patch);
         Validate.isTrue(!CHECK_MACS || snapshotMac.isEmpty() || Arrays.equals(snapshotMac.get(), patch.snapshotMac()), "patch_mac", HmacValidationException.class);
         return mutations;
     }
@@ -496,24 +495,22 @@ class AppStateHandler {
         patch.mutations().addAll(mutationsSync.mutations());
     }
 
-    private Optional<byte[]> generatePatchMac(ContactJid jid, PatchType name, LTHashState newState, PatchSync patch) {
+    private Optional<byte[]> calculateSnapshotMac(ContactJid jid, PatchType name, LTHashState newState, PatchSync patch) {
         return getMutationKeys(jid, patch.keyId())
                 .map(mutationKeys -> generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey()));
     }
 
-    private Optional<byte[]> calculateSyncMac(ContactJid jid, PatchSync patch, PatchType patchType) {
+    private Optional<byte[]> calculatePatchMac(ContactJid jid, PatchSync patch, PatchType patchType) {
         return getMutationKeys(jid, patch.keyId())
                 .map(mutationKeys -> generatePatchMac(patch.snapshotMac(), getSyncMutationMac(patch), patch.encodedVersion(), patchType, mutationKeys.patchMacKey()));
     }
 
-    private byte[] getSyncMutationMac(PatchSync patch) {
+    private byte[][] getSyncMutationMac(PatchSync patch) {
         return patch.mutations()
                 .stream()
                 .map(mutation -> mutation.record().value().blob())
-                .map(Bytes::of)
-                .map(binary -> binary.slice(-Spec.Signal.KEY_LENGTH))
-                .reduce(Bytes.newBuffer(), Bytes::append)
-                .toByteArray();
+                .map(entry -> Arrays.copyOfRange(entry, entry.length - Spec.Signal.KEY_LENGTH, entry.length))
+                .toArray(byte[][]::new);
     }
 
     private Optional<SyncRecord> decodeSnapshot(ContactJid jid, PatchType name, SnapshotSync snapshot) {
@@ -555,8 +552,8 @@ class AppStateHandler {
         var blob = Bytes.of(sync.value().blob());
         var encryptedBlob = blob.cut(-Spec.Signal.KEY_LENGTH).toByteArray();
         var encryptedMac = blob.slice(-Spec.Signal.KEY_LENGTH).toByteArray();
-        Validate.isTrue(!CHECK_MACS || Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
-                .id(), mutationKeys.get().macKey())), "decode_mutation", HmacValidationException.class);
+        Validate.isTrue(!CHECK_MACS || Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.get().macKey())),
+                "decode_mutation", HmacValidationException.class);
         var result = AesCbc.decrypt(encryptedBlob, mutationKeys.get().encKey());
         var actionSync = Protobuf.readMessage(result, ActionDataSync.class);
         Validate.isTrue(!CHECK_MACS || Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.get()
@@ -580,9 +577,9 @@ class AppStateHandler {
         return Hmac.calculateSha256(total, key);
     }
 
-    private byte[] generatePatchMac(byte[] snapshotMac, byte[] valueMac, long version, PatchType patchType, byte[] key) {
+    private byte[] generatePatchMac(byte[] snapshotMac, byte[][] valueMac, long version, PatchType patchType, byte[] key) {
         var total = Bytes.of(snapshotMac)
-                .append(valueMac)
+                .append(Bytes.of(valueMac).toByteArray())
                 .append(BytesHelper.longToBytes(version))
                 .append(patchType.toString().getBytes(StandardCharsets.UTF_8))
                 .toByteArray();
@@ -597,6 +594,7 @@ class AppStateHandler {
     }
 
     private record SyncRecord(LTHashState state, List<ActionDataSync> records) {
+
     }
 
     private record SnapshotSyncRecord(PatchType patchType, SnapshotSync snapshot, List<PatchSync> patches,
@@ -611,11 +609,18 @@ class AppStateHandler {
     }
 
     private record MutationsRecord(LTHash.Result result, List<ActionDataSync> records) {
+
     }
 
     private record PatchChunk(PatchType patchType, List<ActionDataSync> records, boolean hasMore) {
+
     }
 
     private record PushRequest(PatchType type, LTHashState oldState, LTHashState newState, PatchSync sync) {
+
+    }
+
+    public record MutationResult(MutationSync sync, byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
+
     }
 }

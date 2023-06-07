@@ -60,7 +60,7 @@ public final class DeleteMessageForMeAction implements Action {
      * @return a non-null string
      */
     @Override
-    public int version() {
+    public int actionVersion() {
         return 3;
     }
 
@@ -70,7 +70,7 @@ public final class DeleteMessageForMeAction implements Action {
      * @return a non-null string
      */
     @Override
-    public PatchType type() {
+    public PatchType actionType() {
         return null;
     }
 }

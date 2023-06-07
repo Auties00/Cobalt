@@ -83,7 +83,7 @@ public final class FavoriteStickerAction implements Action {
      * @return a non-null string
      */
     @Override
-    public int version() {
+    public int actionVersion() {
         return 7;
     }
 
@@ -93,7 +93,7 @@ public final class FavoriteStickerAction implements Action {
      * @return a non-null string
      */
     @Override
-    public PatchType type() {
+    public PatchType actionType() {
         return null;
     }
 }

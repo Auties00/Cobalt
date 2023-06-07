@@ -41,7 +41,7 @@ public final class PinAction implements Action {
      * @return a non-null string
      */
     @Override
-    public int version() {
+    public int actionVersion() {
         return 5;
     }
 
@@ -51,7 +51,7 @@ public final class PinAction implements Action {
      * @return a non-null string
      */
     @Override
-    public PatchType type() {
+    public PatchType actionType() {
         return null;
     }
 }

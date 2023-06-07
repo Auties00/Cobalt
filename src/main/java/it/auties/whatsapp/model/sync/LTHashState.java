@@ -55,15 +55,18 @@ public class LTHashState {
     }
 
     @Override
+    public boolean equals(Object o) {
+        return o instanceof LTHashState that
+                && this.version == that.version()
+                && this.name == that.name()
+                && Arrays.equals(this.hash, that.hash()) && checkIndexEquality(that);
+    }
+
+    @Override
     public int hashCode() {
         var result = Objects.hash(name, version, indexValueMap);
         result = 31 * result + Arrays.hashCode(hash);
         return result;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof LTHashState that && this.version == that.version() && this.name == that.name() && Arrays.equals(this.hash, that.hash()) && checkIndexEquality(that);
     }
 
     private boolean checkIndexEquality(LTHashState that) {
