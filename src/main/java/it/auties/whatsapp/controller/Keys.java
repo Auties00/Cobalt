@@ -407,7 +407,7 @@ public final class Keys extends Controller<Keys> {
      */
     public static Keys random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, String... alias) {
         var result = Keys.builder()
-                .alias(Arrays.asList(alias))
+                .alias(Objects.requireNonNullElseGet(Arrays.asList(alias), ArrayList::new))
                 .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
                 .serializer(serializer)
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))

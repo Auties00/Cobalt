@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
-import static it.auties.whatsapp.model.sync.HistorySync.Type.RECENT;
+import static it.auties.whatsapp.model.sync.HistorySync.Type.*;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 class MessageHandler {
@@ -57,6 +57,7 @@ class MessageHandler {
     private final Logger logger;
     private final DeferredTaskRunner deferredTaskRunner;
     private final Set<ContactJid> attributedGroups;
+    private final EnumSet<HistorySync.Type> historySyncTypes;
     private ExecutorService executor;
     private CompletableFuture<?> historySyncTask;
 
@@ -66,6 +67,7 @@ class MessageHandler {
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.attributedGroups = ConcurrentHashMap.newKeySet();
         this.logger = System.getLogger("MessageHandler");
+        this.historySyncTypes = EnumSet.noneOf(HistorySync.Type.class);
         this.deferredTaskRunner = new DeferredTaskRunner();
     }
 
@@ -220,7 +222,7 @@ class MessageHandler {
                 .flatMap(Collection::stream)
                 .map(node -> node.attributes().getOptionalString("type"))
                 .flatMap(Optional::stream)
-                .anyMatch("pkmsg"::equals);
+                .anyMatch(PKMSG::equals);
     }
 
     private CompletableFuture<List<Node>> createConversationNodes(MessageSendRequest request, List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
@@ -589,7 +591,6 @@ class MessageHandler {
     }
 
     private void saveMessage(MessageInfo info, boolean offline) {
-        System.out.println("Info: " + info);
         if(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
             handleDistributionMessage(distributionMessage, info.senderJid());
         }
@@ -662,9 +663,20 @@ class MessageHandler {
     }
 
     private void onHistorySyncNotification(MessageInfo info, ProtocolMessage protocolMessage) {
+        if(socketHandler.store().historyLength() == WebHistoryLength.ZERO && isZeroHistorySyncComplete()){
+            return;
+        }
+
         downloadHistorySync(protocolMessage)
                 .thenAcceptAsync(history -> onHistoryNotification(info, history))
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+    }
+
+    private boolean isZeroHistorySyncComplete() {
+        return historySyncTypes.contains(INITIAL_STATUS_V3)
+                && historySyncTypes.contains(PUSH_NAME)
+                && historySyncTypes.contains(INITIAL_BOOTSTRAP)
+                && historySyncTypes.contains(NON_BLOCKING_DATA);
     }
 
     private boolean isTyping(Contact sender) {
@@ -701,15 +713,19 @@ class MessageHandler {
     }
 
     private void handleHistorySync(HistorySync history) {
-        switch (history.syncType()) {
-            case INITIAL_STATUS_V3 -> handleInitialStatus(history);
-            case PUSH_NAME -> handlePushNames(history);
-            case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
-            case RECENT, FULL -> {
-                deferredTaskRunner.execute();
-                handleChatsSync(history, false);
+        try {
+            switch (history.syncType()) {
+                case INITIAL_STATUS_V3 -> handleInitialStatus(history);
+                case PUSH_NAME -> handlePushNames(history);
+                case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
+                case RECENT, FULL -> {
+                    deferredTaskRunner.execute();
+                    handleChatsSync(history, false);
+                }
+                case NON_BLOCKING_DATA -> handleNonBlockingData(history);
             }
-            case NON_BLOCKING_DATA -> handleNonBlockingData(history);
+        }finally {
+            historySyncTypes.add(history.syncType());
         }
     }
 
@@ -821,6 +837,7 @@ class MessageHandler {
             executor.shutdownNow();
         }
         historySyncTask = null;
+        historySyncTypes.clear();
     }
 
     private record MessageDecodeResult(byte[] message, Throwable error) {

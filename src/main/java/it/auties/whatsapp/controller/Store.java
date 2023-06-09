@@ -616,7 +616,7 @@ public final class Store extends Controller<Store> {
         var phone = PhoneNumber.ofNullable(phoneNumber).orElse(null);
         var os = clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE;
         var result = Store.builder()
-                .alias(Arrays.asList(alias))
+                .alias(Objects.requireNonNullElseGet(Arrays.asList(alias), ArrayList::new))
                 .serializer(serializer)
                 .clientType(clientType)
                 .jid(phone == null ? null : phone.toJid())
@@ -627,9 +627,7 @@ public final class Store extends Controller<Store> {
                 .manufacturer(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .build();
-        if(phoneNumber != null){
-            serializer.linkMetadata(result);
-        }
+        serializer.linkMetadata(result);
         return result;
     }
 

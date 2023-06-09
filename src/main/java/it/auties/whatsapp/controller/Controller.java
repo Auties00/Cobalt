@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -48,7 +49,8 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * A list of alias for the controller, can be used in place of UUID1
      */
     @NonNull
-    protected List<String> alias;
+    @Default
+    protected List<String> alias = new ArrayList<>();
 
     /**
      * Serializes this object
