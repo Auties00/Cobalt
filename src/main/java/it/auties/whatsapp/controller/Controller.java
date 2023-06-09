@@ -9,8 +9,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * This interface represents is implemented by all WhatsappWeb4J's controllers. It provides an easy
@@ -44,6 +43,12 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     @Getter
     @NonNull
     protected ClientType clientType;
+
+    /**
+     * A list of alias for the controller, can be used in place of UUID1
+     */
+    @NonNull
+    protected List<String> alias;
 
     /**
      * Serializes this object
@@ -95,8 +100,42 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     @SuppressWarnings("unchecked")
     public T phoneNumber(@NonNull PhoneNumber phoneNumber){
         this.phoneNumber = phoneNumber;
-        serializer.linkPhoneNumber(this);
+        serializer.linkMetadata(this);
         return (T) this;
+    }
+
+    /**
+     * Returns an immutable collection of alias
+     *
+     * @return an immutable collection
+     */
+    public Collection<String> alias(){
+        return Collections.unmodifiableList(alias);
+    }
+
+    /**
+     * Adds an alias to this controller
+     *
+     * @param entry the non-null alias to add
+     */
+    public void addAlias(@NonNull String entry){
+        alias.add(entry);
+    }
+
+    /**
+     * Removes an alias to this controller
+     *
+     * @param entry the non-null alias to remove
+     */
+    public void removeAlias(@NonNull String entry){
+        alias.remove(entry);
+    }
+
+    /**
+     * Removes all alias from this controller
+     */
+    public void removeAlias(){
+        alias.clear();
     }
 
     /**

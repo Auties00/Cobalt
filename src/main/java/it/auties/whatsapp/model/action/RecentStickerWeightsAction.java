@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.model.sync.RecentStickerWeight;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -55,7 +55,7 @@ public final class RecentStickerWeightsAction implements Action {
      * @return an exception
      */
     @Override
-    public PatchType actionType() {
+    public BinaryPatchType actionType() {
         throw new UnsupportedOperationException("Cannot send action");
     }
 }

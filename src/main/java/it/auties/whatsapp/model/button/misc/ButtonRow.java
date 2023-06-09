@@ -1,13 +1,15 @@
 package it.auties.whatsapp.model.button.misc;
 
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import java.util.HexFormat;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
@@ -46,6 +48,6 @@ public class ButtonRow implements ProtobufMessage {
      * @return a non-null row
      */
     public static ButtonRow of(String title, String description) {
-        return of(title, description, Bytes.ofRandom(5).toHex());
+        return of(title, description, HexFormat.of().formatHex(BytesHelper.random(5)));
     }
 }

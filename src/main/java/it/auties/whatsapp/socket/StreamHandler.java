@@ -1,12 +1,11 @@
 package it.auties.whatsapp.socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.SocketEvent;
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
@@ -39,6 +38,7 @@ import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Validate;
@@ -540,8 +540,8 @@ class StreamHandler {
         var patches = node.findNodes("collection")
                 .stream()
                 .map(entry -> entry.attributes().getRequiredString("name"))
-                .map(PatchType::of)
-                .toArray(PatchType[]::new);
+                .map(BinaryPatchType::of)
+                .toArray(BinaryPatchType[]::new);
         socketHandler.pullPatch(patches);
     }
 
@@ -906,9 +906,10 @@ class StreamHandler {
         var qr = String.join(
                 ",",
                 ref,
-                Bytes.of(socketHandler.keys().noiseKeyPair().publicKey()).toBase64(),
-                Bytes.of(socketHandler.keys().identityKeyPair().publicKey()).toBase64(),
-                Bytes.of(socketHandler.keys().companionKey()).toBase64()
+                Base64.getEncoder().encodeToString(socketHandler.keys().noiseKeyPair().publicKey()),
+                Base64.getEncoder().encodeToString(socketHandler.keys().identityKeyPair().publicKey()),
+                Base64.getEncoder().encodeToString(socketHandler.keys().companionKey()),
+                "1"
         );
         socketHandler.store().qrHandler().accept(qr);
     }
@@ -924,19 +925,21 @@ class StreamHandler {
             return;
         }
         var account = Protobuf.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
-        var message = Bytes.of(ACCOUNT_SIGNATURE_HEADER)
-                .append(account.details())
-                .append(socketHandler.keys().identityKeyPair().publicKey())
-                .toByteArray();
+        var message = BytesHelper.concat(
+                ACCOUNT_SIGNATURE_HEADER,
+                account.details(),
+                socketHandler.keys().identityKeyPair().publicKey()
+        );
         if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
             socketHandler.handleFailure(LOGIN, new HmacValidationException("message_header"));
             return;
         }
-        var deviceSignatureMessage = Bytes.of(DEVICE_WEB_SIGNATURE_HEADER)
-                .append(account.details())
-                .append(socketHandler.keys().identityKeyPair().publicKey())
-                .append(account.accountSignatureKey())
-                .toByteArray();
+        var deviceSignatureMessage = BytesHelper.concat(
+                DEVICE_WEB_SIGNATURE_HEADER,
+                account.details(),
+                socketHandler.keys().identityKeyPair().publicKey(),
+                account.accountSignatureKey()
+        );
         account.deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true));
         var keyIndex = Protobuf.readMessage(account.details(), DeviceIdentity.class).keyIndex();
         var outgoingDeviceIdentity = Protobuf.writeMessage(new SignedDeviceIdentity(account.details(), null, account.accountSignature(), account.deviceSignature()));

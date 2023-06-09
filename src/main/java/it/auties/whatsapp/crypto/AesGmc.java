@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.bytes.Bytes;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -32,12 +32,15 @@ public class AesGmc {
             cipher.doFinal(output, outputOffset);
             return output;
         } catch (InvalidCipherTextException exception) {
-            throw new RuntimeException("Cannot %s data using AesGMC: %s".formatted(encrypt ? "encrypt" : "decrypt", Bytes.of(input).toHex()), exception);
+            throw new RuntimeException("Cannot %s data".formatted(encrypt ? "encrypt" : "decrypt"), exception);
         }
     }
 
     private byte[] toIv(long iv) {
-        return Bytes.newBuffer(4).appendLong(iv).assertSize(12).toByteArray();
+        var buffer = BytesHelper.newBuffer();
+        buffer.writeBytes(new byte[4]);
+        buffer.writeLong(iv);
+        return BytesHelper.readBuffer(buffer);
     }
 
     public byte[] decrypt(long iv, byte @NonNull [] input, byte @NonNull [] key) {

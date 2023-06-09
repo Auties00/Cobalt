@@ -4,14 +4,14 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 
-public enum PatchType {
+public enum BinaryPatchType {
     CRITICAL_BLOCK,
     CRITICAL_UNBLOCK_LOW,
     REGULAR_HIGH,
     REGULAR_LOW,
     REGULAR;
 
-    public static PatchType of(String name) {
+    public static BinaryPatchType of(String name) {
         return Arrays.stream(values())
                 .filter(entry -> entry.toString().equals(name))
                 .findAny()

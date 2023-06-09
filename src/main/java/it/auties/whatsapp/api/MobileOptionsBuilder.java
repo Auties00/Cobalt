@@ -54,6 +54,23 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
     }
 
 
+    static MobileOptionsBuilder of(String alias, ControllerSerializer serializer){
+        var store = Store.of(alias, ClientType.MOBILE, serializer);
+        var keys = Keys.of(alias, ClientType.MOBILE, serializer);
+        return new MobileOptionsBuilder(store, keys);
+    }
+
+    static Optional<MobileOptionsBuilder> ofNullable(String alias, ControllerSerializer serializer){
+        var store = Store.ofNullable(alias, ClientType.MOBILE, serializer);
+        var keys = Keys.ofNullable(alias, ClientType.MOBILE, serializer);
+        if(store.isEmpty() || keys.isEmpty()){
+            return Optional.empty();
+        }
+
+        return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
+    }
+
+
     /**
      * Set the operating system of the associated companion
      *

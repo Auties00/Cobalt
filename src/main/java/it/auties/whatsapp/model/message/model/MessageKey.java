@@ -1,19 +1,19 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Locale;
+import java.util.HexFormat;
 import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
@@ -74,7 +74,7 @@ public class MessageKey implements ProtobufMessage {
      * @return a non-null String
      */
     public static String randomId() {
-        return Bytes.ofRandom(8).toHex().toUpperCase(Locale.ROOT);
+        return HexFormat.of().formatHex(BytesHelper.random(8));
     }
 
     /**

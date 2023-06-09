@@ -1,6 +1,5 @@
 package it.auties.whatsapp.util;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
@@ -8,7 +7,6 @@ import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -23,6 +21,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
@@ -39,7 +38,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -53,8 +51,6 @@ public class Medias {
     private final int PROFILE_PIC_SIZE = 640;
     private final String DEFAULT_HOST = "mmg.whatsapp.net";
     private final int THUMBNAIL_SIZE = 32;
-    private final int RANDOM_FILE_NAME_LENGTH = 8;
-    private final Map<String, Path> CACHE = new ConcurrentHashMap<>();
     private final String USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
 
     public byte[] getProfilePic(byte[] file) {
@@ -74,10 +70,6 @@ public class Medias {
         } catch (Throwable exception) {
             return file;
         }
-    }
-
-    public Optional<byte[]> download(String imageUrl) {
-        return download(URI.create(imageUrl));
     }
 
     public CompletableFuture<byte[]> downloadAsync(String imageUrl) {
@@ -127,7 +119,7 @@ public class Medias {
         var keys = MediaKeys.random(type.keyName());
         var encryptedMedia = AesCbc.encrypt(keys.iv(), uploadData, keys.cipherKey());
         var hmac = calculateMac(encryptedMedia, keys);
-        var encrypted = Bytes.of(encryptedMedia).append(hmac).toByteArray();
+        var encrypted = BytesHelper.concat(encryptedMedia, hmac);
         var fileEncSha256 = Sha256.calculate(encrypted);
         var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
         var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, type.path(), token, auth, token));
@@ -146,8 +138,9 @@ public class Medias {
     }
 
     private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
-        var hmacInput = Bytes.of(keys.iv()).append(encryptedMedia).toByteArray();
-        return Bytes.of(Hmac.calculateSha256(hmacInput, keys.macKey())).cut(10).toByteArray();
+        var hmacInput = BytesHelper.concat(keys.iv(), encryptedMedia);
+        var hmac = Hmac.calculateSha256(hmacInput, keys.macKey());
+        return Arrays.copyOf(hmac, 10);
     }
 
     public CompletableFuture<Optional<byte[]>> download(AttachmentProvider provider) {
@@ -173,11 +166,12 @@ public class Medias {
         if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND || response.statusCode() == HttpURLConnection.HTTP_GONE) {
             return Optional.empty();
         }
-        var stream = Bytes.of(response.body());
-        var sha256 = Sha256.calculate(stream.toByteArray());
+
+        var body = response.body();
+        var sha256 = Sha256.calculate(body);
         Validate.isTrue(Arrays.equals(sha256, provider.mediaEncryptedSha256()), "Cannot decode media: Invalid sha256 signature", SecurityException.class);
-        var encryptedMedia = stream.cut(-10).toByteArray();
-        var mediaMac = stream.slice(-10).toByteArray();
+        var encryptedMedia = Arrays.copyOf(body, body.length - 10);
+        var mediaMac = Arrays.copyOfRange(body, body.length - 10, body.length);
         var keys = MediaKeys.of(provider.mediaKey(), provider.attachmentType().keyName());
         var hmac = calculateMac(encryptedMedia, keys);
         Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
@@ -253,8 +247,8 @@ public class Medias {
     }
 
     public int getDuration(byte[] file) {
+        var input = createTempFile(file);
         try {
-            var input = createTempFile(file, true);
             var process = Runtime.getRuntime()
                     .exec("ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s".formatted(input));
             if (process.waitFor() != 0) {
@@ -264,6 +258,12 @@ public class Medias {
             return (int) Float.parseFloat(result);
         } catch (Throwable throwable) {
             return 0;
+        }finally {
+            try {
+                Files.deleteIfExists(input);
+            }catch (IOException ignored){
+
+            }
         }
     }
 
@@ -274,37 +274,37 @@ public class Medias {
                 return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
             }
 
-            var input = createTempFile(file, true);
-            var process = Runtime.getRuntime()
-                    .exec("ffprobe -v error -select_streams v -show_entries stream=width,height -of json %s".formatted(input));
-            if (process.waitFor() != 0) {
-                return MediaDimensions.DEFAULT;
+            var input = createTempFile(file);
+            try {
+                var process = Runtime.getRuntime()
+                        .exec("ffprobe -v error -select_streams v -show_entries stream=width,height -of json %s".formatted(input));
+                if (process.waitFor() != 0) {
+                    return MediaDimensions.DEFAULT;
+                }
+                var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                var ffprobe = Json.readValue(result, FfprobeResult.class);
+                if (ffprobe.streams() == null || ffprobe.streams().isEmpty()) {
+                    return MediaDimensions.DEFAULT;
+                }
+                return ffprobe.streams().get(0);
+            }finally {
+                Files.deleteIfExists(input);
             }
-            var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            var ffprobe = Json.readValue(result, FfprobeResult.class);
-            if (ffprobe.streams() == null || ffprobe.streams().isEmpty()) {
-                return MediaDimensions.DEFAULT;
-            }
-            return ffprobe.streams().get(0);
-        } catch (IOException | InterruptedException throwable) {
+        } catch (Exception throwable) {
             return MediaDimensions.DEFAULT;
         }
     }
 
-    @SneakyThrows
-    private Path createTempFile(byte[] media, boolean useCache) {
-        var hex = Bytes.of(media).toHex();
-        var cached = CACHE.get(hex);
-        if (useCache && cached != null && Files.exists(cached)) {
-            return cached;
+    private Path createTempFile(byte[] data) {
+        try {
+            var file = Files.createTempFile(UUID.randomUUID().toString(), "");
+            if(data != null) {
+                Files.write(file, data);
+            }
+            return file;
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot create temp file", exception);
         }
-        var name = Bytes.ofRandom(RANDOM_FILE_NAME_LENGTH).toHex();
-        var input = Files.createTempFile(name, "");
-        if (useCache) {
-            Files.write(input, media);
-            CACHE.put(hex, input);
-        }
-        return input;
     }
 
     public Optional<byte[]> getThumbnail(byte[] file, String fileType){
@@ -345,8 +345,8 @@ public class Medias {
     }
 
     private Optional<byte[]> getVideoThumbnail(byte[] file) {
-        var input = createTempFile(file, true);
-        var output = createTempFile(file, false);
+        var input = createTempFile(file);
+        var output = createTempFile(null);
         try {
             var process = Runtime.getRuntime()
                     .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input, THUMBNAIL_SIZE, output));
@@ -358,8 +358,11 @@ public class Medias {
             return Optional.empty();
         } finally {
             try {
+                Files.delete(input);
                 Files.delete(output);
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+
+            }
         }
     }
 

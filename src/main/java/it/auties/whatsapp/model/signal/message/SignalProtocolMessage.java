@@ -4,7 +4,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Spec;
 
-public sealed interface SignalProtocolMessage extends ProtobufMessage permits SignalPreKeyMessage, SignalDistributionMessage, SignalMessage {
+public sealed interface SignalProtocolMessage extends ProtobufMessage permits SenderKeyMessage, SignalDistributionMessage, SignalMessage, SignalPreKeyMessage {
     int version();
 
     byte[] serialized();

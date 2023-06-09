@@ -1,6 +1,5 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -10,6 +9,7 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
@@ -25,9 +25,9 @@ import static it.auties.curve25519.Curve25519.sharedKey;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
-    public CipheredMessageResult encrypt(byte[] data) {
+    public GroupCipher.CipheredMessageResult encrypt(byte[] data) {
         if(data == null){
-            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
+            return new GroupCipher.CipheredMessageResult(null, Signal.UNAVAILABLE);
         }
         var currentState = loadSession().currentState()
                 .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
@@ -38,11 +38,11 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         var currentKey = chain.messageKeys().get(chain.counter().get());
         var secrets = Hkdf.deriveSecrets(currentKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
         chain.messageKeys().remove(chain.counter().get());
-        var iv = Bytes.of(secrets[2]).cut(IV_LENGTH).toByteArray();
+        var iv = Arrays.copyOf(secrets[2], IV_LENGTH);
         var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
         var encryptedMessageType = getMessageType(currentState);
         var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
-        return new CipheredMessageResult(encryptedMessage, encryptedMessageType);
+        return new GroupCipher.CipheredMessageResult(encryptedMessage, encryptedMessageType);
     }
 
     private String getMessageType(SessionState currentState) {
@@ -68,12 +68,13 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     private byte[] createMessageSignature(SessionState state, byte[] key, byte[] encodedMessage) {
-        var macInput = Bytes.of(keys.identityKeyPair().encodedPublicKey())
-                .append(state.remoteIdentityKey())
-                .append(encodedMessage)
-                .assertSize(encodedMessage.length + 33 + 33)
-                .toByteArray();
-        return Bytes.of(Hmac.calculateSha256(macInput, key)).cut(MAC_LENGTH).toByteArray();
+        var macInput = BytesHelper.concat(
+                keys.identityKeyPair().encodedPublicKey(),
+                state.remoteIdentityKey(),
+                encodedMessage
+        );
+        var sha256 = Hmac.calculateSha256(macInput, key);
+        return Arrays.copyOfRange(sha256, 0, MAC_LENGTH);
     }
 
     private void fillMessageKeys(SessionChain chain, int counter) {
@@ -134,14 +135,16 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         Validate.isTrue(chain.hasMessageKey(message.counter()), "Key used already or never filled");
         var messageKey = chain.messageKeys().get(message.counter());
         var secrets = Hkdf.deriveSecrets(messageKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
-        var hmacInput = Bytes.of(state.remoteIdentityKey())
-                .append(keys.identityKeyPair().encodedPublicKey())
-                .append(message.serialized())
-                .cut(-MAC_LENGTH)
-                .toByteArray();
-        var hmac = Bytes.of(Hmac.calculateSha256(hmacInput, secrets[1])).cut(MAC_LENGTH).toByteArray();
+        var hmacValue = BytesHelper.concat(
+                state.remoteIdentityKey(),
+                keys.identityKeyPair().encodedPublicKey(),
+                message.serialized()
+        );
+        var hmacInput = Arrays.copyOfRange(hmacValue, 0, hmacValue.length - MAC_LENGTH);;
+        var hmacSha256 = Hmac.calculateSha256(hmacInput, secrets[1]);
+        var hmac = Arrays.copyOf(hmacSha256, MAC_LENGTH);
         Validate.isTrue(Arrays.equals(message.signature(), hmac), "message_decryption", HmacValidationException.class);
-        var iv = Bytes.of(secrets[2]).cut(IV_LENGTH).toByteArray();
+        var iv = Arrays.copyOf(secrets[2], IV_LENGTH);
         var plaintext = AesCbc.decrypt(iv, message.ciphertext(), secrets[0]);
         state.pendingPreKey(null);
         return plaintext;

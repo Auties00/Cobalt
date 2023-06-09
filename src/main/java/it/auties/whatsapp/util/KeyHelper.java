@@ -1,11 +1,12 @@
 package it.auties.whatsapp.util;
 
-import it.auties.bytes.Bytes;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -38,7 +39,7 @@ public class KeyHelper {
         }
         return switch (key.length) {
             case 32 -> key;
-            case 33 -> Bytes.of(key).slice(1).toByteArray();
+            case 33 -> Arrays.copyOfRange(key, 1, key.length);
             default -> throw new IllegalArgumentException("Invalid key size: %s".formatted(key.length));
         };
     }
@@ -58,11 +59,11 @@ public class KeyHelper {
     }
 
     public String identityId() {
-        return Bytes.ofRandom(20).toHex();
+        return HexFormat.of().formatHex(BytesHelper.random(20));
     }
 
     public String deviceId() {
-        return Base64.getUrlEncoder().encodeToString(Bytes.ofRandom(16).toByteArray());
+        return Base64.getUrlEncoder().encodeToString(BytesHelper.random(16));
     }
 
     public String phoneId() {

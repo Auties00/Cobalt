@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryPatchType;
 
 /**
  * A model interface that represents an action
@@ -26,5 +26,5 @@ public sealed interface Action extends ProtobufMessage permits AgentAction, Andr
      *
      * @return a non-null type
      */
-    PatchType actionType();
+    BinaryPatchType actionType();
 }

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.signal.session;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import lombok.*;
 import lombok.Builder.Default;
@@ -8,6 +7,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,21 +59,20 @@ public class SessionState {
     private boolean closed;
 
     public boolean hasChain(byte[] senderEphemeral) {
-        return chains.containsKey(Bytes.of(senderEphemeral).toHex());
+        return chains.containsKey(HexFormat.of().formatHex(senderEphemeral));
     }
 
     public Optional<SessionChain> findChain(byte[] senderEphemeral) {
-        return Optional.ofNullable(chains.get(Bytes.of(senderEphemeral).toHex()));
+        return Optional.ofNullable(chains.get(HexFormat.of().formatHex(senderEphemeral)));
     }
 
     public SessionState addChain(byte[] senderEphemeral, SessionChain chain) {
-        chains.put(Bytes.of(senderEphemeral).toHex(), chain);
+        chains.put(HexFormat.of().formatHex(senderEphemeral), chain);
         return this;
     }
 
     public void removeChain(byte[] senderEphemeral) {
-        var hex = Bytes.of(senderEphemeral).toHex();
-        Objects.requireNonNull(chains.remove(hex), "Cannot remove chain");
+        Objects.requireNonNull(chains.remove(HexFormat.of().formatHex(senderEphemeral)), "Cannot remove chain");
     }
 
     public boolean hasPreKey() {

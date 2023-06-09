@@ -7,12 +7,11 @@ import com.google.zxing.NotFoundException;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
-import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -561,7 +560,7 @@ public class Whatsapp {
         if (pollUpdateMessage.encryptedMetadata() != null) {
             return;
         }
-        var iv = Bytes.ofRandom(12).toByteArray();
+        var iv = BytesHelper.random(12);
         var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(), store().jid().toWhatsappJid());
         var encryptedOptions = pollUpdateMessage.votes().stream().map(entry -> Sha256.calculate(entry.name())).toList();
         var pollUpdateEncryptedOptions = Protobuf.writeMessage(new PollUpdateEncryptedOptions(encryptedOptions));
@@ -574,11 +573,12 @@ public class Whatsapp {
         pollUpdateMessage.voter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
-        var useSecretPayload = Bytes.of(pollUpdateMessage.pollCreationMessageKey().id())
-                .append(originalPollSender)
-                .append(modificationSender)
-                .append(secretName)
-                .toByteArray();
+        var useSecretPayload = BytesHelper.concat(
+                pollUpdateMessage.pollCreationMessageKey().id().getBytes(StandardCharsets.UTF_8),
+                originalPollSender,
+                modificationSender,
+                secretName
+        );
         var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
         var pollUpdateEncryptedPayload = AesGmc.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
         var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadata(pollUpdateEncryptedPayload, iv);
@@ -650,7 +650,7 @@ public class Whatsapp {
         var markAction = new MarkChatAsReadAction(read, range);
         var syncAction = ActionValueSync.of(markAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 3, chat.toJid().toString());
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1271,7 +1271,8 @@ public class Whatsapp {
         Arrays.stream(contacts)
                 .map(contact -> Node.ofAttributes("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
                 .forEach(children::add);
-        var body = Node.ofChildren("create", Map.of("subject", subject, "key", Bytes.ofRandom(12).toHex()), children);
+        var key = HexFormat.of().formatHex(BytesHelper.random(12));
+        var body = Node.ofChildren("create", Map.of("subject", subject, "key", key), children);
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
@@ -1393,7 +1394,7 @@ public class Whatsapp {
         var muteAction = new MuteAction(true, mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ? mute.endTimeStamp() * 1000L : mute.endTimeStamp(), false);
         var syncAction = ActionValueSync.of(muteAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 2, chat.toJid().toString());
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1414,7 +1415,7 @@ public class Whatsapp {
         var muteAction = new MuteAction(false, null, false);
         var syncAction = ActionValueSync.of(muteAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 2, chat.toJid().toString());
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1522,7 +1523,7 @@ public class Whatsapp {
         var pinAction = new PinAction(pin);
         var syncAction = ActionValueSync.of(pinAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 5, chat.toJid().toString());
-        var request = new PatchRequest(PatchType.REGULAR_LOW, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_LOW, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1547,7 +1548,7 @@ public class Whatsapp {
         var syncAction = ActionValueSync.of(starAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
     }
 
@@ -1595,7 +1596,7 @@ public class Whatsapp {
         var archiveAction = new ArchiveChatAction(archive, range);
         var syncAction = ActionValueSync.of(archiveAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 3, chat.toJid().toString());
-        var request = new PatchRequest(PatchType.REGULAR_LOW, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_LOW, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1649,7 +1650,7 @@ public class Whatsapp {
         var syncAction = ActionValueSync.of(deleteMessageAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
     }
 
@@ -1671,7 +1672,7 @@ public class Whatsapp {
         var deleteChatAction = new DeleteChatAction(range);
         var syncAction = ActionValueSync.of(deleteChatAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 6, chat.toJid().toString(), "1");
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1696,7 +1697,7 @@ public class Whatsapp {
         var clearChatAction = new ClearChatAction(range);
         var syncAction = ActionValueSync.of(clearChatAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 6, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        var request = new PatchRequest(BinaryPatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
     }
 
@@ -1931,7 +1932,7 @@ public class Whatsapp {
                 .category(), info.message().type());
         var mediaMessage = (MediaMessage) info.message().content();
         var retryKey = Hkdf.extractAndExpand(mediaMessage.mediaKey(), "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
-        var retryIv = Bytes.ofRandom(12).toByteArray();
+        var retryIv = BytesHelper.random(12);
         var retryIdData = info.key().id().getBytes(StandardCharsets.UTF_8);
         var receipt = Protobuf.writeMessage(new ServerErrorReceipt(info.id()));
         var ciphertext = AesGmc.encrypt(retryIv, receipt, retryKey, retryIdData);
@@ -2067,10 +2068,11 @@ public class Whatsapp {
                 .timestamp(Clock.nowSeconds())
                 .build();
         var deviceIdentityBytes = Protobuf.writeMessage(deviceIdentity);
-        var accountSignatureMessage = Bytes.of(Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER)
-                .append(deviceIdentityBytes)
-                .append(advIdentity)
-                .toByteArray();
+        var accountSignatureMessage = BytesHelper.concat(
+                Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER,
+                deviceIdentityBytes,
+                advIdentity
+        );
         var accountSignature = Curve25519.sign(keys().identityKeyPair().privateKey(), accountSignatureMessage, true);
         var signedDeviceIdentity = SignedDeviceIdentity.builder()
                 .accountSignature(accountSignature)
@@ -2092,9 +2094,7 @@ public class Whatsapp {
                 // .validIndexes(knownDevices)
                 .build();
         var keyIndexListBytes = Protobuf.writeMessage(keyIndexList);
-        var deviceSignatureMessage = Bytes.of(Spec.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER)
-                .append(keyIndexListBytes)
-                .toByteArray();
+        var deviceSignatureMessage = BytesHelper.concat(Spec.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
         var keyAccountSignature = Curve25519.sign(keys().identityKeyPair().privateKey(), deviceSignatureMessage, true);
         var signedKeyIndexList = SignedKeyIndexList.builder()
                 .accountSignature(keyAccountSignature)
@@ -2180,7 +2180,7 @@ public class Whatsapp {
     }
 
     private PatchRequest createRegularRequests(){
-        return new PatchRequest(PatchType.REGULAR, List.of());
+        return new PatchRequest(BinaryPatchType.REGULAR, List.of());
     }
 
     private PatchRequest createRegularLowRequests() {
@@ -2194,18 +2194,18 @@ public class Whatsapp {
                 .filter(Objects::nonNull)
                 .toList();
         // TODO: Archive chat actions, StickerAction
-        return new PatchRequest(PatchType.REGULAR_LOW, entries);
+        return new PatchRequest(BinaryPatchType.REGULAR_LOW, entries);
     }
 
     private PatchRequest createCriticalBlockRequest() {
         var localeEntry = createLocaleEntry();
         var pushNameEntry = createPushNameEntry();
-        return new PatchRequest(PatchType.CRITICAL_BLOCK, List.of(localeEntry, pushNameEntry));
+        return new PatchRequest(BinaryPatchType.CRITICAL_BLOCK, List.of(localeEntry, pushNameEntry));
     }
 
     private PatchRequest createCriticalUnblockLowRequest() {
         var criticalUnblockLow = createContactEntries();
-        return new PatchRequest(PatchType.CRITICAL_UNBLOCK_LOW, criticalUnblockLow);
+        return new PatchRequest(BinaryPatchType.CRITICAL_UNBLOCK_LOW, criticalUnblockLow);
     }
 
     private List<PatchEntry> createContactEntries() {

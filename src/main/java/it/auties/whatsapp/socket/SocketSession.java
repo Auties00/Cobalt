@@ -1,6 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.bytes.Bytes;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -136,14 +136,14 @@ public class SocketSession {
         try {
             var lengthBytes = new byte[3];
             input.readFully(lengthBytes);
-            var buffer = Bytes.of(lengthBytes);
-            return decodeLength(buffer);
+            return decodeLength(lengthBytes);
         } catch (IOException exception) {
             return -1;
         }
     }
 
-    private int decodeLength(Bytes buffer) {
+    private int decodeLength(byte[] input) {
+        var buffer = BytesHelper.newBuffer(input);
         return (buffer.readByte() << 16) | buffer.readUnsignedShort();
     }
 

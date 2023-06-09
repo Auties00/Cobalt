@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
@@ -10,11 +9,13 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.HexFormat;
 import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
@@ -101,8 +102,9 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * @return a non-null template message
      */
     public static TemplateMessage of(@NonNull HydratedFourRowTemplate content, @NonNull TemplateFormatter formatter, ContextInfo contextInfo) {
+        var id = HexFormat.of().formatHex(BytesHelper.random(6));
         var builder = TemplateMessage.builder()
-                .id(Bytes.ofRandom(6).toHex())
+                .id(id)
                 .content(content)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new));
         if (formatter instanceof HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate) {

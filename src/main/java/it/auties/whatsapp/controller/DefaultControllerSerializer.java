@@ -181,6 +181,20 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
+    public Optional<Keys> deserializeKeys(@NonNull ClientType type, String alias) {
+        var file = getSessionDirectory(type, alias);
+        if(Files.notExists(file)){
+            return Optional.empty();
+        }
+
+        try {
+            return deserializeKeysFromId(type, Files.readString(file));
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot read %s".formatted(alias), exception);
+        }
+    }
+
+    @Override
     public Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber) {
         var file = getSessionDirectory(type, String.valueOf(phoneNumber));
         if(Files.notExists(file)){
@@ -209,6 +223,20 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
     public Optional<Store> deserializeStore(@NonNull ClientType type, UUID id) {
         return deserializeStoreFromId(type, id.toString());
+    }
+
+    @Override
+    public Optional<Store> deserializeStore(@NonNull ClientType type, String alias) {
+        var file = getSessionDirectory(type, alias);
+        if(Files.notExists(file)){
+            return Optional.empty();
+        }
+
+        try {
+            return deserializeStoreFromId(type, Files.readString(file));
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot read %s".formatted(alias), exception);
+        }
     }
 
     @Override
@@ -272,16 +300,19 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public void linkPhoneNumber(@NonNull Controller<?> controller) {
+    public void linkMetadata(@NonNull Controller<?> controller) {
+        controller.phoneNumber()
+                .ifPresent(phoneNumber -> linkToUuid(controller.clientType(), controller.uuid(), phoneNumber.toString()));
+        controller.alias()
+                .forEach(alias -> linkToUuid(controller.clientType(), controller.uuid(), alias));
+    }
+
+    private void linkToUuid(ClientType type, UUID uuid, String string) {
         try {
-            var phoneNumber = controller.phoneNumber().orElse(null);
-            if(phoneNumber == null){
-                return;
-            }
-            var link = getSessionDirectory(controller.clientType(), phoneNumber.toString());
-            Files.writeString(link, controller.uuid().toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (IOException exception) {
-            logger.log(WARNING, "Cannot link phone number to uuid", exception);
+            var link = getSessionDirectory(type, string);
+            Files.writeString(link, uuid.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        }catch (IOException exception){
+            logger.log(WARNING, "Cannot link %s to %s".formatted(string, uuid), exception);
         }
     }
 
@@ -358,6 +389,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         return getSessionDirectory(clientType, uuid).resolve(fileName);
     }
 
+    // TODO: Explore alternatives
     private record SmileFile(Path file, Semaphore semaphore) {
         private final static ConcurrentHashMap<Path, SmileFile> instances = new ConcurrentHashMap<>();
         private static final Logger logger = System.getLogger("SmileFile");

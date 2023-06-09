@@ -1,6 +1,5 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.model.sync.RecordSync;
 import lombok.NonNull;
@@ -8,10 +7,7 @@ import lombok.NonNull;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class LTHash {
     private static final int EXPAND_SIZE = 128;
@@ -35,7 +31,7 @@ public class LTHash {
     }
 
     public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
-        var indexMacBase64 = Bytes.of(indexMac).toBase64();
+        var indexMacBase64 = Base64.getEncoder().encodeToString(indexMac);
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == RecordSync.Operation.REMOVE) {
             if (prevOp == null) {

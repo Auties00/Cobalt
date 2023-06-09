@@ -1,13 +1,15 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import java.util.HexFormat;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
@@ -39,7 +41,8 @@ public non-sealed class HydratedQuickReplyButton implements HydratedButton {
      * @return a non-null HydratedQuickReplyButton
      */
     public static HydratedQuickReplyButton of(@NonNull String text) {
-        return new HydratedQuickReplyButton(text, Bytes.ofRandom(6).toHex());
+        var id = HexFormat.of().formatHex(BytesHelper.random(6));
+        return new HydratedQuickReplyButton(text, id);
     }
 
     @Override

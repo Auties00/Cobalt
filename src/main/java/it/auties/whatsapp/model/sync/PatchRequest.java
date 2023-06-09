@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Spec;
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public record PatchRequest(PatchType type, List<PatchEntry> entries) {
+public record PatchRequest(BinaryPatchType type, List<PatchEntry> entries) {
     public record PatchEntry(ActionValueSync sync, String index, int version, Operation operation) {
         public static PatchEntry of(ActionValueSync sync, Operation operation) {
             return of(sync, operation, Spec.Signal.CURRENT_VERSION);

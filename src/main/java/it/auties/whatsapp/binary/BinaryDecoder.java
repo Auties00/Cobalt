@@ -1,8 +1,7 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.bytes.Bytes;
+import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Validate;
@@ -13,51 +12,53 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static it.auties.whatsapp.binary.Tag.*;
-import static it.auties.whatsapp.model.request.Node.of;
-import static it.auties.whatsapp.model.request.Node.ofAttributes;
+import static it.auties.whatsapp.binary.BinaryTag.*;
 
-public class Decoder {
-    private Bytes buffer;
-    private final List<String> singleByteTokens;
-    private final List<String> doubleByteTokens;
-    public Decoder(){
-        this(Tokens.SINGLE_BYTE, Tokens.DOUBLE_BYTE);
-    }
+public final class BinaryDecoder {
+    private ByteBuf buffer;
 
-    public Decoder(List<String> singleByteTokens, List<String> doubleByteTokens){
-        this.singleByteTokens = singleByteTokens;
-        this.doubleByteTokens = doubleByteTokens;
-    }
-
-    public Node readNode(byte[] input){
-        var buffer = Bytes.of(input);
+    public synchronized Node decode(byte[] input) {
+        var buffer = BytesHelper.newBuffer(input);
         var token = buffer.readByte() & 2;
-        var data = buffer.remaining().toByteArray();
-        this.buffer = Bytes.of(token == 0 ? data : BytesHelper.decompress(data));
-        return readEmbeddedNode();
+        allocateBuffer(token, buffer);
+        return readNode();
     }
 
-    public Node readEmbeddedNode() {
+    private void allocateBuffer(int token, ByteBuf input) {
+        if (token == 0) {
+            this.buffer = input;
+            return;
+        }
+
+        var bytes = BytesHelper.readBuffer(input);
+        this.buffer = BytesHelper.newBuffer();
+        buffer.writeBytes(BytesHelper.decompress(bytes));
+    }
+
+    private Node readNode() {
         var token = buffer.readUnsignedByte();
         var size = readSize(token);
         Validate.isTrue(size != 0, "Cannot decode node with empty body");
         var description = readString();
         var attrs = readAttributes(size);
-        return size % 2 != 0 ? ofAttributes(description, attrs) : of(description, attrs, read(false));
+        return size % 2 != 0 ? Node.ofAttributes(description, attrs)
+                : Node.of(description, attrs, read(false));
     }
 
-    public String readString() {
+    private String readString() {
         var read = read(true);
         if (read instanceof String string) {
             return string;
         }
-        throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s".formatted(read, read == null ? null : read.getClass()
-                .getName()));
+
+        throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s"
+                .formatted(read, read == null ? null : read.getClass().getName()));
     }
 
     private List<Node> readList(int size) {
-        return IntStream.range(0, size).mapToObj(index -> readEmbeddedNode()).toList();
+        return IntStream.range(0, size)
+                .mapToObj(index -> readNode())
+                .toList();
     }
 
     private String readString(List<Character> permitted, int start, int end) {
@@ -67,6 +68,7 @@ public class Decoder {
         if (start != 0) {
             string[string.length - 1] = permitted.get(buffer.readUnsignedByte() >>> 4);
         }
+
         return String.valueOf(string);
     }
 
@@ -78,7 +80,7 @@ public class Decoder {
 
     private Object read(boolean parseBytes) {
         var tag = buffer.readUnsignedByte();
-        return switch (Tag.of(tag)) {
+        return switch (of(tag)) {
             case LIST_EMPTY -> null;
             case COMPANION_JID -> readCompanionJid();
             case LIST_8 -> readList(buffer.readUnsignedByte());
@@ -94,38 +96,41 @@ public class Decoder {
     }
 
     private int readString20Length() {
-        return ((15 & buffer.readUnsignedByte()) << 16) + (buffer.readUnsignedByte() << 8) + buffer.readUnsignedByte();
+        return ((15 & buffer.readUnsignedByte()) << 16)
+                + (buffer.readUnsignedByte() << 8)
+                + buffer.readUnsignedByte();
     }
 
     private String readStringFromToken(int token) {
         if (token < DICTIONARY_0.data() || token > DICTIONARY_3.data()) {
-            return singleByteTokens.get(token - 1);
+            return BinaryTokens.SINGLE_BYTE.get(token - 1);
         }
-        var delta = (doubleByteTokens.size() / 4) * (token - DICTIONARY_0.data());
-        return doubleByteTokens.get(buffer.readUnsignedByte() + delta);
+
+        var delta = (BinaryTokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
+        return BinaryTokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
     }
 
     private String readNibble() {
         var number = buffer.readUnsignedByte();
-        return readString(Tokens.NUMBERS, number >>> 7, 127 & number);
+        return readString(BinaryTokens.NUMBERS, number >>> 7, 127 & number);
     }
 
     private Object readString(int size, boolean parseBytes) {
-        var data = buffer.readBytes(size);
+        var data = BytesHelper.readBuffer(buffer, size);
         return parseBytes ? new String(data, StandardCharsets.UTF_8) : data;
     }
 
     private String readHexString() {
         var number = buffer.readUnsignedByte();
-        return readString(Tokens.HEX, number >>> 7, 127 & number);
+        return readString(BinaryTokens.HEX, number >>> 7, 127 & number);
     }
 
     private ContactJid readJidPair() {
         var read = read(true);
         if (read instanceof String encoded) {
-            return ContactJid.of(encoded, Server.of(readString()));
+            return ContactJid.of(encoded, ContactJid.Server.of(readString()));
         } else if (read == null) {
-            return ContactJid.ofServer(Server.of(readString()));
+            return ContactJid.ofServer(ContactJid.Server.of(readString()));
         } else {
             throw new RuntimeException("Invalid jid type");
         }

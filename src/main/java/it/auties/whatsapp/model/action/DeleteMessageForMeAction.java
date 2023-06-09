@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -70,7 +70,7 @@ public final class DeleteMessageForMeAction implements Action {
      * @return a non-null string
      */
     @Override
-    public PatchType actionType() {
+    public BinaryPatchType actionType() {
         return null;
     }
 }

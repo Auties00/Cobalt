@@ -49,6 +49,22 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
         return Optional.of(new WebOptionsBuilder(store.get(), keys.get()));
     }
 
+    static WebOptionsBuilder of(String alias, ControllerSerializer serializer){
+        var store = Store.of(alias, ClientType.WEB, serializer);
+        var keys = Keys.of(alias, ClientType.WEB, serializer);
+        return new WebOptionsBuilder(store, keys);
+    }
+
+    static Optional<WebOptionsBuilder> ofNullable(String alias, ControllerSerializer serializer){
+        var store = Store.ofNullable(alias, ClientType.WEB, serializer);
+        var keys = Keys.ofNullable(alias, ClientType.WEB, serializer);
+        if(store.isEmpty() || keys.isEmpty()){
+            return Optional.empty();
+        }
+
+        return Optional.of(new WebOptionsBuilder(store.get(), keys.get()));
+    }
+
     /**
      * Sets how much chat history Whatsapp should send when the QR is first scanned.
      * By default, one year

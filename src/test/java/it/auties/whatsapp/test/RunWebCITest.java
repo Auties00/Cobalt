@@ -1,6 +1,5 @@
 package it.auties.whatsapp.test;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Emoji;
 import it.auties.whatsapp.api.Whatsapp;
@@ -36,6 +35,7 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
@@ -50,10 +50,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -287,7 +284,7 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Creating group...");
-        var response = api.createGroup(Bytes.ofRandom(5).toHex(), contact).join();
+        var response = api.createGroup(randomId(), contact).join();
         group = response.jid();
         log("Created group: %s", response);
     }
@@ -299,14 +296,14 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Creating community...");
-        var communityCreationResponse = api.createCommunity(Bytes.ofRandom(5).toHex(), "A nice body").join();
+        var communityCreationResponse = api.createCommunity(randomId(), "A nice body").join();
         log("Created community: %s", communityCreationResponse);
         log("Querying community metadata...");
         var communityMetadataResponse = api.queryGroupMetadata(communityCreationResponse.jid()).join();
         Assertions.assertTrue(communityMetadataResponse.community(), "Expected a community");
         log("Queried community metadata: %s", communityMetadataResponse);
         log("Creating child group...");
-        var communityChildCreationResponse = api.createGroup(Bytes.ofRandom(5).toHex(),  ChatEphemeralTimer.THREE_MONTHS, communityCreationResponse.jid()).join();
+        var communityChildCreationResponse = api.createGroup(randomId(), ChatEphemeralTimer.THREE_MONTHS, communityCreationResponse.jid()).join();
         log("Created child group: %s", communityChildCreationResponse);
         log("Querying child group metadata...");
         var communityChildMetadataResponse = api.queryGroupMetadata(communityChildCreationResponse.jid()).join();
@@ -363,7 +360,7 @@ public class RunWebCITest implements Listener {
             testGroupCreation();
         }
         log("Changing group description...");
-        var changeGroupResponse = api.changeGroupDescription(group, Bytes.ofRandom(12).toHex()).join();
+        var changeGroupResponse = api.changeGroupDescription(group, randomId()).join();
         log("Changed group description: %s", changeGroupResponse);
     }
 
@@ -853,7 +850,7 @@ public class RunWebCITest implements Listener {
                 .build();
         api.sendMessage(contact, interactiveMessageWithCollection).join();
         var shopMessage = InteractiveShop.builder()
-                .id(Bytes.ofRandom(5).toHex())
+                .id(randomId())
                 .version(3)
                 .surfaceType(InteractiveShop.SurfaceType.WHATSAPP)
                 .build();
@@ -1027,5 +1024,9 @@ public class RunWebCITest implements Listener {
     @Override
     public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
         System.out.println(info.toJson());
+    }
+
+    private String randomId() {
+        return HexFormat.of().formatHex(BytesHelper.random(5));
     }
 }

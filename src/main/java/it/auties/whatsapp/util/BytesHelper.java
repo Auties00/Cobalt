@@ -1,12 +1,17 @@
 package it.auties.whatsapp.util;
 
-import it.auties.bytes.Bytes;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
@@ -14,6 +19,68 @@ import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
 
 @UtilityClass
 public class BytesHelper {
+    static {
+        System.setProperty("io.netty.threadLocalDirectBufferSize", "1024");
+    }
+
+    public byte[] random(int length){
+        var bytes = new byte[length];
+        ThreadLocalRandom.current().nextBytes(bytes);
+        return bytes;
+    }
+    
+    public byte[] concat(byte[]... entries){
+        return Arrays.stream(entries)
+                .filter(Objects::nonNull)
+                .reduce(new byte[0], BytesHelper::concat);
+    }
+
+    public byte[] concat(byte first, byte[] second) {
+        if(second == null){
+            return new byte[]{first};
+        }
+
+        var result = new byte[1 + second.length];
+        result[0] = first;
+        System.arraycopy(second, 0, result, 1, second.length);
+        return result;
+    }
+
+    public byte[] concat(byte[] first, byte[] second) {
+        if(first == null){
+            return second;
+        }
+
+        if(second == null){
+            return first;
+        }
+
+        var result = new byte[first.length + second.length];
+        System.arraycopy(first, 0, result, 0, first.length);
+        System.arraycopy(second, 0, result, first.length, second.length);
+        return result;
+    }
+
+    public ByteBuf newBuffer(){
+        return ByteBufUtil.threadLocalDirectBuffer();
+    }
+
+    public ByteBuf newBuffer(byte @NonNull [] data){
+        var buffer = newBuffer();
+        buffer.writeBytes(data);
+        return buffer;
+    }
+
+    public byte[] readBuffer(ByteBuf byteBuf){
+        return readBuffer(byteBuf, byteBuf.readableBytes());
+    }
+
+    public byte[] readBuffer(ByteBuf byteBuf, int length){
+        var result = new byte[length];
+        byteBuf.readBytes(result);
+        return result;
+    }
+
     public byte versionToBytes(int version) {
         return (byte) (version << 4 | CURRENT_VERSION);
     }
@@ -58,18 +125,20 @@ public class BytesHelper {
         }
 
         var padRandomByte = KeyHelper.header();
-        var padding = Bytes.newBuffer(padRandomByte).fill((byte) padRandomByte).toByteArray();
-        return Bytes.of(Protobuf.writeMessage(container)).append(padding).toByteArray();
+        var padding = new byte[padRandomByte];
+        Arrays.fill(padding, (byte) padRandomByte);
+        return concat(Protobuf.writeMessage(container), padding);
     }
 
-    @SneakyThrows
     public MessageContainer bytesToMessage(byte[] bytes) {
-        var message = Bytes.of(bytes).cut(-bytes[bytes.length - 1]).toByteArray();
+        var message = Arrays.copyOfRange(bytes, 0, bytes.length - bytes[bytes.length - 1]);
         return Protobuf.readMessage(message, MessageContainer.class);
     }
 
     public byte[] longToBytes(long number) {
-        return Bytes.newBuffer().appendUnsignedInt((int) number).toByteArray();
+        var buffer = newBuffer();
+        buffer.writeLong(number);
+        return readBuffer(buffer);
     }
 
     public byte[] intToBytes(int input, int length) {

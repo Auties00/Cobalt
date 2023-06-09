@@ -14,9 +14,7 @@ open module it.auties.whatsapp4j {
     requires it.auties.qr;
     requires io.github.classgraph;
     requires org.bouncycastle.provider;
-    requires it.auties.bytebuffer;
     requires it.auties.curve;
-    requires com.github.benmanes.caffeine;
     requires it.auties.linkpreview;
     requires ez.vcard;
     requires libphonenumber;
@@ -24,6 +22,8 @@ open module it.auties.whatsapp4j {
     requires org.apache.poi.ooxml;
     requires org.apache.poi.scratchpad;
     requires net.dongliu.apkparser;
+    requires io.netty.buffer;
+    requires io.netty.common;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

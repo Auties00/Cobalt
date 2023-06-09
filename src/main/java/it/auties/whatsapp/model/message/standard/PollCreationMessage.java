@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -131,7 +130,7 @@ public final class PollCreationMessage extends ContextualMessage {
                 selectableOptionsHashesMap$value = new HashMap<>();
             }
             selectableOptions.forEach(entry -> {
-                var sha256 = Bytes.of(Sha256.calculate(entry.name())).toHex();
+                var sha256 = HexFormat.of().formatHex(Sha256.calculate(entry.name()));
                 selectableOptionsHashesMap$value.put(sha256, entry);
             });
             this.selectableOptions.addAll(selectableOptions);

@@ -1,12 +1,12 @@
 package it.auties.whatsapp.model.request;
 
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.whatsapp.binary.Encoder;
+import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.socket.SocketSession;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Protobuf;
 import lombok.NonNull;
@@ -93,12 +93,12 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public CompletableFuture<Node> send(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store, boolean prologue, boolean response) {
         var ciphered = encryptMessage(keys);
-        var buffer = Bytes.of(prologue ? keys.prologue() : new byte[0])
-                .appendInt(ciphered.length >> 16)
-                .appendShort(65535 & ciphered.length)
-                .append(ciphered)
-                .toByteArray();
-        session.sendBinary(buffer)
+        var buffer = BytesHelper.newBuffer();
+        buffer.writeBytes(prologue ? keys.prologue() : new byte[0]);
+        buffer.writeInt(ciphered.length >> 16);
+        buffer.writeShort(65535 & ciphered.length);
+        buffer.writeBytes(ciphered);
+        session.sendBinary(BytesHelper.readBuffer(buffer))
                 .thenRunAsync(() -> onSendSuccess(store, response))
                 .exceptionallyAsync(this::onSendError);
         return future;
@@ -110,14 +110,14 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         if (keys.writeKey() == null) {
             return body;
         }
-        return AesGmc.encrypt(keys.writeCounter(true), body, keys.writeKey().toByteArray());
+        return AesGmc.encrypt(keys.writeCounter(true), body, keys.writeKey());
     }
 
     private byte[] getBody(Object encodedBody) {
         if (encodedBody instanceof byte[] bytes) {
             return bytes;
         } else if (encodedBody instanceof Node node) {
-            var encoder = new Encoder();
+            var encoder = new BinaryEncoder();
             return encoder.encode(node);
         } else {
             throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));

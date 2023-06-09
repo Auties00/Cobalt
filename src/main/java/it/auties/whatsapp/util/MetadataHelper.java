@@ -1,6 +1,5 @@
 package it.auties.whatsapp.util;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
@@ -205,9 +204,7 @@ public class MetadataHelper {
     }
 
     private SecretKey getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
-        var result = Bytes.of(packageName)
-                .append(resource)
-                .toByteArray();
+        var result = BytesHelper.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
         var whatsappLogoChars = new char[result.length];
         for (var i = 0; i < result.length; i++) {
             whatsappLogoChars[i] = (char) result[i];

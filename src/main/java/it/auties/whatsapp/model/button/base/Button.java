@@ -1,15 +1,17 @@
 package it.auties.whatsapp.model.button.base;
 
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import java.util.HexFormat;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -56,7 +58,8 @@ public final class Button implements ProtobufMessage {
      * @return a non-null button
      */
     public static Button of(@NonNull ButtonBody body) {
-        return Button.of(Bytes.ofRandom(6).toHex(), body);
+        var id = HexFormat.of().formatHex(BytesHelper.random(6));
+        return Button.of(id, body);
     }
 
     /**

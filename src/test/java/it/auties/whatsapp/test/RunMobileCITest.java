@@ -1,6 +1,5 @@
 package it.auties.whatsapp.test;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Emoji;
 import it.auties.whatsapp.api.Whatsapp;
@@ -38,9 +37,10 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
-import it.auties.whatsapp.util.Smile;
 import lombok.SneakyThrows;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
@@ -337,7 +337,7 @@ public class RunMobileCITest implements Listener {
             testGroupCreation();
         }
         log("Changing group description...");
-        var changeGroupResponse = api.changeGroupDescription(group, Bytes.ofRandom(12).toHex()).join();
+        var changeGroupResponse = api.changeGroupDescription(group, HexFormat.of().formatHex(BytesHelper.random(12))).join();
         log("Changed group description: %s", changeGroupResponse);
     }
 
@@ -827,7 +827,7 @@ public class RunMobileCITest implements Listener {
                 .build();
         api.sendMessage(contact, interactiveMessageWithCollection).join();
         var shopMessage = InteractiveShop.builder()
-                .id(Bytes.ofRandom(5).toHex())
+                .id(HexFormat.of().formatHex(BytesHelper.random(5)))
                 .version(3)
                 .surfaceType(InteractiveShop.SurfaceType.WHATSAPP)
                 .build();

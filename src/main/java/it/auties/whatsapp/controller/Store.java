@@ -1,7 +1,6 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.crypto.Hkdf;
@@ -287,7 +286,7 @@ public final class Store extends Controller<Store> {
     @NonNull
     @JsonIgnore
     @Default
-    private String tag = Bytes.ofRandom(1).toHex().toLowerCase(Locale.ROOT);
+    private String tag = HexFormat.of().formatHex(BytesHelper.random(1));
 
     /**
      * The timestamp in seconds for the initialization of this object
@@ -538,15 +537,69 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Returns the store saved in memory or constructs a new clean instance
+     *
+     * @param alias the alias of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null store
+     */
+    public static Store of(String alias, @NonNull ClientType clientType) {
+        return of(alias, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the store saved in memory or constructs a new clean instance
+     *
+     * @param alias the alias of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer              
+     * @return a non-null store
+     */
+    public static Store of(String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        return ofNullable(alias, clientType, serializer)
+                .orElseGet(() -> random(null, null, clientType, serializer, alias));
+    }
+
+    /**
+     * Returns the store saved in memory or returns an empty optional
+     *
+     * @param alias the alias of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @return a non-null store
+     */
+    public static Optional<Store> ofNullable(String alias, @NonNull ClientType clientType) {
+        return ofNullable(alias, clientType, DefaultControllerSerializer.instance());
+    }
+
+    /**
+     * Returns the store saved in memory or returns an empty optional
+     *
+     * @param alias the alias of the session to load, can be null
+     * @param clientType  the non-null type of the client
+     * @param serializer  the non-null serializer
+     * @return a non-null store
+     */
+    public static Optional<Store> ofNullable(String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+        if(alias == null){
+            return Optional.empty();
+        }
+
+        var store = serializer.deserializeStore(clientType, alias);
+        store.ifPresent(serializer::attributeStore);
+        return store;
+    }
+
+    /**
      * Constructs a new default instance of WhatsappStore
      *
      * @param uuid        the uuid of the session to create, can be null
      * @param phoneNumber the phone number of the session to create, can be null
      * @param clientType  the non-null type of the client
+     * @param alias       the alias of the controller
      * @return a non-null store
      */
-    public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType) {
-        return random(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
+    public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, String... alias) {
+        return random(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance(), alias);
     }
 
     /**
@@ -556,12 +609,14 @@ public final class Store extends Controller<Store> {
      * @param phoneNumber the phone number of the session to create, can be null
      * @param clientType  the non-null type of the client
      * @param serializer  the non-null serializer
+     * @param alias       the alias of the controller
      * @return a non-null store
      */
-    public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+    public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, String... alias) {
         var phone = PhoneNumber.ofNullable(phoneNumber).orElse(null);
         var os = clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE;
         var result = Store.builder()
+                .alias(Arrays.asList(alias))
                 .serializer(serializer)
                 .clientType(clientType)
                 .jid(phone == null ? null : phone.toJid())
@@ -573,7 +628,7 @@ public final class Store extends Controller<Store> {
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .build();
         if(phoneNumber != null){
-            serializer.linkPhoneNumber(result);
+            serializer.linkMetadata(result);
         }
         return result;
     }
@@ -1020,11 +1075,12 @@ public final class Store extends Controller<Store> {
         pollUpdateMessage.voter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
-        var useSecretPayload = Bytes.of(originalPollInfo.id())
-                .append(originalPollSender)
-                .append(modificationSender)
-                .append(secretName)
-                .toByteArray();
+        var useSecretPayload = BytesHelper.concat(
+                originalPollInfo.id().getBytes(StandardCharsets.UTF_8),
+                originalPollSender,
+                modificationSender,
+                secretName
+        );
         var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
         var additionalData = "%s\0%s".formatted(
                 originalPollInfo.id(),
@@ -1035,7 +1091,7 @@ public final class Store extends Controller<Store> {
         var pollVoteMessage = Protobuf.readMessage(decrypted, PollUpdateEncryptedOptions.class);
         var selectedOptions = pollVoteMessage.selectedOptions()
                 .stream()
-                .map(sha256 -> originalPollMessage.selectableOptionsHashesMap().get(Bytes.of(sha256).toHex()))
+                .map(sha256 -> originalPollMessage.selectableOptionsHashesMap().get(HexFormat.of().formatHex(sha256)))
                 .filter(Objects::nonNull)
                 .toList();
         originalPollMessage.selectedOptionsMap().put(modificationSenderJid, selectedOptions);

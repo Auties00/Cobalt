@@ -4,8 +4,8 @@ import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.binary.Decoder;
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryDecoder;
+import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -182,9 +182,9 @@ public class SocketHandler implements SocketListener {
         if(keys.readKey() == null){
             return;
         }
-        var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey().toByteArray());
-        var decoder = new Decoder();
-        var node = decoder.readNode(plainText);
+        var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey());
+        var decoder = new BinaryDecoder();
+        var node = decoder.decode(plainText);
         onNodeReceived(node);
         store.resolvePendingRequest(node, false);
         streamHandler.digest(node);
@@ -301,7 +301,7 @@ public class SocketHandler implements SocketListener {
         return appStateHandler.push(jid, requests);
     }
 
-    public void pullPatch(PatchType... patchTypes) {
+    public void pullPatch(BinaryPatchType... patchTypes) {
         appStateHandler.pull(patchTypes);
     }
 

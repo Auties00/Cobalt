@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.signal.message;
 
-import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Protobuf;
@@ -11,6 +10,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.Arrays;
 import java.util.function.Function;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
@@ -48,16 +48,17 @@ public final class SignalMessage implements SignalProtocolMessage {
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        var encodedMessage = Bytes.of(serializedVersion()).append(Protobuf.writeMessage(this));
-        this.signature = signer.apply(encodedMessage.toByteArray());
-        this.serialized = encodedMessage.append(signature).toByteArray();
+        var encodedMessage = BytesHelper.concat(serializedVersion(), Protobuf.writeMessage(this));
+        this.signature = signer.apply(encodedMessage);
+        this.serialized = BytesHelper.concat(encodedMessage, signature);
     }
 
     public static SignalMessage ofSerialized(byte[] serialized) {
-        var buffer = Bytes.of(serialized);
-        return Protobuf.readMessage(buffer.slice(1, -MAC_LENGTH).toByteArray(), SignalMessage.class)
+        var data = Arrays.copyOfRange(serialized, 1, serialized.length - MAC_LENGTH);
+        var mac = Arrays.copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length);
+        return Protobuf.readMessage(data, SignalMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
-                .signature(buffer.slice(-MAC_LENGTH).toByteArray())
+                .signature(mac)
                 .serialized(serialized);
     }
 }

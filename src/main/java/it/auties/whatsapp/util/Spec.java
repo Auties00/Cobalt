@@ -1,17 +1,17 @@
 package it.auties.whatsapp.util;
 
-import it.auties.bytes.Bytes;
-import it.auties.whatsapp.binary.Tokens;
+import it.auties.whatsapp.binary.BinaryTokens;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HexFormat;
 
 @SuppressWarnings("unused")
 public class Spec {
     public final static class Whatsapp {
-        public static final Bytes PROTOCOL = Bytes.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
+        public static final byte[] PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
         public static final String WEB_ORIGIN = "https://web.whatsapp.com";
         public static final String WEB_HOST = "web.whatsapp.com";
         public static final URI WEB_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
@@ -19,11 +19,11 @@ public class Spec {
         public static final int APP_ENDPOINT_PORT = 443;
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
-        private static final String WHATSAPP_HEADER = "WA";
-        private static final byte[] WEB_VERSION = new byte[]{6, Tokens.DICTIONARY_VERSION};
-        public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(WEB_VERSION).toByteArray();
-        private static final byte[] MOBILE_VERSION = new byte[]{5, Tokens.DICTIONARY_VERSION};
-        public static final byte[] APP_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(MOBILE_VERSION).toByteArray();
+        private static final byte[] WHATSAPP_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
+        private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
+        public static final byte[] WEB_PROLOGUE = BytesHelper.concat(WHATSAPP_HEADER, WEB_VERSION);
+        private static final byte[] MOBILE_VERSION = new byte[]{5, BinaryTokens.DICTIONARY_VERSION};
+        public static final byte[] APP_PROLOGUE = BytesHelper.concat(WHATSAPP_HEADER, MOBILE_VERSION);
         public static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
         public static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
         public static final byte[] DEVICE_MOBILE_SIGNATURE_HEADER = {6, 2};

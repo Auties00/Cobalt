@@ -1,10 +1,11 @@
 package it.auties.whatsapp.model.media;
 
-import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static it.auties.whatsapp.util.Spec.Signal.IV_LENGTH;
 import static it.auties.whatsapp.util.Spec.Signal.KEY_LENGTH;
@@ -13,16 +14,16 @@ public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] mac
     private static final int EXPANDED_SIZE = 112;
 
     public static MediaKeys random(@NonNull String type) {
-        return of(Bytes.ofRandom(32).toByteArray(), type);
+        return of(BytesHelper.random(32), type);
     }
 
     public static MediaKeys of(byte @NonNull [] key, @NonNull String type) {
-        var encodedKey = type.getBytes(StandardCharsets.UTF_8);
-        var buffer = Bytes.of(Hkdf.extractAndExpand(key, encodedKey, EXPANDED_SIZE));
-        var iv = buffer.cut(IV_LENGTH).toByteArray();
-        var cipherKey = buffer.slice(IV_LENGTH, IV_LENGTH + KEY_LENGTH).toByteArray();
-        var macKey = buffer.slice(IV_LENGTH + KEY_LENGTH, IV_LENGTH + (KEY_LENGTH * 2)).toByteArray();
-        var ref = buffer.slice(IV_LENGTH + (KEY_LENGTH * 2)).toByteArray();
+        var keyName = type.getBytes(StandardCharsets.UTF_8);
+        var expanded = Hkdf.extractAndExpand(key, keyName, EXPANDED_SIZE);
+        var iv = Arrays.copyOfRange(expanded, 0, IV_LENGTH);
+        var cipherKey = Arrays.copyOfRange(expanded, IV_LENGTH, IV_LENGTH + KEY_LENGTH);
+        var macKey = Arrays.copyOfRange(expanded, IV_LENGTH + KEY_LENGTH, IV_LENGTH + KEY_LENGTH * 2);
+        var ref = Arrays.copyOfRange(expanded, IV_LENGTH + KEY_LENGTH * 2, expanded.length);
         return new MediaKeys(key, iv, cipherKey, macKey, ref);
     }
 }

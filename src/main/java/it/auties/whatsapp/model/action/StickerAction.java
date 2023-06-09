@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.binary.BinaryPatchType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -77,7 +77,7 @@ public final class StickerAction implements Action {
      * @return an exception
      */
     @Override
-    public PatchType actionType() {
+    public BinaryPatchType actionType() {
         throw new UnsupportedOperationException("Cannot send action");
     }
 }

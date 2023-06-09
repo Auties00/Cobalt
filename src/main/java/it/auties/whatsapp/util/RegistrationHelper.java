@@ -1,6 +1,5 @@
 package it.auties.whatsapp.util;
 
-import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -105,7 +104,7 @@ public class RegistrationHelper {
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGmc.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
-        var enc = Base64.getUrlEncoder().encodeToString(Bytes.of(keypair.publicKey(), buffer).toByteArray());
+        var enc = Base64.getUrlEncoder().encodeToString(BytesHelper.concat(keypair.publicKey(), buffer));
         var request = HttpRequest.newBuilder()
                 .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, enc)))
                 .GET()

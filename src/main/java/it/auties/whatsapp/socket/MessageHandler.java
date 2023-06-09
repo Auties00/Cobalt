@@ -400,7 +400,7 @@ class MessageHandler {
                 .map(certificate -> certificate.details().name());
     }
 
-    private Node createMessageNode(MessageSendRequest request, CipheredMessageResult groupMessage) {
+    private Node createMessageNode(MessageSendRequest request, GroupCipher.CipheredMessageResult groupMessage) {
         var mediaType = getMediaType(request.info().message());
         var attributes = Attributes.of()
                 .put("v", "2")

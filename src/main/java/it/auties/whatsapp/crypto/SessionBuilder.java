@@ -1,18 +1,19 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -57,7 +58,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         var signedIdentitySecret = Curve25519.sharedKey(KeyHelper.withoutHeader(theirSignedPubKey), ourSignedKey.privateKey());
         var ephemeralSecret = theirEphemeralPubKey == null || ourEphemeralKey == null ? null : Curve25519.sharedKey(KeyHelper.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
         var sharedSecret = createStateSecret(isInitiator, signedSecret, identitySecret, signedIdentitySecret, ephemeralSecret);
-        var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(), "WhisperText".getBytes(StandardCharsets.UTF_8));
+        var masterKey = Hkdf.deriveSecrets(sharedSecret, "WhisperText".getBytes(StandardCharsets.UTF_8));
         var state = createState(isInitiator, ourEphemeralKey, ourSignedKey, theirIdentityPubKey, theirEphemeralPubKey, theirSignedPubKey, registrationId, version, masterKey);
         return isInitiator ? calculateSendingRatchet(state, theirSignedPubKey) : state;
     }
@@ -68,13 +69,16 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         return session;
     }
 
-    private Bytes createStateSecret(boolean isInitiator, byte[] signedSecret, byte[] identitySecret, byte[] signedIdentitySecret, byte[] ephemeralSecret) {
-        return Bytes.newBuffer(32)
-                .fill(0xff)
-                .append(isInitiator ? signedSecret : identitySecret)
-                .append(isInitiator ? identitySecret : signedSecret)
-                .append(signedIdentitySecret)
-                .appendNullable(ephemeralSecret);
+    private byte[] createStateSecret(boolean isInitiator, byte[] signedSecret, byte[] identitySecret, byte[] signedIdentitySecret, byte[] ephemeralSecret) {
+        var header = new byte[32];
+        Arrays.fill(header, (byte) 0xff);
+        return BytesHelper.concat(
+                header,
+                isInitiator ? signedSecret : identitySecret,
+                isInitiator ? identitySecret : signedSecret,
+                signedIdentitySecret,
+                ephemeralSecret
+        );
     }
 
     private SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey, byte[] theirIdentityPubKey, byte[] theirEphemeralPubKey, byte[] theirSignedPubKey, int registrationId, int version, byte[][] masterKey) {

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.bytes.Bytes;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -8,6 +8,7 @@ import lombok.experimental.UtilityClass;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 
 import static it.auties.whatsapp.util.Spec.Signal.KEY_LENGTH;
 
@@ -30,9 +31,9 @@ public class Hkdf {
         Validate.isTrue(salt.length == KEY_LENGTH, "Incorrect salt codeLength: %s", salt.length);
         Validate.isTrue(chunks >= 1 && chunks <= 3, "Incorrect number of chunks: %s", chunks);
         var prk = Hmac.calculateSha256(input, salt);
-        var result = Bytes.newBuffer(KEY_LENGTH).append(info).append(1).toByteArray();
+        var result = BytesHelper.concat(new byte[KEY_LENGTH], info, new byte[]{1});
         var signed = new byte[chunks][];
-        var key = Bytes.of(result).slice(KEY_LENGTH).toByteArray();
+        var key = Arrays.copyOfRange(result, KEY_LENGTH, result.length);
         var first = Hmac.calculateSha256(key, prk);
         signed[0] = first;
         if (chunks > 1) {

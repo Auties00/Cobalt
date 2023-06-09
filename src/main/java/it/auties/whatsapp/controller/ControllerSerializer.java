@@ -15,22 +15,6 @@ import java.util.concurrent.CompletableFuture;
 @SuppressWarnings("unused")
 public interface ControllerSerializer {
     /**
-     * Serializes the keys
-     *
-     * @param keys  the non-null keys to serialize
-     * @param async whether the operation should be executed asynchronously
-     */
-    void serializeKeys(Keys keys, boolean async);
-
-    /**
-     * Serializes the store
-     *
-     * @param store the non-null store to serialize
-     * @param async whether the operation should be executed asynchronously
-     */
-    void serializeStore(Store store, boolean async);
-
-    /**
      * Returns all the known IDs
      *
      * @param type the non-null type of client
@@ -49,6 +33,22 @@ public interface ControllerSerializer {
     /**
      * Serializes the keys
      *
+     * @param keys  the non-null keys to serialize
+     * @param async whether the operation should be executed asynchronously
+     */
+    void serializeKeys(Keys keys, boolean async);
+
+    /**
+     * Serializes the store
+     *
+     * @param store the non-null store to serialize
+     * @param async whether the operation should be executed asynchronously
+     */
+    void serializeStore(Store store, boolean async);
+
+    /**
+     * Serializes the keys
+     *
      * @param type the non-null type of client
      * @param id the id of the keys
      * @return a non-null keys
@@ -63,6 +63,16 @@ public interface ControllerSerializer {
      * @return a non-null keys
      */
     Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber);
+
+
+    /**
+     * Serializes the keys
+     *
+     * @param type  the non-null type of client
+     * @param alias the alias number of the keys
+     * @return a non-null keys
+     */
+    Optional<Keys> deserializeKeys(@NonNull ClientType type, String alias);
 
     /**
      * Serializes the store
@@ -83,14 +93,13 @@ public interface ControllerSerializer {
     Optional<Store> deserializeStore(@NonNull ClientType type, long phoneNumber);
 
     /**
-     * Creates a link between the session store and the phone number
-     * This may not be implemented
+     * Serializes the store
      *
-     * @param controller a non-null controller
+     * @param type  the non-null type of client
+     * @param alias the alias of the store
+     * @return a non-null store
      */
-    default void linkPhoneNumber(@NonNull Controller<?> controller) {
-
-    }
+    Optional<Store> deserializeStore(@NonNull ClientType type, String alias);
 
     /**
      * Deletes a session
@@ -100,6 +109,15 @@ public interface ControllerSerializer {
     void deleteSession(@NonNull Controller<?> controller);
 
     /**
+     * Creates a link between the session and its metadata, usually phone number and alias
+     *
+     * @param controller a non-null controller
+     */
+    default void linkMetadata(@NonNull Controller<?> controller) {
+
+    }
+
+    /**
      * Attributes the store asynchronously. This method is optionally used to load asynchronously
      * heavy data such as chats while the socket is connecting. If implemented, cache the returning
      * result because the method may be called multiple times.
@@ -107,8 +125,7 @@ public interface ControllerSerializer {
      * @param store the non-null store to attribute
      * @return a completable result
      */
-    @SuppressWarnings("UnusedReturnValue")
-    default CompletableFuture<Void> attributeStore(@SuppressWarnings("unused") Store store) {
+    default CompletableFuture<Void> attributeStore(Store store) {
         return CompletableFuture.completedFuture(null);
     }
 }
