@@ -1,8 +1,11 @@
-# Whatsapp4j
+# Cobalt
+Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
+To be clear, this library is not affiliated with Whatsapp LLC in any way.
+This is a personal project that I mantain in my free time
 
-### What is Whatsapp4j
+### What is Cobalt
 
-Whatsapp4j is a library built to interact with Whatsapp.
+Cobalt is a library built to interact with Whatsapp.
 It can be used to work with:
 1. WhatsappWeb (MultiDevice)
 
@@ -787,14 +790,14 @@ All types of messages supported by Whatsapp are supported by this library:
 
     ```java
     var someMessage = ...; // The message to react to
-    api.sendReaction(someMessage, Emojy.RED_HEART); // Use the Emojy class for a list of all Emojys
+    api.sendReaction(someMessage, Emoji.RED_HEART); // Use the Emoji class for a list of all Emojis
     ```
 
     - Remove a reaction
 
     ```java
     var someMessage = ...; // The message to react to
-    api.removeReaction(someMessage); // Use the Emojy class for a list of all Emojys
+    api.removeReaction(someMessage); // Use the Emoji class for a list of all Emojis
     ```
 
 ### How to wait for replies

@@ -914,8 +914,8 @@ public class RunMobileCITest implements Listener {
         if (skip) {
             return;
         }
-        for (var emojy : Emoji.values()) {
-            api.sendMessage(contact, emojy.name()).thenAcceptAsync(message -> api.sendReaction(message, emojy)).join();
+        for (var emoji : Emoji.values()) {
+            api.sendMessage(contact, emoji.name()).thenAcceptAsync(message -> api.sendReaction(message, emoji)).join();
         }
     }
 
