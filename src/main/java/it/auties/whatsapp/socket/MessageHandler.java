@@ -663,7 +663,7 @@ class MessageHandler {
     }
 
     private void onHistorySyncNotification(MessageInfo info, ProtocolMessage protocolMessage) {
-        if(socketHandler.store().historyLength() == WebHistoryLength.ZERO && isZeroHistorySyncComplete()){
+        if(isZeroHistorySyncComplete()){
             return;
         }
 
@@ -673,14 +673,16 @@ class MessageHandler {
     }
 
     private boolean isZeroHistorySyncComplete() {
-        return historySyncTypes.contains(INITIAL_STATUS_V3)
+        return socketHandler.store().historyLength() == WebHistoryLength.ZERO
+                && historySyncTypes.contains(INITIAL_STATUS_V3)
                 && historySyncTypes.contains(PUSH_NAME)
                 && historySyncTypes.contains(INITIAL_BOOTSTRAP)
                 && historySyncTypes.contains(NON_BLOCKING_DATA);
     }
 
     private boolean isTyping(Contact sender) {
-        return sender.lastKnownPresence() == ContactStatus.COMPOSING || sender.lastKnownPresence() == ContactStatus.RECORDING;
+        return sender.lastKnownPresence() == ContactStatus.COMPOSING
+                || sender.lastKnownPresence() == ContactStatus.RECORDING;
     }
 
     private CompletableFuture<HistorySync> downloadHistorySync(ProtocolMessage protocolMessage) {
