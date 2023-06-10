@@ -209,11 +209,6 @@ public class SocketHandler implements SocketListener {
 
     @Override
     public void onError(Throwable throwable) {
-        if (throwable instanceof IllegalStateException stateException && stateException.getMessage()
-                .equals("The connection has been closed.")) {
-            onClose();
-            return;
-        }
         onSocketEvent(SocketEvent.ERROR);
         handleFailure(UNKNOWN, throwable);
     }
@@ -531,21 +526,17 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    protected void sendMessageAck(Node node, Map<String, Object> metadata) {
-        var to = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing from in message ack"));
-        var participant = node.attributes().getNullableString("participant");
-        var recipient = node.attributes().getNullableString("recipient");
-        var type = node.attributes()
-                .getOptionalString("type")
+    protected void sendMessageAck(Node node) {
+        var attrs = node.attributes();
+        var type = attrs.getOptionalString("type")
+                .filter(entry -> !Objects.equals(entry, "message"))
                 .orElse(null);
         var attributes = Attributes.of()
                 .put("id", node.id())
-                .put("to", to)
+                .put("to", node.attributes().getRequiredString("from"))
                 .put("class", node.description())
-                .put("participant", participant, Objects::nonNull)
-                .put("recipient", recipient, Objects::nonNull)
+                .put("participant", attrs.getNullableString("participant"), Objects::nonNull)
+                .put("recipient", attrs.getNullableString("recipient"), Objects::nonNull)
                 .put("type", type, Objects::nonNull)
                 .toMap();
         sendWithNoResponse(Node.ofAttributes("ack", attributes));

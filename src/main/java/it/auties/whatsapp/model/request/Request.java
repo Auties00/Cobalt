@@ -125,12 +125,12 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     }
 
     private void onSendSuccess(Store store, boolean response) {
-        store.addRequest(this);
-        if (response) {
+        if (!response) {
+            future.complete(null);
             return;
         }
 
-        future.complete(null);
+        store.addRequest(this);
     }
 
     private Void onSendError(Throwable throwable) {
@@ -157,8 +157,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @return this request
      */
     public CompletableFuture<Void> sendWithNoResponse(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store) {
-        return send(session, keys, store, false, false).thenRunAsync(() -> {
-        });
+        return send(session, keys, store, false, false)
+                .thenRunAsync(() -> {});
     }
 
     /**

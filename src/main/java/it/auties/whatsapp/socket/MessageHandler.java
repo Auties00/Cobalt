@@ -526,7 +526,7 @@ class MessageHandler {
         var category = infoNode.attributes().getString("category");
         var receiptType = getReceiptType(category, fromMe);
         socketHandler.sendReceipt(chatJid, senderJid, List.of(id), receiptType);
-        socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
+        socketHandler.sendMessageAck(infoNode);
     }
 
     private String getReceiptType(String category, boolean fromMe) {

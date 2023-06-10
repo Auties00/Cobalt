@@ -160,11 +160,7 @@ class StreamHandler {
                 .map(messageId -> chat == null ? socketHandler.store().findStatusById(messageId) : socketHandler.store().findMessageById(chat, messageId))
                 .flatMap(Optional::stream)
                 .forEach(message -> digestReceipt(node, chat, message));
-        var attributes = Attributes.of()
-                .put("class", "receipt")
-                .put("type", node.attributes().getNullableString("type"), Objects::nonNull)
-                .toMap();
-        socketHandler.sendMessageAck(node, attributes);
+        socketHandler.sendMessageAck(node);
     }
 
     private void digestReceipt(Node node, Chat chat, MessageInfo message) {
@@ -182,11 +178,9 @@ class StreamHandler {
         message.status(status);
         updateReceipt(status, chat, participant, message);
         socketHandler.onMessageStatus(status, participant, message, chat);
-        if (!Objects.equals(type.orElse(null), "retry")) {
-            return;
+        if (Objects.equals(type.orElse(null), "retry")) {
+            sendMessageRetry(message);
         }
-
-        sendMessageRetry(message);
     }
 
     private void sendMessageRetry(MessageInfo message) {
@@ -236,19 +230,16 @@ class StreamHandler {
         return messageIds;
     }
 
+    // TODO: Dispatch call event
     private void digestCall(Node node) {
         var call = node.children().peekFirst();
         if (call == null) {
             return;
         }
-        socketHandler.sendMessageAck(node, Map.of("class", "call", "type", call.description()));
+        socketHandler.sendMessageAck(node);
     }
 
     private void digestAck(Node node) {
-        var clazz = node.attributes().getString("class");
-        if (!Objects.equals(clazz, "message")) {
-            return;
-        }
         var error = node.attributes().getInt("error");
         var messageId = node.id();
         var from = node.attributes()
@@ -262,20 +253,21 @@ class StreamHandler {
             match.filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
                     .ifPresent(message -> message.status(MessageStatus.SERVER_ACK));
         }
-        var receipt = Node.ofAttributes("ack", Map.of("class", "receipt", "id", messageId, "from", from));
-        socketHandler.sendWithNoResponse(receipt);
     }
 
     private void digestNotification(Node node) {
-        socketHandler.sendMessageAck(node, node.attributes().toMap());
-        var type = node.attributes().getString("type", null);
-        switch (type) {
-            case "w:gp2" -> handleGroupNotification(node);
-            case "server_sync" -> handleServerSyncNotification(node);
-            case "account_sync" -> handleAccountSyncNotification(node);
-            case "encrypt" -> handleEncryptNotification(node);
-            case "picture" -> handlePictureNotification(node);
-            case "registration" -> handleRegistrationNotification(node);
+        try {
+            var type = node.attributes().getString("type", null);
+            switch (type) {
+                case "w:gp2" -> handleGroupNotification(node);
+                case "server_sync" -> handleServerSyncNotification(node);
+                case "account_sync" -> handleAccountSyncNotification(node);
+                case "encrypt" -> handleEncryptNotification(node);
+                case "picture" -> handlePictureNotification(node);
+                case "registration" -> handleRegistrationNotification(node);
+            }
+        }finally {
+            socketHandler.sendMessageAck(node);
         }
     }
 
@@ -570,13 +562,6 @@ class StreamHandler {
                     .map(Objects::toString)
                     .collect(Collectors.joining("\n"));
             socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac, unresolved nodes:\n%s".formatted(unresolvedNodes)));
-            return;
-        }
-
-        // TODO: This is to fix Node[description=stream:error, content=[Node[description=ack, attributes={id=3EB04EF705C35A660AC5, type=text, class=message}]]]
-        // Should be actually fixed
-        if(node.hasNode("ack")){
-            socketHandler.disconnect(DisconnectReason.RECONNECTING);
             return;
         }
 

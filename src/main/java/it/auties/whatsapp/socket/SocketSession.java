@@ -121,8 +121,6 @@ public class SocketSession {
                 input.readFully(message);
                 listener.onMessage(message);
             }
-        } catch (SocketException ignored){
-
         } catch(Throwable throwable) {
             listener.onError(throwable);
         } finally {
