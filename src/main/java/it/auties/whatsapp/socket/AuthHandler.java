@@ -101,9 +101,9 @@ class AuthHandler {
         var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
         return UserAgent.builder()
                 .appVersion(socketHandler.store().version())
-                .osVersion(mobile ? socketHandler.store().osVersion() : null)
-                .device(mobile ? socketHandler.store().model() : null)
-                .manufacturer(mobile ? socketHandler.store().manufacturer() : null)
+                .osVersion(mobile ? socketHandler.store().device().osVersion().toString() : null)
+                .device(mobile ? socketHandler.store().device().model() : null)
+                .manufacturer(mobile ? socketHandler.store().device().manufacturer() : null)
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .platform(getPlatform())
                 .releaseChannel(socketHandler.store().releaseChannel())
@@ -114,13 +114,13 @@ class AuthHandler {
 
     private UserAgentPlatform getPlatform() {
         if(!socketHandler.store().business()){
-            return socketHandler.store().os();
+            return socketHandler.store().device().osType();
         }
 
-        return switch (socketHandler.store().os()){
+        return switch (socketHandler.store().device().osType()){
             case ANDROID -> UserAgentPlatform.SMB_ANDROID;
             case IOS -> UserAgentPlatform.SMB_IOS;
-            default -> throw new IllegalStateException("Unexpected platform: " + socketHandler.store().os());
+            default -> throw new IllegalStateException("Unexpected platform: " + socketHandler.store().device().osType());
         };
     }
 

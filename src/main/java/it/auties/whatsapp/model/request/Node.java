@@ -6,10 +6,7 @@ import lombok.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to
@@ -274,13 +271,12 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
     /**
      * Constructs a new request from this node
      *
-     * @param idGenerator the non-null id generator if the node doesn't have one already
      * @return a non null request
      * @throws NullPointerException if no valid jid can be found
      */
-    public Request toRequest(@NonNull Supplier<String> idGenerator, Function<Node, Boolean> filter) {
+    public Request toRequest(Function<Node, Boolean> filter) {
         if (id() == null) {
-            attributes.put("id", requireNonNull(idGenerator.get()));
+            attributes.put("id", UUID.randomUUID().toString());
         }
         return Request.of(this, filter);
     }

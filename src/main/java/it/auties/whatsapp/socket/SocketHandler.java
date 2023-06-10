@@ -61,6 +61,7 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 public class SocketHandler implements SocketListener {
     private static final Set<UUID> connectedUuids = ConcurrentHashMap.newKeySet();
     private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
+    private static final Set<String> connectedAlias = ConcurrentHashMap.newKeySet();
 
     private SocketSession session;
 
@@ -107,6 +108,10 @@ public class SocketHandler implements SocketListener {
 
     public static boolean isConnected(long phoneNumber){
         return connectedPhoneNumbers.contains(phoneNumber);
+    }
+
+    public static boolean isConnected(@NonNull String id){
+        return connectedAlias.contains(id);
     }
 
     public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Store store, @NonNull Keys keys) {
@@ -169,6 +174,7 @@ public class SocketHandler implements SocketListener {
         store.phoneNumber()
                 .map(PhoneNumber::number)
                 .ifPresent(connectedPhoneNumbers::add);
+        connectedAlias.addAll(store.alias());
     }
 
     @Override
@@ -356,7 +362,7 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
 
-        var request = node.toRequest(store::nextTag, null);
+        var request = node.toRequest(null);
         return request.sendWithNoResponse(session, keys, store)
                 .exceptionallyAsync(throwable -> handleFailure(STREAM, throwable))
                 .thenRunAsync(() -> onNodeSent(node));
@@ -379,7 +385,7 @@ public class SocketHandler implements SocketListener {
         var query = Node.ofChildren("query", queryNode);
         var list = Node.ofChildren("list", queryBody);
         var sync = Node.ofChildren("usync",
-                Map.of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
+                Map.of("sid", UUID.randomUUID().toString(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
         return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
     }
@@ -424,7 +430,7 @@ public class SocketHandler implements SocketListener {
         if (state() == SocketState.RESTORE) {
             return CompletableFuture.completedFuture(node);
         }
-        var request = node.toRequest(store::nextTag, filter);
+        var request = node.toRequest(filter);
         var result = request.send(session, keys, store);
         onNodeSent(node);
         return result;

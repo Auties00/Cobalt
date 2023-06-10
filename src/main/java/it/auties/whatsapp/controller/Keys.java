@@ -325,12 +325,6 @@ public final class Keys extends Controller<Keys> {
         return serializer.deserializeKeys(clientType, phoneNumber);
     }
 
-
-
-
-
-
-
     /**
      * Returns the Keys saved in memory or constructs a new clean instance
      *

@@ -6,8 +6,8 @@ import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.business.BusinessCategory;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.RegistrationStatus;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import lombok.NonNull;
 
 import java.util.Optional;
@@ -72,49 +72,13 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
 
 
     /**
-     * Set the operating system of the associated companion
+     * Set the device to emulate
      *
      * @return the same instance for chaining
      */
-    public MobileOptionsBuilder osType(@NonNull UserAgentPlatform osType){
+    public MobileOptionsBuilder device(@NonNull CompanionDevice device){
         if(store != null) {
-            store.os(osType);
-        }
-        return this;
-    }
-
-    /**
-     * Set the operating system's version of the associated companion
-     *
-     * @return the same instance for chaining
-     */
-    public MobileOptionsBuilder osVersion(@NonNull String osVersion){
-        if(store != null) {
-            store.osVersion(osVersion);
-        }
-        return this;
-    }
-
-    /**
-     * Set the model of the associated companion
-     *
-     * @return the same instance for chaining
-     */
-    public MobileOptionsBuilder model(@NonNull String model){
-        if(store != null) {
-            store.model(model);
-        }
-        return this;
-    }
-
-    /**
-     * Set the manufacturer of the associated companion
-     *
-     * @return the same instance for chaining
-     */
-    public MobileOptionsBuilder manufacturer(@NonNull String manufacturer){
-        if(store != null) {
-            store.manufacturer(manufacturer);
+            store.device(device);
         }
         return this;
     }

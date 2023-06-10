@@ -8,6 +8,7 @@ import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
@@ -28,7 +29,6 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
@@ -75,7 +75,7 @@ public final class Store extends Controller<Store> {
     private Version version;
 
     /**
-     * Whether the session is online for other users
+     * Whether this account is online for other users
      */
     @Getter
     @Setter
@@ -160,7 +160,6 @@ public final class Store extends Controller<Store> {
      * The key here is the index of the device's key
      * The value is the device's companion jid
      */
-    @Getter
     @Setter
     @Default
     private LinkedHashMap<ContactJid, Integer> linkedDevicesKeys = new LinkedHashMap<>();
@@ -200,7 +199,6 @@ public final class Store extends Controller<Store> {
      */
     @NonNull
     @Default
-    @Getter
     @Setter
     private ConcurrentHashMap<String, String> properties = new ConcurrentHashMap<>();
 
@@ -393,42 +391,18 @@ public final class Store extends Controller<Store> {
     private UserAgentReleaseChannel releaseChannel = UserAgentReleaseChannel.RELEASE;
 
     /**
-     * The operating system of this session
+     * Metadata about the device that is being simulated for Whatsapp
      */
     @Getter
     @Setter
     @NonNull
-    private UserAgentPlatform os;
+    private CompanionDevice device;
 
     /**
-     * The operating system of the associated companion
+     * Metadata about the associated device, only available when using the web api
      */
     @Setter
-    private UserAgentPlatform companionOs;
-
-    /**
-     * The operating system's version of this session
-     */
-    @Getter
-    @Setter
-    @NonNull
-    private String osVersion;
-
-    /**
-     * The model of this session
-     */
-    @Getter
-    @Setter
-    @NonNull
-    private String model;
-
-    /**
-     * The manufacturer of this session
-     */
-    @Getter
-    @Setter
-    @NonNull
-    private String manufacturer;
+    private CompanionDevice companionDevice;
 
     /**
      * Returns the store saved in memory or constructs a new clean instance
@@ -614,21 +588,24 @@ public final class Store extends Controller<Store> {
      */
     public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, String... alias) {
         var phone = PhoneNumber.ofNullable(phoneNumber).orElse(null);
-        var os = clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_TYPE : Spec.Whatsapp.DEFAULT_MOBILE_OS_TYPE;
         var result = Store.builder()
                 .alias(Objects.requireNonNullElseGet(Arrays.asList(alias), ArrayList::new))
                 .serializer(serializer)
                 .clientType(clientType)
                 .jid(phone == null ? null : phone.toJid())
                 .phoneNumber(phone)
-                .os(os)
-                .osVersion(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_OS_VERSION : Spec.Whatsapp.DEFAULT_MOBILE_OS_VERSION)
-                .model(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MODEL : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MODEL)
-                .manufacturer(clientType == ClientType.WEB ? Spec.Whatsapp.DEFAULT_WEB_DEVICE_MANUFACTURER : Spec.Whatsapp.DEFAULT_MOBILE_DEVICE_MANUFACTURER)
+                .device(getDefaultDevice(clientType))
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .build();
         serializer.linkMetadata(result);
         return result;
+    }
+
+    private static CompanionDevice getDefaultDevice(ClientType clientType) {
+        return switch (clientType) {
+            case WEB -> CompanionDevice.windows();
+            case MOBILE -> CompanionDevice.ios();
+        };
     }
 
     /**
@@ -1139,12 +1116,12 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * Returns a request tag
+     * Returns the non-null map of properties received by whatsapp
      *
-     * @return a non-null String
+     * @return an unmodifiable map
      */
-    public String nextTag() {
-        return UUID.randomUUID().toString();
+    public Map<String, String> properties(){
+        return Collections.unmodifiableMap(properties);
     }
 
     /**
@@ -1275,6 +1252,16 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Returns an unmodifiable map that contains every companion associated using Whatsapp web mapped to its key index
+     *
+     * @return an unmodifiable map
+     */
+    public Map<ContactJid, Integer> linkedDevicesKeys(){
+        return Collections.unmodifiableMap(linkedDevicesKeys);
+    }
+
+
+    /**
      * Returns an unmodifiable list that contains the devices associated using Whatsapp web to this session's companion
      *
      * @return an unmodifiable list
@@ -1383,7 +1370,7 @@ public final class Store extends Controller<Store> {
      */
     public Version version(){
         if(version == null){
-            this.version = MetadataHelper.getVersion(os, business).join();
+            this.version = MetadataHelper.getVersion(device.osType(), business).join();
         }
 
         return version;
@@ -1415,13 +1402,13 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * Returns the os of the associated companion
-     * Only available on the web api
+     * Returns metadata about the associated device
+     * Only available when using the web api
      *
      * @return a non-null optional
      */
-    public Optional<UserAgentPlatform> companionOs() {
-        return Optional.ofNullable(companionOs);
+    public Optional<CompanionDevice> companionDevice() {
+        return Optional.ofNullable(companionDevice);
     }
 
     /**

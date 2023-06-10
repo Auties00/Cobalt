@@ -6,6 +6,7 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.binary.BinaryPatchType;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
@@ -957,8 +958,9 @@ class StreamHandler {
         var companionOs = container.findNode("platform")
                 .map(entry -> entry.attributes().getNullableString("name"))
                 .map(this::getCompanionOs)
-                .orElse(null);
-        socketHandler.store().companionOs(companionOs);
+                .orElseThrow(() -> new NoSuchElementException("Unknown platform"));
+        var companionDevice = new CompanionDevice(null, null, companionOs, null);
+        socketHandler.store().companionDevice(companionDevice);
         socketHandler.store().business(isBusiness);
         socketHandler.store().addContact(Contact.ofJid(socketHandler.store().jid().toWhatsappJid()));
     }

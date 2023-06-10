@@ -118,17 +118,17 @@ public class RegistrationHelper {
 
     private String getUserAgent(Store store) {
         var osName = getMobileOsName(store);
-        var osVersion = store.osVersion();
-        var manufacturer = store.manufacturer();
-        var model = store.model().replaceAll(" ", "_");
+        var osVersion = store.device().osVersion();
+        var manufacturer = store.device().manufacturer();
+        var model = store.device().model().replaceAll(" ", "_");
         return "WhatsApp/%s %s/%s Device/%s-%s".formatted(store.version(), osName, osVersion, manufacturer, model);
     }
 
     private String getMobileOsName(Store store) {
-        return switch (store.os()) {
+        return switch (store.device().osType()) {
             case ANDROID -> store.business() ? "SMBA" : "Android";
             case IOS -> store.business() ? "SMBI" : "iOS";
-            default -> throw new IllegalStateException("Unsupported mobile os: " + store.os());
+            default -> throw new IllegalStateException("Unsupported mobile os: " + store.device().osType());
         };
     }
 
@@ -143,7 +143,7 @@ public class RegistrationHelper {
 
     @SafeVarargs
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
-        return MetadataHelper.getToken(store.phoneNumber().get().numberWithoutPrefix(), store.os(), store.business())
+        return MetadataHelper.getToken(store.phoneNumber().get().numberWithoutPrefix(), store.device().osType(), store.business())
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 

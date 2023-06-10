@@ -119,6 +119,16 @@ public class Whatsapp {
         return SocketHandler.isConnected(phoneNumber);
     }
 
+    /**
+     * Checks if a connection exists
+     *
+     * @param alias the non-null alias
+     * @return a boolean
+     */
+    public static boolean isConnected(String alias) {
+        return SocketHandler.isConnected(alias);
+    }
+
     private Whatsapp(@NonNull Store store, @NonNull Keys keys) {
         this.socketHandler = new SocketHandler(this, store, keys);
         if(store.autodetectListeners()){
@@ -1985,8 +1995,10 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<GroupMetadata> createCommunity(@NonNull String subject, String body) {
-        var entry = Node.ofChildren("create", Map.of("subject", subject), Node.ofChildren("description", Map.of("id", store()
-                .nextTag()), Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))), Node.ofAttributes("parent", Map.of("default_membership_approval_mode", "request_required")));
+        var entry = Node.ofChildren("create", Map.of("subject", subject),
+                Node.ofChildren("description", Map.of("id", UUID.randomUUID().toString()),
+                        Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))),
+                Node.ofAttributes("parent", Map.of("default_membership_approval_mode", "request_required")));
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", entry)
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
@@ -2227,11 +2239,13 @@ public class Whatsapp {
     }
 
     private PatchEntry createAndroidEntry() {
-        return store().companionOs()
-                .filter(entry -> entry == UserAgentPlatform.ANDROID || entry == UserAgentPlatform.SMB_ANDROID)
-                .map(ignored -> new AndroidUnsupportedActions(true))
-                .map(entry -> PatchEntry.of(ActionValueSync.of(entry), Operation.SET))
-                .orElse(null);
+        var osType = store().device().osType();
+        if (osType != UserAgentPlatform.ANDROID && osType != UserAgentPlatform.SMB_ANDROID) {
+            return null;
+        }
+
+        var action = new AndroidUnsupportedActions(true);
+        return PatchEntry.of(ActionValueSync.of(action), Operation.SET);
     }
 
     private PatchEntry createNuxRequest() {

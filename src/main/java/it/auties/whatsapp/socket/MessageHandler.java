@@ -299,7 +299,7 @@ class MessageHandler {
                 .map(contact -> Node.ofAttributes("user", Map.of("jid", contact)))
                 .toList();
         var body = Node.ofChildren("usync",
-                Map.of("sid", socketHandler.store().nextTag(), "mode", "query", "last", "true", "index", "0", "context", "message"),
+                Map.of("sid", UUID.randomUUID().toString(), "mode", "query", "last", "true", "index", "0", "context", "message"),
                 Node.ofChildren("query", Node.ofAttributes("devices", Map.of("version", "2"))),
                 Node.ofChildren("list", contactNodes));
         return socketHandler.sendQuery("get", "usync", body)
