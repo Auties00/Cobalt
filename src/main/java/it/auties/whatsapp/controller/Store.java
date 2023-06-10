@@ -29,6 +29,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
@@ -399,10 +400,10 @@ public final class Store extends Controller<Store> {
     private CompanionDevice device;
 
     /**
-     * Metadata about the associated device, only available when using the web api
+     * The os of the associated device, available only for the web api
      */
     @Setter
-    private CompanionDevice companionDevice;
+    private UserAgentPlatform companionDeviceOs;
 
     /**
      * Returns the store saved in memory or constructs a new clean instance
@@ -1405,13 +1406,13 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * Returns metadata about the associated device
-     * Only available when using the web api
+     * The os of the associated device
+     * Available only for the web api
      *
      * @return a non-null optional
      */
-    public Optional<CompanionDevice> companionDevice() {
-        return Optional.ofNullable(companionDevice);
+    public Optional<UserAgentPlatform> companionDeviceOs() {
+        return Optional.ofNullable(companionDeviceOs);
     }
 
     /**
