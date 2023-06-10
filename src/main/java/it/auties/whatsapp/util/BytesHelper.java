@@ -1,7 +1,7 @@
 package it.auties.whatsapp.util;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import lombok.NonNull;
@@ -19,10 +19,6 @@ import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
 
 @UtilityClass
 public class BytesHelper {
-    static {
-        System.setProperty("io.netty.threadLocalDirectBufferSize", "1024");
-    }
-
     public byte[] random(int length){
         var bytes = new byte[length];
         ThreadLocalRandom.current().nextBytes(bytes);
@@ -62,11 +58,15 @@ public class BytesHelper {
     }
 
     public ByteBuf newBuffer(){
-        return ByteBufUtil.threadLocalDirectBuffer();
+        return Unpooled.buffer();
+    }
+
+    public ByteBuf newBuffer(int size){
+        return Unpooled.buffer(size);
     }
 
     public ByteBuf newBuffer(byte @NonNull [] data){
-        var buffer = newBuffer();
+        var buffer = newBuffer(data.length);
         buffer.writeBytes(data);
         return buffer;
     }
