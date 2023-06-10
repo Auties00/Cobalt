@@ -277,25 +277,27 @@ public final class Keys extends Controller<Keys> {
     /**
      * Returns the Keys saved in memory or constructs a new clean instance
      *
+     * @param uuid        the uuid of the session to load, can be null
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
      * @return a non-null Keys
      */
-    public static Keys of(long phoneNumber, @NonNull ClientType clientType) {
-        return of(phoneNumber, clientType, DefaultControllerSerializer.instance());
+    public static Keys of(UUID uuid, long phoneNumber, @NonNull ClientType clientType) {
+        return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
     }
 
     /**
      * Returns the Keys saved in memory or constructs a new clean instance
      *
+     * @param uuid        the uuid of the session to load, can be null
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer              
+     * @param serializer  the non-null serializer
      * @return a non-null Keys
      */
-    public static Keys of(long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+    public static Keys of(UUID uuid, long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return ofNullable(phoneNumber, clientType, serializer)
-                .orElseGet(() -> random(null, phoneNumber, clientType, serializer));
+                .orElseGet(() -> random(uuid, phoneNumber, clientType, serializer));
     }
 
     /**
@@ -328,12 +330,13 @@ public final class Keys extends Controller<Keys> {
     /**
      * Returns the Keys saved in memory or constructs a new clean instance
      *
-     * @param alias the alias of the session to load, can be null
-     * @param clientType  the non-null type of the client
+     * @param uuid       the uuid of the session to load, can be null
+     * @param alias      the alias of the session to load, can be null
+     * @param clientType the non-null type of the client
      * @return a non-null Keys
      */
-    public static Keys of(String alias, @NonNull ClientType clientType) {
-        return of(alias, clientType, DefaultControllerSerializer.instance());
+    public static Keys of(UUID uuid, String alias, @NonNull ClientType clientType) {
+        return of(uuid, alias, clientType, DefaultControllerSerializer.instance());
     }
 
     /**
@@ -344,9 +347,9 @@ public final class Keys extends Controller<Keys> {
      * @param serializer  the non-null serializer              
      * @return a non-null Keys
      */
-    public static Keys of(String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+    public static Keys of(UUID uuid, String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return ofNullable(alias, clientType, serializer)
-                .orElseGet(() -> random(null, null, clientType, serializer, alias));
+                .orElseGet(() -> random(uuid, null, clientType, serializer, alias));
     }
 
     /**

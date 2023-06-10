@@ -460,30 +460,33 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param phoneNumber the phone number of the session to load, can be null
+     * @param uuid        the uuid of the session to load, can be null
+     * @param phoneNumber the phone number of the session to load
      * @param clientType  the non-null type of the client
      * @return a non-null store
      */
-    public static Store of(long phoneNumber, @NonNull ClientType clientType) {
-        return of(phoneNumber, clientType, DefaultControllerSerializer.instance());
+    public static Store of(UUID uuid, long phoneNumber, @NonNull ClientType clientType) {
+        return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
     }
     
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param phoneNumber the phone number of the session to load, can be null
+     * @param uuid        the uuid of the session to load, can be null
+     * @param phoneNumber the phone number of the session to load
      * @param clientType  the non-null type of the client
      * @param serializer  the non-null serializer              
      * @return a non-null store
      */
-    public static Store of(long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+    public static Store of(UUID uuid, long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return ofNullable(phoneNumber, clientType, serializer)
-                .orElseGet(() -> random(null, phoneNumber, clientType, serializer));
+                .orElseGet(() -> random(uuid, phoneNumber, clientType, serializer));
     }
 
     /**
      * Returns the store saved in memory or returns an empty optional
      *
+     * @param uuid        the uuid of the session to load, can be null
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
      * @return a non-null store
@@ -517,21 +520,22 @@ public final class Store extends Controller<Store> {
      * @param clientType  the non-null type of the client
      * @return a non-null store
      */
-    public static Store of(String alias, @NonNull ClientType clientType) {
-        return of(alias, clientType, DefaultControllerSerializer.instance());
+    public static Store of(UUID uuid, String alias, @NonNull ClientType clientType) {
+        return of(uuid, alias, clientType, DefaultControllerSerializer.instance());
     }
 
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param alias the alias of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer              
+     * @param uuid       the uuid of the session to load, can be null
+     * @param alias      the alias of the session to load, can be null
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
      * @return a non-null store
      */
-    public static Store of(String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
+    public static Store of(UUID uuid, String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return ofNullable(alias, clientType, serializer)
-                .orElseGet(() -> random(null, null, clientType, serializer, alias));
+                .orElseGet(() -> random(uuid, null, clientType, serializer, alias));
     }
 
     /**

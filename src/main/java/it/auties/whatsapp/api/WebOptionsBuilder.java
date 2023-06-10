@@ -34,12 +34,13 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     }
 
     static WebOptionsBuilder of(long phoneNumber, ControllerSerializer serializer){
-        var store = Store.of(phoneNumber, ClientType.WEB, serializer);
-        var keys = Keys.of(phoneNumber, ClientType.WEB, serializer);
+        var uuid = UUID.randomUUID();
+        var store = Store.of(uuid, phoneNumber, ClientType.WEB, serializer);
+        var keys = Keys.of(uuid, phoneNumber, ClientType.WEB, serializer);
         return new WebOptionsBuilder(store, keys);
     }
 
-    static Optional<WebOptionsBuilder> ofNullable(Long phoneNumber, ControllerSerializer serializer){
+    static Optional<WebOptionsBuilder> ofNullable(Long phoneNumber, ControllerSerializer serializer){;
         var store = Store.ofNullable(phoneNumber, ClientType.WEB, serializer);
         var keys = Keys.ofNullable(phoneNumber, ClientType.WEB, serializer);
         if(store.isEmpty() || keys.isEmpty()){
@@ -50,8 +51,9 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     }
 
     static WebOptionsBuilder of(String alias, ControllerSerializer serializer){
-        var store = Store.of(alias, ClientType.WEB, serializer);
-        var keys = Keys.of(alias, ClientType.WEB, serializer);
+        var uuid = UUID.randomUUID();
+        var store = Store.of(uuid, alias, ClientType.WEB, serializer);
+        var keys = Keys.of(uuid, alias, ClientType.WEB, serializer);
         return new WebOptionsBuilder(store, keys);
     }
 

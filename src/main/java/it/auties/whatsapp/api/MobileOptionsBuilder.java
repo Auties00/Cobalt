@@ -38,8 +38,9 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
     }
 
     static MobileOptionsBuilder of(long phoneNumber, ControllerSerializer serializer){
-        var store = Store.of(phoneNumber, ClientType.MOBILE, serializer);
-        var keys = Keys.of(phoneNumber, ClientType.MOBILE, serializer);
+        var uuid = UUID.randomUUID();
+        var store = Store.of(uuid, phoneNumber, ClientType.MOBILE, serializer);
+        var keys = Keys.of(uuid, phoneNumber, ClientType.MOBILE, serializer);
         return new MobileOptionsBuilder(store, keys);
     }
 
@@ -55,8 +56,9 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
 
 
     static MobileOptionsBuilder of(String alias, ControllerSerializer serializer){
-        var store = Store.of(alias, ClientType.MOBILE, serializer);
-        var keys = Keys.of(alias, ClientType.MOBILE, serializer);
+        var uuid = UUID.randomUUID();
+        var store = Store.of(uuid, alias, ClientType.MOBILE, serializer);
+        var keys = Keys.of(uuid, alias, ClientType.MOBILE, serializer);
         return new MobileOptionsBuilder(store, keys);
     }
 
