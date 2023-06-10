@@ -486,7 +486,6 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or returns an empty optional
      *
-     * @param uuid        the uuid of the session to load, can be null
      * @param phoneNumber the phone number of the session to load, can be null
      * @param clientType  the non-null type of the client
      * @return a non-null store
