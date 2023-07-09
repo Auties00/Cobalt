@@ -154,4 +154,16 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
         }
         return (T) this;
     }
+
+    /**
+     * Sets whether the mac of every app state patch should be validated or not
+     * By default, it's set to false
+     *
+     * @return the same instance for chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T checkPatchMacks(@NonNull boolean checkPatchMacs) {
+        store.checkPatchMacs(checkPatchMacs);
+        return (T) this;
+    }
 }

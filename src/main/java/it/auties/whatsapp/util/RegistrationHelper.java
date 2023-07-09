@@ -1,11 +1,14 @@
 package it.auties.whatsapp.util;
 
 import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.api.AsyncCaptchaCodeSupplier;
+import it.auties.whatsapp.api.AsyncVerificationCodeSupplier;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.mobile.RegistrationStatus;
+import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.request.Attributes;
@@ -25,37 +28,56 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @UtilityClass
 public class RegistrationHelper {
-    public CompletableFuture<Void> registerPhoneNumber(Store store, Keys keys, Supplier<CompletableFuture<String>> handler, VerificationCodeMethod method) {
+    public CompletableFuture<Void> registerPhoneNumber(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, AsyncCaptchaCodeSupplier captchaHandler, VerificationCodeMethod method) {
         if (method == VerificationCodeMethod.NONE) {
-            return sendVerificationCode(store, keys, handler);
+            return sendVerificationCode(store, keys, codeHandler, captchaHandler);
         }
 
-        return requestVerificationCode(store, keys, method)
-                .thenComposeAsync(ignored -> sendVerificationCode(store, keys, handler));
+        return requestVerificationCode(store, keys, method, false)
+                .thenComposeAsync(ignored -> sendVerificationCode(store, keys, codeHandler, captchaHandler));
     }
 
     public CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method) {
+        return requestVerificationCode(store, keys, method, false);
+    }
+
+    private CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
         if(method == VerificationCodeMethod.NONE){
             return CompletableFuture.completedFuture(null);
         }
 
-        return requestVerificationCodeOptions(store, keys, method)
+        return requestVerificationCodeOptions(store, keys, method, badToken)
                 .thenComposeAsync(attrs -> sendRegistrationRequest(store,"/code", attrs))
-                .thenAcceptAsync(RegistrationHelper::checkResponse)
+                .thenComposeAsync(result -> checkRequestResponse(store, keys, method, result))
                 .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
     }
 
-    private CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method) {
-        return getRegistrationOptions(store, keys,
-                Map.entry("mcc", store.phoneNumber().get().countryCode().mcc()),
-                Map.entry("mnc", store.phoneNumber().get().countryCode().mnc()),
+    private CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, VerificationCodeMethod method, HttpResponse<String> result) {
+        Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
+                "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
+        var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+        if (response.status().isSuccessful()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        if(response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
+            return requestVerificationCode(store, keys, method, true);
+        }
+
+        throw new RegistrationException(response);
+    }
+
+    private CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
+        return getRegistrationOptions(store, keys, badToken,
+                Map.entry("mcc", store.phoneNumber().orElseThrow().countryCode().mcc()),
+                Map.entry("mnc", store.phoneNumber().orElseThrow().countryCode().mnc()),
                 Map.entry("sim_mcc", "000"),
                 Map.entry("sim_mnc", "000"),
                 Map.entry("method", method.type()),
@@ -63,39 +85,57 @@ public class RegistrationHelper {
                 Map.entry("hasav", "1"));
     }
 
-    public CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, Supplier<CompletableFuture<String>> handler) {
+    public CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, AsyncVerificationCodeSupplier handler, AsyncCaptchaCodeSupplier captchaHandler) {
         return handler.get()
-                .thenComposeAsync(result -> sendVerificationCode(store, keys, result))
+                .thenComposeAsync(result -> sendVerificationCode(store, keys, result, captchaHandler, false))
                 .thenRunAsync(() -> saveRegistrationStatus(store, keys, true));
     }
 
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
         keys.registrationStatus(RegistrationStatus.REGISTERED);
         if(registered){
-            store.jid(store.phoneNumber().get().toJid());
+            store.jid(store.phoneNumber().orElseThrow().toJid());
             store.addLinkedDevice(store.jid(), 0);
         }
         keys.serialize(true);
         store.serialize(true);
     }
 
-    @SuppressWarnings("unchecked")
-    private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code) {
-        Entry<String, Object>[] data = code != null ? new Entry[]{Map.entry("code", code.replaceAll("-", "").trim())} : new Entry[0];
-        return getRegistrationOptions(store, keys, data)
+    private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code, AsyncCaptchaCodeSupplier captchaHandler, boolean badToken) {
+        return getRegistrationOptions(store, keys, badToken, Map.entry("code", normalizeCodeResult(code)))
                 .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/register", attrs))
-                .thenAcceptAsync(RegistrationHelper::checkResponse);
+                .thenComposeAsync(result -> checkVerificationResponse(store, keys, code, result, captchaHandler));
     }
 
-    private void checkResponse(HttpResponse<String> result) {
+    private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code, String captcha) {
+        return getRegistrationOptions(store, keys, false, Map.entry("code", normalizeCodeResult(code)), Map.entry("fraud_checkpoint_code", normalizeCodeResult(captcha)))
+                .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/register", attrs))
+                .thenComposeAsync(result -> checkVerificationResponse(store, keys, code, result, null));
+    }
+
+    private CompletableFuture<Void> checkVerificationResponse(Store store, Keys keys, String code, HttpResponse<String> result, AsyncCaptchaCodeSupplier captchaHandler) {
         Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
                 "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        if(response.status().isSuccessful()){
-            return;
+        if(response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
+            return sendVerificationCode(store, keys, code, captchaHandler, true);
         }
 
-        throw new RegistrationException(response);
+        if(response.errorReason() == VerificationCodeError.CAPTCHA) {
+            Objects.requireNonNull(captchaHandler, "Received captcha error, but no handler was specified in the options");
+            return captchaHandler.apply(response)
+                    .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
+        }
+
+        if (!response.status().isSuccessful()) {
+            throw new RegistrationException(response);
+        }
+
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private String normalizeCodeResult(String captcha) {
+        return captcha.replaceAll("-", "").trim();
     }
 
     private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
@@ -142,16 +182,16 @@ public class RegistrationHelper {
     }
 
     @SafeVarargs
-    private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, Entry<String, Object>... attributes) {
-        return MetadataHelper.getToken(store.phoneNumber().get().numberWithoutPrefix(), store.device().osType(), store.business())
+    private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean isRetry, Entry<String, Object>... attributes) {
+        return MetadataHelper.getToken(store.phoneNumber().orElseThrow().numberWithoutPrefix(), store.device().osType(), store.business(), !isRetry)
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 
     // TODO: Add backup token, locale and language and expid
     private Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
-                .put("cc", store.phoneNumber().get().countryCode().prefix())
-                .put("in", store.phoneNumber().get().numberWithoutPrefix())
+                .put("cc", store.phoneNumber().orElseThrow().countryCode().prefix())
+                .put("in", store.phoneNumber().orElseThrow().numberWithoutPrefix())
                 .put("rc", store.releaseChannel().index())
                 .put("lg", "en")
                 .put("lc", "GB") // Locale

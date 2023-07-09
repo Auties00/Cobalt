@@ -1,4 +1,4 @@
-package it.auties.whatsapp.test;
+package it.auties.whatsapp.update;
 
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.github.GithubSecrets;

@@ -11,6 +11,7 @@ public enum VerificationCodeError {
     GENERAL_ERROR("error"),
     TOKEN_ERROR("token-error"),
     BAD_PARAM("bad_param"),
+    BAD_TOKEN("bad_token"),
     MISSING_PARAM("missing_param"),
     TOO_MANY_GUESSES("too_many_guesses"),
     UNKNOWN("unknown"),
@@ -27,7 +28,9 @@ public enum VerificationCodeError {
     TOO_MANY("too_many"),
     NEXT_METHOD("next_method"),
     WRONG_CODE("mismatch"),
-    OLD_VERSION("old_version");
+    OLD_VERSION("old_version"),
+
+    CAPTCHA("code_checkpoint");
 
     private final String data;
 

@@ -1,7 +1,8 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
+import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
@@ -12,8 +13,12 @@ public class MobileTest {
     public void run() {
         Whatsapp.mobileBuilder()
                 .lastConnection()
+                .business(true)
                 .unregistered()
-                .register(16059009994L, VerificationCodeMethod.SMS ,  MobileTest::onScanCode)
+                .verificationCodeMethod(VerificationCodeMethod.SMS)
+                .verificationCodeSupplier(MobileTest::onScanCode)
+                .verificationCaptchaSupplier(MobileTest::onCaptcha)
+                .register(16059009994L)
                 .join()
                 .addLoggedInListener(api -> {
                     api.unlinkDevices().join();
@@ -36,6 +41,12 @@ public class MobileTest {
     private static CompletableFuture<String> onScanCode() {
         System.out.println("Enter OTP: ");
         var scanner = new Scanner(System.in);
-        return CompletableFuture.completedFuture(scanner.nextLine().trim());
+        return CompletableFuture.completedFuture(scanner.nextLine());
+    }
+
+    private static CompletableFuture<String> onCaptcha(VerificationCodeResponse response) {
+        System.out.println("Enter captcha: ");
+        var scanner = new Scanner(System.in);
+        return CompletableFuture.completedFuture(scanner.nextLine());
     }
 }

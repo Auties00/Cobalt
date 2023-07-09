@@ -57,4 +57,7 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.button.template;
     exports it.auties.whatsapp.exception;
     exports it.auties.whatsapp.model.companion;
+    exports it.auties.whatsapp.model.signal.session;
+    exports it.auties.whatsapp.model.signal.auth;
+    exports it.auties.whatsapp.model.sync;
 }

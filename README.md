@@ -123,7 +123,7 @@ Here are two examples:
                 .unregistered()
                 .register(yourPhoneNumber, () -> {
                    System.out.println("Enter OTP: ");
-                   return new Scanner(System.in).nextLine().trim();
+                   return new Scanner(System.in).nextLine();
                 })
                 .join()
                 .addLoggedInListener(() -> System.out.println("Connected"))

@@ -406,6 +406,13 @@ public final class Store extends Controller<Store> {
     private UserAgentPlatform companionDeviceOs;
 
     /**
+     * Whether the mac of every app state request should be checked
+     */
+    @Getter
+    @Setter
+    private boolean checkPatchMacs = false;
+
+    /**
      * Returns the store saved in memory or constructs a new clean instance
      *
      * @param uuid        the uuid of the session to load, can be null
@@ -608,7 +615,7 @@ public final class Store extends Controller<Store> {
     private static CompanionDevice getDefaultDevice(ClientType clientType) {
         return switch (clientType) {
             case WEB -> CompanionDevice.windows();
-            case MOBILE -> CompanionDevice.ios();
+            case MOBILE -> CompanionDevice.android();
         };
     }
 

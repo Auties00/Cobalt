@@ -1,4 +1,4 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;

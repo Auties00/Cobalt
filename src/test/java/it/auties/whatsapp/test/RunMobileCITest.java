@@ -103,7 +103,9 @@ public class RunMobileCITest implements Listener {
             api = Whatsapp.mobileBuilder()
                     .lastConnection()
                     .unregistered()
-                    .register(393495089819L, VerificationCodeMethod.CALL, this::onScanCode)
+                    .verificationCodeMethod(VerificationCodeMethod.CALL)
+                    .verificationCodeSupplier(this::onScanCode)
+                    .register(393495089819L)
                     .join()
                     .addListener(this);
             return;
@@ -116,7 +118,7 @@ public class RunMobileCITest implements Listener {
     private CompletableFuture<String> onScanCode() {
         System.out.println("Enter OTP: ");
         var scanner = new Scanner(System.in);
-        return CompletableFuture.completedFuture(scanner.nextLine().trim());
+        return CompletableFuture.completedFuture(scanner.nextLine());
     }
 
     @SneakyThrows
