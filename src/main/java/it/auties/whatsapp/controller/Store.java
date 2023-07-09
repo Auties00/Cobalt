@@ -410,6 +410,7 @@ public final class Store extends Controller<Store> {
      */
     @Getter
     @Setter
+    @Default
     private boolean checkPatchMacs = false;
 
     /**
