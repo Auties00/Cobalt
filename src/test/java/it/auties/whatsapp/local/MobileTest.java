@@ -2,8 +2,10 @@ package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.message.standard.AudioMessage;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.utils.MediaUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
@@ -23,7 +25,12 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");
-                    api.disable2fa().join();
+                    var audio = AudioMessage.simpleBuilder()
+                            .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
+                            .voiceMessage(true)
+                            .build();
+                    api.sendMessage(ContactJid.of(393495089819L), "Hello").join();
+                    api.sendMessage(ContactJid.of(393495089819L), audio).join();
                 })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

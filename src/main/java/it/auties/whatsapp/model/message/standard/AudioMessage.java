@@ -135,6 +135,7 @@ public final class AudioMessage extends MediaMessage {
                 .duration(Medias.getDuration(media))
                 .mimetype(getMimeType(media, mimeType))
                 .voiceMessage(voiceMessage)
+                .waveform(Medias.getAudioWaveForm(media).orElse(null))
                 .build();
     }
 

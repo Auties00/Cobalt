@@ -18,10 +18,7 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
@@ -32,12 +29,14 @@ import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.IntStream;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -250,7 +249,7 @@ public class Medias {
         var input = createTempFile(file);
         try {
             var process = Runtime.getRuntime()
-                    .exec("ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s".formatted(input));
+                    .exec(new String[]{"ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", input.toString()});
             if (process.waitFor() != 0) {
                 return 0;
             }
@@ -277,7 +276,7 @@ public class Medias {
             var input = createTempFile(file);
             try {
                 var process = Runtime.getRuntime()
-                        .exec("ffprobe -v error -select_streams v -show_entries stream=width,height -of json %s".formatted(input));
+                        .exec(new String[]{"ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height", "-of", "json", input.toString()});
                 if (process.waitFor() != 0) {
                     return MediaDimensions.DEFAULT;
                 }
@@ -349,7 +348,7 @@ public class Medias {
         var output = createTempFile(null);
         try {
             var process = Runtime.getRuntime()
-                    .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input, THUMBNAIL_SIZE, output));
+                    .exec(new String[]{"ffmpeg", "-ss", "00:00:00", "-i", input.toString(), "-y", "-vf", "scale=%s:-1".formatted(THUMBNAIL_SIZE), "-vframes", "1", "-f", "image2", output.toString()});
             if (process.waitFor() != 0) {
                 return Optional.empty();
             }
@@ -417,5 +416,38 @@ public class Medias {
 
     private record FfprobeResult(List<MediaDimensions> streams) {
 
+    }
+
+    public Optional<byte[]> getAudioWaveForm(byte[] audioData) {
+        try {
+            var rawData = toFloatArray(audioData);
+            var samples = 64;
+            var blockSize = rawData.length / samples;
+            var filteredData = IntStream.range(0, samples)
+                    .map(i -> blockSize * i)
+                    .map(blockStart -> IntStream.range(0, blockSize)
+                            .map(j -> (int) Math.abs(rawData[blockStart + j]))
+                            .sum())
+                    .mapToObj(sum -> sum / blockSize)
+                    .toList();
+            var multiplier = Math.pow(Collections.max(filteredData), -1);
+            var normalizedData = filteredData.stream()
+                    .map(data -> (byte)  Math.abs(100 * data * multiplier))
+                    .toList();
+            var waveform = new byte[normalizedData.size()];
+            IntStream.range(0, normalizedData.size())
+                    .forEach(i -> waveform[i] = normalizedData.get(i));
+            return Optional.of(waveform);
+        } catch (Throwable throwable) {
+            return Optional.empty();
+        }
+    }
+
+    private float[] toFloatArray(byte[] audioData) {
+        var rawData = new float[audioData.length / 4];
+        ByteBuffer.wrap(audioData)
+                .asFloatBuffer()
+                .get(rawData);
+        return rawData;
     }
 }
