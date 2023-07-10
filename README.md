@@ -603,6 +603,8 @@ All types of messages supported by Whatsapp are supported by this library:
     ```
 
 - Button
+
+  > **_IMPORTANT:_** This feature is deprecated and doesn't work properly as Whatsapp has some limitations in place: only use it if you know what you are doing
    
    Here is how you create a button:
    ```java
