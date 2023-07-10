@@ -162,7 +162,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T checkPatchMacks(@NonNull boolean checkPatchMacs) {
+    public T checkPatchMacks(boolean checkPatchMacs) {
         store.checkPatchMacs(checkPatchMacs);
         return (T) this;
     }
