@@ -118,8 +118,10 @@ public class SocketSession {
                     break;
                 }
                 var message = new byte[length];
-                input.readFully(message);
-                listener.onMessage(message);
+                if(isOpen()) {
+                    input.readFully(message);
+                    listener.onMessage(message);
+                }
             }
         } catch(Throwable throwable) {
             listener.onError(throwable);

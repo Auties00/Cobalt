@@ -108,7 +108,7 @@ class StreamHandler {
 
     private void digestFailure(Node node) {
         var reason = node.attributes().getInt("reason");
-        if (reason == 401 || reason == 403) {
+        if (reason == 401 || reason == 403 || reason == 405) {
             socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             return;
         }

@@ -99,6 +99,8 @@ If you are trying to implement a feature that is present on WhatsappWeb's WebCli
 consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer), a tool I
 built for this exact purpose.
 
+> **_IMPORTANT:_** Enable "Delegate build actions to Maven" while working on this project or a NoSuchElementException will be thrown
+
 ### Disclaimer about async operations 
 This library heavily depends on async operations using the CompletableFuture construct.
 Remember to handle them as your application will terminate without doing anything if the main thread is not executing any task.
@@ -121,10 +123,11 @@ Here are two examples:
       Whatsapp.mobileBuilder()
                 .newConnection()
                 .unregistered()
-                .register(yourPhoneNumber, () -> {
+                .verificationCodeSupplier(() -> {
                    System.out.println("Enter OTP: ");
                    return new Scanner(System.in).nextLine();
                 })
+                .register(yourPhoneNumber)
                 .join()
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
@@ -151,6 +154,18 @@ Now select the type of connection that you need:
   ```java
   .newConnection(someUuid)
   ```   
+- Retrieve a connection by id if available, otherwise create a new one
+  ```java
+  .newConnection(someUuid)
+  ```
+- Retrieve a connection by phone number if available, otherwise create a new one
+  ```java
+  .newConnection(phoneNumber)
+  ```
+- Retrieve a connection by an alias if available, otherwise create a new one
+  ```java
+  .newConnection(alias)
+  ```
 - Retrieve the first connection that was serialized if available, otherwise create a new one
   ```java
   .firstConnection()
@@ -158,10 +173,6 @@ Now select the type of connection that you need:
 - Retrieve the last connection that was serialized if available, otherwise create a new one
   ```java
   .lastConnection()
-  ```
-- Retrieve a connection by id if available, otherwise create a new one
-  ```java
-  .knownConnection(someUuid)
   ```
 You can now customize the API with these options:
 - name - The device's name for Whatsapp Web, the push name for Whatsapp's Mobile (Serialized)
@@ -179,6 +190,10 @@ You can now customize the API with these options:
 - textPreviewSetting - Whether a media preview should be generated for text messages containing links (Serialized)
   ```java
   .textPreviewSetting(TextPreviewSetting.ENABLED_WITH_INFERENCE)
+  ```
+- checkPatchMacs - Whether patch macs coming from app state pulls should be validated (Serialized)
+  ```java
+  .checkPatchMacs(checkPatchMacs)
   ```
 - errorHandler - The error handler to use for this session (Not serialized, specify this every time)
   ```java
@@ -207,17 +222,19 @@ Otherwise, if you are using the mobile api, select the registration status of yo
   .unverified()
   ```
   Finally, use:
+  Specify a verificationCodeSupplier to get the OTP and a verificationCaptchaSupplier to resolve the captcha if you are registering a business account.
   ```java
-  .verify(this::getOTPLogic)
+  .verify()
   ```
   to verify the account (this doesn't create a connection to Whatsapp's Socket, it uses the HTTP api)
-- Creates a new session from an unregistered phone number: this means that the OTP wasn't sent to the companion as an SMS/Call and that it wasn't forwarded Whatsapp
+- Creates a new session from an unregistered phone number: this means that the OTP wasn't sent to the companion as an SMS/Call
   ```java
   .unregistered()
   ```
+  Specify a verificationCodeSupplier to get the OTP and a verificationCaptchaSupplier to resolve the captcha if you are registering a business account.
   Finally, use:
   ```java
-  .register(phoneNumber, this::getOTPLogic)
+  .register(phoneNumber)
   ```
   to register the account (this doesn't create a connection to Whatsapp's Socket, it uses the HTTP api)
 

@@ -1284,10 +1284,27 @@ public class Whatsapp {
         var key = HexFormat.of().formatHex(BytesHelper.random(12));
         var body = Node.ofChildren("create", Map.of("subject", subject, "key", key), children);
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
-                .thenApplyAsync(response -> Optional.ofNullable(response)
-                        .flatMap(node -> node.findNode("group"))
-                        .orElseThrow(() -> new NoSuchElementException("Missing group response, something went wrong: %s".formatted(findErrorNode(response)))))
-                .thenApplyAsync(GroupMetadata::of);
+                .thenApplyAsync(this::parseGroupResponse);
+    }
+
+    private GroupMetadata parseGroupResponse(Node response) {
+        return Optional.ofNullable(response)
+                .flatMap(node -> node.findNode("group"))
+                .map(GroupMetadata::of)
+                .map(this::addNewGroup)
+                .orElseThrow(() -> new NoSuchElementException("Missing group response, something went wrong: %s".formatted(findErrorNode(response))));
+    }
+
+    private GroupMetadata addNewGroup(GroupMetadata result) {
+        var chat = Chat.builder()
+                .jid(result.jid())
+                .description(result.description().orElse(null))
+                .participants(result.participants())
+                .founder(result.founder().orElse(null))
+                .foundationTimestampSeconds(result.foundationTimestamp().toEpochSecond())
+                .build();
+        store().addChat(chat);
+        return result;
     }
 
     private String findErrorNode(Node result) {

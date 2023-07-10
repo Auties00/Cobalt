@@ -104,7 +104,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @param alias the nullable alias to use to create the connection
      * @return a non-null options selector
      */
-    public Optional<T>  newOptionalConnection(String alias) {
+    public Optional<T> newOptionalConnection(String alias) {
         return createOptionalConnection(alias);
     }
 
