@@ -2453,11 +2453,23 @@ public class Whatsapp {
     }
 
     /**
-     * Gets the verified name certificate
+     * Enables two-factor authentication
      *
+     * @param code the six digits non-null numeric code
      * @return a future
      */
-    public CompletableFuture<?> enable2fa(@NonNull String code, String email) {
+    public CompletableFuture<?> enable2fa(@NonNull String code) {
+        return set2fa(code, null);
+    }
+
+    /**
+     * Enables two-factor authentication
+     *
+     * @param code  the six digits non-null numeric code
+     * @param email the nullable recovery email
+     * @return a future
+     */
+    public CompletableFuture<Boolean> enable2fa(@NonNull String code, String email) {
         return set2fa(code, email);
     }
 
@@ -2466,11 +2478,11 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public CompletableFuture<?> disable2fa() {
+    public CompletableFuture<Boolean> disable2fa() {
         return set2fa(null, null);
     }
 
-    private CompletableFuture<?> set2fa(String code, String email) {
+    private CompletableFuture<Boolean> set2fa(String code, String email) {
         Validate.isTrue(code == null || (code.matches("^[0-9]*$") && code.length() == 6),
                 "Invalid 2fa code: expected a numeric six digits string");
         Validate.isTrue(email == null || isValidEmail(email),
@@ -2480,7 +2492,8 @@ public class Whatsapp {
         if(code != null && email != null){
             body.add(Node.of("email", email.getBytes(StandardCharsets.UTF_8)));
         }
-        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:account", Node.of("2fa", body));
+        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:account", Node.of("2fa", body))
+                .thenApplyAsync(result -> !result.hasNode("error"));
     }
 
     /**

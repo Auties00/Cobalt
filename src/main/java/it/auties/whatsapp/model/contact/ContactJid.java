@@ -140,6 +140,16 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     /**
+     * Constructs a new ContactId for a user from a jid
+     *
+     * @param jid the non-null jid of the user
+     * @return a non-null contact jid
+     */
+    public static ContactJid of(@NonNull long jid) {
+        return of(String.valueOf(jid), Server.WHATSAPP);
+    }
+
+    /**
      * Returns the type of this jid
      *
      * @return a non null type

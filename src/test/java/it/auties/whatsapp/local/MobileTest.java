@@ -1,6 +1,7 @@
 package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import org.junit.jupiter.api.Test;
@@ -18,11 +19,11 @@ public class MobileTest {
                 .verificationCodeMethod(VerificationCodeMethod.SMS)
                 .verificationCodeSupplier(MobileTest::onScanCode)
                 .verificationCaptchaSupplier(MobileTest::onCaptcha)
-                .register(16059009994L)
+                .register(19176199769L)
                 .join()
                 .addLoggedInListener(api -> {
-                    api.unlinkDevices().join();
-                    api.linkDevice("2@oTI3JSmBc2ZWVdS6MGmDz7h0MErmaOWqJMAP+PG0bSnGJIs31E9Wdft17SEj1sjx3Ye4OlV6L7bV7g==,kVLGobUkIdhMKlW+ss4ZG7PHr3tPNPpT21YM4pzSAgE=,rxCRpPY38BS188pJE73NiVTtGuUHjbNS7q295EHWZHY=,PsezYgJB4eycVv32Yf1LKeRiDrcDF5TML91Q1Wrgjzs=,1").join();
+                    System.out.println("Connected");
+                    api.disable2fa().join();
                 })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

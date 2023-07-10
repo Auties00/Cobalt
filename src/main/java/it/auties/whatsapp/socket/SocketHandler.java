@@ -674,7 +674,7 @@ public class SocketHandler implements SocketListener {
         if(!loginFuture.isDone()) {
             loginFuture.complete(null);
         }
-        callListenersSync(listener -> {
+        callListenersAsync(listener -> {
             listener.onLoggedIn(whatsapp);
             listener.onLoggedIn();
         });
@@ -698,7 +698,7 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void onChats() {
-        callListenersSync(listener -> {
+        callListenersAsync(listener -> {
             listener.onChats(whatsapp, store().chats());
             listener.onChats(store().chats());
         });
@@ -712,7 +712,7 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void onContacts() {
-        callListenersSync(listener -> {
+        callListenersAsync(listener -> {
             listener.onContacts(whatsapp, store().contacts());
             listener.onContacts(store().contacts());
         });
