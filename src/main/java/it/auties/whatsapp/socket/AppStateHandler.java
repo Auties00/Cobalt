@@ -102,7 +102,7 @@ class AppStateHandler {
         var syncAttributes = Attributes.of()
                 .put("data_namespace", 3, mobile)
                 .toMap();
-        var sync = Node.ofChildren("sync", syncAttributes, body);
+        var sync = Node.of("sync", syncAttributes, body);
         return socketHandler.sendQuery("set", "w:sync:app:state", sync)
                 .thenRunAsync(() -> onPush(jid, requests, readPatches));
     }
@@ -174,7 +174,7 @@ class AppStateHandler {
                 .put("return_snapshot", false, !mobile)
                 .put("order", request.type() != BinaryPatchType.CRITICAL_UNBLOCK_LOW ? "1" : "0", mobile)
                 .toMap();
-        return Node.ofChildren("collection", collectionAttributes,
+        return Node.of("collection", collectionAttributes,
                 Node.of("patch", Protobuf.writeMessage(request.sync())));
     }
 
@@ -242,7 +242,7 @@ class AppStateHandler {
     private CompletableFuture<Boolean> pullUninterruptedly(ContactJid jid, Set<BinaryPatchType> patchTypes) {
         var tempStates = new HashMap<BinaryPatchType, LTHashState>();
         var nodes = getPullNodes(jid, patchTypes, tempStates);
-        return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
+        return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync", nodes))
                 .thenApplyAsync(this::parseSyncRequest)
                 .thenApplyAsync(records -> decodeSyncs(jid, tempStates, records))
                 .thenComposeAsync(remaining -> handlePullResult(jid, remaining))

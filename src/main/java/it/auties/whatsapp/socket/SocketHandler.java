@@ -102,6 +102,8 @@ public class SocketHandler implements SocketListener {
 
     private ExecutorService listenersService;
 
+    private Node lastNode;
+
     public static boolean isConnected(@NonNull UUID uuid){
         return connectedUuids.contains(uuid);
     }
@@ -191,6 +193,9 @@ public class SocketHandler implements SocketListener {
         var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey());
         var decoder = new BinaryDecoder();
         var node = decoder.decode(plainText);
+        if(!node.hasDescription("bad-mac")) {
+            this.lastNode = node;
+        }
         onNodeReceived(node);
         store.resolvePendingRequest(node, false);
         streamHandler.digest(node);
@@ -354,7 +359,7 @@ public class SocketHandler implements SocketListener {
                 .put("to", to)
                 .put("xmlns", category, Objects::nonNull)
                 .toMap();
-        return sendWithNoResponse(Node.ofChildren("iq", attributes, body));
+        return sendWithNoResponse(Node.of("iq", attributes, body));
     }
 
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
@@ -377,14 +382,14 @@ public class SocketHandler implements SocketListener {
 
     public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(@NonNull ContactJidProvider chat) {
         var query = Node.of("status");
-        var body = Node.ofAttributes("user", Map.of("jid", chat.toJid()));
+        var body = Node.of("user", Map.of("jid", chat.toJid()));
         return sendInteractiveQuery(query, body).thenApplyAsync(this::parseStatus);
     }
 
     public CompletableFuture<List<Node>> sendInteractiveQuery(Node queryNode, Node... queryBody) {
-        var query = Node.ofChildren("query", queryNode);
-        var list = Node.ofChildren("list", queryBody);
-        var sync = Node.ofChildren("usync",
+        var query = Node.of("query", queryNode);
+        var list = Node.of("list", queryBody);
+        var sync = Node.of("usync",
                 Map.of("sid", UUID.randomUUID().toString(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
         return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
@@ -419,7 +424,7 @@ public class SocketHandler implements SocketListener {
                 .put("to", to)
                 .put("xmlns", category, Objects::nonNull)
                 .toMap();
-        return send(Node.ofChildren("iq", attributes, body));
+        return send(Node.of("iq", attributes, body));
     }
 
     public CompletableFuture<Node> send(Node node) {
@@ -437,7 +442,7 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
-        var body = Node.ofAttributes("picture", Map.of("query", "url", "type", "image"));
+        var body = Node.of("picture", Map.of("query", "url", "type", "image"));
         if (chat.toJid().hasServer(Server.GROUP)) {
             return queryGroupMetadata(chat.toJid())
                     .thenComposeAsync(result -> sendQuery("get", "w:profile:picture", Map.of(result.community() ? "parent_group_jid" : "target", chat.toJid()), body))
@@ -459,7 +464,8 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<List<ContactJid>> queryBlockList() {
-        return sendQuery("get", "blocklist", (Node) null).thenApplyAsync(this::parseBlockList);
+        return sendQuery("get", "blocklist", (Node) null)
+                .thenApplyAsync(this::parseBlockList);
     }
 
     private List<ContactJid> parseBlockList(Node result) {
@@ -473,12 +479,12 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> subscribeToPresence(ContactJidProvider jid) {
-        var node = Node.ofAttributes("presence", Map.of("to", jid.toJid(), "type", "subscribe"));
+        var node = Node.of("presence", Map.of("to", jid.toJid(), "type", "subscribe"));
         return sendWithNoResponse(node);
     }
 
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJidProvider group) {
-        var body = Node.ofAttributes("query", Map.of("request", "interactive"));
+        var body = Node.of("query", Map.of("request", "interactive"));
         return sendQuery(group.toJid(), "get", "w:g2", body)
                 .thenApplyAsync(response -> handleGroupMetadata(group, response));
     }
@@ -518,7 +524,7 @@ public class SocketHandler implements SocketListener {
             attributes.put("to", jid);
             attributes.put("participant", participant, Objects::nonNull);
         }
-        var receipt = Node.ofChildren("receipt", attributes.toMap(), toMessagesNode(messages));
+        var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
         sendWithNoResponse(receipt);
     }
 
@@ -528,7 +534,7 @@ public class SocketHandler implements SocketListener {
         }
         return messages.subList(1, messages.size())
                 .stream()
-                .map(id -> Node.ofAttributes("item", Map.of("id", id)))
+                .map(id -> Node.of("item", Map.of("id", id)))
                 .toList();
     }
 
@@ -545,7 +551,7 @@ public class SocketHandler implements SocketListener {
                 .put("recipient", attrs.getNullableString("recipient"), Objects::nonNull)
                 .put("type", type, Objects::nonNull)
                 .toMap();
-        sendWithNoResponse(Node.ofAttributes("ack", attributes));
+        sendWithNoResponse(Node.of("ack", attributes));
     }
 
     protected void onRegistrationCode(long code) {
@@ -761,8 +767,8 @@ public class SocketHandler implements SocketListener {
 
     public void updateUserName(String newName, String oldName) {
         if (oldName != null && !Objects.equals(newName, oldName)) {
-            sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", oldName, "type", "unavailable")));
-            sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", newName, "type", "available")));
+            sendWithNoResponse(Node.of("presence", Map.of("name", oldName, "type", "unavailable")));
+            sendWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")));
             onUserNameChange(newName, oldName);
         }
         var self = store().jid().toWhatsappJid();
@@ -868,7 +874,7 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<List<BusinessCategory>> queryBusinessCategories() {
-            return sendQuery("get", "fb:thrift_iq", Node.ofChildren("request", Map.of("op", "profile_typeahead", "type", "catkit", "v", "1"), Node.ofChildren("query", List.of())))
+            return sendQuery("get", "fb:thrift_iq", Node.of("request", Map.of("op", "profile_typeahead", "type", "catkit", "v", "1"), Node.of("query", List.of())))
                     .thenApplyAsync(this::parseBusinessCategories);
     }
 
@@ -880,5 +886,9 @@ public class SocketHandler implements SocketListener {
                 .flatMap(Collection::stream)
                 .map(BusinessCategory::of)
                 .toList();
+    }
+
+    Node lastNode() {
+        return lastNode;
     }
 }

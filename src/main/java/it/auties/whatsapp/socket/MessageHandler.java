@@ -184,7 +184,7 @@ class MessageHandler {
             if (request.peer()) {
                 body.addAll(preKeys);
             } else {
-                body.add(Node.ofChildren("participants", preKeys));
+                body.add(Node.of("participants", preKeys));
             }
         }
 
@@ -207,7 +207,7 @@ class MessageHandler {
                 .put("device_fanout", false, request.info().message().type() == MessageType.BUTTONS)
                 .put("push_priority", "high", isAppStateKeyShare(request))
                 .toMap();
-        return Node.ofChildren("message", attributes, body);
+        return Node.of("message", attributes, body);
     }
 
     private boolean isAppStateKeyShare(MessageSendRequest request) {
@@ -258,13 +258,13 @@ class MessageHandler {
     protected CompletableFuture<Void> querySessions(List<ContactJid> contacts, boolean force) {
         var missingSessions = contacts.stream()
                 .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
-                .map(contact -> Node.ofAttributes("user", Map.of("jid", contact)))
+                .map(contact -> Node.of("user", Map.of("jid", contact)))
                 .toList();
         return missingSessions.isEmpty() ? CompletableFuture.completedFuture(null) : querySession(missingSessions);
     }
 
     private CompletableFuture<Void> querySession(List<Node> children){
-        return socketHandler.sendQuery("get", "encrypt", Node.ofChildren("key", children))
+        return socketHandler.sendQuery("get", "encrypt", Node.of("key", children))
                 .thenAcceptAsync(this::parseSessions);
     }
 
@@ -278,7 +278,7 @@ class MessageHandler {
         var cipher = new SessionCipher(contact.toSignalAddress(), socketHandler.keys());
         var encrypted = cipher.encrypt(message);
         var messageNode = createMessageNode(request, encrypted);
-        return peer ? messageNode : Node.ofChildren("to", Map.of("jid", contact), messageNode);
+        return peer ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
     }
 
     private CompletableFuture<List<ContactJid>> getGroupRetryDevices(ContactJid contactJid) {
@@ -296,12 +296,12 @@ class MessageHandler {
 
     private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
         var contactNodes = contacts.stream()
-                .map(contact -> Node.ofAttributes("user", Map.of("jid", contact)))
+                .map(contact -> Node.of("user", Map.of("jid", contact)))
                 .toList();
-        var body = Node.ofChildren("usync",
+        var body = Node.of("usync",
                 Map.of("sid", UUID.randomUUID().toString(), "mode", "query", "last", "true", "index", "0", "context", "message"),
-                Node.ofChildren("query", Node.ofAttributes("devices", Map.of("version", "2"))),
-                Node.ofChildren("list", contactNodes));
+                Node.of("query", Node.of("devices", Map.of("version", "2"))),
+                Node.of("list", contactNodes));
         return socketHandler.sendQuery("get", "usync", body)
                 .thenApplyAsync(result -> parseDevices(result, excludeSelf));
     }
@@ -367,7 +367,6 @@ class MessageHandler {
         var key = node.findNode("key")
                 .flatMap(SignalSignedKeyPair::of)
                 .orElse(null);
-        System.out.println("Generating identity for " +  jid);
         var builder = new SessionBuilder(jid.toSignalAddress(), socketHandler.keys());
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
@@ -658,8 +657,7 @@ class MessageHandler {
         }
 
         socketHandler.pullInitialPatches()
-                .exceptionallyAsync(throwable -> socketHandler
-                        .handleFailure(UNKNOWN, throwable));
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(UNKNOWN, throwable));
     }
 
     private void onHistorySyncNotification(MessageInfo info, ProtocolMessage protocolMessage) {

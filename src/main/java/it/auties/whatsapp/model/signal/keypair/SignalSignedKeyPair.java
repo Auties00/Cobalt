@@ -37,7 +37,7 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
     }
 
     public Node toNode() {
-        return Node.ofChildren("skey", Node.of("id", encodedId()), Node.of("value", publicKey()), Node.of("signature", signature()));
+        return Node.of("skey", Node.of("id", encodedId()), Node.of("value", publicKey()), Node.of("signature", signature()));
     }
 
     @Override

@@ -18,7 +18,7 @@ public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privat
 
     @Override
     public Node toNode() {
-        return Node.ofChildren("key", Node.of("id", encodedId()), Node.of("value", publicKey()));
+        return Node.of("key", Node.of("id", encodedId()), Node.of("value", publicKey()));
     }
 
     @Override

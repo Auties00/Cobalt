@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static it.auties.whatsapp.model.request.Node.ofAttributes;
+import static it.auties.whatsapp.model.request.Node.of;
 
 @AllArgsConstructor
 @Builder
@@ -47,7 +47,7 @@ public class LTHashState {
                 .put("version", version)
                 .put("return_snapshot", version == 0)
                 .toMap();
-        return ofAttributes("collection", attributes);
+        return of("collection", attributes);
     }
 
     public LTHashState copy() {

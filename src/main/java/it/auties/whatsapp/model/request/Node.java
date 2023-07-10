@@ -9,16 +9,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to
- * communicate with the client
+ * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client
  *
  * @param description a non-null String that describes the content of this node
  * @param attributes  a non-null Map that describes the metadata of this object
- * @param content     a nullable object: a List of {@link Node}, a {@link String} or a
- *                    {@link Number}
+ * @param content     a nullable object: a List of {@link Node}, a {@link String} or a {@link Number}
  */
-public record Node(@NonNull String description, @NonNull Attributes attributes,
-                   Object content) {
+public record Node(@NonNull String description, @NonNull Attributes attributes, Object content) {
     /**
      * Constructs a Node that only provides a non-null tag
      *
@@ -32,95 +29,143 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
     /**
      * Constructs a Node that provides a non-null tag and a nullable content
      *
-     * @param description a non-null String that describes the data that this object holds
-     * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a
-     *                    {@link Number}
+     * @param description         a non-null String that describes the data that this object holds
+     * @param contentOrAttributes a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}, or the request's attributes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, Object content) {
-        return new Node(description, Attributes.of(), content);
+    public static Node of(@NonNull String description, Object contentOrAttributes) {
+        if (contentOrAttributes instanceof Attributes attributes) {
+            return new Node(description, attributes, null);
+        }
+
+        if (contentOrAttributes instanceof Map<?, ?> attributes) {
+            try {
+                return new Node(description, getAttributesOrThrow(attributes), null);
+            } catch (ClassCastException exception) {
+                throw new IllegalArgumentException("Unexpected attributes type: " + contentOrAttributes.getClass().getName(), exception);
+            }
+        }
+
+        if (contentOrAttributes instanceof List<?> list) {
+            try {
+                return new Node(description, Attributes.of(), getNodesOrThrow(list));
+            } catch (ClassCastException exception) {
+                throw new IllegalArgumentException("Unexpected attributes type: " + contentOrAttributes.getClass().getName(), exception);
+            }
+        }
+
+        if (contentOrAttributes instanceof Node node) {
+            return new Node(description, Attributes.of(), List.of(node));
+        }
+
+        return new Node(description, Attributes.of(), contentOrAttributes);
     }
 
     /**
-     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable
-     * content
+     * Constructs a Node that provides a non-null tag and a nullable content
      *
      * @param description a non-null String that describes the data that this object holds
-     * @param attributes  a non-null Map that describes the metadata of this object
-     * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a
-     *                    {@link Number}
+     * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, @NonNull Map<String, Object> attributes, Object content) {
-        return new Node(description, Attributes.ofNullable(attributes), content);
+    public static Node of(@NonNull String description, Node... content) {
+        return new Node(description, Attributes.of(), getNodesOrThrow(content));
     }
 
     /**
-     * Constructs a Node that provides a non-null tag and a non-null map of attributes
+     * Constructs a Node that provides a non-null tag and a nullable content
      *
      * @param description a non-null String that describes the data that this object holds
-     * @param attributes  a non-null Map that describes the metadata of this object
+     * @param attributes  the attributes of this node
+     * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node ofAttributes(@NonNull String description, @NonNull Map<String, Object> attributes) {
-        return new Node(description, Attributes.ofNullable(attributes), null);
-    }
-
-
-    /**
-     * Constructs a Node that provides a non-null tag and a nullable var-args of children
-     *
-     * @param description a non-null String that describes the data that this object holds
-     * @param children    the nullable children of this node
-     * @return a new node with the above characteristics
-     */
-    public static Node ofChildren(@NonNull String description, Node... children) {
-        return ofChildren(description, Arrays.asList(children));
+    public static Node of(@NonNull String description, Map<String, Object> attributes, Node... content) {
+        return of(description, Attributes.of(attributes), getNodesOrThrow(content));
     }
 
     /**
-     * Constructs a Node that provides a non-null tag and a nullable var-args of children
+     * Constructs a Node that provides a non-null tag and a nullable content
      *
      * @param description a non-null String that describes the data that this object holds
-     * @param children    the nullable children of this node
+     * @param attributes  the attributes of this node
+     * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node ofChildren(@NonNull String description, Collection<Node> children) {
-        return new Node(description, Attributes.of(), requireNonNullNodes(children));
+    public static Node of(@NonNull String description, Attributes attributes, Node... content) {
+        return new Node(description, attributes, getNodesOrThrow(content));
     }
 
-    private static List<Node> requireNonNullNodes(Collection<Node> nodes) {
-        if (nodes == null) {
+    /**
+     * Constructs a Node that provides a non-null tag and a nullable content
+     *
+     * @param description a non-null String that describes the data that this object holds
+     * @param attributes  the attributes of this node
+     * @param content     any number of non-null nodes
+     * @return a new node with the above characteristics
+     */
+    public static Node of(@NonNull String description, Map<String, Object> attributes, Object content) {
+        return of(description, Attributes.of(attributes), content);
+    }
+
+    /**
+     * Constructs a Node that provides a non-null tag and a nullable content
+     *
+     * @param description a non-null String that describes the data that this object holds
+     * @param attributes  the attributes of this node
+     * @param content     any number of non-null nodes
+     * @return a new node with the above characteristics
+     */
+    public static Node of(@NonNull String description, Attributes attributes, Object content) {
+        if (content instanceof List<?> list) {
+            try {
+                return new Node(description, attributes, getNodesOrThrow(list));
+            } catch (ClassCastException exception) {
+                throw new IllegalArgumentException("Unexpected attributes type: " + content.getClass().getName(), exception);
+            }
+        }
+
+        if (content instanceof Node node) {
+            return new Node(description, attributes, List.of(node));
+        }
+
+        return new Node(description, attributes, content);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Attributes getAttributesOrThrow(Map<?, ?> attributes) {
+        try {
+            return Attributes.of((Map<String, Object>) attributes);
+        } catch (ClassCastException exception) {
+            throw new IllegalArgumentException("Unexpected attributes type: " + attributes.getClass().getName(), exception);
+        }
+    }
+
+
+    private static Collection<Node> getNodesOrThrow(Node[] entries) {
+        if (entries == null) {
             return null;
         }
-        var results = nodes.stream().filter(Objects::nonNull).toList();
-        return results.isEmpty() ? null : results;
+
+        return Arrays.stream(entries)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
-    /**
-     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable
-     * var-args of children
-     *
-     * @param description a non-null String that describes the data that this object holds
-     * @param attributes  a non-null Map that describes the metadata of this object
-     * @param children    the nullable children of this node
-     * @return a new node with the above characteristics
-     */
-    public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Node... children) {
-        return ofChildren(description, attributes, Arrays.asList(children));
-    }
+    @SuppressWarnings("unchecked")
+    private static Collection<Node> getNodesOrThrow(Collection<?> entries) {
+        try {
+            if (entries == null) {
+                return null;
+            }
 
-    /**
-     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable
-     * var-args of children
-     *
-     * @param description a non-null String that describes the data that this object holds
-     * @param attributes  a non-null Map that describes the metadata of this object
-     * @param children    the nullable children of this node
-     * @return a new node with the above characteristics
-     */
-    public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Collection<Node> children) {
-        return new Node(description, Attributes.ofNullable(attributes), requireNonNullNodes(children));
+            var results = (Collection<Node>) entries;
+            return results.stream()
+                    .filter(Objects::nonNull)
+                    .toList();
+        } catch (ClassCastException exception) {
+            throw new IllegalArgumentException("Unexpected payload type: expected nodes collection", exception);
+        }
     }
 
     /**
@@ -308,10 +353,10 @@ public record Node(@NonNull String description, @NonNull Attributes attributes,
      */
     @Override
     public String toString() {
-        var description = this.description.isBlank() || this.description.isEmpty() ? "" : "description=%s".formatted(this.description);
-        var attributes = this.attributes.toMap().isEmpty() ? "" : ", attributes=%s".formatted(this.attributes.toMap());
-        var content = this.content == null ? "" : ", content=%s".formatted(this.content instanceof byte[] bytes ? Arrays.toString(bytes) : this.content);
-        return "Node[%s%s%s]".formatted(description, attributes, content);
+        var description = this.description.isBlank() || this.description.isEmpty() ? "" : "description=%s" .formatted(this.description);
+        var attributes = this.attributes.toMap().isEmpty() ? "" : ", attributes=%s" .formatted(this.attributes.toMap());
+        var content = this.content == null ? "" : ", content=%s" .formatted(this.content instanceof byte[] bytes ? Arrays.toString(bytes) : this.content);
+        return "Node[%s%s%s]" .formatted(description, attributes, content);
     }
 
     /**

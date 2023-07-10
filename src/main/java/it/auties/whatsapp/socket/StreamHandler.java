@@ -512,7 +512,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(List.of());
         }
 
-        return socketHandler.sendQuery("get", "privacy", Node.ofChildren("privacy", Node.ofAttributes("list", Map.of("name", type.data(), "value", value.data()))))
+        return socketHandler.sendQuery("get", "privacy", Node.of("privacy", Node.of("list", Map.of("name", type.data(), "value", value.data()))))
                 .thenApplyAsync(this::parsePrivacyExcludedContacts);
     }
 
@@ -549,19 +549,13 @@ class StreamHandler {
         }
         var timestamp = dirty.get().attributes().getString("timestamp");
         socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty",
-                Node.ofAttributes("clean", Map.of("type", type, "timestamp", timestamp)));
+                Node.of("clean", Map.of("type", type, "timestamp", timestamp)));
     }
 
     private void digestError(Node node) {
         if (node.hasNode("bad-mac")) {
             badMac.set(true);
-            var unresolvedNodes = socketHandler.store()
-                    .pendingRequests()
-                    .stream()
-                    .map(Request::body)
-                    .map(Objects::toString)
-                    .collect(Collectors.joining("\n"));
-            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac, unresolved nodes:\n%s".formatted(unresolvedNodes)));
+            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac, last node: %s".formatted(socketHandler.lastNode())));
             return;
         }
 
@@ -648,17 +642,17 @@ class StreamHandler {
                 .businessEmail()
                 .ifPresent(value -> body.add(Node.of("email", value)));
         return getBusinessCategoryNode().thenComposeAsync(result -> {
-            body.add(Node.ofChildren("categories", Node.ofAttributes("category", Map.of("id", result.id()))));
-            return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", version), body));
+            body.add(Node.of("categories", Node.of("category", Map.of("id", result.id()))));
+            return socketHandler.sendQuery("set", "w:biz", Node.of("business_profile", Map.of("v", version), body));
         });
     }
 
     private CompletableFuture<Node> getBusinessCategoryNode() {
         return socketHandler.store()
                 .businessCategory()
-                .map(businessCategory -> CompletableFuture.completedFuture(Node.ofAttributes("category", Map.of("id", businessCategory.id()))))
+                .map(businessCategory -> CompletableFuture.completedFuture(Node.of("category", Map.of("id", businessCategory.id()))))
                 .orElseGet(() -> socketHandler.queryBusinessCategories()
-                        .thenApplyAsync(entries -> Node.ofAttributes("category", Map.of("id", entries.get(0).id()))));
+                        .thenApplyAsync(entries -> Node.of("category", Map.of("id", entries.get(0).id()))));
     }
 
     private synchronized void schedulePing(){
@@ -690,19 +684,19 @@ class StreamHandler {
                 var requiredFuture = socketHandler.sendQuery("get", "w", Node.of("props"))
                         .thenAcceptAsync(this::parseProps)
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                socketHandler.sendQuery("get", "abt", Node.ofAttributes("props", Map.of("protocol", "1")))
+                socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", "1")))
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                 yield requiredFuture;
             }
             case MOBILE -> {
-                var requiredFuture = socketHandler.sendQuery("get", "w", Node.ofAttributes("props", Map.of("protocol", "2", "hash", "")))
+                var requiredFuture = socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")))
                         .thenAcceptAsync(this::parseProps)
                         .thenComposeAsync(ignored -> checkBusinessStatus())
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.ofAttributes("config", Map.of("version", 1)))
+                socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                 socketHandler.store().locale(Objects.requireNonNullElse(socketHandler.store().locale(), "en-US"));
-                socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.ofAttributes("clean", Map.of("timestamp", 0, "type", "account_sync")))
+                socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                 if(socketHandler.store().business()){
                     socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
@@ -741,7 +735,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return socketHandler.sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", socketHandler.store().name(), "type", "available")))
+        return socketHandler.sendWithNoResponse(Node.of("presence", Map.of("name", socketHandler.store().name(), "type", "available")))
                 .thenRun(this::onPresenceUpdated)
                 .exceptionally(exception -> socketHandler.handleFailure(STREAM, exception));
     }
@@ -876,7 +870,7 @@ class StreamHandler {
                 Node.of("registration", socketHandler.keys().encodedRegistrationId()),
                 Node.of("type", KEY_BUNDLE_TYPE),
                 Node.of("identity", socketHandler.keys().identityKeyPair().publicKey()),
-                Node.ofChildren("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
+                Node.of("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
     }
 
     private void generateQrCode(Node node, Node container) {
@@ -928,7 +922,7 @@ class StreamHandler {
         account.deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true));
         var keyIndex = Protobuf.readMessage(account.details(), DeviceIdentity.class).keyIndex();
         var outgoingDeviceIdentity = Protobuf.writeMessage(new SignedDeviceIdentity(account.details(), null, account.accountSignature(), account.deviceSignature()));
-        var devicePairNode = Node.ofChildren("pair-device-sign",
+        var devicePairNode = Node.of("pair-device-sign",
                 Node.of("device-identity", Map.of("key-index", keyIndex), outgoingDeviceIdentity));
         socketHandler.keys().companionIdentity(account);
         sendConfirmNode(node, devicePairNode);
@@ -940,7 +934,7 @@ class StreamHandler {
                 .put("type", "result")
                 .put("to", Server.WHATSAPP.toJid())
                 .toMap();
-        var request = Node.ofChildren("iq", attributes, content);
+        var request = Node.of("iq", attributes, content);
         socketHandler.sendWithNoResponse(request);
     }
 

@@ -41,7 +41,7 @@ public final class BinaryDecoder {
         Validate.isTrue(size != 0, "Cannot decode node with empty body");
         var description = readString();
         var attrs = readAttributes(size);
-        return size % 2 != 0 ? Node.ofAttributes(description, attrs)
+        return size % 2 != 0 ? Node.of(description, attrs)
                 : Node.of(description, attrs, read(false));
     }
 

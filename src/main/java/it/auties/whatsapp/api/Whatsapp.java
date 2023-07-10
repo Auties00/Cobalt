@@ -97,7 +97,7 @@ import java.util.stream.Stream;
 public class Whatsapp {
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
 
-    protected final SocketHandler socketHandler;
+    private final SocketHandler socketHandler;
 
     /**
      * Checks if a connection exists
@@ -263,7 +263,7 @@ public class Whatsapp {
         }
 
         var metadata = Map.of("jid", store().jid(), "reason", "user_initiated");
-        var device = Node.ofAttributes("remove-companion-device", metadata);
+        var device = Node.of("remove-companion-device", metadata);
         return socketHandler.sendQuery("set", "md", device)
                 .thenRun(() -> {});
     }
@@ -289,9 +289,9 @@ public class Whatsapp {
                 .toMap();
         var excludedJids = Arrays.stream(excluded).map(ContactJidProvider::toJid).toList();
         var children = value != PrivacySettingValue.CONTACTS_EXCEPT ? null : excludedJids.stream()
-                .map(entry -> Node.ofAttributes("user", Map.of("jid", entry, "action", "add")))
+                .map(entry -> Node.of("user", Map.of("jid", entry, "action", "add")))
                 .toList();
-        return socketHandler.sendQuery("set", "privacy", Node.ofChildren("privacy", Node.ofChildren("category", attributes, children)))
+        return socketHandler.sendQuery("set", "privacy", Node.of("privacy", Node.of("category", attributes, children)))
                 .thenRunAsync(() -> onPrivacyFeatureChanged(type, value, excludedJids))
                 .thenApply(ignored -> this);
     }
@@ -310,7 +310,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(@NonNull ChatEphemeralTimer timer) {
-        return socketHandler.sendQuery("set", "disappearing_mode", Node.ofAttributes("disappearing_mode", Map.of("duration", timer.period()
+        return socketHandler.sendQuery("set", "disappearing_mode", Node.of("disappearing_mode", Map.of("duration", timer.period()
                         .toSeconds())))
                 .thenRunAsync(() -> store().newChatsEphemeralTimer(timer))
                 .thenApply(ignored -> this);
@@ -324,7 +324,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> createGdprAccountInfo() {
-        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.ofAttributes("gdpr", Map.of("gdpr", "request")))
+        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("gdpr", Map.of("gdpr", "request")))
                 .thenApply(ignored -> this);
     }
 
@@ -336,7 +336,7 @@ public class Whatsapp {
      */
     // TODO: Implement ready and error states
     public CompletableFuture<GdprAccountReport> getGdprAccountInfoStatus() {
-        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.ofAttributes("gdpr", Map.of("gdpr", "status")))
+        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("gdpr", Map.of("gdpr", "status")))
                 .thenApplyAsync(result -> GdprAccountReport.ofPending(result.attributes().getLong("timestamp")));
     }
 
@@ -348,7 +348,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> changeName(@NonNull String newName) {
         var oldName = store().name();
-        return socketHandler.send(Node.ofChildren("presence", Map.of("name", newName)))
+        return socketHandler.send(Node.of("presence", Map.of("name", newName)))
                 .thenRunAsync(() -> socketHandler.updateUserName(newName, oldName))
                 .thenApply(ignored -> this);
     }
@@ -544,7 +544,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Void> attributeMediaMessage(MediaMessage mediaMessage) {
-        return Medias.upload(mediaMessage.decodedMedia().get(), mediaMessage.mediaType().toAttachmentType(), store().mediaConnection())
+        return Medias.upload(mediaMessage.decodedMedia().orElseThrow(), mediaMessage.mediaType().toAttachmentType(), store().mediaConnection())
                 .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
     }
 
@@ -805,7 +805,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Map<ContactJid, HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider... contacts) {
         var contactNodes = Arrays.stream(contacts)
-                .map(jid -> Node.ofChildren("user", Node.of("contact", jid.toJid().toPhoneNumber())))
+                .map(jid -> Node.of("user", Node.of("contact", jid.toJid().toPhoneNumber())))
                 .toArray(Node[]::new);
         return socketHandler.sendInteractiveQuery(Node.of("contact"), contactNodes)
                 .thenApplyAsync(this::parseHasWhatsappResponse);
@@ -888,8 +888,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<BusinessProfile>> queryBusinessProfile(@NonNull ContactJidProvider contact) {
-        return socketHandler.sendQuery("get", "w:biz", Node.ofChildren("business_profile", Map.of("v", 116),
-                        Node.ofAttributes("profile", Map.of("jid", contact.toJid()))))
+        return socketHandler.sendQuery("get", "w:biz", Node.of("business_profile", Map.of("v", 116),
+                        Node.of("profile", Map.of("jid", contact.toJid()))))
                 .thenApplyAsync(this::getBusinessProfile);
     }
 
@@ -943,7 +943,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<Chat>> acceptGroupInvite(@NonNull String inviteCode) {
-        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", Node.ofAttributes("invite", Map.of("code", inviteCode)))
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", Node.of("invite", Map.of("code", inviteCode)))
                 .thenApplyAsync(this::parseAcceptInvite);
     }
 
@@ -966,7 +966,7 @@ public class Whatsapp {
         }
 
         var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
-        var node = Node.ofAttributes("presence", Map.of("name", store().name(), "type", presence.data()));
+        var node = Node.of("presence", Map.of("name", store().name(), "type", presence.data()));
         return socketHandler.sendWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updateSelfPresence(null, presence))
                 .thenApplyAsync(ignored -> available);
@@ -1008,13 +1008,13 @@ public class Whatsapp {
         }
 
         if(presence == ContactStatus.COMPOSING || presence == ContactStatus.RECORDING){
-            var node = Node.ofChildren("chatstate", Map.of("from", store().jid(), "to", chatJid.toJid()), Node.of(presence.data()));
+            var node = Node.of("chatstate", Map.of("from", store().jid(), "to", chatJid.toJid()), Node.of(presence.data()));
             return socketHandler.sendWithNoResponse(node)
                     .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence))
                     .thenApplyAsync(ignored -> chatJid);
         }
 
-        var node = Node.ofAttributes("presence", Map.of("type", presence.data(), "name", store().name()));
+        var node = Node.of("presence", Map.of("type", presence.data(), "name", store().name()));
         return socketHandler.sendWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence))
                 .thenApplyAsync(ignored -> chatJid);
@@ -1067,8 +1067,8 @@ public class Whatsapp {
     private CompletableFuture<List<ContactJid>> executeActionOnGroupParticipant(ContactJidProvider group, GroupAction action, ContactJidProvider... jids) {
         var body = Arrays.stream(jids)
                 .map(ContactJidProvider::toJid)
-                .map(jid -> Node.ofAttributes("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
-                .map(innerBody -> Node.ofChildren(action.data(), innerBody))
+                .map(jid -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
+                .map(innerBody -> Node.of(action.data(), innerBody))
                 .toArray(Node[]::new);
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(result -> parseGroupActionResponse(result, group, action));
@@ -1148,7 +1148,7 @@ public class Whatsapp {
                 .put("delete", true, () -> description == null)
                 .put("prev", descriptionId, () -> descriptionId != null)
                 .toMap();
-        var body = Node.ofChildren("description", attributes, descriptionNode);
+        var body = Node.of("description", attributes, descriptionNode);
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
                 .thenRunAsync(() -> onDescriptionSet(group, description));
     }
@@ -1273,16 +1273,16 @@ public class Whatsapp {
         Validate.isTrue(contacts.length >= minimumMembersCount, "Expected at least %s members for this group", minimumMembersCount);
         var children = new ArrayList<Node>();
         if (parentGroup != null) {
-            children.add(Node.ofAttributes("linked_parent", Map.of("jid", parentGroup.toJid())));
+            children.add(Node.of("linked_parent", Map.of("jid", parentGroup.toJid())));
         }
         if (timer != ChatEphemeralTimer.OFF) {
-            children.add(Node.ofAttributes("ephemeral", Map.of("expiration", timer.periodSeconds())));
+            children.add(Node.of("ephemeral", Map.of("expiration", timer.periodSeconds())));
         }
         Arrays.stream(contacts)
-                .map(contact -> Node.ofAttributes("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
+                .map(contact -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
                 .forEach(children::add);
         var key = HexFormat.of().formatHex(BytesHelper.random(12));
-        var body = Node.ofChildren("create", Map.of("subject", subject, "key", key), children);
+        var body = Node.of("create", Map.of("subject", subject, "key", key), children);
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(this::parseGroupResponse);
     }
@@ -1321,7 +1321,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public <T extends ContactJidProvider> CompletableFuture<T> leaveGroup(@NonNull T group) {
-        var body = Node.ofChildren("leave", Node.ofAttributes("group", Map.of("id", group.toJid())));
+        var body = Node.of("leave", Node.of("group", Map.of("id", group.toJid())));
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(ignored -> handleLeaveGroup(group));
     }
@@ -1351,9 +1351,9 @@ public class Whatsapp {
      */
     public CompletableFuture<Map<ContactJid, Boolean>> linkGroupsToCommunity(@NonNull ContactJidProvider community, @NonNull ContactJidProvider... groups){
         var body = Arrays.stream(groups)
-                .map(entry -> Node.ofAttributes("group", Map.of("jid", entry.toJid())))
+                .map(entry -> Node.of("group", Map.of("jid", entry.toJid())))
                 .toArray(Node[]::new);
-        return socketHandler.sendQuery(community.toJid(), "set", "w:g2", Node.ofChildren("links", Node.ofChildren("link", Map.of("link_type", "sub_group"), body)))
+        return socketHandler.sendQuery(community.toJid(), "set", "w:g2", Node.of("links", Node.of("link", Map.of("link_type", "sub_group"), body)))
                 .thenApplyAsync(result -> parseLinksResponse(result, groups));
     }
 
@@ -1381,7 +1381,7 @@ public class Whatsapp {
      * @return a CompletableFuture that indicates whether the request was successful
      */
     public CompletableFuture<Boolean> unlinkGroupFromCommunity(@NonNull ContactJidProvider community, @NonNull ContactJidProvider group){
-        return socketHandler.sendQuery(community.toJid(), "set", "w:g2", Node.ofChildren("unlink", Map.of("unlink_type", "sub_group"), Node.ofAttributes("group", Map.of("jid", group.toJid()))))
+        return socketHandler.sendQuery(community.toJid(), "set", "w:g2", Node.of("unlink", Map.of("unlink_type", "sub_group"), Node.of("group", Map.of("jid", group.toJid()))))
                 .thenApplyAsync(result -> parseUnlinkResponse(result, group));
     }
 
@@ -1453,7 +1453,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> block(@NonNull T chat) {
-        var body = Node.ofAttributes("item", Map.of("action", "block", "jid", chat.toJid()));
+        var body = Node.of("item", Map.of("action", "block", "jid", chat.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body).thenApplyAsync(ignored -> chat);
     }
 
@@ -1464,7 +1464,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> unblock(@NonNull T chat) {
-        var body = Node.ofAttributes("item", Map.of("action", "unblock", "jid", chat.toJid()));
+        var body = Node.of("item", Map.of("action", "unblock", "jid", chat.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body).thenApplyAsync(ignored -> chat);
     }
 
@@ -1485,7 +1485,7 @@ public class Whatsapp {
                 yield sendMessage(chat, message).thenApplyAsync(ignored -> chat);
             }
             case GROUP -> {
-                var body = timer == ChatEphemeralTimer.OFF ? Node.of("not_ephemeral") : Node.ofAttributes("ephemeral", Map.of("expiration", timer.period()
+                var body = timer == ChatEphemeralTimer.OFF ? Node.of("not_ephemeral") : Node.of("ephemeral", Map.of("expiration", timer.period()
                         .toSeconds()));
                 yield socketHandler.sendQuery(chat.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> chat);
             }
@@ -1739,7 +1739,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<String> changeBusinessAttribute(String key, String value) {
-        return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.of(key, Objects.requireNonNullElse(value, "").getBytes(StandardCharsets.UTF_8))))
+        return socketHandler.sendQuery("set", "w:biz", Node.of("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.of(key, Objects.requireNonNullElse(value, "").getBytes(StandardCharsets.UTF_8))))
                 .thenAcceptAsync(result -> checkBusinessAttributeConflict(key, value, result))
                 .thenApplyAsync(ignored -> value);
     }
@@ -1772,10 +1772,14 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<String> changeBusinessEmail(String email) {
-        Validate.isTrue(email == null || Pattern.compile("^(.+)@(\\\\S+)$")
-                .matcher(email)
-                .matches(), "Invalid email: %s", email);
+        Validate.isTrue(email == null || isValidEmail(email), "Invalid email: %s", email);
         return changeBusinessAttribute("email", email);
+    }
+
+    private boolean isValidEmail(String email) {
+        return Pattern.compile("^(.+)@(\\S+)$")
+                .matcher(email)
+                .matches();
     }
 
     /**
@@ -1785,7 +1789,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCategory>> changeBusinessCategories(List<BusinessCategory> categories) {
-        return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.ofChildren("categories", createCategories(categories))))
+        return socketHandler.sendQuery("set", "w:biz", Node.of("business_profile", Map.of("v", "3", "mutation_type", "delta"), Node.of("categories", createCategories(categories))))
                 .thenApplyAsync(ignored -> categories);
     }
 
@@ -1793,7 +1797,7 @@ public class Whatsapp {
         if (categories == null) {
             return List.of();
         }
-        return categories.stream().map(entry -> Node.ofAttributes("category", Map.of("id", entry.id()))).toList();
+        return categories.stream().map(entry -> Node.of("category", Map.of("id", entry.id()))).toList();
     }
 
     /**
@@ -1803,7 +1807,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<URI>> changeBusinessWebsites(List<URI> websites) {
-        return socketHandler.sendQuery("set", "w:biz", Node.ofChildren("business_profile", Map.of("v", "3", "mutation_type", "delta"), createWebsites(websites)))
+        return socketHandler.sendQuery("set", "w:biz", Node.of("business_profile", Map.of("v", "3", "mutation_type", "delta"), createWebsites(websites)))
                 .thenApplyAsync(ignored -> websites);
     }
 
@@ -1843,7 +1847,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(@NonNull ContactJidProvider contact, int productsLimit) {
-        return socketHandler.sendQuery("get", "w:biz:catalog", Node.ofChildren("product_catalog", Map.of("jid", contact, "allow_shop_source", "true"), Node.of("limit", String.valueOf(productsLimit)
+        return socketHandler.sendQuery("get", "w:biz:catalog", Node.of("product_catalog", Map.of("jid", contact, "allow_shop_source", "true"), Node.of("limit", String.valueOf(productsLimit)
                         .getBytes(StandardCharsets.UTF_8)), Node.of("width", "100".getBytes(StandardCharsets.UTF_8)), Node.of("height", "100".getBytes(StandardCharsets.UTF_8))))
                 .thenApplyAsync(this::parseCatalog);
     }
@@ -1895,7 +1899,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCollectionEntry>> queryBusinessCollections(@NonNull ContactJidProvider contact, int collectionsLimit) {
-        return socketHandler.sendQuery("get", "w:biz:catalog", Map.of("smax_id", "35"), Node.ofChildren("collections", Map.of("biz_jid", contact), Node.of("collection_limit", String.valueOf(collectionsLimit)
+        return socketHandler.sendQuery("get", "w:biz:catalog", Map.of("smax_id", "35"), Node.of("collections", Map.of("biz_jid", contact), Node.of("collection_limit", String.valueOf(collectionsLimit)
                         .getBytes(StandardCharsets.UTF_8)), Node.of("item_limit", String.valueOf(collectionsLimit)
                         .getBytes(StandardCharsets.UTF_8)), Node.of("width", "100".getBytes(StandardCharsets.UTF_8)), Node.of("height", "100".getBytes(StandardCharsets.UTF_8))))
                 .thenApplyAsync(this::parseCollections);
@@ -1968,9 +1972,9 @@ public class Whatsapp {
                 .put("from_me", String.valueOf(info.fromMe()))
                 .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
                 .toMap();
-        var node = Node.ofChildren("receipt", Map.of("id", info.key().id(), "to", store()
+        var node = Node.of("receipt", Map.of("id", info.key().id(), "to", store()
                 .jid()
-                .toWhatsappJid(), "type", "server-error"), Node.ofChildren("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.ofAttributes("rmr", rmrAttributes));
+                .toWhatsappJid(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.of("rmr", rmrAttributes));
         return socketHandler.send(node, result -> result.hasDescription("notification"))
                 .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
     }
@@ -2012,10 +2016,10 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<GroupMetadata> createCommunity(@NonNull String subject, String body) {
-        var entry = Node.ofChildren("create", Map.of("subject", subject),
-                Node.ofChildren("description", Map.of("id", UUID.randomUUID().toString()),
+        var entry = Node.of("create", Map.of("subject", subject),
+                Node.of("description", Map.of("id", UUID.randomUUID().toString()),
                         Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))),
-                Node.ofAttributes("parent", Map.of("default_membership_approval_mode", "request_required")));
+                Node.of("parent", Map.of("default_membership_approval_mode", "request_required")));
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", entry)
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
@@ -2030,7 +2034,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Whatsapp> unlinkDevices(){
-        return socketHandler.sendQuery("set", "md", Node.ofAttributes("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
+        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
                 .thenRun(() -> store().removeLinkedCompanions())
                 .thenApply(ignored -> this);
     }
@@ -2043,7 +2047,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> unlinkDevice(@NonNull ContactJid companion){
         Validate.isTrue(companion.hasAgent(), "Expected companion, got jid without agent: %s", companion);
-        return socketHandler.sendQuery("set", "md", Node.ofAttributes("remove-companion-device", Map.of("jid", companion, "reason", "user_initiated")))
+        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("jid", companion, "reason", "user_initiated")))
                 .thenRun(() -> store().removeLinkedCompanion(companion))
                 .thenApply(ignored -> this);
     }
@@ -2129,7 +2133,7 @@ public class Whatsapp {
                 .accountSignature(keyAccountSignature)
                 .details(keyIndexListBytes)
                 .build();
-        return socketHandler.sendQuery("set", "md", Node.ofChildren("pair-device",
+        return socketHandler.sendQuery("set", "md", Node.of("pair-device",
                         Node.of("ref", ref),
                         Node.of("pub-key", publicKey),
                         Node.of("device-identity", Protobuf.writeMessage(deviceIdentityHmac)),
@@ -2167,7 +2171,7 @@ public class Whatsapp {
         }
 
         return awaitCompanionRegistration(device)
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "encrypt", Node.ofChildren("key", Node.ofAttributes("user", Map.of("jid", device)))))
+                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "encrypt", Node.of("key", Node.of("user", Map.of("jid", device)))))
                 .thenComposeAsync(encryptResult -> handleCompanionEncrypt(encryptResult, device, keyId));
     }
 
@@ -2428,7 +2432,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Optional<BusinessVerifiedNameCertificate>> queryBusinessCertificate(@NonNull ContactJidProvider provider) {
-        return socketHandler.sendQuery("get", "w:biz", Node.ofAttributes("verified_name", Map.of("jid", provider.toJid())))
+        return socketHandler.sendQuery("get", "w:biz", Node.of("verified_name", Map.of("jid", provider.toJid())))
                 .thenApplyAsync(this::parseCertificate);
     }
 
@@ -2438,7 +2442,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Optional<BusinessVerifiedNameCertificate>> changeBusinessCertificate(@NonNull ContactJidProvider provider) {
-        return socketHandler.sendQuery("set", "w:biz", Node.ofAttributes("verified_name", Map.of("jid", provider.toJid())))
+        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("jid", provider.toJid())))
                 .thenApplyAsync(this::parseCertificate);
     }
 
@@ -2446,6 +2450,37 @@ public class Whatsapp {
         return result.findNode("verified_name")
                 .flatMap(Node::contentAsBytes)
                 .map(data -> Protobuf.readMessage(data, BusinessVerifiedNameCertificate.class));
+    }
+
+    /**
+     * Gets the verified name certificate
+     *
+     * @return a future
+     */
+    public CompletableFuture<?> enable2fa(@NonNull String code, String email) {
+        return set2fa(code, email);
+    }
+
+    /**
+     * Gets the verified name certificate
+     *
+     * @return a future
+     */
+    public CompletableFuture<?> disable2fa() {
+        return set2fa(null, null);
+    }
+
+    private CompletableFuture<?> set2fa(String code, String email) {
+        Validate.isTrue(code == null || (code.matches("^[0-9]*$") && code.length() == 6),
+                "Invalid 2fa code: expected a numeric six digits string");
+        Validate.isTrue(email == null || isValidEmail(email),
+                "Invalid email: %s", email);
+        var body = new ArrayList<Node>();
+        body.add(Node.of("code", Objects.requireNonNullElse(code, "").getBytes(StandardCharsets.UTF_8)));
+        if(code != null && email != null){
+            body.add(Node.of("email", email.getBytes(StandardCharsets.UTF_8)));
+        }
+        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:account", Node.of("2fa", body));
     }
 
     /**
