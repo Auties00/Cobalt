@@ -19,6 +19,7 @@ It can be used to work with:
 
    This functionality is currently in beta.
    The documentation is expanding, but some functions may still be undocumented. 
+   There is support for both Android and IOS accounts, as well as normal and business accounts.
    Most functions have been reversed engineered, but some may still not work. 
 
 ### Donations
@@ -212,7 +213,11 @@ If you are using the web api you can also set these options:
   ```java
   .historyLength(WebHistoryLength.THREE_MONTHS)
   ```
-Otherwise, if you are using the mobile api, select the registration status of your session:
+Otherwise, if you are using the mobile api, select whether you want to use a business account:
+  ```java
+  .business(false)
+  ```
+then select the registration status of your session:
 - Creates a new session from a registered phone number: this means that the OTP was already sent to Whatsapp
   ```java
   .registered()
