@@ -998,17 +998,22 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changePresence(@NonNull T chatJid, @NonNull ContactStatus presence) {
-        var alreadySet = store().findChatByJid(chatJid)
+        var knownPresence = store().findChatByJid(chatJid)
                 .map(Chat::presences)
                 .map(entry -> entry.get(store().jid().toWhatsappJid()))
-                .filter(entry -> entry == presence)
-                .isPresent();
-        if(alreadySet){
-            return CompletableFuture.completedFuture(chatJid);
+                .orElse(null);
+        if(knownPresence == ContactStatus.COMPOSING || knownPresence == ContactStatus.RECORDING){
+            var node = Node.of("chatstate", Map.of("to", chatJid.toJid()), Node.of("paused"));
+            return socketHandler.sendWithNoResponse(node)
+                    .thenApplyAsync(ignored -> chatJid);
         }
 
+
         if(presence == ContactStatus.COMPOSING || presence == ContactStatus.RECORDING){
-            var node = Node.of("chatstate", Map.of("from", store().jid(), "to", chatJid.toJid()), Node.of(presence.data()));
+            var tag = presence == ContactStatus.RECORDING ? ContactStatus.COMPOSING.data() : presence.data();
+            var node = Node.of("chatstate",
+                    Map.of("to", chatJid.toJid()),
+                    Node.of(ContactStatus.COMPOSING.data(), presence == ContactStatus.RECORDING ? Map.of("media", "audio") : Map.of()));
             return socketHandler.sendWithNoResponse(node)
                     .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence))
                     .thenApplyAsync(ignored -> chatJid);

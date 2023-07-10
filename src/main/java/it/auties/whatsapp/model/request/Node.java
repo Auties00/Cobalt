@@ -319,8 +319,8 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a non null request
      * @throws NullPointerException if no valid jid can be found
      */
-    public Request toRequest(Function<Node, Boolean> filter) {
-        if (id() == null) {
+    public Request toRequest(Function<Node, Boolean> filter, boolean response) {
+        if (response && id() == null) {
             attributes.put("id", UUID.randomUUID().toString());
         }
         return Request.of(this, filter);

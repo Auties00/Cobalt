@@ -2,6 +2,7 @@ package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.message.standard.AudioMessage;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class MobileTest {
     @Test
@@ -25,12 +27,9 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");
-                    var audio = AudioMessage.simpleBuilder()
-                            .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
-                            .voiceMessage(true)
-                            .build();
-                    api.sendMessage(ContactJid.of(393495089819L), "Hello").join();
-                    api.sendMessage(ContactJid.of(393495089819L), audio).join();
+                    api.changePresence(ContactJid.of(393495089819L), ContactStatus.COMPOSING);
+                    CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS)
+                            .execute(() -> api.changePresence(ContactJid.of(393495089819L), ContactStatus.AVAILABLE));
                 })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

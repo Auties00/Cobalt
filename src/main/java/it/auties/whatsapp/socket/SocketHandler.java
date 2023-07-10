@@ -367,8 +367,8 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
 
-        var request = node.toRequest(null);
-        return request.sendWithNoResponse(session, keys, store)
+        return node.toRequest(null, false)
+                .sendWithNoResponse(session, keys, store)
                 .exceptionallyAsync(throwable -> handleFailure(STREAM, throwable))
                 .thenRunAsync(() -> onNodeSent(node));
     }
@@ -435,7 +435,7 @@ public class SocketHandler implements SocketListener {
         if (state() == SocketState.RESTORE) {
             return CompletableFuture.completedFuture(node);
         }
-        var request = node.toRequest(filter);
+        var request = node.toRequest(filter, true);
         var result = request.send(session, keys, store);
         onNodeSent(node);
         return result;
