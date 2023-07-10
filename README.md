@@ -1104,6 +1104,21 @@ var future = api.unlinkCompanion(companionJid);
 var future = api.unlinkCompanions();
 ```
 
+### 2FA (Mobile api only)
+
+### Enable 2FA
+
+``` java
+var future = api.enable2fa("000000", "mail@domain.com");
+```
+
+### Disable 2FA
+
+``` java
+var future = api.disable2fa();
+```
+
+
 Some methods may not be listed here, all contributions are welcomed to this documentation!
 Some methods may not be supported on the mobile api, please report them so I can fix them.
 Ideally I'd like all of them to work.
