@@ -14,6 +14,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -138,10 +139,18 @@ public class GithubSecrets {
     }
 
     private byte[] getStoreAsJson() {
-        return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().store());
+        try {
+            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().store());
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 
     private byte[] getCredentialsAsJson() {
-        return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().keys());
+        try {
+            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().keys());
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 }
