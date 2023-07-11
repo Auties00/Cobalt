@@ -1,14 +1,23 @@
 package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.standard.AudioMessage;
+import it.auties.whatsapp.model.message.standard.ImageMessage;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.model.request.MessageSendRequest;
+import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.utils.MediaUtils;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -27,9 +36,28 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");
-                    api.changePresence(ContactJid.of(393495089819L), ContactStatus.COMPOSING);
-                    CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS)
-                            .execute(() -> api.changePresence(ContactJid.of(393495089819L), ContactStatus.AVAILABLE));
+                    var message = TextMessage.builder()
+                            .text("Hello World")
+                            .backgroundArgb(0xffffffff)
+                            .font(TextMessage.TextMessageFontType.NORICAN_REGULAR)
+                            .build();
+                    var key = MessageKey.builder()
+                            .chatJid(ContactJid.of("status@broadcast"))
+                            .senderJid(api.store().jid())
+                            .fromMe(true)
+                            .build();
+                    var info = MessageInfo.builder()
+                            .message(MessageContainer.of(message))
+                            .key(key)
+                            .senderJid(api.store().jid())
+                            .timestampSeconds(Clock.nowSeconds())
+                            .build();
+                    var request = MessageSendRequest.builder()
+                            .info(info)
+                            .recipients(List.of(ContactJid.of("393495089819")))
+                            .force(true)
+                            .build();
+                    api.sendMessage(request).join();
                 })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

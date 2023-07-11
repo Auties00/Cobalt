@@ -197,7 +197,7 @@ class StreamHandler {
             message.chat().participantsPreKeys().clear();
             var request = MessageSendRequest.builder()
                     .info(message)
-                    .overrideSender(all ? null : message.senderJid())
+                    .recipients(all ? null : List.of(message.senderJid()))
                     .force(!all)
                     .build();
             socketHandler.sendMessage(request);
