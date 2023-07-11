@@ -452,10 +452,20 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
-        store().attribute(info);
-        return attributeMessageMetadata(info)
-                .thenComposeAsync(ignored -> socketHandler.sendMessage(MessageSendRequest.of(info)))
-                .thenApplyAsync(ignored -> info);
+        return sendMessage(MessageSendRequest.of(info));
+    }
+
+    /**
+     * Sends a message info to a chat
+     *
+     * @param request the request to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageSendRequest request) {
+        store().attribute(request.info());
+        return attributeMessageMetadata(request.info())
+                .thenComposeAsync(ignored -> socketHandler.sendMessage(request))
+                .thenApplyAsync(ignored -> request.info());
     }
 
     private CompletableFuture<Void> attributeMessageMetadata(MessageInfo info) {
