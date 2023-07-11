@@ -79,7 +79,6 @@ class MessageHandler {
         return executor;
     }
 
-
     protected synchronized CompletableFuture<Void> encode(MessageSendRequest request) {
         var future = new CompletableFuture<Void>();
         getOrCreateMessageService().execute(() -> {
@@ -118,8 +117,9 @@ class MessageHandler {
         var groupCipher = new GroupCipher(senderName, socketHandler.keys());
         var groupMessage = groupCipher.encrypt(encodedMessage);
         var messageNode = createMessageNode(request, groupMessage);
-        if (request.hasSenderOverride()) {
-            return getGroupRetryDevices(request.overrideSender()).thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
+        if (request.hasRecipientOverride()) {
+            return getDevices(request.recipients(), false)
+                    .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
                     .thenComposeAsync(socketHandler::send);
         }
@@ -167,15 +167,16 @@ class MessageHandler {
             return List.of(request.info().chatJid());
         }
 
-        if (request.hasSenderOverride()) {
-            return List.of(request.overrideSender());
+        if (request.hasRecipientOverride()) {
+            return request.recipients();
         }
 
         return List.of(sender.toWhatsappJid(), request.info().chatJid());
     }
 
     private boolean isConversation(MessageInfo info) {
-        return info.chatJid().hasServer(Server.WHATSAPP) || info.chatJid().hasServer(Server.USER);
+        return info.chatJid().hasServer(Server.WHATSAPP)
+                || info.chatJid().hasServer(Server.USER);
     }
 
     private Node createEncodedMessageNode(MessageSendRequest request, List<Node> preKeys, Node descriptor) {
@@ -236,9 +237,8 @@ class MessageHandler {
     }
 
     private CompletableFuture<List<Node>> createGroupNodes(MessageSendRequest request, byte[] distributionMessage, List<ContactJid> participants, boolean force) {
-        Validate.isTrue(request.info().chat().isGroup(), "Cannot send group message to non-group");
         var missingParticipants = participants.stream()
-                .filter(participant -> !request.info().chat().participantsPreKeys().contains(participant))
+                .filter(participant -> force || !request.info().chat().participantsPreKeys().contains(participant))
                 .toList();
         if (missingParticipants.isEmpty()) {
             return CompletableFuture.completedFuture(List.of());
@@ -279,10 +279,6 @@ class MessageHandler {
         var encrypted = cipher.encrypt(message);
         var messageNode = createMessageNode(request, encrypted);
         return peer ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
-    }
-
-    private CompletableFuture<List<ContactJid>> getGroupRetryDevices(ContactJid contactJid) {
-        return getDevices(List.of(contactJid), false);
     }
 
     private CompletableFuture<List<ContactJid>> getGroupDevices(GroupMetadata metadata) {
