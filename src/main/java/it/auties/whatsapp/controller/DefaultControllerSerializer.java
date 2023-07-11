@@ -170,7 +170,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeChat(Store store, Chat chat) {
-        var path = getSessionFile(store, "%s%s.smile".formatted(CHAT_PREFIX, chat.uuid()));
+        var path = getSessionFile(store, "%s%s.smile".formatted(CHAT_PREFIX, chat.jid().toString()));
         var preferences = SmileFile.of(path);
         return preferences.write(chat, true);
     }
@@ -209,15 +209,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Optional<Keys> deserializeKeysFromId(ClientType type, String id) {
-        try {
-            var path = getSessionFile(type, id, "keys.smile");
-            var preferences = SmileFile.of(path);
-            var result = preferences.read(Keys.class);
-            result.ifPresent(entry -> entry.serializer(this));
-            return result;
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Corrupted keys", exception);
-        }
+        var path = getSessionFile(type, id, "keys.smile");
+        var preferences = SmileFile.of(path);
+        var result = preferences.read(Keys.class);
+        result.ifPresent(entry -> entry.serializer(this));
+        return result;
     }
 
     @Override
@@ -254,15 +250,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Optional<Store> deserializeStoreFromId(ClientType type, String id) {
-        try {
-            var path = getSessionFile(type, id, "store.smile");
-            var preferences = SmileFile.of(path);
-            var store = preferences.read(Store.class);
-            store.ifPresent(entry -> entry.serializer(this));
-            return store;
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Corrupted store", exception);
-        }
+        var path = getSessionFile(type, id, "store.smile");
+        var preferences = SmileFile.of(path);
+        var store = preferences.read(Store.class);
+        store.ifPresent(entry -> entry.serializer(this));
+        return store;
     }
 
     @Override
@@ -347,21 +339,23 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private void deserializeChat(Store baseStore, Path entry) {
+        var chatPreferences = SmileFile.of(entry);
+        var chat = chatPreferences.read(Chat.class)
+                .orElseGet(() -> fixChat(entry));
+        baseStore.addChatDirect(chat);
+    }
+
+    private Chat fixChat(Path entry) {
+        var chatName = entry.getFileName().toString()
+                .replaceFirst(CHAT_PREFIX, "")
+                .replace(".smile", "");
+        logger.log(ERROR, "Chat at %s is corrupted, resetting it".formatted(chatName));
         try {
-            var chatPreferences = SmileFile.of(entry);
-            var chat = chatPreferences.read(Chat.class).orElseThrow();
-            baseStore.addChatDirect(chat);
-        } catch (IOException exception) {
-            var chatName = entry.getFileName().toString().replaceFirst(CHAT_PREFIX, "").replace(".smile", "");
-            logger.log(ERROR, "Chat %s is corrupted, resetting it".formatted(chatName), exception);
-            try {
-                Files.deleteIfExists(entry);
-            } catch (IOException deleteException) {
-                logger.log(WARNING, "Cannot delete chat file");
-            }
-            var result = Chat.ofJid(ContactJid.of(chatName));
-            baseStore.addChatDirect(result);
+            Files.deleteIfExists(entry);
+        } catch (IOException deleteException) {
+            logger.log(WARNING, "Cannot delete chat file");
         }
+        return Chat.ofJid(ContactJid.of(chatName));
     }
 
     private Path getHome(ClientType type) {
@@ -413,7 +407,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             return instance;
         }
 
-        private <T> Optional<T> read(Class<T> clazz) throws IOException {
+        private <T> Optional<T> read(Class<T> clazz) {
             return read(new TypeReference<>() {
                 @Override
                 public Class<T> getType() {
@@ -422,12 +416,14 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             });
         }
 
-        private <T> Optional<T> read(TypeReference<T> reference) throws IOException {
+        private <T> Optional<T> read(TypeReference<T> reference) {
             if (Files.notExists(file)) {
                 return Optional.empty();
             }
             try (var input = new GZIPInputStream(Files.newInputStream(file))) {
                 return Optional.of(Smile.readValue(input, reference));
+            }catch (IOException exception) {
+                return Optional.empty();
             }
         }
 
