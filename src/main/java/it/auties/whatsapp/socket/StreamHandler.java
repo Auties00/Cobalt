@@ -951,7 +951,7 @@ class StreamHandler {
         var companionOs = container.findNode("platform")
                 .map(entry -> entry.attributes().getNullableString("name"))
                 .map(this::getCompanionOs)
-                .orElseThrow(() -> new NoSuchElementException("Unknown platform"));
+                .orElseThrow(() -> new NoSuchElementException("Unknown platform: " + container));
         socketHandler.store().companionDeviceOs(companionOs);
         socketHandler.store().business(isBusiness);
         socketHandler.store().addContact(Contact.ofJid(socketHandler.store().jid().toWhatsappJid()));
@@ -962,7 +962,7 @@ class StreamHandler {
             case "smba" -> UserAgentPlatform.SMB_ANDROID;
             case "smbi" -> UserAgentPlatform.SMB_IOS;
             case "android" -> UserAgentPlatform.ANDROID;
-            case "ios" -> UserAgentPlatform.IOS;
+            case "iphone", "ipad", "ios" -> UserAgentPlatform.IOS;
             default -> null;
         };
     }
