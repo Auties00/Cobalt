@@ -55,7 +55,7 @@ In short, if you use this library without a malicious intent, you will never get
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.4.10</version>
+    <version>3.5.10</version>
 </dependency>
 ```
 
@@ -63,12 +63,12 @@ In short, if you use this library without a malicious intent, you will never get
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.4.10'
+   implementation 'com.github.auties00:whatsappweb4j:3.5.10'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.4.10")
+   implementation("com.github.auties00:whatsappweb4j:3.5.10")
    ```
 
 ### Examples
