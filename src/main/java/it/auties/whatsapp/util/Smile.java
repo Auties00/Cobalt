@@ -48,51 +48,27 @@ public class Smile {
         }
     }
 
-    public byte[] writeValueAsBytes(Object object){
-        try {
-            return smile.writeValueAsBytes(object);
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot write smile", exception);
-        }
+    public byte[] writeValueAsBytes(Object object) throws IOException{
+        return smile.writeValueAsBytes(object);
     }
 
-    public void writeValueAsBytes(OutputStream outputStream, Object object){
-        try {
-            smile.writeValue(outputStream, object);
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot write smile", exception);
-        }
+    public void writeValueAsBytes(OutputStream outputStream, Object object) throws IOException{
+        smile.writeValue(outputStream, object);
     }
 
-    public <T> T readValue(byte[] value, Class<T> clazz){
-        try {
-            return smile.readValue(value, clazz);
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot read smile", exception);
-        }
+    public <T> T readValue(byte[] value, Class<T> clazz) throws IOException{
+        return smile.readValue(value, clazz);
     }
 
-    public <T> T readValue(InputStream inputStream, Class<T> clazz){
-        try {
-            return smile.readValue(inputStream, clazz);
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot read smile", exception);
-        }
+    public <T> T readValue(InputStream inputStream, Class<T> clazz) throws IOException {
+        return smile.readValue(inputStream, clazz);
     }
 
-    public <T> T readValue(byte[] value, TypeReference<T> clazz){
-        try {
-            return smile.readValue(value, clazz);
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot read smile", exception);
-        }
+    public <T> T readValue(byte[] value, TypeReference<T> clazz) throws IOException {
+        return smile.readValue(value, clazz);
     }
 
-    public <T> T readValue(InputStream inputStream, TypeReference<T> clazz){
-        try {
-            return smile.readValue(inputStream, clazz);
-        }catch (IOException exception){
-            throw new UncheckedIOException("Cannot read smile", exception);
-        }
+    public <T> T readValue(InputStream inputStream, TypeReference<T> clazz) throws IOException{
+        return smile.readValue(inputStream, clazz);
     }
 }
