@@ -1,8 +1,6 @@
 package it.auties.whatsapp.test;
 
-import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.Emoji;
-import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
@@ -86,7 +84,7 @@ public class RunWebCITest implements Listener {
         }
         loadConfig();
         createLatch();
-        future = api.connectAndAwait();
+        future = api.connectAwaitingLogout();
         latch.await();
     }
 
@@ -100,12 +98,16 @@ public class RunWebCITest implements Listener {
             }
             api = Whatsapp.webBuilder()
                     .lastConnection()
-                    .build();
+                    .unregistered(QrHandler.toTerminal());
             api.addListener(this);
             return;
         }
         log("Detected github actions environment");
-        api = Whatsapp.of(loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
+        api = Whatsapp.customBuilder()
+                .store(loadGithubParameter(GithubActions.STORE_NAME, Store.class))
+                .keys(loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class))
+                .webVerificationSupport(QrHandler.toTerminal())
+                .build();
         api.addListener(this);
     }
 

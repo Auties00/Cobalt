@@ -7,7 +7,6 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.companion.CompanionDevice;
-import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import lombok.NonNull;
 
 import java.util.Optional;
@@ -189,11 +188,16 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null optional of whatsapp
      */
     public Optional<Whatsapp> registered() {
-        if(keys.registrationStatus() == RegistrationStatus.UNREGISTERED){
+        if(!keys.registered()){
             return Optional.empty();
         }
 
-        return Optional.of(Whatsapp.of(store, keys));
+        return Optional.of(Whatsapp.customBuilder()
+                .store(store)
+                .keys(keys)
+                .errorHandler(errorHandler)
+                .socketExecutor(socketExecutor)
+                .build());
     }
 
     /**
@@ -203,7 +207,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unregistered unregistered() {
-        return new Unregistered(store, keys);
+        return new Unregistered(store, keys, errorHandler, socketExecutor);
     }
 
     /**
@@ -213,6 +217,6 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unverified unverified() {
-        return new Unverified(store, keys);
+        return new Unverified(store, keys, errorHandler, socketExecutor);
     }
 }

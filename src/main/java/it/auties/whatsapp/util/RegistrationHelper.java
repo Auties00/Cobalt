@@ -7,7 +7,6 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.exception.RegistrationException;
-import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
@@ -92,7 +91,7 @@ public class RegistrationHelper {
     }
 
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
-        keys.registrationStatus(RegistrationStatus.REGISTERED);
+        keys.registered(registered);
         if(registered){
             store.jid(store.phoneNumber().orElseThrow().toJid());
             store.addLinkedDevice(store.jid(), 0);

@@ -6,7 +6,6 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -109,7 +108,7 @@ public final class Keys extends Controller<Keys> {
      */
     @Default
     @Getter
-    private byte[] companionKey = SignalKeyPair.random().publicKey();
+    private SignalKeyPair companionKeyPair = SignalKeyPair.random();
 
     /**
      * The prologue to send in a message
@@ -173,12 +172,28 @@ public final class Keys extends Controller<Keys> {
     private Map<ContactJid, Map<BinaryPatchType, LTHashState>> hashStates = new ConcurrentHashMap<>();
 
     /**
-     * Whether the client was registered, if mobile app
+     * Whether the client was registered
      */
     @Getter
     @Setter
     @Default
-    private RegistrationStatus registrationStatus = RegistrationStatus.UNREGISTERED;
+    private boolean registered = false;
+
+    /**
+     * Whether the client has already sent its business certificate (mobile api only)
+     */
+    @Getter
+    @Setter
+    @Default
+    private boolean businessCertificate = false;
+
+    /**
+     * Whether the client received the initial app sync (web api only)
+     */
+    @Getter
+    @Setter
+    @Default
+    private boolean initialAppSync = false;
 
     /**
      * Write counter for IV
@@ -216,7 +231,7 @@ public final class Keys extends Controller<Keys> {
                 .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
                 .clientType(ClientType.MOBILE)
                 .prologue(Spec.Whatsapp.APP_PROLOGUE)
-                .registrationStatus(RegistrationStatus.REGISTERED)
+                .registered(true)
                 .build();
         result.signedKeyPair(SignalSignedKeyPair.of(result.registrationId(), result.identityKeyPair()));
         result.serialize(true);

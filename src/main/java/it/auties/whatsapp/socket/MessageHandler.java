@@ -55,7 +55,7 @@ class MessageHandler {
     private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
     private final Set<Chat> historyCache;
     private final Logger logger;
-    private final DeferredTaskRunner deferredTaskRunner;
+    private final DeferredTaskRunner deferredGroupQuery;
     private final Set<ContactJid> attributedGroups;
     private final EnumSet<HistorySync.Type> historySyncTypes;
     private ExecutorService executor;
@@ -68,7 +68,7 @@ class MessageHandler {
         this.attributedGroups = ConcurrentHashMap.newKeySet();
         this.logger = System.getLogger("MessageHandler");
         this.historySyncTypes = EnumSet.noneOf(HistorySync.Type.class);
-        this.deferredTaskRunner = new DeferredTaskRunner();
+        this.deferredGroupQuery = new DeferredTaskRunner();
     }
 
     private synchronized ExecutorService getOrCreateMessageService(){
@@ -514,14 +514,11 @@ class MessageHandler {
     }
 
     private void sendReceipt(Node infoNode, String id, ContactJid chatJid, ContactJid senderJid, boolean fromMe) {
-        if(fromMe && senderJid == null){
-            senderJid = chatJid;
-        }
-
+        var participant = fromMe && senderJid == null ? chatJid : senderJid;
         var category = infoNode.attributes().getString("category");
         var receiptType = getReceiptType(category, fromMe);
-        socketHandler.sendReceipt(chatJid, senderJid, List.of(id), receiptType);
         socketHandler.sendMessageAck(infoNode);
+        socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType);
     }
 
     private String getReceiptType(String category, boolean fromMe) {
@@ -647,11 +644,8 @@ class MessageHandler {
     }
 
     private void onAppStateSyncKeyShare(ProtocolMessage protocolMessage) {
-        socketHandler.keys().addAppKeys(socketHandler.store().jid(), protocolMessage.appStateSyncKeyShare().keys());
-        if (socketHandler.store().initialSync()) {
-            return;
-        }
-
+        socketHandler.keys()
+                .addAppKeys(socketHandler.store().jid(), protocolMessage.appStateSyncKeyShare().keys());
         socketHandler.pullInitialPatches()
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(UNKNOWN, throwable));
     }
@@ -715,7 +709,7 @@ class MessageHandler {
                 case PUSH_NAME -> handlePushNames(history);
                 case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
                 case RECENT, FULL -> {
-                    deferredTaskRunner.execute();
+                    deferredGroupQuery.execute();
                     handleChatsSync(history, false);
                 }
                 case NON_BLOCKING_DATA -> handleNonBlockingData(history);
@@ -793,7 +787,7 @@ class MessageHandler {
             }
             if(shouldSyncGroupMetadata(chat)){
                 attributedGroups.add(chat.jid());
-                deferredTaskRunner.schedule(() -> socketHandler.queryGroupMetadata(chat));
+                deferredGroupQuery.schedule(() -> socketHandler.queryGroupMetadata(chat));
             }
 
             store.addChat(chat);

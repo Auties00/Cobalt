@@ -1,26 +1,13 @@
 package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.standard.AudioMessage;
-import it.auties.whatsapp.model.message.standard.ImageMessage;
-import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.utils.MediaUtils;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 public class MobileTest {
     @Test
@@ -36,28 +23,10 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");
-                    var message = TextMessage.builder()
-                            .text("Hello World")
-                            .backgroundArgb(0xffffffff)
-                            .font(TextMessage.TextMessageFontType.NORICAN_REGULAR)
-                            .build();
-                    var key = MessageKey.builder()
-                            .chatJid(ContactJid.of("status@broadcast"))
-                            .senderJid(api.store().jid())
-                            .fromMe(true)
-                            .build();
-                    var info = MessageInfo.builder()
-                            .message(MessageContainer.of(message))
-                            .key(key)
-                            .senderJid(api.store().jid())
-                            .timestampSeconds(Clock.nowSeconds())
-                            .build();
-                    var request = MessageSendRequest.builder()
-                            .info(info)
-                            .recipients(List.of(ContactJid.of("393495089819")))
-                            .force(true)
-                            .build();
-                    api.sendMessage(request).join();
+                    while (true){
+                        api.sendMessage(ContactJid.of("393495089819"), "Hello World")
+                                .join();
+                    }
                 })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
@@ -69,7 +38,7 @@ public class MobileTest {
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
                 .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
-                .connectAndAwait()
+                .connectAwaitingLogout()
                 .join();
     }
 

@@ -67,6 +67,7 @@ import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.util.*;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -81,6 +82,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -95,6 +97,8 @@ import java.util.stream.Stream;
 @Accessors(fluent = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Whatsapp {
+    // The instances are added and removed when the client connects/disconnects
+    // This is to make sure that the instances remain in memory only as long as it's needed
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
 
     private final SocketHandler socketHandler;
@@ -129,8 +133,38 @@ public class Whatsapp {
         return SocketHandler.isConnected(alias);
     }
 
-    private Whatsapp(@NonNull Store store, @NonNull Keys keys) {
-        this.socketHandler = new SocketHandler(this, store, keys);
+    /**
+     * Advanced builder if you need more customization
+     */
+    @Builder(builderMethodName = "customBuilder")
+    private static Whatsapp builder(@NonNull Store store, @NonNull Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, Executor socketExecutor){
+        Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()),
+                "UUIDs for store and keys don't match: %s != %s", store.uuid(), keys.uuid());
+        var knownInstance = instances.get(store.uuid());
+        if(knownInstance != null){
+            return knownInstance;
+        }
+
+        var checkedSupport = getWebVerificationMethod(store, keys, webVerificationSupport);
+        var result = new Whatsapp(store, keys, errorHandler, checkedSupport, socketExecutor);
+        result.addDisconnectedListener(reason -> instances.remove(store.uuid()));
+        return result;
+    }
+
+    private static WebVerificationSupport getWebVerificationMethod(Store store, Keys keys, WebVerificationSupport webVerificationSupport) {
+        if(store.clientType() != ClientType.WEB){
+            return null;
+        }
+
+        if(!keys.registered() && webVerificationSupport == null) {
+            return QrHandler.toTerminal();
+        }
+
+        return webVerificationSupport;
+    }
+
+    private Whatsapp(@NonNull Store store, @NonNull Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, Executor socketExecutor) {
+        this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationSupport, socketExecutor);
         if(store.autodetectListeners()){
             return;
         }
@@ -138,24 +172,6 @@ public class Whatsapp {
         store().addListeners(ListenerScanner.scan(this));
     }
 
-    /**
-     * Creates a new instance from a store and keys
-     *
-     * @param store the non-null store
-     * @param keys the non-null keys
-     * @return a non-null instance
-     */
-    public static Whatsapp of(@NonNull Store store, @NonNull Keys keys){
-        Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUIDs for store and keys don't match: %s != %s", store.uuid(), keys.uuid());
-        var knownInstance = instances.get(store.uuid());
-        if(knownInstance != null){
-            return knownInstance;
-        }
-
-        var result = new Whatsapp(store, keys);
-        result.addDisconnectedListener(reason -> instances.remove(store.uuid()));
-        return result;
-    }
 
     /**
      * Creates a new web api
@@ -193,7 +209,7 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public synchronized CompletableFuture<Void> connectAndAwait(){
+    public synchronized CompletableFuture<Void> connectAwaitingLogout(){
         return socketHandler.connect()
                 .thenRunAsync(() -> instances.put(store().uuid(), this))
                 .thenCompose(ignored -> socketHandler.logoutFuture());

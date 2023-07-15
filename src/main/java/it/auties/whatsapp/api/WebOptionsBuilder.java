@@ -3,10 +3,12 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import lombok.NonNull;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 @SuppressWarnings("unused")
 public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
@@ -79,26 +81,77 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     }
 
     /**
-     * Sets the qr handle
+     * Creates a Whatsapp instance with a qr handler that prints to the terminal
      *
-     * @return the same instance for chaining
+     * @return a Whatsapp instance
      */
-    public WebOptionsBuilder qrHandler(@NonNull QrHandler qrHandler) {
-        store.qrHandler(qrHandler);
-        return this;
+    public Whatsapp unregistered() {
+        return unregistered(QrHandler.toTerminal());
     }
 
-
     /**
-     * Opens a connection with Whatsapp Web's WebSocket
+     * Creates a Whatsapp instance with a qr handler
      *
-     * @return a future
+     * @param qrHandler the non-null handler to use
+     * @return a Whatsapp instance
      */
-    public Whatsapp build() {
+    public Whatsapp unregistered(@NonNull QrHandler qrHandler) {
         if (whatsapp == null) {
-            this.whatsapp = Whatsapp.of(store, keys);
+            this.whatsapp = Whatsapp.customBuilder()
+                    .store(store)
+                    .keys(keys)
+                    .errorHandler(errorHandler)
+                    .socketExecutor(socketExecutor)
+                    .webVerificationSupport(qrHandler)
+                    .build();
         }
 
         return whatsapp;
+    }
+
+    /**
+     * Creates a Whatsapp instance with an OTP handler
+     *
+     * @param phoneNumber        the phone number of the user
+     * @param pairingCodeHandler the non-null handler for the pairing code
+     * @return a Whatsapp instance
+     */
+    public Whatsapp unregistered(long phoneNumber, @NonNull PairingCodeHandler pairingCodeHandler) {
+        if (whatsapp == null) {
+            store.phoneNumber(PhoneNumber.of(phoneNumber));
+            this.whatsapp = Whatsapp.customBuilder()
+                    .store(store)
+                    .keys(keys)
+                    .errorHandler(errorHandler)
+                    .socketExecutor(socketExecutor)
+                    .webVerificationSupport(pairingCodeHandler)
+                    .build();
+        }
+
+        return whatsapp;
+    }
+
+    /**
+     * Creates a Whatsapp instance with no handlers
+     * This method assumes that you have already logged in using a QR code or OTP
+     * Otherwise, it returns an empty optional.
+     *
+     * @return an optional
+     */
+    public Optional<Whatsapp> registered() {
+        if(!keys.registered()){
+            return Optional.empty();
+        }
+
+        if (whatsapp == null) {
+            this.whatsapp = Whatsapp.customBuilder()
+                    .store(store)
+                    .keys(keys)
+                    .errorHandler(errorHandler)
+                    .socketExecutor(socketExecutor)
+                    .build();
+        }
+
+        return Optional.of(whatsapp);
     }
 }

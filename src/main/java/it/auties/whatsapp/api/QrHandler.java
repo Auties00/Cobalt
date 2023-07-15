@@ -26,7 +26,7 @@ import static java.nio.file.Files.createTempFile;
  */
 @FunctionalInterface
 @SuppressWarnings("unused")
-public interface QrHandler extends Consumer<String> {
+public non-sealed interface QrHandler extends Consumer<String>, WebVerificationSupport {
     /**
      * Prints the QR code to the terminal. If your terminal doesn't support utf, you may see random
      * characters.

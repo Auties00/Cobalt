@@ -88,7 +88,7 @@ public class RunMobileCITest implements Listener {
         }
         loadConfig();
         createLatch();
-        future = api.connectAndAwait();
+        future = api.connectAwaitingLogout();
         latch.await();
     }
 
@@ -111,8 +111,11 @@ public class RunMobileCITest implements Listener {
             return;
         }
         log("Detected github actions environment");
-        api = Whatsapp.of(loadGithubParameter(GithubActions.STORE_NAME, Store.class), loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
-        api.addListener(this);
+        api = Whatsapp.customBuilder()
+                .store(loadGithubParameter(GithubActions.STORE_NAME, Store.class))
+                .keys(loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class))
+                .build()
+                .addListener(this);
     }
 
     private CompletableFuture<String> onScanCode() {

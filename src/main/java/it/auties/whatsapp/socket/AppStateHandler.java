@@ -202,7 +202,7 @@ class AppStateHandler {
     }
 
     protected CompletableFuture<Void> pullInitial() {
-        if(socketHandler.store().initialSync()){
+        if(socketHandler.keys().initialAppSync()){
             return CompletableFuture.completedFuture(null);
         }
 
@@ -212,8 +212,8 @@ class AppStateHandler {
     }
 
     private void onPull(boolean initial, boolean success) {
-        if (!socketHandler.store().initialSync()) {
-            socketHandler.store().initialSync((initial && success) || isSyncComplete());
+        if (!socketHandler.keys().initialAppSync()) {
+            socketHandler.keys().initialAppSync((initial && success) || isSyncComplete());
         }
 
         attempts.clear();

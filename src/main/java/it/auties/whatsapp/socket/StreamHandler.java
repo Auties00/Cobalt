@@ -2,10 +2,10 @@ package it.auties.whatsapp.socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.SocketEvent;
+import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.binary.BinaryPatchType;
+import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
@@ -24,14 +24,12 @@ import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.mobile.RegistrationStatus;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
@@ -43,17 +41,26 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -72,14 +79,18 @@ class StreamHandler {
     private static final int MAX_ATTEMPTS = 5;
 
     private final SocketHandler socketHandler;
+    private final WebVerificationSupport webVerificationSupport;
     private final Map<String, Integer> retries;
     private final AtomicBoolean badMac;
+    private final AtomicReference<String> lastLinkCodeKey;
     private ScheduledExecutorService service;
 
-    protected StreamHandler(SocketHandler socketHandler) {
+    protected StreamHandler(SocketHandler socketHandler, WebVerificationSupport webVerificationSupport) {
         this.socketHandler = socketHandler;
+        this.webVerificationSupport = webVerificationSupport;
         this.retries = new HashMap<>();
         this.badMac = new AtomicBoolean();
+        this.lastLinkCodeKey = new AtomicReference<>();
     }
 
     protected void digest(@NonNull Node node) {
@@ -256,19 +267,57 @@ class StreamHandler {
     }
 
     private void digestNotification(Node node) {
-        try {
-            var type = node.attributes().getString("type", null);
-            switch (type) {
-                case "w:gp2" -> handleGroupNotification(node);
-                case "server_sync" -> handleServerSyncNotification(node);
-                case "account_sync" -> handleAccountSyncNotification(node);
-                case "encrypt" -> handleEncryptNotification(node);
-                case "picture" -> handlePictureNotification(node);
-                case "registration" -> handleRegistrationNotification(node);
-            }
-        }finally {
-            socketHandler.sendMessageAck(node);
+        socketHandler.sendMessageAck(node);
+        var type = node.attributes().getString("type", null);
+        switch (type) {
+            case "w:gp2" -> handleGroupNotification(node);
+            case "server_sync" -> handleServerSyncNotification(node);
+            case "account_sync" -> handleAccountSyncNotification(node);
+            case "encrypt" -> handleEncryptNotification(node);
+            case "picture" -> handlePictureNotification(node);
+            case "registration" -> handleRegistrationNotification(node);
+            case "link_code_companion_reg" -> confirmCompanionWebRegistration(node);
         }
+    }
+
+    private void confirmCompanionWebRegistration(Node node) {
+        var phoneNumber = getPhoneNumberAsJid();
+        var linkCodeCompanionReg = node.findNode("link_code_companion_reg")
+                .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
+        var ref = linkCodeCompanionReg.findNode("link_code_pairing_ref")
+                .flatMap(Node::contentAsBytes)
+                .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
+        var primaryIdentityPublicKey = linkCodeCompanionReg.findNode("primary_identity_pub")
+                .flatMap(Node::contentAsBytes)
+                .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
+        var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findNode("link_code_pairing_wrapped_primary_ephemeral_pub")
+                .flatMap(Node::contentAsBytes)
+                .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
+        var r = lastLinkCodeKey.get();
+        var n = socketHandler.keys().companionKeyPair();
+        var i = socketHandler.keys().identityKeyPair().publicKey();
+        var c = BytesHelper.random(32);
+        var d = BytesHelper.random(32);
+        var __ = BytesHelper.random(12);
+        var m = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 0, 32);
+        var E = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 32, 48);
+        var y = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 48, 80);
+        var T = y(r, m);
+        var v = I(y, T, E);
+        var I = Curve25519.sharedKey(v, n.privateKey());
+        var M = Hkdf.extractAndExpand(I, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), d,32);
+        var C = BytesHelper.concat(i, primaryIdentityPublicKey, c);
+        var P = AesGmc.encrypt(__, C, M);
+        var b = BytesHelper.concat(d, __, P);
+        var L = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
+        var D = BytesHelper.concat(I, L, c);
+        var w = Hkdf.extractAndExpand(D, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
+        var confirmation = Node.of("link_code_companion_reg",
+                Map.of("jid", phoneNumber, "stage", "companion_finish"),
+                Node.of("link_code_pairing_wrapped_key_bundle", b),
+                Node.of("companion_identity_public", w),
+                Node.of("link_code_pairing_ref", ref));
+        socketHandler.sendQuery("set", "md", confirmation);
     }
 
     private void handleRegistrationNotification(Node node) {
@@ -427,7 +476,7 @@ class StreamHandler {
         var devices = child.findNodes("device")
                 .stream()
                 .collect(Collectors.toMap(
-                        entry -> entry.attributes().getJid("jid").get(),
+                        entry -> entry.attributes().getJid("jid").orElseThrow(),
                         entry -> entry.attributes().getInt("key-index"),
                         (first, second) -> second,
                         LinkedHashMap::new
@@ -580,8 +629,9 @@ class StreamHandler {
     }
 
     private void digestSuccess(Node node) {
-        node.attributes().getJid("lid").ifPresent(socketHandler.store()::lid);
-        confirmConnection();
+        node.attributes().getJid("lid")
+                .ifPresent(socketHandler.store()::lid);
+        socketHandler.sendQuery("set", "passive", Node.of("active"));
         if (!socketHandler.keys().hasPreKeys()) {
             sendPreKeys();
         }
@@ -591,11 +641,7 @@ class StreamHandler {
         var loggedInFuture = queryInitialInfo()
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        if(socketHandler.store().clientType() == ClientType.MOBILE){
-            socketHandler.store().initialSync(true);
-        }
-
-        if (!socketHandler.store().initialSync()) {
+        if (!socketHandler.keys().registered()) {
             return;
         }
 
@@ -666,7 +712,11 @@ class StreamHandler {
 
     private void onInitialInfo() {
         socketHandler.onLoggedIn();
-        if (!socketHandler.store().initialSync()) {
+        if (!socketHandler.keys().registered()) {
+            if(socketHandler.store().clientType() == ClientType.WEB){
+                socketHandler.keys().registered(true);
+            }
+
             return;
         }
 
@@ -708,12 +758,12 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> checkBusinessStatus() {
-        if (!socketHandler.store().business() || socketHandler.keys().registrationStatus() == RegistrationStatus.BUSINESS_REGISTERED) {
+        if (!socketHandler.store().business() || socketHandler.keys().businessCertificate()) {
             return CompletableFuture.completedFuture(null);
         }
 
         return CompletableFuture.allOf(setBusinessCertificate(), setBusinessProfile())
-                .thenRunAsync(() -> socketHandler.keys().registrationStatus(RegistrationStatus.BUSINESS_REGISTERED));
+                .thenRunAsync(() -> socketHandler.keys().businessCertificate(true));
     }
 
     private CompletableFuture<Void> queryInitialPrivacySettings() {
@@ -855,10 +905,6 @@ class StreamHandler {
         }
     }
 
-    private void confirmConnection() {
-        socketHandler.sendQuery("set", "passive", Node.of("active"));
-    }
-
     private void sendPreKeys() {
         var startId = socketHandler.keys().lastPreKeyId() + 1;
         var preKeys = IntStream.range(startId, startId + PRE_KEYS_UPLOAD_CHUNK)
@@ -874,11 +920,78 @@ class StreamHandler {
     }
 
     private void generateQrCode(Node node, Node container) {
-        printQrCode(container);
-        sendConfirmNode(node, null);
+        if (webVerificationSupport instanceof QrHandler qrHandler){
+            printQrCode(qrHandler, container);
+            sendConfirmNode(node, null);
+        }else if(webVerificationSupport instanceof PairingCodeHandler codeHandler) {
+            askPairingCode(codeHandler);
+        } else {
+            throw new IllegalArgumentException("Cannot verify account: unknown verification method");
+        }
     }
 
-    private void printQrCode(Node container) {
+    private void askPairingCode(PairingCodeHandler codeHandler) {
+        var code = BytesHelper.bytesToCrockford(BytesHelper.random(5));
+        var phoneNumber = getPhoneNumberAsJid();
+        var linkCodePairingWrappedCompanionEphemeralPub = getLinkCodePairingPublicKey(code);
+        var registration = Node.of("link_code_companion_reg",
+                Map.of("jid", phoneNumber, "stage", "companion_hello", "should_show_push_notification", true),
+                Node.of("link_code_pairing_wrapped_companion_ephemeral_pub", linkCodePairingWrappedCompanionEphemeralPub),
+                Node.of("companion_server_auth_key_pub", socketHandler.keys().noiseKeyPair().publicKey()),
+                Node.of("companion_platform_id", 49),
+                Node.of("companion_platform_display", socketHandler.store().name()),
+                Node.of("link_code_pairing_nonce", 0));
+        socketHandler.sendQuery("set", "md", registration)
+                .thenAcceptAsync(result -> onAskedPairingCode(codeHandler, code));
+    }
+
+    private void onAskedPairingCode(PairingCodeHandler codeHandler, String code) {
+        lastLinkCodeKey.set(code);
+        codeHandler.accept(code);
+    }
+
+    private ContactJid getPhoneNumberAsJid() {
+        return socketHandler.store()
+                .phoneNumber()
+                .map(PhoneNumber::toJid)
+                .orElseThrow(() -> new IllegalArgumentException("Missing phone number while registering via OTP"));
+    }
+
+    private byte[] getLinkCodePairingPublicKey(String linkCodeKey) {
+        var r = BytesHelper.random(32);
+        var n = BytesHelper.random(16);
+        var a = y(linkCodeKey, r);
+        var s = v(socketHandler.keys().companionKeyPair().publicKey(), n, a);
+        return BytesHelper.concat(r, n, s);
+    }
+
+    @SneakyThrows
+    private SecretKey y(String password, byte[] salt) {
+        var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+        var spec = new PBEKeySpec(password.toCharArray(), salt, 2 << 16, 256);
+        var tmp = factory.generateSecret(spec);
+        var secret = new SecretKeySpec(tmp.getEncoded(), "AES");
+        var cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, secret);
+        return secret;
+    }
+
+    @SneakyThrows
+    public byte[] v(byte[] data, byte[] counter, SecretKey key) {
+        var cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(counter));
+        return cipher.doFinal(data);
+    }
+
+    @SneakyThrows
+    public byte[] I(byte[] encryptedData, SecretKey secretKey, byte[] counter) {
+        var ivSpec = new IvParameterSpec(counter);
+        var cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
+        return cipher.doFinal(encryptedData);
+    }
+
+    private void printQrCode(QrHandler qrHandler, Node container) {
         var ref = container.findNode("ref")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
@@ -887,10 +1000,10 @@ class StreamHandler {
                 ref,
                 Base64.getEncoder().encodeToString(socketHandler.keys().noiseKeyPair().publicKey()),
                 Base64.getEncoder().encodeToString(socketHandler.keys().identityKeyPair().publicKey()),
-                Base64.getEncoder().encodeToString(socketHandler.keys().companionKey()),
+                Base64.getEncoder().encodeToString(socketHandler.keys().companionKeyPair().publicKey()),
                 "1"
         );
-        socketHandler.store().qrHandler().accept(qr);
+        qrHandler.accept(qr);
     }
 
     private void confirmQrCode(Node node, Node container) {
@@ -898,7 +1011,7 @@ class StreamHandler {
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
         var advIdentity = Protobuf.readMessage(deviceIdentity.contentAsBytes().orElseThrow(), SignedDeviceIdentityHMAC.class);
-        var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKey());
+        var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKeyPair().publicKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
             socketHandler.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
             return;
@@ -973,5 +1086,6 @@ class StreamHandler {
             service.shutdownNow();
         }
         badMac.set(false);
+        lastLinkCodeKey.set(null);
     }
 }

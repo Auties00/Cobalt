@@ -1,5 +1,6 @@
 package it.auties.whatsapp.local;
 
+import it.auties.whatsapp.api.PairingCodeHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import org.junit.jupiter.api.Test;
@@ -9,9 +10,9 @@ public class WebTest {
     @Test
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
-                .lastConnection()
+                .newConnection()
                 .historyLength(WebHistoryLength.ZERO)
-                .build()
+                .unregistered(393495089819L, PairingCodeHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

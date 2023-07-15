@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.request;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.NonNull;
 
@@ -20,7 +21,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param toMap the non-null wrapped map
  */
-public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
+public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> toMap) {
     /**
      * Constructs a new map using the non-null provided entries
      *

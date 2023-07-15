@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -19,6 +20,8 @@ import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
 
 @UtilityClass
 public class BytesHelper {
+    private static final String CROCKFORD_CHARACTERS = "123456789ABCDEFGHJKLMNPQRSTVWXYZ";
+
     public byte[] random(int length){
         var bytes = new byte[length];
         ThreadLocalRandom.current().nextBytes(bytes);
@@ -156,5 +159,26 @@ public class BytesHelper {
             result = 256 * result + Byte.toUnsignedInt(bytes[i]);
         }
         return result;
+    }
+
+    public String bytesToCrockford(byte[] bytes) {
+        var buffer = ByteBuffer.wrap(bytes);
+        var value = 0;
+        var bitCount = 0;
+        var crockford = new StringBuilder();
+        for (var i = 0; i < buffer.limit(); i++) {
+            value = (value << 8) | (buffer.get(i) & 0xFF);
+            bitCount += 8;
+            while (bitCount >= 5) {
+                crockford.append(CROCKFORD_CHARACTERS.charAt((value >>> (bitCount - 5)) & 31));
+                bitCount -= 5;
+            }
+        }
+
+        if (bitCount > 0) {
+            crockford.append(CROCKFORD_CHARACTERS.charAt((value << (5 - bitCount)) & 31));
+        }
+
+        return crockford.toString();
     }
 }

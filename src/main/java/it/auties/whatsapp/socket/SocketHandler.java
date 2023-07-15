@@ -1,9 +1,7 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.DisconnectReason;
+import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.api.SocketEvent;
-import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
@@ -47,10 +45,7 @@ import lombok.experimental.Accessors;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -59,6 +54,8 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
 public class SocketHandler implements SocketListener {
+    private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
+
     private static final Set<UUID> connectedUuids = ConcurrentHashMap.newKeySet();
     private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
     private static final Set<String> connectedAlias = ConcurrentHashMap.newKeySet();
@@ -80,6 +77,12 @@ public class SocketHandler implements SocketListener {
 
     @NonNull
     private final AppStateHandler appStateHandler;
+
+    @NonNull
+    private final ErrorHandler errorHandler;
+
+    @NonNull
+    private final Executor socketExecutor;
 
     @NonNull
     @Getter
@@ -116,15 +119,17 @@ public class SocketHandler implements SocketListener {
         return connectedAlias.contains(id);
     }
 
-    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Store store, @NonNull Keys keys) {
+    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Store store, @NonNull Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, Executor socketExecutor) {
         this.whatsapp = whatsapp;
         this.store = store;
         this.keys = keys;
         this.state = SocketState.WAITING;
         this.authHandler = new AuthHandler(this);
-        this.streamHandler = new StreamHandler(this);
+        this.streamHandler = new StreamHandler(this, webVerificationSupport);
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
+        this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
+        this.socketExecutor = Objects.requireNonNullElse(socketExecutor, DEFAULT_EXECUTOR);
     }
 
     private void onShutdown(boolean reconnect) {
@@ -193,7 +198,7 @@ public class SocketHandler implements SocketListener {
         var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey());
         var decoder = new BinaryDecoder();
         var node = decoder.decode(plainText);
-        if(!node.hasDescription("bad-mac")) {
+        if(!node.hasNode("bad-mac")) {
             this.lastNode = node;
         }
         onNodeReceived(node);
@@ -237,7 +242,7 @@ public class SocketHandler implements SocketListener {
             this.logoutFuture = new CompletableFuture<>();
         }
 
-        this.session = new SocketSession(store.proxy().orElse(null), store.socketExecutor());
+        this.session = new SocketSession(store.proxy().orElse(null), socketExecutor);
         return session.connect(this)
                 .thenCompose(ignored -> loginFuture);
     }
@@ -277,9 +282,6 @@ public class SocketHandler implements SocketListener {
             case RESTORE -> {
                 store.deleteSession();
                 store.resolveAllPendingRequests();
-                var qrHandler = store.qrHandler();
-                var errorHandler = store.errorHandler();
-                var socketExecutor = store.socketExecutor();
                 var oldListeners = new ArrayList<>(store.listeners());
                 if(session != null) {
                     session.close();
@@ -290,9 +292,6 @@ public class SocketHandler implements SocketListener {
                         .orElse(null);
                 this.keys = Keys.random(uuid, number, store.clientType(), store.serializer());
                 this.store = Store.random(uuid, number, store.clientType(), store.serializer());
-                store.qrHandler(qrHandler);
-                store.errorHandler(errorHandler);
-                store.socketExecutor(socketExecutor);
                 store.addListeners(oldListeners);
                 yield connect();
             }
@@ -854,7 +853,7 @@ public class SocketHandler implements SocketListener {
         if (state() == SocketState.RESTORE || state() == SocketState.LOGGED_OUT) {
             return null;
         }
-        var result = store.errorHandler().handleError(store.clientType(), location, throwable);
+        var result = errorHandler.handleError(store.clientType(), location, throwable);
         switch (result) {
             case RESTORE -> disconnect(DisconnectReason.RESTORE);
             case LOG_OUT -> disconnect(DisconnectReason.LOGGED_OUT);

@@ -61,11 +61,6 @@ import java.util.stream.Stream;
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store extends Controller<Store> {
     /**
-     * The default executor
-     */
-    private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
-
-    /**
      * The version used by this session
      */
     private URI proxy;
@@ -233,14 +228,6 @@ public final class Store extends Controller<Store> {
     private ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
 
     /**
-     * Whether this store has already received the snapshot from Whatsapp Web containing chats and
-     * contacts
-     */
-    @Getter
-    @Setter
-    private boolean initialSync;
-
-    /**
      * Whether chats should be unarchived if a new message arrives
      */
     @Getter
@@ -332,36 +319,6 @@ public final class Store extends Controller<Store> {
     @Default
     @NonNull
     private WebHistoryLength historyLength = WebHistoryLength.STANDARD;
-
-    /**
-     * The handler to use when printing out the qr coe
-     */
-    @Getter
-    @Setter
-    @Default
-    @NonNull
-    @JsonIgnore
-    private QrHandler qrHandler = QrHandler.toTerminal();
-
-    /**
-     * The handler for errors
-     */
-    @Getter
-    @Setter
-    @Default
-    @NonNull
-    @JsonIgnore
-    private ErrorHandler errorHandler = ErrorHandler.toTerminal();
-
-    /**
-     * The executor to use for the socket
-     */
-    @Getter
-    @Setter
-    @Default
-    @NonNull
-    @JsonIgnore
-    private Executor socketExecutor = DEFAULT_EXECUTOR;
 
     /**
      * Whether listeners should be automatically scanned and registered or not
