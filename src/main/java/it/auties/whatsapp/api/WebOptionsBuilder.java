@@ -8,7 +8,6 @@ import lombok.NonNull;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 @SuppressWarnings("unused")
 public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
@@ -78,15 +77,6 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     public WebOptionsBuilder historyLength(@NonNull WebHistoryLength historyLength) {
         store.historyLength(historyLength);
         return this;
-    }
-
-    /**
-     * Creates a Whatsapp instance with a qr handler that prints to the terminal
-     *
-     * @return a Whatsapp instance
-     */
-    public Whatsapp unregistered() {
-        return unregistered(QrHandler.toTerminal());
     }
 
     /**

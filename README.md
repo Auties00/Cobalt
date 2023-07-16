@@ -55,7 +55,7 @@ In short, if you use this library without a malicious intent, you will never get
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.5.0</version>
+    <version>3.5.1</version>
 </dependency>
 ```
 
@@ -63,12 +63,12 @@ In short, if you use this library without a malicious intent, you will never get
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.5.0'
+   implementation 'com.github.auties00:whatsappweb4j:3.5.1'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.5.0")
+   implementation("com.github.auties00:whatsappweb4j:3.5.1")
    ```
 
 ### Examples
@@ -108,35 +108,6 @@ Remember to handle them as your application will terminate without doing anythin
 Please do not open redundant issues on GitHub because of this.
 
 ### How to create a connection
-Here are two examples:
-- Web 
-    ```java
-      Whatsapp.webBuilder()
-                .newConnection()
-                .build()
-                .addLoggedInListener(() -> System.out.println("Connected"))
-                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
-                .connect()
-                .join();
-    ```
-- Mobile
-    ```java
-      Whatsapp.mobileBuilder()
-                .newConnection()
-                .unregistered()
-                .verificationCodeSupplier(() -> {
-                   System.out.println("Enter OTP: ");
-                   return new Scanner(System.in).nextLine();
-                })
-                .register(yourPhoneNumber)
-                .join()
-                .addLoggedInListener(() -> System.out.println("Connected"))
-                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
-                .connect()
-                .join();
-    ```
-
-If you want to understand this code, read the following walkthrough.
 To create a new connection, start by creating a builder with the api you need:
 - Web
     ```java
@@ -167,83 +138,131 @@ Now select the type of connection that you need:
   ```java
   .newConnection(alias)
   ```
+- Retrieve a connection by id if available, otherwise returns an empty Optional
+  ```java
+  .newOptionalConnection(someUuid)
+  ```
 - Retrieve the first connection that was serialized if available, otherwise create a new one
   ```java
   .firstConnection()
+  ```
+- Retrieve the first connection that was serialized if available, otherwise returns an empty Optional
+  ```java
+  .firstOptionalConnection()
   ```
 - Retrieve the last connection that was serialized if available, otherwise create a new one
   ```java
   .lastConnection()
   ```
+- Retrieve the last connection that was serialized if available, otherwise returns an empty Optional
+  ```java
+  .lastOptionalConnection()
+  ```
 You can now customize the API with these options:
-- name - The device's name for Whatsapp Web, the push name for Whatsapp's Mobile (Serialized)
+- name - The device's name for Whatsapp Web, the push name for Whatsapp's Mobile
   ```java
   .name("Some Custom Name :)")
   ```
-- version - The version of Whatsapp to use (Serialized)
+- version - The version of Whatsapp to use
   ```java
   .version(new Version("x.xx.xx"))
   ```
-- autodetectListeners - Whether listeners annotated with `@RegisterListener` should automatically be registered (Serialized)
+- autodetectListeners - Whether listeners annotated with `@RegisterListener` should automatically be registered
   ```java
   .autodetectListeners(true)
   ```
-- textPreviewSetting - Whether a media preview should be generated for text messages containing links (Serialized)
+- textPreviewSetting - Whether a media preview should be generated for text messages containing links
   ```java
   .textPreviewSetting(TextPreviewSetting.ENABLED_WITH_INFERENCE)
   ```
-- checkPatchMacs - Whether patch macs coming from app state pulls should be validated (Serialized)
+- checkPatchMacs - Whether patch macs coming from app state pulls should be validated
   ```java
   .checkPatchMacs(checkPatchMacs)
   ```
-- errorHandler - The error handler to use for this session (Not serialized, specify this every time)
-  ```java
-  .errorHandler(ErrorHandler.toTerminal())
-  ```
-- proxy - The proxy to use for the socket connection (Serialized)
+- proxy - The proxy to use for the socket connection
   ```java
   .proxy(someProxy)
   ```
-- socketExecutor - The custom executor to handle the socket asynchronously (Not serialized, specify this every time)
-  ```java
-  .socketExecutor(someCustomExecutor)
-  ```
-If you are using the web api you can also set these options:
-- historyLength: The amount of messages to sync from the companion device (Serialized)
-  ```java
-  .historyLength(WebHistoryLength.THREE_MONTHS)
-  ```
-Otherwise, if you are using the mobile api, select whether you want to use a business account:
-  ```java
-  .business(false)
-  ```
-then select the registration status of your session:
-- Creates a new session from a registered phone number: this means that the OTP was already sent to Whatsapp
+  
+> **_IMPORTANT:_** All of these options are serialized, so you don't need to specify them again each time.
+
+There are also platform specific options:
+1. Web
+   - historyLength: The amount of messages to sync from the companion device
+     ```java
+     .historyLength(WebHistoryLength.THREE_MONTHS)
+     ```
+2. Mobile
+   - device: the device you want to fake (only Android supports business accounts for now, IOS supports only normal accounts):
+     ```java
+     .device(CompanionDevice.android())
+      ```
+   - business: whether you want to create a business account or a standard one
+      ```java
+      .business(true)
+      ```
+   - businessCategory: the category of your business account
+     ```java
+     .businessCategory(new BusinessCategory(id, name))
+      ```
+   - businessEmail: the email of your business account
+     ```java
+     .businessEmail("email@domanin.com")
+      ```
+   - businessWebsite: the website of your business account
+     ```java
+     .businessWebsite("https://google.com")
+      ```
+   - businessDescription: the description of your business account
+     ```java
+     .businessDescription("A nice description")
+      ```
+   - businessLatitude: the latitude of your business account
+     ```java
+     .businessLatitude(37.386051)
+      ```
+   - businessLongitude: the longitude of your business account
+     ```java
+     .businessLongitude(-122.083855)
+      ```
+   - businessAddress: the address of your business account
+     ```java
+     .businessAddress("1600 Amphitheatre Pkwy, Mountain View")
+      ```
+
+Finally select the registration status of your session:
+- Creates a new registered session: this means that the QR code was already scanned / the OTP was already sent to Whatsapp
   ```java
   .registered()
   ```
-- Creates a new session from an unverified phone number: this means that the OTP was already sent to the companion as an SMS/Call, but that it hasn't been sent to Whatsapp yet
+- Creates a new unregistered session: this means that the QR code wasn't scanned / the OTP wasn't sent to the companion's phone via SMS/Call/OTP
+  
+  If you are using the Web API, you can either register via QR code:
   ```java
-  .unverified()
-  ```
-  Finally, use:
-  Specify a verificationCodeSupplier to get the OTP and a verificationCaptchaSupplier to resolve the captcha if you are registering a business account.
+  .unregistered(QrHandler.toTerminal())
+  ```  
+  or with a pairing code(new feature):
   ```java
-  .verify()
-  ```
-  to verify the account (this doesn't create a connection to Whatsapp's Socket, it uses the HTTP api)
-- Creates a new session from an unregistered phone number: this means that the OTP wasn't sent to the companion as an SMS/Call
+  .unregistered(yourPhoneNumberWithCountryCode, PairingCodeHandler.toTerminal())
+  ```  
+  Otherwise, if you are using the mobile API, you can decide if you want to receive an SMS, a call or an OTP:
   ```java
-  .unregistered()
-  ```
-  Specify a verificationCodeSupplier to get the OTP and a verificationCaptchaSupplier to resolve the captcha if you are registering a business account.
-  Finally, use:
+  .verificationCodeMethod(VerificationCodeMethod.SMS)
+  ```  
+  Then provide a supplier for that verification method:
   ```java
-  .register(phoneNumber)
+  .verificationCodeSupplier(() -> yourAsyncOrSyncLogic())
+  ``` 
+  If you are using a business account, provide a captcha handler:
+  ```java
+  .verificationCaptchaSupplier(responseData -> yourAsyncOrSyncLogic())
   ```
-  to register the account (this doesn't create a connection to Whatsapp's Socket, it uses the HTTP api)
+  Finally, register:
+  ```java
+  .register(yourPhoneNumberWithCountryCode)
+  ```
 
-Finally, use
+Now you can connect to your session:
   ```java
   .connect()
   ```

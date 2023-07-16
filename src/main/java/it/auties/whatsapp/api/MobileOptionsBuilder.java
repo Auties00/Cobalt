@@ -71,7 +71,6 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
         return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
     }
 
-
     /**
      * Set the device to emulate
      *
@@ -113,7 +112,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      *
      * @return the same instance for chaining
      */
-    public MobileOptionsBuilder businessLongitude(Long businessLongitude) {
+    public MobileOptionsBuilder businessLongitude(Double businessLongitude) {
         if(store != null) {
             store.businessLongitude(businessLongitude);
         }
@@ -125,7 +124,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      *
      * @return the same instance for chaining
      */
-    public MobileOptionsBuilder businessLatitude(Long businessLatitude) {
+    public MobileOptionsBuilder businessLatitude(Double businessLatitude) {
         if(store != null) {
             store.businessLatitude(businessLatitude);
         }

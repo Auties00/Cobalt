@@ -140,7 +140,7 @@ public class GithubSecrets {
 
     private byte[] getStoreAsJson() {
         try {
-            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().store());
+            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().registered().orElseThrow().store());
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
@@ -148,7 +148,7 @@ public class GithubSecrets {
 
     private byte[] getCredentialsAsJson() {
         try {
-            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().build().keys());
+            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().registered().orElseThrow().keys());
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }

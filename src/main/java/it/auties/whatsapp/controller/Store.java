@@ -112,13 +112,13 @@ public final class Store extends Controller<Store> {
      * The longitude of this account's location, if it's a business account
      */
     @Setter
-    private Long businessLongitude;
+    private Double businessLongitude;
 
     /**
      * The latitude of this account's location, if it's a business account
      */
     @Setter
-    private Long businessLatitude;
+    private Double businessLatitude;
 
     /**
      * The description of this account, if it's a business account
@@ -1394,7 +1394,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<Long> businessLongitude(){
+    public Optional<Double> businessLongitude(){
         return Optional.ofNullable(businessLongitude);
     }
 
@@ -1403,7 +1403,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<Long> businessLatitude(){
+    public Optional<Double> businessLatitude(){
         return Optional.ofNullable(businessLatitude);
     }
 
