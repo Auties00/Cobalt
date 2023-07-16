@@ -108,6 +108,7 @@ public final class Keys extends Controller<Keys> {
      */
     @Default
     @Getter
+    @Setter
     private SignalKeyPair companionKeyPair = SignalKeyPair.random();
 
     /**
@@ -525,7 +526,8 @@ public final class Keys extends Controller<Keys> {
      * @return a non-null hash state
      */
     public Optional<LTHashState> findHashStateByName(@NonNull ContactJid device, @NonNull BinaryPatchType patchType) {
-        return Optional.ofNullable(hashStates.get(device)).map(entry -> entry.get(patchType));
+        return Optional.ofNullable(hashStates.get(device))
+                .map(entry -> entry.get(patchType));
     }
 
     /**

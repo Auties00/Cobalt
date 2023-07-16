@@ -60,4 +60,6 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.signal.session;
     exports it.auties.whatsapp.model.signal.auth;
     exports it.auties.whatsapp.model.sync;
+    exports it.auties.whatsapp.model.signal.sender;
+    exports it.auties.whatsapp.model.signal.keypair;
 }

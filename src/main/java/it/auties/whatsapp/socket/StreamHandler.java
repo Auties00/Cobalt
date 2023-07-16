@@ -35,6 +35,7 @@ import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
@@ -44,9 +45,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -54,7 +53,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
+import java.security.*;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
@@ -293,31 +292,39 @@ class StreamHandler {
         var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findNode("link_code_pairing_wrapped_primary_ephemeral_pub")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
-        var r = lastLinkCodeKey.get();
-        var n = socketHandler.keys().companionKeyPair();
-        var i = socketHandler.keys().identityKeyPair().publicKey();
-        var c = BytesHelper.random(32);
-        var d = BytesHelper.random(32);
-        var __ = BytesHelper.random(12);
-        var m = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 0, 32);
-        var E = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 32, 48);
-        var y = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 48, 80);
-        var T = y(r, m);
-        var v = I(y, T, E);
-        var I = Curve25519.sharedKey(v, n.privateKey());
-        var M = Hkdf.extractAndExpand(I, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), d,32);
-        var C = BytesHelper.concat(i, primaryIdentityPublicKey, c);
-        var P = AesGmc.encrypt(__, C, M);
-        var b = BytesHelper.concat(d, __, P);
-        var L = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
-        var D = BytesHelper.concat(I, L, c);
-        var w = Hkdf.extractAndExpand(D, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
+        var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
+        var companionSharedKey = Curve25519.sharedKey(codePairingPublicKey, socketHandler.keys().companionKeyPair().privateKey());
+        var random = BytesHelper.random(32);
+        var linkCodeSalt = BytesHelper.random(32);
+        var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
+        var encryptPayload = BytesHelper.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
+        var encryptIv = BytesHelper.random(12);
+        var encrypted = AesGmc.encrypt(encryptIv, encryptPayload, linkCodePairingExpanded);
+        var encryptedPayload = BytesHelper.concat(linkCodeSalt, encryptIv, encrypted);
+        var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
+        var identityPayload = BytesHelper.concat(companionSharedKey, identitySharedKey, random);
+        var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
+        socketHandler.keys().companionKeyPair(SignalKeyPair.of(advSecretPublicKey));
         var confirmation = Node.of("link_code_companion_reg",
                 Map.of("jid", phoneNumber, "stage", "companion_finish"),
-                Node.of("link_code_pairing_wrapped_key_bundle", b),
-                Node.of("companion_identity_public", w),
+                Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
+                Node.of("companion_identity_public", socketHandler.keys().identityKeyPair().publicKey()),
                 Node.of("link_code_pairing_ref", ref));
         socketHandler.sendQuery("set", "md", confirmation);
+    }
+
+    private byte[] decipherLinkPublicKey(byte[] primaryEphemeralPublicKeyWrapped) {
+        try {
+            var salt = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 0, 32);
+            var secretKey = generatePairingKey(lastLinkCodeKey.get(), salt);
+            var iv = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 32, 48);
+            var payload = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 48, 80);
+            var cipher = Cipher.getInstance("AES/CTR/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
+            return cipher.doFinal(payload);
+        }catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot decipher link code pairing key", exception);
+        }
     }
 
     private void handleRegistrationNotification(Node node) {
@@ -932,17 +939,29 @@ class StreamHandler {
 
     private void askPairingCode(PairingCodeHandler codeHandler) {
         var code = BytesHelper.bytesToCrockford(BytesHelper.random(5));
-        var phoneNumber = getPhoneNumberAsJid();
-        var linkCodePairingWrappedCompanionEphemeralPub = getLinkCodePairingPublicKey(code);
         var registration = Node.of("link_code_companion_reg",
-                Map.of("jid", phoneNumber, "stage", "companion_hello", "should_show_push_notification", true),
-                Node.of("link_code_pairing_wrapped_companion_ephemeral_pub", linkCodePairingWrappedCompanionEphemeralPub),
+                Map.of("jid", getPhoneNumberAsJid(), "stage", "companion_hello", "should_show_push_notification", true),
+                Node.of("link_code_pairing_wrapped_companion_ephemeral_pub", cipherLinkPublicKey(code)),
                 Node.of("companion_server_auth_key_pub", socketHandler.keys().noiseKeyPair().publicKey()),
                 Node.of("companion_platform_id", 49),
                 Node.of("companion_platform_display", socketHandler.store().name()),
                 Node.of("link_code_pairing_nonce", 0));
         socketHandler.sendQuery("set", "md", registration)
                 .thenAcceptAsync(result -> onAskedPairingCode(codeHandler, code));
+    }
+
+    private byte[] cipherLinkPublicKey(String linkCodeKey) {
+      try {
+          var salt = BytesHelper.random(32);
+          var randomIv = BytesHelper.random(16);
+          var secretKey = generatePairingKey(linkCodeKey, salt);
+          var cipher = Cipher.getInstance("AES/CTR/NoPadding");
+          cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(randomIv));
+          var ciphered = cipher.doFinal(socketHandler.keys().companionKeyPair().publicKey());
+          return BytesHelper.concat(salt, randomIv, ciphered);
+      }catch (GeneralSecurityException exception) {
+          throw new RuntimeException("Cannot cipher link code pairing key", exception);
+      }
     }
 
     private void onAskedPairingCode(PairingCodeHandler codeHandler, String code) {
@@ -957,38 +976,18 @@ class StreamHandler {
                 .orElseThrow(() -> new IllegalArgumentException("Missing phone number while registering via OTP"));
     }
 
-    private byte[] getLinkCodePairingPublicKey(String linkCodeKey) {
-        var r = BytesHelper.random(32);
-        var n = BytesHelper.random(16);
-        var a = y(linkCodeKey, r);
-        var s = v(socketHandler.keys().companionKeyPair().publicKey(), n, a);
-        return BytesHelper.concat(r, n, s);
-    }
-
-    @SneakyThrows
-    private SecretKey y(String password, byte[] salt) {
-        var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        var spec = new PBEKeySpec(password.toCharArray(), salt, 2 << 16, 256);
-        var tmp = factory.generateSecret(spec);
-        var secret = new SecretKeySpec(tmp.getEncoded(), "AES");
-        var cipher = Cipher.getInstance("AES/CTR/NoPadding");
-        cipher.init(Cipher.ENCRYPT_MODE, secret);
-        return secret;
-    }
-
-    @SneakyThrows
-    public byte[] v(byte[] data, byte[] counter, SecretKey key) {
-        var cipher = Cipher.getInstance("AES/CTR/NoPadding");
-        cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(counter));
-        return cipher.doFinal(data);
-    }
-
-    @SneakyThrows
-    public byte[] I(byte[] encryptedData, SecretKey secretKey, byte[] counter) {
-        var ivSpec = new IvParameterSpec(counter);
-        var cipher = Cipher.getInstance("AES/CTR/NoPadding");
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
-        return cipher.doFinal(encryptedData);
+    private SecretKey generatePairingKey(String password, byte[] salt) {
+       try {
+           var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+           var spec = new PBEKeySpec(password.toCharArray(), salt, 2 << 16, 256);
+           var tmp = factory.generateSecret(spec);
+           var secret = new SecretKeySpec(tmp.getEncoded(), "AES");
+           var cipher = Cipher.getInstance("AES/CTR/NoPadding");
+           cipher.init(Cipher.ENCRYPT_MODE, secret);
+           return secret;
+       }catch (GeneralSecurityException exception) {
+           throw new RuntimeException("Cannot compute pairing key", exception);
+       }
     }
 
     private void printQrCode(QrHandler qrHandler, Node container) {
