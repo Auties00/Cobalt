@@ -2,7 +2,7 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.*;
-import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
@@ -1031,7 +1031,7 @@ public final class Store extends Controller<Store> {
                 modificationSenderJid
         );
         var metadata = pollUpdateMessage.encryptedMetadata();
-        var decrypted = AesGmc.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
+        var decrypted = AesGcm.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
         var pollVoteMessage = Protobuf.readMessage(decrypted, PollUpdateEncryptedOptions.class);
         var selectedOptions = pollVoteMessage.selectedOptions()
                 .stream()

@@ -29,7 +29,7 @@ public class Handshake {
     }
 
     public byte[] cipher(byte @NonNull [] bytes, boolean encrypt) {
-        var cyphered = encrypt ? AesGmc.encrypt(counter++, bytes, cryptoKey, hash) : AesGmc.decrypt(counter++, bytes, cryptoKey, hash);
+        var cyphered = encrypt ? AesGcm.encrypt(counter++, bytes, cryptoKey, hash) : AesGcm.decrypt(counter++, bytes, cryptoKey, hash);
         if (!encrypt) {
             updateHash(bytes);
             return cyphered;

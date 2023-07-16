@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.binary.BinaryPatchType;
-import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
@@ -42,7 +42,6 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
 import javax.crypto.*;
@@ -299,7 +298,7 @@ class StreamHandler {
         var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
         var encryptPayload = BytesHelper.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
         var encryptIv = BytesHelper.random(12);
-        var encrypted = AesGmc.encrypt(encryptIv, encryptPayload, linkCodePairingExpanded);
+        var encrypted = AesGcm.encrypt(encryptIv, encryptPayload, linkCodePairingExpanded);
         var encryptedPayload = BytesHelper.concat(linkCodeSalt, encryptIv, encrypted);
         var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
         var identityPayload = BytesHelper.concat(companionSharedKey, identitySharedKey, random);

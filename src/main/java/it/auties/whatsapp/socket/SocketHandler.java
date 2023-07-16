@@ -6,7 +6,7 @@ import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
@@ -195,7 +195,7 @@ public class SocketHandler implements SocketListener {
         if(keys.readKey() == null){
             return;
         }
-        var plainText = AesGmc.decrypt(keys.readCounter(true), message, keys.readKey());
+        var plainText = AesGcm.decrypt(keys.readCounter(true), message, keys.readKey());
         var decoder = new BinaryDecoder();
         var node = decoder.decode(plainText);
         if(!node.hasNode("bad-mac")) {

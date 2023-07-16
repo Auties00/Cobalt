@@ -14,7 +14,7 @@ import it.auties.linkpreview.LinkPreviewResult;
 import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
@@ -616,7 +616,7 @@ public class Whatsapp {
                 secretName
         );
         var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
-        var pollUpdateEncryptedPayload = AesGmc.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
+        var pollUpdateEncryptedPayload = AesGcm.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
         var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadata(pollUpdateEncryptedPayload, iv);
         pollUpdateMessage.encryptedMetadata(pollUpdateEncryptedMetadata);
     }
@@ -1997,7 +1997,7 @@ public class Whatsapp {
         var retryIv = BytesHelper.random(12);
         var retryIdData = info.key().id().getBytes(StandardCharsets.UTF_8);
         var receipt = Protobuf.writeMessage(new ServerErrorReceipt(info.id()));
-        var ciphertext = AesGmc.encrypt(retryIv, receipt, retryKey, retryIdData);
+        var ciphertext = AesGcm.encrypt(retryIv, receipt, retryKey, retryIdData);
         var rmrAttributes = Attributes.of()
                 .put("jid", info.chatJid())
                 .put("from_me", String.valueOf(info.fromMe()))
@@ -2021,7 +2021,7 @@ public class Whatsapp {
         var mediaIv = encryptNode.findNode("enc_iv")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
-        var mediaRetryNotificationData = AesGmc.decrypt(mediaIv, mediaPayload, retryKey, retryIdData);
+        var mediaRetryNotificationData = AesGcm.decrypt(mediaIv, mediaPayload, retryKey, retryIdData);
         var mediaRetryNotification = Protobuf.readMessage(mediaRetryNotificationData, MediaRetryNotification.class);
         Validate.isTrue(mediaRetryNotification.directPath() != null, "Media retry upload failed: %s", mediaRetryNotification);
         mediaMessage.mediaUrl(Medias.createMediaUrl(mediaRetryNotification.directPath()));

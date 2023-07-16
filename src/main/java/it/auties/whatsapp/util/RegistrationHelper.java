@@ -5,7 +5,7 @@ import it.auties.whatsapp.api.AsyncCaptchaCodeSupplier;
 import it.auties.whatsapp.api.AsyncVerificationCodeSupplier;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
@@ -143,7 +143,7 @@ public class RegistrationHelper {
         var encodedParams = toFormParams(params);
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
-        var buffer = AesGmc.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
+        var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
         var enc = Base64.getUrlEncoder().encodeToString(BytesHelper.concat(keypair.publicKey(), buffer));
         var request = HttpRequest.newBuilder()
                 .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, enc)))

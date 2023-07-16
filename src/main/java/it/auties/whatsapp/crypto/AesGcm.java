@@ -10,7 +10,7 @@ import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 @UtilityClass
-public class AesGmc {
+public class AesGcm {
     private final int NONCE = 128;
 
     public byte[] encrypt(long iv, byte @NonNull [] input, byte @NonNull [] key) {
