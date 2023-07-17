@@ -71,7 +71,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param value the nullable value to check against
      * @return a boolean
      */
-    public boolean hasKey(@NonNull String key, String value) {
+    public boolean hasValue(@NonNull String key, String value) {
         return Objects.equals(toMap.get(key), value);
     }
 

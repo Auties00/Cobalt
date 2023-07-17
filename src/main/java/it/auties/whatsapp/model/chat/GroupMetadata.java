@@ -116,7 +116,7 @@ public class GroupMetadata implements ProtobufMessage {
         var community = node.findNode("parent")
                 .isPresent();
         var openCommunity = node.findNode("parent")
-                .filter(entry -> entry.attributes().hasKey("default_membership_approval_mode", "request_required"))
+                .filter(entry -> entry.attributes().hasValue("default_membership_approval_mode", "request_required"))
                 .isEmpty();
         var ephemeral = node.findNode("ephemeral")
                 .map(Node::attributes)

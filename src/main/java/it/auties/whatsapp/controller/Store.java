@@ -6,6 +6,7 @@ import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
+import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
@@ -226,6 +227,13 @@ public final class Store extends Controller<Store> {
     @NonNull
     @Default
     private ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
+
+    /**
+     * The non-null map of calls
+     */
+    @NonNull
+    @Default
+    private ConcurrentHashMap<String, Call> calls = new ConcurrentHashMap<>();
 
     /**
      * Whether chats should be unarchived if a new message arrives
@@ -1452,6 +1460,26 @@ public final class Store extends Controller<Store> {
     @Override
     public void serialize(boolean async) {
         serializer.serializeStore(this, async);
+    }
+
+    /**
+     * Adds a call to the store
+     *
+     * @param call a non-null call
+     * @return the old value associated with {@link Call#id()}
+     */
+    public Optional<Call> addCall(@NonNull Call call) {
+        return Optional.ofNullable(calls.put(call.id(), call));
+    }
+
+    /**
+     * Finds a call by id
+     *
+     * @param callId the id of the call, can be null
+     * @return an optional
+     */
+    public Optional<Call> findCallById(String callId) {
+        return callId == null ? Optional.empty() : Optional.ofNullable(calls.get(callId));
     }
 
     public static abstract class StoreBuilder<C extends Store, B extends StoreBuilder<C, B>> extends ControllerBuilder<Store, C, B> {

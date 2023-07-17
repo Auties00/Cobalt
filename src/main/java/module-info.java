@@ -62,4 +62,5 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.sync;
     exports it.auties.whatsapp.model.signal.sender;
     exports it.auties.whatsapp.model.signal.keypair;
+    exports it.auties.whatsapp.model.call;
 }

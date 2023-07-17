@@ -23,6 +23,7 @@ import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
+import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.chat.PastParticipant.LeaveReason;
 import it.auties.whatsapp.model.companion.CompanionLinkResult;
@@ -1393,7 +1394,7 @@ public class Whatsapp {
                 .stream()
                 .map(entry -> entry.findNodes("link"))
                 .flatMap(Collection::stream)
-                .filter(entry -> entry.attributes().hasKey("link_type", "sub_group"))
+                .filter(entry -> entry.attributes().hasValue("link_type", "sub_group"))
                 .map(entry -> entry.findNode("group"))
                 .flatMap(Optional::stream)
                 .map(entry -> entry.attributes().getJid("jid"))
@@ -1418,9 +1419,9 @@ public class Whatsapp {
 
     private boolean parseUnlinkResponse(Node result, @NonNull ContactJidProvider group) {
         return result.findNode("unlink")
-                .filter(entry -> entry.attributes().hasKey("unlink_type", "sub_group"))
+                .filter(entry -> entry.attributes().hasValue("unlink_type", "sub_group"))
                 .flatMap(entry -> entry.findNode("group"))
-                .map(entry -> entry.attributes().hasKey("jid", group.toJid().toString()))
+                .map(entry -> entry.attributes().hasValue("jid", group.toJid().toString()))
                 .isPresent();
     }
 
@@ -2186,9 +2187,9 @@ public class Whatsapp {
     }
 
     private CompletableFuture<CompanionLinkResult> handleCompanionPairing(Node result, int keyId) {
-        if(result.attributes().hasKey("type", "error")){
+        if(result.attributes().hasValue("type", "error")){
             var error = result.findNode("error")
-                    .filter(entry -> entry.attributes().hasKey("text", "resource-limit"))
+                    .filter(entry -> entry.attributes().hasValue("text", "resource-limit"))
                     .map(entry -> CompanionLinkResult.MAX_DEVICES_ERROR)
                     .orElse(CompanionLinkResult.RETRY_ERROR);
             return CompletableFuture.completedFuture(error);
@@ -2505,7 +2506,7 @@ public class Whatsapp {
     }
 
     /**
-     * Gets the verified name certificate
+     * Disables two-factor authentication
      *
      * @return a future
      */
@@ -2524,6 +2525,32 @@ public class Whatsapp {
             body.add(Node.of("email", email.getBytes(StandardCharsets.UTF_8)));
         }
         return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:account", Node.of("2fa", body))
+                .thenApplyAsync(result -> !result.hasNode("error"));
+    }
+
+
+    /**
+     * Rejects a call
+     *
+     * @param callId the non-null id of the call to reject
+     * @return a future
+     */
+    public CompletableFuture<Boolean> rejectCall(@NonNull String callId) {
+        return store().findCallById(callId)
+                .map(this::rejectCall)
+                .orElseGet(() -> CompletableFuture.completedFuture(false));
+    }
+
+    /**
+     * Rejects a call
+     *
+     * @param call the non-null call to reject
+     * @return a future
+     */
+    private CompletableFuture<Boolean> rejectCall(@NonNull Call call) {
+        var rejectNode = Node.of("reject", Map.of("call-id", call.id(), "call-creator", call.caller(), "count", 0));
+        var body = Node.of("call", Map.of("from", socketHandler.store().jid(), "to", call.caller()), rejectNode);
+        return socketHandler.send(body)
                 .thenApplyAsync(result -> !result.hasNode("error"));
     }
 

@@ -10,6 +10,8 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
+import it.auties.whatsapp.model.call.Call;
+import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupRole;
@@ -239,13 +241,41 @@ class StreamHandler {
         return messageIds;
     }
 
+    private CallStatus getCallStatus(Node node) {
+        return switch (node.description()) {
+            case "terminate" -> node.attributes().hasValue("reason", "timeout") ? CallStatus.TIMED_OUT : CallStatus.REJECTED;
+            case "reject" -> CallStatus.REJECTED;
+            case "accept" -> CallStatus.ACCEPTED;
+            default -> CallStatus.RINGING;
+        };
+    }
+
     // TODO: Dispatch call event
     private void digestCall(Node node) {
-        var call = node.children().peekFirst();
-        if (call == null) {
+        var callNode = node.children().peekFirst();
+        if (callNode == null) {
             return;
         }
-        socketHandler.sendMessageAck(node);
+
+        if(node.hasDescription("offer")) {
+            var callId = callNode.attributes()
+                    .getString("call-id");
+            var from = callNode.attributes()
+                    .getJid("from")
+                    .orElseThrow(() -> new NoSuchElementException("Missing call creator: " + callNode));
+            var caller = callNode.attributes()
+                    .getJid("call-creator")
+                    .orElse(from);
+            var status = getCallStatus(callNode);
+            var timestamp = callNode.attributes()
+                    .getOptionalLong("t")
+                    .map(Clock::parseSeconds)
+                    .orElseGet(ZonedDateTime::now);
+            var isOffline = callNode.attributes().hasKey("offline");
+            var hasVideo = callNode.hasNode("video");
+            var call = new Call(from, caller, callId, timestamp, hasVideo, status, isOffline);
+            socketHandler.store().addCall(call);
+        }
     }
 
     private void digestAck(Node node) {
@@ -303,7 +333,7 @@ class StreamHandler {
         var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
         var identityPayload = BytesHelper.concat(companionSharedKey, identitySharedKey, random);
         var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
-        socketHandler.keys().companionKeyPair(SignalKeyPair.of(advSecretPublicKey));
+        socketHandler.keys().companionKeyPair(new SignalKeyPair(advSecretPublicKey, socketHandler.keys().companionKeyPair().privateKey()));
         var confirmation = Node.of("link_code_companion_reg",
                 Map.of("jid", phoneNumber, "stage", "companion_finish"),
                 Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
@@ -552,7 +582,7 @@ class StreamHandler {
             var jid = entry.attributes()
                     .getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing jid in response: %s".formatted(entry)));
-            if (entry.attributes().hasKey("action", "add")) {
+            if (entry.attributes().hasValue("action", "add")) {
                 newValues.add(jid);
                 continue;
             }
@@ -980,10 +1010,7 @@ class StreamHandler {
            var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
            var spec = new PBEKeySpec(password.toCharArray(), salt, 2 << 16, 256);
            var tmp = factory.generateSecret(spec);
-           var secret = new SecretKeySpec(tmp.getEncoded(), "AES");
-           var cipher = Cipher.getInstance("AES/CTR/NoPadding");
-           cipher.init(Cipher.ENCRYPT_MODE, secret);
-           return secret;
+           return new SecretKeySpec(tmp.getEncoded(), "AES");
        }catch (GeneralSecurityException exception) {
            throw new RuntimeException("Cannot compute pairing key", exception);
        }
