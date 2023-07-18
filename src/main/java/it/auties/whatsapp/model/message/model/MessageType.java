@@ -174,6 +174,10 @@ public enum MessageType {
      */
     ENCRYPTED_REACTION,
     /**
+     * A call
+     */
+    CALL,
+    /**
      * Sticker sync
      */
     STICKER_SYNC

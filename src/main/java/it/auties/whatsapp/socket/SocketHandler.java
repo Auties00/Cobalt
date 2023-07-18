@@ -863,8 +863,8 @@ public class SocketHandler implements SocketListener {
         return null;
     }
 
-    public CompletableFuture<Void> queryCompanionDevices() {
-        return messageHandler.getDevices(List.of(store.jid().toWhatsappJid()), true)
+    public CompletableFuture<Void> querySessions(@NonNull ContactJid jid) {
+        return messageHandler.getDevices(List.of(jid), true)
                 .thenCompose(values -> messageHandler.querySessions(values, false));
     }
 

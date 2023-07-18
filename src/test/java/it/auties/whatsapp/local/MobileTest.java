@@ -23,10 +23,7 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");
-                    while (true){
-                        api.sendMessage(ContactJid.of("393495089819"), "Hello World")
-                                .join();
-                    }
+                    api.startCall(ContactJid.of("393495089819")).join();
                 })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

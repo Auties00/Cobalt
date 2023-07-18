@@ -14,10 +14,7 @@ import it.auties.linkpreview.LinkPreviewResult;
 import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGcm;
-import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.crypto.Hmac;
-import it.auties.whatsapp.crypto.Sha256;
+import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
@@ -32,6 +29,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.message.standard.CallMessage;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.AttachmentProvider;
@@ -77,6 +75,7 @@ import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -2528,6 +2527,45 @@ public class Whatsapp {
                 .thenApplyAsync(result -> !result.hasNode("error"));
     }
 
+    public CompletableFuture<?> startCall(@NonNull ContactJidProvider provider) {
+        return socketHandler.querySessions(provider.toJid())
+                .thenComposeAsync(ignored -> sendCallMessage(provider));
+    }
+
+    private CompletableFuture<?> sendCallMessage(ContactJidProvider provider) {
+        var callId = MessageKey.randomId();
+        var audioStream = Node.of("audio", Map.of("rate", 8000, "enc", "opus"));
+        var audioStreamTwo = Node.of("audio", Map.of("rate", 16000, "enc", "opus"));
+        var net = Node.of("net", Map.of("medium", 3));
+        var encopt = Node.of("encopt", Map.of("keygen", 2));
+        var enc = createCallNode(provider);
+        var capability = Node.of("capability", Map.of("ver", 1), URLDecoder.decode("%01%04%f7%09%c4:", StandardCharsets.UTF_8));
+        var callCreator = "%s.%s:%s@s.whatsapp.net".formatted(store().jid().user(), store().jid().device(), store().jid().device());
+        var offer = Node.of("offer",
+                Map.of("call-creator", callCreator, "call-id", callId, "device_class", 2016),
+                audioStream, audioStreamTwo, net, enc, capability, encopt);
+        return socketHandler.send(Node.of("call", Map.of("to", provider.toJid()), offer));
+    }
+
+    public CompletableFuture<Node> stopCall() {
+        return null;
+    }
+
+    private Node createCallNode(ContactJidProvider provider) {
+        var call = CallMessage.builder()
+                .key(SignalKeyPair.random().publicKey())
+                .source("audio")
+                .delay(1)
+                .data(BytesHelper.random(32))
+                .build();
+        var message = MessageContainer.of(call);
+        socketHandler.querySessions(provider.toJid());
+        var cipher = new SessionCipher(provider.toJid().toSignalAddress(), keys());
+        var encodedMessage = BytesHelper.messageToBytes(message);
+        var cipheredMessage = cipher.encrypt(encodedMessage);
+        return Node.of("enc",
+                Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
+    }
 
     /**
      * Rejects a call

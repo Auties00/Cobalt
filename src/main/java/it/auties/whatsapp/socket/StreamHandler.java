@@ -279,6 +279,14 @@ class StreamHandler {
     }
 
     private void digestAck(Node node) {
+        var ackClass = node.attributes().getString("class");
+        switch (ackClass) {
+            case "call" -> digestCallAck(node);
+            case "message" -> digestMessageAck(node);
+        }
+    }
+
+    private void digestMessageAck(Node node) {
         var error = node.attributes().getInt("error");
         var messageId = node.id();
         var from = node.attributes()
@@ -288,9 +296,40 @@ class StreamHandler {
                 .findMessageById(from, messageId);
         if (error != 0) {
             match.ifPresent(message -> message.status(MessageStatus.ERROR));
-        } else {
-            match.filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
-                    .ifPresent(message -> message.status(MessageStatus.SERVER_ACK));
+            return;
+        }
+
+        match.filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
+                .ifPresent(message -> message.status(MessageStatus.SERVER_ACK));
+    }
+
+    private void digestCallAck(Node node) {
+        var relayNode = node.findNode("relay").orElse(null);
+        if (relayNode == null) {
+            return;
+        }
+
+        var callCreator = relayNode.attributes().getJid("call-creator").orElseThrow();
+        var callId = relayNode.attributes().getString("call-id");
+        relayNode.findNodes("participant")
+                .stream()
+                .map(entry -> entry.attributes().getJid("jid"))
+                .flatMap(Optional::stream)
+                .forEach(to -> sendRelay(callCreator, callId, to));
+    }
+
+    private void sendRelay(ContactJid callCreator, String callId, ContactJid to) {
+        var values = new byte[][]{
+                new byte[]{-105, 99, -47, -29, 13, -106},
+                new byte[]{-99, -16, -53, 62, 13, -106},
+                new byte[]{-99, -16, -25, 62, 13, -106},
+                new byte[]{-99, -16, -5, 62, 13, -106},
+                new byte[]{-71, 60, -37, 62, 13, -106}
+        };
+        for (var value : values) {
+            var te = Node.of("te", Map.of("latency", 33554440), value);
+            var relay = Node.of("relaylatency", Map.of("call-creator", callCreator, "call-id", callId), te);
+            socketHandler.send(Node.of("call", Map.of("to", to), relay));
         }
     }
 

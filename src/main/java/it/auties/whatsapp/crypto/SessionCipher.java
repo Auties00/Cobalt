@@ -25,9 +25,9 @@ import static it.auties.curve25519.Curve25519.sharedKey;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
-    public GroupCipher.CipheredMessageResult encrypt(byte[] data) {
+    public CipheredMessageResult encrypt(byte[] data) {
         if(data == null){
-            return new GroupCipher.CipheredMessageResult(null, Signal.UNAVAILABLE);
+            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
         }
         var currentState = loadSession().currentState()
                 .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
@@ -42,7 +42,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
         var encryptedMessageType = getMessageType(currentState);
         var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
-        return new GroupCipher.CipheredMessageResult(encryptedMessage, encryptedMessageType);
+        return new CipheredMessageResult(encryptedMessage, encryptedMessageType);
     }
 
     private String getMessageType(SessionState currentState) {

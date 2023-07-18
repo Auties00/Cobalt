@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
@@ -74,7 +75,9 @@ public class MessageKey implements ProtobufMessage {
      * @return a non-null String
      */
     public static String randomId() {
-        return HexFormat.of().formatHex(BytesHelper.random(8));
+        return HexFormat.of()
+                .formatHex(BytesHelper.random(8))
+                .toUpperCase(Locale.ROOT);
     }
 
     /**

@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.model;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.info.CallInfo;
+import it.auties.whatsapp.model.message.standard.CallMessage;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.payment.*;
@@ -102,8 +102,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Call message
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, implementation = CallInfo.class)
-    private CallInfo call;
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = CallMessage.class)
+    private CallMessage callMessage;
 
     /**
      * Sever message
@@ -341,7 +341,7 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null container
      */
     public static MessageContainer empty(){
-        return MessageContainer.of(EMPTY_MESSAGE);
+        return MessageContainer.builder().build();
     }
 
     /**
@@ -431,7 +431,9 @@ public class MessageContainer implements ProtobufMessage {
             builder.requestPhoneNumberMessage(requestPhoneNumberMessage);
         } else if (message instanceof EncryptedReactionMessage encReactionMessage) {
             builder.encryptedReactionMessage(encReactionMessage);
-        } else {
+        }else if(message instanceof CallMessage callMessage){
+            builder.callMessage(callMessage);
+        } else if(!(message instanceof EmptyMessage)) {
             throw new IllegalStateException("Unsupported message: " + message);
         }
         return builder;
@@ -443,7 +445,9 @@ public class MessageContainer implements ProtobufMessage {
      * @param message the text message with no context
      */
     public static MessageContainer of(@NonNull String message) {
-        return MessageContainer.builder().textMessage(TextMessage.of(message)).build();
+        return MessageContainer.builder()
+                .textMessage(TextMessage.of(message))
+                .build();
     }
 
     /**
@@ -662,6 +666,9 @@ public class MessageContainer implements ProtobufMessage {
         if (viewOnceV2ExtensionMessage != null) {
             return viewOnceV2ExtensionMessage.unbox();
         }
+        if(callMessage != null) {
+            return callMessage;
+        }
         return EMPTY_MESSAGE;
     }
 
@@ -803,15 +810,6 @@ public class MessageContainer implements ProtobufMessage {
     }
 
     /**
-     * Returns the call wrapped by this message, if any is present
-     *
-     * @return a non-null optional
-     */
-    public Optional<CallInfo> call() {
-        return Optional.ofNullable(call);
-    }
-
-    /**
      * Converts this message to an ephemeral message
      *
      * @return a non-null message container
@@ -819,7 +817,6 @@ public class MessageContainer implements ProtobufMessage {
     public MessageContainer toEphemeral() {
         return type() == MessageType.EPHEMERAL ? this : MessageContainer.builder()
                 .ephemeralMessage(FutureMessageContainer.of(content()))
-                .call(call)
                 .deviceInfo(deviceInfo)
                 .build();
     }
@@ -832,7 +829,6 @@ public class MessageContainer implements ProtobufMessage {
     public MessageContainer toViewOnce() {
         return type() == MessageType.VIEW_ONCE ? this : MessageContainer.builder()
                 .viewOnceMessage(FutureMessageContainer.of(content()))
-                .call(call)
                 .deviceInfo(deviceInfo)
                 .build();
     }
@@ -867,7 +863,6 @@ public class MessageContainer implements ProtobufMessage {
         }
         return MessageContainer.of(content())
                 .toBuilder()
-                .call(call)
                 .deviceInfo(deviceInfo)
                 .build();
     }

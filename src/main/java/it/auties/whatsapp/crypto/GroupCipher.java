@@ -54,8 +54,4 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
         senderKeyState.chainKey(lastChainKey.next());
         return lastChainKey.toMessageKey();
     }
-
-    public record CipheredMessageResult(byte[] message, String type) {
-
-    }
 }

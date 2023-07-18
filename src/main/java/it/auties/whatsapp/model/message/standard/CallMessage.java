@@ -1,8 +1,10 @@
-package it.auties.whatsapp.model.info;
+package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.model.message.model.Message;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
- * A model class that holds the information related to a Whatsapp call.
+ * A message that contains information related to a call
  */
 @AllArgsConstructor
 @Data
@@ -20,7 +22,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("Call")
-public final class CallInfo implements Info, ProtobufMessage {
+public final class CallMessage implements Message {
     /**
      * The key of this call
      */
@@ -44,4 +46,14 @@ public final class CallInfo implements Info, ProtobufMessage {
      */
     @ProtobufProperty(index = 4, type = UINT32)
     private int delay;
+
+    @Override
+    public MessageType type() {
+        return MessageType.CALL;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

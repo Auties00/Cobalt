@@ -397,13 +397,12 @@ class MessageHandler {
                 .map(certificate -> certificate.details().name());
     }
 
-    private Node createMessageNode(MessageSendRequest request, GroupCipher.CipheredMessageResult groupMessage) {
+    private Node createMessageNode(MessageSendRequest request, CipheredMessageResult groupMessage) {
         var mediaType = getMediaType(request.info().message());
         var attributes = Attributes.of()
                 .put("v", "2")
                 .put("type", groupMessage.type())
-                .put("mediatype", mediaType, Objects::nonNull)
-                .toMap();
+                .put("mediatype", mediaType, Objects::nonNull);
         return Node.of("enc", attributes, groupMessage.message());
     }
 
