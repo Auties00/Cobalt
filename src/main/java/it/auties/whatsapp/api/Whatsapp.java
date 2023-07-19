@@ -2037,10 +2037,15 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<GroupMetadata> createCommunity(@NonNull String subject, String body) {
-        var node = new BinaryDecoder().decode(HexFormat.of().parseHex("00f80a1916ed3311fa001c08ff077006b62899a222045af801f804ef4cec7ffc03736263f803f804b708ff077006b62899a221f801f802ed75fc03667267f803fc06706172656e74fc2064656661756c745f6d656d626572736869705f617070726f76616c5f6d6f6465fc10726571756573745f7265717569726564f801fc22616c6c6f775f6e6f6e5f61646d696e5f7375625f67726f75705f6372656174696f6e"));
-        return socketHandler.send(node).thenApplyAsync(result -> {
-            result.assertNode("group", () -> "Missing community response, something went wrong: " + findErrorNode(result));
-            return GroupMetadata.of(result);
+        var descriptionId = HexFormat.of().formatHex(BytesHelper.random(12));
+        var entry = Node.of("create", Map.of("subject", subject),
+                Node.of("description", Map.of("id", descriptionId),
+                        Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))),
+                Node.of("parent", Map.of("default_membership_approval_mode", "request_required")),
+                Node.of("allow_non_admin_sub_group_creation"));
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", entry).thenApplyAsync(node -> {
+            node.assertNode("group", () -> "Missing community response, something went wrong: " + findErrorNode(node));
+            return GroupMetadata.of(node);
         });
     }
 
@@ -2531,6 +2536,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Boolean> startCall(@NonNull ContactJidProvider contact) {
+        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
         return socketHandler.querySessions(contact.toJid())
                 .thenComposeAsync(ignored -> sendCallMessage(contact));
     }
@@ -2583,6 +2589,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Boolean> stopCall(@NonNull String callId) {
+        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
         return store().findCallById(callId)
                 .map(this::stopCall)
                 .orElseGet(() -> CompletableFuture.completedFuture(false));
@@ -2596,6 +2603,7 @@ public class Whatsapp {
      * @return a future
      */
     private CompletableFuture<Boolean> stopCall(@NonNull Call call) {
+        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
         var rejectNode = Node.of("reject", Map.of("call-id", call.id(), "call-creator", call.caller(), "count", 0));
         var body = Node.of("call", Map.of("from", socketHandler.store().jid(), "to", call.caller()), rejectNode);
         return socketHandler.send(body)
