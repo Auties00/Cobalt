@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class MobileTest {
     @Test
@@ -23,7 +24,10 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");
-                    api.createCommunity("Test", "Something").join();
+                    var call = api.startCall(ContactJid.of("393495089819")).join();
+                    System.out.println(call);
+                    CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)
+                            .execute(() -> api.stopCall(call).join());
                 })
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

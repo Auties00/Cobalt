@@ -2534,13 +2534,13 @@ public class Whatsapp {
      * @param contact the non-null contact
      * @return a future
      */
-    public CompletableFuture<Boolean> startCall(@NonNull ContactJidProvider contact) {
+    public CompletableFuture<Call> startCall(@NonNull ContactJidProvider contact) {
         Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
         return socketHandler.querySessions(contact.toJid())
                 .thenComposeAsync(ignored -> sendCallMessage(contact));
     }
 
-    private CompletableFuture<Boolean> sendCallMessage(ContactJidProvider provider) {
+    private CompletableFuture<Call> sendCallMessage(ContactJidProvider provider) {
         var callId = MessageKey.randomId();
         var audioStream = Node.of("audio", Map.of("rate", 8000, "enc", "opus"));
         var audioStreamTwo = Node.of("audio", Map.of("rate", 16000, "enc", "opus"));
@@ -2556,15 +2556,11 @@ public class Whatsapp {
                 .thenApply(result -> onCallSent(provider, callId, result));
     }
 
-    private boolean onCallSent(ContactJidProvider provider, String callId, Node result) {
-        var success = result.hasNode("relay");
-        if(success) {
-            var call = new Call(provider.toJid(), store().jid(), callId, ZonedDateTime.now(), false, CallStatus.RINGING, false);
-            store().addCall(call);
-            socketHandler.onCall(call);
-        }
-
-        return success;
+    private Call onCallSent(ContactJidProvider provider, String callId, Node result) {
+        var call = new Call(provider.toJid(), store().jid(), callId, ZonedDateTime.now(), false, CallStatus.RINGING, false);
+        store().addCall(call);
+        socketHandler.onCall(call);
+        return call;
     }
 
     private Node createCallNode(ContactJidProvider provider) {
@@ -2602,9 +2598,17 @@ public class Whatsapp {
      * @param call the non-null call to reject
      * @return a future
      */
-    private CompletableFuture<Boolean> stopCall(@NonNull Call call) {
+    public CompletableFuture<Boolean> stopCall(@NonNull Call call) {
         Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
-        var rejectNode = Node.of("reject", Map.of("call-id", call.id(), "call-creator", call.caller(), "count", 0));
+        var callCreator = "%s.%s:%s@s.whatsapp.net".formatted(call.caller().user(), call.caller().device(), call.caller().device());
+        if(Objects.equals(call.caller().user(), store().jid().user())) {
+            var rejectNode = Node.of("terminate", Map.of("reason", "timeout", "call-id", call.id(), "call-creator", callCreator));
+            var body = Node.of("call", Map.of("to", call.chat()), rejectNode);
+            return socketHandler.send(body)
+                    .thenApplyAsync(result -> !result.hasNode("error"));
+        }
+
+        var rejectNode = Node.of("reject", Map.of("call-id", call.id(), "call-creator", callCreator, "count", 0));
         var body = Node.of("call", Map.of("from", socketHandler.store().jid(), "to", call.caller()), rejectNode);
         return socketHandler.send(body)
                 .thenApplyAsync(result -> !result.hasNode("error"));
