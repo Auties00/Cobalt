@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.request;
+package it.auties.whatsapp.model.exchange;
 
 import it.auties.whatsapp.model.info.MessageInfo;
 import lombok.NonNull;

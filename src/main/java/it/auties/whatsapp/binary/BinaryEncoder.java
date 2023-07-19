@@ -2,7 +2,7 @@ package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.exchange.Node;
 import it.auties.whatsapp.util.BytesHelper;
 
 import java.nio.charset.StandardCharsets;

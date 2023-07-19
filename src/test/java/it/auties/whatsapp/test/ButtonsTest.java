@@ -24,7 +24,7 @@ import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.standard.TextMessage;
-import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.exchange.Node;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.util.Smile;

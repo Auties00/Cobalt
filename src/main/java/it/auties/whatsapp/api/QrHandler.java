@@ -71,7 +71,7 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationS
      */
     static QrHandler toFile(@NonNull ToFileConsumer fileConsumer) {
         try {
-            var file = createTempFile(UUID.randomUUID().toString(), ".jpg");
+            var file = createTempFile("qr", ".jpg");
             return toFile(file, fileConsumer);
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot create temp file for qr handler", exception);

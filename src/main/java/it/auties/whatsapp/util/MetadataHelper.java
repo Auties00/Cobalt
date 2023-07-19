@@ -1,7 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.model.response.WebVersionResponse;
+import it.auties.whatsapp.model.exchange.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Spec.Whatsapp;

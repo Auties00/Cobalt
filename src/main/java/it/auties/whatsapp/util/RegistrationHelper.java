@@ -10,7 +10,7 @@ import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import it.auties.whatsapp.model.request.Attributes;
+import it.auties.whatsapp.model.exchange.Attributes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;

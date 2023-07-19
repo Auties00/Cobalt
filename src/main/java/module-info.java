@@ -39,8 +39,7 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.message.standard;
     exports it.auties.whatsapp.model.product;
     exports it.auties.whatsapp.model.setting;
-    exports it.auties.whatsapp.model.request;
-    exports it.auties.whatsapp.model.response;
+    exports it.auties.whatsapp.model.exchange;
     exports it.auties.whatsapp.model.payment;
     exports it.auties.whatsapp.model.message.button;
     exports it.auties.whatsapp.listener;

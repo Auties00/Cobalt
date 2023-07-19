@@ -1,6 +1,5 @@
-package it.auties.whatsapp.model.response;
+package it.auties.whatsapp.model.exchange;
 
-import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Clock;
 import lombok.NonNull;
 

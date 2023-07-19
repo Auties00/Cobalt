@@ -1,5 +1,6 @@
-package it.auties.whatsapp.model.request;
+package it.auties.whatsapp.model.exchange;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.NonNull;
@@ -29,6 +30,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @return a new instance of Attributes
      */
     @SafeVarargs
+    @JsonCreator
     public static Attributes of(@NonNull Entry<String, Object>... entries) {
         return ofNullable(ofEntries(entries));
     }

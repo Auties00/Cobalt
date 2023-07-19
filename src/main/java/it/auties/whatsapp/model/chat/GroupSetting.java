@@ -15,21 +15,27 @@ public enum GroupSetting {
     /**
      * Who can edit the metadata of a group
      */
-    EDIT_GROUP_INFO("locked"),
+    EDIT_GROUP_INFO("locked", "unlocked"),
 
     /**
      * Who can send messages in a group
      */
-    SEND_MESSAGES("announcement"),
+    SEND_MESSAGES("announcement", "not_announcement"),
 
     /**
      * Who can add new members to the community
      */
-    APPROVE_NEW_PARTICIPANTS("membership_approval_mode");
+    APPROVE_NEW_PARTICIPANTS("membership_approval_mode", "membership_approval_mode");
 
     /**
-     * The name of the setting linked to this enumerated constant
+     * The name of the setting when enabled
      */
     @Getter
-    private final String data;
+    private final String on;
+
+    /**
+     * The name of the setting when disabled
+     */
+    @Getter
+    private final String off;
 }

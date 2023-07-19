@@ -25,11 +25,10 @@ import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
-import it.auties.whatsapp.model.request.Attributes;
-import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.model.response.ContactStatusResponse;
+import it.auties.whatsapp.model.exchange.Attributes;
+import it.auties.whatsapp.model.exchange.MessageSendRequest;
+import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.model.exchange.ContactStatusResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHello;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
@@ -389,7 +388,7 @@ public class SocketHandler implements SocketListener {
         var query = Node.of("query", queryNode);
         var list = Node.of("list", queryBody);
         var sync = Node.of("usync",
-                Map.of("sid", UUID.randomUUID().toString(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
+                Map.of("sid", MessageKey.randomId(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
         return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
     }
@@ -485,17 +484,18 @@ public class SocketHandler implements SocketListener {
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJidProvider group) {
         var body = Node.of("query", Map.of("request", "interactive"));
         return sendQuery(group.toJid(), "get", "w:g2", body)
-                .thenApplyAsync(response -> handleGroupMetadata(group, response));
+                .thenApplyAsync(this::handleGroupMetadata);
     }
 
-    private GroupMetadata handleGroupMetadata(ContactJidProvider group, Node response) {
+    protected GroupMetadata handleGroupMetadata(Node response) {
         var metadata = response.findNode("group")
                 .map(GroupMetadata::of)
                 .orElseThrow(() -> new NoSuchElementException("Erroneous response: %s".formatted(response)));
-        var chat = group instanceof Chat entry ? entry : store.findChatByJid(group).orElse(null);
+        var chat = store.findChatByJid(metadata.jid())
+                .orElseGet(() -> store().addNewChat(metadata.jid()));
         if(chat != null) {
-            metadata.founder().ifPresent(chat::founder);
             chat.foundationTimestampSeconds(metadata.foundationTimestamp().toEpochSecond());
+            metadata.founder().ifPresent(chat::founder);
             metadata.description().ifPresent(chat::description);
             chat.addParticipants(metadata.participants());
         }

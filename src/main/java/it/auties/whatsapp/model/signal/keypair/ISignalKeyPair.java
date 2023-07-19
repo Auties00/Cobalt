@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.signal.keypair;
 
-import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.exchange.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 

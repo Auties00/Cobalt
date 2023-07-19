@@ -6,7 +6,6 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.Handshake;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
 import it.auties.whatsapp.model.signal.auth.Companion.CompanionPropsPlatformType;

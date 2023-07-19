@@ -14,6 +14,7 @@ import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.chat.GroupRole;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -29,10 +30,10 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
-import it.auties.whatsapp.model.request.Attributes;
-import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.response.ContactStatusResponse;
+import it.auties.whatsapp.model.exchange.Attributes;
+import it.auties.whatsapp.model.exchange.MessageSendRequest;
+import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.model.exchange.ContactStatusResponse;
 import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
@@ -717,6 +718,7 @@ class StreamHandler {
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
         if (!socketHandler.keys().registered()) {
+            queryGroups();
             return;
         }
 
@@ -725,6 +727,22 @@ class StreamHandler {
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, chatsFuture)
                 .thenRunAsync(socketHandler::onChats);
+    }
+
+    private void queryGroups() {
+        socketHandler.sendQuery(Server.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
+                .thenAcceptAsync(this::onGroupsQuery);
+    }
+
+    private void onGroupsQuery(Node result) {
+        var groups = result.findNode("groups");
+        if(groups.isEmpty()){
+            return;
+        }
+
+        groups.get()
+                .findNodes("group")
+                .forEach(socketHandler::handleGroupMetadata);
     }
 
     private CompletableFuture<Node> setBusinessCertificate() {

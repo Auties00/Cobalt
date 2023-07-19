@@ -1,11 +1,14 @@
-package it.auties.whatsapp.model.request;
+package it.auties.whatsapp.model.exchange;
 
+import it.auties.whatsapp.socket.Request;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Json;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -277,6 +280,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     /**
      * Returns the first node that matches the description provided
      *
+     * @param description the nullable description
      * @return an optional
      */
     public Optional<Node> findNode(String description) {
@@ -286,10 +290,18 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     /**
      * Returns all the nodes that match the description provided
      *
+     * @param description the nullable description
      * @return an optional body, present if a result was found
      */
     public List<Node> findNodes(String description) {
         return children().stream().filter(node -> Objects.equals(node.description(), description)).toList();
+    }
+
+    /**
+     * Asserts that a child node with the provided description exists
+     */
+    public void assertNode(String description, Supplier<String> error) {
+        findNode(description).orElseThrow(() -> new NoSuchElementException(error.get()));
     }
 
     /**
@@ -321,7 +333,8 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      */
     public Request toRequest(Function<Node, Boolean> filter, boolean response) {
         if (response && id() == null) {
-            attributes.put("id", UUID.randomUUID().toString());
+            var id = HexFormat.of().formatHex(BytesHelper.random(5));
+            attributes.put("id", id);
         }
         return Request.of(this, filter);
     }

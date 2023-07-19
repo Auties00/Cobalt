@@ -23,6 +23,10 @@ public class BinaryTokens {
     public final String HEX_REGEX = "[^0-9A-F]+?";
 
     public boolean anyMatch(@NonNull String input, @NonNull String regex) {
-        return Pattern.compile(regex).matcher(input).results().findAny().isPresent();
+        return Pattern.compile(regex)
+                .matcher(input)
+                .results()
+                .findAny()
+                .isPresent();
     }
 }

@@ -76,7 +76,7 @@ public class MessageKey implements ProtobufMessage {
      */
     public static String randomId() {
         return HexFormat.of()
-                .formatHex(BytesHelper.random(8))
+                .formatHex(BytesHelper.random(5))
                 .toUpperCase(Locale.ROOT);
     }
 

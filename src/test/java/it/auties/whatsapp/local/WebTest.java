@@ -20,7 +20,7 @@ public class WebTest {
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> {
                     System.out.printf("Connected: %s%n", api.store().privacySettings());
-                    api.startCall(ContactJid.of("393495089819")).join();
+                    api.createCommunity("Test", "Something").join();
                 })
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

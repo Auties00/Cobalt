@@ -1,13 +1,9 @@
 package it.auties.whatsapp.model.chat;
 
-import it.auties.whatsapp.api.Whatsapp;
-
 /**
- * The constants of this enumerated type describe the various policies that can be enforced for a
- * {@link GroupSetting} in a {@link Chat}. Said chat should be a group: {@link Chat#isGroup()}. Said
- * actions can be executed using various methods in {@link Whatsapp}.
+ * The constants of this enumerated type describe the various policies that can be enforced for a {@link GroupSetting} or {@link CommunitySetting} in a {@link Chat}
  */
-public enum GroupPolicy {
+public enum SettingPolicy {
     /**
      * Allows both admins and users
      */
@@ -23,7 +19,7 @@ public enum GroupPolicy {
      * @param input the boolean value obtained from Whatsapp
      * @return a non-null GroupPolicy
      */
-    public static GroupPolicy of(boolean input) {
+    public static SettingPolicy of(boolean input) {
         return input ? ADMINS : ANYONE;
     }
 }

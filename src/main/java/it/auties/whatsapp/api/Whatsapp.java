@@ -11,6 +11,7 @@ import it.auties.curve25519.Curve25519;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
+import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -21,6 +22,7 @@ import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.call.Call;
+import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.chat.PastParticipant.LeaveReason;
 import it.auties.whatsapp.model.companion.CompanionLinkResult;
@@ -29,6 +31,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.exchange.*;
 import it.auties.whatsapp.model.message.standard.CallMessage;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -50,10 +53,6 @@ import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
-import it.auties.whatsapp.model.request.*;
-import it.auties.whatsapp.model.response.ContactStatusResponse;
-import it.auties.whatsapp.model.response.HasWhatsappResponse;
-import it.auties.whatsapp.model.response.MexQueryResult;
 import it.auties.whatsapp.model.setting.LocaleSetting;
 import it.auties.whatsapp.model.setting.PushNameSetting;
 import it.auties.whatsapp.model.signal.auth.*;
@@ -63,6 +62,7 @@ import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.HistorySyncNotification.Type;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
+import it.auties.whatsapp.model.exchange.MexQueryRequest;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.util.*;
@@ -1195,27 +1195,17 @@ public class Whatsapp {
     }
 
     /**
-     * Changes which category of users can send messages in a group
+     * Changes a group setting
      *
-     * @param group  the target group
-     * @param policy the new policy to enforce
-     * @return a CompletableFuture
+     * @param group   the non-null group affected by this change
+     * @param setting the non-null setting
+     * @param policy  the non-null policy
+     * @return a future
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> changeWhoCanSendMessages(@NonNull T group, @NonNull GroupPolicy policy) {
-        var body = Node.of(policy != GroupPolicy.ANYONE ? "not_announcement" : "announcement");
-        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
-    }
-
-    /**
-     * Changes which category of users can edit the group's settings
-     *
-     * @param group  the target group
-     * @param policy the new policy to enforce
-     * @return a CompletableFuture
-     */
-    public <T extends ContactJidProvider> CompletableFuture<T> changeWhoCanEditInfo(@NonNull T group, @NonNull GroupPolicy policy) {
-        var body = Node.of(policy != GroupPolicy.ANYONE ? "locked" : "unlocked");
-        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
+    public <T extends ContactJidProvider> CompletableFuture<T> changeGroupSetting(@NonNull T group, @NonNull GroupSetting setting, @NonNull SettingPolicy policy) {
+        var body = Node.of(policy != SettingPolicy.ANYONE ? setting.on() : setting.off());
+        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenApplyAsync(ignored -> group);
     }
 
     /**
@@ -1294,17 +1284,17 @@ public class Whatsapp {
      *
      * @param subject     the new group's name
      * @param timer       the default ephemeral timer for messages sent in this group
-     * @param parentGroup the community to whom the new group will be linked
+     * @param parentCommunity the community to whom the new group will be linked
      * @param contacts    at least one contact to add to the group, not enforced if part of a community
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, ContactJidProvider parentGroup, @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, ContactJidProvider parentCommunity, @NonNull ContactJidProvider... contacts) {
         Validate.isTrue(!subject.isBlank(), "The subject of a group cannot be blank");
-        var minimumMembersCount = parentGroup == null ? 1 : 0;
+        var minimumMembersCount = parentCommunity == null ? 1 : 0;
         Validate.isTrue(contacts.length >= minimumMembersCount, "Expected at least %s members for this group", minimumMembersCount);
         var children = new ArrayList<Node>();
-        if (parentGroup != null) {
-            children.add(Node.of("linked_parent", Map.of("jid", parentGroup.toJid())));
+        if (parentCommunity != null) {
+            children.add(Node.of("linked_parent", Map.of("jid", parentCommunity.toJid())));
         }
         if (timer != ChatEphemeralTimer.OFF) {
             children.add(Node.of("ephemeral", Map.of("expiration", timer.periodSeconds())));
@@ -2047,15 +2037,25 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<GroupMetadata> createCommunity(@NonNull String subject, String body) {
-        var entry = Node.of("create", Map.of("subject", subject),
-                Node.of("description", Map.of("id", UUID.randomUUID().toString()),
-                        Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))),
-                Node.of("parent", Map.of("default_membership_approval_mode", "request_required")));
-        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", entry)
-                .thenApplyAsync(response -> Optional.ofNullable(response)
-                        .flatMap(node -> node.findNode("group"))
-                        .orElseThrow(() -> new NoSuchElementException("Missing community response, something went wrong: %s".formatted(findErrorNode(response)))))
-                .thenApplyAsync(GroupMetadata::of);
+        var node = new BinaryDecoder().decode(HexFormat.of().parseHex("00f80a1916ed3311fa001c08ff077006b62899a222045af801f804ef4cec7ffc03736263f803f804b708ff077006b62899a221f801f802ed75fc03667267f803fc06706172656e74fc2064656661756c745f6d656d626572736869705f617070726f76616c5f6d6f6465fc10726571756573745f7265717569726564f801fc22616c6c6f775f6e6f6e5f61646d696e5f7375625f67726f75705f6372656174696f6e"));
+        return socketHandler.send(node).thenApplyAsync(result -> {
+            result.assertNode("group", () -> "Missing community response, something went wrong: " + findErrorNode(result));
+            return GroupMetadata.of(result);
+        });
+    }
+
+    /**
+     * Changes a community setting
+     *
+     * @param community the non-null community affected by this change
+     * @param setting the non-null setting
+     * @param policy the non-null policy
+     * @return a future
+     */
+    public <T extends ContactJidProvider> CompletableFuture<T> changeCommunitySetting(@NonNull T community, @NonNull CommunitySetting setting, @NonNull SettingPolicy policy) {
+        var tag = policy == SettingPolicy.ANYONE ? setting.on() : setting.off();
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", Node.of(tag))
+                .thenApplyAsync(ignored -> community);
     }
 
 
@@ -2105,11 +2105,13 @@ public class Whatsapp {
 
     /**
      * Links a companion to this device
+     * Mobile api only
      *
      * @param qrCodeData the non-null qr code as a String
      * @return a future
      */
     public CompletableFuture<CompanionLinkResult> linkDevice(@NonNull String qrCodeData) {
+        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Device linking is only available for the mobile api");
         var maxDevices = getMaxLinkedDevices();
         if (store().linkedDevices().size() > maxDevices) {
             return CompletableFuture.completedFuture(CompanionLinkResult.MAX_DEVICES_ERROR);
@@ -2467,16 +2469,6 @@ public class Whatsapp {
                 .thenApplyAsync(this::parseCertificate);
     }
 
-    /**
-     * Gets the verified name certificate
-     *
-     * @return a future
-     */
-    public CompletableFuture<Optional<BusinessVerifiedNameCertificate>> changeBusinessCertificate(@NonNull ContactJidProvider provider) {
-        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("jid", provider.toJid())))
-                .thenApplyAsync(this::parseCertificate);
-    }
-
     private Optional<BusinessVerifiedNameCertificate> parseCertificate(Node result) {
         return result.findNode("verified_name")
                 .flatMap(Node::contentAsBytes)
@@ -2485,6 +2477,7 @@ public class Whatsapp {
 
     /**
      * Enables two-factor authentication
+     * Mobile API only
      *
      * @param code the six digits non-null numeric code
      * @return a future
@@ -2495,6 +2488,7 @@ public class Whatsapp {
 
     /**
      * Enables two-factor authentication
+     * Mobile API only
      *
      * @param code  the six digits non-null numeric code
      * @param email the nullable recovery email
@@ -2506,6 +2500,7 @@ public class Whatsapp {
 
     /**
      * Disables two-factor authentication
+     * Mobile API only
      *
      * @return a future
      */
@@ -2514,6 +2509,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Boolean> set2fa(String code, String email) {
+        Validate.isTrue(store().clientType() == ClientType.MOBILE, "2FA is only available for the mobile api");
         Validate.isTrue(code == null || (code.matches("^[0-9]*$") && code.length() == 6),
                 "Invalid 2fa code: expected a numeric six digits string");
         Validate.isTrue(email == null || isValidEmail(email),
@@ -2527,12 +2523,19 @@ public class Whatsapp {
                 .thenApplyAsync(result -> !result.hasNode("error"));
     }
 
-    public CompletableFuture<?> startCall(@NonNull ContactJidProvider provider) {
-        return socketHandler.querySessions(provider.toJid())
-                .thenComposeAsync(ignored -> sendCallMessage(provider));
+    /**
+     * Starts a call with a contact
+     * Mobile API only
+     *
+     * @param contact the non-null contact
+     * @return a future
+     */
+    public CompletableFuture<Boolean> startCall(@NonNull ContactJidProvider contact) {
+        return socketHandler.querySessions(contact.toJid())
+                .thenComposeAsync(ignored -> sendCallMessage(contact));
     }
 
-    private CompletableFuture<?> sendCallMessage(ContactJidProvider provider) {
+    private CompletableFuture<Boolean> sendCallMessage(ContactJidProvider provider) {
         var callId = MessageKey.randomId();
         var audioStream = Node.of("audio", Map.of("rate", 8000, "enc", "opus"));
         var audioStreamTwo = Node.of("audio", Map.of("rate", 16000, "enc", "opus"));
@@ -2544,19 +2547,23 @@ public class Whatsapp {
         var offer = Node.of("offer",
                 Map.of("call-creator", callCreator, "call-id", callId, "device_class", 2016),
                 audioStream, audioStreamTwo, net, enc, capability, encopt);
-        return socketHandler.send(Node.of("call", Map.of("to", provider.toJid()), offer));
+        return socketHandler.send(Node.of("call", Map.of("to", provider.toJid()), offer))
+                .thenApply(result -> onCallSent(provider, callId, result));
     }
 
-    public CompletableFuture<Node> stopCall() {
-        return null;
+    private boolean onCallSent(ContactJidProvider provider, String callId, Node result) {
+        var success = result.hasNode("relay");
+        if(success) {
+            var call = new Call(provider.toJid(), store().jid(), callId, ZonedDateTime.now(), false, CallStatus.RINGING, false);
+            store().addCall(call);
+        }
+
+        return success;
     }
 
     private Node createCallNode(ContactJidProvider provider) {
         var call = CallMessage.builder()
                 .key(SignalKeyPair.random().publicKey())
-                .source("audio")
-                .delay(1)
-                .data(BytesHelper.random(32))
                 .build();
         var message = MessageContainer.of(call);
         socketHandler.querySessions(provider.toJid());
@@ -2564,28 +2571,31 @@ public class Whatsapp {
         var encodedMessage = BytesHelper.messageToBytes(message);
         var cipheredMessage = cipher.encrypt(encodedMessage);
         return Node.of("enc",
-                Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
+                Map.of("v", 2, "type", cipheredMessage.type(), "count", 0), cipheredMessage.message());
     }
 
+
     /**
-     * Rejects a call
+     * Rejects an incoming call or stops an active call
+     * Mobile API only
      *
      * @param callId the non-null id of the call to reject
      * @return a future
      */
-    public CompletableFuture<Boolean> rejectCall(@NonNull String callId) {
+    public CompletableFuture<Boolean> stopCall(@NonNull String callId) {
         return store().findCallById(callId)
-                .map(this::rejectCall)
+                .map(this::stopCall)
                 .orElseGet(() -> CompletableFuture.completedFuture(false));
     }
 
     /**
-     * Rejects a call
+     * Rejects an incoming call or stops an active call
+     * Mobile API only
      *
      * @param call the non-null call to reject
      * @return a future
      */
-    private CompletableFuture<Boolean> rejectCall(@NonNull Call call) {
+    private CompletableFuture<Boolean> stopCall(@NonNull Call call) {
         var rejectNode = Node.of("reject", Map.of("call-id", call.id(), "call-creator", call.caller(), "count", 0));
         var body = Node.of("call", Map.of("from", socketHandler.store().jid(), "to", call.caller()), rejectNode);
         return socketHandler.send(body)

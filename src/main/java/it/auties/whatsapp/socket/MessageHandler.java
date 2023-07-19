@@ -20,9 +20,9 @@ import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
-import it.auties.whatsapp.model.request.Attributes;
-import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.exchange.Attributes;
+import it.auties.whatsapp.model.exchange.MessageSendRequest;
+import it.auties.whatsapp.model.exchange.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
@@ -48,14 +48,12 @@ import static it.auties.whatsapp.model.sync.HistorySync.Type.*;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 class MessageHandler {
-    private static final int WEEKS_GROUP_METADATA_SYNC = 2;
     private static final int HISTORY_SYNC_TIMEOUT = 10;
 
     private final SocketHandler socketHandler;
     private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
     private final Set<Chat> historyCache;
     private final Logger logger;
-    private final DeferredTaskRunner deferredGroupQuery;
     private final Set<ContactJid> attributedGroups;
     private final EnumSet<HistorySync.Type> historySyncTypes;
     private ExecutorService executor;
@@ -68,7 +66,6 @@ class MessageHandler {
         this.attributedGroups = ConcurrentHashMap.newKeySet();
         this.logger = System.getLogger("MessageHandler");
         this.historySyncTypes = EnumSet.noneOf(HistorySync.Type.class);
-        this.deferredGroupQuery = new DeferredTaskRunner();
     }
 
     private synchronized ExecutorService getOrCreateMessageService(){
@@ -295,7 +292,7 @@ class MessageHandler {
                 .map(contact -> Node.of("user", Map.of("jid", contact)))
                 .toList();
         var body = Node.of("usync",
-                Map.of("sid", UUID.randomUUID().toString(), "mode", "query", "last", "true", "index", "0", "context", "message"),
+                Map.of("sid", MessageKey.randomId(), "mode", "query", "last", "true", "index", "0", "context", "message"),
                 Node.of("query", Node.of("devices", Map.of("version", "2"))),
                 Node.of("list", contactNodes));
         return socketHandler.sendQuery("get", "usync", body)
@@ -707,10 +704,7 @@ class MessageHandler {
                 case INITIAL_STATUS_V3 -> handleInitialStatus(history);
                 case PUSH_NAME -> handlePushNames(history);
                 case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
-                case RECENT, FULL -> {
-                    deferredGroupQuery.execute();
-                    handleChatsSync(history, false);
-                }
+                case RECENT, FULL -> handleChatsSync(history, false);
                 case NON_BLOCKING_DATA -> handleNonBlockingData(history);
             }
         }finally {
@@ -784,19 +778,9 @@ class MessageHandler {
             if (pastParticipants != null) {
                 chat.addPastParticipants(pastParticipants);
             }
-            if(shouldSyncGroupMetadata(chat)){
-                attributedGroups.add(chat.jid());
-                deferredGroupQuery.schedule(() -> socketHandler.queryGroupMetadata(chat));
-            }
 
             store.addChat(chat);
         }
-    }
-
-    private boolean shouldSyncGroupMetadata(Chat chat) {
-        return chat.isGroup()
-                && !attributedGroups.contains(chat.jid())
-                && chat.timestamp().until(ZonedDateTime.now(), ChronoUnit.WEEKS) < WEEKS_GROUP_METADATA_SYNC;
     }
 
     private void handleNonBlockingData(HistorySync history) {

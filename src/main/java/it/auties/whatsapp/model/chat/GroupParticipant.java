@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.chat;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.exchange.Node;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;

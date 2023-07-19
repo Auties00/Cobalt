@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.response;
+package it.auties.whatsapp.model.exchange;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;

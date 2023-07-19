@@ -1,7 +1,6 @@
-package it.auties.whatsapp.model.response;
+package it.auties.whatsapp.model.exchange;
 
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;
 
 import java.util.NoSuchElementException;

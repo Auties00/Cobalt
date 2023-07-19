@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.curve25519.XecUtils;
-import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.exchange.Node;
 import it.auties.whatsapp.util.KeyHelper;
 import lombok.NonNull;
 

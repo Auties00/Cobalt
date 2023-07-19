@@ -1,6 +1,6 @@
 package it.auties.whatsapp.listener;
 
-import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.exchange.Node;
 
 public interface OnNodeSent extends Listener {
     /**
