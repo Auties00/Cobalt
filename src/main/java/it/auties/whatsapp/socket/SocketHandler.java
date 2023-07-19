@@ -10,6 +10,7 @@ import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
+import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.contact.Contact;
@@ -817,6 +818,13 @@ public class SocketHandler implements SocketListener {
         callListenersAsync(listener -> {
             listener.onLinkedDevices(whatsapp, devices.keySet());
             listener.onLinkedDevices(devices.keySet());
+        });
+    }
+
+    public void onCall(Call call) {
+        callListenersAsync(listener -> {
+            listener.onCall(whatsapp, call);
+            listener.onCall(call);
         });
     }
 

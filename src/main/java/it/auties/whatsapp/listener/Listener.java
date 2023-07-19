@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.action.Action;
+import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -673,6 +674,25 @@ public interface Listener {
      * @param code the registration code
      */
     default void onRegistrationCode(Whatsapp whatsapp, long code){
+
+    }
+
+    /**
+     * Called when a phone call arrives
+     *
+     * @param call the non-null phone call
+     */
+    default void onCall(Call call) {
+
+    }
+
+    /**
+     * Called when a phone call arrives
+     *
+     * @param whatsapp an instance to the calling api
+     * @param call the non-null phone call
+     */
+    default void onCall(Whatsapp whatsapp, Call call) {
 
     }
 }

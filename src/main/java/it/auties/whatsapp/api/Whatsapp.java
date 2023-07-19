@@ -11,7 +11,6 @@ import it.auties.curve25519.Curve25519;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
-import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -2562,6 +2561,7 @@ public class Whatsapp {
         if(success) {
             var call = new Call(provider.toJid(), store().jid(), callId, ZonedDateTime.now(), false, CallStatus.RINGING, false);
             store().addCall(call);
+            socketHandler.onCall(call);
         }
 
         return success;
@@ -3301,5 +3301,25 @@ public class Whatsapp {
      */
     public Whatsapp addLinkedDevicesListener(OnWhatsappRegistrationCode onWhatsappRegistrationCode) {
         return addListener(onWhatsappRegistrationCode);
+    }
+
+    /**
+     * Registers a call listener
+     *
+     * @param onCall the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addRegistrationCodeListener(OnCall onCall) {
+        return addListener(onCall);
+    }
+
+    /**
+     * Registers a call listener
+     *
+     * @param onWhatsappCall the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addLinkedDevicesListener(OnWhatsappCall onWhatsappCall) {
+        return addListener(onWhatsappCall);
     }
 }

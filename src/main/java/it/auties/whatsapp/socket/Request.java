@@ -168,7 +168,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public boolean complete(Node response, boolean exceptionally) {
         if (response == null) {
-            future.complete(Node.of("xmlstreamend"));
+            future.complete(null);
             return true;
         }
         if (exceptionally) {

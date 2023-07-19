@@ -251,32 +251,31 @@ class StreamHandler {
         };
     }
 
-    // TODO: Dispatch call event
     private void digestCall(Node node) {
+        socketHandler.sendMessageAck(node);
         var callNode = node.children().peekFirst();
         if (callNode == null) {
             return;
         }
 
-        if(node.hasDescription("offer")) {
-            var callId = callNode.attributes()
-                    .getString("call-id");
-            var from = callNode.attributes()
-                    .getJid("from")
-                    .orElseThrow(() -> new NoSuchElementException("Missing call creator: " + callNode));
-            var caller = callNode.attributes()
-                    .getJid("call-creator")
-                    .orElse(from);
-            var status = getCallStatus(callNode);
-            var timestamp = callNode.attributes()
-                    .getOptionalLong("t")
-                    .map(Clock::parseSeconds)
-                    .orElseGet(ZonedDateTime::now);
-            var isOffline = callNode.attributes().hasKey("offline");
-            var hasVideo = callNode.hasNode("video");
-            var call = new Call(from, caller, callId, timestamp, hasVideo, status, isOffline);
-            socketHandler.store().addCall(call);
-        }
+        var from = node.attributes()
+                .getJid("from")
+                .orElseThrow(() -> new NoSuchElementException("Missing call creator: " + callNode));
+        var callId = callNode.attributes()
+                .getString("call-id");
+        var caller = callNode.attributes()
+                .getJid("call-creator")
+                .orElse(from);
+        var status = getCallStatus(callNode);
+        var timestamp = callNode.attributes()
+                .getOptionalLong("t")
+                .map(Clock::parseSeconds)
+                .orElseGet(ZonedDateTime::now);
+        var isOffline = callNode.attributes().hasKey("offline");
+        var hasVideo = callNode.hasNode("video");
+        var call = new Call(from, caller, callId, timestamp, hasVideo, status, isOffline);
+        socketHandler.store().addCall(call);
+        socketHandler.onCall(call);
     }
 
     private void digestAck(Node node) {

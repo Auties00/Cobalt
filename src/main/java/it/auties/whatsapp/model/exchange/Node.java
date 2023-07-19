@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.exchange;
 
+import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.socket.Request;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Json;
@@ -333,9 +334,9 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      */
     public Request toRequest(Function<Node, Boolean> filter, boolean response) {
         if (response && id() == null) {
-            var id = HexFormat.of().formatHex(BytesHelper.random(5));
-            attributes.put("id", id);
+            attributes.put("id", MessageKey.randomId());
         }
+
         return Request.of(this, filter);
     }
 
