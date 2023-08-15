@@ -170,8 +170,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeChat(Store store, Chat chat) {
-        String fileName = "%s%s.smile".formatted(CHAT_PREFIX, chat.jid().toString());
-        fileName = fileName.replaceAll(":", "~~");
+        var fileName = "%s%s.smile".formatted(CHAT_PREFIX, chat.jid().toString());
         var path = getSessionFile(store, fileName);
         var preferences = SmileFile.of(path);
         return preferences.write(chat, true);
@@ -379,6 +378,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Path getSessionFile(Store store, String fileName) {
+        fileName = fileName.replaceAll(":", "~~");
         return getSessionFile(store.clientType(), store.uuid().toString(), fileName);
     }
 
