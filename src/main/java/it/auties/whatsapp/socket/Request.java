@@ -5,6 +5,7 @@ import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
+import it.auties.whatsapp.exception.RequestException;
 import it.auties.whatsapp.model.exchange.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Exceptions;
@@ -134,7 +135,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     }
 
     private Void onSendError(Throwable throwable) {
-        future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occurred".formatted(this), throwable));
+        future.completeExceptionally(new RequestException(this, "Cannot send %s, an unknown exception occurred".formatted(this), throwable));
         return null;
     }
 
