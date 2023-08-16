@@ -1029,7 +1029,7 @@ class StreamHandler {
                 Node.of("link_code_pairing_wrapped_companion_ephemeral_pub", cipherLinkPublicKey(code)),
                 Node.of("companion_server_auth_key_pub", socketHandler.keys().noiseKeyPair().publicKey()),
                 Node.of("companion_platform_id", 49),
-                Node.of("companion_platform_display", socketHandler.store().name()),
+                Node.of("companion_platform_display", "Chrome (Linux)"),
                 Node.of("link_code_pairing_nonce", 0));
         socketHandler.sendQuery("set", "md", registration)
                 .thenAcceptAsync(result -> onAskedPairingCode(codeHandler, code));
