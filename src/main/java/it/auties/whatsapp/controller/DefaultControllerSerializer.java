@@ -157,7 +157,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         var path = getSessionFile(store, "store.smile");
         var preferences = SmileFile.of(path);
         preferences.write(store, async);
-        if(async){
+        if (async) {
             store.chats().forEach(chat -> serializeChat(store, chat));
             return;
         }
@@ -170,7 +170,8 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeChat(Store store, Chat chat) {
-        var path = getSessionFile(store, "%s%s.smile".formatted(CHAT_PREFIX, chat.jid().toString()));
+        var fileName = "%s%s.smile".formatted(CHAT_PREFIX, chat.jid().toString());
+        var path = getSessionFile(store, fileName);
         var preferences = SmileFile.of(path);
         return preferences.write(chat, true);
     }
@@ -183,13 +184,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
     public Optional<Keys> deserializeKeys(@NonNull ClientType type, String alias) {
         var file = getSessionDirectory(type, alias);
-        if(Files.notExists(file)){
+        if (Files.notExists(file)) {
             return Optional.empty();
         }
 
         try {
             return deserializeKeysFromId(type, Files.readString(file));
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot read %s".formatted(alias), exception);
         }
     }
@@ -197,13 +198,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
     public Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber) {
         var file = getSessionDirectory(type, String.valueOf(phoneNumber));
-        if(Files.notExists(file)){
+        if (Files.notExists(file)) {
             return Optional.empty();
         }
 
         try {
             return deserializeKeysFromId(type, Files.readString(file));
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot read %s".formatted(phoneNumber), exception);
         }
     }
@@ -224,13 +225,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
     public Optional<Store> deserializeStore(@NonNull ClientType type, String alias) {
         var file = getSessionDirectory(type, alias);
-        if(Files.notExists(file)){
+        if (Files.notExists(file)) {
             return Optional.empty();
         }
 
         try {
             return deserializeStoreFromId(type, Files.readString(file));
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot read %s".formatted(alias), exception);
         }
     }
@@ -238,13 +239,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
     public Optional<Store> deserializeStore(@NonNull ClientType type, long phoneNumber) {
         var file = getSessionDirectory(type, String.valueOf(phoneNumber));
-        if(Files.notExists(file)){
+        if (Files.notExists(file)) {
             return Optional.empty();
         }
 
         try {
             return deserializeStoreFromId(type, Files.readString(file));
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot read %s".formatted(phoneNumber), exception);
         }
     }
@@ -284,7 +285,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         var folderPath = getSessionDirectory(controller.clientType(), controller.uuid().toString());
         deleteDirectory(folderPath.toFile());
         var phoneNumber = controller.phoneNumber().orElse(null);
-        if(phoneNumber == null){
+        if (phoneNumber == null) {
             return;
         }
         var linkedFolderPath = getSessionDirectory(controller.clientType(), phoneNumber.toString());
@@ -303,7 +304,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         try {
             var link = getSessionDirectory(type, string);
             Files.writeString(link, uuid.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             logger.log(WARNING, "Cannot link %s to %s".formatted(string, uuid), exception);
         }
     }
@@ -348,7 +349,8 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private Chat fixChat(Path entry) {
         var chatName = entry.getFileName().toString()
                 .replaceFirst(CHAT_PREFIX, "")
-                .replace(".smile", "");
+                .replace(".smile", "")
+                .replaceAll("~~", ":");
         logger.log(ERROR, "Chat at %s is corrupted, resetting it".formatted(chatName));
         try {
             Files.deleteIfExists(entry);
@@ -376,6 +378,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Path getSessionFile(Store store, String fileName) {
+        fileName = fileName.replaceAll(":", "~~");
         return getSessionFile(store.clientType(), store.uuid().toString(), fileName);
     }
 
@@ -422,7 +425,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             }
             try (var input = new GZIPInputStream(Files.newInputStream(file))) {
                 return Optional.of(Smile.readValue(input, reference));
-            }catch (IOException exception) {
+            } catch (IOException exception) {
                 return Optional.empty();
             }
         }
@@ -446,7 +449,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 }
 
                 semaphore.acquire();
-                try(var byteArrayOutputStream = new ByteArrayOutputStream()) {
+                try (var byteArrayOutputStream = new ByteArrayOutputStream()) {
                     try (var stream = new GZIPOutputStream(byteArrayOutputStream)) {
                         Smile.writeValueAsBytes(stream, input);
                         Files.write(file, byteArrayOutputStream.toByteArray());
