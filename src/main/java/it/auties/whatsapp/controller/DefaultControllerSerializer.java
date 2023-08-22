@@ -212,9 +212,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private Optional<Keys> deserializeKeysFromId(ClientType type, String id) {
         var path = getSessionFile(type, id, "keys.smile");
         var preferences = SmileFile.of(path);
-        var result = preferences.read(Keys.class);
-        result.ifPresent(entry -> entry.serializer(this));
-        return result;
+        return preferences.read(Keys.class);
     }
 
     @Override
@@ -253,9 +251,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private Optional<Store> deserializeStoreFromId(ClientType type, String id) {
         var path = getSessionFile(type, id, "store.smile");
         var preferences = SmileFile.of(path);
-        var store = preferences.read(Store.class);
-        store.ifPresent(entry -> entry.serializer(this));
-        return store;
+        return preferences.read(Store.class);
     }
 
     @Override
@@ -378,8 +374,8 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Path getSessionFile(Store store, String fileName) {
-        fileName = fileName.replaceAll(":", "~~");
-        return getSessionFile(store.clientType(), store.uuid().toString(), fileName);
+        var fixedName = fileName.replaceAll(":", "~~");
+        return getSessionFile(store.clientType(), store.uuid().toString(), fixedName);
     }
 
     private Path getSessionFile(ClientType clientType, String uuid, String fileName) {

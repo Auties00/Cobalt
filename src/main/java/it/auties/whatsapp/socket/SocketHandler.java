@@ -18,6 +18,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.exchange.*;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageContainer;
@@ -26,10 +27,6 @@ import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
-import it.auties.whatsapp.model.exchange.Attributes;
-import it.auties.whatsapp.model.exchange.MessageSendRequest;
-import it.auties.whatsapp.model.exchange.Node;
-import it.auties.whatsapp.model.exchange.ContactStatusResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHello;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
@@ -42,6 +39,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.net.SocketException;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -225,8 +223,17 @@ public class SocketHandler implements SocketListener {
 
     @Override
     public void onError(Throwable throwable) {
+        if(isIgnorableSocketError(throwable)) {
+            return;
+        }
         onSocketEvent(SocketEvent.ERROR);
         handleFailure(UNKNOWN, throwable);
+    }
+
+    private boolean isIgnorableSocketError(Throwable throwable) {
+        return throwable instanceof SocketException socketException
+                && Objects.equals(socketException.getMessage(), "Socket closed")
+                && (state() == SocketState.RECONNECTING || state() == SocketState.DISCONNECTED);
     }
 
     public synchronized CompletableFuture<Void> connect() {

@@ -1,11 +1,11 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.model.exchange;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
-import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.socket.SocketSession;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Protobuf;

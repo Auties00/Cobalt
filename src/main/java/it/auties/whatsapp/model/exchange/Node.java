@@ -1,8 +1,6 @@
 package it.auties.whatsapp.model.exchange;
 
 import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.socket.Request;
-import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Json;
 import lombok.NonNull;
 

@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 import static com.google.zxing.client.j2se.MatrixToImageWriter.writeToPath;

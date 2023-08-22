@@ -1,7 +1,6 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 

@@ -5,7 +5,6 @@ import lombok.NonNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * An interface to represent a supplier that returns a code wrapped in a CompletableFuture

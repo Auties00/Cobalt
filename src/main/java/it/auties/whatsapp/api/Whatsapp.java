@@ -31,7 +31,6 @@ import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.exchange.*;
-import it.auties.whatsapp.model.message.standard.CallMessage;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.AttachmentProvider;
@@ -61,7 +60,6 @@ import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.HistorySyncNotification.Type;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
-import it.auties.whatsapp.model.exchange.MexQueryRequest;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.util.*;
@@ -809,7 +807,7 @@ public class Whatsapp {
      * @return a non-null result
      */
     public CompletableFuture<MessageInfo> awaitReply(@NonNull String id) {
-        return store().addPendingReply(ReplyHandler.of(id));
+        return store().addPendingReply(id);
     }
 
     /**

@@ -14,7 +14,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.HexFormat;
-import java.util.Locale;
 import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;

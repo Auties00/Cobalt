@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.message.model;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.message.standard.CallMessage;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.payment.*;

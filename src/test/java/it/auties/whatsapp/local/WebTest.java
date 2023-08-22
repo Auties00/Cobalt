@@ -18,10 +18,7 @@ public class WebTest {
                 .lastConnection()
                 .historyLength(WebHistoryLength.ZERO)
                 .unregistered(QrHandler.toTerminal())
-                .addLoggedInListener(api -> {
-                    System.out.printf("Connected: %s%n", api.store().privacySettings());
-                    api.createCommunity("Test", "Something").join();
-                })
+                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))

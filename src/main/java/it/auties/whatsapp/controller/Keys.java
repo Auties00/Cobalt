@@ -38,6 +38,7 @@ import static java.util.Objects.requireNonNullElseGet;
 /**
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
+@Getter
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true, chain = true)
@@ -46,7 +47,6 @@ public final class Keys extends Controller<Keys> {
     /**
      * The client id
      */
-    @Getter
     @Default
     private int registrationId = KeyHelper.registrationId();
 
@@ -55,7 +55,6 @@ public final class Keys extends Controller<Keys> {
      */
     @Default
     @NonNull
-    @Getter
     private SignalKeyPair noiseKeyPair = SignalKeyPair.random();
 
     /**
@@ -63,7 +62,6 @@ public final class Keys extends Controller<Keys> {
      */
     @Default
     @NonNull
-    @Getter
     private SignalKeyPair ephemeralKeyPair = SignalKeyPair.random();
 
     /**
@@ -71,13 +69,11 @@ public final class Keys extends Controller<Keys> {
      */
     @Default
     @NonNull
-    @Getter
     private SignalKeyPair identityKeyPair = SignalKeyPair.random();
 
     /**
      * The signed pre key
      */
-    @Getter
     @Setter(AccessLevel.PRIVATE)
     private SignalSignedKeyPair signedKeyPair;
 
@@ -85,14 +81,12 @@ public final class Keys extends Controller<Keys> {
      * The signed key of the companion's device
      * This value will be null until it gets synced by whatsapp
      */
-    @Getter
     @Setter
     private byte[] signedKeyIndex;
 
     /**
      * The timestamp of the signed key companion's device
      */
-    @Getter
     @Setter
     private long signedKeyIndexTimestamp;
 
@@ -107,34 +101,29 @@ public final class Keys extends Controller<Keys> {
      * The companion secret key
      */
     @Default
-    @Getter
     @Setter
     private SignalKeyPair companionKeyPair = SignalKeyPair.random();
 
     /**
      * The prologue to send in a message
      */
-    @Getter
     private byte @NonNull [] prologue;
 
     /**
      * The phone id for the mobile api
      */
-    @Getter
     @Default
     private String phoneId = KeyHelper.phoneId();
 
     /**
      * The device id for the mobile api
      */
-    @Getter
     @Default
     private String deviceId = KeyHelper.deviceId();
 
     /**
      * The identity id for the mobile api
      */
-    @Getter
     @Default
     private String recoveryToken = KeyHelper.identityId();
 
@@ -162,7 +151,6 @@ public final class Keys extends Controller<Keys> {
      */
     @NonNull
     @Default
-    @Getter
     private Map<SessionAddress, Session> sessions = new ConcurrentHashMap<>();
 
     /**
@@ -175,7 +163,6 @@ public final class Keys extends Controller<Keys> {
     /**
      * Whether the client was registered
      */
-    @Getter
     @Setter
     @Default
     private boolean registered = false;
@@ -183,7 +170,6 @@ public final class Keys extends Controller<Keys> {
     /**
      * Whether the client has already sent its business certificate (mobile api only)
      */
-    @Getter
     @Setter
     @Default
     private boolean businessCertificate = false;
@@ -191,7 +177,6 @@ public final class Keys extends Controller<Keys> {
     /**
      * Whether the client received the initial app sync (web api only)
      */
-    @Getter
     @Setter
     @Default
     private boolean initialAppSync = false;
@@ -216,7 +201,6 @@ public final class Keys extends Controller<Keys> {
      * Session dependent keys to write and read cyphered messages
      */
     @JsonIgnore
-    @Getter
     @Setter
     private byte[] writeKey, readKey;
 
@@ -287,7 +271,9 @@ public final class Keys extends Controller<Keys> {
             return Optional.empty();
         }
 
-        return serializer.deserializeKeys(clientType, uuid);
+        var result = serializer.deserializeKeys(clientType, uuid);
+        result.ifPresent(entry -> entry.serializer(serializer));
+        return result;
     }
 
     /**

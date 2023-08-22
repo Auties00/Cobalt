@@ -20,7 +20,7 @@ public class MobileTest {
                 .verificationCodeMethod(VerificationCodeMethod.SMS)
                 .verificationCodeSupplier(MobileTest::onScanCode)
                 .verificationCaptchaSupplier(MobileTest::onCaptcha)
-                .register(19176199769L)
+                .register(15707404120L)
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");

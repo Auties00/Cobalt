@@ -16,6 +16,7 @@ import java.util.*;
  * This interface represents is implemented by all WhatsappWeb4J's controllers. It provides an easy
  * way to store IDs and serialize said class.
  */
+@Getter
 @SuperBuilder
 @Accessors(fluent = true)
 @SuppressWarnings("unused")
@@ -24,7 +25,6 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * The id of this controller
      */
     @NonNull
-    @Getter
     protected UUID uuid;
 
     /**
@@ -41,7 +41,6 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The client type
      */
-    @Getter
     @NonNull
     protected ClientType clientType;
 

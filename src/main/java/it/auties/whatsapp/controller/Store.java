@@ -1,7 +1,9 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.TextPreviewSetting;
+import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.listener.Listener;
@@ -13,6 +15,8 @@ import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
+import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.model.exchange.Request;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
@@ -27,9 +31,6 @@ import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
-import it.auties.whatsapp.model.exchange.Node;
-import it.auties.whatsapp.model.exchange.ReplyHandler;
-import it.auties.whatsapp.socket.Request;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
@@ -264,7 +265,7 @@ public final class Store extends Controller<Store> {
     @NonNull
     @JsonIgnore
     @Default
-    private KeySetView<ReplyHandler, Boolean> replyHandlers = ConcurrentHashMap.newKeySet();
+    private ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers = new ConcurrentHashMap<>();
 
     /**
      * The non-null list of listeners
@@ -399,6 +400,7 @@ public final class Store extends Controller<Store> {
      */
     public static Store of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return ofNullable(uuid, clientType, serializer)
+                .map(result -> result.serializer(serializer))
                 .orElseGet(() -> random(uuid, null, clientType, serializer));
     }
 
@@ -482,7 +484,10 @@ public final class Store extends Controller<Store> {
         }
         
         var store = serializer.deserializeStore(clientType, phoneNumber);
-        store.ifPresent(serializer::attributeStore);
+        store.ifPresent(entry -> {
+            entry.serializer(serializer);
+            serializer.attributeStore(entry);
+        });
         return store;
     }
 
@@ -831,20 +836,20 @@ public final class Store extends Controller<Store> {
      * @return a boolean
      */
     public boolean resolvePendingReply(@NonNull MessageInfo response) {
-        var contextualMessage = response.message().contentWithContext();
-        if (contextualMessage.isEmpty()) {
-            return false;
-        }
-        var contextualMessageId = contextualMessage.get().contextInfo().quotedMessageId().orElse(null);
-        if (contextualMessageId == null) {
-            return false;
-        }
-        var result = replyHandlers.stream().filter(entry -> entry.id().equals(contextualMessageId)).findFirst();
-        result.ifPresent(reply -> {
-            replyHandlers.remove(reply);
-            reply.future().complete(response);
-        });
-        return result.isPresent();
+        return response.message()
+                .contentWithContext()
+                .map(ContextualMessage::contextInfo)
+                .flatMap(ContextInfo::quotedMessageId)
+                .map(id -> {
+                    var future = replyHandlers.remove(id);
+                    if (future == null) {
+                        return false;
+                    }
+
+                    future.complete(response);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -1181,12 +1186,13 @@ public final class Store extends Controller<Store> {
     /**
      * Adds a replay handler to this store
      *
-     * @param reply the non-null reply handler to add
+     * @param messageId the non-null message id to listen for
      * @return the non-null completable result of the reply handler
      */
-    public CompletableFuture<MessageInfo> addPendingReply(@NonNull ReplyHandler reply) {
-        replyHandlers.add(reply);
-        return reply.future();
+    public CompletableFuture<MessageInfo> addPendingReply(@NonNull String messageId) {
+        var result = new CompletableFuture<MessageInfo>();
+        replyHandlers.put(messageId, result);
+        return result;
     }
 
     /**

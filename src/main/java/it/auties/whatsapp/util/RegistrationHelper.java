@@ -7,10 +7,10 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
+import it.auties.whatsapp.model.exchange.Attributes;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import it.auties.whatsapp.model.exchange.Attributes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import lombok.experimental.UtilityClass;
@@ -70,7 +70,7 @@ public class RegistrationHelper {
             return requestVerificationCode(store, keys, method, true);
         }
 
-        throw new RegistrationException(response);
+        throw new RegistrationException(response, result.body());
     }
 
     private CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
@@ -128,7 +128,7 @@ public class RegistrationHelper {
         }
 
         if (!response.status().isSuccessful()) {
-            throw new RegistrationException(response);
+            throw new RegistrationException(response, result.body());
         }
 
         return CompletableFuture.completedFuture(null);
