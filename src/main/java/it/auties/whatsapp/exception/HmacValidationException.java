@@ -1,6 +1,6 @@
 package it.auties.whatsapp.exception;
 
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * An unchecked exception that is thrown when a hmac signature cannot be validated

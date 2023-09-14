@@ -7,13 +7,12 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
-import it.auties.whatsapp.model.exchange.Attributes;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Spec.Whatsapp;
-import lombok.experimental.UtilityClass;
 
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -32,9 +31,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@UtilityClass
-public class RegistrationHelper {
-    public CompletableFuture<Void> registerPhoneNumber(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, AsyncCaptchaCodeSupplier captchaHandler, VerificationCodeMethod method) {
+public final class RegistrationHelper {
+    public static CompletableFuture<Void> registerPhoneNumber(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, AsyncCaptchaCodeSupplier captchaHandler, VerificationCodeMethod method) {
         if (method == VerificationCodeMethod.NONE) {
             return sendVerificationCode(store, keys, codeHandler, captchaHandler);
         }
@@ -43,22 +41,22 @@ public class RegistrationHelper {
                 .thenComposeAsync(ignored -> sendVerificationCode(store, keys, codeHandler, captchaHandler));
     }
 
-    public CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method) {
+    public static CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method) {
         return requestVerificationCode(store, keys, method, false);
     }
 
-    private CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
-        if(method == VerificationCodeMethod.NONE){
+    private static CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
+        if (method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }
 
         return requestVerificationCodeOptions(store, keys, method, badToken)
-                .thenComposeAsync(attrs -> sendRegistrationRequest(store,"/code", attrs))
+                .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/code", attrs))
                 .thenComposeAsync(result -> checkRequestResponse(store, keys, method, result))
                 .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
     }
 
-    private CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, VerificationCodeMethod method, HttpResponse<String> result) {
+    private static CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, VerificationCodeMethod method, HttpResponse<String> result) {
         Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
                 "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
@@ -66,14 +64,14 @@ public class RegistrationHelper {
             return CompletableFuture.completedFuture(null);
         }
 
-        if(response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
+        if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
             return requestVerificationCode(store, keys, method, true);
         }
 
         throw new RegistrationException(response, result.body());
     }
 
-    private CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
+    private static CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
         return getRegistrationOptions(store, keys, badToken,
                 Map.entry("mcc", store.phoneNumber().orElseThrow().countryCode().mcc()),
                 Map.entry("mnc", store.phoneNumber().orElseThrow().countryCode().mnc()),
@@ -84,15 +82,15 @@ public class RegistrationHelper {
                 Map.entry("hasav", "1"));
     }
 
-    public CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, AsyncVerificationCodeSupplier handler, AsyncCaptchaCodeSupplier captchaHandler) {
+    public static CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, AsyncVerificationCodeSupplier handler, AsyncCaptchaCodeSupplier captchaHandler) {
         return handler.get()
                 .thenComposeAsync(result -> sendVerificationCode(store, keys, result, captchaHandler, false))
                 .thenRunAsync(() -> saveRegistrationStatus(store, keys, true));
     }
 
-    private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
+    private static void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
         keys.registered(registered);
-        if(registered){
+        if (registered) {
             store.jid(store.phoneNumber().orElseThrow().toJid());
             store.addLinkedDevice(store.jid(), 0);
         }
@@ -100,28 +98,28 @@ public class RegistrationHelper {
         store.serialize(true);
     }
 
-    private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code, AsyncCaptchaCodeSupplier captchaHandler, boolean badToken) {
+    private static CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code, AsyncCaptchaCodeSupplier captchaHandler, boolean badToken) {
         return getRegistrationOptions(store, keys, badToken, Map.entry("code", normalizeCodeResult(code)))
                 .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/register", attrs))
                 .thenComposeAsync(result -> checkVerificationResponse(store, keys, code, result, captchaHandler));
     }
 
-    private CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code, String captcha) {
+    private static CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, String code, String captcha) {
         return getRegistrationOptions(store, keys, false, Map.entry("code", normalizeCodeResult(code)), Map.entry("fraud_checkpoint_code", normalizeCodeResult(captcha)))
                 .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/register", attrs))
                 .thenComposeAsync(result -> checkVerificationResponse(store, keys, code, result, null));
     }
 
-    private CompletableFuture<Void> checkVerificationResponse(Store store, Keys keys, String code, HttpResponse<String> result, AsyncCaptchaCodeSupplier captchaHandler) {
+    private static CompletableFuture<Void> checkVerificationResponse(Store store, Keys keys, String code, HttpResponse<String> result, AsyncCaptchaCodeSupplier captchaHandler) {
         System.out.println(result.body());
         Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
                 "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        if(response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
+        if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
             return sendVerificationCode(store, keys, code, captchaHandler, true);
         }
 
-        if(response.errorReason() == VerificationCodeError.CAPTCHA) {
+        if (response.errorReason() == VerificationCodeError.CAPTCHA) {
             Objects.requireNonNull(captchaHandler, "Received captcha error, but no handler was specified in the options");
             return captchaHandler.apply(response)
                     .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
@@ -134,11 +132,11 @@ public class RegistrationHelper {
         return CompletableFuture.completedFuture(null);
     }
 
-    private String normalizeCodeResult(String captcha) {
+    private static String normalizeCodeResult(String captcha) {
         return captcha.replaceAll("-", "").trim();
     }
 
-    private CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
+    private static CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
         var client = createClient(store);
         var encodedParams = toFormParams(params);
         var keypair = SignalKeyPair.random();
@@ -156,7 +154,7 @@ public class RegistrationHelper {
         return client.sendAsync(request, BodyHandlers.ofString());
     }
 
-    private String getUserAgent(Store store) {
+    private static String getUserAgent(Store store) {
         var osName = getMobileOsName(store);
         var osVersion = store.device().osVersion();
         var manufacturer = store.device().manufacturer();
@@ -164,7 +162,7 @@ public class RegistrationHelper {
         return "WhatsApp/%s %s/%s Device/%s-%s".formatted(store.version(), osName, osVersion, manufacturer, model);
     }
 
-    private String getMobileOsName(Store store) {
+    private static String getMobileOsName(Store store) {
         return switch (store.device().osType()) {
             case ANDROID -> store.business() ? "SMBA" : "Android";
             case IOS -> store.business() ? "SMBI" : "iOS";
@@ -172,7 +170,7 @@ public class RegistrationHelper {
         };
     }
 
-    private HttpClient createClient(Store store) {
+    private static HttpClient createClient(Store store) {
         var clientBuilder = HttpClient.newBuilder();
         store.proxy().ifPresent(proxy -> {
             clientBuilder.proxy(ProxySelector.of(new InetSocketAddress(proxy.getHost(), proxy.getPort())));
@@ -182,13 +180,13 @@ public class RegistrationHelper {
     }
 
     @SafeVarargs
-    private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean isRetry, Entry<String, Object>... attributes) {
+    private static CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean isRetry, Entry<String, Object>... attributes) {
         return MetadataHelper.getToken(store.phoneNumber().orElseThrow().numberWithoutPrefix(), store.device().osType(), store.business(), !isRetry)
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 
     // TODO: Add backup token, locale and language and expid
-    private Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
+    private static Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().orElseThrow().countryCode().prefix())
                 .put("in", store.phoneNumber().orElseThrow().numberWithoutPrefix())
@@ -214,7 +212,7 @@ public class RegistrationHelper {
                 .toMap();
     }
 
-    private String toFormParams(Map<String, Object> values) {
+    private static String toFormParams(Map<String, Object> values) {
         return values.entrySet()
                 .stream()
                 .map(entry -> "%s=%s".formatted(entry.getKey(), entry.getValue()))

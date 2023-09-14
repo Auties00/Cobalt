@@ -1,43 +1,24 @@
 package it.auties.whatsapp.model.product;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a product catalog
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("CatalogSnapshot")
-public class ProductCatalog implements ProtobufMessage {
-    /**
-     * The catalog's thumbnail image
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = ImageMessage.class)
-    private ImageMessage catalogImage;
+public record ProductCatalog(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @NonNull
+        ImageMessage catalogImage,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String title,
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+        @NonNull
+        String description
+) implements ProtobufMessage {
 
-    /**
-     * The title of the catalog
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String title;
-
-    /**
-     * The description of the catalog
-     */
-    @ProtobufProperty(index = 3, type = STRING)
-    private String description;
 }

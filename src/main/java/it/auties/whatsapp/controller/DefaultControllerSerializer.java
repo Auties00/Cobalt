@@ -3,11 +3,12 @@ package it.auties.whatsapp.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.util.Validate;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -21,6 +22,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -35,7 +37,7 @@ import static java.lang.System.Logger.Level.WARNING;
  * The store and the keys are decoded synchronously, but the store's chat are decoded asynchronously to save time
  */
 public class DefaultControllerSerializer implements ControllerSerializer {
-    private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsapp4j/");
+    private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.cobalt/");
     private static final String CHAT_PREFIX = "chat_";
     private static final ControllerSerializer DEFAULT_SERIALIZER = new DefaultControllerSerializer();
 
@@ -353,7 +355,10 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         } catch (IOException deleteException) {
             logger.log(WARNING, "Cannot delete chat file");
         }
-        return Chat.ofJid(ContactJid.of(chatName));
+        return new ChatBuilder()
+                .jid(ContactJid.of(chatName))
+                .historySyncMessages(new ConcurrentLinkedDeque<>())
+                .build();
     }
 
     private Path getHome(ClientType type) {

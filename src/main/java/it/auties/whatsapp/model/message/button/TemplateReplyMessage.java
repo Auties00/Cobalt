@@ -1,57 +1,31 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.*;
+import java.util.Optional;
+
 
 /**
  * A model class that represents a message that contains a response to a previous
  * {@link HighlyStructuredMessage}
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("TemplateButtonReplyMessage")
-public final class TemplateReplyMessage extends ButtonReplyMessage {
-    /**
-     * The id of the button that was selected from the previous template message
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String id;
-
-    /**
-     * The text of the button that was selected from the previous template message
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String buttonText;
-
-    /**
-     * The context info of this message
-     */
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
-    private ContextInfo contextInfo;
-
-    /**
-     * The index of the button that was selected from the previous template message
-     */
-    @ProtobufProperty(index = 4, type = UINT32)
-    private int index;
-
+public record TemplateReplyMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String id,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String buttonText,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        Optional<ContextInfo> contextInfo,
+        @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
+        int index
+) implements ButtonReplyMessage {
     @Override
     public MessageType type() {
         return MessageType.TEMPLATE_REPLY;

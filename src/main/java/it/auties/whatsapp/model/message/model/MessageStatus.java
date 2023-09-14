@@ -1,10 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -12,9 +9,7 @@ import java.util.Optional;
 /**
  * The constants of this enumerated type describe the various types of status of a {@link Message}
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-public enum MessageStatus implements ProtobufMessage {
+public enum MessageStatus implements ProtobufEnum {
     /**
      * Erroneous status(no ticks)
      */
@@ -40,8 +35,10 @@ public enum MessageStatus implements ProtobufMessage {
      */
     PLAYED(5);
 
-    @Getter
-    private final int index;
+    final int index;
+    MessageStatus(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
 
     public static Optional<MessageStatus> of(String name) {
         return name == null ? Optional.empty() : Arrays.stream(values())
@@ -49,8 +46,7 @@ public enum MessageStatus implements ProtobufMessage {
                 .findFirst();
     }
 
-    @JsonCreator
-    public static MessageStatus of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(ERROR);
+    public int index() {
+        return this.index;
     }
 }

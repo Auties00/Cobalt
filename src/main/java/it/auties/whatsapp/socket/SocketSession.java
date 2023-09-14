@@ -124,7 +124,7 @@ public class SocketSession {
         } catch(Throwable throwable) {
             listener.onError(throwable);
         } finally {
-            if (!closed) {
+            if (closed) {
                 closeResources();
             }
         }

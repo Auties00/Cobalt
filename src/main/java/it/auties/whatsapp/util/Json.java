@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,9 +17,9 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
 import static java.lang.System.Logger.Level.ERROR;
 
-@UtilityClass
-public class Json {
-    private final ObjectMapper json;
+public final class Json {
+    private static final ObjectMapper json;
+
     static {
         try {
             json = new ObjectMapper().registerModule(new Jdk8Module())
@@ -39,39 +38,39 @@ public class Json {
         }
     }
 
-    public byte[] writeValueAsBytes(Object object){
+    public static byte[] writeValueAsBytes(Object object) {
         try {
             return json.writer().writeValueAsBytes(object);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot write json", exception);
         }
     }
 
-    public String writeValueAsString(Object object){
+    public static String writeValueAsString(Object object) {
         return writeValueAsString(object, false);
     }
 
-    public String writeValueAsString(Object object, boolean pretty){
+    public static String writeValueAsString(Object object, boolean pretty) {
         try {
             var writer = pretty ? json.writerWithDefaultPrettyPrinter() : json.writer();
             return writer.writeValueAsString(object);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot write json", exception);
         }
     }
 
-    public <T> T readValue(String value, Class<T> clazz){
+    public static <T> T readValue(String value, Class<T> clazz) {
         try {
             return json.readValue(value, clazz);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot read json", exception);
         }
     }
 
-    public <T> T readValue(String value, TypeReference<T> clazz){
+    public static <T> T readValue(String value, TypeReference<T> clazz) {
         try {
             return json.readValue(value, clazz);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot read json", exception);
         }
     }

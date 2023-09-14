@@ -1,75 +1,34 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
+import it.auties.protobuf.model.ProtobufMessage;
 
-import java.util.Arrays;
+import static it.auties.protobuf.model.ProtobufType.OBJECT;
+import static it.auties.protobuf.model.ProtobufType.STRING;
 
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) UserAgentPlatform platform,
+                        @ProtobufProperty(index = 2, type = OBJECT) Version appVersion,
+                        @ProtobufProperty(index = 3, type = STRING) String mcc,
+                        @ProtobufProperty(index = 4, type = STRING) String mnc,
+                        @ProtobufProperty(index = 5, type = STRING) String osVersion,
+                        @ProtobufProperty(index = 6, type = STRING) String manufacturer,
+                        @ProtobufProperty(index = 7, type = STRING) String device,
+                        @ProtobufProperty(index = 8, type = STRING) String osBuildNumber,
+                        @ProtobufProperty(index = 9, type = STRING) String phoneId,
+                        @ProtobufProperty(index = 10, type = OBJECT) UserAgentReleaseChannel releaseChannel,
+                        @ProtobufProperty(index = 11, type = STRING) String localeLanguageIso6391,
+                        @ProtobufProperty(index = 12, type = STRING) String localeCountryIso31661Alpha2,
+                        @ProtobufProperty(index = 13, type = STRING) String deviceBoard) implements ProtobufMessage {
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class UserAgent implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = UserAgent.UserAgentPlatform.class)
-    private UserAgentPlatform platform;
+    public enum UserAgentPlatform implements ProtobufEnum {
 
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = Version.class)
-    private Version appVersion;
-
-    @ProtobufProperty(index = 3, type = STRING)
-    private String mcc;
-
-    @ProtobufProperty(index = 4, type = STRING)
-    private String mnc;
-
-    @ProtobufProperty(index = 5, type = STRING)
-    private String osVersion;
-
-    @ProtobufProperty(index = 6, type = STRING)
-    private String manufacturer;
-
-    @ProtobufProperty(index = 7, type = STRING)
-    private String device;
-
-    @ProtobufProperty(index = 8, type = STRING)
-    private String osBuildNumber;
-
-    @ProtobufProperty(index = 9, type = STRING)
-    private String phoneId;
-
-    @ProtobufProperty(index = 10, type = MESSAGE, implementation = UserAgent.UserAgentReleaseChannel.class)
-    private UserAgentReleaseChannel releaseChannel;
-
-    @ProtobufProperty(index = 11, type = STRING)
-    private String localeLanguageIso6391;
-
-    @ProtobufProperty(index = 12, type = STRING)
-    private String localeCountryIso31661Alpha2;
-
-    @ProtobufProperty(index = 13, type = STRING)
-    private String deviceBoard;
-
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("Platform")
-    public enum UserAgentPlatform implements ProtobufMessage {
         ANDROID(0),
         IOS(1),
         WINDOWS_PHONE(2),
         BLACKBERRY(3),
-        BLACK_BERRY_X(4),
+        BLACKBERRYX(4),
         S40(5),
         S60(6),
         PYTHON_CLIENT(7),
@@ -85,42 +44,42 @@ public class UserAgent implements ProtobufMessage {
         GREEN_IPHONE(17),
         BLUE_ANDROID(18),
         BLUE_IPHONE(19),
-        FB_LITE_ANDROID(20),
-        M_LITE_ANDROID(21),
-        IG_LITE_ANDROID(22),
+        FBLITE_ANDROID(20),
+        MLITE_ANDROID(21),
+        IGLITE_ANDROID(22),
         PAGE(23),
         MACOS(24),
-        VR(25),
+        OCULUS_MSG(25),
         OCULUS_CALL(26),
         MILAN(27),
-        CAPI(28),
-        WEAROS(29),
-        ARDEVICE(30),
-        VRDEVICE(31);
-        
-        @Getter
-        private final int index;
+        CAPI(28);
 
-        @JsonCreator
-        public static UserAgentPlatform of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        UserAgentPlatform(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
         }
     }
 
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("ReleaseChannel")
-    public enum UserAgentReleaseChannel implements ProtobufMessage {
+    public enum UserAgentReleaseChannel implements ProtobufEnum {
+
         RELEASE(0),
         BETA(1),
         ALPHA(2),
         DEBUG(3);
-        
-        @Getter
-        private final int index;
 
-        public static UserAgentReleaseChannel of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        UserAgentReleaseChannel(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
         }
     }
 }

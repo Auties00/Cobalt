@@ -1,27 +1,13 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
 
 import java.util.List;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.model.ProtobufType.INT64;
+import static it.auties.protobuf.model.ProtobufType.STRING;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class AppStateFatalExceptionNotification implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = STRING, repeated = true)
-    private List<String> collectionNames;
-
-    @ProtobufProperty(index = 2, type = INT64)
-    private Long timestamp;
+public record AppStateFatalExceptionNotification(@ProtobufProperty(index = 1, type = STRING, repeated = true) List<String> collectionNames,
+                                                 @ProtobufProperty(index = 2, type = INT64) Long timestamp) implements ProtobufMessage {
 }

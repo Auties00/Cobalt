@@ -1,28 +1,28 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.BinaryPatchType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.sync.PatchType;
+import it.auties.whatsapp.util.Clock;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
 /**
  * A model class that represents the deletion of a sticker from the recent list
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("RemoveRecentStickerAction")
-public final class RemoveRecentStickerAction implements Action {
-    @ProtobufProperty(index = 1, name = "lastStickerSentTs", type = INT64)
-    private long lastStickerSentTimestamp;
+public record RemoveRecentStickerAction(
+        @ProtobufProperty(index = 1, type = ProtobufType.INT64)
+        long lastStickerSentTimestampSeconds
+) implements Action {
+    /**
+     * Returns when the sticker was last sent
+     *
+     * @return an optional
+     */
+    public Optional<ZonedDateTime> lastStickerSentTimestamp() {
+        return Clock.parseSeconds(lastStickerSentTimestampSeconds);
+    }
 
     /**
      * The name of this action
@@ -50,7 +50,7 @@ public final class RemoveRecentStickerAction implements Action {
      * @return a non-null string
      */
     @Override
-    public BinaryPatchType actionType() {
+    public PatchType actionType() {
         return null;
     }
 }

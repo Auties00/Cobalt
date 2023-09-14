@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.companion;
 
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.Version;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model for a mobile companion
@@ -13,9 +13,9 @@ import lombok.NonNull;
  * @param osVersion the non-null os version of the device
  */
 public record CompanionDevice(@NonNull String model, @NonNull String manufacturer, @NonNull UserAgentPlatform osType, @NonNull Version osVersion) {
-    private static final CompanionDevice IPHONE_7 = new CompanionDevice("iPhone 7", "Apple", UserAgentPlatform.IOS, new Version("15.3.1"));
-    private static final CompanionDevice SAMSUNG_GALAXY_S9 = new CompanionDevice("star2lte", "Samsung", UserAgentPlatform.ANDROID, new Version("8.0.0"));
-    private static final CompanionDevice SURFACE_LAPTOP_STUDIO = new CompanionDevice("Surface Laptop Studio", "Microsoft", UserAgentPlatform.WINDOWS, new Version("10.0"));
+    private static final CompanionDevice IPHONE_7 = new CompanionDevice("iPhone 7", "Apple", UserAgentPlatform.IOS, Version.of("15.3.1"));
+    private static final CompanionDevice SAMSUNG_GALAXY_S9 = new CompanionDevice("star2lte", "Samsung", UserAgentPlatform.ANDROID, Version.of("8.0.0"));
+    private static final CompanionDevice SURFACE_LAPTOP_STUDIO = new CompanionDevice("Surface Laptop Studio", "Microsoft", UserAgentPlatform.WINDOWS, Version.of("10.0"));
 
     /**
      * Returns an Iphone 7

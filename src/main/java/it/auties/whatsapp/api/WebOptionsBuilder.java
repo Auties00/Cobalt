@@ -4,7 +4,7 @@ import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 import java.util.UUID;

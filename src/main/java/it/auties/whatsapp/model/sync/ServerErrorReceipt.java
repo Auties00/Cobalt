@@ -1,21 +1,12 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.model.ProtobufType.STRING;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class ServerErrorReceipt implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = STRING)
-    private String messageId;
+public record ServerErrorReceipt(
+        @ProtobufProperty(index = 1, type = STRING) String stanzaId
+) implements ProtobufMessage {
+
 }

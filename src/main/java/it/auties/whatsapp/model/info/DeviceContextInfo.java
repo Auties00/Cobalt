@@ -1,45 +1,47 @@
 package it.auties.whatsapp.model.info;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.DeviceListMetadata;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Optional;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
 public final class DeviceContextInfo implements Info, ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = DeviceListMetadata.class)
-    @Default
-    private DeviceListMetadata deviceListMetadata = new DeviceListMetadata();
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    private final DeviceListMetadata deviceListMetadata;
 
-    @ProtobufProperty(index = 2, type = INT32)
-    @Default
-    private int deviceListMetadataVersion = 2;
+    @ProtobufProperty(index = 2, type = ProtobufType.INT32)
+    private final int deviceListMetadataVersion;
 
-    @ProtobufProperty(index = 3, name = "messageSecret", type = BYTES)
+    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
     private byte[] messageSecret;
 
-    @ProtobufProperty(index = 4, name = "paddingBytes", type = BYTES)
-    private byte[] paddingBytes;
+    @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
+    private final byte[] paddingBytes;
 
-    public static DeviceContextInfo of() {
-        return DeviceContextInfo.builder().build();
+    public DeviceContextInfo(DeviceListMetadata deviceListMetadata, int deviceListMetadataVersion, byte[] messageSecret, byte[] paddingBytes) {
+        this.deviceListMetadata = deviceListMetadata;
+        this.deviceListMetadataVersion = deviceListMetadataVersion;
+        this.messageSecret = messageSecret;
+        this.paddingBytes = paddingBytes;
+    }
+
+    public Optional<DeviceListMetadata> deviceListMetadata() {
+        return Optional.ofNullable(deviceListMetadata);
+    }
+
+    public int deviceListMetadataVersion() {
+        return deviceListMetadataVersion;
     }
 
     public Optional<byte[]> messageSecret() {
         return Optional.ofNullable(messageSecret);
+    }
+
+    public void setMessageSecret(byte[] messageSecret) {
+        this.messageSecret = messageSecret;
     }
 
     public Optional<byte[]> paddingBytes() {

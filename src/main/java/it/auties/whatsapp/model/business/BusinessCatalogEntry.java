@@ -1,11 +1,9 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.whatsapp.model.exchange.Node;
-import lombok.NonNull;
+import it.auties.whatsapp.model.node.Node;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Locale;
 import java.util.NoSuchElementException;
 
 /**
@@ -23,8 +21,8 @@ import java.util.NoSuchElementException;
  * @param currency       the currency of the price of the catalog entry
  * @param hidden         whether the catalog entry is hidden or not
  */
-public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedImage, @NonNull ReviewStatus reviewStatus,
-                                   @NonNull Availability availability, @NonNull String name, @NonNull String sellerId,
+public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedImage, @NonNull BusinessReviewStatus reviewStatus,
+                                   @NonNull BusinessItemAvailability availability, @NonNull String name, @NonNull String sellerId,
                                    @NonNull URI uri, @NonNull String description, long price, @NonNull String currency,
                                    boolean hidden) {
     /**
@@ -48,12 +46,12 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
         var statusInfo = node.findNode("status_info")
                 .flatMap(entry -> entry.findNode("status"))
                 .flatMap(Node::contentAsString)
-                .map(ReviewStatus::of)
-                .orElse(ReviewStatus.NO_REVIEW);
+                .map(BusinessReviewStatus::of)
+                .orElse(BusinessReviewStatus.NO_REVIEW);
         var availability = node.findNode("availability")
                 .flatMap(Node::contentAsString)
-                .map(Availability::of)
-                .orElse(Availability.UNKNOWN);
+                .map(BusinessItemAvailability::of)
+                .orElse(BusinessItemAvailability.UNKNOWN);
         var sellerId = node.findNode("retailer_id")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing seller id for catalog entry"));
@@ -70,72 +68,5 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing currency for catalog entry"));
         return new BusinessCatalogEntry(id, encryptedImage, statusInfo, availability, name, sellerId, uri, description, price, currency, hidden);
-    }
-
-    /**
-     * An enumeration of possible ReviewStatuses.
-     */
-    public enum ReviewStatus {
-        /**
-         * Indicates that no review has been performed.
-         */
-        NO_REVIEW,
-        /**
-         * Indicates that the review is pending.
-         */
-        PENDING,
-        /**
-         * Indicates that the review was rejected.
-         */
-        REJECTED,
-        /**
-         * Indicates that the review was approved.
-         */
-        APPROVED,
-        /**
-         * Indicates that the review is outdated.
-         */
-        OUTDATED;
-
-        /**
-         * Returns a ReviewStatus based on the given name.
-         *
-         * @param name the name of the ReviewStatus
-         * @return a ReviewStatus
-         */
-        public static ReviewStatus of(String name) {
-            return valueOf(name.toUpperCase(Locale.ROOT));
-        }
-    }
-
-    /**
-     * An enumeration of possible Availabilities.
-     */
-    public enum Availability {
-        /**
-         * Indicates an unknown availability.
-         */
-        UNKNOWN,
-        /**
-         * Indicates that the item is in stock.
-         */
-        IN_STOCK,
-        /**
-         * Indicates that the item is out of stock.
-         */
-        OUT_OF_STOCK;
-
-        /**
-         * Returns an Availability based on the given name.
-         *
-         * @param name the name of the Availability
-         * @return an Availability
-         */
-        public static Availability of(String name) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.name().toLowerCase(Locale.ROOT).replaceAll("_", " ").equals(name))
-                    .findFirst()
-                    .orElse(UNKNOWN);
-        }
     }
 }

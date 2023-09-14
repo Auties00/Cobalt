@@ -1,31 +1,18 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.BinaryPatchType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.sync.PatchType;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import java.util.Optional;
 
 /**
  * A model clas that represents the assignment of a chat
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("ChatAssignmentAction")
-public final class ChatAssignmentAction implements Action {
-    /**
-     * The device agent id
-     */
-    @ProtobufProperty(index = 1, name = "deviceAgentID", type = STRING)
-    private String deviceAgentId;
+public record ChatAssignmentAction(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        Optional<String> deviceAgentId
+) implements Action {
 
     /**
      * The name of this action
@@ -53,7 +40,7 @@ public final class ChatAssignmentAction implements Action {
      * @return a non-null string
      */
     @Override
-    public BinaryPatchType actionType() {
+    public PatchType actionType() {
         return null;
     }
 }

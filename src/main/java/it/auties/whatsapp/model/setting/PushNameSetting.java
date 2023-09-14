@@ -1,23 +1,14 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
-
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class PushNameSetting implements Setting {
-    @ProtobufProperty(index = 1, type = STRING)
-    private String name;
-
+public record PushNameSetting(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String name
+) implements Setting {
     @Override
     public String indexName() {
         return "setting_pushName";

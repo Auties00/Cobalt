@@ -1,81 +1,38 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.message.standard.KeepInChatType;
 import it.auties.whatsapp.util.Clock;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
+import java.util.Optional;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents an ephemeral message that was saved manually by the user in a chat
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("KeepInChat")
-public class KeepInChat implements ProtobufMessage {
-    /**
-     * The type of this action
-     */
-    @ProtobufProperty(index = 1, name = "keepType", type = MESSAGE)
-    private KeepInChatType keepType;
-
-    /**
-     * The timestamp of this action
-     */
-    @ProtobufProperty(index = 2, name = "serverTimestamp", type = INT64)
-    private long serverTimestampSeconds;
-
-    /**
-     * The key of the message that was saved
-     */
-    @ProtobufProperty(index = 3, name = "key", type = MESSAGE)
-    private MessageKey key;
-
-    /**
-     * The jid of the device that saved this message
-     */
-    @ProtobufProperty(index = 4, name = "deviceJid", type = STRING)
-    private ContactJid deviceJid;
-
-    /**
-     * The timestamp for the client in milliseconds
-     */
-    @ProtobufProperty(index = 5, name = "clientTimestampMs", type = INT64)
-    private long clientTimestampInMilliseconds;
-
-    /**
-     * The timestamp for the server in milliseconds
-     */
-    @ProtobufProperty(index = 6, name = "serverTimestampMs", type = INT64)
-    private long serverTimestampMilliseconds;
-
-    /**
-     * The server timestamp if present
-     *
-     * @return a non-null optional
-     */
-    public ZonedDateTime serverTimestamp(){
+public record KeepInChat(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        KeepInChatType keepType,
+        @ProtobufProperty(index = 2, type = ProtobufType.INT64)
+        long serverTimestampSeconds,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        MessageKey key,
+        @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+        ContactJid deviceJid,
+        @ProtobufProperty(index = 5, type = ProtobufType.INT64)
+        long clientTimestampInMilliseconds,
+        @ProtobufProperty(index = 6, type = ProtobufType.INT64)
+        long serverTimestampMilliseconds
+) implements ProtobufMessage {
+    public Optional<ZonedDateTime> serverTimestamp(){
         return Clock.parseSeconds(serverTimestampSeconds);
     }
 
-    /**
-     * The client timestamp if present
-     *
-     * @return a non-null optional
-     */
-    public ZonedDateTime clientTimestamp(){
+    public Optional<ZonedDateTime> clientTimestamp(){
         return Clock.parseMilliseconds(clientTimestampInMilliseconds);
     }
 }

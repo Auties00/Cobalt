@@ -1,15 +1,10 @@
 package it.auties.whatsapp.model.media;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
 /**
  * The constants of this enumerated type describe the various types of attachments supported by Whatsapp
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
 public enum AttachmentType {
+    NONE("", "", false),
     IMAGE("mms/image", "WhatsApp Image Keys", false),
     AUDIO("mms/audio", "WhatsApp Audio Keys", false),
     VIDEO("mms/video", "WhatsApp Video Keys", false),
@@ -21,12 +16,25 @@ public enum AttachmentType {
     THUMBNAIL_VIDEO("mms/thumbnail-video", "WhatsApp Video Thumbnail Keys", false),
     APP_STATE("mms/md-app-state", "WhatsApp App State Keys", false);
 
-    @Getter
     private final String path;
-
-    @Getter
     private final String keyName;
-
-    @Getter
     private final boolean inflatable;
+
+    AttachmentType(String path, String keyName, boolean inflatable) {
+        this.path = path;
+        this.keyName = keyName;
+        this.inflatable = inflatable;
+    }
+
+    public String path() {
+        return this.path;
+    }
+
+    public String keyName() {
+        return this.keyName;
+    }
+
+    public boolean inflatable() {
+        return this.inflatable;
+    }
 }

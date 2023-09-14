@@ -2,7 +2,7 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.Exceptions;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -37,7 +37,7 @@ public interface ErrorHandler {
 
     /**
      * Default error handler. Saves the exception locally.
-     * The file will be saved in $HOME/.whatsapp4j/errors
+     * The file will be saved in $HOME/.cobalt/errors
      *
      * @return a non-null error handler
      */

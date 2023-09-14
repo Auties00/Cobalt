@@ -1,44 +1,26 @@
 package it.auties.whatsapp.model.interactive;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
 import it.auties.whatsapp.model.message.button.InteractiveMessageContentType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.INT32;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a business collection
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class InteractiveCollection implements InteractiveMessageContent {
-    /**
-     * The business jid of the message
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private ContactJid business;
+public record InteractiveCollection(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        ContactJid business,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String id,
+        @ProtobufProperty(index = 3, type = ProtobufType.INT32)
+        int version
+) implements InteractiveMessageContent {
 
-    /**
-     * The id of the message
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String id;
-
-    /**
-     * The version of the message
-     */
-    @ProtobufProperty(index = 3, type = INT32)
-    private int version;
 
     @Override
     public InteractiveMessageContentType contentType() {

@@ -6,7 +6,7 @@ import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
 import it.auties.whatsapp.util.Spec.Signal;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.NoSuchElementException;
 
@@ -19,10 +19,9 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
         var currentState = keys.findSenderKeyByName(name).findState();
         var messageKey = currentState.chainKey().toMessageKey();
         var ciphertext = AesCbc.encrypt(messageKey.iv(), data, messageKey.cipherKey());
-        var senderKeyMessage = new SenderKeyMessage(currentState.id(), messageKey.iteration(), ciphertext, currentState.signingKey()
-                .privateKey());
+        var senderKeyMessage = new SenderKeyMessage(currentState.id(), messageKey.iteration(), ciphertext, currentState.signingKey().privateKey());
         var next = currentState.chainKey().next();
-        currentState.chainKey(next);
+        currentState.setChainKey(next);
         return new CipheredMessageResult(senderKeyMessage.serialized(), Signal.SKMSG);
     }
 
@@ -51,7 +50,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
             senderKeyState.addSenderMessageKey(lastChainKey.toMessageKey());
             lastChainKey = lastChainKey.next();
         }
-        senderKeyState.chainKey(lastChainKey.next());
+        senderKeyState.setChainKey(lastChainKey.next());
         return lastChainKey.toMessageKey();
     }
 }

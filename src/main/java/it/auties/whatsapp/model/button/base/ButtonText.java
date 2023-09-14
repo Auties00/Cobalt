@@ -1,29 +1,17 @@
 package it.auties.whatsapp.model.button.base;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents the text of a button
  */
-@AllArgsConstructor(staticName = "of")
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class ButtonText implements ButtonBody {
-    /**
-     * The text of this button
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String content;
-
+public record ButtonText(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String content
+) implements ButtonBody {
     @Override
     public ButtonBodyType bodyType() {
         return ButtonBodyType.TEXT;

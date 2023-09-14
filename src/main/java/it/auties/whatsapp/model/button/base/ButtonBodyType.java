@@ -1,27 +1,19 @@
 package it.auties.whatsapp.model.button.base;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
-import java.util.Arrays;
-
-@AllArgsConstructor
-@Accessors(fluent = true)
-@ProtobufName("HydratedButtonType")
-public enum ButtonBodyType implements ProtobufMessage {
+public enum ButtonBodyType implements ProtobufEnum {
     UNKNOWN(0),
     TEXT(1),
     NATIVE_FLOW(2);
 
-    @Getter
-    private final int index;
+    final int index;
+    ButtonBodyType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
 
-    @JsonCreator
-    public static ButtonBodyType of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+    public int index() {
+        return index;
     }
 }

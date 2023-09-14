@@ -1,12 +1,9 @@
 package it.auties.whatsapp.model.contact;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
-import lombok.*;
-import lombok.Builder.Default;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -14,17 +11,9 @@ import java.util.Optional;
 
 /**
  * A model class that represents a Contact. This class is only a model, this means that changing its
- * values will have no real effect on WhatsappWeb's servers. This class also offers a builder,
- * accessible using {@link Contact#builder()}.
+ * values will have no real effect on WhatsappWeb's servers.
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ToString
-@SuppressWarnings("unused")
-public final class Contact implements ProtobufMessage, ContactJidProvider {
+public final class Contact implements ContactJidProvider {
     /**
      * The non-null unique jid used to identify this contact
      */
@@ -36,17 +25,20 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * it should not be possible for this field to be null as it's required when registering for
      * Whatsapp. Though it looks that it can be removed later, so it's nullable.
      */
+    @Nullable
     private String chosenName;
 
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
+    @Nullable
     private String fullName;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp If a
      * name is available, theoretically, also a short name should be
      */
+    @Nullable
     private String shortName;
 
     /**
@@ -57,13 +49,14 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
      * send updates, use {@link Whatsapp#subscribeToPresence(ContactJidProvider)}.
      */
-    @Default
-    private ContactStatus lastKnownPresence = ContactStatus.UNAVAILABLE;
+    @NonNull
+    private ContactStatus lastKnownPresence;
 
     /**
      * The nullable last seconds this contact was seen available. Any contact can decide to hide this
      * information in their privacy settings.
      */
+    @Nullable
     private ZonedDateTime lastSeen;
 
     /**
@@ -71,33 +64,93 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      */
     private boolean blocked;
 
-    /**
-     * Constructs a new Contact from a provided jid
-     *
-     * @param jid the non-null jid
-     * @return a non-null Contact
-     */
-    public static Contact ofJid(@NonNull ContactJid jid) {
-        return Contact.builder().jid(jid).build();
+    public Contact(@NonNull ContactJid jid) {
+        this.jid = jid;
+        this.lastKnownPresence = ContactStatus.UNAVAILABLE;
     }
 
-    /**
-     * Returns the best name available for this contact
-     *
-     * @return a non-null String
-     */
+    public Contact(@NonNull ContactJid jid, @Nullable String chosenName, @Nullable String fullName, @Nullable String shortName, @NonNull ContactStatus lastKnownPresence, @Nullable ZonedDateTime lastSeen, boolean blocked) {
+        this.jid = jid;
+        this.chosenName = chosenName;
+        this.fullName = fullName;
+        this.shortName = shortName;
+        this.lastKnownPresence = lastKnownPresence;
+        this.lastSeen = lastSeen;
+        this.blocked = blocked;
+    }
+
+    public ContactJid jid() {
+        return this.jid;
+    }
+
     public String name() {
-        return shortName != null ? shortName : fullName != null ? fullName : chosenName != null ? chosenName : jid().user();
+        if (shortName != null) {
+            return shortName;
+        }
+
+        if (fullName != null) {
+            return fullName;
+        }
+
+        if (chosenName != null) {
+            return chosenName;
+        }
+
+        return jid().user();
     }
 
-    /**
-     * Returns an optional object wrapping the last seconds this contact was seen. If this information
-     * isn't available, an empty optional is returned.
-     *
-     * @return an optional object wrapping the last seconds this contact was seen available
-     */
     public Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
+    }
+
+    public Optional<String> chosenName() {
+        return Optional.ofNullable(this.chosenName);
+    }
+
+    public Optional<String> fullName() {
+        return Optional.ofNullable(this.fullName);
+    }
+
+    public Optional<String> shortName() {
+        return Optional.ofNullable(this.shortName);
+    }
+
+    public ContactStatus lastKnownPresence() {
+        return this.lastKnownPresence;
+    }
+
+    public boolean blocked() {
+        return this.blocked;
+    }
+
+    public Contact setChosenName(String chosenName) {
+        this.chosenName = chosenName;
+        return this;
+    }
+
+    public Contact setFullName(String fullName) {
+        this.fullName = fullName;
+        return this;
+    }
+
+    public Contact setShortName(String shortName) {
+        this.shortName = shortName;
+        return this;
+    }
+
+    public Contact setLastKnownPresence(ContactStatus lastKnownPresence) {
+        this.lastKnownPresence = lastKnownPresence;
+        return this;
+    }
+
+    public Contact setLastSeen(ZonedDateTime lastSeen) {
+        this.lastSeen = lastSeen;
+        return this;
+    }
+
+    public Contact setBlocked(boolean blocked) {
+        this.blocked = blocked;
+        return this;
     }
 
     @Override
@@ -105,21 +158,10 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
         return Objects.hashCode(this.jid());
     }
 
-    /**
-     * Checks if this contact is equal to another contact
-     *
-     * @param other the contact
-     * @return a boolean
-     */
     public boolean equals(Object other) {
         return other instanceof Contact that && Objects.equals(this.jid(), that.jid());
     }
 
-    /**
-     * Returns this object as a jid
-     *
-     * @return a non-null jid
-     */
     @Override
     public @NonNull ContactJid toJid() {
         return jid();

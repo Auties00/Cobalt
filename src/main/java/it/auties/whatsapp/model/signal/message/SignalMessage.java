@@ -1,64 +1,78 @@
 package it.auties.whatsapp.model.signal.message;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Protobuf;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Objects;
 
-import static it.auties.protobuf.base.ProtobufType.BYTES;
-import static it.auties.protobuf.base.ProtobufType.UINT32;
-import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
 import static it.auties.whatsapp.util.Spec.Signal.MAC_LENGTH;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class SignalMessage implements SignalProtocolMessage {
-    private int version;
+public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
+    private final byte @NonNull [] ephemeralPublicKey;
 
-    @ProtobufProperty(index = 1, type = BYTES)
-    private byte @NonNull [] ephemeralPublicKey;
+    @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
+    private final Integer counter;
 
-    @ProtobufProperty(index = 2, type = UINT32)
-    private Integer counter;
+    @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
+    private final Integer previousCounter;
 
-    @ProtobufProperty(index = 3, type = UINT32)
-    private Integer previousCounter;
-
-    @ProtobufProperty(index = 4, type = BYTES)
-    private byte @NonNull [] ciphertext;
+    @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
+    private final byte @NonNull [] ciphertext;
 
     private byte[] signature;
 
-    private byte[] serialized;
-
-    public SignalMessage(byte @NonNull [] ephemeralPublicKey, int counter, int previousCounter, byte @NonNull [] ciphertext, Function<byte[], byte[]> signer) {
-        this.version = CURRENT_VERSION;
+    public SignalMessage(byte @NonNull [] ephemeralPublicKey, Integer counter, Integer previousCounter, byte @NonNull [] ciphertext) {
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        var encodedMessage = BytesHelper.concat(serializedVersion(), Protobuf.writeMessage(this));
-        this.signature = signer.apply(encodedMessage);
-        this.serialized = BytesHelper.concat(encodedMessage, signature);
     }
 
     public static SignalMessage ofSerialized(byte[] serialized) {
         var data = Arrays.copyOfRange(serialized, 1, serialized.length - MAC_LENGTH);
-        var mac = Arrays.copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length);
-        return Protobuf.readMessage(data, SignalMessage.class)
-                .version(BytesHelper.bytesToVersion(serialized[0]))
-                .signature(mac)
-                .serialized(serialized);
+        var signature = Arrays.copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length);
+        return SignalMessageSpec.decode(data)
+                .setVersion(BytesHelper.bytesToVersion(serialized[0]))
+                .setSerialized(serialized)
+                .setSignature(signature);
+    }
+
+    @Override
+    public byte[] serialized() {
+        if(serialized == null) {
+            var encodedMessage = BytesHelper.concat(serializedVersion(), SignalMessageSpec.encode(this));
+            this.serialized = BytesHelper.concat(encodedMessage, Objects.requireNonNull(signature, "Message wasn't signed"));
+        }
+
+        return serialized;
+    }
+
+    public byte[] ephemeralPublicKey() {
+        return ephemeralPublicKey;
+    }
+
+    public Integer counter() {
+        return counter;
+    }
+
+    public Integer previousCounter() {
+        return previousCounter;
+    }
+
+    public byte[] ciphertext() {
+        return ciphertext;
+    }
+
+    public byte[] signature() {
+        return signature;
+    }
+
+    public SignalMessage setSignature(byte[] signature) {
+        this.signature = signature;
+        return this;
     }
 }

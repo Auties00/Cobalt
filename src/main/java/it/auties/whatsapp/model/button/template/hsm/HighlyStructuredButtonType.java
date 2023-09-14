@@ -1,20 +1,13 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of buttons that a template can
  * wrap
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-public enum HighlyStructuredButtonType implements ProtobufMessage {
+public enum HighlyStructuredButtonType implements ProtobufEnum {
     /**
      * No button
      */
@@ -32,11 +25,12 @@ public enum HighlyStructuredButtonType implements ProtobufMessage {
      */
     CALL(3);
 
-    @Getter
-    private final int index;
+    final int index;
+    HighlyStructuredButtonType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
 
-    @JsonCreator
-    public static HighlyStructuredButtonType of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(HighlyStructuredButtonType.NONE);
+    public int index() {
+        return index;
     }
 }

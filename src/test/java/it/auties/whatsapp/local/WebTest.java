@@ -1,21 +1,16 @@
 package it.auties.whatsapp.local;
 
-import it.auties.whatsapp.api.PairingCodeHandler;
 import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 // Just used for testing locally
 public class WebTest {
     @Test
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
-                .lastConnection()
+                .newConnection()
                 .historyLength(WebHistoryLength.ZERO)
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))

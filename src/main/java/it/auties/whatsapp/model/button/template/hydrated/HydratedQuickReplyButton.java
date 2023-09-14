@@ -1,39 +1,23 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HexFormat;
-
-import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a hydrated quick reply button
  */
-@AllArgsConstructor(staticName = "of")
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public non-sealed class HydratedQuickReplyButton implements HydratedButton {
-    /**
-     * The text of this button
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String text;
-
-    /**
-     * The id of this button
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String id;
-
+public record HydratedQuickReplyButton(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String text,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String id
+) implements HydratedButton {
     /**
      * Constructs a new HydratedQuickReplyButton from a text with a random id
      *

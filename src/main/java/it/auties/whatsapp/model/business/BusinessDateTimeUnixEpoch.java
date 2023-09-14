@@ -1,38 +1,26 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
-
-import static it.auties.protobuf.base.ProtobufType.INT64;
+import java.util.Optional;
 
 /**
  * A model class that represents a time as a unix epoch
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class BusinessDateTimeUnixEpoch implements BusinessDateTimeValue {
-    /**
-     * The timestamp of the date
-     */
-    @ProtobufProperty(index = 1, type = INT64)
-    private long timestampSeconds;
+public record BusinessDateTimeUnixEpoch(
+        @ProtobufProperty(index = 1, type = ProtobufType.INT64)
+        long timestampSeconds
+) implements BusinessDateTimeValue {
 
     /**
-     * Returns the timestamp as a zoned date time
+     * Returns the timestampSeconds as a zoned date time
      *
      * @return an optional
      */
-    public ZonedDateTime timestamp() {
+    public Optional<ZonedDateTime> timestamp() {
         return Clock.parseSeconds(timestampSeconds);
     }
 

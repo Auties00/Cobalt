@@ -1,36 +1,21 @@
 package it.auties.whatsapp.model.product;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a section inside a list of products
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class ProductSection implements ProtobufMessage {
-    /**
-     * The title of the section
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String title;
+public record ProductSection(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String title,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
+        List<ProductSectionEntry> products
+) implements ProtobufMessage {
 
-    /**
-     * The products in this section
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProductSectionEntry.class, repeated = true)
-    private List<ProductSectionEntry> products;
 }

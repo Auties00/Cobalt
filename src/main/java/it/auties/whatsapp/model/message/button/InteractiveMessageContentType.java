@@ -1,22 +1,13 @@
 package it.auties.whatsapp.model.message.button;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of content that an interactive
  * message can wrap
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-@ProtobufName("InteractiveMessageType")
-public enum InteractiveMessageContentType implements ProtobufMessage {
+public enum InteractiveMessageContentType implements ProtobufEnum {
     /**
      * No content
      */
@@ -34,11 +25,13 @@ public enum InteractiveMessageContentType implements ProtobufMessage {
      */
     NATIVE_FLOW(3);
 
-    @Getter
-    private final int index;
+    final int index;
 
-    @JsonCreator
-    public static InteractiveMessageContentType of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(NONE);
+    InteractiveMessageContentType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
+
+    public int index() {
+        return this.index;
     }
 }

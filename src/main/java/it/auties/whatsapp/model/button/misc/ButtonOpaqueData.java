@@ -1,132 +1,71 @@
 package it.auties.whatsapp.model.button.misc;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
+import java.util.Optional;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents data about a button
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("MsgOpaqueData")
-public class ButtonOpaqueData implements ProtobufMessage {
-    /**
-     * The body of the button
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String body;
+public record ButtonOpaqueData(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        Optional<String> body,
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+        Optional<String> caption,
+        @ProtobufProperty(index = 5, type = ProtobufType.DOUBLE)
+        double longitude,
+        @ProtobufProperty(index = 7, type = ProtobufType.DOUBLE)
+        double latitude,
+        @ProtobufProperty(index = 8, type = ProtobufType.INT32)
+        int paymentAmount1000,
+        @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+        Optional<String> paymentNote,
+        @ProtobufProperty(index = 10, type = ProtobufType.STRING)
+        Optional<String> canonicalUrl,
+        @ProtobufProperty(index = 11, type = ProtobufType.STRING)
+        Optional<String> matchedText,
+        @ProtobufProperty(index = 12, type = ProtobufType.STRING)
+        Optional<String> title,
+        @ProtobufProperty(index = 13, type = ProtobufType.STRING)
+        Optional<String> description,
+        @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
+        boolean isLive,
+        @ProtobufProperty(index = 14, type = ProtobufType.BYTES)
+        Optional<byte[]> futureProofBuffer,
+        @ProtobufProperty(index = 15, type = ProtobufType.STRING)
+        Optional<String> clientUrl,
+        @ProtobufProperty(index = 16, type = ProtobufType.STRING)
+        Optional<String> loc,
+        @ProtobufProperty(index = 17, type = ProtobufType.STRING)
+        Optional<String> pollName,
+        @ProtobufProperty(index = 18, type = ProtobufType.OBJECT, repeated = true)
+        @NonNull
+        List<PollOption> pollOptions,
+        @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
+        int pollSelectableOptionsCount,
+        @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
+        Optional<byte[]> messageSecret,
+        @ProtobufProperty(index = 51, type = ProtobufType.STRING)
+        Optional<String> originalSelfAuthor,
+        @ProtobufProperty(index = 22, type = ProtobufType.INT64)
+        long senderTimestampMs,
+        @ProtobufProperty(index = 23, type = ProtobufType.STRING)
+        Optional<String> pollUpdateParentKey,
+        @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+        Optional<PollUpdateEncryptedMetadata> encPollVote,
+        @ProtobufProperty(index = 25, type = ProtobufType.STRING)
+        Optional<String> encReactionTargetMessageKey,
+        @ProtobufProperty(index = 26, type = ProtobufType.BYTES)
+        Optional<byte[]> encReactionEncPayload,
+        @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
+        Optional<byte[]> encReactionEncIv
+) implements ProtobufMessage {
 
-    /**
-     * The caption of the button
-     */
-    @ProtobufProperty(index = 3, type = STRING)
-    private String caption;
-
-    /**
-     * The longitude of the button
-     */
-    @ProtobufProperty(index = 5, type = DOUBLE)
-    private double longitude;
-
-    /**
-     * The latitude of the button
-     */
-    @ProtobufProperty(index = 7, type = DOUBLE)
-    private double latitude;
-
-    /**
-     * The payment amount of the button
-     */
-    @ProtobufProperty(index = 8, type = INT32)
-    private int paymentAmount1000;
-
-    /**
-     * The note attached to the payment of the button
-     */
-    @ProtobufProperty(index = 9, type = STRING)
-    private String paymentNote;
-
-    /**
-     * The canonical url of the button
-     */
-    @ProtobufProperty(index = 10, type = STRING)
-    private String canonicalUrl;
-
-    /**
-     * The matched text of the button
-     */
-    @ProtobufProperty(index = 11, type = STRING)
-    private String matchedText;
-
-    /**
-     * The title of the button
-     */
-    @ProtobufProperty(index = 12, type = STRING)
-    private String title;
-
-    /**
-     * The description of the button
-     */
-    @ProtobufProperty(index = 13, type = STRING)
-    private String description;
-
-    @ProtobufProperty(index = 6, name = "isLive", type = BOOL)
-    private Boolean isLive;
-
-    @ProtobufProperty(index = 14, name = "futureproofBuffer", type = BYTES)
-    private byte[] futureproofBuffer;
-
-    @ProtobufProperty(index = 15, name = "clientUrl", type = STRING)
-    private String clientUrl;
-
-    @ProtobufProperty(index = 16, name = "loc", type = STRING)
-    private String loc;
-
-    @ProtobufProperty(index = 17, name = "pollName", type = STRING)
-    private String pollName;
-
-    @ProtobufProperty(implementation = PollOption.class, index = 18, name = "pollOptions", repeated = true, type = MESSAGE)
-    private List<PollOption> pollOptions;
-
-    @ProtobufProperty(index = 20, name = "pollSelectableOptionsCount", type = UINT32)
-    private Integer pollSelectableOptionsCount;
-
-    @ProtobufProperty(index = 21, name = "messageSecret", type = BYTES)
-    private byte[] messageSecret;
-
-    @ProtobufProperty(index = 51, name = "originalSelfAuthor", type = STRING)
-    private String originalSelfAuthor;
-
-    @ProtobufProperty(index = 22, name = "senderTimestampMs", type = INT64)
-    private Long senderTimestampMs;
-
-    @ProtobufProperty(index = 23, name = "pollUpdateParentKey", type = STRING)
-    private String pollUpdateParentKey;
-
-    @ProtobufProperty(index = 24, name = "encPollVote", type = MESSAGE)
-    private PollUpdateEncryptedMetadata encPollVote;
-
-    @ProtobufProperty(index = 25, name = "encReactionTargetMessageKey", type = STRING)
-    private String encReactionTargetMessageKey;
-
-    @ProtobufProperty(index = 26, name = "encReactionEncPayload", type = BYTES)
-    private byte[] encReactionEncPayload;
-
-    @ProtobufProperty(index = 27, name = "encReactionEncIv", type = BYTES)
-    private byte[] encReactionEncIv;
 }

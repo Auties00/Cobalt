@@ -1,37 +1,21 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a quick reply button
  */
-@AllArgsConstructor(staticName = "of")
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class HighlyStructuredQuickReplyButton implements HighlyStructuredButton {
-    /**
-     * The text of this button
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE)
-    private HighlyStructuredMessage text;
-
-    /**
-     * The id of this button
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String id;
-
+public record HighlyStructuredQuickReplyButton(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @NonNull
+        HighlyStructuredMessage text,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String id
+) implements HighlyStructuredButton {
     public HighlyStructuredButtonType buttonType() {
         return HighlyStructuredButtonType.QUICK_REPLY;
     }

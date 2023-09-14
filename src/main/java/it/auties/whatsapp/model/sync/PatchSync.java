@@ -1,53 +1,48 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
-import lombok.With;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.base.ProtobufType.*;
-
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@With
-@Accessors(fluent = true)
-@ProtobufName("SyncdPatch")
-public class PatchSync implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = VersionSync.class)
+public final class PatchSync implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private VersionSync version;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
+    private final List<MutationSync> mutations;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    private final ExternalBlobReference externalMutations;
+    @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
+    private final byte[] snapshotMac;
+    @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
+    private final byte[] patchMac;
+    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    private final KeyId keyId;
+    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    private final ExitCode exitCode;
+    @ProtobufProperty(index = 8, type = ProtobufType.UINT32)
+    private final Integer deviceIndex;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = MutationSync.class, repeated = true)
-    @Default
-    private List<MutationSync> mutations = new ArrayList<>();
-
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ExternalBlobReference.class)
-    private ExternalBlobReference externalMutations;
-
-    @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] snapshotMac;
-
-    @ProtobufProperty(index = 5, type = BYTES)
-    private byte[] patchMac;
-
-    @ProtobufProperty(index = 6, type = MESSAGE, implementation = KeyId.class)
-    private KeyId keyId;
-
-    @ProtobufProperty(index = 7, type = MESSAGE, implementation = ExitCode.class)
-    private ExitCode exitCode;
-
-    @ProtobufProperty(index = 8, type = UINT32)
-    private Integer deviceIndex;
+    public PatchSync(
+            VersionSync version,
+            List<MutationSync> mutations,
+            ExternalBlobReference externalMutations,
+            byte[] snapshotMac,
+            byte[] patchMac,
+            KeyId keyId,
+            ExitCode exitCode,
+            Integer deviceIndex
+    ) {
+        this.version = version;
+        this.mutations = mutations;
+        this.externalMutations = externalMutations;
+        this.snapshotMac = snapshotMac;
+        this.patchMac = patchMac;
+        this.keyId = keyId;
+        this.exitCode = exitCode;
+        this.deviceIndex = deviceIndex;
+    }
 
     public long encodedVersion() {
         return hasVersion() ? version.version() : 0L;
@@ -59,5 +54,41 @@ public class PatchSync implements ProtobufMessage {
 
     public boolean hasExternalMutations() {
         return externalMutations != null;
+    }
+
+    public VersionSync version() {
+        return version;
+    }
+
+    public List<MutationSync> mutations() {
+        return mutations;
+    }
+
+    public ExternalBlobReference externalMutations() {
+        return externalMutations;
+    }
+
+    public byte[] snapshotMac() {
+        return snapshotMac;
+    }
+
+    public byte[] patchMac() {
+        return patchMac;
+    }
+
+    public KeyId keyId() {
+        return keyId;
+    }
+
+    public ExitCode exitCode() {
+        return exitCode;
+    }
+
+    public Integer deviceIndex() {
+        return deviceIndex;
+    }
+
+    public void setVersion(VersionSync version) {
+        this.version = version;
     }
 }

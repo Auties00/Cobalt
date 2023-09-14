@@ -1,33 +1,24 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.message.model.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.message.model.Message;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("KeepInChatMessage")
-public final class KeepInChatMessage implements Message {
-    @ProtobufProperty(index = 1, name = "key", type = MESSAGE)
-    private MessageKey key;
-
-    @ProtobufProperty(index = 2, name = "keepType", type = MESSAGE)
-    private KeepInChatType keepType;
-
-    @ProtobufProperty(index = 3, name = "timestampMs", type = INT64)
-    private long timestampMilliseconds;
-
+public record KeepInChatMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @NonNull
+        MessageKey key,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @NonNull
+        KeepInChatType keepType,
+        @ProtobufProperty(index = 3, type = ProtobufType.INT64)
+        long timestampMilliseconds
+) implements Message {
     @Override
     public MessageType type() {
         return MessageType.KEEP_IN_CHAT;

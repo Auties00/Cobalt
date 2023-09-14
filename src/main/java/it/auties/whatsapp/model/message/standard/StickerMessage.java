@@ -1,21 +1,22 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.api.Whatsapp;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.time.ZonedDateTime;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.STICKER;
 import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
@@ -23,137 +24,218 @@ import static java.util.Objects.requireNonNullElse;
 /**
  * A model class that represents a message holding a sticker inside
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true)
-public final class StickerMessage extends MediaMessage {
-    /**
-     * The upload url of the encoded sticker that this object wraps
-     */
-    @ProtobufProperty(index = 1, type = STRING)
+public final class StickerMessage extends LocalMediaMessage<StickerMessage> implements MediaMessage<StickerMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    @Nullable
     private String mediaUrl;
+    
+    @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaSha256;
+    
+    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaEncryptedSha256;
+    
+    @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaKey;
+    
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
+    @Nullable
+    private final String mimetype;
+    
+    @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer height;
+    
+    @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer width;
 
-    /**
-     * The sha256 of the decoded sticker that this object wraps
-     */
-    @ProtobufProperty(index = 2, type = BYTES)
-    private byte[] mediaSha256;
-
-    /**
-     * The sha256 of the encoded sticker that this object wraps
-     */
-    @ProtobufProperty(index = 3, type = BYTES)
-    private byte[] mediaEncryptedSha256;
-
-    /**
-     * The media key of the sticker that this object wraps
-     */
-    @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] mediaKey;
-
-    /**
-     * The mime type of the sticker that this object wraps. Most of the seconds this is
-     * {@link MediaMessageType#defaultMimeType()}
-     */
-    @ProtobufProperty(index = 5, type = STRING)
-    private String mimetype;
-
-    /**
-     * The unsigned height of the decoded sticker that this object wraps
-     */
-    @ProtobufProperty(index = 6, type = UINT32)
-    private Integer height;
-
-    /**
-     * The unsigned width of the decoded sticker that this object wraps
-     */
-    @ProtobufProperty(index = 7, type = UINT32)
-    private Integer width;
-
-    /**
-     * The direct path to the encoded sticker that this object wraps
-     */
-    @ProtobufProperty(index = 8, type = STRING)
+    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+    @Nullable
     private String mediaDirectPath;
+    
+    @ProtobufProperty(index = 9, type = ProtobufType.UINT64)
+    @Nullable
+    private Long mediaSize;
+    
+    @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
+    @Nullable
+    private final Long mediaKeyTimestampSeconds;
+    
+    @ProtobufProperty(index = 11, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer firstFrameLength;
+    
+    @ProtobufProperty(index = 12, type = ProtobufType.BYTES)
+    private final byte @Nullable [] firstFrameSidecar;
+    
+    @ProtobufProperty(index = 13, type = ProtobufType.BOOL)
+    private final boolean animated;
+    
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    private final byte @Nullable [] thumbnail;
 
-    /**
-     * The unsigned size of the decoded sticker that this object wraps
-     */
-    @ProtobufProperty(index = 9, type = UINT64)
-    private long mediaSize;
+    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @Nullable
+    private final ContextInfo contextInfo;
 
-    /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for
-     * {@link StickerMessage#mediaKey()}
-     */
-    @ProtobufProperty(index = 10, type = UINT64)
-    private long mediaKeyTimestamp;
+    @ProtobufProperty(index = 18, type = ProtobufType.INT64)
+    private final Long stickerSentTimestamp;
 
-    /**
-     * The codeLength of the first frame
-     */
-    @ProtobufProperty(index = 11, type = UINT32)
-    private Integer firstFrameLength;
+    @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
+    private final boolean avatar;
 
-    /**
-     * The sidecar for the first frame
-     */
-    @ProtobufProperty(index = 12, type = BYTES)
-    private byte[] firstFrameSidecar;
+    public StickerMessage(@Nullable String mediaUrl, byte @Nullable [] mediaSha256, byte @Nullable [] mediaEncryptedSha256, byte @Nullable [] mediaKey, @Nullable String mimetype, @Nullable Integer height, @Nullable Integer width, @Nullable String mediaDirectPath, @Nullable Long mediaSize, @Nullable Long mediaKeyTimestampSeconds, @Nullable Integer firstFrameLength, byte @Nullable [] firstFrameSidecar, boolean animated, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, long stickerSentTimestamp, boolean avatar) {
+        this.mediaUrl = mediaUrl;
+        this.mediaSha256 = mediaSha256;
+        this.mediaEncryptedSha256 = mediaEncryptedSha256;
+        this.mediaKey = mediaKey;
+        this.mimetype = mimetype;
+        this.height = height;
+        this.width = width;
+        this.mediaDirectPath = mediaDirectPath;
+        this.mediaSize = mediaSize;
+        this.mediaKeyTimestampSeconds = mediaKeyTimestampSeconds;
+        this.firstFrameLength = firstFrameLength;
+        this.firstFrameSidecar = firstFrameSidecar;
+        this.animated = animated;
+        this.thumbnail = thumbnail;
+        this.contextInfo = contextInfo;
+        this.stickerSentTimestamp = stickerSentTimestamp;
+        this.avatar = avatar;
+    }
 
-    /**
-     * Determines whether this sticker message is animated
-     */
-    @ProtobufProperty(index = 13, type = BOOL)
-    private boolean animated;
-
-    /**
-     * The thumbnail for this sticker message encoded as png in an array of bytes
-     */
-    @ProtobufProperty(index = 16, type = BYTES)
-    private byte[] thumbnail;
-
-    @ProtobufProperty(index = 18, name = "stickerSentTs", type = INT64)
-    private long stickerSentTimestamp;
-
-    @ProtobufProperty(index = 19, name = "isAvatar", type = BOOL)
-    private boolean isAvatar;
-
-    /**
-     * Constructs a new builder to create a StickerMessage. The result can be later sent using
-     * {@link Whatsapp#sendMessage(MessageInfo)}
-     *
-     * @param media           the non-null sticker that the new message wraps
-     * @param mimeType        the mime type of the new message, by default
-     *                        {@link MediaMessageType#defaultMimeType()}
-     * @param thumbnail       the thumbnail of the sticker that the new message wraps as a png
-     * @param animated        whether the sticker that the new message wraps is animated
-     * @param contextInfo     the context info that the new message wraps
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "simpleBuilder")
-    private static StickerMessage customBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
-        return StickerMessage.builder()
-                .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowSeconds())
+    @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
+    static StickerMessage simpleBuilder(byte @Nullable [] media, String mimeType, byte @Nullable [] thumbnail, boolean animated, ContextInfo contextInfo) {
+        return new StickerMessageBuilder()
+                .mediaKeyTimestampSeconds(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
                 .animated(animated)
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .build();
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
+                .build()
+                .setDecodedMedia(media);
     }
 
-    /**
-     * Returns the media type of the sticker that this object wraps
-     *
-     * @return {@link MediaMessageType#STICKER}
-     */
+    public OptionalInt height() {
+        return height == null ? OptionalInt.empty() : OptionalInt.of(height);
+    }
+
+    public OptionalInt width() {
+        return width == null ? OptionalInt.empty() : OptionalInt.of(width);
+    }
+
+    public boolean animated() {
+        return animated;
+    }
+
+    public boolean avatar() {
+        return avatar;
+    }
+
+    @Override
+    public Optional<String> mediaUrl() {
+        return Optional.ofNullable(mediaUrl);
+    }
+
+    @Override
+    public StickerMessage setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+        return this;
+    }
+
+    @Override
+    public Optional<String> mediaDirectPath() {
+        return Optional.ofNullable(mediaDirectPath);
+    }
+
+    @Override
+    public StickerMessage setMediaDirectPath(String mediaDirectPath) {
+        this.mediaDirectPath = mediaDirectPath;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaKey() {
+        return Optional.ofNullable(mediaKey);
+    }
+
+    @Override
+    public StickerMessage setMediaKey(byte[] bytes) {
+        this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaSha256() {
+        return Optional.ofNullable(mediaSha256);
+    }
+
+    @Override
+    public StickerMessage setMediaSha256(byte[] bytes) {
+        this.mediaSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaEncryptedSha256() {
+        return Optional.ofNullable(mediaEncryptedSha256);
+    }
+
+    @Override
+    public StickerMessage setMediaEncryptedSha256(byte[] bytes) {
+        this.mediaEncryptedSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public OptionalLong mediaSize() {
+        return mediaSize == null ? OptionalLong.empty() : OptionalLong.of(mediaSize);
+    }
+
+    @Override
+    public OptionalLong mediaKeyTimestampSeconds() {
+        return Clock.parseTimestamp(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public Optional<ZonedDateTime> mediaKeyTimestamp() {
+        return Clock.parseSeconds(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public StickerMessage setMediaSize(long mediaSize) {
+        this.mediaSize = mediaSize;
+        return this;
+    }
+    
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.STICKER;
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    public Optional<String> mimetype() {
+        return Optional.ofNullable(mimetype);
+    }
+
+    public OptionalInt firstFrameLength() {
+        return firstFrameLength == null ? OptionalInt.empty() : OptionalInt.of(firstFrameLength);
+    }
+
+    public Optional<byte[]> firstFrameSidecar() {
+        return Optional.ofNullable(firstFrameSidecar);
+    }
+
+    public Optional<byte[]> thumbnail() {
+        return Optional.ofNullable(thumbnail);
+    }
+
+    public OptionalLong stickerSentTimestamp() {
+        return Clock.parseTimestamp(stickerSentTimestamp);
     }
 }

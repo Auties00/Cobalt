@@ -1,28 +1,17 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
-
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("AvatarUserSettings")
-public final class AvatarUserSettings implements Setting {
-    @ProtobufProperty(index = 1, name = "fbid", type = STRING)
-    private String facebookId;
-
-    @ProtobufProperty(index = 2, name = "password", type = STRING)
-    private String password;
-
+public record AvatarUserSettings(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String facebookId,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String password
+) implements Setting {
     @Override
     public String indexName() {
         throw new UnsupportedOperationException("Cannot send setting: no index name");

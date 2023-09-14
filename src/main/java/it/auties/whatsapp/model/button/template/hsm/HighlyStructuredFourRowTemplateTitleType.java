@@ -1,20 +1,13 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of title that a template can
  * have
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-public enum HighlyStructuredFourRowTemplateTitleType implements ProtobufMessage {
+public enum HighlyStructuredFourRowTemplateTitleType implements ProtobufEnum {
     /**
      * No title
      */
@@ -40,14 +33,12 @@ public enum HighlyStructuredFourRowTemplateTitleType implements ProtobufMessage 
      */
     LOCATION(5);
 
-    @Getter
-    private final int index;
+    final int index;
+    HighlyStructuredFourRowTemplateTitleType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
 
-    @JsonCreator
-    public static HighlyStructuredFourRowTemplateTitleType of(int index) {
-        return Arrays.stream(values())
-                .filter(entry -> entry.index() == index)
-                .findFirst()
-                .orElse(HighlyStructuredFourRowTemplateTitleType.NONE);
+    public int index() {
+        return index;
     }
 }

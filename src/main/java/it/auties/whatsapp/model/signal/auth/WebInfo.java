@@ -1,59 +1,34 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
+import it.auties.protobuf.model.ProtobufMessage;
 
-import java.util.Arrays;
+import static it.auties.protobuf.model.ProtobufType.OBJECT;
+import static it.auties.protobuf.model.ProtobufType.STRING;
 
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+public record WebInfo(@ProtobufProperty(index = 1, type = STRING) String refToken,
+                      @ProtobufProperty(index = 2, type = STRING) String version,
+                      @ProtobufProperty(index = 3, type = OBJECT) WebPayload webPayload,
+                      @ProtobufProperty(index = 4, type = OBJECT) WebInfoWebSubPlatform webSubPlatform) implements ProtobufMessage {
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class WebInfo implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = STRING)
-    private String refToken;
+    public enum WebInfoWebSubPlatform implements ProtobufEnum {
 
-    @ProtobufProperty(index = 2, type = STRING)
-    private String version;
-
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = WebPayload.class)
-    private WebPayload payload;
-
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = WebInfo.WebInfoWebSubPlatform.class)
-    private WebInfoWebSubPlatform platform;
-
-    public WebInfo(WebInfoWebSubPlatform platform) {
-        this.platform = platform;
-    }
-
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("WebSubPlatform")
-    public enum WebInfoWebSubPlatform implements ProtobufMessage {
         WEB_BROWSER(0),
         APP_STORE(1),
         WIN_STORE(2),
         DARWIN(3),
         WIN32(4);
-        
-        @Getter
-        private final int index;
 
-        @JsonCreator
-        public static WebInfoWebSubPlatform of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        WebInfoWebSubPlatform(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
         }
     }
 }

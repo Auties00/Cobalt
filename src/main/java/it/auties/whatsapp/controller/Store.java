@@ -10,14 +10,15 @@ import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
-import it.auties.whatsapp.model.exchange.Node;
-import it.auties.whatsapp.model.exchange.Request;
+import it.auties.whatsapp.model.contact.ContactJidServer;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -27,22 +28,27 @@ import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.poll.PollUpdate;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptionsSpec;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
+import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.MetadataHelper;
+import it.auties.whatsapp.util.ProxyAuthenticator;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -95,7 +101,7 @@ public final class Store extends Controller<Store> {
     @Getter
     @Setter
     @Default
-    private String name = "Whatsapp4j";
+    private String name = "Cobalt";
 
     /**
      * Whether the linked companion is a business account or not
@@ -284,7 +290,7 @@ public final class Store extends Controller<Store> {
     private String tag = HexFormat.of().formatHex(BytesHelper.random(1));
 
     /**
-     * The timestamp in seconds for the initialization of this object
+     * The timestampSeconds in seconds for the initialization of this object
      */
     @Default
     @Getter
@@ -620,7 +626,7 @@ public final class Store extends Controller<Store> {
 
     private Stream<Contact> findContactsStream(String name) {
         return name == null ? Stream.empty() : contacts().parallelStream()
-                .filter(contact -> Objects.equals(contact.fullName(), name) || Objects.equals(contact.shortName(), name) || Objects.equals(contact.chosenName(), name));
+                .filter(contact -> contact.fullName().filter(name::equals).isPresent() || contact.chosenName().filter(name::equals).isPresent() || contact.shortName().filter(name::equals).isPresent());
     }
 
     /**
@@ -801,6 +807,7 @@ public final class Store extends Controller<Store> {
      * @param id the id to search, can be null
      * @return a non-null optional
      */
+    @SuppressWarnings("ClassEscapesDefinedScope")
     public Optional<Request> findPendingRequest(String id) {
         return id == null ? Optional.empty() : Optional.ofNullable(requests.get(id));
     }
@@ -825,6 +832,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null collection
      */
+    @SuppressWarnings("ClassEscapesDefinedScope")
     public Collection<Request> pendingRequests() {
         return Collections.unmodifiableCollection(requests.values());
     }
@@ -838,7 +846,7 @@ public final class Store extends Controller<Store> {
     public boolean resolvePendingReply(@NonNull MessageInfo response) {
         return response.message()
                 .contentWithContext()
-                .map(ContextualMessage::contextInfo)
+                .flatMap(ContextualMessage::contextInfo)
                 .flatMap(ContextInfo::quotedMessageId)
                 .map(id -> {
                     var future = replyHandlers.remove(id);
@@ -859,7 +867,10 @@ public final class Store extends Controller<Store> {
      * @return the input chat
      */
     public Chat addNewChat(@NonNull ContactJid chatJid) {
-        var chat = Chat.ofJid(chatJid);
+        var chat = new ChatBuilder()
+                .historySyncMessages(new ConcurrentLinkedDeque<>())
+                .jid(chatJid)
+                .build();
         addChat(chat);
         return chat;
     }
@@ -872,15 +883,15 @@ public final class Store extends Controller<Store> {
      */
     public Optional<Chat> addChat(@NonNull Chat chat) {
         chat.messages().forEach(this::attribute);
-        if (chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
+        if (chat.hasName() && chat.jid().hasServer(ContactJidServer.WHATSAPP)) {
             var contact = findContactByJid(chat.jid())
-                    .orElseGet(() -> addContact(Contact.ofJid(chat.jid())));
-            contact.fullName(chat.name());
+                    .orElseGet(() -> addContact(new Contact(chat.jid())));
+            contact.setFullName(chat.name());
         }
         var oldChat = chats.get(chat.jid());
         if(oldChat != null) {
             if(oldChat.hasName() && !chat.hasName()){
-                chat.name(oldChat.name()); // Coming from contact actions
+                chat.setName(oldChat.name()); // Coming from contact actions
             }
             joinMessages(chat, oldChat);
         }
@@ -928,7 +939,7 @@ public final class Store extends Controller<Store> {
      * @return the input contact
      */
     public Contact addContact(@NonNull ContactJid contactJid) {
-        return addContact(Contact.ofJid(contactJid));
+        return addContact(new Contact(contactJid));
     }
 
     /**
@@ -961,24 +972,26 @@ public final class Store extends Controller<Store> {
     public MessageInfo attribute(@NonNull MessageInfo info) {
         var chat = findChatByJid(info.chatJid())
                 .orElseGet(() -> addNewChat(info.chatJid()));
-        info.key().chat(chat);
-        if(info.fromMe() && jid != null && !Objects.equals(info.senderJid().user(), jid.user())){
-            info.key().senderJid(jid.toWhatsappJid());
+        info.setChat(chat);
+        if(info.fromMe() && jid != null) {
+            info.key().setSenderJid(jid.toWhatsappJid());
         }
         info.key()
                 .senderJid()
                 .ifPresent(senderJid -> attributeSender(info, senderJid));
         info.message()
                 .contentWithContext()
-                .map(ContextualMessage::contextInfo)
+                .flatMap(ContextualMessage::contextInfo)
                 .ifPresent(this::attributeContext);
         processMessage(info);
         return info;
     }
 
     private MessageKey attributeSender(MessageInfo info, ContactJid senderJid) {
-        var contact = findContactByJid(senderJid).orElseGet(() -> addContact(Contact.ofJid(senderJid)));
-        return info.sender(contact).key().sender(contact);
+        var contact = findContactByJid(senderJid)
+                .orElseGet(() -> addContact(new Contact(senderJid)));
+        info.setSender(contact);
+        return info.key();
     }
 
     private void attributeContext(ContextInfo contextInfo) {
@@ -987,13 +1000,15 @@ public final class Store extends Controller<Store> {
     }
 
     private void attributeContextChat(ContextInfo contextInfo, ContactJid chatJid) {
-        var chat = findChatByJid(chatJid).orElseGet(() -> addNewChat(chatJid));
-        contextInfo.quotedMessageChat(chat);
+        var chat = findChatByJid(chatJid)
+                .orElseGet(() -> addNewChat(chatJid));
+        contextInfo.setQuotedMessageChat(chat);
     }
 
     private void attributeContextSender(ContextInfo contextInfo, ContactJid senderJid) {
-        var contact = findContactByJid(senderJid).orElseGet(() -> addContact(Contact.ofJid(senderJid)));
-        contextInfo.quotedMessageSender(contact);
+        var contact = findContactByJid(senderJid)
+                .orElseGet(() -> addContact(new Contact(senderJid)));
+        contextInfo.setQuotedMessageSender(contact);
     }
 
     private void processMessage(MessageInfo info) {
@@ -1008,28 +1023,28 @@ public final class Store extends Controller<Store> {
     }
 
     private void handlePollCreation(MessageInfo info, PollCreationMessage pollCreationMessage) {
-        if(pollCreationMessage.encryptionKey() != null){
+        if(pollCreationMessage.encryptionKey().isPresent()){
             return;
         }
 
         info.message()
                 .deviceInfo()
-                .messageSecret()
+                .flatMap(DeviceContextInfo::messageSecret)
                 .or(info::messageSecret)
-                .ifPresent(pollCreationMessage::encryptionKey);
+                .ifPresent(pollCreationMessage::setEncryptionKey);
     }
 
     private void handlePollUpdate(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
         var originalPollInfo = findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
         var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
-        pollUpdateMessage.pollCreationMessage(originalPollMessage);
+        pollUpdateMessage.setPollCreationMessage(originalPollMessage);
         var originalPollSender = originalPollInfo.senderJid()
                 .toWhatsappJid()
                 .toString()
                 .getBytes(StandardCharsets.UTF_8);
         var modificationSenderJid = info.senderJid().toWhatsappJid();
-        pollUpdateMessage.voter(modificationSenderJid);
+        pollUpdateMessage.setVoter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
         var useSecretPayload = BytesHelper.concat(
@@ -1038,27 +1053,30 @@ public final class Store extends Controller<Store> {
                 modificationSender,
                 secretName
         );
-        var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
+        var encryptionKey = originalPollMessage.encryptionKey()
+                .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
+        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
         var additionalData = "%s\0%s".formatted(
                 originalPollInfo.id(),
                 modificationSenderJid
         );
-        var metadata = pollUpdateMessage.encryptedMetadata();
+        var metadata = pollUpdateMessage.encryptedMetadata()
+                .orElseThrow(() -> new NoSuchElementException("Missing encrypted metadata"));
         var decrypted = AesGcm.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
-        var pollVoteMessage = Protobuf.readMessage(decrypted, PollUpdateEncryptedOptions.class);
+        var pollVoteMessage = PollUpdateEncryptedOptionsSpec.decode(decrypted);
         var selectedOptions = pollVoteMessage.selectedOptions()
                 .stream()
-                .map(sha256 -> originalPollMessage.selectableOptionsHashesMap().get(HexFormat.of().formatHex(sha256)))
-                .filter(Objects::nonNull)
+                .map(sha256 -> originalPollMessage.getSelectableOption(HexFormat.of().formatHex(sha256)))
+                .flatMap(Optional::stream)
                 .toList();
-        originalPollMessage.selectedOptionsMap().put(modificationSenderJid, selectedOptions);
-        pollUpdateMessage.votes(selectedOptions);
+        originalPollMessage.addSelectedOptions(modificationSenderJid, selectedOptions);
+        pollUpdateMessage.setVotes(selectedOptions);
         var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowMilliseconds());
         info.pollUpdates().add(update);
     }
 
     private void handleReactionMessage(MessageInfo info, ReactionMessage reactionMessage) {
-        info.ignore(true);
+        info.setIgnore(true);
         findMessageByKey(reactionMessage.key())
                 .ifPresent(message -> message.reactions().add(reactionMessage));
     }
@@ -1072,7 +1090,7 @@ public final class Store extends Controller<Store> {
         return chats.values()
                 .parallelStream()
                 .filter(Chat::isPinned)
-                .sorted(Comparator.comparingLong((Chat chat) -> chat.pinnedTimestampSeconds()).reversed())
+                .sorted(Comparator.comparingLong(Chat::pinnedTimestampSeconds).reversed())
                 .toList();
     }
 
@@ -1093,7 +1111,7 @@ public final class Store extends Controller<Store> {
     public List<Chat> chats() {
         return chats.values()
                 .stream()
-                .sorted(Comparator.comparingLong((Chat chat) -> chat.timestampSeconds()).reversed())
+                .sorted(Comparator.comparingLong(Chat::timestampSeconds).reversed())
                 .toList();
     }
 
@@ -1174,6 +1192,7 @@ public final class Store extends Controller<Store> {
      * @param request the non-null request to add
      * @return the non-null completable result of the request
      */
+    @SuppressWarnings("ClassEscapesDefinedScope")
     public CompletableFuture<Node> addRequest(@NonNull Request request) {
         if (request.id() == null) {
             return CompletableFuture.completedFuture(null);

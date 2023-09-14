@@ -6,9 +6,9 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 

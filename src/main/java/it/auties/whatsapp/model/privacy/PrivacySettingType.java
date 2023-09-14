@@ -1,9 +1,6 @@
 package it.auties.whatsapp.model.privacy;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 
@@ -11,8 +8,6 @@ import java.util.*;
  * The constants of this enumerated type describe the various types of settings that a user can
  * toggle in his account's preferences
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
 public enum PrivacySettingType {
     /**
      * Refers to whether your last access on Whatsapp should be visible
@@ -43,20 +38,29 @@ public enum PrivacySettingType {
      */
     CALL_ADD("calladd", Set.of(PrivacySettingValue.EVERYONE));
 
-    @Getter
     private final String data;
-
     private final Set<PrivacySettingValue> values;
 
+    PrivacySettingType(String data, Set<PrivacySettingValue> values) {
+        this.data = data;
+        this.values = values;
+    }
+
     public static Optional<PrivacySettingType> of(String id) {
-        return Arrays.stream(values()).filter(entry -> Objects.equals(entry.data(), id)).findFirst();
+        return Arrays.stream(values())
+                .filter(entry -> Objects.equals(entry.data(), id))
+                .findFirst();
     }
 
     public Set<PrivacySettingValue> supportedValues() {
         return Collections.unmodifiableSet(values);
     }
 
-    public boolean isSupported(@NonNull PrivacySettingValue value){
+    public boolean isSupported(@NonNull PrivacySettingValue value) {
         return values.contains(value);
+    }
+
+    public String data() {
+        return this.data;
     }
 }

@@ -1,48 +1,24 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.BinaryPatchType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.*;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.sync.PatchType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model clas that represents an edit to a label
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class LabelEditAction implements Action {
-    /**
-     * The name of the label
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String name;
-
-    /**
-     * The color of the label
-     */
-    @ProtobufProperty(index = 2, type = INT32)
-    private int color;
-
-    /**
-     * The id of the label
-     */
-    @ProtobufProperty(index = 3, type = INT32)
-    private int id;
-
-    /**
-     * Whether this label was deleted
-     */
-    @ProtobufProperty(index = 4, type = BOOL)
-    private boolean deleted;
-
+public record LabelEditAction(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String name,
+        @ProtobufProperty(index = 2, type = ProtobufType.INT32)
+        int color,
+        @ProtobufProperty(index = 3, type = ProtobufType.INT32)
+        int id,
+        @ProtobufProperty(index = 4, type = ProtobufType.BOOL)
+        boolean deleted
+) implements Action {
     /**
      * The name of this action
      *
@@ -69,7 +45,7 @@ public final class LabelEditAction implements Action {
      * @return a non-null string
      */
     @Override
-    public BinaryPatchType actionType() {
+    public PatchType actionType() {
         return null;
     }
 }

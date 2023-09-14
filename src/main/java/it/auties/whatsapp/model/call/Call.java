@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.call;
 
 import it.auties.whatsapp.model.contact.ContactJid;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 

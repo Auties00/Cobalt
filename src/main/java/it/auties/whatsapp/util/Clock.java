@@ -1,30 +1,37 @@
 package it.auties.whatsapp.util;
 
-import lombok.experimental.UtilityClass;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.Function;
 
-@UtilityClass
 public class Clock {
-    public long nowSeconds() {
+    public static long nowSeconds() {
         return Instant.now().getEpochSecond();
     }
 
-    public long nowMilliseconds() {
+    public static long nowMilliseconds() {
         return Instant.now().toEpochMilli();
     }
 
-    public ZonedDateTime parseSeconds(Integer input) {
-        return parseSeconds(input.longValue());
+    public static OptionalLong parseTimestamp(Number input) {
+        return input == null ? OptionalLong.empty() : OptionalLong.of(input.longValue());
     }
 
-    public ZonedDateTime parseSeconds(long input) {
-        return input <= 0 ? ZonedDateTime.now() : ZonedDateTime.ofInstant(Instant.ofEpochSecond(input), ZoneId.systemDefault());
+    public static Optional<ZonedDateTime> parseSeconds(Number input) {
+        return parseTimestamp(input, Instant::ofEpochSecond);
     }
 
-    public ZonedDateTime parseMilliseconds(long input) {
-        return input <= 0 ? ZonedDateTime.now() : ZonedDateTime.ofInstant(Instant.ofEpochMilli(input), ZoneId.systemDefault());
+    public static Optional<ZonedDateTime> parseMilliseconds(Number input) {
+        return parseTimestamp(input, Instant::ofEpochMilli);
+    }
+
+    private static Optional<ZonedDateTime> parseTimestamp(Number input, Function<Long, Instant> converter) {
+        return Optional.ofNullable(input)
+                .map(Number::longValue)
+                .filter(value -> value > 0)
+                .map(value -> ZonedDateTime.ofInstant(converter.apply(value), ZoneId.systemDefault()));
     }
 }

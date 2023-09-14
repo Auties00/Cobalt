@@ -1,11 +1,5 @@
 package it.auties.whatsapp.model.mobile;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.AllArgsConstructor;
-
-import java.util.Arrays;
-
-@AllArgsConstructor
 public enum VerificationCodeError {
     NETWORK_ERROR("network_error"),
     GENERAL_ERROR("error"),
@@ -34,8 +28,11 @@ public enum VerificationCodeError {
 
     private final String data;
 
-    @JsonCreator
-    public static VerificationCodeError of(String name) {
-        return Arrays.stream(values()).filter(entry -> entry.data.equalsIgnoreCase(name)).findFirst().orElse(UNKNOWN);
+    VerificationCodeError(String data) {
+        this.data = data;
+    }
+
+    public String data() {
+        return data;
     }
 }

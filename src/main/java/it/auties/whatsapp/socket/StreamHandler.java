@@ -3,13 +3,11 @@ package it.auties.whatsapp.socket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
-import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
-import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
-import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
+import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.Chat;
@@ -17,34 +15,33 @@ import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupRole;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactJid.Server;
-import it.auties.whatsapp.model.contact.ContactJid.Type;
+import it.auties.whatsapp.model.contact.ContactJidServer;
+import it.auties.whatsapp.model.contact.ContactJidType;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.exchange.Attributes;
-import it.auties.whatsapp.model.exchange.ContactStatusResponse;
-import it.auties.whatsapp.model.exchange.MessageSendRequest;
-import it.auties.whatsapp.model.exchange.Node;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.MessageInfo.StubType;
+import it.auties.whatsapp.model.info.StubType;
+import it.auties.whatsapp.model.info.MessageInfoBuilder;
 import it.auties.whatsapp.model.media.MediaConnection;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.node.Attributes;
+import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
-import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
+import it.auties.whatsapp.model.request.MessageSendRequest;
+import it.auties.whatsapp.model.response.ContactStatusResponse;
+import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
+import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Validate;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -73,7 +70,6 @@ import static it.auties.whatsapp.util.Spec.Signal.KEY_BUNDLE_TYPE;
 import static it.auties.whatsapp.util.Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER;
 import static it.auties.whatsapp.util.Spec.Whatsapp.DEVICE_WEB_SIGNATURE_HEADER;
 
-@Accessors(fluent = true)
 class StreamHandler {
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int PRE_KEYS_UPLOAD_CHUNK = 30;
@@ -166,7 +162,7 @@ class StreamHandler {
     private void digestReceipt(Node node) {
         var chat = node.attributes()
                 .getJid("from")
-                .filter(jid -> jid.type() != Type.STATUS)
+                .filter(jid -> jid.type() != ContactJidType.STATUS)
                 .flatMap(socketHandler.store()::findChatByJid)
                 .orElse(null);
         getReceiptsMessageIds(node)
@@ -186,10 +182,10 @@ class StreamHandler {
                 .flatMap(socketHandler.store()::findContactByJid)
                 .orElse(null);
         if(chat != null && chat.unreadMessagesCount() > 0) {
-            chat.unreadMessagesCount(chat.unreadMessagesCount() - 1);
+            chat.setUnreadMessagesCount(chat.unreadMessagesCount() - 1);
         }
 
-        message.status(status);
+        message.setStatus(status);
         updateReceipt(status, chat, participant, message);
         socketHandler.onMessageStatus(status, participant, message, chat);
         if (Objects.equals(type.orElse(null), "retry")) {
@@ -208,12 +204,9 @@ class StreamHandler {
         try {
             var all = message.senderJid().device() == 0;
             socketHandler.querySessionsForcefully(message.senderJid());
-            message.chat().participantsPreKeys().clear();
-            var request = MessageSendRequest.builder()
-                    .info(message)
-                    .recipients(all ? null : List.of(message.senderJid()))
-                    .force(!all)
-                    .build();
+            message.chat().ifPresent(Chat::clearParticipantsPreKeys);
+            var recipients = all ? null : List.of(message.senderJid());
+            var request = new MessageSendRequest(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
         } finally {
             retries.put(message.id(), attempts + 1);
@@ -271,7 +264,7 @@ class StreamHandler {
         var status = getCallStatus(callNode);
         var timestamp = callNode.attributes()
                 .getOptionalLong("t")
-                .map(Clock::parseSeconds)
+                .flatMap(Clock::parseSeconds)
                 .orElseGet(ZonedDateTime::now);
         var isOffline = callNode.attributes().hasKey("offline");
         var hasVideo = callNode.hasNode("video");
@@ -297,12 +290,12 @@ class StreamHandler {
         var match = socketHandler.store()
                 .findMessageById(from, messageId);
         if (error != 0) {
-            match.ifPresent(message -> message.status(MessageStatus.ERROR));
+            match.ifPresent(message -> message.setStatus(MessageStatus.ERROR));
             return;
         }
 
         match.filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
-                .ifPresent(message -> message.status(MessageStatus.SERVER_ACK));
+                .ifPresent(message -> message.setStatus(MessageStatus.SERVER_ACK));
     }
 
     private void digestCallAck(Node node) {
@@ -462,11 +455,11 @@ class StreamHandler {
                 .getJid("participant")
                 .orElse(null);
         var parameters = getStubTypeParameters(metadata);
-        var key = MessageKey.builder()
+        var key = new MessageKeyBuilder()
                 .chatJid(chat.jid())
                 .senderJid(participantJid)
                 .build();
-        var message = MessageInfo.builder()
+        var message = new MessageInfoBuilder()
                 .timestampSeconds(timestamp)
                 .key(key)
                 .ignore(true)
@@ -488,10 +481,8 @@ class StreamHandler {
         switch (stubType){
             case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
             case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
-            case GROUP_PARTICIPANT_PROMOTE -> chat.findParticipant(participantJid)
-                    .ifPresent(participant -> participant.role(GroupRole.ADMIN));
-            case GROUP_PARTICIPANT_DEMOTE -> chat.removeParticipant(participantJid)
-                    .ifPresent(participant -> participant.role(GroupRole.USER));
+            case GROUP_PARTICIPANT_PROMOTE -> chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.ADMIN));
+            case GROUP_PARTICIPANT_DEMOTE -> chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.USER));
         }
     }
 
@@ -519,7 +510,7 @@ class StreamHandler {
         var chat = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
-        if (!chat.isServerJid(ContactJid.Server.WHATSAPP)) {
+        if (!chat.isServerJid(ContactJidServer.WHATSAPP)) {
             return;
         }
         var keysSize = node.findNode("count")
@@ -578,7 +569,7 @@ class StreamHandler {
 
     private void updateBlocklistEntry(Node entry) {
         entry.attributes().getJid("jid").flatMap(socketHandler.store()::findContactByJid).ifPresent(contact -> {
-            contact.blocked(Objects.equals(entry.attributes().getString("action"), "block"));
+            contact.setBlocked(Objects.equals(entry.attributes().getString("action"), "block"));
             socketHandler.onContactBlocked(contact);
         });
     }
@@ -589,7 +580,7 @@ class StreamHandler {
     }
 
     private void updateUserDisappearingMode(Node child) {
-        var timer = ChatEphemeralTimer.of(child.attributes().getLong("duration"));
+        var timer = ChatEphemeralTimer.of(child.attributes().getInt("duration"));
         socketHandler.store().newChatsEphemeralTimer(timer);
     }
 
@@ -658,8 +649,8 @@ class StreamHandler {
         var patches = node.findNodes("collection")
                 .stream()
                 .map(entry -> entry.attributes().getRequiredString("name"))
-                .map(BinaryPatchType::of)
-                .toArray(BinaryPatchType[]::new);
+                .map(PatchType::of)
+                .toArray(PatchType[]::new);
         socketHandler.pullPatch(patches);
     }
 
@@ -673,9 +664,9 @@ class StreamHandler {
         if (!Objects.equals(type, "account_sync")) {
             return;
         }
-        var timestamp = dirty.get().attributes().getString("timestamp");
+        var timestamp = dirty.get().attributes().getString("timestampSeconds");
         socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty",
-                Node.of("clean", Map.of("type", type, "timestamp", timestamp)));
+                Node.of("clean", Map.of("type", type, "timestampSeconds", timestamp)));
     }
 
     private void digestError(Node node) {
@@ -731,7 +722,7 @@ class StreamHandler {
     }
 
     private void queryGroups() {
-        socketHandler.sendQuery(Server.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
+        socketHandler.sendQuery(ContactJidServer.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
                 .thenAcceptAsync(this::onGroupsQuery);
     }
 
@@ -747,17 +738,17 @@ class StreamHandler {
     }
 
     private CompletableFuture<Node> setBusinessCertificate() {
-        var details = BusinessVerifiedNameDetails.builder()
+        var details = new BusinessVerifiedNameDetailsBuilder()
                 .name("")
                 .issuer("smb:wa")
                 .serial(Math.abs(new SecureRandom().nextLong()))
                 .build();
-        var encodedDetails = Protobuf.writeMessage(details);
-        var certificate = BusinessVerifiedNameCertificate.builder()
-                .details(encodedDetails)
+        var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
+        var certificate = new BusinessVerifiedNameCertificateBuilder()
+                .encodedDetails(encodedDetails)
                 .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails, true))
                 .build();
-        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), Protobuf.writeMessage(certificate)));
+        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate)));
     }
 
     private CompletableFuture<Node> setBusinessProfile() {
@@ -840,7 +831,7 @@ class StreamHandler {
                 socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                 socketHandler.store().locale(Objects.requireNonNullElse(socketHandler.store().locale(), "en-US"));
-                socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
+                socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestampSeconds", 0, "type", "account_sync")))
                         .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                 if(socketHandler.store().business()){
                     socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
@@ -888,7 +879,7 @@ class StreamHandler {
         socketHandler.store().online(true);
         socketHandler.store()
                 .findContactByJid(socketHandler.store().jid().toWhatsappJid())
-                .ifPresent(entry -> entry.lastKnownPresence(ContactStatus.AVAILABLE).lastSeen(ZonedDateTime.now()));
+                .ifPresent(entry -> entry.setLastKnownPresence(ContactStatus.AVAILABLE).setLastSeen(ZonedDateTime.now()));
     }
 
     private CompletableFuture<Void> updateUserStatus(boolean update) {
@@ -927,7 +918,7 @@ class StreamHandler {
             var contact = socketHandler.store().addContact(entry);
             socketHandler.onNewContact(contact);
             return contact;
-        }).blocked(true);
+        }).setBlocked(true);
     }
 
     private CompletableFuture<Void> parsePrivacySettings(Node result) {
@@ -971,7 +962,19 @@ class StreamHandler {
             return;
         }
         socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
-                .thenApplyAsync(MediaConnection::of)
+                .thenApplyAsync(node -> {
+                    var mediaConnection = node.findNode("media_conn").orElse(node);
+                    var auth = mediaConnection.attributes().getString("auth");
+                    var ttl = mediaConnection.attributes().getInt("ttl");
+                    var maxBuckets = mediaConnection.attributes().getInt("max_buckets");
+                    var timestamp = System.currentTimeMillis();
+                    var hosts = mediaConnection.findNodes("host")
+                            .stream()
+                            .map(Node::attributes)
+                            .map(attributes -> attributes.getString("hostname"))
+                            .toList();
+                    return new MediaConnection(auth, ttl, maxBuckets, timestamp, hosts);
+                })
                 .thenAcceptAsync(result -> {
                     socketHandler.store().mediaConnection(result);
                     scheduleMediaConnection(result.ttl());
@@ -1093,13 +1096,13 @@ class StreamHandler {
         saveCompanion(container);
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
-        var advIdentity = Protobuf.readMessage(deviceIdentity.contentAsBytes().orElseThrow(), SignedDeviceIdentityHMAC.class);
+        var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity.contentAsBytes().orElseThrow());
         var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKeyPair().publicKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
             socketHandler.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
             return;
         }
-        var account = Protobuf.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
+        var account = SignedDeviceIdentitySpec.decode(advIdentity.details());
         var message = BytesHelper.concat(
                 ACCOUNT_SIGNATURE_HEADER,
                 account.details(),
@@ -1115,12 +1118,17 @@ class StreamHandler {
                 socketHandler.keys().identityKeyPair().publicKey(),
                 account.accountSignatureKey()
         );
-        account.deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true));
-        var keyIndex = Protobuf.readMessage(account.details(), DeviceIdentity.class).keyIndex();
-        var outgoingDeviceIdentity = Protobuf.writeMessage(new SignedDeviceIdentity(account.details(), null, account.accountSignature(), account.deviceSignature()));
+        var result = new SignedDeviceIdentityBuilder()
+                .accountSignature(account.accountSignature())
+                .accountSignatureKey(account.accountSignatureKey())
+                .details(account.details())
+                .deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true))
+                .build();
+        var keyIndex = DeviceIdentitySpec.decode(result.details()).keyIndex();
+        var outgoingDeviceIdentity = SignedDeviceIdentitySpec.encode(new SignedDeviceIdentity(result.details(), null, result.accountSignature(), result.deviceSignature()));
         var devicePairNode = Node.of("pair-device-sign",
                 Node.of("device-identity", Map.of("key-index", keyIndex), outgoingDeviceIdentity));
-        socketHandler.keys().companionIdentity(account);
+        socketHandler.keys().companionIdentity(result);
         sendConfirmNode(node, devicePairNode);
     }
 
@@ -1128,7 +1136,7 @@ class StreamHandler {
         var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("type", "result")
-                .put("to", Server.WHATSAPP.toJid())
+                .put("to", ContactJidServer.WHATSAPP.toJid())
                 .toMap();
         var request = Node.of("iq", attributes, content);
         socketHandler.sendWithNoResponse(request);
@@ -1150,7 +1158,7 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Unknown platform: " + container));
         socketHandler.store().companionDeviceOs(companionOs);
         socketHandler.store().business(isBusiness);
-        socketHandler.store().addContact(Contact.ofJid(socketHandler.store().jid().toWhatsappJid()));
+        socketHandler.store().addContact(new Contact(socketHandler.store().jid().toWhatsappJid()));
     }
 
     private UserAgentPlatform getCompanionOs(String name) {

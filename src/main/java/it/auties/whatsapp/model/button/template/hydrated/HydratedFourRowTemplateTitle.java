@@ -1,12 +1,14 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.message.standard.DocumentMessage;
+import it.auties.whatsapp.model.message.standard.ImageMessage;
+import it.auties.whatsapp.model.message.standard.LocationMessage;
+import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
 
 /**
  * A model that represents the title of a {@link HydratedFourRowTemplate}
  */
-public sealed interface HydratedFourRowTemplateTitle extends ProtobufMessage permits DocumentMessage, TextMessage, ImageMessage, VideoMessage, LocationMessage {
+public sealed interface HydratedFourRowTemplateTitle permits DocumentMessage, HydratedFourRowTemplateTextTitle, ImageMessage, VideoOrGifMessage, LocationMessage {
     /**
      * Return the type of this title
      *

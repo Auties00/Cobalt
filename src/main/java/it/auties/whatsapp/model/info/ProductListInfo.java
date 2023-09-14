@@ -1,45 +1,27 @@
 package it.auties.whatsapp.model.info;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.product.ProductListHeaderImage;
 import it.auties.whatsapp.model.product.ProductSection;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that holds the information related to a list of products.
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class ProductListInfo implements Info, ProtobufMessage {
-    /**
-     * The products that this message wraps
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = ProductSection.class, repeated = true)
-    private List<ProductSection> productSections;
+public record ProductListInfo(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
+        List<ProductSection> productSections,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @NonNull
+        ProductListHeaderImage headerImage,
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+        @NonNull
+        ContactJid seller
+) implements Info, ProtobufMessage {
 
-    /**
-     * The header image of the messages that this message wraps
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProductListHeaderImage.class)
-    private ProductListHeaderImage headerImage;
-
-    /**
-     * The jid of the seller of the products that this message wraps
-     */
-    @ProtobufProperty(index = 3, type = STRING)
-    private ContactJid seller;
 }

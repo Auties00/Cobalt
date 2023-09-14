@@ -1,157 +1,222 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.api.Whatsapp;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 
-import static it.auties.protobuf.base.ProtobufType.*;
-import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
-
-/**
- * A model class that represents a message holding an audio inside
- */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true)
-public final class AudioMessage extends MediaMessage {
-    /**
-     * The upload url of the encoded media that this object wraps
-     */
-    @ProtobufProperty(index = 1, type = STRING)
+public final class AudioMessage extends LocalMediaMessage<AudioMessage> implements MediaMessage<AudioMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    @Nullable
     private String mediaUrl;
 
-    /**
-     * The mime type of the audio that this object wraps. Most of the seconds this is
-     * {@link MediaMessageType#defaultMimeType()}
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String mimetype;
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    @Nullable
+    private final String mimetype;
 
-    /**
-     * The sha256 of the decoded media that this object wraps
-     */
-    @ProtobufProperty(index = 3, type = BYTES)
-    private byte[] mediaSha256;
+    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaSha256;
 
-    /**
-     * The unsigned size of the decoded media that this object wraps
-     */
-    @ProtobufProperty(index = 4, type = UINT64)
-    private long mediaSize;
+    @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
+    @Nullable
+    private Long mediaSize;
 
-    /**
-     * The unsigned codeLength of the decoded audio in endTimeStamp
-     */
-    @ProtobufProperty(index = 5, type = UINT32)
-    private int duration;
+    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer duration;
 
-    /**
-     * Determines whether this object is a normal audio message, which might contain for example
-     * music, or a voice message
-     */
-    @ProtobufProperty(index = 6, type = BOOL)
-    private boolean voiceMessage;
+    @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
+    private final boolean voiceMessage;
 
-    /**
-     * The media key of the audio that this object wraps.
-     */
-    @ProtobufProperty(index = 7, type = BYTES)
-    private byte[] mediaKey;
+    @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaKey;
 
-    /**
-     * The sha256 of the encoded media that this object wraps
-     */
-    @ProtobufProperty(index = 8, type = BYTES)
-    private byte[] mediaEncryptedSha256;
+    @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaEncryptedSha256;
 
-    /**
-     * The direct path to the encoded media that this object wraps
-     */
-    @ProtobufProperty(index = 9, type = STRING)
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    @Nullable
     private String mediaDirectPath;
 
-    /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for
-     * {@link AudioMessage#mediaKey()}
-     */
-    @ProtobufProperty(index = 10, type = INT64)
-    private long mediaKeyTimestamp;
+    @ProtobufProperty(index = 10, type = ProtobufType.INT64)
+    @Nullable
+    private final Long mediaKeyTimestampSeconds;
 
-    /**
-     * The sidecar is an array of bytes obtained by concatenating every [n*64K, (n+1)*64K+16] chunk of
-     * the encoded media signed with the mac key and truncated to ten bytes. This allows to play and
-     * seek the audio without the need to fully decode it decrypt as CBC allows to read data from a
-     * random offset (block-size aligned). Source: <a href="https://github.com/sigalor/whatsapp-web-reveng#encryption">WhatsApp Web reverse engineered</a>
-     */
-    @ProtobufProperty(index = 18, type = BYTES)
-    private byte[] streamingSidecar;
+    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @Nullable
+    private final ContextInfo contextInfo;
 
-    /**
-     * The waveform as bytes
-     */
-    @ProtobufProperty(index = 19, name = "waveform", type = BYTES)
-    private byte[] waveform;
+    @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
+    private final byte @Nullable [] streamingSidecar;
 
-    /**
-     * The background color
-     */
-    @ProtobufProperty(index = 20, name = "backgroundArgb", type = FIXED32)
-    private Integer backgroundArgb;
+    @ProtobufProperty(index = 19, type = ProtobufType.BYTES)
+    private final byte @Nullable [] waveform;
 
-    /**
-     * Constructs a new builder to create a AudioMessage. The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
-     * {@link AudioMessage#duration} is computed automatically if ffprobe is installed on the host machine
-     *
-     * @param media        the non-null image that the new message holds
-     * @param mimeType     the mime type of the new message, by default
-     *                     {@link MediaMessageType#defaultMimeType()}
-     * @param contextInfo  the context info that the new message wraps
-     * @param voiceMessage whether the new message should be considered as a voice message or as a
-     *                     normal audio, by default the latter is used
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "simpleBuilder")
-    private static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
-        return AudioMessage.builder()
-                .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowSeconds())
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
+    @ProtobufProperty(index = 20, type = ProtobufType.FIXED32)
+    @Nullable
+    private final Integer backgroundArgb;
+
+    public AudioMessage(@Nullable String mediaUrl, @Nullable String mimetype, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer duration, boolean voiceMessage, byte @Nullable [] mediaKey, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, @Nullable ContextInfo contextInfo, byte @Nullable [] streamingSidecar, byte @Nullable [] waveform, @Nullable Integer backgroundArgb) {
+        this.mediaUrl = mediaUrl;
+        this.mimetype = mimetype;
+        this.mediaSha256 = mediaSha256;
+        this.mediaSize = mediaSize;
+        this.duration = duration;
+        this.voiceMessage = voiceMessage;
+        this.mediaKey = mediaKey;
+        this.mediaEncryptedSha256 = mediaEncryptedSha256;
+        this.mediaDirectPath = mediaDirectPath;
+        this.mediaKeyTimestampSeconds = mediaKeyTimestampSeconds;
+        this.contextInfo = contextInfo;
+        this.streamingSidecar = streamingSidecar;
+        this.waveform = waveform;
+        this.backgroundArgb = backgroundArgb;
+    }
+
+    @ProtobufBuilder(className = "AudioMessageSimpleBuilder")
+    static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+        return new AudioMessageBuilder()
+                .mediaKeyTimestampSeconds(Clock.nowSeconds())
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .duration(Medias.getDuration(media))
                 .mimetype(getMimeType(media, mimeType))
                 .voiceMessage(voiceMessage)
                 .waveform(Medias.getAudioWaveForm(media).orElse(null))
-                .build();
+                .build()
+                .setDecodedMedia(media);
     }
 
     private static String getMimeType(byte[] media, String mimeType) {
         return Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(media))
-                .orElseGet(AUDIO::defaultMimeType);
+                .orElseGet(MediaMessageType.AUDIO::defaultMimeType);
     }
 
-    /**
-     * Returns the media type of the audio that this object wraps
-     *
-     * @return {@link MediaMessageType#AUDIO}
-     */
+    public Optional<String> mimetype() {
+        return Optional.ofNullable(mimetype);
+    }
+
+    public OptionalInt duration() {
+        return duration == null ? OptionalInt.empty() : OptionalInt.of(duration);
+    }
+
+    public boolean voiceMessage() {
+        return voiceMessage;
+    }
+
+    public Optional<byte[]> streamingSidecar() {
+        return Optional.ofNullable(streamingSidecar);
+    }
+
+    public Optional<byte[]> waveform() {
+        return Optional.ofNullable(waveform);
+    }
+
+    public Integer backgroundArgb() {
+        return backgroundArgb;
+    }
+
+    @Override
+    public Optional<String> mediaUrl() {
+        return Optional.ofNullable(mediaUrl);
+    }
+
+    @Override
+    public AudioMessage setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+        return this;
+    }
+
+    @Override
+    public Optional<String> mediaDirectPath() {
+        return Optional.ofNullable(mediaDirectPath);
+    }
+
+    @Override
+    public AudioMessage setMediaDirectPath(String mediaDirectPath) {
+        this.mediaDirectPath = mediaDirectPath;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaKey() {
+        return Optional.ofNullable(mediaKey);
+    }
+
+    @Override
+    public AudioMessage setMediaKey(byte[] bytes) {
+        this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaSha256() {
+        return Optional.ofNullable(mediaSha256);
+    }
+
+    @Override
+    public AudioMessage setMediaSha256(byte[] bytes) {
+        this.mediaSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaEncryptedSha256() {
+        return Optional.ofNullable(mediaEncryptedSha256);
+    }
+
+    @Override
+    public AudioMessage setMediaEncryptedSha256(byte[] bytes) {
+        this.mediaEncryptedSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public OptionalLong mediaSize() {
+        return mediaSize == null ? OptionalLong.empty() : OptionalLong.of(mediaSize);
+    }
+
+    @Override
+    public OptionalLong mediaKeyTimestampSeconds() {
+        return Clock.parseTimestamp(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public Optional<ZonedDateTime> mediaKeyTimestamp() {
+        return Clock.parseSeconds(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public AudioMessage setMediaSize(long mediaSize) {
+        this.mediaSize = mediaSize;
+        return this;
+    }
+
+    @Override
+    public AttachmentType attachmentType() {
+        return AttachmentType.AUDIO;
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
     @Override
     public MediaMessageType mediaType() {
-        return AUDIO;
+        return MediaMessageType.AUDIO;
     }
 }

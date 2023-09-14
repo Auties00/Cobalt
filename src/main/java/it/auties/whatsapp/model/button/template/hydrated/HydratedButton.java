@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufMessage;
 
 /**
  * A model that represents all types of hydrated buttons

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.message.standard.*;
 
 /**

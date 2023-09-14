@@ -2,26 +2,22 @@ package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.protobuf.base.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufConverter;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
-import lombok.*;
-import lombok.experimental.Accessors;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * A model class that represents a jid. This class is only a model, this means that changing its
- * values will have no real effect on WhatsappWeb's servers. This class also offers a builder,
- * accessible using {@link ContactJid#builder()}.
+ * values will have no real effect on WhatsappWeb's servers.
  */
-@Builder
-@With
-public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ContactJidProvider {
+public record ContactJid(String user, @NonNull ContactJidServer server, int device, int agent) implements ContactJidProvider {
     /**
      * Default constructor
      */
-    public ContactJid(String user, @NonNull Server server, int device, int agent){
+    public ContactJid(String user, @NonNull ContactJidServer server, int device, int agent){
         this.user = user != null && user.startsWith("+") ? user.substring(1) : user;
         this.server = server;
         this.device = device;
@@ -33,8 +29,13 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the non-null custom server
      * @return a non-null contact jid
      */
-    public static ContactJid ofServer(@NonNull Server server) {
+    public static ContactJid ofServer(@NonNull ContactJidServer server) {
         return of(null, server);
+    }
+
+    @ProtobufConverter // Reserved for protobuf
+    public static ContactJid ofProtobuf(@Nullable String input) {
+        return input == null ? null : ContactJid.of(input);
     }
 
     /**
@@ -44,7 +45,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the non-null custom server
      * @return a non-null contact jid
      */
-    public static ContactJid of(String jid, @NonNull Server server) {
+    public static ContactJid of(String jid, @NonNull ContactJidServer server) {
         var complexUser = withoutServer(jid);
         if (complexUser == null) {
             return new ContactJid(null, server, 0, 0);
@@ -78,7 +79,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         if (jid == null) {
             return null;
         }
-        for (var server : Server.values()) {
+        for (var server : ContactJidServer.values()) {
             jid = jid.replace("@%s".formatted(server), "");
         }
         return jid;
@@ -101,7 +102,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact jid
      */
     public static ContactJid ofDevice(String jid, int device, int agent) {
-        return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, agent);
+        return new ContactJid(withoutServer(jid), ContactJidServer.WHATSAPP, device, agent);
     }
 
     /**
@@ -112,15 +113,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact jid
      */
     public static ContactJid ofDevice(String jid, int device) {
-        return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, 0);
-    }
-
-    /**
-     * Do not use this method, reserved for protobuf
-     */
-    @ProtobufConverter
-    public static ContactJid ofProtobuf(String input) {
-        return input == null ? null : of(input);
+        return new ContactJid(withoutServer(jid), ContactJidServer.WHATSAPP, device, 0);
     }
 
     @ProtobufConverter
@@ -136,7 +129,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     @JsonCreator
     public static ContactJid of(@NonNull String jid) {
-        return of(jid, Server.of(jid));
+        return of(jid, ContactJidServer.of(jid));
     }
 
     /**
@@ -146,7 +139,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact jid
      */
     public static ContactJid of(long jid) {
-        return of(String.valueOf(jid), Server.WHATSAPP);
+        return of(String.valueOf(jid), ContactJidServer.WHATSAPP);
     }
 
     /**
@@ -154,19 +147,19 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @return a non null type
      */
-    public Type type() {
-        return isCompanion() ? Type.COMPANION : switch (server()) {
-            case WHATSAPP -> Objects.equals(user(), "16505361212") ? Type.OFFICIAL_SURVEY_ACCOUNT : Type.USER;
-            case LID -> Type.LID;
-            case BROADCAST -> Objects.equals(user(), "status") ? Type.STATUS : Type.BROADCAST;
-            case GROUP -> Type.GROUP;
-            case GROUP_CALL -> Type.GROUP_CALL;
+    public ContactJidType type() {
+        return isCompanion() ? ContactJidType.COMPANION : switch (server()) {
+            case WHATSAPP -> Objects.equals(user(), "16505361212") ? ContactJidType.OFFICIAL_SURVEY_ACCOUNT : ContactJidType.USER;
+            case LID -> ContactJidType.LID;
+            case BROADCAST -> Objects.equals(user(), "status") ? ContactJidType.STATUS : ContactJidType.BROADCAST;
+            case GROUP -> ContactJidType.GROUP;
+            case GROUP_CALL -> ContactJidType.GROUP_CALL;
             case USER -> switch (user()) {
-                case "server" -> Type.SERVER;
-                case "0" -> Type.ANNOUNCEMENT;
-                case "16508638904" -> Type.IAS;
-                case "16505361212" -> Type.OFFICIAL_BUSINESS_ACCOUNT;
-                default -> Type.UNKNOWN;
+                case "server" -> ContactJidType.SERVER;
+                case "0" -> ContactJidType.ANNOUNCEMENT;
+                case "16508638904" -> ContactJidType.IAS;
+                case "16505361212" -> ContactJidType.OFFICIAL_BUSINESS_ACCOUNT;
+                default -> ContactJidType.UNKNOWN;
             };
         };
     }
@@ -186,7 +179,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the server to check against
      * @return a boolean
      */
-    public boolean hasServer(Server server) {
+    public boolean hasServer(ContactJidServer server) {
         return server() == server;
     }
 
@@ -196,7 +189,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the server to check against
      * @return a boolean
      */
-    public boolean isServerJid(Server server) {
+    public boolean isServerJid(ContactJidServer server) {
         return user() == null && server() == server;
     }
 
@@ -269,117 +262,5 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     public boolean hasAgent() {
         return agent != 0;
-    }
-
-    /**
-     * The constants of this enumerated type describe the various types of jids currently supported
-     */
-    public enum Type {
-        /**
-         * Represents a device connected using the multi device beta
-         */
-        COMPANION,
-        /**
-         * Regular Whatsapp contact Jid
-         */
-        USER,
-        /**
-         * Official survey account
-         */
-        OFFICIAL_SURVEY_ACCOUNT,
-        /**
-         * Lid
-         */
-        LID,
-        /**
-         * Broadcast list
-         */
-        BROADCAST,
-        /**
-         * Official business account
-         */
-        OFFICIAL_BUSINESS_ACCOUNT,
-        /**
-         * Group Chat Jid
-         */
-        GROUP,
-        /**
-         * Group Call Jid
-         */
-        GROUP_CALL,
-        /**
-         * Server Jid: Used to send nodes to Whatsapp usually
-         */
-        SERVER,
-        /**
-         * Announcements Chat Jid: Read only chat, usually used by Whatsapp for log updates
-         */
-        ANNOUNCEMENT,
-        /**
-         * IAS Chat jid
-         */
-        IAS,
-        /**
-         * Image Status Jid of a contact
-         */
-        STATUS,
-        /**
-         * Unknown Jid type
-         */
-        UNKNOWN
-    }
-
-    /**
-     * The constants of this enumerated type describe the various servers that a jid might be linked
-     * to
-     */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    public enum Server {
-        /**
-         * User
-         */
-        USER("c.us"),
-        /**
-         * Group
-         */
-        GROUP("g.us"),
-        /**
-         * Broadcast group
-         */
-        BROADCAST("broadcast"),
-        /**
-         * Group call
-         */
-        GROUP_CALL("call"),
-        /**
-         * Whatsapp
-         */
-        WHATSAPP("s.whatsapp.net"),
-        /**
-         * Lid
-         */
-        LID("lid");
-
-        @Getter
-        private final String address;
-
-        @JsonCreator
-        public static Server of(String address) {
-            return Arrays.stream(values())
-                    .filter(entry -> address != null && address.endsWith(entry.address()))
-                    .findFirst()
-                    .orElse(WHATSAPP);
-        }
-
-        public ContactJid toJid() {
-            return ofServer(this);
-        }
-
-        @Override
-        @JsonValue
-        public String toString() {
-            return address();
-        }
     }
 }

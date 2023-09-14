@@ -1,41 +1,24 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Optional;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 /**
  * A model class that represents a template for a button
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("TemplateButton")
-public class HighlyStructuredButtonTemplate implements ProtobufMessage {
-    @ProtobufProperty(index = 4, type = UINT32)
-    private int index;
-
-    @ProtobufProperty(index = 1, type = MESSAGE)
-    private HighlyStructuredQuickReplyButton highlyStructuredQuickReplyButton;
-
-    @ProtobufProperty(index = 2, type = MESSAGE)
-    private HighlyStructuredURLButton highlyStructuredUrlButton;
-
-    @ProtobufProperty(index = 3, type = MESSAGE)
-    private HighlyStructuredCallButton highlyStructuredCallButton;
-
+public record HighlyStructuredButtonTemplate(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        Optional<HighlyStructuredQuickReplyButton> highlyStructuredQuickReplyButton,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        Optional<HighlyStructuredURLButton> highlyStructuredUrlButton,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        Optional<HighlyStructuredCallButton> highlyStructuredCallButton,
+        @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
+        int index
+) implements ProtobufMessage {
     /**
      * Constructs a new template
      *
@@ -43,13 +26,24 @@ public class HighlyStructuredButtonTemplate implements ProtobufMessage {
      * @return a non-null button template
      */
     public static HighlyStructuredButtonTemplate of(HighlyStructuredButton highlyStructuredButton) {
-        var builder = HighlyStructuredButtonTemplate.builder();
-        if (highlyStructuredButton instanceof HighlyStructuredCallButton structuredCallButton) {
-            builder.highlyStructuredCallButton(structuredCallButton);
-        } else if (highlyStructuredButton instanceof HighlyStructuredQuickReplyButton structuredQuickReplyButton) {
-            builder.highlyStructuredQuickReplyButton(structuredQuickReplyButton);
-        } else if (highlyStructuredButton instanceof HighlyStructuredURLButton highlyStructuredURLButton) {
-            builder.highlyStructuredUrlButton(highlyStructuredURLButton);
+        return of(-1, highlyStructuredButton);
+    }
+
+    /**
+     * Constructs a new template
+     *
+     * @param index                  the index
+     * @param highlyStructuredButton the button
+     * @return a non-null button template
+     */
+    public static HighlyStructuredButtonTemplate of(int index, HighlyStructuredButton highlyStructuredButton) {
+        var builder = new HighlyStructuredButtonTemplateBuilder()
+                .index(index);
+        switch (highlyStructuredButton) {
+            case HighlyStructuredQuickReplyButton highlyStructuredQuickReplyButton -> builder.highlyStructuredQuickReplyButton(highlyStructuredQuickReplyButton);
+            case HighlyStructuredURLButton highlyStructuredURLButton -> builder.highlyStructuredUrlButton(highlyStructuredURLButton);
+            case HighlyStructuredCallButton highlyStructuredCallButton -> builder.highlyStructuredCallButton(highlyStructuredCallButton);
+            case null -> {}
         }
         return builder.build();
     }
@@ -59,20 +53,16 @@ public class HighlyStructuredButtonTemplate implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public Optional<HighlyStructuredButton> button(){
-        if(highlyStructuredQuickReplyButton != null){
-            return Optional.of(highlyStructuredQuickReplyButton);
+    public Optional<? extends HighlyStructuredButton> button() {
+        if (highlyStructuredQuickReplyButton.isPresent()) {
+            return highlyStructuredQuickReplyButton;
         }
 
-        if(highlyStructuredUrlButton != null){
-            return Optional.of(highlyStructuredUrlButton);
+        if (highlyStructuredUrlButton.isPresent()) {
+            return highlyStructuredUrlButton;
         }
 
-        if(highlyStructuredCallButton != null){
-            return Optional.of(highlyStructuredCallButton);
-        }
-
-        return Optional.empty();
+        return highlyStructuredCallButton;
     }
 
     /**

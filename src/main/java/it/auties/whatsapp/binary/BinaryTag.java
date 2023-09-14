@@ -1,13 +1,7 @@
 package it.auties.whatsapp.binary;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
 import java.util.Arrays;
 
-@AllArgsConstructor
-@Accessors(fluent = true)
 public enum BinaryTag {
     UNKNOWN(-1),
     LIST_EMPTY(0),
@@ -28,8 +22,11 @@ public enum BinaryTag {
     SINGLE_BYTE_MAX(256),
     PACKED_MAX(254);
 
-    @Getter
     private final int data;
+
+    BinaryTag(int data) {
+        this.data = data;
+    }
 
     public static BinaryTag of(int data) {
         return Arrays.stream(values()).filter(entry -> entry.data() == data).findAny().orElse(UNKNOWN);
@@ -37,5 +34,9 @@ public enum BinaryTag {
 
     public boolean contentEquals(int number) {
         return number == this.data();
+    }
+
+    public int data() {
+        return this.data;
     }
 }

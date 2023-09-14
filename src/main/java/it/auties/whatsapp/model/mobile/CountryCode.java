@@ -1,14 +1,8 @@
 package it.auties.whatsapp.model.mobile;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
 import java.util.Arrays;
 import java.util.Optional;
 
-@AllArgsConstructor
-@Accessors(fluent = true)
 public enum CountryCode {
     AFGHANISTAN("93", 412),
     ALBANIA("355", 276),
@@ -119,6 +113,7 @@ public enum CountryCode {
     LIECHTENSTEIN("423", 295),
     LITHUANIA("370", 246),
     LUXEMBOURG("352", 270),
+    MACAO("853", 455),
     MACEDONIA("389", 294),
     MADAGASCAR("261", 646),
     MALAWI("265", 650),
@@ -231,16 +226,26 @@ public enum CountryCode {
     SOUTH_KOREA("82", 450),
     VIETNAM("84", 452);
 
-    @Getter
     private final String prefix;
-
-    @Getter
     private final int mcc;
+
+    CountryCode(String prefix, int mcc) {
+        this.prefix = prefix;
+        this.mcc = mcc;
+    }
 
     public static Optional<CountryCode> ofPrefix(String prefix) {
         return prefix == null ? Optional.empty() : Arrays.stream(values())
                 .filter(entry -> entry.prefix().equalsIgnoreCase(prefix))
                 .findFirst();
+    }
+
+    public String prefix() {
+        return prefix;
+    }
+
+    public int mcc() {
+        return mcc;
     }
 
     public String mnc() {

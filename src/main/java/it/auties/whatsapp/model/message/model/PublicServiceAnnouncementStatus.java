@@ -1,29 +1,22 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.util.Clock;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
-import static it.auties.protobuf.base.ProtobufType.UINT64;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("StatusPSA")
-public class PublicServiceAnnouncementStatus implements ProtobufMessage {
-    @ProtobufProperty(index = 44, type = STRING)
-    @NonNull
-    private String campaignId;
-
-    @ProtobufProperty(index = 45, type = UINT64)
-    private long campaignExpirationTimestamp;
+public record PublicServiceAnnouncementStatus(
+        @ProtobufProperty(index = 44, type = ProtobufType.STRING)
+        @NonNull
+        String campaignId,
+        @ProtobufProperty(index = 45, type = ProtobufType.UINT64)
+        long campaignExpirationTimestampSeconds
+) implements ProtobufMessage {
+    public Optional<ZonedDateTime> campaignExpirationTimestamp() {
+        return Clock.parseSeconds(campaignExpirationTimestampSeconds);
+    }
 }

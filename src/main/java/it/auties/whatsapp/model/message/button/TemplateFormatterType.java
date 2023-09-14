@@ -1,20 +1,13 @@
 package it.auties.whatsapp.model.message.button;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constant of this enumerated type define the various of types of visual formats for a
  * {@link TemplateMessage}
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-public enum TemplateFormatterType implements ProtobufMessage {
+public enum TemplateFormatterType implements ProtobufEnum {
     /**
      * No format
      */
@@ -32,14 +25,12 @@ public enum TemplateFormatterType implements ProtobufMessage {
      */
     INTERACTIVE(3);
 
-    @Getter
-    private final int index;
+    final int index;
+    TemplateFormatterType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
 
-    @JsonCreator
-    public static TemplateFormatterType of(int index) {
-        return Arrays.stream(values())
-                .filter(entry -> entry.index() == index)
-                .findFirst()
-                .orElse(TemplateFormatterType.NONE);
+    public int index() {
+        return this.index;
     }
 }

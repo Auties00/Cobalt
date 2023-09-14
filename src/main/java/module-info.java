@@ -1,4 +1,4 @@
-open module it.auties.whatsapp4j {
+open module it.auties.cobalt {
     requires static lombok;
     requires transitive java.desktop;
     requires java.net.http;
@@ -24,6 +24,7 @@ open module it.auties.whatsapp4j {
     requires net.dongliu.apkparser;
     requires io.netty.buffer;
     requires io.netty.common;
+    requires org.checkerframework.checker.qual;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
@@ -39,13 +40,12 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.message.standard;
     exports it.auties.whatsapp.model.product;
     exports it.auties.whatsapp.model.setting;
-    exports it.auties.whatsapp.model.exchange;
+    exports it.auties.whatsapp.model.response;
     exports it.auties.whatsapp.model.payment;
     exports it.auties.whatsapp.model.message.button;
     exports it.auties.whatsapp.listener;
     exports it.auties.whatsapp.util;
     exports it.auties.whatsapp.model.privacy;
-    exports it.auties.whatsapp.model.location;
     exports it.auties.whatsapp.model.poll;
     exports it.auties.whatsapp.model.mobile;
     exports it.auties.whatsapp.model.interactive;
@@ -62,4 +62,5 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.signal.sender;
     exports it.auties.whatsapp.model.signal.keypair;
     exports it.auties.whatsapp.model.call;
+    exports it.auties.whatsapp.model.node;
 }

@@ -6,8 +6,8 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.util.RegistrationHelper;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;

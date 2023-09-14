@@ -1,21 +1,12 @@
 package it.auties.whatsapp.model.business;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of business privacy
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-@ProtobufName("BizPrivacyStatus")
-public enum BusinessPrivacyStatus implements ProtobufMessage {
+public enum BusinessPrivacyStatus implements ProtobufEnum {
     /**
      * End-to-end encryption
      */
@@ -32,11 +23,13 @@ public enum BusinessPrivacyStatus implements ProtobufMessage {
      * Facebook and bsp encryption
      */
     BSP_AND_FB(3);
-    @Getter
-    private final int index;
 
-    @JsonCreator
-    public static BusinessPrivacyStatus of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+    final int index;
+    BusinessPrivacyStatus(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
+
+    public int index() {
+        return index;
     }
 }

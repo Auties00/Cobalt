@@ -3,7 +3,6 @@ package it.auties.whatsapp.controller;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
@@ -17,17 +16,18 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
+import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec;
 import lombok.AccessLevel;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,7 +85,7 @@ public final class Keys extends Controller<Keys> {
     private byte[] signedKeyIndex;
 
     /**
-     * The timestamp of the signed key companion's device
+     * The timestampSeconds of the signed key companion's device
      */
     @Setter
     private long signedKeyIndexTimestamp;
@@ -158,7 +158,11 @@ public final class Keys extends Controller<Keys> {
      */
     @NonNull
     @Default
-    private Map<ContactJid, Map<BinaryPatchType, LTHashState>> hashStates = new ConcurrentHashMap<>();
+    private Map<ContactJid, Map<PatchType, LTHashState>> hashStates = new ConcurrentHashMap<>();
+
+    @NonNull
+    @Default
+    private Map<ContactJid, Collection<ContactJid>> groupsPreKeys = new ConcurrentHashMap<>();
 
     /**
      * Whether the client was registered
@@ -511,7 +515,7 @@ public final class Keys extends Controller<Keys> {
      * @param patchType the non-null name to search
      * @return a non-null hash state
      */
-    public Optional<LTHashState> findHashStateByName(@NonNull ContactJid device, @NonNull BinaryPatchType patchType) {
+    public Optional<LTHashState> findHashStateByName(@NonNull ContactJid device, @NonNull PatchType patchType) {
         return Optional.ofNullable(hashStates.get(device))
                 .map(entry -> entry.get(patchType));
     }
@@ -557,7 +561,7 @@ public final class Keys extends Controller<Keys> {
      * @return this
      */
     public Keys putState(@NonNull ContactJid device, @NonNull LTHashState state) {
-        var oldData = Objects.requireNonNullElseGet(hashStates.get(device), HashMap<BinaryPatchType, LTHashState>::new);
+        var oldData = Objects.requireNonNullElseGet(hashStates.get(device), HashMap<PatchType, LTHashState>::new);
         oldData.put(state.name(), state);
         hashStates.put(device, oldData);
         return this;
@@ -668,6 +672,34 @@ public final class Keys extends Controller<Keys> {
      */
     public Collection<SignalPreKeyPair> preKeys(){
         return Collections.unmodifiableList(preKeys);
+    }
+
+    public void addRecipientWithPreKeys(@NonNull ContactJid group, @NonNull ContactJid recipient) {
+        var preKeys = groupsPreKeys.get(group);
+        if(preKeys != null) {
+            preKeys.add(recipient);
+            return;
+        }
+
+        var newPreKeys = new ArrayList<ContactJid>();
+        newPreKeys.add(recipient);
+        groupsPreKeys.put(group, newPreKeys);
+    }
+
+    public void addRecipientsWithPreKeys(@NonNull ContactJid group, @NonNull Collection<ContactJid> recipients) {
+        var preKeys = groupsPreKeys.get(group);
+        if(preKeys != null) {
+            preKeys.addAll(recipients);
+            return;
+        }
+
+        var newPreKeys = new ArrayList<>(recipients);
+        groupsPreKeys.put(group, newPreKeys);
+    }
+
+    public boolean hasGroupKeys(@NonNull ContactJid group, @NonNull ContactJid recipient) {
+        var preKeys = groupsPreKeys.get(group);
+        return preKeys != null && preKeys.contains(recipient);
     }
 
     @Override

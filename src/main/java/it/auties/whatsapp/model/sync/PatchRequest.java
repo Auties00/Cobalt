@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.whatsapp.binary.BinaryPatchType;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Spec;
@@ -9,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public record PatchRequest(BinaryPatchType type, List<PatchEntry> entries) {
+public record PatchRequest(PatchType type, List<PatchEntry> entries) {
     public record PatchEntry(ActionValueSync sync, String index, int version, Operation operation) {
         public static PatchEntry of(ActionValueSync sync, Operation operation) {
             return of(sync, operation, Spec.Signal.CURRENT_VERSION);
@@ -22,15 +21,15 @@ public record PatchRequest(BinaryPatchType type, List<PatchEntry> entries) {
 
         private static List<String> createArguments(ActionValueSync sync, String... args) {
             var action = sync.action();
-            if (action != null) {
+            if (action.isPresent()) {
                 var index = new ArrayList<String>();
-                index.add(action.indexName());
+                index.add(action.get().indexName());
                 index.addAll(Arrays.asList(args));
                 return index;
             }
             var setting = sync.setting();
-            if (setting != null) {
-                return List.of(setting.indexName());
+            if (setting.isPresent()) {
+                return List.of(setting.get().indexName());
             }
             throw new IllegalArgumentException("Cannot encode %s".formatted(sync));
         }

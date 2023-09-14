@@ -8,10 +8,12 @@ public enum CompanionLinkResult {
      * The device was successfully linked
      */
     SUCCESS,
+
     /**
      * The limit of devices, as of now four, has already been reached
      */
     MAX_DEVICES_ERROR,
+
     /**
      * The device couldn't be linked because of an unknown error
      * This usually means that the qr code is no longer valid

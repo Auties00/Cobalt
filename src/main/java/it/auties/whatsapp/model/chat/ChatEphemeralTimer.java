@@ -1,10 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufConverter;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import it.auties.protobuf.annotation.ProtobufConverter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -13,8 +10,6 @@ import java.util.Arrays;
  * Enum representing the ChatEphemeralTimer period. Each constant is associated with a specific
  * duration period.
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
 public enum ChatEphemeralTimer {
     /**
      * ChatEphemeralTimer with duration of 0 days.
@@ -36,25 +31,19 @@ public enum ChatEphemeralTimer {
      */
     THREE_MONTHS(Duration.ofDays(90));
 
-    /**
-     * Getter for the duration period
-     */
-    @Getter
+    @NonNull
     private final Duration period;
 
-    @ProtobufConverter
-    public static ChatEphemeralTimer ofProtobuf(int value){
-        return of(value);
+    ChatEphemeralTimer(@NonNull Duration period) {
+        this.period = period;
     }
 
-    /**
-     * Factory method for creating a ChatEphemeralTimer instance based on the specified value.
-     *
-     * @param value the value to use for creating the ChatEphemeralTimer
-     * @return the ChatEphemeralTimer instance that matches the specified value
-     */
-    @JsonCreator
-    public static ChatEphemeralTimer of(long value) {
+    public Duration period() {
+        return period;
+    }
+
+    @ProtobufConverter
+    public static ChatEphemeralTimer of(int value) {
         return Arrays.stream(values())
                 .filter(entry -> entry.period().toSeconds() == value || entry.period().toDays() == value)
                 .findFirst()

@@ -1,38 +1,26 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.interactive.InteractiveBody;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import java.util.Optional;
 
-@AllArgsConstructor
-@Data
-@Jacksonized
-@SuperBuilder
-@Accessors(fluent = true)
-@EqualsAndHashCode(callSuper = true)
-@ProtobufName("InteractiveResponseMessage")
-public final class InteractiveResponseMessage extends ContextualMessage {
-    @ProtobufProperty(index = 1, name = "body", type = MESSAGE)
-    private InteractiveBody body;
-
-    @ProtobufProperty(index = 2, name = "nativeFlowResponseMessage", type = MESSAGE)
-    private NativeFlowResponseMessage nativeFlowResponseMessage;
-
-    @ProtobufProperty(index = 15, name = "contextInfo", type = MESSAGE)
-    private ContextInfo contextInfo;
-
+public record InteractiveResponseMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @NonNull
+        InteractiveBody body,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @NonNull
+        NativeFlowResponseMessage nativeFlowResponseMessage,
+        @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
+        Optional<ContextInfo> contextInfo
+) implements ContextualMessage {
     @Override
     public MessageType type() {
         return MessageType.INTERACTIVE_RESPONSE;

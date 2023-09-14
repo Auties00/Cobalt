@@ -1,29 +1,18 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.BinaryPatchType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.sync.PatchType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that contains the main Whatsapp version being used
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("PrimaryVersionAction")
-public final class PrimaryVersionAction implements Action {
-    @ProtobufProperty(index = 1, name = "version", type = STRING)
-    private String version;
-
+public record PrimaryVersionAction(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String version
+) implements Action {
     /**
      * The name of this action
      *
@@ -50,7 +39,7 @@ public final class PrimaryVersionAction implements Action {
      * @return a non-null string
      */
     @Override
-    public BinaryPatchType actionType() {
+    public PatchType actionType() {
         return null;
     }
 }

@@ -4,38 +4,37 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import lombok.NonNull;
-import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
+import it.auties.whatsapp.model.message.model.MessageContainerSpec;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
 
-@UtilityClass
-public class BytesHelper {
+public final class BytesHelper {
     private static final String CROCKFORD_CHARACTERS = "123456789ABCDEFGHJKLMNPQRSTVWXYZ";
 
-    public byte[] random(int length){
+    public static byte[] random(int length) {
         var bytes = new byte[length];
         ThreadLocalRandom.current().nextBytes(bytes);
         return bytes;
     }
-    
-    public byte[] concat(byte[]... entries){
+
+    public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
                 .filter(Objects::nonNull)
                 .reduce(new byte[0], BytesHelper::concat);
     }
 
-    public byte[] concat(byte first, byte[] second) {
-        if(second == null){
+    public static byte[] concat(byte first, byte[] second) {
+        if (second == null) {
             return new byte[]{first};
         }
 
@@ -45,12 +44,12 @@ public class BytesHelper {
         return result;
     }
 
-    public byte[] concat(byte[] first, byte[] second) {
-        if(first == null){
+    public static byte[] concat(byte[] first, byte[] second) {
+        if (first == null) {
             return second;
         }
 
-        if(second == null){
+        if (second == null) {
             return first;
         }
 
@@ -60,39 +59,39 @@ public class BytesHelper {
         return result;
     }
 
-    public ByteBuf newBuffer(){
+    public static ByteBuf newBuffer() {
         return Unpooled.buffer();
     }
 
-    public ByteBuf newBuffer(int size){
+    public static ByteBuf newBuffer(int size) {
         return Unpooled.buffer(size);
     }
 
-    public ByteBuf newBuffer(byte @NonNull [] data){
+    public static ByteBuf newBuffer(byte @NonNull [] data) {
         var buffer = newBuffer(data.length);
         buffer.writeBytes(data);
         return buffer;
     }
 
-    public byte[] readBuffer(ByteBuf byteBuf){
+    public static byte[] readBuffer(ByteBuf byteBuf) {
         return readBuffer(byteBuf, byteBuf.readableBytes());
     }
 
-    public byte[] readBuffer(ByteBuf byteBuf, int length){
+    public static byte[] readBuffer(ByteBuf byteBuf, int length) {
         var result = new byte[length];
         byteBuf.readBytes(result);
         return result;
     }
 
-    public byte versionToBytes(int version) {
+    public static byte versionToBytes(int version) {
         return (byte) (version << 4 | CURRENT_VERSION);
     }
 
-    public int bytesToVersion(byte version) {
+    public static int bytesToVersion(byte version) {
         return Byte.toUnsignedInt(version) >> 4;
     }
 
-    public byte[] compress(byte[] uncompressed) {
+    public static byte[] compress(byte[] uncompressed) {
         var deflater = new Deflater();
         deflater.setInput(uncompressed);
         deflater.finish();
@@ -105,46 +104,49 @@ public class BytesHelper {
         return result.toByteArray();
     }
 
-    @SneakyThrows
-    public byte[] decompress(byte[] compressed) {
-        var decompressor = new Inflater();
-        decompressor.setInput(compressed);
-        var result = new ByteArrayOutputStream();
-        var buffer = new byte[1024];
-        while (!decompressor.finished()) {
-            var count = decompressor.inflate(buffer);
-            result.write(buffer, 0, count);
-        }
-        return result.toByteArray();
+    public static byte[] decompress(byte[] compressed) {
+       try {
+           var decompressor = new Inflater();
+           decompressor.setInput(compressed);
+           var result = new ByteArrayOutputStream();
+           var buffer = new byte[1024];
+           while (!decompressor.finished()) {
+               var count = decompressor.inflate(buffer);
+               result.write(buffer, 0, count);
+           }
+           return result.toByteArray();
+       }catch (DataFormatException exception) {
+           throw new IllegalArgumentException("Malformed data", exception);
+       }
     }
 
-    public byte[] messageToBytes(Message message) {
+    public static byte[] messageToBytes(Message message) {
         return messageToBytes(MessageContainer.of(message));
     }
 
-    public byte[] messageToBytes(MessageContainer container) {
-        if(container.isEmpty()){
+    public static byte[] messageToBytes(MessageContainer container) {
+        if (container.isEmpty()) {
             return null;
         }
 
         var padRandomByte = KeyHelper.header();
         var padding = new byte[padRandomByte];
         Arrays.fill(padding, (byte) padRandomByte);
-        return concat(Protobuf.writeMessage(container), padding);
+        return concat(MessageContainerSpec.encode(container), padding);
     }
 
-    public MessageContainer bytesToMessage(byte[] bytes) {
+    public static MessageContainer bytesToMessage(byte[] bytes) {
         var message = Arrays.copyOfRange(bytes, 0, bytes.length - bytes[bytes.length - 1]);
-        return Protobuf.readMessage(message, MessageContainer.class);
+        return MessageContainerSpec.decode(message);
     }
 
-    public byte[] longToBytes(long number) {
+    public static byte[] longToBytes(long number) {
         var buffer = newBuffer();
         buffer.writeLong(number);
         return readBuffer(buffer);
     }
 
-    public byte[] intToBytes(int input, int length) {
+    public static byte[] intToBytes(int input, int length) {
         var result = new byte[length];
         for (var i = length - 1; i >= 0; i--) {
             result[i] = (byte) (255 & input);
@@ -153,7 +155,7 @@ public class BytesHelper {
         return result;
     }
 
-    public int bytesToInt(byte[] bytes, int length) {
+    public static int bytesToInt(byte[] bytes, int length) {
         var result = 0;
         for (var i = 0; i < length; i++) {
             result = 256 * result + Byte.toUnsignedInt(bytes[i]);
@@ -161,7 +163,7 @@ public class BytesHelper {
         return result;
     }
 
-    public String bytesToCrockford(byte[] bytes) {
+    public static String bytesToCrockford(byte[] bytes) {
         var buffer = ByteBuffer.wrap(bytes);
         var value = 0;
         var bitCount = 0;

@@ -1,39 +1,31 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageKey;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
 import java.util.List;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("SyncActionMessageRange")
 public class ActionMessageRangeSync implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = INT64)
+    @ProtobufProperty(index = 1, type = ProtobufType.INT64)
     private Long lastMessageTimestamp;
 
-    @ProtobufProperty(index = 2, type = INT64)
+    @ProtobufProperty(index = 2, type = ProtobufType.INT64)
     private Long lastSystemMessageTimestamp;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = SyncActionMessage.class, repeated = true)
-    private List<SyncActionMessage> messages;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT, repeated = true)
+    private final List<SyncActionMessage> messages;
+
+    public ActionMessageRangeSync(Long lastMessageTimestamp, Long lastSystemMessageTimestamp, List<SyncActionMessage> messages) {
+        this.lastMessageTimestamp = lastMessageTimestamp;
+        this.lastSystemMessageTimestamp = lastSystemMessageTimestamp;
+        this.messages = messages;
+    }
 
     public ActionMessageRangeSync(@NonNull Chat chat, boolean allMessages) {
         chat.newestMessage().ifPresent(message -> this.lastMessageTimestamp = message.timestampSeconds());
@@ -58,13 +50,14 @@ public class ActionMessageRangeSync implements ProtobufMessage {
 
     private SyncActionMessage createActionMessage(MessageInfo info) {
         var timestamp = (info != null) ? info.timestampSeconds() : null;
-        var key = (info != null) ? checkSenderKey(info.key().copy()) : null;
+        var key = (info != null) ? checkSenderKey(info.key()) : null;
         return new SyncActionMessage(key, timestamp);
     }
 
     private MessageKey checkSenderKey(MessageKey key) {
-        key.senderJid().ifPresent(jid -> key.senderJid(jid.toWhatsappJid()));
-        return key;
+        return key.senderJid()
+                .map(entry -> new MessageKey(key.chatJid(), key.fromMe(), key.id(), entry.toWhatsappJid()))
+                .orElse(key);
     }
 
     public long lastMessageTimestamp() {

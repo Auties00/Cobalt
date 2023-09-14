@@ -1,30 +1,13 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 
-import static it.auties.protobuf.base.ProtobufType.UINT32;
-import static it.auties.protobuf.base.ProtobufType.UINT64;
-
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("ADVDeviceIdentity")
-public class DeviceIdentity implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = UINT32)
-    private int rawId;
-
-    @ProtobufProperty(index = 2, type = UINT64)
-    private long timestamp;
-
-    @ProtobufProperty(index = 3, type = UINT32)
-    private int keyIndex;
+public record DeviceIdentity(    @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
+                                 int rawId,
+                                 @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
+                                 long timestamp,
+                                 @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
+                                 int keyIndex) implements ProtobufMessage {
 }

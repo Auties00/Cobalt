@@ -1,73 +1,54 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.Clock;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * A model that represents the receipt for a message
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("UserReceipt")
-public class MessageReceipt implements ProtobufMessage {
-    /**
-     * When the message was delivered(two ticks)
-     */
-    @ProtobufProperty(index = 2, type = INT64)
+public final class MessageReceipt implements ProtobufMessage {
+    @ProtobufProperty(index = 2, type = ProtobufType.INT64)
+    @Nullable
     private Long deliveredTimestampSeconds;
-
-    /**
-     * When the message was read(two blue ticks)
-     */
-    @ProtobufProperty(index = 3, type = INT64)
+    @ProtobufProperty(index = 3, type = ProtobufType.INT64)
+    @Nullable
     private Long readTimestampSeconds;
-
-    /**
-     * When the message was played(two blue ticks)
-     */
-    @ProtobufProperty(index = 4, type = INT64)
+    @ProtobufProperty(index = 4, type = ProtobufType.INT64)
+    @Nullable
     private Long playedTimestampSeconds;
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING, repeated = true)
+    @NonNull
+    private final List<ContactJid> deliveredJids;
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING, repeated = true)
+    @NonNull
+    private final List<ContactJid> readJids;
 
-    /**
-     * A list of contacts who received the message(two ticks)
-     */
-    @ProtobufProperty(index = 5, type = STRING, repeated = true, implementation = ContactJid.class)
-    @Default
-    private List<ContactJid> deliveredJids = new ArrayList<>();
+    public MessageReceipt() {
+        this.deliveredJids = new ArrayList<>();
+        this.readJids = new ArrayList<>();
+    }
 
-    /**
-     * A list of contacts who read the message(two blue ticks)
-     */
-    @ProtobufProperty(index = 6, type = STRING, repeated = true, implementation = ContactJid.class)
-    @Default
-    private List<ContactJid> readJids = new ArrayList<>();
+    public MessageReceipt(@Nullable Long deliveredTimestampSeconds, @Nullable Long readTimestampSeconds, @Nullable Long playedTimestampSeconds, @NonNull List<ContactJid> deliveredJids, @NonNull List<ContactJid> readJids) {
+        this.deliveredTimestampSeconds = deliveredTimestampSeconds;
+        this.readTimestampSeconds = readTimestampSeconds;
+        this.playedTimestampSeconds = playedTimestampSeconds;
+        this.deliveredJids = deliveredJids;
+        this.readJids = readJids;
+    }
 
-    /**
-     * Returns a default message receipt
-     *
-     * @return a non-null instance
-     */
-    public static MessageReceipt of() {
-        return MessageReceipt.builder().build();
+    public OptionalLong deliveredTimestampSeconds() {
+        return Clock.parseTimestamp(deliveredTimestampSeconds);
     }
 
     /**
@@ -75,17 +56,25 @@ public class MessageReceipt implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public ZonedDateTime deliveredTimestamp() {
+    public Optional<ZonedDateTime> deliveredTimestamp() {
         return Clock.parseSeconds(deliveredTimestampSeconds);
     }
 
+    public OptionalLong readTimestampSeconds() {
+        return Clock.parseTimestamp(readTimestampSeconds);
+    }
+
     /**
      * Returns the date when the message was delivered
      *
      * @return a non-null optional
      */
-    public ZonedDateTime readTimestamp() {
+    public Optional<ZonedDateTime> readTimestamp() {
         return Clock.parseSeconds(readTimestampSeconds);
+    }
+
+    public OptionalLong playedTimestampSeconds() {
+        return Clock.parseTimestamp(playedTimestampSeconds);
     }
 
     /**
@@ -93,14 +82,22 @@ public class MessageReceipt implements ProtobufMessage {
      *
      * @return a non-null optional
      */
-    public ZonedDateTime playedTimestamp() {
+    public Optional<ZonedDateTime> playedTimestamp() {
         return Clock.parseSeconds(playedTimestampSeconds);
     }
 
+    public List<ContactJid> deliveredJids() {
+        return deliveredJids;
+    }
+
+    public List<ContactJid> readJids() {
+        return readJids;
+    }
+
     /**
-     * Sets the read timestamp
+     * Sets the read timestampSeconds
      *
-     * @param readTimestampSeconds the timestamp
+     * @param readTimestampSeconds the timestampSeconds
      * @return the same instance
      */
     public MessageReceipt readTimestampSeconds(long readTimestampSeconds) {
@@ -112,9 +109,9 @@ public class MessageReceipt implements ProtobufMessage {
     }
 
     /**
-     * Sets the played timestamp
+     * Sets the played timestampSeconds
      *
-     * @param playedTimestampSeconds the timestamp
+     * @param playedTimestampSeconds the timestampSeconds
      * @return the same instance
      */
     public MessageReceipt playedTimestampSeconds(long playedTimestampSeconds) {

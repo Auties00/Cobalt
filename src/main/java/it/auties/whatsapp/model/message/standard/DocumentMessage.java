@@ -1,183 +1,271 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.api.Whatsapp;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
+import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachmentType;
+import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
+import it.auties.whatsapp.model.message.button.ButtonsMessageHeaderType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Spec;
 import it.auties.whatsapp.util.Validate;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 
 /**
  * A model class that represents a message holding a document inside
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true)
-public final class DocumentMessage extends MediaMessage implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
-    /**
-     * The upload url of the encoded document that this object wraps
-     */
-    @ProtobufProperty(index = 1, type = STRING)
+public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
+        implements MediaMessage<DocumentMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    @Nullable
     private String mediaUrl;
 
-    /**
-     * The mime type of the audio that this object wraps. Most of the seconds this is
-     * {@link MediaMessageType#defaultMimeType()}
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String mimetype;
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    @Nullable
+    private final String mimetype;
 
-    /**
-     * The title of the document that this object wraps
-     */
-    @ProtobufProperty(index = 3, type = STRING)
-    private String title;
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+    @Nullable
+    private final String title;
 
-    /**
-     * The sha256 of the decoded media that this object wraps
-     */
-    @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] mediaSha256;
+    @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaSha256;
 
-    /**
-     * The unsigned size of the decoded media that this object wraps
-     */
-    @ProtobufProperty(index = 5, type = UINT64)
-    private long mediaSize;
+    @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
+    @Nullable
+    private Long mediaSize;
 
-    /**
-     * The unsigned codeLength in pages of the document that this object wraps
-     */
-    @ProtobufProperty(index = 6, type = UINT32)
-    private Integer pageCount;
+    @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer pageCount;
 
-    /**
-     * The media key of the document that this object wraps.
-     */
-    @ProtobufProperty(index = 7, type = BYTES)
-    private byte[] mediaKey;
+    @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaKey;
 
-    /**
-     * The name of the document that this object wraps
-     */
-    @ProtobufProperty(index = 8, type = STRING)
-    private String fileName;
+    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+    @Nullable
+    private final String fileName;
 
-    /**
-     * The sha256 of the encoded media that this object wraps
-     */
-    @ProtobufProperty(index = 9, type = BYTES)
-    private byte[] mediaEncryptedSha256;
+    @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaEncryptedSha256;
 
-    /**
-     * The direct path to the encoded media that this object wraps
-     */
-    @ProtobufProperty(index = 10, type = STRING)
+    @ProtobufProperty(index = 10, type = ProtobufType.STRING)
+    @Nullable
     private String mediaDirectPath;
 
-    /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for
-     * {@link DocumentMessage#mediaKey()}
-     */
-    @ProtobufProperty(index = 11, type = UINT64)
-    private long mediaKeyTimestamp;
+    @ProtobufProperty(index = 11, type = ProtobufType.UINT64)
+    @Nullable
+    private final Long mediaKeyTimestampSeconds;
 
-    /**
-     * The thumbnail for this document encoded as jpeg in an array of bytes
-     */
-    @ProtobufProperty(index = 16, type = BYTES)
-    private byte[] thumbnail;
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    private final byte @Nullable [] thumbnail;
 
-    @ProtobufProperty(index = 12, name = "contactVcard", type = BOOL)
-    private Boolean contactVcard;
+    @ProtobufProperty(index = 12, type = ProtobufType.BOOL)
+    private final boolean contactVcard;
 
-    @ProtobufProperty(index = 13, name = "thumbnailDirectPath", type = STRING)
-    private String thumbnailDirectPath;
+    @ProtobufProperty(index = 13, type = ProtobufType.STRING)
+    @Nullable
+    private final String thumbnailDirectPath;
 
-    @ProtobufProperty(index = 14, name = "thumbnailSha256", type = BYTES)
-    private byte[] thumbnailSha256;
+    @ProtobufProperty(index = 14, type = ProtobufType.BYTES)
+    private final byte @Nullable [] thumbnailSha256;
 
-    @ProtobufProperty(index = 15, name = "thumbnailEncSha256", type = BYTES)
-    private byte[] thumbnailEncSha256;
+    @ProtobufProperty(index = 15, type = ProtobufType.BYTES)
+    private final byte @Nullable [] thumbnailEncSha256;
 
-    @ProtobufProperty(index = 18, name = "thumbnailHeight", type = UINT32)
-    private Integer thumbnailHeight;
+    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @Nullable
+    private final ContextInfo contextInfo;
 
-    @ProtobufProperty(index = 19, name = "thumbnailWidth", type = UINT32)
-    private Integer thumbnailWidth;
+    @ProtobufProperty(index = 18, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer thumbnailHeight;
 
-    @ProtobufProperty(index = 20, name = "caption", type = STRING)
-    private String caption;
+    @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer thumbnailWidth;
 
-    /**
-     * Constructs a new builder to create a DocumentMessage. The result can be later sent using
-     * {@link Whatsapp#sendMessage(MessageInfo)}
-     *
-     * @param media       the non-null document that the new message wraps
-     * @param fileName    the non-null name of the document that the new message wraps
-     * @param mimeType    the mime type of the new message, by default
-     *                    {@link MediaMessageType#defaultMimeType()}
-     * @param title       the title of the document that the new message wraps
-     * @param pageCount   the number of pages of the document that the new message wraps
-     * @param thumbnail   the thumbnail of the document that the new message wraps
-     * @param contextInfo the context info that the new message wraps
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "simpleBuilder")
-    private static DocumentMessage customBuilder(byte[] media, @NonNull String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 20, type = ProtobufType.STRING)
+    @Nullable
+    private final String caption;
+
+    public DocumentMessage(@Nullable String mediaUrl, @Nullable String mimetype, @Nullable String title, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer pageCount, byte @Nullable [] mediaKey, @Nullable String fileName, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] thumbnail, boolean contactVcard, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, @Nullable ContextInfo contextInfo, @Nullable Integer thumbnailHeight, @Nullable Integer thumbnailWidth, @Nullable String caption) {
+        this.mediaUrl = mediaUrl;
+        this.mimetype = mimetype;
+        this.title = title;
+        this.mediaSha256 = mediaSha256;
+        this.mediaSize = mediaSize;
+        this.pageCount = pageCount;
+        this.mediaKey = mediaKey;
+        this.fileName = fileName;
+        this.mediaEncryptedSha256 = mediaEncryptedSha256;
+        this.mediaDirectPath = mediaDirectPath;
+        this.mediaKeyTimestampSeconds = mediaKeyTimestampSeconds;
+        this.thumbnail = thumbnail;
+        this.contactVcard = contactVcard;
+        this.thumbnailDirectPath = thumbnailDirectPath;
+        this.thumbnailSha256 = thumbnailSha256;
+        this.thumbnailEncSha256 = thumbnailEncSha256;
+        this.contextInfo = contextInfo;
+        this.thumbnailHeight = thumbnailHeight;
+        this.thumbnailWidth = thumbnailWidth;
+        this.caption = caption;
+    }
+
+    @ProtobufBuilder(className = "DocumentMessageSimpleBuilder")
+    static DocumentMessage customBuilder(byte[] media, @NonNull String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
         var extensionIndex = fileName.lastIndexOf(".");
         Validate.isTrue(extensionIndex != -1 && extensionIndex + 1 < fileName.length(), "Expected fileName to be formatted as name.extension");
         var extension = fileName.substring(extensionIndex + 1);
-        var actualMimeType = Optional.ofNullable(mimeType)
-                .or(() -> Medias.getMimeType(fileName))
-                .or(() -> Medias.getMimeType(media))
-                .orElse(DOCUMENT.defaultMimeType());
-        return DocumentMessage.builder()
-                .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowSeconds())
-                .mimetype(actualMimeType)
+        return new DocumentMessageBuilder()
+                .mediaKeyTimestampSeconds(Clock.nowSeconds())
+                .mimetype(getMimeType(media, fileName, mimeType))
                 .fileName(fileName)
                 .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media, extension).orElse(1))
                 .title(title)
                 .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, extension).orElse(null))
                 .thumbnailWidth(Spec.Whatsapp.THUMBNAIL_WIDTH)
                 .thumbnailHeight(Spec.Whatsapp.THUMBNAIL_HEIGHT)
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build();
     }
 
-    /**
-     * Returns the media type of the document that this object wraps
-     *
-     * @return {@link MediaMessageType#DOCUMENT}
-     */
+    private static String getMimeType(byte[] media, @NonNull String fileName, String mimeType) {
+        return Optional.ofNullable(mimeType)
+                .or(() -> Medias.getMimeType(fileName))
+                .or(() -> Medias.getMimeType(media))
+                .orElse(DOCUMENT.defaultMimeType());
+    }
+
+    public OptionalInt pageCount() {
+        return pageCount == null ? OptionalInt.empty() : OptionalInt.of(pageCount);
+    }
+
+    public Optional<String> title() {
+        return Optional.ofNullable(title);
+    }
+
+    public Optional<String> fileName() {
+        return Optional.ofNullable(fileName);
+    }
+
+    public boolean contactVcard() {
+        return contactVcard;
+    }
+
+    public Optional<String> caption() {
+        return Optional.ofNullable(caption);
+    }
+
+    @Override
+    public Optional<String> mediaUrl() {
+        return Optional.ofNullable(mediaUrl);
+    }
+
+    @Override
+    public DocumentMessage setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+        return this;
+    }
+
+    @Override
+    public Optional<String> mediaDirectPath() {
+        return Optional.ofNullable(mediaDirectPath);
+    }
+
+    @Override
+    public DocumentMessage setMediaDirectPath(String mediaDirectPath) {
+        this.mediaDirectPath = mediaDirectPath;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaKey() {
+        return Optional.ofNullable(mediaKey);
+    }
+
+    @Override
+    public DocumentMessage setMediaKey(byte[] bytes) {
+        this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaSha256() {
+        return Optional.ofNullable(mediaSha256);
+    }
+
+    @Override
+    public DocumentMessage setMediaSha256(byte[] bytes) {
+        this.mediaSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaEncryptedSha256() {
+        return Optional.ofNullable(mediaEncryptedSha256);
+    }
+
+    @Override
+    public DocumentMessage setMediaEncryptedSha256(byte[] bytes) {
+        this.mediaEncryptedSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public OptionalLong mediaSize() {
+        return mediaSize == null ? OptionalLong.empty() : OptionalLong.of(mediaSize);
+    }
+
+    @Override
+    public OptionalLong mediaKeyTimestampSeconds() {
+        return Clock.parseTimestamp(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public Optional<ZonedDateTime> mediaKeyTimestamp() {
+        return Clock.parseSeconds(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public DocumentMessage setMediaSize(long mediaSize) {
+        this.mediaSize = mediaSize;
+        return this;
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.DOCUMENT;
+    }
+
+    @Override
+    public AttachmentType attachmentType() {
+        return AttachmentType.DOCUMENT;
     }
 
     @Override
@@ -186,7 +274,45 @@ public final class DocumentMessage extends MediaMessage implements InteractiveHe
     }
 
     @Override
+    public ButtonsMessageHeaderType buttonHeaderType() {
+        return ButtonsMessageHeaderType.DOCUMENT;
+    }
+
+    @Override
     public HydratedFourRowTemplateTitleType hydratedTitleType() {
         return HydratedFourRowTemplateTitleType.DOCUMENT;
+    }
+
+    @Override
+    public InteractiveHeaderAttachmentType interactiveHeaderType() {
+        return InteractiveHeaderAttachmentType.DOCUMENT;
+    }
+
+    public Optional<String> mimetype() {
+        return Optional.ofNullable(mimetype);
+    }
+
+    public Optional<byte[]> thumbnail() {
+        return Optional.ofNullable(thumbnail);
+    }
+
+    public Optional<String> thumbnailDirectPath() {
+        return Optional.ofNullable(thumbnailDirectPath);
+    }
+
+    public Optional<byte[]> thumbnailSha256() {
+        return Optional.ofNullable(thumbnailSha256);
+    }
+
+    public Optional<byte[]> thumbnailEncSha256() {
+        return Optional.ofNullable(thumbnailEncSha256);
+    }
+
+    public OptionalInt thumbnailHeight() {
+        return thumbnailHeight == null ? OptionalInt.empty() : OptionalInt.of(thumbnailHeight);
+    }
+
+    public OptionalInt thumbnailWidth() {
+        return thumbnailWidth == null ? OptionalInt.empty() : OptionalInt.of(thumbnailWidth);
     }
 }

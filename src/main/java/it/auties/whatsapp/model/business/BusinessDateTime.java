@@ -1,40 +1,20 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model class that represents a time
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime")
-public final class BusinessDateTime implements BusinessLocalizableParameterValue {
-    /**
-     * The date as a component
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessDateTimeComponent.class)
-    private BusinessDateTimeComponent dateComponent;
-
-    /**
-     * The date as a unix epoch
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessDateTimeUnixEpoch.class)
-    private BusinessDateTimeUnixEpoch dateUnixEpoch;
-
+public record BusinessDateTime(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        Optional<BusinessDateTimeComponent> dateComponent,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        Optional<BusinessDateTimeUnixEpoch> dateUnixEpoch
+) implements BusinessLocalizableParameterValue {
     /**
      * Constructs a new date time using a component
      *
@@ -43,14 +23,14 @@ public final class BusinessDateTime implements BusinessLocalizableParameterValue
      */
     public static BusinessDateTime of(@NonNull BusinessDateTimeValue dateComponent) {
         if (dateComponent instanceof BusinessDateTimeComponent businessDateTimeComponent) {
-            return new BusinessDateTime(businessDateTimeComponent, null);
+            return new BusinessDateTime(Optional.of(businessDateTimeComponent), Optional.empty());
         } else if (dateComponent instanceof BusinessDateTimeUnixEpoch businessDateTimeUnixEpoch) {
-            return new BusinessDateTime(null, businessDateTimeUnixEpoch);
-        }else {
-            throw new IllegalArgumentException();
+            return new BusinessDateTime(Optional.empty(), Optional.of(businessDateTimeUnixEpoch));
+        } else {
+            return new BusinessDateTime(Optional.empty(), Optional.empty());
         }
     }
-    
+
     /**
      * Returns the type of date of this component
      *
@@ -66,34 +46,8 @@ public final class BusinessDateTime implements BusinessLocalizableParameterValue
      *
      * @return a non-null date type
      */
-    public Optional<BusinessDateTimeValue> date() {
-        if(dateComponent != null){
-            return Optional.of(dateComponent);
-        }
-
-        if(dateUnixEpoch != null){
-            return Optional.of(dateUnixEpoch);
-        }
-
-        return Optional.empty();
-    }
-
-    /**
-     * Returns the date component of this component
-     *
-     * @return a non-null date type
-     */
-    public Optional<BusinessDateTimeComponent> dateComponent() {
-        return Optional.ofNullable(dateComponent);
-    }
-
-    /**
-     * Returns the unix epoch of this component
-     *
-     * @return a non-null date type
-     */
-    public Optional<BusinessDateTimeUnixEpoch> dateUnixEpoch() {
-        return Optional.ofNullable(dateUnixEpoch);
+    public Optional<? extends BusinessDateTimeValue> date() {
+        return dateComponent.isPresent() ? dateComponent : dateUnixEpoch;
     }
 
     @Override

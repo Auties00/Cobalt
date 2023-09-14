@@ -1,65 +1,39 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.product.Product;
 import it.auties.whatsapp.model.product.ProductCatalog;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import java.util.Optional;
 
 /**
  * A model class that represents a message holding a product inside
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true)
-public final class ProductMessage extends ContextualMessage implements ButtonMessage {
-    /**
-     * The product that this message wraps
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = Product.class)
-    private Product product;
-
-    /**
-     * The jid of the WhatsappBusiness account that owns the product that this message wraps
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private ContactJid businessOwnerJid;
-
-    /**
-     * The catalog where the product that this message wraps is
-     */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = ProductCatalog.class)
-    private ProductCatalog catalog;
-
-    /**
-     * The body of this message
-     */
-    @ProtobufProperty(index = 5, type = STRING)
-    private String body;
-
-    /**
-     * The footer of this message
-     */
-    @ProtobufProperty(index = 6, type = STRING)
-    private String footer;
-
+public record ProductMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @NonNull
+        Product product,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        ContactJid businessOwnerJid,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @NonNull
+        ProductCatalog catalog,
+        @ProtobufProperty(index = 5, type = ProtobufType.STRING)
+        Optional<String> body,
+        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+        Optional<String> footer,
+        @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+        Optional<ContextInfo> contextInfo
+) implements ContextualMessage, ButtonMessage {
     @Override
     public MessageType type() {
         return MessageType.PRODUCT;

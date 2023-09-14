@@ -1,11 +1,7 @@
 package it.auties.whatsapp.model.signal.session;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-@Builder
-@Jacksonized
 public record SessionPreKey(Integer preKeyId, byte @NonNull [] baseKey, int signedKeyId) {
 
 }

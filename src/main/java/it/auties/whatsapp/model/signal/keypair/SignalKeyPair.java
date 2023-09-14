@@ -2,9 +2,9 @@ package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.curve25519.XecUtils;
-import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.KeyHelper;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.security.interfaces.XECPrivateKey;
 import java.security.interfaces.XECPublicKey;

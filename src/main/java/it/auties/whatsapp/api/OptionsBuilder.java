@@ -6,7 +6,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URI;
 import java.util.Objects;

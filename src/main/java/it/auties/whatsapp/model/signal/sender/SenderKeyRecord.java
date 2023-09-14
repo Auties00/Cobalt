@@ -1,19 +1,11 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
 
-@AllArgsConstructor
-@Builder
-@Jacksonized
-public class SenderKeyRecord implements ProtobufMessage {
+public class SenderKeyRecord {
     private final LinkedHashMap<Integer, List<SenderKeyState>> states;
-
     public SenderKeyRecord() {
         this.states = new LinkedHashMap<>();
     }

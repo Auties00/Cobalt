@@ -1,144 +1,55 @@
 package it.auties.whatsapp.model.message.payment;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Arrays;
+import java.util.Optional;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message to pay an order.
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@Jacksonized
-@SuperBuilder
-@Accessors(fluent = true)
-@ProtobufName("OrderMessage")
-public final class PaymentOrderMessage extends ContextualMessage implements PaymentMessage {
-    /**
-     * The jid of this order
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String id;
 
-    /**
-     * The thumbnail of this order
-     */
-    @ProtobufProperty(index = 2, type = BYTES)
-    private byte[] thumbnail;
-
-    /**
-     * The total number of items that was ordered
-     */
-    @ProtobufProperty(index = 3, type = UINT32)
-    private int itemCount;
-
-    /**
-     * The status of this order
-     */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = PaymentOrderMessage.OrderMessageOrderStatus.class)
-    private OrderMessageOrderStatus status;
-
-    /**
-     * The surface of this order
-     */
-    @ProtobufProperty(index = 5, type = MESSAGE, implementation = PaymentOrderMessage.OrderSurface.class)
-    private OrderSurface surface;
-
-    /**
-     * The message of this order
-     */
-    @ProtobufProperty(index = 6, type = STRING)
-    private String message;
-
-    /**
-     * The title of this order
-     */
-    @ProtobufProperty(index = 7, type = STRING)
-    private String title;
-
-    /**
-     * The jid of the seller associated with this order
-     */
-    @ProtobufProperty(index = 8, type = STRING)
-    private ContactJid sellerId;
-
-    /**
-     * The token of this order
-     */
-    @ProtobufProperty(index = 9, type = STRING)
-    private String token;
-
-    /**
-     * The amount of money being paid for this order
-     */
-    @ProtobufProperty(index = 10, type = UINT64)
-    private long amount;
-
-    /**
-     * The currency code for {@link PaymentOrderMessage#amount}. Follows the ISO-4217 Standard. For a
-     * list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
-     */
-    @ProtobufProperty(index = 11, type = STRING)
-    private String currency;
-
+public record PaymentOrderMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String id,
+        @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
+        Optional<byte[]> thumbnail,
+        @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
+        int itemCount,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @NonNull
+        PaymentOrderStatus status,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @NonNull
+        PaymentOrderSurface surface,
+        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+        Optional<String> message,
+        @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+        Optional<String> title,
+        @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+        @NonNull
+        ContactJid sellerId,
+        @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+        @NonNull
+        String token,
+        @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
+        long amount,
+        @ProtobufProperty(index = 11, type = ProtobufType.STRING)
+        @NonNull
+        String currency,
+        @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+        Optional<ContextInfo> contextInfo
+) implements ContextualMessage, PaymentMessage {
     @Override
     public MessageType type() {
         return MessageType.PAYMENT_ORDER;
-    }
-
-    /**
-     * Unsupported, doesn't make much sense
-     */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("OrderStatus")
-    public enum OrderMessageOrderStatus implements ProtobufMessage {
-        /**
-         * Inquiry
-         */
-        INQUIRY(1);
-        
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static OrderMessageOrderStatus of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
-        }
-    }
-
-    /**
-     * Unsupported, doesn't make much sense
-     */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    public enum OrderSurface implements ProtobufMessage{
-        /**
-         * Catalog
-         */
-        CATALOG(1);
-        
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static OrderSurface of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
-        }
     }
 }

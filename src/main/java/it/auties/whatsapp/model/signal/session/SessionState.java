@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.signal.session;
 
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import lombok.*;
+import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -12,50 +11,31 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@AllArgsConstructor
 @Builder
-@Jacksonized
-@Accessors(fluent = true)
 public class SessionState {
-    @Getter
     private final int version;
 
-    @Getter
     private final int registrationId;
 
-    @Getter
     private final byte @NonNull [] baseKey;
 
-    @Getter
     private final byte @NonNull [] remoteIdentityKey;
 
     @NonNull
     @Default
-    private final ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
 
-    @Getter
-    @Setter
     private byte @NonNull [] rootKey;
 
-    @Getter
-    @Setter
     private SessionPreKey pendingPreKey;
 
     @NonNull
-    @Getter
-    @Setter
     private SignalKeyPair ephemeralKeyPair;
 
-    @Getter
-    @Setter
     private byte @NonNull [] lastRemoteEphemeralKey;
 
-    @Getter
-    @Setter
     private int previousCounter;
 
-    @Getter
-    @Setter
     private boolean closed;
 
     public boolean hasChain(byte[] senderEphemeral) {
@@ -90,5 +70,75 @@ public class SessionState {
 
     public boolean contentEquals(int version, byte[] baseKey) {
         return version() == version && Arrays.equals(baseKey(), baseKey);
+    }
+
+    public int version() {
+        return this.version;
+    }
+
+    public int registrationId() {
+        return this.registrationId;
+    }
+
+    public byte @NonNull [] baseKey() {
+        return this.baseKey;
+    }
+
+    public byte @NonNull [] remoteIdentityKey() {
+        return this.remoteIdentityKey;
+    }
+
+    public byte @NonNull [] rootKey() {
+        return this.rootKey;
+    }
+
+    public SessionPreKey pendingPreKey() {
+        return this.pendingPreKey;
+    }
+
+    public @NonNull SignalKeyPair ephemeralKeyPair() {
+        return this.ephemeralKeyPair;
+    }
+
+    public byte @NonNull [] lastRemoteEphemeralKey() {
+        return this.lastRemoteEphemeralKey;
+    }
+
+    public int previousCounter() {
+        return this.previousCounter;
+    }
+
+    public boolean closed() {
+        return this.closed;
+    }
+
+    public SessionState rootKey(byte @NonNull [] rootKey) {
+        this.rootKey = rootKey;
+        return this;
+    }
+
+    public SessionState pendingPreKey(SessionPreKey pendingPreKey) {
+        this.pendingPreKey = pendingPreKey;
+        return this;
+    }
+
+    public SessionState ephemeralKeyPair(@NonNull SignalKeyPair ephemeralKeyPair) {
+        this.ephemeralKeyPair = ephemeralKeyPair;
+        return this;
+    }
+
+    public SessionState lastRemoteEphemeralKey(byte @NonNull [] lastRemoteEphemeralKey) {
+        this.lastRemoteEphemeralKey = lastRemoteEphemeralKey;
+        return this;
+    }
+
+    public SessionState previousCounter(int previousCounter) {
+        this.previousCounter = previousCounter;
+        return this;
+    }
+
+    public SessionState closed(boolean closed) {
+        this.closed = closed;
+        return this;
     }
 }

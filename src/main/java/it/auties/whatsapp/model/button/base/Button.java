@@ -1,56 +1,31 @@
 package it.auties.whatsapp.model.button.base;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
 import it.auties.whatsapp.util.BytesHelper;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HexFormat;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import java.util.Optional;
 
 /**
  * A model class that represents a button
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class Button implements ProtobufMessage {
-    /**
-     * The id of this button
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String id;
 
-    /**
-     * The text content of this button. This property is defined only if {@link Button#bodyType()} ==
-     * {@link ButtonBodyType#TEXT}.
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ButtonText.class)
-    private ButtonText bodyText;
-
-    /**
-     * The native flow content of this button. This property is defined only if {@link Button#bodyType()}
-     * == {@link ButtonBodyType#NATIVE_FLOW}.
-     */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = NativeFlowInfo.class)
-    private NativeFlowInfo bodyNativeFlow;
-
-    /**
-     * The type of this message
-     */
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ButtonBodyType.class)
-    private ButtonBodyType bodyType;
-
+public record Button(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String id,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        Optional<ButtonText> bodyText,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        Optional<NativeFlowInfo> bodyNativeFlow,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @NonNull
+        ButtonBodyType bodyType
+) implements ProtobufMessage {
     /**
      * Constructs a new button
      *
@@ -70,13 +45,23 @@ public final class Button implements ProtobufMessage {
      * @return a non-null button
      */
     public static Button of(@NonNull String id, ButtonBody body) {
-        var builder = Button.builder().id(id);
-        if (body instanceof ButtonText buttonText) {
-            builder.bodyText(buttonText).bodyType(ButtonBodyType.TEXT);
-        } else if (body instanceof NativeFlowInfo flowInfo) {
-            builder.bodyNativeFlow(flowInfo).bodyType(ButtonBodyType.NATIVE_FLOW);
+        var builder = new ButtonBuilder()
+                .id(id);
+        switch (body) {
+            case ButtonText buttonText -> builder.bodyText(buttonText).bodyType(ButtonBodyType.TEXT);
+            case NativeFlowInfo flowInfo -> builder.bodyNativeFlow(flowInfo).bodyType(ButtonBodyType.NATIVE_FLOW);
+            case null -> builder.bodyType(ButtonBodyType.UNKNOWN);
         }
-
         return builder.build();
     }
+
+    /**
+     * Returns the body of this button
+     *
+     * @return an optional
+     */
+    public Optional<? extends ButtonBody> body() {
+        return bodyText.isPresent() ? bodyText : bodyNativeFlow;
+    }
+
 }

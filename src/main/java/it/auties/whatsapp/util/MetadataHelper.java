@@ -1,18 +1,15 @@
 package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.model.exchange.WebVersionResponse;
+import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Spec.Whatsapp;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import lombok.extern.jackson.Jacksonized;
 import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.ApkSigner;
 import net.dongliu.apk.parser.bean.CertificateMeta;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -27,7 +24,6 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,41 +34,39 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-@UtilityClass
-public class MetadataHelper {
+public final class MetadataHelper {
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    private final Logger LOGGER =  System.getLogger("Metadata");
-    private final Pattern IOS_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )\\d+\\.\\d+\\.\\d+");
+    private static final Logger LOGGER = System.getLogger("Metadata");
+    private static final Pattern IOS_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )\\d+\\.\\d+\\.\\d+");
 
-    private volatile Version webVersion;
-    private volatile Version iosVersion;
-    private volatile WhatsappApk cachedApk;
-    private volatile WhatsappApk cachedBusinessApk;
+    private static volatile Version webVersion;
+    private static volatile Version iosVersion;
+    private static volatile WhatsappApk cachedApk;
+    private static volatile WhatsappApk cachedBusinessApk;
 
-    private Path androidCache = Path.of(System.getProperty("user.home") + "/.whatsapp4j/token/android");
+    private static Path androidCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/android");
 
-    public void setAndroidCache(@NonNull Path path) {
+    public static void setAndroidCache(@NonNull Path path) {
         try {
             Files.createDirectories(path);
             androidCache = path;
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
-    public CompletableFuture<Version> getVersion(UserAgentPlatform platform, boolean business) {
+    public static CompletableFuture<Version> getVersion(UserAgentPlatform platform, boolean business) {
         return getVersion(platform, business, true);
     }
 
-    public CompletableFuture<Version> getVersion(UserAgentPlatform platform, boolean business, boolean useJarCache) {
+    public static CompletableFuture<Version> getVersion(UserAgentPlatform platform, boolean business, boolean useJarCache) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS -> getWebVersion();
             case ANDROID -> getAndroidData(business, useJarCache)
@@ -82,7 +76,7 @@ public class MetadataHelper {
         };
     }
 
-    private CompletableFuture<Version> getIosVersion() {
+    private static CompletableFuture<Version> getIosVersion() {
         // var client = HttpClient.newHttpClient();
         //        var request = HttpRequest.newBuilder()
         //                .GET()
@@ -90,43 +84,41 @@ public class MetadataHelper {
         //                .build();
         //        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
         //                .thenApplyAsync(MetadataHelper::parseIosVersion);
+        //    private Version parseIosVersion(HttpResponse<String> result) {
+        //        return iosVersion = IOS_VERSION_PATTERN.matcher(result.body())
+        //                .results()
+        //                .map(MatchResult::group)
+        //                .reduce((first, second) -> second)
+        //                .map(version -> Version.of("2." + version))
+        //                .orElseGet(MetadataHelper::getDefaultIosVersion);
+        //    }
         return CompletableFuture.completedFuture(Objects.requireNonNullElse(iosVersion, Whatsapp.DEFAULT_MOBILE_IOS_VERSION));
     }
 
-    private Version parseIosVersion(HttpResponse<String> result) {
-        return iosVersion = IOS_VERSION_PATTERN.matcher(result.body())
-                .results()
-                .map(MatchResult::group)
-                .reduce((first, second) -> second)
-                .map(version -> new Version("2." + version))
-                .orElseGet(MetadataHelper::getDefaultIosVersion);
-    }
-
-    private Version getDefaultIosVersion() {
+    private static Version getDefaultIosVersion() {
         LOGGER.log(Logger.Level.WARNING, "Cannot fetch latest IOS version, falling back to %s".formatted(Whatsapp.DEFAULT_MOBILE_IOS_VERSION));
         return Whatsapp.DEFAULT_MOBILE_IOS_VERSION;
     }
 
-    private CompletableFuture<Version> getWebVersion() {
-        try{
+    private static CompletableFuture<Version> getWebVersion() {
+        try (var client = HttpClient.newHttpClient()) {
             if (webVersion != null) {
                 return CompletableFuture.completedFuture(webVersion);
             }
 
-            var client = HttpClient.newHttpClient();
             var request = HttpRequest.newBuilder()
                     .GET()
                     .uri(URI.create(Whatsapp.WEB_UPDATE_URL))
                     .build();
             return client.sendAsync(request, ofString())
                     .thenApplyAsync(response -> Json.readValue(response.body(), WebVersionResponse.class))
-                    .thenApplyAsync(version -> webVersion = new Version(version.currentVersion()));
-        } catch(Throwable throwable) {
+                    .thenApplyAsync(version -> webVersion = Version.of(version.currentVersion()));
+        } catch (Throwable throwable) {
             throw new RuntimeException("Cannot fetch latest web version", throwable);
         }
     }
 
-    public CompletableFuture<String> getToken(long phoneNumber, UserAgentPlatform platform, boolean business, boolean useJarCache) {
+    public static CompletableFuture<String> getToken(long phoneNumber, UserAgentPlatform platform, boolean business, boolean useJarCache) {
         return switch (platform) {
             case ANDROID -> getAndroidToken(String.valueOf(phoneNumber), business, useJarCache);
             case IOS -> getIosToken(phoneNumber, platform, business, useJarCache);
@@ -134,22 +126,22 @@ public class MetadataHelper {
         };
     }
 
-    private CompletableFuture<String> getIosToken(long phoneNumber, UserAgentPlatform platform, boolean business, boolean useJarCache) {
+    private static CompletableFuture<String> getIosToken(long phoneNumber, UserAgentPlatform platform, boolean business, boolean useJarCache) {
         return getVersion(platform, business, useJarCache)
                 .thenApply(version -> getIosToken(phoneNumber, version));
     }
 
-    private String getIosToken(long phoneNumber, Version version) {
+    private static String getIosToken(long phoneNumber, Version version) {
         var token = Whatsapp.MOBILE_IOS_STATIC + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
         return HexFormat.of().formatHex(MD5.calculate(token));
     }
 
-    private CompletableFuture<String> getAndroidToken(String phoneNumber, boolean business, boolean useJarCache) {
+    private static CompletableFuture<String> getAndroidToken(String phoneNumber, boolean business, boolean useJarCache) {
         return getAndroidData(business, useJarCache)
                 .thenApplyAsync(whatsappData -> getAndroidToken(phoneNumber, whatsappData));
     }
 
-    private String getAndroidToken(String phoneNumber, WhatsappApk whatsappData) {
+    private static String getAndroidToken(String phoneNumber, WhatsappApk whatsappData) {
         try {
             var mac = Mac.getInstance("HMACSHA1");
             var secretKeyBytes = whatsappData.secretKey();
@@ -164,12 +156,12 @@ public class MetadataHelper {
         }
     }
 
-    private synchronized CompletableFuture<WhatsappApk> getAndroidData(boolean business, boolean useJarCache) {
-        if(!business && cachedApk != null){
+    private static synchronized CompletableFuture<WhatsappApk> getAndroidData(boolean business, boolean useJarCache) {
+        if (!business && cachedApk != null) {
             return CompletableFuture.completedFuture(cachedApk);
         }
 
-        if(business && cachedBusinessApk != null){
+        if (business && cachedBusinessApk != null) {
             return CompletableFuture.completedFuture(cachedBusinessApk);
         }
 
@@ -178,16 +170,16 @@ public class MetadataHelper {
                 .orElseGet(() -> downloadWhatsappApk(business));
     }
 
-    public CompletableFuture<WhatsappApk> downloadWhatsappApk(boolean business) {
+    public static CompletableFuture<WhatsappApk> downloadWhatsappApk(boolean business) {
         return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_DOWNLOAD_URL : Whatsapp.MOBILE_DOWNLOAD_URL)
                 .thenApplyAsync(result -> getAndroidData(result, business));
     }
 
-    private Optional<WhatsappApk> getCachedApk(boolean business, boolean useJarCache){
+    private static Optional<WhatsappApk> getCachedApk(boolean business, boolean useJarCache) {
         try {
             var localCache = getAndroidLocalCache(business);
-            if(Files.notExists(localCache)){
-                if(useJarCache){
+            if (Files.notExists(localCache)) {
+                if (useJarCache) {
                     var jarCache = getAndroidJarCache(business);
                     return Optional.of(Json.readValue(Files.readString(jarCache), WhatsappApk.class));
                 }
@@ -197,30 +189,30 @@ public class MetadataHelper {
 
             var now = Instant.now();
             var fileTime = Files.getLastModifiedTime(localCache);
-            if(fileTime.toInstant().until(now, ChronoUnit.WEEKS) > 1){
+            if (fileTime.toInstant().until(now, ChronoUnit.WEEKS) > 1) {
                 return Optional.empty();
             }
 
             return Optional.of(Json.readValue(Files.readString(localCache), WhatsappApk.class));
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             return Optional.empty();
         }
     }
 
-    private Path getAndroidJarCache(boolean business) throws URISyntaxException {
+    private static Path getAndroidJarCache(boolean business) throws URISyntaxException {
         var url = business
                 ? ClassLoader.getSystemResource("token/android/whatsapp_business.json")
                 : ClassLoader.getSystemResource("token/android/whatsapp.json");
         return Path.of(url.toURI());
     }
 
-    private Path getAndroidLocalCache(boolean business) {
+    private static Path getAndroidLocalCache(boolean business) {
         return androidCache.resolve(business ? "whatsapp_business.json" : "whatsapp.json");
     }
 
-    private WhatsappApk getAndroidData(byte[] apk, boolean business) {
+    private static WhatsappApk getAndroidData(byte[] apk, boolean business) {
         try (var apkFile = new ByteArrayApkFile(apk)) {
-            var version = new Version(apkFile.getApkMeta().getVersionName());
+            var version = Version.of(apkFile.getApkMeta().getVersionName());
             var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
             var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
             var certificates = getCertificates(apkFile);
@@ -236,40 +228,40 @@ public class MetadataHelper {
         }
     }
 
-    private WhatsappApk cacheWhatsappData(WhatsappApk apk) {
+    private static WhatsappApk cacheWhatsappData(WhatsappApk apk) {
         CompletableFuture.runAsync(() -> {
             try {
                 var json = Json.writeValueAsString(apk, true);
                 var file = getAndroidLocalCache(apk.business());
                 Files.createDirectories(file.getParent());
                 Files.writeString(file, json);
-            }catch (Throwable throwable){
+            } catch (Throwable throwable) {
                 LOGGER.log(Logger.Level.WARNING, "Cannot update local cache", throwable);
             }
         });
         return apk;
     }
 
-    private byte[] getAboutLogo(ByteArrayApkFile apkFile) throws IOException {
+    private static byte[] getAboutLogo(ByteArrayApkFile apkFile) throws IOException {
         var resource = apkFile.getFileData("res/drawable-hdpi/about_logo.png");
-        if(resource != null){
+        if (resource != null) {
             return resource;
         }
 
         var resourceV4 = apkFile.getFileData("res/drawable-hdpi-v4/about_logo.png");
-        if(resourceV4 != null){
+        if (resourceV4 != null) {
             return resourceV4;
         }
 
         var xxResourceV4 = apkFile.getFileData("res/drawable-xxhdpi-v4/about_logo.png");
-        if(xxResourceV4 != null){
+        if (xxResourceV4 != null) {
             return xxResourceV4;
         }
 
         throw new NoSuchElementException("Missing about_logo.png from apk");
     }
 
-    private List<byte[]> getCertificates(ByteArrayApkFile apkFile) throws IOException, CertificateException {
+    private static List<byte[]> getCertificates(ByteArrayApkFile apkFile) throws IOException, CertificateException {
         return apkFile.getApkSingers()
                 .stream()
                 .map(ApkSigner::getCertificateMetas)
@@ -278,7 +270,7 @@ public class MetadataHelper {
                 .toList();
     }
 
-    private SecretKey getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
+    private static SecretKey getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
         var result = BytesHelper.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
         var whatsappLogoChars = new char[result.length];
         for (var i = 0; i < result.length; i++) {
@@ -289,8 +281,6 @@ public class MetadataHelper {
         return factory.generateSecret(key);
     }
 
-    @Builder
-    @Jacksonized
     public record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, Collection<byte[]> certificates, boolean business) {
 
     }

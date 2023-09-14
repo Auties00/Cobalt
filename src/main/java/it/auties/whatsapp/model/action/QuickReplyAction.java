@@ -1,56 +1,30 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.BinaryPatchType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.sync.PatchType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-
-import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model clas that represents the addition or deletion of a quick reply
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class QuickReplyAction implements Action {
-    /**
-     * The shortcut for this reply
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String shortcut;
-
-    /**
-     * The full reply
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String message;
-
-    /**
-     * The keywords for this reply
-     */
-    @ProtobufProperty(index = 3, type = STRING, repeated = true)
-    private List<String> keywords;
-
-    /**
-     * The count for this reply
-     */
-    @ProtobufProperty(index = 4, type = INT32)
-    private int count;
-
-    /**
-     * Whether this quick reply was deleted
-     */
-    @ProtobufProperty(index = 5, type = BOOL)
-    private boolean deleted;
-
+public record QuickReplyAction(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String shortcut,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String message,
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING, repeated = true)
+        @NonNull
+        List<String> keywords,
+        @ProtobufProperty(index = 4, type = ProtobufType.INT32)
+        int count,
+        @ProtobufProperty(index = 5, type = ProtobufType.BOOL)
+        boolean deleted
+) implements Action {
     /**
      * The name of this action
      *
@@ -77,7 +51,7 @@ public final class QuickReplyAction implements Action {
      * @return a non-null string
      */
     @Override
-    public BinaryPatchType actionType() {
+    public PatchType actionType() {
         return null;
     }
 }

@@ -4,10 +4,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.experimental.Accessors;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -15,29 +12,36 @@ import java.util.Optional;
 /**
  * An immutable model class that represents a quoted message
  */
-@AllArgsConstructor
-@Value
-@Accessors(fluent = true)
-public class QuotedMessage implements MessageMetadataProvider {
+public final class QuotedMessage implements MessageMetadataProvider {
     /**
      * The id of the message
      */
-    @NonNull String id;
+    @NonNull
+    private final String id;
 
     /**
      * The chat of the message
      */
-    @NonNull Chat chat;
+    @NonNull
+    private final Chat chat;
 
     /**
      * The sender of the message
      */
-    Contact sender;
+    private final Contact sender;
 
     /**
      * The message
      */
-    @NonNull MessageContainer message;
+    @NonNull
+    private final MessageContainer message;
+
+    public QuotedMessage(@NonNull String id, @NonNull Chat chat, Contact sender, @NonNull MessageContainer message) {
+        this.id = id;
+        this.chat = chat;
+        this.sender = sender;
+        this.message = message;
+    }
 
     /**
      * Constructs a quoted message from a context info
@@ -49,11 +53,16 @@ public class QuotedMessage implements MessageMetadataProvider {
         if (!contextInfo.hasQuotedMessage()) {
             return Optional.empty();
         }
-        var id = contextInfo.quotedMessageId().get();
-        var chat = contextInfo.quotedMessageChat().get();
+        var id = contextInfo.quotedMessageId().orElseThrow();
+        var chat = contextInfo.quotedMessageChat().orElseThrow();
         var sender = contextInfo.quotedMessageSender().orElse(null);
-        var message = contextInfo.quotedMessage().get();
+        var message = contextInfo.quotedMessage().orElseThrow();
         return Optional.of(new QuotedMessage(id, chat, sender, message));
+    }
+
+    @Override
+    public ContactJid chatJid() {
+        return chat.jid();
     }
 
     /**
@@ -63,7 +72,7 @@ public class QuotedMessage implements MessageMetadataProvider {
      */
     @Override
     public ContactJid senderJid() {
-        return Objects.requireNonNullElseGet(sender.jid(), chat::jid);
+        return Objects.requireNonNullElseGet(sender.jid(), this::chatJid);
     }
 
     /**
@@ -73,5 +82,18 @@ public class QuotedMessage implements MessageMetadataProvider {
      */
     public Optional<Contact> sender() {
         return Optional.ofNullable(sender);
+    }
+
+    public String id() {
+        return id;
+    }
+
+    @Override
+    public Optional<Chat> chat() {
+        return Optional.of(chat);
+    }
+
+    public MessageContainer message() {
+        return message;
     }
 }

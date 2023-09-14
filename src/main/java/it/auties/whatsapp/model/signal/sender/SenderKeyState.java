@@ -1,23 +1,12 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@AllArgsConstructor
-@Builder
-@Jacksonized
-@Data
-@Accessors(fluent = true)
-public class SenderKeyState implements ProtobufMessage {
+public class SenderKeyState {
     private final int id;
     private final SignalKeyPair signingKey;
     private final ConcurrentHashMap<Integer, SenderMessageKey> messageKeys;
@@ -36,6 +25,22 @@ public class SenderKeyState implements ProtobufMessage {
 
     public Optional<SenderMessageKey> findSenderMessageKey(int iteration) {
         return Optional.ofNullable(messageKeys.get(iteration));
+    }
+
+    public int id() {
+        return id;
+    }
+
+    public SignalKeyPair signingKey() {
+        return signingKey;
+    }
+
+    public SenderChainKey chainKey() {
+        return chainKey;
+    }
+
+    public void setChainKey(SenderChainKey chainKey) {
+        this.chainKey = chainKey;
     }
 
     @Override

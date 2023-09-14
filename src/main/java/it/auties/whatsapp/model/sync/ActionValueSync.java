@@ -1,450 +1,221 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.util.Clock;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Builder;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
 import java.util.Optional;
 
-import static it.auties.protobuf.base.ProtobufType.*;
-
-@AllArgsConstructor
-@Builder
-@Jacksonized
-@ToString
-@Accessors(fluent = true)
-@ProtobufName("SyncActionValue")
-public class ActionValueSync implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = INT64)
-    @Getter
-    private long timestamp;
-
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = StarAction.class)
-    private StarAction starAction;
-
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContactAction.class)
-    private ContactAction contactAction;
-
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = MuteAction.class)
-    private MuteAction muteAction;
-
-    @ProtobufProperty(index = 5, type = MESSAGE, implementation = PinAction.class)
-    private PinAction pinAction;
-
-    @ProtobufProperty(index = 8, type = MESSAGE, implementation = QuickReplyAction.class)
-    private QuickReplyAction quickReplyAction;
-
-    @ProtobufProperty(index = 9, type = MESSAGE, implementation = RecentStickerWeightsAction.class)
-    private RecentStickerWeightsAction recentStickerWeightsAction;
-
-    @ProtobufProperty(index = 11, type = MESSAGE, implementation = RecentEmojiWeightsAction.class)
-    private RecentEmojiWeightsAction recentEmojiWeightsAction;
-
-    @ProtobufProperty(index = 14, type = MESSAGE, implementation = LabelEditAction.class)
-    private LabelEditAction labelEditAction;
-
-    @ProtobufProperty(index = 15, type = MESSAGE, implementation = LabelAssociationAction.class)
-    private LabelAssociationAction labelAssociationAction;
-
-    @ProtobufProperty(index = 17, type = MESSAGE, implementation = ArchiveChatAction.class)
-    private ArchiveChatAction archiveChatAction;
-
-    @ProtobufProperty(index = 18, type = MESSAGE, implementation = DeleteMessageForMeAction.class)
-    private DeleteMessageForMeAction deleteMessageForMeAction;
-
-    @ProtobufProperty(index = 20, type = MESSAGE, implementation = MarkChatAsReadAction.class)
-    private MarkChatAsReadAction markChatAsReadAction;
-
-    @ProtobufProperty(index = 21, type = MESSAGE, implementation = ClearChatAction.class)
-    private ClearChatAction clearChatAction;
-
-    @ProtobufProperty(index = 22, type = MESSAGE, implementation = DeleteChatAction.class)
-    private DeleteChatAction deleteChatAction;
-
-    @ProtobufProperty(index = 25, type = MESSAGE, implementation = FavoriteStickerAction.class)
-    private FavoriteStickerAction favoriteStickerAction;
-
-    @ProtobufProperty(index = 26, type = MESSAGE, implementation = AndroidUnsupportedActions.class)
-    private AndroidUnsupportedActions androidUnsupportedActions;
-
-    @ProtobufProperty(index = 27, name = "agentAction", type = MESSAGE)
-    private AgentAction agentAction;
-
-    @ProtobufProperty(index = 28, name = "subscriptionAction", type = MESSAGE)
-    private SubscriptionAction subscriptionAction;
-
-    @ProtobufProperty(index = 29, name = "userStatusMuteAction", type = MESSAGE)
-    private UserStatusMuteAction userStatusMuteAction;
-
-    @ProtobufProperty(index = 30, name = "timeFormatAction", type = MESSAGE)
-    private TimeFormatAction timeFormatAction;
-
-    @ProtobufProperty(index = 31, name = "nuxAction", type = MESSAGE)
-    private NuxAction nuxAction;
-
-    @ProtobufProperty(index = 32, name = "primaryVersionAction", type = MESSAGE)
-    private PrimaryVersionAction primaryVersionAction;
-
-    @ProtobufProperty(index = 33, name = "stickerAction", type = MESSAGE)
-    private StickerAction stickerAction;
-
-    @ProtobufProperty(index = 34, name = "removeRecentStickerAction", type = MESSAGE)
-    private RemoveRecentStickerAction removeRecentStickerAction;
-
-    @ProtobufProperty(index = 35, name = "chatAssignment", type = MESSAGE)
-    private ChatAssignmentAction chatAssignmentAction;
-
-    @ProtobufProperty(index = 36, name = "chatAssignmentOpenedStatus", type = MESSAGE)
-    private ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction;
-
-    @ProtobufProperty(index = 6, type = MESSAGE, implementation = SecurityNotificationSetting.class)
-    private SecurityNotificationSetting securityNotificationSetting;
-
-    @ProtobufProperty(index = 7, type = MESSAGE, implementation = PushNameSetting.class)
-    private PushNameSetting pushNameSetting;
-
-    @ProtobufProperty(index = 16, type = MESSAGE, implementation = LocaleSetting.class)
-    private LocaleSetting localeSetting;
-
-    @ProtobufProperty(index = 23, type = MESSAGE, implementation = UnarchiveChatsSetting.class)
-    private UnarchiveChatsSetting unarchiveChatsSetting;
-
-    @ProtobufProperty(index = 10, type = MESSAGE, implementation = StickerMetadata.class)
-    private StickerMetadata stickerMetadata;
-
-    @ProtobufProperty(index = 19, type = MESSAGE, implementation = KeyExpiration.class)
-    private KeyExpiration keyExpiration;
-
-    @ProtobufProperty(index = 24, type = MESSAGE, implementation = ActionValueSync.PrimaryFeature.class)
-    private PrimaryFeature primaryFeature;
-
-    @SuppressWarnings("PatternVariableHidesField")
-    private ActionValueSync(@NonNull Action action) {
-        this.timestamp = Clock.nowSeconds();
-        if (action instanceof StarAction starAction) {
-            this.starAction = starAction;
-        } else if (action instanceof ContactAction contactAction) {
-            this.contactAction = contactAction;
-        } else if (action instanceof MuteAction muteAction) {
-            this.muteAction = muteAction;
-        } else if (action instanceof PinAction pinAction) {
-            this.pinAction = pinAction;
-        } else if (action instanceof QuickReplyAction quickReplyAction) {
-            this.quickReplyAction = quickReplyAction;
-        } else if (action instanceof RecentStickerWeightsAction recentStickerWeightsAction) {
-            this.recentStickerWeightsAction = recentStickerWeightsAction;
-        } else if (action instanceof RecentEmojiWeightsAction recentEmojiWeightsAction) {
-            this.recentEmojiWeightsAction = recentEmojiWeightsAction;
-        } else if (action instanceof LabelEditAction labelEditAction) {
-            this.labelEditAction = labelEditAction;
-        } else if (action instanceof LabelAssociationAction labelAssociationAction) {
-            this.labelAssociationAction = labelAssociationAction;
-        } else if (action instanceof ArchiveChatAction archiveChatAction) {
-            this.archiveChatAction = archiveChatAction;
-        } else if (action instanceof DeleteMessageForMeAction deleteMessageForMeAction) {
-            this.deleteMessageForMeAction = deleteMessageForMeAction;
-        } else if (action instanceof MarkChatAsReadAction markChatAsReadAction) {
-            this.markChatAsReadAction = markChatAsReadAction;
-        } else if (action instanceof ClearChatAction clearChatAction) {
-            this.clearChatAction = clearChatAction;
-        } else if (action instanceof DeleteChatAction deleteChatAction) {
-            this.deleteChatAction = deleteChatAction;
-        } else if (action instanceof FavoriteStickerAction favoriteStickerAction) {
-            this.favoriteStickerAction = favoriteStickerAction;
-        } else if (action instanceof AndroidUnsupportedActions androidUnsupportedActions) {
-            this.androidUnsupportedActions = androidUnsupportedActions;
-        } else if (action instanceof AgentAction agentAction) {
-            this.agentAction = agentAction;
-        } else if (action instanceof ChatAssignmentAction chatAssignmentAction) {
-            this.chatAssignmentAction = chatAssignmentAction;
-        } else if (action instanceof ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction) {
-            this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
-        } else if (action instanceof NuxAction nuxAction) {
-            this.nuxAction = nuxAction;
-        } else if (action instanceof PrimaryVersionAction primaryVersionAction) {
-            this.primaryVersionAction = primaryVersionAction;
-        } else if (action instanceof RemoveRecentStickerAction removeRecentStickerAction) {
-            this.removeRecentStickerAction = removeRecentStickerAction;
-        } else if (action instanceof StickerAction stickerAction) {
-            this.stickerAction = stickerAction;
-        } else if (action instanceof SubscriptionAction subscriptionAction) {
-            this.subscriptionAction = subscriptionAction;
-        } else if (action instanceof TimeFormatAction timeFormatAction) {
-            this.timeFormatAction = timeFormatAction;
-        } else if (action instanceof UserStatusMuteAction userStatusMuteAction) {
-            this.userStatusMuteAction = userStatusMuteAction;
-        }
-    }
-
-    @SuppressWarnings("PatternVariableHidesField")
-    private ActionValueSync(@NonNull Setting setting) {
-        this.timestamp = Clock.nowSeconds();
-        if (setting instanceof SecurityNotificationSetting securityNotificationSetting) {
-            this.securityNotificationSetting = securityNotificationSetting;
-        } else if (setting instanceof PushNameSetting pushNameSetting) {
-            this.pushNameSetting = pushNameSetting;
-        } else if (setting instanceof LocaleSetting localeSetting) {
-            this.localeSetting = localeSetting;
-        } else if (setting instanceof UnarchiveChatsSetting unarchiveChatsSetting) {
-            this.unarchiveChatsSetting = unarchiveChatsSetting;
-        } else {
-            throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
-        }
-    }
-
+public record ActionValueSync(
+        @ProtobufProperty(index = 1, type = ProtobufType.INT64)
+        long timestamp,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        Optional<StarAction> starAction,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        Optional<ContactAction> contactAction,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        Optional<MuteAction> muteAction,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        Optional<PinAction> pinAction,
+        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+        Optional<QuickReplyAction> quickReplyAction,
+        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+        Optional<RecentStickerWeightsAction> recentStickerWeightsAction,
+        @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
+        Optional<RecentEmojiWeightsAction> recentEmojiWeightsAction,
+        @ProtobufProperty(index = 14, type = ProtobufType.OBJECT)
+        Optional<LabelEditAction> labelEditAction,
+        @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
+        Optional<LabelAssociationAction> labelAssociationAction,
+        @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+        Optional<ArchiveChatAction> archiveChatAction,
+        @ProtobufProperty(index = 18, type = ProtobufType.OBJECT)
+        Optional<DeleteMessageForMeAction> deleteMessageForMeAction,
+        @ProtobufProperty(index = 20, type = ProtobufType.OBJECT)
+        Optional<MarkChatAsReadAction> markChatAsReadAction,
+        @ProtobufProperty(index = 21, type = ProtobufType.OBJECT)
+        Optional<ClearChatAction> clearChatAction,
+        @ProtobufProperty(index = 22, type = ProtobufType.OBJECT)
+        Optional<DeleteChatAction> deleteChatAction,
+        @ProtobufProperty(index = 25, type = ProtobufType.OBJECT)
+        Optional<FavoriteStickerAction> favoriteStickerAction,
+        @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
+        Optional<AndroidUnsupportedActions> androidUnsupportedActions,
+        @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
+        Optional<AgentAction> agentAction,
+        @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
+        Optional<SubscriptionAction> subscriptionAction,
+        @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
+        Optional<UserStatusMuteAction> userStatusMuteAction,
+        @ProtobufProperty(index = 30, type = ProtobufType.OBJECT)
+        Optional<TimeFormatAction> timeFormatAction,
+        @ProtobufProperty(index = 31, type = ProtobufType.OBJECT)
+        Optional<NuxAction> nuxAction,
+        @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+        Optional<PrimaryVersionAction> primaryVersionAction,
+        @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
+        Optional<StickerAction> stickerAction,
+        @ProtobufProperty(index = 34, type = ProtobufType.OBJECT)
+        Optional<RemoveRecentStickerAction> removeRecentStickerAction,
+        @ProtobufProperty(index = 35, type = ProtobufType.OBJECT)
+        Optional<ChatAssignmentAction> chatAssignmentAction,
+        @ProtobufProperty(index = 36, type = ProtobufType.OBJECT)
+        Optional<ChatAssignmentOpenedStatusAction> chatAssignmentOpenedStatusAction,
+        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        Optional<SecurityNotificationSetting> securityNotificationSetting,
+        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        Optional<PushNameSetting> pushNameSetting,
+        @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
+        Optional<LocaleSetting> localeSetting,
+        @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
+        Optional<UnarchiveChatsSetting> unarchiveChatsSetting,
+        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        Optional<RecentStickerMetadata> stickerMetadata,
+        @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
+        Optional<KeyExpiration> keyExpiration,
+        @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+        Optional<PrimaryFeature> primaryFeature
+) implements ProtobufMessage {
     public static ActionValueSync of(@NonNull Action action) {
-        return new ActionValueSync(action);
+        var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
+        switch (action) {
+            case StarAction starAction -> builder.starAction(starAction);
+            case ContactAction contactAction -> builder.contactAction(contactAction);
+            case MuteAction muteAction -> builder.muteAction(muteAction);
+            case PinAction pinAction -> builder.pinAction(pinAction);
+            case QuickReplyAction quickReplyAction -> builder.quickReplyAction(quickReplyAction);
+            case RecentStickerWeightsAction recentStickerWeightsAction -> builder.recentStickerWeightsAction(recentStickerWeightsAction);
+            case RecentEmojiWeightsAction recentEmojiWeightsAction -> builder.recentEmojiWeightsAction(recentEmojiWeightsAction);
+            case LabelEditAction labelEditAction -> builder.labelEditAction(labelEditAction);
+            case LabelAssociationAction labelAssociationAction -> builder.labelAssociationAction(labelAssociationAction);
+            case ArchiveChatAction archiveChatAction -> builder.archiveChatAction(archiveChatAction);
+            case DeleteMessageForMeAction deleteMessageForMeAction -> builder.deleteMessageForMeAction(deleteMessageForMeAction);
+            case MarkChatAsReadAction markChatAsReadAction -> builder.markChatAsReadAction(markChatAsReadAction);
+            case ClearChatAction clearChatAction -> builder.clearChatAction(clearChatAction);
+            case DeleteChatAction deleteChatAction -> builder.deleteChatAction(deleteChatAction);
+            case FavoriteStickerAction favoriteStickerAction -> builder.favoriteStickerAction(favoriteStickerAction);
+            case AndroidUnsupportedActions androidUnsupportedActions -> builder.androidUnsupportedActions(androidUnsupportedActions);
+            case AgentAction agentAction -> builder.agentAction(agentAction);
+            case ChatAssignmentAction chatAssignmentAction -> builder.chatAssignmentAction(chatAssignmentAction);
+            case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction -> builder.chatAssignmentOpenedStatusAction(chatAssignmentOpenedStatusAction);
+            case NuxAction nuxAction -> builder.nuxAction(nuxAction);
+            case PrimaryVersionAction primaryVersionAction -> builder.primaryVersionAction(primaryVersionAction);
+            case RemoveRecentStickerAction removeRecentStickerAction -> builder.removeRecentStickerAction(removeRecentStickerAction);
+            case StickerAction stickerAction -> builder.stickerAction(stickerAction);
+            case SubscriptionAction subscriptionAction -> builder.subscriptionAction(subscriptionAction);
+            case TimeFormatAction timeFormatAction -> builder.timeFormatAction(timeFormatAction);
+            case UserStatusMuteAction userStatusMuteAction -> builder.userStatusMuteAction(userStatusMuteAction);
+            default -> throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(action));
+        }
+        return builder.build();
     }
 
     public static ActionValueSync of(@NonNull Setting setting) {
-        return new ActionValueSync(setting);
+        var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
+        switch (setting) {
+            case SecurityNotificationSetting securityNotificationSetting -> builder.securityNotificationSetting(securityNotificationSetting);
+            case PushNameSetting pushNameSetting -> builder.pushNameSetting(pushNameSetting);
+            case LocaleSetting localeSetting -> builder.localeSetting(localeSetting);
+            case UnarchiveChatsSetting unarchiveChatsSetting -> builder.unarchiveChatsSetting(unarchiveChatsSetting);
+            default -> throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
+        }
+        return builder.build();
     }
 
-    @SuppressWarnings({"DuplicatedCode"}) // IntelliJ bug
-    public Action action() {
-        if (starAction != null) {
+    public Optional<? extends Action> action() {
+        if (starAction.isPresent()) {
             return starAction;
         }
-        if (contactAction != null) {
+        if (contactAction.isPresent()) {
             return contactAction;
         }
-        if (muteAction != null) {
+        if (muteAction.isPresent()) {
             return muteAction;
         }
-        if (pinAction != null) {
+        if (pinAction.isPresent()) {
             return pinAction;
         }
-        if (quickReplyAction != null) {
+        if (quickReplyAction.isPresent()) {
             return quickReplyAction;
         }
-        if (recentStickerWeightsAction != null) {
+        if (recentStickerWeightsAction.isPresent()) {
             return recentStickerWeightsAction;
         }
-        if (recentEmojiWeightsAction != null) {
+        if (recentEmojiWeightsAction.isPresent()) {
             return recentEmojiWeightsAction;
         }
-        if (labelEditAction != null) {
+        if (labelEditAction.isPresent()) {
             return labelEditAction;
         }
-        if (labelAssociationAction != null) {
+        if (labelAssociationAction.isPresent()) {
             return labelAssociationAction;
         }
-        if (archiveChatAction != null) {
+        if (archiveChatAction.isPresent()) {
             return archiveChatAction;
         }
-        if (deleteMessageForMeAction != null) {
+        if (deleteMessageForMeAction.isPresent()) {
             return deleteMessageForMeAction;
         }
-        if (markChatAsReadAction != null) {
+        if (markChatAsReadAction.isPresent()) {
             return markChatAsReadAction;
         }
-        if (clearChatAction != null) {
+        if (clearChatAction.isPresent()) {
             return clearChatAction;
         }
-        if (deleteChatAction != null) {
+        if (deleteChatAction.isPresent()) {
             return deleteChatAction;
         }
-        if (favoriteStickerAction != null) {
+        if (favoriteStickerAction.isPresent()) {
             return favoriteStickerAction;
         }
-        if (androidUnsupportedActions != null) {
+        if (androidUnsupportedActions.isPresent()) {
             return androidUnsupportedActions;
         }
-        if (agentAction != null) {
+        if (agentAction.isPresent()) {
             return agentAction;
         }
-        if (chatAssignmentAction != null) {
+        if (chatAssignmentAction.isPresent()) {
             return chatAssignmentAction;
         }
-        if (chatAssignmentOpenedStatusAction != null) {
+        if (chatAssignmentOpenedStatusAction.isPresent()) {
             return chatAssignmentOpenedStatusAction;
         }
-        if (nuxAction != null) {
+        if (nuxAction.isPresent()) {
             return nuxAction;
         }
-        if (primaryVersionAction != null) {
+        if (primaryVersionAction.isPresent()) {
             return primaryVersionAction;
         }
-        if (removeRecentStickerAction != null) {
+        if (removeRecentStickerAction.isPresent()) {
             return removeRecentStickerAction;
         }
-        if (stickerAction != null) {
+        if (stickerAction.isPresent()) {
             return stickerAction;
         }
-        if (subscriptionAction != null) {
+        if (subscriptionAction.isPresent()) {
             return subscriptionAction;
         }
-        if (timeFormatAction != null) {
+        if (timeFormatAction.isPresent()) {
             return timeFormatAction;
         }
-        if (userStatusMuteAction != null) {
-            return userStatusMuteAction;
-        }
-        return null;
+        return userStatusMuteAction;
     }
 
-    public Setting setting() {
-        if (securityNotificationSetting != null) {
+    public Optional<? extends Setting> setting() {
+        if (securityNotificationSetting.isPresent()) {
             return securityNotificationSetting;
         }
-        if (pushNameSetting != null) {
+        if (pushNameSetting.isPresent()) {
             return pushNameSetting;
         }
-        if (localeSetting != null) {
+        if (localeSetting.isPresent()) {
             return localeSetting;
         }
-        if (unarchiveChatsSetting != null) {
-            return unarchiveChatsSetting;
-        }
-        return null;
-    }
-
-    public Optional<StarAction> starAction() {
-        return Optional.ofNullable(starAction);
-    }
-
-    public Optional<ContactAction> contactAction() {
-        return Optional.ofNullable(contactAction);
-    }
-
-    public Optional<MuteAction> muteAction() {
-        return Optional.ofNullable(muteAction);
-    }
-
-    public Optional<PinAction> pinAction() {
-        return Optional.ofNullable(pinAction);
-    }
-
-    public Optional<QuickReplyAction> quickReplyAction() {
-        return Optional.ofNullable(quickReplyAction);
-    }
-
-    public Optional<RecentStickerWeightsAction> recentStickerWeightsAction() {
-        return Optional.ofNullable(recentStickerWeightsAction);
-    }
-
-    public Optional<RecentEmojiWeightsAction> recentEmojiWeightsAction() {
-        return Optional.ofNullable(recentEmojiWeightsAction);
-    }
-
-    public Optional<LabelEditAction> labelEditAction() {
-        return Optional.ofNullable(labelEditAction);
-    }
-
-    public Optional<LabelAssociationAction> labelAssociationAction() {
-        return Optional.ofNullable(labelAssociationAction);
-    }
-
-    public Optional<ArchiveChatAction> archiveChatAction() {
-        return Optional.ofNullable(archiveChatAction);
-    }
-
-    public Optional<DeleteMessageForMeAction> deleteMessageForMeAction() {
-        return Optional.ofNullable(deleteMessageForMeAction);
-    }
-
-    public Optional<MarkChatAsReadAction> markChatAsReadAction() {
-        return Optional.ofNullable(markChatAsReadAction);
-    }
-
-    public Optional<ClearChatAction> clearChatAction() {
-        return Optional.ofNullable(clearChatAction);
-    }
-
-    public Optional<DeleteChatAction> deleteChatAction() {
-        return Optional.ofNullable(deleteChatAction);
-    }
-
-    public Optional<FavoriteStickerAction> favoriteStickerAction() {
-        return Optional.ofNullable(favoriteStickerAction);
-    }
-
-    public Optional<AndroidUnsupportedActions> androidUnsupportedActions() {
-        return Optional.ofNullable(androidUnsupportedActions);
-    }
-
-    public Optional<AgentAction> agentAction() {
-        return Optional.ofNullable(agentAction);
-    }
-
-    public Optional<SubscriptionAction> subscriptionAction() {
-        return Optional.ofNullable(subscriptionAction);
-    }
-
-    public Optional<UserStatusMuteAction> userStatusMuteAction() {
-        return Optional.ofNullable(userStatusMuteAction);
-    }
-
-    public Optional<TimeFormatAction> timeFormatAction() {
-        return Optional.ofNullable(timeFormatAction);
-    }
-
-    public Optional<NuxAction> nuxAction() {
-        return Optional.ofNullable(nuxAction);
-    }
-
-    public Optional<PrimaryVersionAction> primaryVersionAction() {
-        return Optional.ofNullable(primaryVersionAction);
-    }
-
-    public Optional<StickerAction> stickerAction() {
-        return Optional.ofNullable(stickerAction);
-    }
-
-    public Optional<RemoveRecentStickerAction> removeRecentStickerAction() {
-        return Optional.ofNullable(removeRecentStickerAction);
-    }
-
-    public Optional<ChatAssignmentAction> chatAssignmentAction() {
-        return Optional.ofNullable(chatAssignmentAction);
-    }
-
-    public Optional<ChatAssignmentOpenedStatusAction> chatAssignmentOpenedStatusAction() {
-        return Optional.ofNullable(chatAssignmentOpenedStatusAction);
-    }
-
-    public Optional<SecurityNotificationSetting> securityNotificationSetting() {
-        return Optional.ofNullable(securityNotificationSetting);
-    }
-
-    public Optional<PushNameSetting> pushNameSetting() {
-        return Optional.ofNullable(pushNameSetting);
-    }
-
-    public Optional<LocaleSetting> localeSetting() {
-        return Optional.ofNullable(localeSetting);
-    }
-
-    public Optional<UnarchiveChatsSetting> unarchiveChatsSetting() {
-        return Optional.ofNullable(unarchiveChatsSetting);
-    }
-
-    public Optional<StickerMetadata> stickerMetadata() {
-        return Optional.ofNullable(stickerMetadata);
-    }
-
-    public Optional<KeyExpiration> keyExpiration() {
-        return Optional.ofNullable(keyExpiration);
-    }
-
-    public Optional<PrimaryFeature> primaryFeature() {
-        return Optional.ofNullable(primaryFeature);
-    }
-
-    @AllArgsConstructor
-    @Jacksonized
-    @Builder
-    @Accessors(fluent = true)
-    public static class PrimaryFeature implements ProtobufMessage {
-        @ProtobufProperty(index = 1, type = STRING, repeated = true)
-        @Getter
-        private List<String> flags;
+        return unarchiveChatsSetting;
     }
 }

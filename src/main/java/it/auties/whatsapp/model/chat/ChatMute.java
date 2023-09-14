@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
-import it.auties.protobuf.base.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufConverter;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.Instant;
@@ -124,7 +124,7 @@ public record ChatMute(long endTimeStamp) {
      * @return a non-empty optional date if {@link ChatMute#endTimeStamp} > 0
      */
     public Optional<ZonedDateTime> end() {
-        return endTimeStamp > 0 ? Optional.of(Clock.parseSeconds(endTimeStamp)) : Optional.empty();
+        return Clock.parseSeconds(endTimeStamp);
     }
 
     @ProtobufConverter

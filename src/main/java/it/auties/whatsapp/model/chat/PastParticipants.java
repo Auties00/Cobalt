@@ -1,42 +1,23 @@
 package it.auties.whatsapp.model.chat;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
-import java.util.List;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * Class representing a list of past participants in a chat group
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("PastParticipants")
-public class PastParticipants implements ProtobufMessage {
-    /**
-     * The JID of the chat group.
-     */
-    @ProtobufProperty(index = 1, name = "groupJid", type = STRING)
-    private ContactJid groupJid;
+public record PastParticipants(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        ContactJid groupJid,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
+        @NonNull
+        ArrayList<PastParticipant> pastParticipants
+) implements ProtobufMessage {
 
-    /**
-     * The list of past participants in the chat group.
-     */
-    @ProtobufProperty(implementation = PastParticipant.class, index = 2, name = "pastParticipants", repeated = true, type = MESSAGE)
-    @Default
-    private List<PastParticipant> pastParticipants = new ArrayList<>();
 }

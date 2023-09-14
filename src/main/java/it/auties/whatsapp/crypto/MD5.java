@@ -1,24 +1,25 @@
 package it.auties.whatsapp.crypto;
 
-import lombok.NonNull;
-import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
-@UtilityClass
-public class MD5 {
-    private final String MD5 = "MD5";
+public final class MD5 {
+    private static final String MD5 = "MD5";
 
-    public byte[] calculate(@NonNull String data) {
+    public static byte[] calculate(@NonNull String data) {
         return calculate(data.getBytes(StandardCharsets.UTF_8));
     }
 
-    @SneakyThrows
-    public byte[] calculate(byte @NonNull [] data) {
-        var digest = MessageDigest.getInstance(MD5);
-        digest.update(data);
-        return digest.digest();
+    public static byte[] calculate(byte @NonNull [] data) {
+        try {
+            var digest = MessageDigest.getInstance(MD5);
+            digest.update(data);
+            return digest.digest();
+        }catch (NoSuchAlgorithmException exception) {
+            throw new UnsupportedOperationException("Missing md5 implementation", exception);
+        }
     }
 }

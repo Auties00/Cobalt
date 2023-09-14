@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.privacy;
 
 import it.auties.whatsapp.model.contact.ContactJid;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 

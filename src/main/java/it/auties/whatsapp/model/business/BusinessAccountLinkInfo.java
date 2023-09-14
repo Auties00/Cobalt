@@ -1,53 +1,38 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.util.Clock;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.*;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
 /**
  * A model class that holds a payload about a business link info.
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("BizAccountLinkInfo")
-public class BusinessAccountLinkInfo implements ProtobufMessage {
+public record BusinessAccountLinkInfo(
+        @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
+        long businessId,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String phoneNumber,
+        @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
+        long issueTimeSeconds,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @NonNull
+        BusinessStorageType hostStorage,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @NonNull
+        BusinessAccountType accountType
+) implements ProtobufMessage {
     /**
-     * The business id for this link
+     * Returns this object's timestampSeconds
+     *
+     * @return an optional
      */
-    @ProtobufProperty(index = 1, name = "whatsappBizAcctFbid", type = UINT64)
-    private long businessId;
-
-    /**
-     * The phone number of this link
-     */
-    @ProtobufProperty(index = 2, name = "whatsappAcctNumber", type = STRING)
-    private String phoneNumber;
-
-    /**
-     * The issue time of this link
-     */
-    @ProtobufProperty(index = 3, name = "issueTime", type = UINT64)
-    private long issueTime;
-
-    /**
-     * The type of storage
-     */
-    @ProtobufProperty(index = 4, name = "hostStorage", type = MESSAGE)
-    private BusinessStorageType hostStorage;
-
-    /**
-     * The type of account
-     */
-    @ProtobufProperty(index = 5, name = "accountType", type = MESSAGE)
-    private BusinessAccountType accountType;
+    public Optional<ZonedDateTime> issueTime() {
+        return Clock.parseSeconds(issueTimeSeconds);
+    }
 }

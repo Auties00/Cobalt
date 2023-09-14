@@ -2,7 +2,8 @@ package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.model.contact.ContactJidServer;
+import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Validate;
 
@@ -128,9 +129,9 @@ public final class BinaryDecoder {
     private ContactJid readJidPair() {
         var read = read(true);
         if (read instanceof String encoded) {
-            return ContactJid.of(encoded, ContactJid.Server.of(readString()));
+            return ContactJid.of(encoded, ContactJidServer.of(readString()));
         } else if (read == null) {
-            return ContactJid.ofServer(ContactJid.Server.of(readString()));
+            return ContactJid.ofServer(ContactJidServer.of(readString()));
         } else {
             throw new RuntimeException("Invalid jid type");
         }

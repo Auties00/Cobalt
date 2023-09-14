@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.signal.keypair;
 
-import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.KeyHelper;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair {
     public SignalPreKeyPair(int id, byte[] publicKey, byte[] privateKey) {

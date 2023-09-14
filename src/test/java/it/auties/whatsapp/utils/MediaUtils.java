@@ -1,16 +1,13 @@
 package it.auties.whatsapp.utils;
 
-import lombok.experimental.UtilityClass;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URL;
+import java.net.URI;
 
-@UtilityClass
 public class MediaUtils {
-    public byte[] readBytes(String url) {
-        try {
-            return new URL(url).openStream().readAllBytes();
+    public static byte[] readBytes(String url) {
+        try(var stream =URI.create(url).toURL().openStream()) {
+            return stream.readAllBytes();
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot download media", exception);
         }

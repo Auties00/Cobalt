@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.button.template;
 
-import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;

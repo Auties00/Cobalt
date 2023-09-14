@@ -2,7 +2,7 @@ package org.example.whatsapp.command;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Set;
 

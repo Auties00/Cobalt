@@ -1,36 +1,19 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 
-import java.util.Arrays;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("SyncdRecord")
-public final class RecordSync implements ProtobufMessage, Syncable {
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = IndexSync.class)
-    private IndexSync index;
-
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ValueSync.class)
-    private ValueSync value;
-
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = KeyId.class)
-    private KeyId keyId;
-
+public record RecordSync(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        IndexSync index,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        ValueSync value,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        KeyId keyId
+) implements ProtobufMessage, Syncable {
     @Override
     public Operation operation() {
         return Operation.SET;
@@ -41,22 +24,24 @@ public final class RecordSync implements ProtobufMessage, Syncable {
         return this;
     }
 
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("SyncdOperation")
-    public enum Operation implements ProtobufMessage {
+    public enum Operation implements ProtobufEnum {
         SET(0, ((byte) (0x1))),
         REMOVE(1, ((byte) (0x2)));
-        
-        @Getter
-        private final int index;
 
-        @Getter
+        final int index;
         private final byte content;
 
-        @JsonCreator
-        public static Operation of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        Operation(@ProtobufEnumIndex int index, byte content) {
+            this.index = index;
+            this.content = content;
+        }
+
+        public int index() {
+            return index;
+        }
+
+        public byte content() {
+            return content;
         }
     }
 }

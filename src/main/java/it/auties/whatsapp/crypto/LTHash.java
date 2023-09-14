@@ -2,7 +2,7 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.model.sync.RecordSync;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -11,6 +11,7 @@ import java.util.*;
 
 public class LTHash {
     private static final int EXPAND_SIZE = 128;
+    public static final String SALT = "WhatsApp Patch Integrity";
 
     private final byte @NonNull [] salt;
 
@@ -23,7 +24,7 @@ public class LTHash {
     private final List<byte[]> add, subtract;
 
     public LTHash(LTHashState hash) {
-        this.salt = "WhatsApp Patch Integrity".getBytes(StandardCharsets.UTF_8);
+        this.salt = SALT.getBytes(StandardCharsets.UTF_8);
         this.hash = hash.hash();
         this.indexValueMap = new HashMap<>(hash.indexValueMap());
         this.add = new ArrayList<>();

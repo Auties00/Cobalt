@@ -18,12 +18,20 @@ public sealed interface MessageMetadataProvider permits MessageInfo, QuotedMessa
      */
     String id();
 
+
+    /**
+     * Returns the jid of the chat where the message was sent
+     *
+     * @return a jid
+     */
+    ContactJid chatJid();
+
     /**
      * Returns the chat of the message
      *
      * @return a chat
      */
-    Chat chat();
+    Optional<Chat> chat();
 
     /**
      * Returns the sender's jid

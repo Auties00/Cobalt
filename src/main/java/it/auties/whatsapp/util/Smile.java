@@ -6,7 +6,6 @@ import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.auties.map.SimpleMapModule;
-import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,9 +21,8 @@ import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
 import static java.lang.System.Logger.Level.ERROR;
 
-@UtilityClass
-public class Smile {
-    private final ObjectMapper smile;
+public final class Smile {
+    private static final ObjectMapper smile;
 
     static {
         try {
@@ -47,27 +45,27 @@ public class Smile {
         }
     }
 
-    public byte[] writeValueAsBytes(Object object) throws IOException{
+    public static byte[] writeValueAsBytes(Object object) throws IOException {
         return smile.writeValueAsBytes(object);
     }
 
-    public void writeValueAsBytes(OutputStream outputStream, Object object) throws IOException{
+    public static void writeValueAsBytes(OutputStream outputStream, Object object) throws IOException {
         smile.writeValue(outputStream, object);
     }
 
-    public <T> T readValue(byte[] value, Class<T> clazz) throws IOException{
+    public static <T> T readValue(byte[] value, Class<T> clazz) throws IOException {
         return smile.readValue(value, clazz);
     }
 
-    public <T> T readValue(InputStream inputStream, Class<T> clazz) throws IOException {
+    public static <T> T readValue(InputStream inputStream, Class<T> clazz) throws IOException {
         return smile.readValue(inputStream, clazz);
     }
 
-    public <T> T readValue(byte[] value, TypeReference<T> clazz) throws IOException {
+    public static <T> T readValue(byte[] value, TypeReference<T> clazz) throws IOException {
         return smile.readValue(value, clazz);
     }
 
-    public <T> T readValue(InputStream inputStream, TypeReference<T> clazz) throws IOException{
+    public static <T> T readValue(InputStream inputStream, TypeReference<T> clazz) throws IOException {
         return smile.readValue(inputStream, clazz);
     }
 }

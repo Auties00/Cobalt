@@ -1,16 +1,12 @@
 package it.auties.whatsapp.model.signal.session;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Builder
-@Jacksonized
 public record Session(Set<@NonNull SessionState> states) {
     public Session(Set<SessionState> states) {
         this.states = Objects.requireNonNullElseGet(states, ConcurrentHashMap::newKeySet);

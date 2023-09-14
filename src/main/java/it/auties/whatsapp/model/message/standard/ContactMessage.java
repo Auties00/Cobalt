@@ -1,43 +1,29 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactCard;
+import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import java.util.Optional;
 
 /**
  * A model class that represents a message holding a contact inside
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@SuperBuilder
-@Jacksonized
-@Data
-@EqualsAndHashCode(callSuper = true)
-@Accessors(fluent = true)
-public final class ContactMessage extends ContextualMessage {
-    /**
-     * The name of the contact that this message wraps
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String name;
-
-    /**
-     * The info about the contact that this message wraps encoded as a vcard
-     */
-    @ProtobufProperty(index = 16, type = STRING, implementation = ContactCard.class)
-    private ContactCard vcard;
-
+public record ContactMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String name,
+        @ProtobufProperty(index = 16, type = ProtobufType.STRING)
+        @NonNull
+        ContactCard vcard,
+        @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+        Optional<ContextInfo> contextInfo
+) implements ContextualMessage {
     @Override
     public MessageType type() {
         return MessageType.CONTACT;

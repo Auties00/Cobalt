@@ -1,26 +1,26 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.util.Clock;
 
-import static it.auties.protobuf.base.ProtobufType.SFIXED32;
-import static it.auties.protobuf.base.ProtobufType.SFIXED64;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class EphemeralSetting implements Setting {
-    @ProtobufProperty(index = 1, type = SFIXED32)
-    private int duration;
-
-    @ProtobufProperty(index = 2, type = SFIXED64)
-    private long timestamp;
+public record EphemeralSetting(
+        @ProtobufProperty(index = 1, type = ProtobufType.SFIXED32)
+        int duration,
+        @ProtobufProperty(index = 2, type = ProtobufType.SFIXED64)
+        long timestampSeconds
+) implements Setting {
+    /**
+     * Returns when this setting was toggled
+     *
+     * @return an optional
+     */
+    public Optional<ZonedDateTime> timestamp() {
+        return Clock.parseSeconds(timestampSeconds);
+    }
 
     @Override
     public String indexName() {

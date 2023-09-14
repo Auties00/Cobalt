@@ -1,53 +1,41 @@
 package it.auties.whatsapp.model.info;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.business.BusinessAccountType;
 import it.auties.whatsapp.model.business.BusinessStorageType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.whatsapp.util.Clock;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.*;
+import java.time.ZonedDateTime;
+import java.util.Optional;
+
 
 /**
  * A model class that holds the information related to a business account.
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class BusinessAccountInfo implements Info, ProtobufMessage {
+public record BusinessAccountInfo(
+        @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
+        long facebookId,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String accountNumber,
+        @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
+        long timestampSeconds,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @NonNull
+        BusinessStorageType hostStorage,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @NonNull
+        BusinessAccountType accountType
+) implements Info, ProtobufMessage {
     /**
-     * The facebook jid
+     * Returns the timestampSeconds for this message
+     *
+     * @return an optional
      */
-    @ProtobufProperty(index = 1, type = UINT64)
-    private long facebookId;
-
-    /**
-     * The account phone number
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String accountNumber;
-
-    /**
-     * The timestamp of the account
-     */
-    @ProtobufProperty(index = 3, type = UINT64)
-    private long timestamp;
-
-    /**
-     * Indicates here this account is hosted
-     */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = BusinessStorageType.class)
-    private BusinessStorageType hostStorage;
-
-    /**
-     * The type of this account
-     */
-    @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessAccountType.class)
-    private BusinessAccountType accountType;
+    public Optional<ZonedDateTime> timestamp() {
+        return Clock.parseSeconds(timestampSeconds);
+    }
 }

@@ -1,148 +1,39 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
+import it.auties.protobuf.model.ProtobufMessage;
 
-import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.base.ProtobufType.*;
+import static it.auties.protobuf.model.ProtobufType.*;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class ClientPayload implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = UINT64)
-    private Long username;
+public record ClientPayload(@ProtobufProperty(index = 1, type = UINT64) Long username,
+                            @ProtobufProperty(index = 3, type = BOOL) Boolean passive,
+                            @ProtobufProperty(index = 5, type = OBJECT) UserAgent userAgent,
+                            @ProtobufProperty(index = 6, type = OBJECT) WebInfo webInfo,
+                            @ProtobufProperty(index = 7, type = STRING) String pushName,
+                            @ProtobufProperty(index = 9, type = SFIXED32) Integer sessionId,
+                            @ProtobufProperty(index = 10, type = BOOL) Boolean shortConnect,
+                            @ProtobufProperty(index = 12, type = OBJECT) ClientPayloadConnectType connectType,
+                            @ProtobufProperty(index = 13, type = OBJECT) ClientPayloadConnectReason connectReason,
+                            @ProtobufProperty(index = 14, type = INT32, repeated = true) List<Integer> shards,
+                            @ProtobufProperty(index = 15, type = OBJECT) DNSSource dnsSource,
+                            @ProtobufProperty(index = 16, type = UINT32) Integer connectAttemptCount,
+                            @ProtobufProperty(index = 18, type = UINT32) Integer device,
+                            @ProtobufProperty(index = 19, type = OBJECT) CompanionRegistrationData regData,
+                            @ProtobufProperty(index = 20, type = OBJECT) ClientPayloadProduct product,
+                            @ProtobufProperty(index = 21, type = BYTES) byte[] fbCat,
+                            @ProtobufProperty(index = 22, type = BYTES) byte[] fbUserAgent,
+                            @ProtobufProperty(index = 23, type = BOOL) Boolean oc,
+                            @ProtobufProperty(index = 24, type = INT32) Integer lc,
+                            @ProtobufProperty(index = 30, type = OBJECT) ClientPayloadIOSAppExtension iosAppExtension,
+                            @ProtobufProperty(index = 31, type = UINT64) Long fbAppId,
+                            @ProtobufProperty(index = 32, type = BYTES) byte[] fbDeviceId) implements ProtobufMessage {
 
-    @ProtobufProperty(index = 3, type = BOOL)
-    private boolean passive;
+    public enum ClientPayloadConnectType implements ProtobufEnum {
 
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = ClientPayload.ClientPayloadClientFeature.class, repeated = true)
-    private List<ClientPayloadClientFeature> clientFeatures;
-
-    @ProtobufProperty(index = 5, type = MESSAGE, implementation = UserAgent.class)
-    private UserAgent userAgent;
-
-    @ProtobufProperty(index = 6, type = MESSAGE, implementation = WebInfo.class)
-    private WebInfo webInfo;
-
-    @ProtobufProperty(index = 7, type = STRING)
-    private String pushName;
-
-    @ProtobufProperty(index = 9, type = SFIXED32)
-    private Integer sessionId;
-
-    @ProtobufProperty(index = 10, type = BOOL)
-    private boolean shortConnect;
-
-    @ProtobufProperty(index = 12, type = MESSAGE, implementation = ClientPayload.ClientPayloadConnectType.class)
-    private ClientPayloadConnectType connectType;
-
-    @ProtobufProperty(index = 13, type = MESSAGE, implementation = ClientPayload.ClientPayloadConnectReason.class)
-    private ClientPayloadConnectReason connectReason;
-
-    @ProtobufProperty(index = 14, type = INT32, repeated = true)
-    private List<Integer> shards;
-
-    @ProtobufProperty(index = 15, type = MESSAGE, implementation = DNSSource.class)
-    private DNSSource dnsSource;
-
-    @ProtobufProperty(index = 16, type = UINT32)
-    private Integer connectAttemptCount;
-
-    @ProtobufProperty(index = 17, type = UINT32)
-    private Integer agent;
-
-    @ProtobufProperty(index = 18, type = UINT32)
-    private Integer device;
-
-    @ProtobufProperty(index = 19, type = MESSAGE, implementation = CompanionData.class)
-    private CompanionData regData;
-
-    @ProtobufProperty(index = 20, type = MESSAGE, implementation = ClientPayload.ClientPayloadProduct.class)
-    private ClientPayloadProduct product;
-
-    @ProtobufProperty(index = 21, type = BYTES)
-    private byte[] fbCat;
-
-    @ProtobufProperty(index = 22, type = BYTES)
-    private byte[] fbUserAgent;
-
-    @ProtobufProperty(index = 23, type = BOOL)
-    private boolean oc;
-
-    @ProtobufProperty(index = 30, type = MESSAGE, implementation = ClientPayload.ClientPayloadIOSAppExtension.class)
-    private ClientPayloadIOSAppExtension iosAppExtension;
-
-    @ProtobufProperty(index = 24, name = "lc", type = INT32)
-    private Integer lc;
-
-    @ProtobufProperty(index = 31, name = "fbAppId", type = UINT64)
-    private Long fbAppId;
-
-    @ProtobufProperty(index = 32, name = "fbDeviceId", type = BYTES)
-    private byte[] fbDeviceId;
-
-    @ProtobufProperty(index = 33, name = "pull", type = BOOL)
-    private Boolean pull;
-
-    @ProtobufProperty(index = 34, name = "paddingBytes", type = BYTES)
-    private byte[] paddingBytes;
-
-    @ProtobufProperty(index = 35, name = "bizMarketSegment", type = MESSAGE)
-    private BizMarketSegment bizMarketSegment;
-
-    @ProtobufProperty(index = 36, name = "yearClass", type = INT32)
-    private Integer yearClass;
-
-    @ProtobufProperty(index = 37, name = "memClass", type = INT32)
-    private Integer memClass;
-
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    public enum ClientPayloadClientFeature implements ProtobufMessage {
-        NONE(0);
-        
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static ClientPayloadClientFeature of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
-        }
-    }
-
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("IOSAppExtension")
-    public enum ClientPayloadIOSAppExtension implements ProtobufMessage {
-        SHARE_EXTENSION(0),
-        SERVICE_EXTENSION(1),
-        INTENTS_EXTENSION(2);
-        
-        @Getter
-        private final int index;
-
-        public static ClientPayloadIOSAppExtension of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
-        }
-    }
-
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("ConnectType")
-    public enum ClientPayloadConnectType implements ProtobufMessage {
         CELLULAR_UNKNOWN(0),
         WIFI_UNKNOWN(1),
         CELLULAR_EDGE(100),
@@ -158,56 +49,68 @@ public class ClientPayload implements ProtobufMessage {
         CELLULAR_EHRPD(110),
         CELLULAR_LTE(111),
         CELLULAR_HSPAP(112);
-        
-        @Getter
-        private final int index;
 
-        public static ClientPayloadConnectType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        ClientPayloadConnectType(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
         }
     }
 
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("ConnectReason")
-    public enum ClientPayloadConnectReason implements ProtobufMessage {
+    public enum ClientPayloadConnectReason implements ProtobufEnum {
+
         PUSH(0),
         USER_ACTIVATED(1),
         SCHEDULED(2),
         ERROR_RECONNECT(3),
         NETWORK_SWITCH(4),
         PING_RECONNECT(5);
-        
-        @Getter
-        private final int index;
 
-        public static ClientPayloadConnectReason of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        ClientPayloadConnectReason(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
         }
     }
 
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("Product")
-    public enum ClientPayloadProduct implements ProtobufMessage {
+    public enum ClientPayloadProduct implements ProtobufEnum {
+
         WHATSAPP(0),
         MESSENGER(1);
-        
-        @Getter
-        private final int index;
 
-        public static ClientPayloadProduct of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        ClientPayloadProduct(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
         }
     }
 
-    @AllArgsConstructor
-    public enum BizMarketSegment implements ProtobufMessage {
-        DEFAULT(0),
-        DEVX(1),
-        INBOX(2);
-        
-        @Getter
-        private final int index;
+    public enum ClientPayloadIOSAppExtension implements ProtobufEnum {
+
+        SHARE_EXTENSION(0),
+        SERVICE_EXTENSION(1),
+        INTENTS_EXTENSION(2);
+
+        ClientPayloadIOSAppExtension(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
+        }
     }
 }

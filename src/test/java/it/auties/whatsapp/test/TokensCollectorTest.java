@@ -2,7 +2,6 @@ package it.auties.whatsapp.test;
 
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.util.Spec.Whatsapp;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -20,7 +19,7 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 public class TokensCollectorTest {
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
-    private static final String SOURCE_NAME = "Tokens.java";
+    private static final String SOURCE_NAME = "BinaryTokens.java";
     private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/app.([^\"]*).js\">";
     private static final String SINGLE_BYTE_REGEX = "t.SINGLE_BYTE_TOKEN=\\[\"(.*?)\"]";
     private static final String DICTIONARY_0_REGEX = "const r=\\[\"(.*?)\"]";
@@ -56,9 +55,8 @@ public class TokensCollectorTest {
         System.out.printf("Created tokens class at %s%n", findTokensFile());
     }
 
-    @SneakyThrows
     private Path findTokensFile() {
-        return Path.of("src/main/java/it/auties/whatsapp/binary/Tokens.java").toAbsolutePath();
+        return Path.of("src/main/java/it/auties/whatsapp/binary/BinaryTokens.java").toAbsolutePath();
     }
 
     private String getSingleByteTokens(String javascriptSource) {

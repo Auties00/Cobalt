@@ -1,22 +1,27 @@
 package it.auties.whatsapp.model.interactive;
 
-import lombok.Builder;
-import lombok.NonNull;
+import it.auties.protobuf.annotation.ProtobufConverter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model that represents the jpeg thumbnail of a {@link InteractiveHeader}
  *
  * @param thumbnail the non-null jpeg thumbnail
  */
-@Builder
 public record InteractiveHeaderThumbnail(byte @NonNull [] thumbnail) implements InteractiveHeaderAttachment {
-    /**
-     * Constructs a new thumbnail from a non-null array of bytes
-     *
-     * @param thumbnail the non-null jpeg thumbnail
-     * @return a non-null thumbnail
-     */
-    public static InteractiveHeaderThumbnail of(byte[] thumbnail){
+    @ProtobufConverter
+    public static InteractiveHeaderThumbnail of(byte @NonNull [] thumbnail) {
         return new InteractiveHeaderThumbnail(thumbnail);
+    }
+
+    @ProtobufConverter
+    @Override
+    public byte[] thumbnail() {
+        return thumbnail;
+    }
+
+    @Override
+    public InteractiveHeaderAttachmentType interactiveHeaderType() {
+        return InteractiveHeaderAttachmentType.THUMBNAIL;
     }
 }

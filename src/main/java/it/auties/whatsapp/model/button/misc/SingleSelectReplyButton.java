@@ -1,29 +1,17 @@
 package it.auties.whatsapp.model.button.misc;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents the selection of a row
  */
-@AllArgsConstructor(staticName = "of")
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("SingleSelectReply")
-public class SingleSelectReplyButton implements ProtobufMessage {
-    /**
-     * The id of the selected row
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String rowId;
+public record SingleSelectReplyButton(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String rowId
+) implements ProtobufMessage {
+
 }

@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.privacy;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.util.Clock;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 
@@ -12,13 +12,13 @@ import java.time.ZonedDateTime;
  */
 public sealed interface GdprAccountReport {
     /**
-     * Constructs a pending gdpr report from a timestamp
+     * Constructs a pending gdpr report from a timestampSeconds
      *
-     * @param timestamp the timestamp in seconds
+     * @param timestamp the timestampSeconds in seconds
      * @return a non-null gdpr request
      */
     static Pending ofPending(long timestamp) {
-        return new Pending(timestamp <= 0 ? ZonedDateTime.now().plusDays(3) : Clock.parseSeconds(timestamp));
+        return new Pending(Clock.parseSeconds(timestamp).orElseGet(() -> ZonedDateTime.now().plusDays(3)));
     }
 
     /**

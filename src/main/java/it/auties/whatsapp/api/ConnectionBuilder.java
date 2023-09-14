@@ -2,7 +2,7 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.DefaultControllerSerializer;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 import java.util.UUID;

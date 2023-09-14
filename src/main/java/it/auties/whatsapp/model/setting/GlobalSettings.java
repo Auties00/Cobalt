@@ -1,53 +1,46 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.ChatMediaVisibility;
 import it.auties.whatsapp.model.chat.ChatWallpaper;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.whatsapp.util.Clock;
 
-import static it.auties.protobuf.base.ProtobufType.*;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class GlobalSettings implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = ChatWallpaper.class)
-    private ChatWallpaper lightThemeWallpaper;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ChatMediaVisibility.class)
-    private ChatMediaVisibility mediaVisibility;
-
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ChatWallpaper.class)
-    private ChatWallpaper darkThemeWallpaper;
-
-    @ProtobufProperty(index = 4, name = "autoDownloadWiFi", type = MESSAGE)
-    private AutoDownloadSettings autoDownloadWiFi;
-
-    @ProtobufProperty(index = 5, name = "autoDownloadCellular", type = MESSAGE)
-    private AutoDownloadSettings autoDownloadCellular;
-
-    @ProtobufProperty(index = 6, name = "autoDownloadRoaming", type = MESSAGE)
-    private AutoDownloadSettings autoDownloadRoaming;
-
-    @ProtobufProperty(index = 7, name = "showIndividualNotificationsPreview", type = BOOL)
-    private boolean showIndividualNotificationsPreview;
-
-    @ProtobufProperty(index = 8, name = "showGroupNotificationsPreview", type = BOOL)
-    private boolean showGroupNotificationsPreview;
-
-    @ProtobufProperty(index = 9, name = "disappearingModeDuration", type = INT32)
-    private int disappearingModeDuration;
-
-    @ProtobufProperty(index = 10, name = "disappearingModeTimestamp", type = INT64)
-    private long disappearingModeTimestamp;
-
-    @ProtobufProperty(index = 11, name = "avatarUserSettings", type = MESSAGE)
-    private AvatarUserSettings avatarUserSettings;
+public record GlobalSettings(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        Optional<ChatWallpaper> lightThemeWallpaper,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        ChatMediaVisibility mediaVisibility,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        Optional<ChatWallpaper> darkThemeWallpaper,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        Optional<AutoDownloadSettings> autoDownloadWiFi,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        Optional<AutoDownloadSettings> autoDownloadCellular,
+        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        Optional<AutoDownloadSettings> autoDownloadRoaming,
+        @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
+        boolean showIndividualNotificationsPreview,
+        @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
+        boolean showGroupNotificationsPreview,
+        @ProtobufProperty(index = 9, type = ProtobufType.INT32)
+        int disappearingModeDuration,
+        @ProtobufProperty(index = 10, type = ProtobufType.INT64)
+        long disappearingModeTimestampSeconds,
+        @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
+        AvatarUserSettings avatarUserSettings
+) implements ProtobufMessage {
+    /**
+     * Returns when the disappearing mode was toggled
+     *
+     * @return an optional
+     */
+    public Optional<ZonedDateTime> disappearingModeTimestamp() {
+        return Clock.parseSeconds(disappearingModeTimestampSeconds);
+    }
 }

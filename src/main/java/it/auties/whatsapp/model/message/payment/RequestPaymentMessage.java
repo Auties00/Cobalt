@@ -1,76 +1,52 @@
 package it.auties.whatsapp.model.message.payment;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import it.auties.whatsapp.model.payment.PaymentBackground;
 import it.auties.whatsapp.model.payment.PaymentMoney;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.whatsapp.util.Clock;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.*;
+import java.time.ZonedDateTime;
+import java.util.Optional;
+
 
 /**
  * A model class that represents a message to try to place a {@link PaymentMessage}.
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@Jacksonized
-@Builder
-@Accessors(fluent = true)
-public final class RequestPaymentMessage implements PaymentMessage {
-    /**
-     * The currency code for {@link RequestPaymentMessage#amount}. Follows the ISO-4217 Standard. For
-     * a list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String currency;
+public record RequestPaymentMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String currency,
+        @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
+        long amount1000,
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+        ContactJid requestFrom,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        Optional<MessageContainer> noteMessage,
+        @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
+        long expiryTimestampSeconds,
+        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @NonNull
+        PaymentMoney amount,
+        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        Optional<PaymentBackground> background
+) implements PaymentMessage {
+        /**
+         * Returns when the transaction expires
+         *
+         * @return an optional
+         */
+        public Optional<ZonedDateTime> expiryTimestamp() {
+                return Clock.parseSeconds(expiryTimestampSeconds);
+        }
 
-    /**
-     * The amount of money being paid
-     */
-    @ProtobufProperty(index = 2, type = UINT64)
-    private long amount1000;
-
-    /**
-     * The name of the Whatsapp business account that will receive the money
-     */
-    @ProtobufProperty(index = 3, type = STRING)
-    private String requestFrom;
-
-    /**
-     * The caption message, that is the message below the payment request
-     */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = MessageContainer.class)
-    private MessageContainer noteMessage;
-
-    /**
-     * The timestamp, that is the seconds in seconds since {@link java.time.Instant#EPOCH}, for the
-     * expiration of this payment request
-     */
-    @ProtobufProperty(index = 5, type = UINT64)
-    private long expiryTimestamp;
-
-    /**
-     * The amount being paid
-     */
-    @ProtobufProperty(index = 6, type = MESSAGE, implementation = PaymentMoney.class)
-    private PaymentMoney amount;
-
-    /**
-     * The background of the payment
-     */
-    @ProtobufProperty(index = 7, type = MESSAGE, implementation = PaymentBackground.class)
-    private PaymentBackground background;
-
-    @Override
-    public MessageType type() {
-        return MessageType.REQUEST_PAYMENT;
-    }
+        @Override
+        public MessageType type() {
+                return MessageType.REQUEST_PAYMENT;
+        }
 }

@@ -17,18 +17,19 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.MessageInfoBuilder;
 import it.auties.whatsapp.model.interactive.InteractiveButton;
-import it.auties.whatsapp.model.interactive.InteractiveHeader;
-import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
+import it.auties.whatsapp.model.interactive.InteractiveHeaderSimpleBuilder;
+import it.auties.whatsapp.model.interactive.InteractiveNativeFlowBuilder;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageContainerBuilder;
+import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
 import it.auties.whatsapp.model.message.standard.TextMessage;
-import it.auties.whatsapp.model.exchange.Node;
+import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.util.Smile;
-import lombok.SneakyThrows;
+import it.auties.whatsapp.utils.ConfigUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
@@ -98,12 +99,15 @@ public class ButtonsTest implements Listener {
                 .addListener(this);
     }
 
-    @SneakyThrows
     private <T> T loadGithubParameter(String parameter, Class<T> type) {
-        var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
-        var path = Path.of("ci/%s.gpg".formatted(parameter));
-        var decrypted = ByteArrayHandler.decrypt(Files.readAllBytes(path), passphrase.toCharArray());
-        return Smile.readValue(decrypted, type);
+        try {
+            var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
+            var path = Path.of("ci/%s.gpg".formatted(parameter));
+            var decrypted = ByteArrayHandler.decrypt(Files.readAllBytes(path), passphrase.toCharArray());
+            return Smile.readValue(decrypted, type);
+        }catch (Throwable throwable) {
+            throw new RuntimeException("Cannot read github parameter " + parameter, throwable);
+        }
     }
 
     private void loadConfig() throws IOException {
@@ -141,8 +145,8 @@ public class ButtonsTest implements Listener {
             return;
         }
         log("Sending buttons...");
-        var imageButtons = ButtonsMessage.simpleBuilder()
-                .header(TextMessage.of("Header"))
+        var imageButtons = new ButtonsMessageSimpleBuilder()
+                .header(new ButtonsMessageHeaderText("Header"))
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
@@ -214,7 +218,7 @@ public class ButtonsTest implements Listener {
 
     private List<Button> createButtons() {
         return IntStream.range(0, 3)
-                .mapToObj(index -> ButtonText.of("Button %s".formatted(index)))
+                .mapToObj(index -> new ButtonText("Button %s".formatted(index)))
                 .map(Button::of)
                 .toList();
     }
@@ -226,27 +230,27 @@ public class ButtonsTest implements Listener {
             return;
         }
         var buttons = List.of(ButtonRow.of("First option", "A nice description"), ButtonRow.of("Second option", "A nice description"), ButtonRow.of("Third option", "A nice description"));
-        var section = ButtonSection.of("First section", buttons);
+        var section = new ButtonSection("First section", buttons);
         var otherButtons = List.of(ButtonRow.of("First option", "A nice description"), ButtonRow.of("Second option", "A nice description"), ButtonRow.of("Third option", "A nice description"));
-        var anotherSection = ButtonSection.of("First section", otherButtons);
-        var listMessage = ListMessage.builder()
+        var anotherSection = new ButtonSection("First section", otherButtons);
+        var listMessage = new ListMessageBuilder()
                 .sections(List.of(section, anotherSection))
                 .button("Click me")
                 .title("A nice title")
                 .description("A nice description")
                 .footer("A nice footer")
-                .listType(ListMessage.Type.SINGLE_SELECT)
+                .listType(ListMessageType.SINGLE_SELECT)
                 .build();
-        var container = MessageContainer.builder()
+        var container = new MessageContainerBuilder()
                 .listMessage(listMessage)
                 .textMessage(TextMessage.of("Test"))
                 .build();
-        var keyInfo = MessageKey.builder()
+        var keyInfo = new MessageKeyBuilder()
                 .chatJid(contact)
                 .senderJid(api.store().jid())
                 .fromMe(true)
                 .build();
-        var messageInfo = MessageInfo.builder()
+        var messageInfo = new MessageInfoBuilder()
                 .key(keyInfo)
                 .senderJid(api.store().jid())
                 .message(container)
@@ -263,14 +267,17 @@ public class ButtonsTest implements Listener {
         }
         log("Sending template message...");
         var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
-        var urlButton = HydratedTemplateButton.of(HydratedURLButton.of("Search it", "https://google.com"));
-        var callButton = HydratedTemplateButton.of(HydratedCallButton.of("Call me", contact.toPhoneNumber()));
-        var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder()
+        var urlButton = HydratedTemplateButton.of(new HydratedURLButton("Search it", "https://google.com"));
+        var callButton = HydratedTemplateButton.of(new HydratedCallButton("Call me", contact.toPhoneNumber()));
+        var fourRowTemplate = new HydratedFourRowTemplateSimpleBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(List.of(quickReplyButton, urlButton, callButton))
                 .build();
-        api.sendMessage(contact, TemplateMessage.of(fourRowTemplate)).join();
+        var template = new TemplateMessageSimpleBuilder()
+                .format(fourRowTemplate)
+                .build();
+        api.sendMessage(contact, template).join();
         log("Sent template message");
     }
 
@@ -282,14 +289,14 @@ public class ButtonsTest implements Listener {
             return;
         }
         log("Sending interactive messages..");
-        var nativeFlowMessage = InteractiveNativeFlow.builder()
-                .buttons(List.of(InteractiveButton.of("review_and_pay"), InteractiveButton.of("review_order")))
+        var nativeFlowMessage = new InteractiveNativeFlowBuilder()
+                .buttons(List.of(new InteractiveButton("review_and_pay"), new InteractiveButton("review_order")))
                 .build();
-        var nativeHeader = InteractiveHeader.simpleBuilder()
+        var nativeHeader = new InteractiveHeaderSimpleBuilder()
                 .title("Title")
                 .subtitle("Subtitle")
                 .build();
-        var interactiveMessageWithFlow = InteractiveMessage.simpleBuilder()
+        var interactiveMessageWithFlow = new InteractiveMessageSimpleBuilder()
                 .header(nativeHeader)
                 .content(nativeFlowMessage)
                 .footer("Footer")

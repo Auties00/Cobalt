@@ -1,34 +1,20 @@
 package it.auties.whatsapp.model.message.server;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.STRING;
-
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class StickerSyncRMRMessage implements ServerMessage {
-    @ProtobufProperty(index = 1, type = STRING, repeated = true)
-    private List<String> hash;
-
-    @ProtobufProperty(index = 2, type = STRING)
-    private String rmrSource;
-
-    @ProtobufProperty(index = 3, type = INT64)
-    private long requestTimestamp;
-
+public record StickerSyncRMRMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING, repeated = true)
+        List<String> hash,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        String rmrSource,
+        @ProtobufProperty(index = 3, type = ProtobufType.INT64)
+        long requestTimestamp
+) implements ServerMessage {
     @Override
     public MessageType type() {
         return MessageType.STICKER_SYNC;

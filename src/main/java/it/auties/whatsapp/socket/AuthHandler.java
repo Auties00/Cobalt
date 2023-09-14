@@ -1,29 +1,28 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
-import it.auties.protobuf.base.ProtobufDeserializationException;
+import it.auties.protobuf.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.WebHistoryLength;
-import it.auties.whatsapp.crypto.Handshake;
-import it.auties.whatsapp.model.exchange.Request;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
-import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
-import it.auties.whatsapp.model.signal.auth.Companion.CompanionPropsPlatformType;
+import it.auties.whatsapp.model.signal.auth.CompanionProperties.CompanionPropsPlatformType;
 import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMethod;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Protobuf;
 import it.auties.whatsapp.util.Spec;
-import lombok.RequiredArgsConstructor;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-@RequiredArgsConstructor
+
 class AuthHandler {
     private final SocketHandler socketHandler;
+    AuthHandler(SocketHandler socketHandler) {
+        this.socketHandler = socketHandler;
+    }
 
     protected CompletableFuture<Boolean> login(SocketSession session, byte[] message) {
         try {
@@ -32,7 +31,7 @@ class AuthHandler {
                 return CompletableFuture.completedFuture(false);
             }
 
-            var handshake = new Handshake(socketHandler.keys());
+            var handshake = new SocketHandshake(socketHandler.keys());
             handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
             handshake.updateHash(serverHello.get().ephemeral());
             var sharedEphemeral = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys()
@@ -59,39 +58,41 @@ class AuthHandler {
 
     private Optional<ServerHello> readHandshake(byte[] message) {
         try {
-            var handshakeMessage = Protobuf.readMessage(message, HandshakeMessage.class);
+            var handshakeMessage = HandshakeMessageSpec.decode(message);
             return Optional.ofNullable(handshakeMessage.serverHello());
         }catch (ProtobufDeserializationException exception){
             return Optional.empty();
         }
     }
 
-    private CompletableFuture<Boolean> sendHandshake(SocketSession session, Handshake handshake, HandshakeMessage handshakeMessage) {
-        return Request.of(handshakeMessage)
+    private CompletableFuture<Boolean> sendHandshake(SocketSession session, SocketHandshake handshake, HandshakeMessage handshakeMessage) {
+        return Request.of(HandshakeMessageSpec.encode(handshakeMessage))
                 .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
                 .thenApplyAsync(result -> onHandshakeSent(handshake));
     }
 
-    private boolean onHandshakeSent(Handshake handshake) {
+    private boolean onHandshakeSent(SocketHandshake handshake) {
         socketHandler.keys().clearReadWriteKey();
         handshake.finish();
         return true;
     }
 
-    private HandshakeMessage createHandshakeMessage(Handshake handshake, byte[] encodedKey, byte[] userPayload) {
+    private HandshakeMessage createHandshakeMessage(SocketHandshake handshake, byte[] encodedKey, byte[] userPayload) {
         var encodedPayload = handshake.cipher(userPayload, true);
         var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-        return new HandshakeMessage(clientFinish);
+        return new HandshakeMessageBuilder()
+                .clientFinish(clientFinish)
+                .build();
     }
 
     private byte[] encodeUserPayload() {
         var userAgent = createUserAgent();
         var builder = createUserPayloadBuilder(userAgent);
-        return Protobuf.writeMessage(finishUserPayload(builder));
+        return ClientPayloadSpec.encode(finishUserPayload(builder));
     }
 
     public ClientPayloadBuilder createUserPayloadBuilder(UserAgent userAgent){
-        return ClientPayload.builder()
+        return new ClientPayloadBuilder()
                 .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                 .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                 .userAgent(userAgent);
@@ -99,7 +100,7 @@ class AuthHandler {
 
     private UserAgent createUserAgent() {
         var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
-        return UserAgent.builder()
+        return new UserAgentBuilder()
                 .appVersion(socketHandler.store().version())
                 .osVersion(mobile ? socketHandler.store().device().osVersion().toString() : null)
                 .device(mobile ? socketHandler.store().device().model() : null)
@@ -157,35 +158,36 @@ class AuthHandler {
     }
 
     private DNSSource getDnsSource() {
-        return DNSSource.builder()
+        return new DNSSourceBuilder()
                 .appCached(false)
                 .dnsMethod(DNSSourceDNSResolutionMethod.SYSTEM)
                 .build();
     }
 
-    private CompanionData createRegisterData() {
-        var companion = CompanionData.builder()
+    private CompanionRegistrationData createRegisterData() {
+        var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(socketHandler.store().version().toHash())
-                .id(socketHandler.keys().encodedRegistrationId())
-                .keyType(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
-                .identifier(socketHandler.keys().identityKeyPair().publicKey())
-                .signatureId(socketHandler.keys().signedKeyPair().encodedId())
-                .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
-                .signature(socketHandler.keys().signedKeyPair().signature());
+                .eRegid(socketHandler.keys().encodedRegistrationId())
+                .eKeytype(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
+                .eIdent(socketHandler.keys().identityKeyPair().publicKey())
+                .eSkeyId(socketHandler.keys().signedKeyPair().encodedId())
+                .eSkeyVal(socketHandler.keys().signedKeyPair().keyPair().publicKey())
+                .eSkeySig(socketHandler.keys().signedKeyPair().signature());
         if (socketHandler.store().clientType() == ClientType.WEB) {
-            var props = Protobuf.writeMessage(createCompanionProps());
-            companion.companion(props);
+            var props = createCompanionProps();
+            var encodedProps = props == null ? null : CompanionPropertiesSpec.encode(props);
+            companion.companionProps(encodedProps);
         }
 
         return companion.build();
     }
 
-    private Companion createCompanionProps() {
+    private CompanionProperties createCompanionProps() {
         if (socketHandler.store().clientType() != ClientType.WEB) {
             return null;
         }
 
-        return Companion.builder()
+        return new CompanionPropertiesBuilder()
                 .os(socketHandler.store().name())
                 .platformType(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
                 .requireFullSync(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED)

@@ -5,7 +5,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.util.KeyHelper;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public record GroupBuilder(@NonNull Keys keys) {
     public byte[] createOutgoing(SenderKeyName name) {
@@ -14,8 +14,7 @@ public record GroupBuilder(@NonNull Keys keys) {
             record.addState(KeyHelper.senderKeyId(), 0, KeyHelper.senderKey(), SignalKeyPair.random());
         }
         var state = record.findState();
-        var message = new SignalDistributionMessage(state.id(), state.chainKey().iteration(), state.chainKey()
-                .seed(), state.signingKey().encodedPublicKey());
+        var message = new SignalDistributionMessage(state.id(), state.chainKey().iteration(), state.chainKey().seed(), state.signingKey().encodedPublicKey());
         return message.serialized();
     }
 

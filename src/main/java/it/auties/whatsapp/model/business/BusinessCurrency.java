@@ -1,36 +1,19 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a currency
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class BusinessCurrency implements BusinessLocalizableParameterValue {
-    /**
-     * The currency countryCode
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String currencyCode;
-
-    /**
-     * The amount
-     */
-    @ProtobufProperty(index = 2, type = INT64)
-    private long amount1000;
-
+public record BusinessCurrency(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String currencyCode,
+        @ProtobufProperty(index = 2, type = ProtobufType.INT64)
+        long amount1000
+) implements BusinessLocalizableParameterValue {
     @Override
     public BusinessLocalizableParameterType parameterType() {
         return BusinessLocalizableParameterType.CURRENCY;

@@ -1,29 +1,17 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 
-import static it.auties.protobuf.base.ProtobufType.UINT32;
 
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("HistorySyncConfig")
-public class HistorySyncConfig implements ProtobufMessage {
-    @ProtobufProperty(index = 1, name = "fullSyncDaysLimit", type = UINT32)
-    private int fullSyncDaysLimit;
+public record HistorySyncConfig(
+        @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
+        int fullSyncDaysLimit,
+        @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
+        int fullSyncSizeMbLimit,
+        @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
+        int storageQuotaMb
+) implements ProtobufMessage {
 
-    @ProtobufProperty(index = 2, name = "fullSyncSizeMbLimit", type = UINT32)
-    private int fullSyncSizeMbLimit;
-
-    @ProtobufProperty(index = 3, name = "storageQuotaMb", type = UINT32)
-    private int storageQuotaMb;
 }

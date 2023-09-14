@@ -1,33 +1,23 @@
 package it.auties.whatsapp.model.interactive;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import java.util.Optional;
 
 /**
  * A model class that represents a native flow button
  */
-@AllArgsConstructor(staticName = "of")
-@RequiredArgsConstructor(staticName = "of")
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class InteractiveButton implements ProtobufMessage {
-    /**
-     * The name of this button
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    @NonNull
-    private String name;
-
-    /**
-     * The parameters of this button as json
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String parameters;
+public record InteractiveButton(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String name,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        Optional<String> parameters
+) implements ProtobufMessage {
+        public InteractiveButton(@NonNull String name) {
+                this(name, Optional.empty());
+        }
 }

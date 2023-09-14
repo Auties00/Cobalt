@@ -1,86 +1,61 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.Message;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateMessageMetadata;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Validate;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model class that represents a message holding a vote for a poll inside
  */
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("PollUpdateMessage")
-public final class PollUpdateMessage implements Message {
-    private static final String POLL_NAME = "Poll Vote";
-
-    /**
-     * The jid of the contact who voted in this poll
-     */
+public final class PollUpdateMessage implements Message, EncryptedMessage {
+    @Nullable
     private ContactJid voter;
 
-    /**
-     * The MessageKey of the poll where the user voted
-     */
-    @ProtobufProperty(index = 1, name = "pollCreationMessageKey", type = MESSAGE)
-    private MessageKey pollCreationMessageKey;
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @NonNull
+    private final MessageKey pollCreationMessageKey;
 
-    /**
-     * The actual message where the user voted
-     */
+    @Nullable
     private PollCreationMessage pollCreationMessage;
 
-    /**
-     * All the options, including the previous ones, that the user voted
-     */
-    @Default
-    private List<PollOption> votes = new ArrayList<>();
+    @NonNull
+    private List<PollOption> votes;
 
-    /**
-     * The encryption data necessary to decipher this message
-     */
-    @ProtobufProperty(index = 2, name = "vote", type = MESSAGE)
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @Nullable
     private PollUpdateEncryptedMetadata encryptedMetadata;
 
-    /**
-     * Metadata about this message
-     */
-    @ProtobufProperty(index = 3, name = "metadata", type = MESSAGE)
-    private PollUpdateMessageMetadata metadata;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @Nullable
+    private final PollUpdateMessageMetadata metadata;
 
-    /**
-     * The timestamp of this message
-     */
-    @ProtobufProperty(index = 4, name = "senderTimestampMs", type = INT64)
-    @Default
-    private long senderTimestampMilliseconds = Clock.nowSeconds();
+    @ProtobufProperty(index = 4, type = ProtobufType.INT64)
+    private final long senderTimestampMilliseconds;
+
+    public PollUpdateMessage(@NonNull MessageKey pollCreationMessageKey, @NonNull PollUpdateEncryptedMetadata encryptedMetadata, @Nullable PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds) {
+        this.pollCreationMessageKey = pollCreationMessageKey;
+        this.encryptedMetadata = encryptedMetadata;
+        this.metadata = metadata;
+        this.senderTimestampMilliseconds = senderTimestampMilliseconds;
+        this.votes = new ArrayList<>();
+    }
 
     /**
      * Constructs a new builder to create a PollCreationMessage The result can be later sent using
@@ -90,37 +65,74 @@ public final class PollUpdateMessage implements Message {
      * @param votes the votes to cast: this list will override previous votes, so it can be empty or null if you want to revoke all votes
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimplePollUpdateMessageBuilder", builderMethodName = "simpleBuilder")
-    public static PollUpdateMessage of(@NonNull MessageInfo poll, List<PollOption> votes) {
+    @ProtobufBuilder(className = "PollUpdateMessageSimpleBuilder")
+    static PollUpdateMessage simpleBuilder(@NonNull MessageInfo poll, List<PollOption> votes) {
         Validate.isTrue(poll.message()
                 .type() == MessageType.POLL_CREATION, "Expected a poll, got %s".formatted(poll.message().type()));
-        return PollUpdateMessage.builder()
+        var result = new PollUpdateMessageBuilder()
                 .pollCreationMessageKey(poll.key())
-                .pollCreationMessage((PollCreationMessage) poll.message().content())
-                .votes(Objects.requireNonNullElseGet(votes, List::of))
+                .senderTimestampMilliseconds(Clock.nowMilliseconds())
                 .build();
+        result.setPollCreationMessage((PollCreationMessage) poll.message().content());
+        result.setVotes(votes);
+        return result;
     }
 
-    /**
-     * Returns the time when this message was sent, if available
-     *
-     * @return a non-null optional
-     */
-    public ZonedDateTime senderTimestamp() {
-        return Clock.parseSeconds(senderTimestampMilliseconds);
+    public Optional<PollUpdateEncryptedMetadata> encryptedMetadata() {
+        return Optional.ofNullable(encryptedMetadata);
     }
 
-    /**
-     * Returns the metadata of this message
-     *
-     * @return a non-null optional
-     */
+    public PollUpdateMessage setEncryptedMetadata(PollUpdateEncryptedMetadata encryptedMetadata) {
+        this.encryptedMetadata = encryptedMetadata;
+        return this;
+    }
+
+    public Optional<ContactJid> voter() {
+        return Optional.ofNullable(voter);
+    }
+
+    public PollUpdateMessage setVoter(ContactJid voter) {
+        this.voter = voter;
+        return this;
+    }
+
+    public MessageKey pollCreationMessageKey() {
+        return pollCreationMessageKey;
+    }
+
+    public Optional<PollCreationMessage> pollCreationMessage() {
+        return Optional.ofNullable(pollCreationMessage);
+    }
+
+    public PollUpdateMessage setPollCreationMessage(PollCreationMessage pollCreationMessage) {
+        this.pollCreationMessage = pollCreationMessage;
+        return this;
+    }
+
+    public List<PollOption> votes() {
+        return Collections.unmodifiableList(votes);
+    }
+
+    public PollUpdateMessage setVotes(List<PollOption> votes) {
+        this.votes = votes;
+        return this;
+    }
+
     public Optional<PollUpdateMessageMetadata> metadata(){
         return Optional.ofNullable(metadata);
     }
 
+    public long senderTimestampMilliseconds() {
+        return senderTimestampMilliseconds;
+    }
+
+    public Optional<ZonedDateTime> senderTimestamp() {
+        return Clock.parseSeconds(senderTimestampMilliseconds);
+    }
+
+
     public String secretName() {
-        return POLL_NAME;
+        return "Poll Vote";
     }
 
     @Override

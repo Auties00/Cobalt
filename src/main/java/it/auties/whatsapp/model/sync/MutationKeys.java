@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.sync;
 
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.util.Spec;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;

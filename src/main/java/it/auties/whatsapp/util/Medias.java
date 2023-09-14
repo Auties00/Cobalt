@@ -6,14 +6,13 @@ import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
 import it.auties.whatsapp.util.Spec.Whatsapp;
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -44,20 +43,19 @@ import java.util.stream.IntStream;
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-@UtilityClass
-public class Medias {
-    private final HttpClient CLIENT = HttpClient.newBuilder()
+public final class Medias {
+    private static final HttpClient CLIENT = HttpClient.newBuilder()
             .version(Version.HTTP_1_1)
             .followRedirects(Redirect.ALWAYS)
             .build();
-    private final int PROFILE_PIC_SIZE = 640;
-    private final String DEFAULT_HOST = "mmg.whatsapp.net";
-    private final int THUMBNAIL_SIZE = 32;
-    private final String USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
+    private static final int PROFILE_PIC_SIZE = 640;
+    private static final String DEFAULT_HOST = "mmg.whatsapp.net";
+    private static final int THUMBNAIL_SIZE = 32;
+    private static final String USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
 
-    public byte[] getProfilePic(byte[] file) {
+    public static byte[] getProfilePic(byte[] file) {
         try {
-            try(var inputStream = new ByteArrayInputStream(file)) {
+            try (var inputStream = new ByteArrayInputStream(file)) {
                 var inputImage = ImageIO.read(inputStream);
                 var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
                 var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
@@ -74,22 +72,22 @@ public class Medias {
         }
     }
 
-    public CompletableFuture<byte[]> downloadAsync(String imageUrl) {
+    public static CompletableFuture<byte[]> downloadAsync(String imageUrl) {
         return downloadAsync(URI.create(imageUrl));
     }
 
-    public Optional<byte[]> download(URI imageUri) {
+    public static Optional<byte[]> download(URI imageUri) {
         return downloadAsync(imageUri)
                 .thenApplyAsync(Optional::ofNullable)
                 .exceptionally(ignored -> Optional.empty())
                 .join();
     }
 
-    public CompletableFuture<byte[]> downloadAsync(URI imageUri) {
+    public static CompletableFuture<byte[]> downloadAsync(URI imageUri) {
         return downloadAsync(imageUri, true);
     }
 
-    public CompletableFuture<byte[]> downloadAsync(URI imageUri, boolean userAgent) {
+    public static CompletableFuture<byte[]> downloadAsync(URI imageUri, boolean userAgent) {
         try {
             if (imageUri == null) {
                 return CompletableFuture.completedFuture(null);
@@ -98,7 +96,7 @@ public class Medias {
             var request = HttpRequest.newBuilder()
                     .uri(imageUri)
                     .GET();
-            if(userAgent){
+            if (userAgent) {
                 request.header("User-Agent", USER_AGENT);
             }
             return CLIENT.sendAsync(request.build(), BodyHandlers.ofByteArray()).thenCompose(response -> {
@@ -114,7 +112,7 @@ public class Medias {
         }
     }
 
-    public CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
+    public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
         var uploadData = type.inflatable() ? BytesHelper.compress(file) : file;
         var fileSha256 = Sha256.calculate(uploadData);
@@ -139,16 +137,17 @@ public class Medias {
         });
     }
 
-    private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
+    private static byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
         var hmacInput = BytesHelper.concat(keys.iv(), encryptedMedia);
         var hmac = Hmac.calculateSha256(hmacInput, keys.macKey());
         return Arrays.copyOf(hmac, 10);
     }
 
-    public CompletableFuture<Optional<byte[]>> download(AttachmentProvider provider) {
+    public static CompletableFuture<Optional<byte[]>> download(MutableAttachmentProvider<?> provider) {
         try {
-            Validate.isTrue(provider.mediaUrl() != null || provider.mediaDirectPath() != null, "Missing url and path from media");
-            var url = Objects.requireNonNullElseGet(provider.mediaUrl(), () -> createMediaUrl(provider.mediaDirectPath()));
+            var url = provider.mediaUrl()
+                    .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
+                    .orElseThrow(() -> new NoSuchElementException("Missing url and path from media"));
             var request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .GET()
@@ -160,34 +159,35 @@ public class Medias {
         }
     }
 
-    public String createMediaUrl(@NonNull String directPath) {
+    public static String createMediaUrl(@NonNull String directPath) {
         return "https://%s%s".formatted(DEFAULT_HOST, directPath);
     }
 
-    private Optional<byte[]> handleResponse(AttachmentProvider provider, HttpResponse<byte[]> response) {
+    private static Optional<byte[]> handleResponse(MutableAttachmentProvider<?> provider, HttpResponse<byte[]> response) {
         if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND || response.statusCode() == HttpURLConnection.HTTP_GONE) {
             return Optional.empty();
         }
 
         var body = response.body();
         var sha256 = Sha256.calculate(body);
-        Validate.isTrue(Arrays.equals(sha256, provider.mediaEncryptedSha256()), "Cannot decode media: Invalid sha256 signature", SecurityException.class);
+        Validate.isTrue(provider.mediaEncryptedSha256().isEmpty() || Arrays.equals(sha256, provider.mediaEncryptedSha256().get()),
+                "Cannot decode media: Invalid sha256 signature", SecurityException.class);
         var encryptedMedia = Arrays.copyOf(body, body.length - 10);
         var mediaMac = Arrays.copyOfRange(body, body.length - 10, body.length);
-        var keys = MediaKeys.of(provider.mediaKey(), provider.attachmentType().keyName());
+        var keys = MediaKeys.of(provider.mediaKey().orElseThrow(() -> new NoSuchElementException("Missing media key")), provider.attachmentType().keyName());
         var hmac = calculateMac(encryptedMedia, keys);
         Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
         var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
         return Optional.of(decrypted);
     }
 
-    public Optional<String> getMimeType(String name) {
+    public static Optional<String> getMimeType(String name) {
         return getExtension(name)
                 .map(extension -> Path.of("bogus%s".formatted(extension)))
                 .flatMap(Medias::getMimeType);
     }
 
-    private Optional<String> getExtension(String name) {
+    private static Optional<String> getExtension(String name) {
         if (name == null) {
             return Optional.empty();
         }
@@ -198,7 +198,7 @@ public class Medias {
         return Optional.of(name.substring(index));
     }
 
-    public Optional<String> getMimeType(Path path) {
+    public static Optional<String> getMimeType(Path path) {
         try {
             return Optional.ofNullable(Files.probeContentType(path));
         } catch (IOException exception) {
@@ -206,7 +206,7 @@ public class Medias {
         }
     }
 
-    public Optional<String> getMimeType(byte[] media) {
+    public static Optional<String> getMimeType(byte[] media) {
         try {
             return Optional.ofNullable(URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media)));
         } catch (IOException exception) {
@@ -214,8 +214,8 @@ public class Medias {
         }
     }
 
-    public OptionalInt getPagesCount(byte[] file, String fileType){
-        try(var inputStream = new ByteArrayInputStream(file)) {
+    public static OptionalInt getPagesCount(byte[] file, String fileType) {
+        try (var inputStream = new ByteArrayInputStream(file)) {
             return switch (fileType) {
                 case "docx" -> {
                     var docx = new XWPFDocument(inputStream);
@@ -248,7 +248,7 @@ public class Medias {
         }
     }
 
-    public int getDuration(byte[] file) {
+    public static int getDuration(byte[] file) {
         var input = createTempFile(file);
         try {
             var process = Runtime.getRuntime()
@@ -260,18 +260,18 @@ public class Medias {
             return (int) Float.parseFloat(result);
         } catch (Throwable throwable) {
             return 0;
-        }finally {
+        } finally {
             try {
                 Files.deleteIfExists(input);
-            }catch (IOException ignored){
+            } catch (IOException ignored) {
 
             }
         }
     }
 
-    public MediaDimensions getDimensions(byte[] file, boolean video) {
+    public static MediaDimensions getDimensions(byte[] file, boolean video) {
         try {
-            if(!video){
+            if (!video) {
                 var originalImage = ImageIO.read(new ByteArrayInputStream(file));
                 return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
             }
@@ -281,39 +281,39 @@ public class Medias {
                 var process = Runtime.getRuntime()
                         .exec(new String[]{"ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height", "-of", "json", input.toString()});
                 if (process.waitFor() != 0) {
-                    return MediaDimensions.DEFAULT;
+                    return MediaDimensions.defaultDimensions();
                 }
                 var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
                 var ffprobe = Json.readValue(result, FfprobeResult.class);
                 if (ffprobe.streams() == null || ffprobe.streams().isEmpty()) {
-                    return MediaDimensions.DEFAULT;
+                    return MediaDimensions.defaultDimensions();
                 }
                 return ffprobe.streams().get(0);
-            }finally {
+            } finally {
                 Files.deleteIfExists(input);
             }
         } catch (Exception throwable) {
-            return MediaDimensions.DEFAULT;
+            return MediaDimensions.defaultDimensions();
         }
     }
 
-    private Path createTempFile(byte[] data) {
+    private static Path createTempFile(byte[] data) {
         try {
             var file = Files.createTempFile(UUID.randomUUID().toString(), "");
-            if(data != null) {
+            if (data != null) {
                 Files.write(file, data);
             }
             return file;
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot create temp file", exception);
         }
     }
 
-    public Optional<byte[]> getThumbnail(byte[] file, String fileType){
+    public static Optional<byte[]> getThumbnail(byte[] file, String fileType) {
         return getThumbnail(file, Format.ofDocument(fileType));
     }
 
-    public Optional<byte[]> getThumbnail(byte[] file, Format format) {
+    public static Optional<byte[]> getThumbnail(byte[] file, Format format) {
         return switch (format) {
             case UNKNOWN -> Optional.empty();
             case JPG, PNG -> getImageThumbnail(file, format);
@@ -323,7 +323,7 @@ public class Medias {
         };
     }
 
-    private Optional<byte[]> getImageThumbnail(byte[] file, Format format) {
+    private static Optional<byte[]> getImageThumbnail(byte[] file, Format format) {
         try {
             var image = ImageIO.read(new ByteArrayInputStream(file));
             if (image == null) {
@@ -346,7 +346,7 @@ public class Medias {
         }
     }
 
-    private Optional<byte[]> getVideoThumbnail(byte[] file) {
+    private static Optional<byte[]> getVideoThumbnail(byte[] file) {
         var input = createTempFile(file);
         var output = createTempFile(null);
         try {
@@ -368,7 +368,7 @@ public class Medias {
         }
     }
 
-    private Optional<byte[]> getPdfThumbnail(byte[] file) {
+    private static Optional<byte[]> getPdfThumbnail(byte[] file) {
         try (var document = PDDocument.load(file); var outputStream = new ByteArrayOutputStream()) {
             var renderer = new PDFRenderer(document);
             var image = renderer.renderImage(0);
@@ -384,9 +384,9 @@ public class Medias {
         }
     }
 
-    private Optional<byte[]> getPresentationThumbnail(byte[] file) {
+    private static Optional<byte[]> getPresentationThumbnail(byte[] file) {
         try (var ppt = new XMLSlideShow(new ByteArrayInputStream(file)); var outputStream = new ByteArrayOutputStream()) {
-            if(ppt.getSlides().isEmpty()){
+            if (ppt.getSlides().isEmpty()) {
                 return Optional.empty();
             }
             var thumb = new BufferedImage(Spec.Whatsapp.THUMBNAIL_WIDTH, Spec.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
@@ -395,12 +395,12 @@ public class Medias {
             ppt.getSlides().get(0).draw(graphics2D);
             ImageIO.write(thumb, "jpg", outputStream);
             return Optional.of(outputStream.toByteArray());
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             return Optional.empty();
         }
     }
 
-    public enum Format {
+    public static enum Format {
         UNKNOWN,
         PNG,
         JPG,
@@ -408,8 +408,8 @@ public class Medias {
         PDF,
         PPTX;
 
-        static Format ofDocument(String fileType){
-            return fileType == null ? UNKNOWN : switch (fileType.toLowerCase()){
+        static Format ofDocument(String fileType) {
+            return fileType == null ? UNKNOWN : switch (fileType.toLowerCase()) {
                 case "pdf" -> PDF;
                 case "pptx", "ppt" -> PPTX;
                 default -> UNKNOWN;
@@ -421,7 +421,7 @@ public class Medias {
 
     }
 
-    public Optional<byte[]> getAudioWaveForm(byte[] audioData) {
+    public static Optional<byte[]> getAudioWaveForm(byte[] audioData) {
         try {
             var rawData = toFloatArray(audioData);
             var samples = 64;
@@ -435,7 +435,7 @@ public class Medias {
                     .toList();
             var multiplier = Math.pow(Collections.max(filteredData), -1);
             var normalizedData = filteredData.stream()
-                    .map(data -> (byte)  Math.abs(100 * data * multiplier))
+                    .map(data -> (byte) Math.abs(100 * data * multiplier))
                     .toList();
             var waveform = new byte[normalizedData.size()];
             IntStream.range(0, normalizedData.size())
@@ -446,7 +446,7 @@ public class Medias {
         }
     }
 
-    private float[] toFloatArray(byte[] audioData) {
+    private static float[] toFloatArray(byte[] audioData) {
         var rawData = new float[audioData.length / 4];
         ByteBuffer.wrap(audioData)
                 .asFloatBuffer()

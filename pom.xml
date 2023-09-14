@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
-    <artifactId>whatsappweb4j</artifactId>
-    <version>3.5.2</version>
+    <artifactId>cobalt</artifactId>
+    <version>0.1</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
-    <url>https://github.com/Auties00/WhatsappWeb4j</url>
+    <url>https://github.com/Auties00/Cobalt</url>
     <developers>
         <developer>
             <name>Alessandro Autiero</name>
@@ -21,9 +21,9 @@
         </license>
     </licenses>
     <scm>
-        <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
-        <connection>scm:git:https://github.com/Auties00/WhatsappWeb4j.git</connection>
-        <developerConnection>scm:ssh:https://github.com/Auties00/WhatsappWeb4j.git</developerConnection>
+        <url>https://github.com/Auties00/Cobalt/tree/master</url>
+        <connection>scm:git:https://github.com/Auties00/Cobalt.git</connection>
+        <developerConnection>scm:ssh:https://github.com/Auties00/Cobalt.git</developerConnection>
     </scm>
 
     <distributionManagement>
@@ -41,6 +41,10 @@
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>projectlombok.org</id>
+            <url>https://projectlombok.org/edge-releases</url>
         </repository>
     </repositories>
 
@@ -162,17 +166,18 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
         <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
-        <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
+        <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>2.0.5</protoc.version>
-        <lombok.version>1.18.28</lombok.version>
+        <protoc.version>2.0.0</protoc.version>
+        <lombok.version>edge-SNAPSHOT</lombok.version>
+        <checker.framework.version>3.37.0</checker.framework.version>
         <junit.version>5.10.0-M1</junit.version>
         <jna.version>5.13.0</jna.version>
         <jackson.version>2.15.2</jackson.version>
@@ -205,30 +210,14 @@
                 <version>${maven.versions.version}</version>
             </plugin>
 
-            <!-- Instrument protobuf classes-->
-            <plugin>
-                <groupId>com.github.auties00</groupId>
-                <artifactId>protobuf-serialization-plugin</artifactId>
-                <version>${protoc.version}</version>
-                <executions>
-                    <execution>
-                        <id>protobuf</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>protobuf</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Compile the project-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>19</source>
+                    <target>19</target>
                     <release>${java.version}</release>
                     <useIncrementalCompilation>false</useIncrementalCompilation>
                     <annotationProcessorPaths>
@@ -237,8 +226,14 @@
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </annotationProcessorPath>
+                        <annotationProcessorPath>
+                            <groupId>com.github.auties00</groupId>
+                            <artifactId>protobuf-serialization-plugin</artifactId>
+                            <version>${protoc.version}</version>
+                        </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <failOnError>true</failOnError>
+                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
 
@@ -264,6 +259,11 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+            <version>${checker.framework.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
@@ -410,6 +410,11 @@
             <artifactId>bcpg-jdk15on</artifactId>
             <version>${bouncy.castle.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>protobuf-serialization-plugin</artifactId>
+            <version>${protoc.version}</version>
         </dependency>
     </dependencies>
 </project>

@@ -1,221 +1,252 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.model.*;
-import lombok.*;
-import lombok.Builder.Default;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.whatsapp.model.message.button.ButtonActionLink;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageMetadataProvider;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static it.auties.protobuf.base.ProtobufType.*;
-
 /**
- * A model class that holds the information related to a {@link ContextualMessage}.
+ * A model class that holds the information related to a {@link it.auties.whatsapp.model.message.model.ContextualMessage}.
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@Jacksonized
-@Builder
-@Accessors(fluent = true)
-@ToString(exclude = "quotedMessageChat")
 public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * The jid of the message that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 1, type = STRING)
-    @Setter(AccessLevel.NONE)
-    private String quotedMessageId;
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    @Nullable
+    private final String quotedMessageId;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 2, type = STRING)
-    @Setter(AccessLevel.NONE)
-    private ContactJid quotedMessageSenderJid;
-
-    /**
-     * The contact that sent the message that this ContextualMessage quotes
-     */
-    private Contact quotedMessageSender;
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    @Nullable
+    private final ContactJid quotedMessageSenderJid;
 
     /**
      * The message container that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = MessageContainer.class)
-    @Setter(AccessLevel.NONE)
-    private MessageContainer quotedMessage;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @Nullable
+    private final MessageContainer quotedMessage;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 4, type = STRING)
-    @Setter(AccessLevel.NONE)
-    private ContactJid quotedMessageChatJid;
-
-    /**
-     * The contact that sent the message that this ContextualMessage quotes
-     */
-    @JsonBackReference
-    private Chat quotedMessageChat;
+    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+    @Nullable
+    private final ContactJid quotedMessageChatJid;
 
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
-    @ProtobufProperty(index = 15, type = STRING, repeated = true, implementation = ContactJid.class)
-    @Default
-    private List<ContactJid> mentions = new ArrayList<>();
+    @ProtobufProperty(index = 15, type = ProtobufType.STRING, repeated = true)
+    @NonNull
+    private final List<ContactJid> mentions;
 
     /**
      * Conversation source
      */
-    @ProtobufProperty(index = 18, type = STRING)
-    private String conversionSource;
+    @ProtobufProperty(index = 18, type = ProtobufType.STRING)
+    @Nullable
+    private final String conversionSource;
 
     /**
      * Conversation data
      */
-    @ProtobufProperty(index = 19, type = BYTES)
-    private byte[] conversionData;
+    @ProtobufProperty(index = 19, type = ProtobufType.BYTES)
+    private final byte @Nullable [] conversionData;
 
     /**
      * Conversation delay in endTimeStamp
      */
-    @ProtobufProperty(index = 20, type = UINT32)
-    private int conversionDelaySeconds;
+    @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
+    private final int conversionDelaySeconds;
 
     /**
      * Forwarding score
      */
-    @ProtobufProperty(index = 21, type = UINT32)
-    private int forwardingScore;
+    @ProtobufProperty(index = 21, type = ProtobufType.UINT32)
+    private final int forwardingScore;
 
     /**
      * Whether this ContextualMessage is forwarded
      */
-    @ProtobufProperty(index = 22, type = BOOL)
-    private boolean forwarded;
+    @ProtobufProperty(index = 22, type = ProtobufType.BOOL)
+    private final boolean forwarded;
 
     /**
      * The ad that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 23, type = MESSAGE, implementation = AdReplyInfo.class)
-    private AdReplyInfo quotedAd;
+    @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
+    @Nullable
+    private final AdReplyInfo quotedAd;
 
     /**
      * Placeholder key
      */
-    @ProtobufProperty(index = 24, type = MESSAGE, implementation = MessageKey.class)
-    private MessageKey placeholderKey;
+    @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+    @Nullable
+    private final MessageKey placeholderKey;
 
     /**
      * The expiration in seconds for this ContextualMessage. Only valid if the chat where this message
      * was sent is ephemeral.
      */
-    @ProtobufProperty(index = 25, type = UINT32)
+    @ProtobufProperty(index = 25, type = ProtobufType.UINT32)
     private int ephemeralExpiration;
 
     /**
-     * The timestamp, that is the seconds in seconds since {@link java.time.Instant#EPOCH}, of the
+     * The timestampSeconds, that is the seconds in seconds since {@link java.time.Instant#EPOCH}, of the
      * last modification to the ephemeral settings for the chat where this ContextualMessage was
      * sent.
      */
-    @ProtobufProperty(index = 26, type = INT64)
+    @ProtobufProperty(index = 26, type = ProtobufType.INT64)
     private long ephemeralSettingTimestamp;
 
     /**
      * Ephemeral shared secret
      */
-    @ProtobufProperty(index = 27, type = BYTES)
-    private byte[] ephemeralSharedSecret;
+    @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
+    private final byte @Nullable [] ephemeralSharedSecret;
 
     /**
      * External ad reply
      */
-    @ProtobufProperty(index = 28, type = MESSAGE, implementation = ExternalAdReplyInfo.class)
-    private ExternalAdReplyInfo externalAdReply;
+    @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
+    @Nullable
+    private final ExternalAdReplyInfo externalAdReply;
 
     /**
      * Entry point conversion source
      */
-    @ProtobufProperty(index = 29, type = STRING)
-    private String entryPointConversionSource;
+    @ProtobufProperty(index = 29, type = ProtobufType.STRING)
+    @Nullable
+    private final String entryPointConversionSource;
 
     /**
      * Entry point conversion app
      */
-    @ProtobufProperty(index = 30, type = STRING)
-    private String entryPointConversionApp;
+    @ProtobufProperty(index = 30, type = ProtobufType.STRING)
+    @Nullable
+    private final String entryPointConversionApp;
 
     /**
      * Entry point conversion delay in endTimeStamp
      */
-    @ProtobufProperty(index = 31, type = UINT32)
-    private int entryPointConversionDelaySeconds;
+    @ProtobufProperty(index = 31, type = ProtobufType.UINT32)
+    private final int entryPointConversionDelaySeconds;
 
     /**
      * Disappearing mode
      */
-    @ProtobufProperty(index = 32, type = MESSAGE, implementation = ChatDisappear.class)
-    private ChatDisappear disappearingMode;
+    @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+    @Nullable
+    private final ChatDisappear disappearingMode;
 
     /**
      * Action link
      */
-    @ProtobufProperty(index = 33, type = MESSAGE)
-    private ActionLink actionLink;
+    @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
+    @Nullable
+    private final ButtonActionLink actionLink;
 
     /**
      * Group subject
      */
-    @ProtobufProperty(index = 34, type = STRING)
-    private String groupSubject;
+    @ProtobufProperty(index = 34, type = ProtobufType.STRING)
+    @Nullable
+    private final String groupSubject;
 
     /**
      * Parent group
      */
-    @ProtobufProperty(index = 35, type = STRING)
-    private ContactJid parentGroup;
+    @ProtobufProperty(index = 35, type = ProtobufType.STRING)
+    @Nullable
+    private final ContactJid parentGroup;
 
     /**
      * Trust banner type
      */
-    @ProtobufProperty(index = 37, name = "trustBannerType", type = STRING)
-    private String trustBannerType;
+    @ProtobufProperty(index = 37, type = ProtobufType.STRING)
+    @Nullable
+    private final String trustBannerType;
 
     /**
      * Trust banner action
      */
-    @ProtobufProperty(index = 38, name = "trustBannerAction", type = UINT32)
-    private Integer trustBannerAction;
-
-    private ContextInfo(@NonNull MessageMetadataProvider quotedMessage) {
-        this.quotedMessageId = quotedMessage.id();
-        this.quotedMessageSenderJid = quotedMessage.senderJid();
-        this.quotedMessageSender = quotedMessage.sender().orElse(null);
-        this.quotedMessageChatJid = quotedMessage.chat().jid();
-        this.quotedMessageChat = quotedMessage.chat();
-        this.quotedMessage = quotedMessage.message();
-    }
+    @ProtobufProperty(index = 38, type = ProtobufType.UINT32)
+    private final int trustBannerAction;
 
     /**
-     * Constructs a ContextInfo from a quoted message
-     *
-     * @param quotedMessage the message to quote
-     * @return a non-null context info
+     * The contact that sent the message that this ContextualMessage quotes
      */
+    @Nullable
+    private Contact quotedMessageSender;
+
+    /**
+     * The contact that sent the message that this ContextualMessage quotes
+     */
+    @Nullable
+    @JsonBackReference
+    private Chat quotedMessageChat;
+
+    public ContextInfo(@Nullable String quotedMessageId, @Nullable ContactJid quotedMessageSenderJid, @Nullable MessageContainer quotedMessage, @Nullable ContactJid quotedMessageChatJid, @NonNull List<ContactJid> mentions, @Nullable String conversionSource, byte @Nullable [] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, @Nullable AdReplyInfo quotedAd, @Nullable MessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte @Nullable [] ephemeralSharedSecret, @Nullable ExternalAdReplyInfo externalAdReply, @Nullable String entryPointConversionSource, @Nullable String entryPointConversionApp, int entryPointConversionDelaySeconds, @Nullable ChatDisappear disappearingMode, @Nullable ButtonActionLink actionLink, @Nullable String groupSubject, @Nullable ContactJid parentGroup, @Nullable String trustBannerType, int trustBannerAction) {
+        this.quotedMessageId = quotedMessageId;
+        this.quotedMessageSenderJid = quotedMessageSenderJid;
+        this.quotedMessage = quotedMessage;
+        this.quotedMessageChatJid = quotedMessageChatJid;
+        this.mentions = mentions;
+        this.conversionSource = conversionSource;
+        this.conversionData = conversionData;
+        this.conversionDelaySeconds = conversionDelaySeconds;
+        this.forwardingScore = forwardingScore;
+        this.forwarded = forwarded;
+        this.quotedAd = quotedAd;
+        this.placeholderKey = placeholderKey;
+        this.ephemeralExpiration = ephemeralExpiration;
+        this.ephemeralSettingTimestamp = ephemeralSettingTimestamp;
+        this.ephemeralSharedSecret = ephemeralSharedSecret;
+        this.externalAdReply = externalAdReply;
+        this.entryPointConversionSource = entryPointConversionSource;
+        this.entryPointConversionApp = entryPointConversionApp;
+        this.entryPointConversionDelaySeconds = entryPointConversionDelaySeconds;
+        this.disappearingMode = disappearingMode;
+        this.actionLink = actionLink;
+        this.groupSubject = groupSubject;
+        this.parentGroup = parentGroup;
+        this.trustBannerType = trustBannerType;
+        this.trustBannerAction = trustBannerAction;
+    }
+
     public static ContextInfo of(@NonNull MessageMetadataProvider quotedMessage) {
-        return new ContextInfo(quotedMessage);
+        return new ContextInfoBuilder()
+                .quotedMessageId(quotedMessage.id())
+                .quotedMessage(quotedMessage.message())
+                .quotedMessageChatJid(quotedMessage.chatJid())
+                .quotedMessageSenderJid(quotedMessage.senderJid())
+                .mentions(new ArrayList<>())
+                .build();
+    }
+
+    public static ContextInfo empty() {
+        return new ContextInfoBuilder()
+                .mentions(new ArrayList<>())
+                .build();
     }
 
     /**
@@ -225,6 +256,11 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     public Optional<Contact> quotedMessageSender() {
         return Optional.ofNullable(quotedMessageSender);
+    }
+
+    public ContextInfo setQuotedMessageSender(Contact quotedMessageSender) {
+        this.quotedMessageSender = quotedMessageSender;
+        return this;
     }
 
     /**
@@ -251,7 +287,9 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * @return a boolean
      */
     public boolean hasQuotedMessage() {
-        return quotedMessageId().isPresent() && quotedMessage().isPresent() && quotedMessageChat().isPresent();
+        return quotedMessageId().isPresent()
+                && quotedMessage().isPresent()
+                && quotedMessageChat().isPresent();
     }
 
     /**
@@ -279,5 +317,105 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     public Optional<Chat> quotedMessageChat() {
         return Optional.ofNullable(quotedMessageChat);
+    }
+
+
+    public ContextInfo setQuotedMessageChat(Chat quotedMessageChat) {
+        this.quotedMessageChat = quotedMessageChat;
+        return this;
+    }
+
+    public List<ContactJid> mentions() {
+        return mentions;
+    }
+
+    public Optional<String> conversionSource() {
+        return Optional.ofNullable(conversionSource);
+    }
+
+    public Optional<byte[]> conversionData() {
+        return Optional.ofNullable(conversionData);
+    }
+
+    public int conversionDelaySeconds() {
+        return conversionDelaySeconds;
+    }
+
+    public int forwardingScore() {
+        return forwardingScore;
+    }
+
+    public boolean forwarded() {
+        return forwarded;
+    }
+
+    public Optional<AdReplyInfo> quotedAd() {
+        return Optional.ofNullable(quotedAd);
+    }
+
+    public Optional<MessageKey> placeholderKey() {
+        return Optional.ofNullable(placeholderKey);
+    }
+
+    public int ephemeralExpiration() {
+        return ephemeralExpiration;
+    }
+
+    public ContextInfo setEphemeralExpiration(int ephemeralExpiration) {
+        this.ephemeralExpiration = ephemeralExpiration;
+        return this;
+    }
+
+    public long ephemeralSettingTimestamp() {
+        return ephemeralSettingTimestamp;
+    }
+
+    public ContextInfo setEphemeralSettingTimestamp(long ephemeralSettingTimestamp) {
+        this.ephemeralSettingTimestamp = ephemeralSettingTimestamp;
+        return this;
+    }
+
+    public Optional<byte[]> ephemeralSharedSecret() {
+        return Optional.ofNullable(ephemeralSharedSecret);
+    }
+
+    public Optional<ExternalAdReplyInfo> externalAdReply() {
+        return Optional.ofNullable(externalAdReply);
+    }
+
+    public Optional<String> entryPointConversionSource() {
+        return Optional.ofNullable(entryPointConversionSource);
+    }
+
+    public Optional<String> entryPointConversionApp() {
+        return Optional.ofNullable(entryPointConversionApp);
+    }
+
+    public int entryPointConversionDelaySeconds() {
+        return entryPointConversionDelaySeconds;
+    }
+
+    public Optional<ChatDisappear> disappearingMode() {
+        return Optional.ofNullable(disappearingMode);
+    }
+
+    public Optional<ButtonActionLink> actionLink() {
+        return Optional.ofNullable(actionLink);
+    }
+
+    public Optional<String> groupSubject() {
+        return Optional.ofNullable(groupSubject);
+    }
+
+    public Optional<ContactJid> parentGroup() {
+        return Optional.ofNullable(parentGroup);
+    }
+
+    public Optional<String> trustBannerType() {
+        return Optional.ofNullable(trustBannerType);
+    }
+
+    public int trustBannerAction() {
+        return trustBannerAction;
     }
 }

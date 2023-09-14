@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.whatsapp.model.exchange.Node;
-import lombok.NonNull;
+import it.auties.whatsapp.model.node.Node;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A business hours entry that represents the hours of operation for a single day of the week.

@@ -1,30 +1,18 @@
 package it.auties.whatsapp.model.poll;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents an option in a
  * {@link it.auties.whatsapp.model.message.standard.PollCreationMessage}
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("PollOption")
-public class PollOption implements ProtobufMessage {
-    /**
-     * The name of the option
-     */
-    @ProtobufProperty(index = 1, name = "name", type = STRING)
-    private String name;
+public record PollOption(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String name
+) implements ProtobufMessage {
+
 }

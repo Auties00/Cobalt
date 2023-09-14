@@ -1,38 +1,23 @@
 package it.auties.whatsapp.model.info;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonBody;
 import it.auties.whatsapp.model.button.base.ButtonBodyType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that holds the information related to a native flow.
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class NativeFlowInfo implements ProtobufMessage, ButtonBody, Info {
-    /**
-     * The name of the flow
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String name;
-
-    /**
-     * The params of the flow, encoded as json
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String parameters;
-
+public record NativeFlowInfo(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String name,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String parameters
+) implements Info, ButtonBody, ProtobufMessage {
     @Override
     public ButtonBodyType bodyType() {
         return ButtonBodyType.NATIVE_FLOW;

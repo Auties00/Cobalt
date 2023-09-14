@@ -1,20 +1,13 @@
 package it.auties.whatsapp.model.business;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of hosting that a Whatsapp
  * business account can use
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-public enum BusinessStorageType implements ProtobufMessage {
+public enum BusinessStorageType implements ProtobufEnum {
     /**
      * Hosted on a private server ("On-Premise")
      */
@@ -24,11 +17,13 @@ public enum BusinessStorageType implements ProtobufMessage {
      */
     FACEBOOK(1);
 
-    @Getter
-    private final int index;
+    final int index;
 
-    @JsonCreator
-    public static BusinessStorageType of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+    BusinessStorageType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
+
+    public int index() {
+        return index;
     }
 }

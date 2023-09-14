@@ -1,30 +1,16 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.binary.BinaryPatchType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.BOOL;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.sync.PatchType;
 
 /**
  * A model clas that represents a new pin status for a chat
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class PinAction implements Action {
-    /**
-     * Whether this action marks the chat as pinned
-     */
-    @ProtobufProperty(index = 1, type = BOOL)
-    private boolean pinned;
-
+public record PinAction(
+        @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
+        boolean pinned
+) implements Action {
     /**
      * The name of this action
      *
@@ -51,7 +37,7 @@ public final class PinAction implements Action {
      * @return a non-null string
      */
     @Override
-    public BinaryPatchType actionType() {
+    public PatchType actionType() {
         return null;
     }
 }

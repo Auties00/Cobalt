@@ -1,29 +1,30 @@
 package it.auties.whatsapp.crypto;
 
-import lombok.NonNull;
-import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.GeneralSecurityException;
 
-@UtilityClass
-public class Hmac {
-    private final String HMAC_SHA_256 = "HmacSHA256";
-    private final String HMAC_SHA_512 = "HmacSHA512";
+public final class Hmac {
+    private static final String HMAC_SHA_256 = "HmacSHA256";
+    private static final String HMAC_SHA_512 = "HmacSHA512";
 
-    public byte[] calculateSha256(byte @NonNull [] plain, byte @NonNull [] key) {
+    public static byte[] calculateSha256(byte @NonNull [] plain, byte @NonNull [] key) {
         return calculate(HMAC_SHA_256, plain, key);
     }
 
-    @SneakyThrows
-    private byte[] calculate(String algorithm, byte[] plain, byte[] key) {
-        var localMac = Mac.getInstance(algorithm);
-        localMac.init(new SecretKeySpec(key, algorithm));
-        return localMac.doFinal(plain);
+    private static byte[] calculate(String algorithm, byte[] plain, byte[] key) {
+        try {
+            var localMac = Mac.getInstance(algorithm);
+            localMac.init(new SecretKeySpec(key, algorithm));
+            return localMac.doFinal(plain);
+        }catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot calculate hmac", exception);
+        }
     }
 
-    public byte[] calculateSha512(byte @NonNull [] plain, byte @NonNull [] key) {
+    public static byte[] calculateSha512(byte @NonNull [] plain, byte @NonNull [] key) {
         return calculate(HMAC_SHA_512, plain, key);
     }
 }

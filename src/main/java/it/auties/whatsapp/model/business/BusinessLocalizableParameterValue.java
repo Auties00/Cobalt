@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufMessage;
 
 /**
  * A model class that represents the value of a localizable parameter

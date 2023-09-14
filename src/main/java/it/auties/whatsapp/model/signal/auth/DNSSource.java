@@ -1,49 +1,32 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
+import it.auties.protobuf.model.ProtobufMessage;
 
-import java.util.Arrays;
+import static it.auties.protobuf.model.ProtobufType.BOOL;
+import static it.auties.protobuf.model.ProtobufType.OBJECT;
 
-import static it.auties.protobuf.base.ProtobufType.BOOL;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+public record DNSSource(@ProtobufProperty(index = 15, type = OBJECT) DNSSourceDNSResolutionMethod dnsMethod,
+                        @ProtobufProperty(index = 16, type = BOOL) boolean appCached) implements ProtobufMessage {
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class DNSSource implements ProtobufMessage {
-    @ProtobufProperty(index = 15, type = MESSAGE, implementation = DNSSource.DNSSourceDNSResolutionMethod.class)
-    private DNSSourceDNSResolutionMethod dnsMethod;
+    public enum DNSSourceDNSResolutionMethod implements ProtobufEnum {
 
-    @ProtobufProperty(index = 16, type = BOOL)
-    private boolean appCached;
-
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("DNSResolutionMethod")
-    public enum DNSSourceDNSResolutionMethod implements ProtobufMessage{
         SYSTEM(0),
         GOOGLE(1),
         HARDCODED(2),
         OVERRIDE(3),
         FALLBACK(4);
-        
-        @Getter
-        private final int index;
 
-        @JsonCreator
-        public static DNSSourceDNSResolutionMethod of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        DNSSourceDNSResolutionMethod(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
         }
     }
 }

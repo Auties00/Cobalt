@@ -1,119 +1,69 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
 import it.auties.whatsapp.model.message.button.TemplateFormatterType;
-import it.auties.whatsapp.model.message.standard.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.whatsapp.model.message.standard.DocumentMessage;
+import it.auties.whatsapp.model.message.standard.ImageMessage;
+import it.auties.whatsapp.model.message.standard.LocationMessage;
+import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
-
 /**
  * A model class that represents a hydrated four row template
  */
-@AllArgsConstructor
-@NoArgsConstructor(staticName = "of")
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-@ProtobufName("TemplateMessage.HydratedFourRowTemplate")
-public final class HydratedFourRowTemplate implements TemplateFormatter {
-    /**
-     * The id of the template
-     */
-    @ProtobufProperty(index = 9, type = STRING)
-    private String templateId;
-
-    /**
-     * The document title of this row. This property is defined only if
-     * {@link HydratedFourRowTemplate#titleType()} == {@link HydratedFourRowTemplateTitleType#DOCUMENT}.
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = DocumentMessage.class)
-    private DocumentMessage titleDocument;
-
-    /**
-     * The text title of this row. This property is defined only if
-     * {@link HydratedFourRowTemplate#titleType()} == {@link HydratedFourRowTemplateTitleType#TEXT}.
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String titleText;
-
-    /**
-     * The image title of this row. This property is defined only if
-     * {@link HydratedFourRowTemplate#titleType()} == {@link HydratedFourRowTemplateTitleType#IMAGE}.
-     */
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
-    private ImageMessage titleImage;
-
-    /**
-     * The video title of this row. This property is defined only if
-     * {@link HydratedFourRowTemplate#titleType()} == {@link HydratedFourRowTemplateTitleType#VIDEO}.
-     */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = VideoMessage.class)
-    private VideoMessage titleVideo;
-
-    /**
-     * The location title of this row. This property is defined only if
-     * {@link HydratedFourRowTemplate#titleType()} == {@link HydratedFourRowTemplateTitleType#LOCATION}.
-     */
-    @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
-    private LocationMessage titleLocation;
-
-    /**
-     * The body of this row
-     */
-    @ProtobufProperty(index = 6, type = STRING)
-    private String body;
-
-    /**
-     * The footer of this row
-     */
-    @ProtobufProperty(index = 7, type = STRING)
-    private String footer;
-
-    /**
-     * The buttons of this row
-     */
-    @ProtobufProperty(index = 8, type = MESSAGE, implementation = HydratedTemplateButton.class, repeated = true)
-    private List<HydratedTemplateButton> hydratedButtons;
-
-    /**
-     * Constructs a new builder to create a hydrated four row template
-     *
-     * @param title   the title of this template
-     * @param body    the body of this template
-     * @param footer  the footer of this template
-     * @param buttons the buttons of this template
-     * @return a non-null new template
-     */
-    @Builder(builderClassName = "HydratedFourRowTemplateSimpleBuilder", builderMethodName = "simpleBuilder")
-    private static HydratedFourRowTemplate customBuilder(HydratedFourRowTemplateTitle title, String body, String footer, List<HydratedTemplateButton> buttons, String id) {
-        IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
-        var builder = HydratedFourRowTemplate.builder().body(body).footer(footer).hydratedButtons(buttons).templateId(id);
-        if (title instanceof DocumentMessage documentMessage) {
-            builder.titleDocument(documentMessage);
-        } else if (title instanceof TextMessage textMessage) {
-            builder.titleText(textMessage.text());
-        } else if (title instanceof ImageMessage imageMessage) {
-            builder.titleImage(imageMessage);
-        } else if (title instanceof VideoMessage videoMessage) {
-            builder.titleVideo(videoMessage);
-        } else if (title instanceof LocationMessage locationMessage) {
-            builder.titleLocation(locationMessage);
+public record HydratedFourRowTemplate(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        Optional<DocumentMessage> titleDocument,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        Optional<HydratedFourRowTemplateTextTitle> titleText,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        Optional<ImageMessage> titleImage,
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        Optional<VideoOrGifMessage> titleVideo,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        Optional<LocationMessage> titleLocation,
+        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+        @NonNull
+        String body,
+        @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+        Optional<String> footer,
+        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
+        @NonNull
+        List<HydratedTemplateButton> hydratedButtons,
+        @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+        @NonNull
+        String templateId
+) implements TemplateFormatter {
+    @ProtobufBuilder(className = "HydratedFourRowTemplateSimpleBuilder")
+    static HydratedFourRowTemplate customBuilder(HydratedFourRowTemplateTitle title, String body, String footer, List<HydratedTemplateButton> buttons, String templateId) {
+        var builder = new HydratedFourRowTemplateBuilder()
+                .templateId(templateId)
+                .body(body)
+                .hydratedButtons(getIndexedButtons(buttons))
+                .footer(footer);
+        switch (title) {
+            case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);
+            case HydratedFourRowTemplateTextTitle hydratedFourRowTemplateTextTitle -> builder.titleText(hydratedFourRowTemplateTextTitle);
+            case ImageMessage imageMessage -> builder.titleImage(imageMessage);
+            case VideoOrGifMessage videoMessage -> builder.titleVideo(videoMessage);
+            case LocationMessage locationMessage -> builder.titleLocation(locationMessage);
+            case null -> {}
         }
         return builder.build();
+    }
+
+    private static List<HydratedTemplateButton> getIndexedButtons(List<HydratedTemplateButton> buttons) {
+        return IntStream.range(0, buttons.size()).mapToObj(index -> {
+            var button = buttons.get(index);
+            return new HydratedTemplateButton(button.quickReplyButton(), button.urlButton(), button.callButton(), index + 1);
+        }).toList();
     }
 
     /**
@@ -131,68 +81,24 @@ public final class HydratedFourRowTemplate implements TemplateFormatter {
      *
      * @return an optional
      */
-    public Optional<HydratedFourRowTemplateTitle> title() {
-        if (titleDocument != null) {
-            return Optional.of(titleDocument);
+    public Optional<? extends HydratedFourRowTemplateTitle> title() {
+        if (titleDocument.isPresent()) {
+            return titleDocument;
         }
-        if (titleText != null) {
-            return Optional.of(TextMessage.of(titleText));
+
+        if (titleText.isPresent()) {
+            return titleText;
         }
-        if (titleImage != null) {
-            return Optional.of(titleImage);
+
+        if (titleImage.isPresent()) {
+            return titleImage;
         }
-        if (titleVideo != null) {
-            return Optional.of(titleVideo);
+
+        if (titleVideo.isPresent()) {
+            return titleVideo;
         }
-        if (titleLocation != null) {
-            return Optional.of(titleLocation);
-        }
-        return Optional.empty();
-    }
 
-    /**
-     * Returns the document title of this message if present
-     *
-     * @return an optional
-     */
-    public Optional<DocumentMessage> titleDocument() {
-        return Optional.ofNullable(titleDocument);
-    }
-
-    /**
-     * Returns the text title of this message if present
-     *
-     * @return an optional
-     */
-    public Optional<String> titleText() {
-        return Optional.ofNullable(titleText);
-    }
-
-    /**
-     * Returns the image title of this message if present
-     *
-     * @return an optional
-     */
-    public Optional<ImageMessage> titleImage() {
-        return Optional.ofNullable(titleImage);
-    }
-
-    /**
-     * Returns the video title of this message if present
-     *
-     * @return an optional
-     */
-    public Optional<VideoMessage> titleVideo() {
-        return Optional.ofNullable(titleVideo);
-    }
-
-    /**
-     * Returns the location title of this message if present
-     *
-     * @return an optional
-     */
-    public Optional<LocationMessage> titleLocation() {
-        return Optional.ofNullable(titleLocation);
+        return titleLocation;
     }
 
     @Override

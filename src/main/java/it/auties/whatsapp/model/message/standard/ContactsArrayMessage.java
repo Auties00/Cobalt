@@ -1,44 +1,30 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
+import java.util.Optional;
 
 /**
  * A model class that represents a message holding a list of contacts inside
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true)
-public final class ContactsArrayMessage extends ContextualMessage {
-    /**
-     * The name of the contact the first contact that this message wraps
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String name;
 
-    /**
-     * A list of {@link ContactMessage} that this message wraps
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ContactMessage.class, repeated = true)
-    private List<ContactMessage> contacts;
+public record ContactsArrayMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        @NonNull
+        String name,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
+        @NonNull
+        List<ContactMessage> contacts,
+        @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+        Optional<ContextInfo> contextInfo
+) implements ContextualMessage {
 
     @Override
     public MessageType type() {

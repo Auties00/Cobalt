@@ -1,74 +1,26 @@
 package it.auties.whatsapp.model.message.payment;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Arrays;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.UINT64;
+import java.util.OptionalLong;
 
 /**
  * A model class that represents a message to decline a {@link RequestPaymentMessage}.
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public final class PaymentInviteMessage implements PaymentMessage {
-    /**
-     * The type of service used for this payment
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = PaymentInviteMessage.PaymentInviteMessageServiceType.class)
-    private PaymentInviteMessageServiceType serviceType;
 
-    /**
-     * The timestamp of expiration for this message
-     */
-    @ProtobufProperty(index = 2, type = UINT64)
-    private long expiryTimestamp;
-
+public record PaymentInviteMessage(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @NonNull
+        PaymentServiceType serviceType,
+        @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
+        OptionalLong expiryTimestamp
+) implements PaymentMessage {
     @Override
     public MessageType type() {
         return MessageType.PAYMENT_INVITE;
-    }
-
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("ServiceType")
-    public enum PaymentInviteMessageServiceType implements ProtobufMessage {
-        /**
-         * Unknown service provider
-         */
-        UNKNOWN(0),
-        /**
-         * Facebook Pay
-         */
-        FACEBOOK_PAY(1),
-        /**
-         * Novi
-         */
-        NOVI(2),
-        /**
-         * Upi
-         */
-        UPI(3);
-        
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static PaymentInviteMessageServiceType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
-        }
     }
 }

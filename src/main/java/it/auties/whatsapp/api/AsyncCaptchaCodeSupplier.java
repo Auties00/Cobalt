@@ -1,7 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;

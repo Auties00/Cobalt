@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HexFormat;
 
-@SuppressWarnings("unused")
 public class Spec {
     public final static class Whatsapp {
         public static final byte[] PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
@@ -20,7 +19,7 @@ public class Spec {
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         public static final String IOS_UPDATE_URL = "https://www.whatsapp.com/download?lang=en";
-        public static final Version DEFAULT_MOBILE_IOS_VERSION = new Version("2.23.12.75");
+        public static final Version DEFAULT_MOBILE_IOS_VERSION = Version.of("2.23.12.75");
         private static final byte[] WHATSAPP_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
         private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = BytesHelper.concat(WHATSAPP_HEADER, WEB_VERSION);

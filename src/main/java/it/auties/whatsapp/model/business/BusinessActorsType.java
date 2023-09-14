@@ -1,21 +1,12 @@
 package it.auties.whatsapp.model.business;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of actors of a business account
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-@ProtobufName("ActualActorsType")
-public enum BusinessActorsType implements ProtobufMessage {
+public enum BusinessActorsType implements ProtobufEnum {
     /**
      * Self
      */
@@ -24,11 +15,13 @@ public enum BusinessActorsType implements ProtobufMessage {
      * Bsp
      */
     BSP(1);
-    @Getter
-    private final int index;
 
-    @JsonCreator
-    public static BusinessActorsType of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+    final int index;
+    BusinessActorsType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
+
+    public int index() {
+        return index;
     }
 }

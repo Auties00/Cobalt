@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.interactive.InteractiveCollection;
 import it.auties.whatsapp.model.interactive.InteractiveNativeFlow;
 import it.auties.whatsapp.model.interactive.InteractiveShop;

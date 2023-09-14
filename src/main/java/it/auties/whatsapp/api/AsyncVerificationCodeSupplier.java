@@ -1,6 +1,6 @@
 package it.auties.whatsapp.api;
 
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;

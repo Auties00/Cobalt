@@ -4,6 +4,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
+import it.auties.whatsapp.model.signal.message.SignalMessageSpec;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
@@ -13,7 +14,7 @@ import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -50,17 +51,17 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     private byte[] encrypt(SessionState state, SessionChain chain, byte[] key, byte[] encrypted) {
-        var message = new SignalMessage(state.ephemeralKeyPair().encodedPublicKey(), chain.counter()
-                .get(), state.previousCounter(), encrypted, encodedMessage -> createMessageSignature(state, key, encodedMessage));
-        var serializedMessage = message.serialized();
+        var message = new SignalMessage(state.ephemeralKeyPair().encodedPublicKey(), chain.counter().get(), state.previousCounter(), encrypted);
+        message.setSignature(createMessageSignature(state, key, SignalMessageSpec.encode(message)));
         if (!state.hasPreKey()) {
-            return serializedMessage;
+            return message.serialized();
         }
+
         var preKeyMessage = new SignalPreKeyMessage(
                 state.pendingPreKey().preKeyId(),
                 state.pendingPreKey().baseKey(),
                 keys.identityKeyPair().encodedPublicKey(),
-                serializedMessage,
+                message.serialized(),
                 keys.registrationId(),
                 state.pendingPreKey().signedKeyId()
         );
@@ -140,7 +141,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
                 keys.identityKeyPair().encodedPublicKey(),
                 message.serialized()
         );
-        var hmacInput = Arrays.copyOfRange(hmacValue, 0, hmacValue.length - MAC_LENGTH);;
+        var hmacInput = Arrays.copyOfRange(hmacValue, 0, hmacValue.length - MAC_LENGTH);
         var hmacSha256 = Hmac.calculateSha256(hmacInput, secrets[1]);
         var hmac = Arrays.copyOf(hmacSha256, MAC_LENGTH);
         Validate.isTrue(Arrays.equals(message.signature(), hmac), "message_decryption", HmacValidationException.class);

@@ -1,6 +1,8 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
@@ -9,21 +11,21 @@ import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
-import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
+import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachmentType;
+import it.auties.whatsapp.model.interactive.InteractiveLocationAnnotation;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
+import it.auties.whatsapp.model.message.button.ButtonsMessageHeaderType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.List;
-import java.util.Objects;
+import java.time.ZonedDateTime;
+import java.util.*;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.IMAGE;
 import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static java.util.Objects.requireNonNullElse;
@@ -31,150 +33,129 @@ import static java.util.Objects.requireNonNullElse;
 /**
  * A model class that represents a message holding an image inside
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true)
-public final class ImageMessage extends MediaMessage implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
-    /**
-     * The upload url of the encoded image that this object wraps
-     */
-    @ProtobufProperty(index = 1, type = STRING)
+public final class ImageMessage extends LocalMediaMessage<ImageMessage>
+        implements MediaMessage<ImageMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    @Nullable
     private String mediaUrl;
 
-    /**
-     * The mime type of the image that this object wraps. Most of the seconds this is
-     * {@link MediaMessageType#defaultMimeType()}
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String mimetype;
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    @Nullable
+    private final String mimetype;
+    
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+    @Nullable
+    private final String caption;
+    
+    @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaSha256;
 
-    /**
-     * The caption of this message
-     */
-    @ProtobufProperty(index = 3, type = STRING)
-    private String caption;
+    @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
+    @Nullable
+    private Long mediaSize;
+    
+    @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer height;
 
-    /**
-     * The sha256 of the decoded image that this object wraps
-     */
-    @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] mediaSha256;
-
-    /**
-     * The unsigned size of the decoded image that this object wraps
-     */
-    @ProtobufProperty(index = 5, type = UINT64)
-    private long mediaSize;
-
-    /**
-     * The unsigned height of the decoded image that this object wraps
-     */
-    @ProtobufProperty(index = 6, type = UINT32)
-    private Integer height;
-
-    /**
-     * The unsigned width of the decoded image that this object wraps
-     */
-    @ProtobufProperty(index = 7, type = UINT32)
-    private Integer width;
-
-    /**
-     * The media key of the image that this object wraps
-     */
-    @ProtobufProperty(index = 8, type = BYTES)
-    private byte[] mediaKey;
-
-    /**
-     * The sha256 of the encoded image that this object wraps
-     */
-    @ProtobufProperty(index = 9, type = BYTES)
-    private byte[] mediaEncryptedSha256;
-
-    /**
-     * Interactive annotations
-     */
-    @ProtobufProperty(index = 10, type = MESSAGE, implementation = InteractiveLocationAnnotation.class, repeated = true)
-    private List<InteractiveLocationAnnotation> interactiveAnnotations;
-
-    /**
-     * The direct path to the encoded image that this object wraps
-     */
-    @ProtobufProperty(index = 11, type = STRING)
+    @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer width;
+    
+    @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaKey;
+    
+    @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
+    private byte @Nullable [] mediaEncryptedSha256;
+    
+    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT, repeated = true)
+    @NonNull
+    private final List<InteractiveLocationAnnotation> interactiveAnnotations;
+    
+    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
+    @Nullable
     private String mediaDirectPath;
+    
+    @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
+    @Nullable
+    private final Long mediaKeyTimestampSeconds;
+    
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    private final byte @Nullable [] thumbnail;
 
-    /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for
-     * {@link ImageMessage#mediaKey()}
-     */
-    @ProtobufProperty(index = 12, type = UINT64)
-    private long mediaKeyTimestamp;
+    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @Nullable
+    private final ContextInfo contextInfo;
+    
+    @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
+    private final byte @Nullable [] firstScanSidecar;
+    
+    @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer firstScanLength;
+    
+    @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
+    @Nullable
+    private final Integer experimentGroupId;
+    
+    @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
+    private final byte @Nullable [] scansSidecar;
+    
+    @ProtobufProperty(index = 22, type = ProtobufType.UINT32, repeated = true)
+    @NonNull
+    private final List<Integer> scanLengths;
 
-    /**
-     * The thumbnail for this image message encoded as jpeg in an array of bytes
-     */
-    @ProtobufProperty(index = 16, type = BYTES)
-    private byte[] thumbnail;
+    @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
+    private final byte @Nullable [] midQualityFileSha256;
+    
+    @ProtobufProperty(index = 24, type = ProtobufType.BYTES)
+    private final byte @Nullable [] midQualityFileEncSha256;
 
-    /**
-     * The sidecar for the first sidecar
-     */
-    @ProtobufProperty(index = 18, type = BYTES)
-    private byte[] firstScanSidecar;
+    @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
+    private final boolean viewOnce;
 
-    /**
-     * The codeLength of the first scan
-     */
-    @ProtobufProperty(index = 19, type = UINT32)
-    private Integer firstScanLength;
+    @ProtobufProperty(index = 26, type = ProtobufType.STRING)
+    @Nullable
+    private final String thumbnailDirectPath;
 
-    /**
-     * Experiment Group Id
-     */
-    @ProtobufProperty(index = 20, type = UINT32)
-    private Integer experimentGroupId;
+    @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
+    private final byte @Nullable [] thumbnailSha256;
 
-    /**
-     * The sidecar for the scans of the decoded image
-     */
-    @ProtobufProperty(index = 21, type = BYTES)
-    private byte[] scansSidecar;
+    @ProtobufProperty(index = 28, type = ProtobufType.BYTES)
+    private final byte @Nullable [] thumbnailEncSha256;
 
-    /**
-     * The codeLength of each scan of the decoded image
-     */
-    @ProtobufProperty(index = 22, type = UINT32, repeated = true)
-    private List<Integer> scanLengths;
+    @ProtobufProperty(index = 29, type = ProtobufType.STRING)
+    @Nullable
+    private final String staticUrl;
 
-    /**
-     * The sha256 of the decoded image in medium quality
-     */
-    @ProtobufProperty(index = 23, type = BYTES)
-    private byte[] midQualityFileSha256;
-
-    /**
-     * The sha256 of the encoded image in medium quality
-     */
-    @ProtobufProperty(index = 24, type = BYTES)
-    private byte[] midQualityFileEncSha256;
-
-    @ProtobufProperty(index = 25, name = "viewOnce", type = BOOL)
-    private boolean viewOnce;
-
-    @ProtobufProperty(index = 26, name = "thumbnailDirectPath", type = STRING)
-    private String thumbnailDirectPath;
-
-    @ProtobufProperty(index = 27, name = "thumbnailSha256", type = BYTES)
-    private byte[] thumbnailSha256;
-
-    @ProtobufProperty(index = 28, name = "thumbnailEncSha256", type = BYTES)
-    private byte[] thumbnailEncSha256;
-
-    @ProtobufProperty(index = 29, name = "staticUrl", type = STRING)
-    private String staticUrl;
+    public ImageMessage(@Nullable String mediaUrl, @Nullable String mimetype, @Nullable String caption, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer height, @Nullable Integer width, byte @Nullable [] mediaKey, byte @Nullable [] mediaEncryptedSha256, @NonNull List<InteractiveLocationAnnotation> interactiveAnnotations, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, byte @Nullable [] firstScanSidecar, @Nullable Integer firstScanLength, @Nullable Integer experimentGroupId, byte @Nullable [] scansSidecar, @NonNull List<Integer> scanLengths, byte @Nullable [] midQualityFileSha256, byte @Nullable [] midQualityFileEncSha256, boolean viewOnce, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, @Nullable String staticUrl) {
+        this.mediaUrl = mediaUrl;
+        this.mimetype = mimetype;
+        this.caption = caption;
+        this.mediaSha256 = mediaSha256;
+        this.mediaSize = mediaSize;
+        this.height = height;
+        this.width = width;
+        this.mediaKey = mediaKey;
+        this.mediaEncryptedSha256 = mediaEncryptedSha256;
+        this.interactiveAnnotations = interactiveAnnotations;
+        this.mediaDirectPath = mediaDirectPath;
+        this.mediaKeyTimestampSeconds = mediaKeyTimestampSeconds;
+        this.thumbnail = thumbnail;
+        this.contextInfo = contextInfo;
+        this.firstScanSidecar = firstScanSidecar;
+        this.firstScanLength = firstScanLength;
+        this.experimentGroupId = experimentGroupId;
+        this.scansSidecar = scansSidecar;
+        this.scanLengths = scanLengths;
+        this.midQualityFileSha256 = midQualityFileSha256;
+        this.midQualityFileEncSha256 = midQualityFileEncSha256;
+        this.viewOnce = viewOnce;
+        this.thumbnailDirectPath = thumbnailDirectPath;
+        this.thumbnailSha256 = thumbnailSha256;
+        this.thumbnailEncSha256 = thumbnailEncSha256;
+        this.staticUrl = staticUrl;
+    }
 
     /**
      * Constructs a new builder to create a ImageMessage. The result can be later sent using
@@ -188,26 +169,103 @@ public final class ImageMessage extends MediaMessage implements InteractiveHeade
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "simpleBuilder")
-    private static ImageMessage customBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+    @ProtobufBuilder(className = "ImageMessageSimpleBuilder")
+    static ImageMessage simpleBuilder(byte @Nullable [] media, String mimeType, String caption, byte @Nullable [] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
-        return ImageMessage.builder()
-                .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowSeconds())
+        return new ImageMessageBuilder()
+                .mediaKeyTimestampSeconds(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, JPG).orElse(null))
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .build();
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
+                .build()
+                .setDecodedMedia(media);
     }
 
-    /**
-     * Returns the media type of the image that this object wraps
-     *
-     * @return {@link MediaMessageType#IMAGE}
-     */
+
+    @Override
+    public Optional<String> mediaUrl() {
+        return Optional.ofNullable(mediaUrl);
+    }
+
+    @Override
+    public ImageMessage setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+        return this;
+    }
+
+    @Override
+    public Optional<String> mediaDirectPath() {
+        return Optional.ofNullable(mediaDirectPath);
+    }
+
+    @Override
+    public ImageMessage setMediaDirectPath(String mediaDirectPath) {
+        this.mediaDirectPath = mediaDirectPath;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaKey() {
+        return Optional.ofNullable(mediaKey);
+    }
+
+    @Override
+    public ImageMessage setMediaKey(byte[] bytes) {
+        this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaSha256() {
+        return Optional.ofNullable(mediaSha256);
+    }
+
+    @Override
+    public ImageMessage setMediaSha256(byte[] bytes) {
+        this.mediaSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public Optional<byte[]> mediaEncryptedSha256() {
+        return Optional.ofNullable(mediaEncryptedSha256);
+    }
+
+    @Override
+    public ImageMessage setMediaEncryptedSha256(byte[] bytes) {
+        this.mediaEncryptedSha256 = bytes;
+        return this;
+    }
+
+    @Override
+    public OptionalLong mediaSize() {
+        return mediaSize == null ? OptionalLong.empty() : OptionalLong.of(mediaSize);
+    }
+
+    @Override
+    public OptionalLong mediaKeyTimestampSeconds() {
+        return Clock.parseTimestamp(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public Optional<ZonedDateTime> mediaKeyTimestamp() {
+        return Clock.parseSeconds(mediaKeyTimestampSeconds);
+    }
+
+    @Override
+    public ImageMessage setMediaSize(long mediaSize) {
+        this.mediaSize = mediaSize;
+        return this;
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+    
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.IMAGE;
@@ -221,5 +279,87 @@ public final class ImageMessage extends MediaMessage implements InteractiveHeade
     @Override
     public HydratedFourRowTemplateTitleType hydratedTitleType() {
         return HydratedFourRowTemplateTitleType.IMAGE;
+    }
+
+    @Override
+    public InteractiveHeaderAttachmentType interactiveHeaderType() {
+        return InteractiveHeaderAttachmentType.IMAGE;
+    }
+
+    @Override
+    public ButtonsMessageHeaderType buttonHeaderType() {
+        return ButtonsMessageHeaderType.IMAGE;
+    }
+
+    public Optional<String> mimetype() {
+        return Optional.ofNullable(mimetype);
+    }
+
+    public Optional<String> caption() {
+        return Optional.ofNullable(caption);
+    }
+
+    public OptionalInt height() {
+        return height == null ? OptionalInt.empty() : OptionalInt.of(height);
+    }
+
+    public OptionalInt width() {
+        return width == null ? OptionalInt.empty() : OptionalInt.of(width);
+    }
+
+    public List<InteractiveLocationAnnotation> interactiveAnnotations() {
+        return Collections.unmodifiableList(interactiveAnnotations);
+    }
+
+    public Optional<byte[]> thumbnail() {
+        return Optional.ofNullable(thumbnail);
+    }
+
+    public Optional<byte[]> firstScanSidecar() {
+        return Optional.ofNullable(firstScanSidecar);
+    }
+
+    public OptionalInt firstScanLength() {
+        return firstScanLength == null ? OptionalInt.empty() : OptionalInt.of(firstScanLength);
+    }
+
+    public OptionalInt experimentGroupId() {
+        return experimentGroupId == null ? OptionalInt.empty() : OptionalInt.of(experimentGroupId);
+    }
+
+    public Optional<byte[]> scansSidecar() {
+        return Optional.ofNullable(scansSidecar);
+    }
+
+    public List<Integer> scanLengths() {
+        return Collections.unmodifiableList(scanLengths);
+    }
+
+    public Optional<byte[]> midQualityFileSha256() {
+        return Optional.ofNullable(midQualityFileSha256);
+    }
+
+    public Optional<byte[]> midQualityFileEncSha256() {
+        return Optional.ofNullable(midQualityFileEncSha256);
+    }
+
+    public boolean viewOnce() {
+        return viewOnce;
+    }
+
+    public Optional<String> thumbnailDirectPath() {
+        return Optional.ofNullable(thumbnailDirectPath);
+    }
+
+    public Optional<byte[]> thumbnailSha256() {
+        return Optional.ofNullable(thumbnailSha256);
+    }
+
+    public Optional<byte[]> thumbnailEncSha256() {
+        return Optional.ofNullable(thumbnailEncSha256);
+    }
+
+    public Optional<String> staticUrl() {
+        return Optional.ofNullable(staticUrl);
     }
 }

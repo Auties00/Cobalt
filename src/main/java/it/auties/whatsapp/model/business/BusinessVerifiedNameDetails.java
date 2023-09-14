@@ -1,53 +1,40 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.util.Clock;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
-import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a verified name
  */
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class BusinessVerifiedNameDetails implements ProtobufMessage {
+public record BusinessVerifiedNameDetails(
+        @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
+        long serial,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        @NonNull
+        String issuer,
+        @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+        @NonNull
+        String name,
+        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
+        @NonNull
+        List<BusinessLocalizedName> localizedNames,
+        @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
+        long issueTimeSeconds
+) implements ProtobufMessage {
     /**
-     * The verified serial
+     * Returns this object's timestampSeconds
+     *
+     * @return an optional
      */
-    @ProtobufProperty(index = 1, type = UINT64)
-    private long serial;
-
-    /**
-     * The issuer of this certificate
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String issuer;
-
-    /**
-     * The verified name
-     */
-    @ProtobufProperty(index = 4, type = STRING)
-    private String name;
-
-    /**
-     * The localizable names
-     */
-    @ProtobufProperty(index = 8, type = MESSAGE, implementation = BusinessLocalizedName.class, repeated = true)
-    private List<BusinessLocalizedName> localizedNames;
-
-    /**
-     * The timestamp when this certificate was issued
-     */
-    @ProtobufProperty(index = 10, type = UINT64)
-    private Long issueTime;
+    public Optional<ZonedDateTime> issueTime() {
+        return Clock.parseSeconds(issueTimeSeconds);
+    }
 }

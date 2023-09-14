@@ -1,11 +1,6 @@
 package it.auties.whatsapp.model.mobile;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import lombok.Builder;
-import lombok.extern.jackson.Jacksonized;
-
-import java.util.Base64;
 
 /**
  * A model that represents a response from Whatsapp regarding the registration of a phone number
@@ -29,8 +24,6 @@ import java.util.Base64;
  * @param imageCaptcha        the image captcha to solve, only available for business accounts
  * @param audioCaptcha        the audio captcha to solve, only available for business accounts
  */
-@Builder
-@Jacksonized
 public record VerificationCodeResponse(@JsonProperty("login") PhoneNumber number, @JsonProperty("lid") long lid,
                                        @JsonProperty("status") VerificationCodeStatus status,
                                        @JsonProperty("reason") VerificationCodeError errorReason,
@@ -46,53 +39,8 @@ public record VerificationCodeResponse(@JsonProperty("login") PhoneNumber number
                                        @JsonProperty("wa_old_wait") long oldWait,
                                        @JsonProperty("security_code_set") boolean securityCodeSet,
                                        @JsonProperty("email_otp_eligible") boolean whatsappOtpEligible,
-                                       @JsonProperty("image_blob") byte[] imageCaptcha,
-                                       @JsonProperty("audio_blob") byte[] audioCaptcha
+                                       @JsonProperty("image_blob") String imageCaptcha,
+                                       @JsonProperty("audio_blob") String audioCaptcha
 ) {
-    public static class VerificationCodeResponseBuilder {
-        @JsonSetter("email_otp_wait")
-        private void whatsappOtpWait(String whatsappOtpWait) {
-            try {
-                this.whatsappOtpWait = Long.parseLong(whatsappOtpWait);
-            } catch (NumberFormatException exception) {
-                this.whatsappOtpWait = -1;
-            }
-        }
 
-        @JsonSetter("voice_wait")
-        private void voiceWait(String voiceWait) {
-            try {
-                this.voiceWait = Long.parseLong(voiceWait);
-            } catch (NumberFormatException exception) {
-                this.voiceWait = -1;
-            }
-        }
-
-        @JsonSetter("sms_wait")
-        private void smsWait(String smsWait) {
-            try {
-                this.smsWait = Long.parseLong(smsWait);
-            } catch (NumberFormatException exception) {
-                this.smsWait = -1;
-            }
-        }
-
-        @JsonSetter("image_blob")
-        private void imageCaptcha(String imageCaptcha) {
-            if (imageCaptcha == null) {
-                return;
-            }
-
-            this.imageCaptcha = Base64.getDecoder().decode(imageCaptcha);
-        }
-
-        @JsonSetter("audio_blob")
-        private void audioCaptcha(String audioCaptcha) {
-            if (imageCaptcha == null) {
-                return;
-            }
-
-            this.audioCaptcha = Base64.getDecoder().decode(audioCaptcha);
-        }
-    }
 }

@@ -1,35 +1,11 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
 
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.model.ProtobufType.OBJECT;
 
-@AllArgsConstructor
-@Data
-@Builder
-@Jacksonized
-@Accessors(fluent = true)
-public class HandshakeMessage implements ProtobufMessage {
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ClientHello.class)
-    private ClientHello clientHello;
-
-    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ServerHello.class)
-    private ServerHello serverHello;
-
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = ClientFinish.class)
-    private ClientFinish clientFinish;
-
-    public HandshakeMessage(ClientHello clientHello) {
-        this.clientHello = clientHello;
-    }
-
-    public HandshakeMessage(ClientFinish clientFinish) {
-        this.clientFinish = clientFinish;
-    }
+public record HandshakeMessage(@ProtobufProperty(index = 2, type = OBJECT) ClientHello clientHello,
+                               @ProtobufProperty(index = 3, type = OBJECT) ServerHello serverHello,
+                               @ProtobufProperty(index = 4, type = OBJECT) ClientFinish clientFinish) implements ProtobufMessage {
 }

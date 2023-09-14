@@ -1,24 +1,25 @@
 package it.auties.whatsapp.crypto;
 
-import lombok.NonNull;
-import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
-@UtilityClass
-public class Sha256 {
-    private final String SHA_256 = "SHA-256";
+public final class Sha256 {
+    private static final String SHA_256 = "SHA-256";
 
-    public byte[] calculate(@NonNull String data) {
+    public static byte[] calculate(@NonNull String data) {
         return calculate(data.getBytes(StandardCharsets.UTF_8));
     }
 
-    @SneakyThrows
-    public byte[] calculate(byte @NonNull [] data) {
-        var digest = MessageDigest.getInstance(SHA_256);
-        digest.update(data);
-        return digest.digest();
+    public static byte[] calculate(byte @NonNull [] data) {
+        try {
+            var digest = MessageDigest.getInstance(SHA_256);
+            digest.update(data);
+            return digest.digest();
+        }catch (NoSuchAlgorithmException exception) {
+            throw new UnsupportedOperationException("Missing sha256 implementation");
+        }
     }
 }

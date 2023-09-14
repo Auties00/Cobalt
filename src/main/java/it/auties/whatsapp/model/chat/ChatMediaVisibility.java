@@ -1,20 +1,13 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-
-import java.util.Arrays;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of media visibility that can be
  * set for a chat
  */
-@AllArgsConstructor
-@Accessors(fluent = true)
-public enum ChatMediaVisibility implements ProtobufMessage {
+public enum ChatMediaVisibility implements ProtobufEnum {
     /**
      * Default
      */
@@ -28,11 +21,12 @@ public enum ChatMediaVisibility implements ProtobufMessage {
      */
     ON(2);
 
-    @Getter
-    private final int index;
+    final int index;
+    ChatMediaVisibility(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
 
-    @JsonCreator
-    public static ChatMediaVisibility of(int index) {
-        return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+    public int index() {
+        return index;
     }
 }

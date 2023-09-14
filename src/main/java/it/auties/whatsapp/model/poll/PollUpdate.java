@@ -1,45 +1,36 @@
 package it.auties.whatsapp.model.poll;
 
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
-import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageKey;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.whatsapp.util.Clock;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
 /**
  * A model class that represents metadata about a
  * {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage} Not currently used, so it's
  * package private
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-@Jacksonized
-@Builder
-@ProtobufName("PollUpdate")
-public class PollUpdate implements ProtobufMessage {
+public record PollUpdate(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @NonNull
+        MessageKey pollUpdateMessageKey,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @NonNull
+        PollUpdateEncryptedOptions vote,
+        @ProtobufProperty(index = 3, type = ProtobufType.INT64)
+        long senderTimestampMilliseconds
+) implements ProtobufMessage {
     /**
-     * The message key
+     * Returns when the update was sent
+     *
+     * @return an optional
      */
-    @ProtobufProperty(index = 1, name = "pollUpdateMessageKey", type = MESSAGE)
-    private MessageKey pollUpdateMessageKey;
-
-    /**
-     * The vote
-     */
-    @ProtobufProperty(index = 2, name = "vote", type = MESSAGE)
-    private PollUpdateEncryptedOptions vote;
-
-    /**
-     * The timestamp
-     */
-    @ProtobufProperty(index = 3, name = "senderTimestampMs", type = INT64)
-    private long senderTimestampMilliseconds;
+    public Optional<ZonedDateTime> senderTimestamp() {
+        return Clock.parseMilliseconds(senderTimestampMilliseconds);
+    }
 }
