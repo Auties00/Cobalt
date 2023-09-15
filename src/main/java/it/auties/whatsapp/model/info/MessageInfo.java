@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -17,6 +18,7 @@ import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -115,10 +117,15 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Protobu
     private final ContactJid originalSender;
     @ProtobufProperty(index = 52, type = ProtobufType.UINT64)
     private long revokeTimestampSeconds;
+
+    @JsonBackReference
+    @Nullable
     private Chat chat;
+
+    @Nullable
     private Contact sender;
 
-    public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer message, long timestampSeconds, @NonNull MessageStatus status, ContactJid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, StubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, @NonNull MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, ContactJid originalSender, long revokeTimestampSeconds, Chat chat, Contact sender) {
+    public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer message, long timestampSeconds, @NonNull MessageStatus status, ContactJid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, StubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, @NonNull MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, ContactJid originalSender, long revokeTimestampSeconds, @Nullable Chat chat, @Nullable Contact sender) {
         this.key = key;
         this.message = message;
         this.timestampSeconds = timestampSeconds;

@@ -402,6 +402,17 @@ public class Whatsapp {
      * Send a reaction to a message
      *
      * @param message  the non-null message
+     * @param reaction the reaction to send, null if you want to remove the reaction
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, Emoji reaction) {
+        return sendReaction(message, Objects.toString(reaction));
+    }
+
+    /**
+     * Send a reaction to a message
+     *
+     * @param message  the non-null message
      * @param reaction the reaction to send, null if you want to remove the reaction. If a string that
      *                 isn't an emoji supported by Whatsapp is used, it will not get displayed
      *                 correctly. Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emoji)} if
@@ -421,6 +432,17 @@ public class Whatsapp {
                 .timestampSeconds(Instant.now().toEpochMilli())
                 .build();
         return sendMessage(message.chatJid(), reactionMessage);
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull String message) {
+        return sendMessage(chat, MessageContainer.of(message));
     }
 
     /**
@@ -729,68 +751,6 @@ public class Whatsapp {
                 .period()
                 .toSeconds();
         contextInfo.setEphemeralExpiration((int) period);
-    }
-
-    /**
-     * Send a reaction to a message
-     *
-     * @param message  the non-null message
-     * @param reaction the reaction to send, null if you want to remove the reaction
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, Emoji reaction) {
-        return sendReaction(message, Objects.toString(reaction));
-    }
-
-    /**
-     * Builds and sends a message from a chat and a message
-     *
-     * @param chat    the chat where the message should be sent
-     * @param message the message to send
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull String message) {
-        return sendMessage(chat, MessageContainer.of(message));
-    }
-
-    /**
-     * Builds and sends a message from a chat, a message and a quoted message
-     *
-     * @param chat          the chat where the message should be sent
-     * @param message       the message to send
-     * @param quotedMessage the quoted message
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull String message, @NonNull MessageMetadataProvider quotedMessage) {
-        return sendMessage(chat, TextMessage.of(message), quotedMessage);
-    }
-
-    /**
-     * Builds and sends a message from a chat, a message and a quoted message
-     *
-     * @param chat          the chat where the message should be sent
-     * @param message       the message to send
-     * @param quotedMessage the quoted message
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull ContextualMessage message, @NonNull MessageMetadataProvider quotedMessage) {
-        Validate.isTrue(!quotedMessage.message().isEmpty(), "Cannot quote an empty message");
-        Validate.isTrue(!quotedMessage.message().hasCategory(MessageCategory.SERVER), "Cannot quote a server message");
-        return sendMessage(chat, message, ContextInfo.of(quotedMessage));
-    }
-
-    /**
-     * Builds and sends a message from a chat, a message and a context
-     *
-     * @param chat        the chat where the message should be sent
-     * @param message     the message to send
-     * @param contextInfo the context of the message to send
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
-        // FIXME: 14/09/23
-        // message.contextInfo(contextInfo);
-        return sendMessage(chat, message);
     }
 
     /**

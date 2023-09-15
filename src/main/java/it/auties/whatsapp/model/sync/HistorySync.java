@@ -22,7 +22,7 @@ public record HistorySync(@ProtobufProperty(index = 1, type = OBJECT, required =
                           @ProtobufProperty(index = 9, type = BYTES) byte[] threadIdUserSecret,
                           @ProtobufProperty(index = 10, type = UINT32) int threadDsTimeframeOffset,
                           @ProtobufProperty(index = 11, type = OBJECT, repeated = true)
-                          List<RecentStickerMetadata> recentStickers,
+                          List<StickerMetadata> recentStickers,
                           @ProtobufProperty(index = 12, type = OBJECT, repeated = true)
                           List<PastParticipants> pastParticipants) implements ProtobufMessage {
     public HistorySync {

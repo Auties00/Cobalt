@@ -118,7 +118,9 @@ public class SocketSession {
                     break;
                 }
                 var message = new byte[length];
-                input.readFully(message);
+                if(isOpen()) {
+                    input.readFully(message);
+                }
                 listener.onMessage(message);
             }
         } catch(Throwable throwable) {

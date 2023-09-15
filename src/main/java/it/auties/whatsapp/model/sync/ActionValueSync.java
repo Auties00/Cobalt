@@ -6,7 +6,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.util.Clock;
-import lombok.Builder;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
@@ -75,7 +74,7 @@ public record ActionValueSync(
         @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
         Optional<UnarchiveChatsSetting> unarchiveChatsSetting,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-        Optional<RecentStickerMetadata> stickerMetadata,
+        Optional<StickerMetadata> stickerMetadata,
         @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
         Optional<KeyExpiration> keyExpiration,
         @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
