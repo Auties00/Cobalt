@@ -1,5 +1,7 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
@@ -408,7 +410,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         static {
             instances = new ConcurrentHashMap<>();
             logger = System.getLogger("Smile");
-            smile = new SmileMapper()
+            smile = SmileMapper.builder()
+                    .withConfigOverride(Collection.class, config -> config.setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY)))
+                    .build()
                     .registerModule(new Jdk8Module())
                     .registerModule(new SimpleMapModule())
                     .registerModule(new JavaTimeModule())

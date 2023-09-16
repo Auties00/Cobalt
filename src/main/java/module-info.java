@@ -18,7 +18,7 @@ open module it.auties.cobalt {
     requires org.bouncycastle.provider;
     requires it.auties.curve;
     requires it.auties.linkpreview;
-    requires ez.vcard;
+    requires com.googlecode.ezvcard;
     requires libphonenumber;
     requires org.apache.pdfbox;
     requires org.apache.poi.ooxml;

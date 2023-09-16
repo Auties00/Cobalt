@@ -100,12 +100,14 @@ public class SocketSession {
     public CompletableFuture<Void> sendBinary(byte[] bytes) {
         return CompletableFuture.runAsync(() -> {
             try {
-                if(socket == null){
+                if (socket == null) {
                     return;
                 }
                 var stream = socket.getOutputStream();
                 stream.write(bytes);
                 stream.flush();
+            }catch (SocketException exception) {
+                closeResources();
             } catch (IOException exception) {
                 throw new UncheckedIOException("Cannot send message", exception);
             }
