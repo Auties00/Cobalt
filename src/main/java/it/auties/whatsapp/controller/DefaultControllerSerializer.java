@@ -411,7 +411,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             instances = new ConcurrentHashMap<>();
             logger = System.getLogger("Smile");
             smile = SmileMapper.builder()
-                    .withConfigOverride(Collection.class, config -> config.setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY)))
+                    .withConfigOverride(List.class, config -> config.setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY)))
                     .build()
                     .registerModule(new Jdk8Module())
                     .registerModule(new SimpleMapModule())

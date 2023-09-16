@@ -7,6 +7,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class representing a list of past participants in a chat group
@@ -17,7 +18,7 @@ public record PastParticipants(
         ContactJid groupJid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
         @NonNull
-        ArrayList<PastParticipant> pastParticipants
+        List<PastParticipant> pastParticipants
 ) implements ProtobufMessage {
 
 }

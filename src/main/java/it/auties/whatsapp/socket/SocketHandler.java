@@ -183,7 +183,7 @@ public class SocketHandler implements SocketListener {
     public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
             authHandler.login(session, message)
-                    .thenApplyAsync(result -> result ? state(SocketState.CONNECTED) : null)
+                    .thenApplyAsync(result -> result ? setState(SocketState.CONNECTED) : null)
                     .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
             return;
         }
@@ -260,7 +260,12 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> disconnect(DisconnectReason reason) {
-        state(SocketState.of(reason));
+        var newState = SocketState.of(reason);
+        if(state == newState) {
+            return  CompletableFuture.completedFuture(null);
+        }
+
+        setState(newState);
         keys.clearReadWriteKey();
         return switch (reason) {
             case DISCONNECTED -> {
@@ -966,7 +971,7 @@ public class SocketHandler implements SocketListener {
         return this.store;
     }
 
-    protected SocketHandler state(@NonNull SocketState state) {
+    protected SocketHandler setState(@NonNull SocketState state) {
         this.state = state;
         return this;
     }

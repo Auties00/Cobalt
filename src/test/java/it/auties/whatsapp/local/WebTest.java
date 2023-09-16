@@ -11,7 +11,7 @@ public class WebTest {
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
                 .lastConnection()
-                .historyLength(WebHistoryLength.STANDARD)
+                .historyLength(WebHistoryLength.ZERO)
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
