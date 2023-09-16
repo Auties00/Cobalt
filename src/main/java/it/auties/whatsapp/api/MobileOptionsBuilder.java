@@ -78,7 +78,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder device(@NonNull CompanionDevice device){
         if(store != null) {
-            store.device(device);
+            store.setDevice(device);
         }
         return this;
     }
@@ -90,7 +90,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder business(boolean business){
         if(store != null) {
-            store.business(business);
+            store.setBusiness(business);
         }
         return this;
     }
@@ -102,7 +102,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder businessAddress(String businessAddress) {
         if(store != null) {
-            store.businessAddress(businessAddress);
+            store.setBusinessAddress(businessAddress);
         }
         return this;
     }
@@ -114,7 +114,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder businessLongitude(Double businessLongitude) {
         if(store != null) {
-            store.businessLongitude(businessLongitude);
+            store.setBusinessLongitude(businessLongitude);
         }
         return this;
     }
@@ -126,7 +126,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder businessLatitude(Double businessLatitude) {
         if(store != null) {
-            store.businessLatitude(businessLatitude);
+            store.setBusinessLatitude(businessLatitude);
         }
         return this;
     }
@@ -138,7 +138,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder businessDescription(String businessDescription) {
         if(store != null) {
-            store.businessDescription(businessDescription);
+            store.setBusinessDescription(businessDescription);
         }
         return this;
     }
@@ -150,7 +150,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder businessWebsite(String businessWebsite) {
         if(store != null) {
-            store.businessWebsite(businessWebsite);
+            store.setBusinessWebsite(businessWebsite);
         }
         return this;
     }
@@ -162,7 +162,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder businessEmail(String businessEmail) {
         if(store != null) {
-            store.businessEmail(businessEmail);
+            store.setBusinessEmail(businessEmail);
         }
         return this;
     }
@@ -174,7 +174,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public MobileOptionsBuilder businessCategory(BusinessCategory businessCategory) {
         if(store != null) {
-            store.businessCategory(businessCategory);
+            store.setBusinessCategory(businessCategory);
         }
         return this;
     }

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -22,7 +23,6 @@ import it.auties.whatsapp.util.Validate;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.swing.text.html.Option;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -104,6 +104,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     @ProtobufProperty(index = 24, type = ProtobufType.STRING)
     private final String staticUrl;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public VideoOrGifMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, byte[] mediaKey, String caption, boolean gifPlayback, Integer height, Integer width, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, long mediaKeyTimestampSeconds, byte[] thumbnail, @Nullable ContextInfo contextInfo, byte[] streamingSidecar, VideoMessageAttribution gifAttribution, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;

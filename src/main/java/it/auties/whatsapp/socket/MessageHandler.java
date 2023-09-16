@@ -5,11 +5,7 @@ import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.chat.*;
-import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactJidServer;
-import it.auties.whatsapp.model.contact.ContactJidType;
-import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.contact.*;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
@@ -104,7 +100,14 @@ class MessageHandler {
 
     private CompletableFuture<Node> encodeGroup(MessageSendRequest request) {
         var encodedMessage = BytesHelper.messageToBytes(request.info().message());
-        var senderName = new SenderKeyName(request.info().chatJid().toString(), socketHandler.store().jid().toSignalAddress());
+        var sender = socketHandler.store()
+                .jid()
+                .orElse(null);
+        if(sender == null){
+            return CompletableFuture.failedFuture(new IllegalStateException("Cannot create message: user is not signed in"));
+        }
+
+        var senderName = new SenderKeyName(request.info().chatJid().toString(), sender.toSignalAddress());
         var groupBuilder = new GroupBuilder(socketHandler.keys());
         var signalMessage = groupBuilder.createOutgoing(senderName);
         var groupCipher = new GroupCipher(senderName, socketHandler.keys());
@@ -133,7 +136,9 @@ class MessageHandler {
     }
 
     private CompletableFuture<Node> encodeConversation(MessageSendRequest request) {
-        var sender = socketHandler.store().jid();
+        var sender = socketHandler.store()
+                .jid()
+                .orElse(null);
         if(sender == null){
             return CompletableFuture.failedFuture(new IllegalStateException("Cannot create message: user is not signed in"));
         }
@@ -220,8 +225,15 @@ class MessageHandler {
     }
 
     private CompletableFuture<List<Node>> createConversationNodes(MessageSendRequest request, List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
+        var jid = socketHandler.store()
+                .jid()
+                .orElse(null);
+        if(jid == null){
+            return CompletableFuture.failedFuture(new IllegalStateException("Cannot create message: user is not signed in"));
+        }
+
         var partitioned = contacts.stream()
-                .collect(Collectors.partitioningBy(contact -> Objects.equals(contact.user(), socketHandler.store().jid().user())));
+                .collect(Collectors.partitioningBy(contact -> Objects.equals(contact.user(), jid.user())));
         var companions = querySessions(partitioned.get(true), request.force())
                 .thenApplyAsync(ignored -> createMessageNodes(request, partitioned.get(true), deviceMessage));
         var others = querySessions(partitioned.get(false), request.force())
@@ -326,10 +338,17 @@ class MessageHandler {
     }
 
     private Optional<Integer> parseDeviceId(Node child, ContactJid jid, boolean excludeSelf) {
+        var self = socketHandler.store()
+                .jid()
+                .orElse(null);
+        if(self == null){
+            return Optional.empty();
+        }
+
         var deviceId = child.attributes().getInt("id");
         return child.description().equals("device")
                 && (!excludeSelf || deviceId != 0)
-                && (!jid.user().equals(socketHandler.store().jid().user()) || socketHandler.store().jid().device() != deviceId)
+                && (!jid.user().equals(self.user()) || self.device() != deviceId)
                 && (deviceId == 0 || child.attributes().hasKey("key-index")) ? Optional.of(deviceId) : Optional.empty();
     }
 
@@ -437,11 +456,14 @@ class MessageHandler {
             var participant = infoNode.attributes().getJid("participant").orElse(null);
             var messageBuilder = new MessageInfoBuilder();
             var keyBuilder = new MessageKeyBuilder();
-            var userCompanionJid = socketHandler.store().jid();
-            if(userCompanionJid == null){
+            var receiver = socketHandler.store()
+                    .jid()
+                    .map(ContactJid::toWhatsappJid)
+                    .orElse(null);
+            if(receiver == null){
                 return; // This means that the session got disconnected while processing
             }
-            var receiver = userCompanionJid.toWhatsappJid();
+
             if (from.hasServer(ContactJidServer.WHATSAPP) || from.hasServer(ContactJidServer.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
@@ -454,7 +476,7 @@ class MessageHandler {
                 messageBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
             }
             var key = keyBuilder.id(id).build();
-            if(Objects.equals(key.senderJid().orElse(null), socketHandler.store().jid())) {
+            if(Objects.equals(key.senderJid().orElse(null), socketHandler.store().jid().orElse(null))) {
                 sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }
@@ -552,8 +574,11 @@ class MessageHandler {
     }
 
     private void attributeMessageReceipt(MessageInfo info) {
-        var self = socketHandler.store().jid().toWhatsappJid();
-        if (!info.fromMe() || !info.chatJid().equals(self)) {
+        var self = socketHandler.store()
+                .jid()
+                .map(ContactJid::toWhatsappJid)
+                .orElse(null);
+        if (!info.fromMe() || (self != null && !info.chatJid().equals(self))) {
             return;
         }
         info.receipt().readTimestampSeconds(info.timestampSeconds());
@@ -634,8 +659,11 @@ class MessageHandler {
     private void onAppStateSyncKeyShare(ProtocolMessage protocolMessage) {
         var data = protocolMessage.appStateSyncKeyShare()
                 .orElseThrow(() -> new NoSuchElementException("Missing app state keys"));
+        var self = socketHandler.store()
+                .jid()
+                .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         socketHandler.keys()
-                .addAppKeys(socketHandler.store().jid(), data.keys());
+                .addAppKeys(self, data.keys());
         socketHandler.pullInitialPatches()
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(UNKNOWN, throwable));
     }

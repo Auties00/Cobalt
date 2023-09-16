@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
-import lombok.Builder.Default;
-import lombok.Getter;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
@@ -16,16 +12,13 @@ import java.util.*;
  * This interface represents is implemented by all WhatsappWeb4J's controllers. It provides an easy
  * way to store IDs and serialize said class.
  */
-@Getter
-@SuperBuilder
-@Accessors(fluent = true)
 @SuppressWarnings("unused")
 public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
     /**
      * The id of this controller
      */
     @NonNull
-    protected UUID uuid;
+    protected final UUID uuid;
 
     /**
      * The phone number of the associated companion
@@ -35,6 +28,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The serializer instance to use
      */
+    @NonNull
     @JsonIgnore
     protected ControllerSerializer serializer;
 
@@ -42,14 +36,21 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * The client type
      */
     @NonNull
-    protected ClientType clientType;
+    protected final ClientType clientType;
 
     /**
      * A list of alias for the controller, can be used in place of UUID1
      */
     @NonNull
-    @Default
-    protected List<String> alias = new ArrayList<>();
+    protected final List<String> alias;
+
+    public Controller(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @NonNull List<String> alias) {
+        this.uuid = uuid;
+        this.phoneNumber = phoneNumber;
+        this.serializer = serializer;
+        this.clientType = clientType;
+        this.alias = alias;
+    }
 
     /**
      * Serializes this object
@@ -63,25 +64,12 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      */
     public abstract void dispose();
 
-    /**
-     * Returns the serializer
-     *
-     * @return a non-null serializer
-     */
-    public ControllerSerializer serializer() {
-        return serializer;
+    public @NonNull UUID uuid() {
+        return this.uuid;
     }
 
-    /**
-     * Sets the serializer of this controller
-     *
-     * @param serializer a serializer
-     * @return the same instance
-     */
-    @SuppressWarnings("unchecked")
-    public T serializer(ControllerSerializer serializer) {
-        this.serializer = serializer;
-        return (T) this;
+    public @NonNull ClientType clientType() {
+        return this.clientType;
     }
 
     /**
@@ -99,9 +87,30 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * @return the same instance
      */
     @SuppressWarnings("unchecked")
-    public T phoneNumber(@NonNull PhoneNumber phoneNumber){
+    public T setPhoneNumber(@NonNull PhoneNumber phoneNumber) {
         this.phoneNumber = phoneNumber;
         serializer.linkMetadata(this);
+        return (T) this;
+    }
+
+    /**
+     * Returns the serializer
+     *
+     * @return a non-null serializer
+     */
+    public ControllerSerializer serializer() {
+        return serializer;
+    }
+
+    /**
+     * Sets the serializer of this controller
+     *
+     * @param serializer a serializer
+     * @return the same instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setSerializer(ControllerSerializer serializer) {
+        this.serializer = serializer;
         return (T) this;
     }
 
@@ -110,7 +119,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      *
      * @return an immutable collection
      */
-    public Collection<String> alias(){
+    public Collection<String> alias() {
         return Collections.unmodifiableList(alias);
     }
 
@@ -119,7 +128,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      *
      * @param entry the non-null alias to add
      */
-    public void addAlias(@NonNull String entry){
+    public void addAlias(@NonNull String entry) {
         alias.add(entry);
     }
 
@@ -128,14 +137,14 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      *
      * @param entry the non-null alias to remove
      */
-    public void removeAlias(@NonNull String entry){
+    public void removeAlias(@NonNull String entry) {
         alias.remove(entry);
     }
 
     /**
      * Removes all alias from this controller
      */
-    public void removeAlias(){
+    public void removeAlias() {
         alias.clear();
     }
 

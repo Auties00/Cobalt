@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -39,6 +40,7 @@ public final class MessageReceipt implements ProtobufMessage {
         this.readJids = new ArrayList<>();
     }
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public MessageReceipt(@Nullable Long deliveredTimestampSeconds, @Nullable Long readTimestampSeconds, @Nullable Long playedTimestampSeconds, @NonNull List<ContactJid> deliveredJids, @NonNull List<ContactJid> readJids) {
         this.deliveredTimestampSeconds = deliveredTimestampSeconds;
         this.readTimestampSeconds = readTimestampSeconds;

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -92,6 +93,7 @@ public final class TextMessage implements ContextualMessage {
     @ProtobufProperty(index = 30, type = ProtobufType.BOOL)
     private boolean viewOnce;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public TextMessage(@NonNull String text, @Nullable String matchedText, @Nullable String canonicalUrl, @Nullable String description, @Nullable String title, @Nullable Integer textArgb, @Nullable Integer backgroundArgb, @Nullable TextMessageFontType font, @Nullable TextMessagePreviewType previewType, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, boolean doNotPlayInline, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, byte @Nullable [] mediaKey, @Nullable Long mediaKeyTimestampSeconds, @Nullable Integer thumbnailHeight, @Nullable Integer thumbnailWidth, @Nullable InviteLinkGroupType inviteLinkGroupType, @Nullable String inviteLinkParentGroupSubjectV2, byte @Nullable [] inviteLinkParentGroupThumbnailV2, @Nullable InviteLinkGroupType inviteLinkGroupTypeV2, boolean viewOnce) {
         this.text = text;
         this.matchedText = matchedText;

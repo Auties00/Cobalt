@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -11,7 +12,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.Collections;
 import java.util.List;
 
-public class ActionMessageRangeSync implements ProtobufMessage {
+public final class ActionMessageRangeSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.INT64)
     private Long lastMessageTimestamp;
 
@@ -21,6 +22,7 @@ public class ActionMessageRangeSync implements ProtobufMessage {
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT, repeated = true)
     private final List<SyncActionMessage> messages;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ActionMessageRangeSync(Long lastMessageTimestamp, Long lastSystemMessageTimestamp, List<SyncActionMessage> messages) {
         this.lastMessageTimestamp = lastMessageTimestamp;
         this.lastSystemMessageTimestamp = lastSystemMessageTimestamp;

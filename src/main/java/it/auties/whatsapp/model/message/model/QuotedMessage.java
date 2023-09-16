@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -36,6 +37,7 @@ public final class QuotedMessage implements MessageMetadataProvider {
     @NonNull
     private final MessageContainer message;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public QuotedMessage(@NonNull String id, @NonNull Chat chat, Contact sender, @NonNull MessageContainer message) {
         this.id = id;
         this.chat = chat;

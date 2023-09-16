@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.signal.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -22,17 +23,18 @@ public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessa
 
     private byte[] signingKey;
 
-    public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText) {
-        this.id = id;
-        this.iteration = iteration;
-        this.cipherText = cipherText;
-    }
-
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public SenderKeyMessage(Integer id, Integer iteration, byte @NonNull [] cipherText, byte[] signingKey) {
         this.id = id;
         this.iteration = iteration;
         this.cipherText = cipherText;
         this.signingKey = signingKey;
+    }
+
+    public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText) {
+        this.id = id;
+        this.iteration = iteration;
+        this.cipherText = cipherText;
     }
 
     public static SenderKeyMessage ofSerialized(byte[] serialized) {

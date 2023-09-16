@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -57,6 +58,7 @@ public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage
     @Nullable
     private final ContextInfo contextInfo;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public PaymentInvoiceMessage(@Nullable String note, @NonNull String token, @Nullable PaymentAttachmentType paymentAttachmentType, @Nullable String mimeType, byte @Nullable [] mediaKey, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] mediaSha256, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo) {
         this.note = note;
         this.token = token;

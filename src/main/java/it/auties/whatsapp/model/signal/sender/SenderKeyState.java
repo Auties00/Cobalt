@@ -1,17 +1,19 @@
 package it.auties.whatsapp.model.signal.sender;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SenderKeyState {
+public final class SenderKeyState {
     private final int id;
     private final SignalKeyPair signingKey;
     private final ConcurrentHashMap<Integer, SenderMessageKey> messageKeys;
     private SenderChainKey chainKey;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public SenderKeyState(int id, int iteration, byte[] seed, SignalKeyPair signingKey) {
         this.id = id;
         this.chainKey = new SenderChainKey(iteration, seed);

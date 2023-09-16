@@ -23,7 +23,7 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) UserAgentPla
                         @ProtobufProperty(index = 13, type = STRING) String deviceBoard) implements ProtobufMessage {
 
     public enum UserAgentPlatform implements ProtobufEnum {
-
+        UNKNOWN(999),
         ANDROID(0),
         IOS(1),
         WINDOWS_PHONE(2),

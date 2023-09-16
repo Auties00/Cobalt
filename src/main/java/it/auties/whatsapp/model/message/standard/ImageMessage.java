@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -128,6 +129,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     @Nullable
     private final String staticUrl;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ImageMessage(@Nullable String mediaUrl, @Nullable String mimetype, @Nullable String caption, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer height, @Nullable Integer width, byte @Nullable [] mediaKey, byte @Nullable [] mediaEncryptedSha256, @NonNull List<InteractiveLocationAnnotation> interactiveAnnotations, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, byte @Nullable [] firstScanSidecar, @Nullable Integer firstScanLength, @Nullable Integer experimentGroupId, byte @Nullable [] scansSidecar, @NonNull List<Integer> scanLengths, byte @Nullable [] midQualityFileSha256, byte @Nullable [] midQualityFileEncSha256, boolean viewOnce, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, @Nullable String staticUrl) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;

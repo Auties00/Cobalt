@@ -1,11 +1,18 @@
 package it.auties.whatsapp.model.signal.sender;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
 import java.util.*;
 
-public class SenderKeyRecord {
+public final class SenderKeyRecord {
     private final LinkedHashMap<Integer, List<SenderKeyState>> states;
+
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public SenderKeyRecord(LinkedHashMap<Integer, List<SenderKeyState>> states) {
+        this.states = states;
+    }
+
     public SenderKeyRecord() {
         this.states = new LinkedHashMap<>();
     }

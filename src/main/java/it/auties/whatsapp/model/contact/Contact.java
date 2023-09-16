@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.contact;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -69,6 +70,7 @@ public final class Contact implements ContactJidProvider {
         this.lastKnownPresence = ContactStatus.UNAVAILABLE;
     }
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Contact(@NonNull ContactJid jid, @Nullable String chosenName, @Nullable String fullName, @Nullable String shortName, @NonNull ContactStatus lastKnownPresence, @Nullable ZonedDateTime lastSeen, boolean blocked) {
         this.jid = jid;
         this.chosenName = chosenName;

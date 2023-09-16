@@ -1,22 +1,27 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import it.auties.map.SimpleMapModule;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.util.Validate;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
@@ -28,6 +33,14 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
+import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
 
@@ -387,10 +400,28 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         return getSessionDirectory(clientType, uuid).resolve(fileName);
     }
 
-    // TODO: Explore alternatives
     private record SmileFile(Path file, Semaphore semaphore) {
-        private final static ConcurrentHashMap<Path, SmileFile> instances = new ConcurrentHashMap<>();
-        private static final Logger logger = System.getLogger("SmileFile");
+        private final static ObjectMapper smile;
+        private final static ConcurrentHashMap<Path, SmileFile> instances;
+        private final static Logger logger;
+
+        static {
+            instances = new ConcurrentHashMap<>();
+            logger = System.getLogger("Smile");
+            smile = new SmileMapper()
+                    .registerModule(new Jdk8Module())
+                    .registerModule(new SimpleMapModule())
+                    .registerModule(new JavaTimeModule())
+                    .registerModule(new ParameterNamesModule())
+                    .setSerializationInclusion(NON_DEFAULT)
+                    .enable(WRITE_ENUMS_USING_INDEX)
+                    .enable(FAIL_ON_EMPTY_BEANS)
+                    .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                    .disable(FAIL_ON_UNKNOWN_PROPERTIES)
+                    .setVisibility(ALL, ANY)
+                    .setVisibility(GETTER, NONE)
+                    .setVisibility(IS_GETTER, NONE);
+        }
 
         private SmileFile {
             try {
@@ -425,7 +456,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 return Optional.empty();
             }
             try (var input = new GZIPInputStream(Files.newInputStream(file))) {
-                return Optional.of(Smile.readValue(input, reference));
+                return Optional.of(smile.readValue(input, reference));
             } catch (IOException exception) {
                 return Optional.empty();
             }
@@ -450,11 +481,10 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 }
 
                 semaphore.acquire();
-                try (var byteArrayOutputStream = new ByteArrayOutputStream()) {
-                    try (var stream = new GZIPOutputStream(byteArrayOutputStream)) {
-                        Smile.writeValueAsBytes(stream, input);
-                        Files.write(file, byteArrayOutputStream.toByteArray());
-                    }
+                var tempFile = Files.createTempFile(file.getFileName().toString(), ".tmp");
+                try (var tempFileOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
+                    smile.writeValue(tempFileOutputStream, input);
+                    Files.move(tempFile, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
                 }
             } catch (IOException exception) {
                 throw new UncheckedIOException("Cannot complete file write", exception);

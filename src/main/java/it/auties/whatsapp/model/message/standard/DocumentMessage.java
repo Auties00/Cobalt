@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -109,6 +110,7 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
     @Nullable
     private final String caption;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public DocumentMessage(@Nullable String mediaUrl, @Nullable String mimetype, @Nullable String title, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer pageCount, byte @Nullable [] mediaKey, @Nullable String fileName, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] thumbnail, boolean contactVcard, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, @Nullable ContextInfo contextInfo, @Nullable Integer thumbnailHeight, @Nullable Integer thumbnailWidth, @Nullable String caption) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;

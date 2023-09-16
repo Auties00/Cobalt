@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -30,6 +31,7 @@ public final class MessageKey implements ProtobufMessage {
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     private @Nullable ContactJid senderJid;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public MessageKey(@NonNull ContactJid chatJid, boolean fromMe, @NonNull String id, @Nullable ContactJid senderJid) {
         this.chatJid = chatJid;
         this.fromMe = fromMe;

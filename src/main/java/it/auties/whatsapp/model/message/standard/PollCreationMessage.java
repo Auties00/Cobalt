@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -45,6 +46,7 @@ public final class PollCreationMessage implements ContextualMessage {
 
     private final Map<ContactJid, Collection<PollOption>> selectedOptionsMap;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public PollCreationMessage(byte @Nullable [] encryptionKey, @NonNull String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, Map<ContactJid, Collection<PollOption>> selectedOptionsMap) {
         this.encryptionKey = encryptionKey;
         this.title = title;

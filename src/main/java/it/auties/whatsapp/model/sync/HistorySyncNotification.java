@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MutableAttachmentProvider;
@@ -27,6 +28,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     @ProtobufProperty(index = 8, type = STRING)
     private final String originalMessageId;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public HistorySyncNotification(byte[] mediaSha256, long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySyncType syncType, Integer chunkOrder, String originalMessageId) {
         this.mediaSha256 = mediaSha256;
         this.mediaSize = mediaSize;

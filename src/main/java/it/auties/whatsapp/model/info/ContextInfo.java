@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -205,6 +206,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
     @JsonBackReference
     private Chat quotedMessageChat;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ContextInfo(@Nullable String quotedMessageId, @Nullable ContactJid quotedMessageSenderJid, @Nullable MessageContainer quotedMessage, @Nullable ContactJid quotedMessageChatJid, @NonNull List<ContactJid> mentions, @Nullable String conversionSource, byte @Nullable [] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, @Nullable AdReplyInfo quotedAd, @Nullable MessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte @Nullable [] ephemeralSharedSecret, @Nullable ExternalAdReplyInfo externalAdReply, @Nullable String entryPointConversionSource, @Nullable String entryPointConversionApp, int entryPointConversionDelaySeconds, @Nullable ChatDisappear disappearingMode, @Nullable ButtonActionLink actionLink, @Nullable String groupSubject, @Nullable ContactJid parentGroup, @Nullable String trustBannerType, int trustBannerAction) {
         this.quotedMessageId = quotedMessageId;
         this.quotedMessageSenderJid = quotedMessageSenderJid;

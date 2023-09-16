@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -69,6 +70,7 @@ public final class AudioMessage extends LocalMediaMessage<AudioMessage> implemen
     @Nullable
     private final Integer backgroundArgb;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public AudioMessage(@Nullable String mediaUrl, @Nullable String mimetype, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer duration, boolean voiceMessage, byte @Nullable [] mediaKey, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, @Nullable ContextInfo contextInfo, byte @Nullable [] streamingSidecar, byte @Nullable [] waveform, @Nullable Integer backgroundArgb) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;

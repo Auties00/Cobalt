@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -17,6 +18,7 @@ public final class GroupParticipant implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
     private GroupRole role;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public GroupParticipant(ContactJid jid, GroupRole role) {
         this.jid = jid;
         this.role = Objects.requireNonNullElse(role, GroupRole.USER);

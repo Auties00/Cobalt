@@ -143,10 +143,11 @@ class AuthHandler {
                         .build();
             }
             case WEB -> {
-                if (socketHandler.store().jid() != null) {
-                    yield builder.username(Long.parseLong(socketHandler.store().jid().user()))
+                var jid = socketHandler.store().jid();
+                if (jid.isPresent()) {
+                    yield builder.username(Long.parseLong(jid.get().user()))
                             .passive(true)
-                            .device(socketHandler.store().jid().device())
+                            .device(jid.get().device())
                             .build();
                 }
 

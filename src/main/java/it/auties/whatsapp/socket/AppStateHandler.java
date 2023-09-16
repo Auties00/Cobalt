@@ -207,7 +207,12 @@ class AppStateHandler {
             return;
         }
 
-        getOrCreateAppService().execute(() -> pullUninterruptedly(socketHandler.store().jid(), Set.of(patchTypes))
+        var jid = socketHandler.store().jid();
+        if(jid.isEmpty()){
+            return;
+        }
+
+        getOrCreateAppService().execute(() -> pullUninterruptedly(jid.get(), Set.of(patchTypes))
                 .thenAcceptAsync(success -> onPull(false, success))
                 .exceptionallyAsync(exception -> onPullError(false, exception)));
     }
@@ -217,14 +222,19 @@ class AppStateHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return pullUninterruptedly(socketHandler.store().jid(), Set.of(PatchType.values()))
+        var jid = socketHandler.store().jid();
+        if(jid.isEmpty()){
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return pullUninterruptedly(jid.get(), Set.of(PatchType.values()))
                 .thenAcceptAsync(success -> onPull(true, success))
                 .exceptionallyAsync(exception -> onPullError(true, exception));
     }
 
     private void onPull(boolean initial, boolean success) {
         if (!socketHandler.keys().initialAppSync()) {
-            socketHandler.keys().initialAppSync((initial && success) || isSyncComplete());
+            socketHandler.keys().setInitialAppSync((initial && success) || isSyncComplete());
         }
 
         attempts.clear();
@@ -236,8 +246,9 @@ class AppStateHandler {
     }
 
     private boolean isSyncComplete(PatchType entry) {
-        return socketHandler.keys()
-                .findHashStateByName(socketHandler.store().jid(), entry) // FIXME: Is this right?
+        var jid = socketHandler.store().jid();
+        return jid.isPresent() && socketHandler.keys()
+                .findHashStateByName(jid.get(), entry)
                 .filter(type -> type.version() > 0)
                 .isPresent();
     }
@@ -382,39 +393,40 @@ class AppStateHandler {
             var targetChat = messageIndex.chatJid().flatMap(socketHandler.store()::findChatByJid);
             var targetMessage = targetChat.flatMap(chat -> socketHandler.store()
                     .findMessageById(chat, mutation.messageIndex().messageId().orElse(null)));
-            if (action instanceof ClearChatAction clearChatAction) {
-                clearMessages(targetChat.orElse(null), clearChatAction);
-            } else if (action instanceof ContactAction contactAction) {
-                updateName(targetContact.orElseGet(() -> createContact(messageIndex)), targetChat.orElseGet(() -> createChat(messageIndex)), contactAction);
-            } else if (action instanceof DeleteChatAction) {
-                targetChat.ifPresent(Chat::removeMessages);
-            } else if (action instanceof DeleteMessageForMeAction) {
-                targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
-            } else if (action instanceof MarkChatAsReadAction markAction) {
-                targetChat.ifPresent(chat -> chat.setUnreadMessagesCount(markAction.read() ? 0 : -1));
-            } else if (action instanceof MuteAction muteAction) {
-                targetChat.ifPresent(chat -> chat.setMute(ChatMute.muted(muteAction.muteEndTimestampSeconds().orElse(0L))));
-            } else if (action instanceof PinAction pinAction) {
-                targetChat.ifPresent(chat -> chat.setPinnedTimestampSeconds(pinAction.pinned() ? (int) mutation.value().timestamp() : 0));
-            } else if (action instanceof StarAction starAction) {
-                targetMessage.ifPresent(message -> message.setStarred(starAction.starred()));
-            } else if (action instanceof ArchiveChatAction archiveChatAction) {
-                targetChat.ifPresent(chat -> chat.setArchived(archiveChatAction.archived()));
-            } else if (action instanceof TimeFormatAction timeFormatAction) {
-                socketHandler.store().twentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
+            switch (action) {
+                case ClearChatAction clearChatAction -> clearMessages(targetChat.orElse(null), clearChatAction);
+                case ContactAction contactAction ->
+                        updateName(targetContact.orElseGet(() -> createContact(messageIndex)), targetChat.orElseGet(() -> createChat(messageIndex)), contactAction);
+                case DeleteChatAction deleteChatAction -> targetChat.ifPresent(Chat::removeMessages);
+                case DeleteMessageForMeAction deleteMessageForMeAction ->
+                        targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
+                case MarkChatAsReadAction markAction ->
+                        targetChat.ifPresent(chat -> chat.setUnreadMessagesCount(markAction.read() ? 0 : -1));
+                case MuteAction muteAction ->
+                        targetChat.ifPresent(chat -> chat.setMute(ChatMute.muted(muteAction.muteEndTimestampSeconds().orElse(0L))));
+                case PinAction pinAction ->
+                        targetChat.ifPresent(chat -> chat.setPinnedTimestampSeconds(pinAction.pinned() ? (int) mutation.value().timestamp() : 0));
+                case StarAction starAction ->
+                        targetMessage.ifPresent(message -> message.setStarred(starAction.starred()));
+                case ArchiveChatAction archiveChatAction ->
+                        targetChat.ifPresent(chat -> chat.setArchived(archiveChatAction.archived()));
+                case TimeFormatAction timeFormatAction ->
+                        socketHandler.store().setTwentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
+                default -> {}
             }
             socketHandler.onAction(action, messageIndex);
         }
         var setting = value.setting().orElse(null);
         if (setting != null) {
-            if (setting instanceof EphemeralSetting ephemeralSetting) {
-                showEphemeralMessageWarning(ephemeralSetting);
-            } else if (setting instanceof LocaleSetting localeSetting) {
-                socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().locale());
-            } else if (setting instanceof PushNameSetting pushNameSetting) {
-                socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().name());
-            } else if (setting instanceof UnarchiveChatsSetting unarchiveChatsSetting) {
-                socketHandler.store().unarchiveChats(unarchiveChatsSetting.unarchiveChats());
+            switch (setting) {
+                case EphemeralSetting ephemeralSetting -> showEphemeralMessageWarning(ephemeralSetting);
+                case LocaleSetting localeSetting ->
+                        socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().locale().orElse(null));
+                case PushNameSetting pushNameSetting ->
+                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().name());
+                case UnarchiveChatsSetting unarchiveChatsSetting ->
+                        socketHandler.store().setUnarchiveChats(unarchiveChatsSetting.unarchiveChats());
+                default -> {}
             }
             socketHandler.onSetting(setting);
         }

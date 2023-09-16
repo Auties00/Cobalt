@@ -1,12 +1,14 @@
 open module it.auties.cobalt {
-    requires static lombok;
+    requires static jilt;
     requires transitive java.desktop;
     requires java.net.http;
+    requires dsl.json;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.datatype.jdk8;
     requires com.fasterxml.jackson.datatype.jsr310;
     requires com.fasterxml.jackson.dataformat.smile;
+    requires com.fasterxml.jackson.module.paramnames;
     requires it.auties.protobuf.base;
     requires it.auties.map;
     requires com.google.zxing;
@@ -25,6 +27,7 @@ open module it.auties.cobalt {
     requires io.netty.buffer;
     requires io.netty.common;
     requires org.checkerframework.checker.qual;
+    requires java.compiler;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

@@ -82,7 +82,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
     }
 
     private SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey, byte[] theirIdentityPubKey, byte[] theirEphemeralPubKey, byte[] theirSignedPubKey, int registrationId, int version, byte[][] masterKey) {
-        return SessionState.builder()
+        return SessionStateBuilder.builder()
                 .version(version)
                 .registrationId(registrationId)
                 .rootKey(masterKey[0])

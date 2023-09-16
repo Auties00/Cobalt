@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -150,6 +151,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
 
     private final @NonNull Set<PastParticipant> pastParticipants;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Chat(@NonNull UUID uuid, @NonNull ContactJid jid, @NonNull ConcurrentLinkedDeque<HistorySyncMessage> historySyncMessages, ContactJid newJid, ContactJid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull ArrayList<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @NonNull ChatMute mute, ChatWallpaper wallpaper, @NonNull ChatMediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, ContactJid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, ContactJid parentGroupJid, String displayName, ContactJid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, ContactJid lidJid, @NonNull ConcurrentHashMap<ContactJid, ContactStatus> presences, @NonNull Set<ContactJid> participantsPreKeys, @NonNull Set<PastParticipant> pastParticipants) {
         this.uuid = uuid;
         this.jid = jid;

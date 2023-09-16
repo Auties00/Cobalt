@@ -1,12 +1,9 @@
 package it.auties.whatsapp.api;
 
-import lombok.AllArgsConstructor;
-
 /**
  * A list of all emojis supported by Whatsapp
  * <a href="https://unicode.org/emoji/charts/full-emoji-list.html">Source</a>
  */
-@AllArgsConstructor
 @SuppressWarnings("SpellCheckingInspection")
 public enum Emoji {
     GRINNING_FACE("😀"),
@@ -1885,6 +1882,9 @@ public enum Emoji {
     FLAG_WALES("🏴󠁧󠁢󠁷󠁬󠁳󠁿");
 
     private final String value;
+    Emoji(String value) {
+        this.value = value;
+    }
 
     @Override
     public String toString() {

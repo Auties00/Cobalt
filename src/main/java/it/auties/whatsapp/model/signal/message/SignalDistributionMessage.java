@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.signal.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
@@ -20,6 +21,7 @@ public final class SignalDistributionMessage extends SignalProtocolMessage<Signa
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private final byte @NonNull [] signingKey;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public SignalDistributionMessage(int id, int iteration, byte @NonNull [] chainKey, byte @NonNull [] signingKey) {
         this.id = id;
         this.iteration = iteration;

@@ -42,7 +42,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T name(@NonNull String name) {
         if(store != null) {
-            store.name(name);
+            store.setName(name);
         }
         return (T) this;
     }
@@ -58,7 +58,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T version(@NonNull Version version) {
         if(store != null) {
-            store.version(version);
+            store.setVersion(version);
         }
         return (T) this;
     }
@@ -72,7 +72,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T autodetectListeners(boolean autodetectListeners) {
         if(store != null) {
-            store.autodetectListeners(autodetectListeners);
+            store.setAutodetectListeners(autodetectListeners);
         }
         return (T) this;
     }
@@ -86,7 +86,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T textPreviewSetting(@NonNull TextPreviewSetting textPreviewSetting) {
         if(store != null) {
-            store.textPreviewSetting(textPreviewSetting);
+            store.setTextPreviewSetting(textPreviewSetting);
         }
         return (T) this;
     }
@@ -122,7 +122,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T releaseChannel(@NonNull UserAgentReleaseChannel releaseChannel) {
         if(store != null) {
-            store.releaseChannel(releaseChannel);
+            store.setReleaseChannel(releaseChannel);
         }
         return (T) this;
     }
@@ -135,7 +135,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T proxy(URI proxy) {
         if(store != null) {
-            store.proxy(proxy);
+            store.setProxy(proxy);
         }
         return (T) this;
     }
@@ -149,7 +149,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T acknowledgeMessages(boolean acknowledgeMessages) {
         if(store != null) {
-            store.automaticPresenceUpdates(acknowledgeMessages);
+            store.setAutomaticPresenceUpdates(acknowledgeMessages);
         }
         return (T) this;
     }
@@ -162,7 +162,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T checkPatchMacks(boolean checkPatchMacs) {
-        store.checkPatchMacs(checkPatchMacs);
+        store.setCheckPatchMacs(checkPatchMacs);
         return (T) this;
     }
 }

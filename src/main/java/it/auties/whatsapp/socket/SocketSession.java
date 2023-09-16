@@ -2,8 +2,6 @@ package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.ProxyAuthenticator;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -19,7 +17,6 @@ import java.util.concurrent.ExecutorService;
 import static it.auties.whatsapp.util.Spec.Whatsapp.APP_ENDPOINT_HOST;
 import static it.auties.whatsapp.util.Spec.Whatsapp.APP_ENDPOINT_PORT;
 
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class SocketSession {
     static {
         Authenticator.setDefault(new ProxyAuthenticator());
@@ -30,6 +27,11 @@ public class SocketSession {
     private Socket socket;
     private SocketListener listener;
     private boolean closed;
+
+    SocketSession(URI proxy, Executor executor) {
+        this.proxy = proxy;
+        this.executor = executor;
+    }
 
     CompletableFuture<Void> connect(SocketListener listener) {
         if (socket != null && isOpen()) {

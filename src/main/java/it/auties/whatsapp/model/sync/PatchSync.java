@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -24,6 +25,7 @@ public final class PatchSync implements ProtobufMessage {
     @ProtobufProperty(index = 8, type = ProtobufType.UINT32)
     private final Integer deviceIndex;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public PatchSync(
             VersionSync version,
             List<MutationSync> mutations,

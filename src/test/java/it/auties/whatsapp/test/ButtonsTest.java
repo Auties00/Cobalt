@@ -28,8 +28,8 @@ import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.utils.ConfigUtils;
+import it.auties.whatsapp.utils.Smile;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
@@ -245,14 +245,17 @@ public class ButtonsTest implements Listener {
                 .listMessage(listMessage)
                 .textMessage(TextMessage.of("Test"))
                 .build();
+        var jid = api.store()
+                .jid()
+                .orElseThrow();
         var keyInfo = new MessageKeyBuilder()
                 .chatJid(contact)
-                .senderJid(api.store().jid())
+                .senderJid(jid)
                 .fromMe(true)
                 .build();
         var messageInfo = new MessageInfoBuilder()
                 .key(keyInfo)
-                .senderJid(api.store().jid())
+                .senderJid(jid)
                 .message(container)
                 .build();
         var result = api.sendMessage(messageInfo).join();

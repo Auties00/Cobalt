@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.signal.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
@@ -25,6 +26,7 @@ public final class SignalPreKeyMessage extends SignalProtocolMessage<SignalPreKe
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
     private final Integer signedPreKeyId;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public SignalPreKeyMessage(Integer preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage, int registrationId, int signedPreKeyId) {
         this.preKeyId = preKeyId;
         this.baseKey = baseKey;

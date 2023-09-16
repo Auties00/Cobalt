@@ -89,10 +89,11 @@ public final class RegistrationHelper {
     }
 
     private static void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
-        keys.registered(registered);
+        keys.setRegistered(registered);
         if (registered) {
-            store.jid(store.phoneNumber().orElseThrow().toJid());
-            store.addLinkedDevice(store.jid(), 0);
+            var jid = store.phoneNumber().orElseThrow().toJid();
+            store.setJid(jid);
+            store.addLinkedDevice(jid, 0);
         }
         keys.serialize(true);
         store.serialize(true);
@@ -137,21 +138,22 @@ public final class RegistrationHelper {
     }
 
     private static CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
-        var client = createClient(store);
-        var encodedParams = toFormParams(params);
-        var keypair = SignalKeyPair.random();
-        var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
-        var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
-        var enc = Base64.getUrlEncoder().encodeToString(BytesHelper.concat(keypair.publicKey(), buffer));
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, enc)))
-                .GET()
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .header("User-Agent", getUserAgent(store))
-                .header("WaMsysRequest", "1")
-                .header("request_token", UUID.randomUUID().toString())
-                .build();
-        return client.sendAsync(request, BodyHandlers.ofString());
+        try(var client = createClient(store)) {
+            var encodedParams = toFormParams(params);
+            var keypair = SignalKeyPair.random();
+            var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
+            var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
+            var enc = Base64.getUrlEncoder().encodeToString(BytesHelper.concat(keypair.publicKey(), buffer));
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, enc)))
+                    .GET()
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .header("User-Agent", getUserAgent(store))
+                    .header("WaMsysRequest", "1")
+                    .header("request_token", UUID.randomUUID().toString())
+                    .build();
+            return client.sendAsync(request, BodyHandlers.ofString());
+        }
     }
 
     private static String getUserAgent(Store store) {

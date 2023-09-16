@@ -75,7 +75,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      * @return the same instance for chaining
      */
     public WebOptionsBuilder historyLength(@NonNull WebHistoryLength historyLength) {
-        store.historyLength(historyLength);
+        store.setHistoryLength(historyLength);
         return this;
     }
 
@@ -91,8 +91,8 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
                     .store(store)
                     .keys(keys)
                     .errorHandler(errorHandler)
-                    .socketExecutor(socketExecutor)
                     .webVerificationSupport(qrHandler)
+                    .socketExecutor(socketExecutor)
                     .build();
         }
 
@@ -108,13 +108,13 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      */
     public Whatsapp unregistered(long phoneNumber, @NonNull PairingCodeHandler pairingCodeHandler) {
         if (whatsapp == null) {
-            store.phoneNumber(PhoneNumber.of(phoneNumber));
+            store.setPhoneNumber(PhoneNumber.of(phoneNumber));
             this.whatsapp = Whatsapp.customBuilder()
                     .store(store)
                     .keys(keys)
                     .errorHandler(errorHandler)
-                    .socketExecutor(socketExecutor)
                     .webVerificationSupport(pairingCodeHandler)
+                    .socketExecutor(socketExecutor)
                     .build();
         }
 

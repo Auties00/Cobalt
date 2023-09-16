@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -49,6 +50,7 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
     private final long senderTimestampMilliseconds;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public PollUpdateMessage(@NonNull MessageKey pollCreationMessageKey, @NonNull PollUpdateEncryptedMetadata encryptedMetadata, @Nullable PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds) {
         this.pollCreationMessageKey = pollCreationMessageKey;
         this.encryptedMetadata = encryptedMetadata;

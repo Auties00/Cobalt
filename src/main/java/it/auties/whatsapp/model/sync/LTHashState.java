@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 
@@ -10,7 +11,7 @@ import java.util.Objects;
 
 import static it.auties.whatsapp.model.node.Node.of;
 
-public class LTHashState {
+public final class LTHashState {
     private PatchType name;
 
     private long version;
@@ -30,6 +31,7 @@ public class LTHashState {
         this.indexValueMap = new HashMap<>();
     }
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public LTHashState(PatchType name, long version, byte[] hash, Map<String, byte[]> indexValueMap) {
         this.name = name;
         this.version = version;

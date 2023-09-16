@@ -1,5 +1,6 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.TextPreviewSetting;
@@ -38,17 +39,12 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
-import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.MetadataHelper;
-import it.auties.whatsapp.util.ProxyAuthenticator;
-import lombok.Builder.Default;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import it.auties.whatsapp.util.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jilt.Builder;
+import org.jilt.BuilderStyle;
+import org.jilt.Opt;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -63,100 +59,90 @@ import java.util.stream.Stream;
 /**
  * This controller holds the user-related data regarding a WhatsappWeb session
  */
-@SuperBuilder
-@Jacksonized
-@Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store extends Controller<Store> {
     /**
      * The version used by this session
      */
+    @Nullable
     private URI proxy;
 
     /**
      * The version used by this session
      */
-    private Version version;
+    @NonNull
+    private final FutureReference<Version> version;
 
     /**
      * Whether this account is online for other users
      */
-    @Getter
-    @Setter
-    @Default
-    private boolean online = false;
+    private boolean online;
 
     /**
      * The locale of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
-    @Getter
-    @Setter
+    @Nullable
     private String locale;
 
     /**
      * The name of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
-    @Getter
-    @Setter
-    @Default
-    private String name = "Cobalt";
+    @NonNull
+    private String name;
 
     /**
      * Whether the linked companion is a business account or not
      */
-    @Getter
-    @Setter
     private boolean business;
 
     /**
      * The address of this account, if it's a business account
      */
-    @Setter
+    @Nullable
     private String businessAddress;
 
     /**
      * The longitude of this account's location, if it's a business account
      */
-    @Setter
+    @Nullable
     private Double businessLongitude;
 
     /**
      * The latitude of this account's location, if it's a business account
      */
-    @Setter
+    @Nullable
     private Double businessLatitude;
 
     /**
      * The description of this account, if it's a business account
      */
-    @Setter
+    @Nullable
     private String businessDescription;
 
     /**
      * The website of this account, if it's a business account
      */
-    @Setter
+    @Nullable
     private String businessWebsite;
 
     /**
      * The email of this account, if it's a business account
      */
-    @Setter
+    @Nullable
     private String businessEmail;
 
     /**
      * The category of this account, if it's a business account
      */
-    @Setter
+    @Nullable
     private BusinessCategory businessCategory;
 
     /**
      * The hash of the companion associated with this session
      */
-    @Getter
-    @Setter
+    @Nullable
     private String deviceHash;
 
     /**
@@ -164,15 +150,14 @@ public final class Store extends Controller<Store> {
      * The key here is the index of the device's key
      * The value is the device's companion jid
      */
-    @Setter
-    @Default
-    private LinkedHashMap<ContactJid, Integer> linkedDevicesKeys = new LinkedHashMap<>();
+    @NonNull
+    private LinkedHashMap<ContactJid, Integer> linkedDevicesKeys;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
-    @Setter
+    @Nullable
     private URI profilePicture;
 
     /**
@@ -180,80 +165,66 @@ public final class Store extends Controller<Store> {
      * This field will be null while the user hasn't logged in yet.
      * Assumed to be non-null otherwise.
      */
-    @Getter
-    @Setter
+    @Nullable
     private String about;
 
     /**
      * The user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-    @Getter
-    @Setter
+    @Nullable
     private ContactJid jid;
 
     /**
      * The lid user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-    @Getter
-    @Setter
+    @Nullable
     private ContactJid lid;
 
     /**
      * The non-null map of properties received by whatsapp
      */
     @NonNull
-    @Default
-    @Setter
-    private ConcurrentHashMap<String, String> properties = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> properties;
 
     /**
      * The non-null map of chats
      */
     @NonNull
-    @Default
     @JsonIgnore
-    private ConcurrentHashMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ContactJid, Chat> chats;
 
     /**
      * The non-null map of contacts
      */
     @NonNull
-    @Default
-    private ConcurrentHashMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ContactJid, Contact> contacts;
 
     /**
      * The non-null list of status messages
      */
     @NonNull
-    @Default
-    private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status;
 
     /**
      * The non-null map of privacy settings
      */
     @NonNull
-    @Default
-    private ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings;
 
     /**
      * The non-null map of calls
      */
     @NonNull
-    @Default
-    private ConcurrentHashMap<String, Call> calls = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Call> calls;
 
     /**
      * Whether chats should be unarchived if a new message arrives
      */
-    @Getter
-    @Setter
     private boolean unarchiveChats;
 
     /**
      * Whether the twenty-hours format is being used by the client
      */
-    @Getter
-    @Setter
     private boolean twentyFourHourFormat;
 
     /**
@@ -262,134 +233,207 @@ public final class Store extends Controller<Store> {
      */
     @NonNull
     @JsonIgnore
-    @Default
-    private ConcurrentHashMap<String, Request> requests = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Request> requests;
 
     /**
      * The non-null list of replies waiting to be fulfilled
      */
     @NonNull
     @JsonIgnore
-    @Default
-    private ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers;
 
     /**
      * The non-null list of listeners
      */
     @NonNull
     @JsonIgnore
-    @Default
-    private final KeySetView<Listener, Boolean> listeners = ConcurrentHashMap.newKeySet();
+    private final KeySetView<Listener, Boolean> listeners;
 
     /**
      * The request tag, used to create messages
      */
     @NonNull
     @JsonIgnore
-    @Default
-    private String tag = HexFormat.of().formatHex(BytesHelper.random(1));
+    private final String tag;
 
     /**
      * The timestampSeconds in seconds for the initialization of this object
      */
-    @Default
-    @Getter
-    private long initializationTimeStamp = Clock.nowSeconds();
+    private final long initializationTimeStamp;
 
     /**
      * The media connection associated with this store
      */
     @JsonIgnore
+    @Nullable
     private MediaConnection mediaConnection;
 
     /**
      * The media connection latch associated with this store
      */
     @JsonIgnore
-    @Default
-    private CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
+    @NonNull
+    private final CountDownLatch mediaConnectionLatch;
 
     /**
      * The request tag, used to create messages
      */
     @NonNull
-    @Getter
-    @Setter
-    @Default
-    private ChatEphemeralTimer newChatsEphemeralTimer = ChatEphemeralTimer.OFF;
+    private ChatEphemeralTimer newChatsEphemeralTimer;
 
     /**
      * The setting to use when generating previews for text messages that contain links
      */
-    @Getter
-    @Setter
-    @Default
-    private TextPreviewSetting textPreviewSetting = TextPreviewSetting.ENABLED_WITH_INFERENCE;
+    @NonNull
+    private TextPreviewSetting textPreviewSetting;
 
     /**
      * Describes how much chat history Whatsapp should send
      */
-    @Getter
-    @Setter
-    @Default
     @NonNull
-    private WebHistoryLength historyLength = WebHistoryLength.STANDARD;
+    private WebHistoryLength historyLength;
 
     /**
      * Whether listeners should be automatically scanned and registered or not
      */
-    @Getter
-    @Setter
-    @Default
-    private boolean autodetectListeners = true;
+    private boolean autodetectListeners;
 
 
     /**
      * Whether updates about the presence of the session should be sent automatically to Whatsapp
      * For example, when the bot is started, the status of the companion is changed to available if this option is enabled
      */
-    @Getter
-    @Setter
-    @Default
-    private boolean automaticPresenceUpdates = true;
+    private boolean automaticPresenceUpdates;
 
     /**
      * The release channel to use when connecting to Whatsapp
      * This should allow the use of beta features
      */
-    @Getter
-    @Setter
     @NonNull
-    @Default
-    private UserAgentReleaseChannel releaseChannel = UserAgentReleaseChannel.RELEASE;
+    private UserAgentReleaseChannel releaseChannel;
 
     /**
      * Metadata about the device that is being simulated for Whatsapp
      */
-    @Getter
-    @Setter
     @NonNull
     private CompanionDevice device;
 
     /**
      * The os of the associated device, available only for the web api
      */
-    @Setter
+    @Nullable
     private UserAgentPlatform companionDeviceOs;
 
     /**
      * Whether the mac of every app state request should be checked
      */
-    @Getter
-    @Setter
-    @Default
-    private boolean checkPatchMacs = false;
+    private boolean checkPatchMacs;
+
+    @SuppressWarnings("ClassEscapesDefinedScope")
+    @Builder(style = BuilderStyle.TYPE_SAFE_UNGROUPED_OPTIONALS, factoryMethod = "builder")
+    public Store(
+            @NonNull UUID uuid,
+            @NonNull ClientType clientType,
+            @NonNull CompanionDevice device,
+            @Nullable @Opt PhoneNumber phoneNumber,
+            @Nullable @Opt ControllerSerializer serializer,
+            @Nullable @Opt List<String> alias,
+            @Nullable @Opt URI proxy,
+            @Nullable @Opt Version version,
+            @Opt boolean online,
+            @Nullable @Opt String locale,
+            @Nullable @Opt String name,
+            @Opt boolean business,
+            @Nullable @Opt String businessAddress,
+            @Nullable @Opt Double businessLongitude,
+            @Nullable @Opt Double businessLatitude,
+            @Nullable @Opt String businessDescription,
+            @Nullable @Opt String businessWebsite,
+            @Nullable @Opt String businessEmail,
+            @Nullable @Opt BusinessCategory businessCategory,
+            @Nullable @Opt String deviceHash,
+            @Nullable @Opt LinkedHashMap<ContactJid, Integer> linkedDevicesKeys,
+            @Nullable @Opt URI profilePicture,
+            @Nullable @Opt String about,
+            @Nullable @Opt ContactJid jid,
+            @Nullable @Opt ContactJid lid,
+            @Nullable @Opt ConcurrentHashMap<String, String> properties,
+            @Nullable @Opt ConcurrentHashMap<ContactJid, Chat> chats,
+            @Nullable @Opt ConcurrentHashMap<ContactJid, Contact> contacts,
+            @Nullable @Opt ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status,
+            @Nullable @Opt ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings,
+            @Nullable @Opt ConcurrentHashMap<String, Call> calls,
+            @Opt boolean unarchiveChats,
+            @Opt boolean twentyFourHourFormat,
+            @Nullable @Opt ConcurrentHashMap<String, Request> requests,
+            @Nullable @Opt ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers,
+            @Nullable @Opt String tag,
+            @Nullable @Opt Long initializationTimeStamp,
+            @Nullable @Opt MediaConnection mediaConnection,
+            @Nullable @Opt ChatEphemeralTimer newChatsEphemeralTimer,
+            @Nullable @Opt TextPreviewSetting textPreviewSetting,
+            @Nullable @Opt WebHistoryLength historyLength,
+            @Opt @Nullable Boolean autodetectListeners,
+            @Opt @Nullable Boolean automaticPresenceUpdates,
+            @Opt @Nullable UserAgentReleaseChannel releaseChannel,
+            @Nullable @Opt UserAgentPlatform companionDeviceOs,
+            @Opt boolean checkPatchMacs
+    ) {
+        super(uuid, phoneNumber, Objects.requireNonNullElseGet(serializer, DefaultControllerSerializer::instance), clientType, Objects.requireNonNullElseGet(alias, ArrayList::new));
+        this.proxy = proxy;
+        if(proxy != null) {
+            ProxyAuthenticator.register(proxy);
+        }
+        
+        this.version = new FutureReference<>(version, () -> MetadataHelper.getVersion(device.osType(), business));
+        this.online = online;
+        this.locale = locale;
+        this.name = Objects.requireNonNullElse(name, "Cobalt");
+        this.business = business;
+        this.businessAddress = businessAddress;
+        this.businessLongitude = businessLongitude;
+        this.businessLatitude = businessLatitude;
+        this.businessDescription = businessDescription;
+        this.businessWebsite = businessWebsite;
+        this.businessEmail = businessEmail;
+        this.businessCategory = businessCategory;
+        this.deviceHash = deviceHash;
+        this.linkedDevicesKeys = Objects.requireNonNullElseGet(linkedDevicesKeys, LinkedHashMap::new);
+        this.profilePicture = profilePicture;
+        this.about = about;
+        this.jid = jid;
+        this.lid = lid;
+        this.properties = Objects.requireNonNullElseGet(properties, ConcurrentHashMap::new);
+        this.chats = Objects.requireNonNullElseGet(chats, ConcurrentHashMap::new);
+        this.contacts = Objects.requireNonNullElseGet(contacts, ConcurrentHashMap::new);
+        this.status = Objects.requireNonNullElseGet(status, ConcurrentHashMap::new);
+        this.privacySettings = Objects.requireNonNullElseGet(privacySettings, ConcurrentHashMap::new);
+        this.calls = Objects.requireNonNullElseGet(calls, ConcurrentHashMap::new);
+        this.unarchiveChats = unarchiveChats;
+        this.twentyFourHourFormat = twentyFourHourFormat;
+        this.requests = Objects.requireNonNullElseGet(requests, ConcurrentHashMap::new);
+        this.replyHandlers = Objects.requireNonNullElseGet(replyHandlers, ConcurrentHashMap::new);
+        this.tag = Objects.requireNonNullElseGet(tag, () -> HexFormat.of().formatHex(BytesHelper.random(1)));
+        this.initializationTimeStamp = Objects.requireNonNullElseGet(initializationTimeStamp, Clock::nowMilliseconds);
+        this.mediaConnection = mediaConnection;
+        this.mediaConnectionLatch = new CountDownLatch(1);
+        this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
+        this.textPreviewSetting = Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE);
+        this.historyLength = Objects.requireNonNullElse(historyLength, WebHistoryLength.STANDARD);
+        this.autodetectListeners = Objects.requireNonNullElse(autodetectListeners, true);
+        this.automaticPresenceUpdates = Objects.requireNonNullElse(automaticPresenceUpdates, true);
+        this.releaseChannel = Objects.requireNonNullElse(releaseChannel, UserAgentReleaseChannel.RELEASE);
+        this.listeners = ConcurrentHashMap.newKeySet();
+        this.device = device;
+        this.companionDeviceOs = companionDeviceOs;
+        this.checkPatchMacs = checkPatchMacs;
+    }
 
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param clientType  the non-null type of the client
+     * @param uuid       the uuid of the session to load, can be null
+     * @param clientType the non-null type of the client
      * @return a non-null store
      */
     public static Store of(UUID uuid, @NonNull ClientType clientType) {
@@ -399,22 +443,22 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer              
+     * @param uuid       the uuid of the session to load, can be null
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
      * @return a non-null store
      */
     public static Store of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
         return ofNullable(uuid, clientType, serializer)
-                .map(result -> result.serializer(serializer))
+                .map(result -> result.setSerializer(serializer))
                 .orElseGet(() -> random(uuid, null, clientType, serializer));
     }
 
     /**
      * Returns the store saved in memory or returns an empty optional
      *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param clientType  the non-null type of the client
+     * @param uuid       the uuid of the session to load, can be null
+     * @param clientType the non-null type of the client
      * @return a non-null store
      */
     public static Optional<Store> ofNullable(UUID uuid, @NonNull ClientType clientType) {
@@ -424,13 +468,13 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or returns an empty optional
      *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
+     * @param uuid       the uuid of the session to load, can be null
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
      * @return a non-null store
      */
     public static Optional<Store> ofNullable(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if(uuid == null){
+        if (uuid == null) {
             return Optional.empty();
         }
 
@@ -450,14 +494,14 @@ public final class Store extends Controller<Store> {
     public static Store of(UUID uuid, long phoneNumber, @NonNull ClientType clientType) {
         return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
     }
-    
+
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
      * @param uuid        the uuid of the session to load, can be null
      * @param phoneNumber the phone number of the session to load
      * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer              
+     * @param serializer  the non-null serializer
      * @return a non-null store
      */
     public static Store of(UUID uuid, long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
@@ -475,7 +519,7 @@ public final class Store extends Controller<Store> {
     public static Optional<Store> ofNullable(Long phoneNumber, @NonNull ClientType clientType) {
         return ofNullable(phoneNumber, clientType, DefaultControllerSerializer.instance());
     }
-    
+
     /**
      * Returns the store saved in memory or returns an empty optional
      *
@@ -485,13 +529,13 @@ public final class Store extends Controller<Store> {
      * @return a non-null store
      */
     public static Optional<Store> ofNullable(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if(phoneNumber == null){
+        if (phoneNumber == null) {
             return Optional.empty();
         }
-        
+
         var store = serializer.deserializeStore(clientType, phoneNumber);
         store.ifPresent(entry -> {
-            entry.serializer(serializer);
+            entry.setSerializer(serializer);
             serializer.attributeStore(entry);
         });
         return store;
@@ -500,8 +544,8 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param alias the alias of the session to load, can be null
-     * @param clientType  the non-null type of the client
+     * @param alias      the alias of the session to load, can be null
+     * @param clientType the non-null type of the client
      * @return a non-null store
      */
     public static Store of(UUID uuid, String alias, @NonNull ClientType clientType) {
@@ -525,8 +569,8 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or returns an empty optional
      *
-     * @param alias the alias of the session to load, can be null
-     * @param clientType  the non-null type of the client
+     * @param alias      the alias of the session to load, can be null
+     * @param clientType the non-null type of the client
      * @return a non-null store
      */
     public static Optional<Store> ofNullable(String alias, @NonNull ClientType clientType) {
@@ -536,13 +580,13 @@ public final class Store extends Controller<Store> {
     /**
      * Returns the store saved in memory or returns an empty optional
      *
-     * @param alias the alias of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
+     * @param alias      the alias of the session to load, can be null
+     * @param clientType the non-null type of the client
+     * @param serializer the non-null serializer
      * @return a non-null store
      */
     public static Optional<Store> ofNullable(String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if(alias == null){
+        if (alias == null) {
             return Optional.empty();
         }
 
@@ -576,14 +620,13 @@ public final class Store extends Controller<Store> {
      */
     public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, String... alias) {
         var phone = PhoneNumber.ofNullable(phoneNumber).orElse(null);
-        var result = Store.builder()
-                .alias(Objects.requireNonNullElseGet(Arrays.asList(alias), ArrayList::new))
-                .serializer(serializer)
+        var result = StoreBuilder.builder()
+                .uuid(uuid)
                 .clientType(clientType)
-                .jid(phone == null ? null : phone.toJid())
-                .phoneNumber(phone)
                 .device(getDefaultDevice(clientType))
-                .uuid(Objects.requireNonNullElseGet(uuid, UUID::randomUUID))
+                .phoneNumber(phone)
+                .serializer(serializer)
+                .jid(phone == null ? null : phone.toJid())
                 .build();
         serializer.linkMetadata(result);
         return result;
@@ -889,8 +932,8 @@ public final class Store extends Controller<Store> {
             contact.setFullName(chat.name());
         }
         var oldChat = chats.get(chat.jid());
-        if(oldChat != null) {
-            if(oldChat.hasName() && !chat.hasName()){
+        if (oldChat != null) {
+            if (oldChat.hasName() && !chat.hasName()) {
                 chat.setName(oldChat.name()); // Coming from contact actions
             }
             joinMessages(chat, oldChat);
@@ -973,7 +1016,7 @@ public final class Store extends Controller<Store> {
         var chat = findChatByJid(info.chatJid())
                 .orElseGet(() -> addNewChat(info.chatJid()));
         info.setChat(chat);
-        if(info.fromMe() && jid != null) {
+        if (info.fromMe() && jid != null) {
             info.key().setSenderJid(jid.toWhatsappJid());
         }
         info.key()
@@ -1023,7 +1066,7 @@ public final class Store extends Controller<Store> {
     }
 
     private void handlePollCreation(MessageInfo info, PollCreationMessage pollCreationMessage) {
-        if(pollCreationMessage.encryptionKey().isPresent()){
+        if (pollCreationMessage.encryptionKey().isPresent()) {
             return;
         }
 
@@ -1120,8 +1163,12 @@ public final class Store extends Controller<Store> {
      *
      * @return an unmodifiable map
      */
-    public Map<String, String> properties(){
+    public Map<String, String> properties() {
         return Collections.unmodifiableMap(properties);
+    }
+
+    public void addProperties(Map<String, String> properties) {
+        this.properties.putAll(properties);
     }
 
     /**
@@ -1130,7 +1177,7 @@ public final class Store extends Controller<Store> {
      * @return the media connection
      */
     public MediaConnection mediaConnection() {
-        return mediaConnection(Duration.ofMinutes(2));
+        return mediaConnection(Duration.ofMinutes(1));
     }
 
     /**
@@ -1157,7 +1204,7 @@ public final class Store extends Controller<Store> {
      * @param mediaConnection a media connection
      * @return the same instance
      */
-    public Store mediaConnection(MediaConnection mediaConnection) {
+    public Store setMediaConnection(MediaConnection mediaConnection) {
         this.mediaConnection = mediaConnection;
         mediaConnectionLatch.countDown();
         return this;
@@ -1228,7 +1275,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null list
      */
-    public Collection<PrivacySettingEntry> privacySettings(){
+    public Collection<PrivacySettingEntry> privacySettings() {
         return privacySettings.values();
     }
 
@@ -1238,18 +1285,18 @@ public final class Store extends Controller<Store> {
      * @param type a non-null type
      * @return a non-null entry
      */
-    public PrivacySettingEntry findPrivacySetting(@NonNull PrivacySettingType type){
+    public PrivacySettingEntry findPrivacySetting(@NonNull PrivacySettingType type) {
         return privacySettings.get(type);
     }
 
     /**
      * Sets the privacy setting entry for a type
      *
-     * @param type a non-null type
+     * @param type  a non-null type
      * @param entry the non-null entry
      * @return the old privacy setting entry
      */
-    public PrivacySettingEntry addPrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingEntry entry){
+    public PrivacySettingEntry addPrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingEntry entry) {
         return privacySettings.put(type, entry);
     }
 
@@ -1258,7 +1305,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an unmodifiable map
      */
-    public Map<ContactJid, Integer> linkedDevicesKeys(){
+    public Map<ContactJid, Integer> linkedDevicesKeys() {
         return Collections.unmodifiableMap(linkedDevicesKeys);
     }
 
@@ -1268,7 +1315,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an unmodifiable list
      */
-    public Collection<ContactJid> linkedDevices(){
+    public Collection<ContactJid> linkedDevices() {
         return Collections.unmodifiableCollection(linkedDevicesKeys.keySet());
     }
 
@@ -1280,7 +1327,7 @@ public final class Store extends Controller<Store> {
      * @param keyId     the id of its key
      * @return the nullable old key
      */
-    public Optional<Integer> addLinkedDevice(@NonNull ContactJid companion, int keyId){
+    public Optional<Integer> addLinkedDevice(@NonNull ContactJid companion, int keyId) {
         return Optional.ofNullable(linkedDevicesKeys.put(companion, keyId));
     }
 
@@ -1291,14 +1338,14 @@ public final class Store extends Controller<Store> {
      * @param companion a non-null companion
      * @return the nullable old key
      */
-    public Optional<Integer> removeLinkedCompanion(@NonNull ContactJid companion){
+    public Optional<Integer> removeLinkedCompanion(@NonNull ContactJid companion) {
         return Optional.ofNullable(linkedDevicesKeys.remove(companion));
     }
 
     /**
      * Removes all linked companion
      */
-    public void removeLinkedCompanions(){
+    public void removeLinkedCompanions() {
         linkedDevicesKeys.clear();
     }
 
@@ -1307,7 +1354,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null collection
      */
-    public Collection<Listener> listeners(){
+    public Collection<Listener> listeners() {
         return Collections.unmodifiableSet(listeners);
     }
 
@@ -1355,41 +1402,17 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * Sets the version of this session
-     *
-     * @param version the non-null version
-     * @return a non-null version
-     */
-    public Store version(@NonNull Version version){
-        this.version = version;
-        return this;
-    }
-
-    /**
-     * Returns the version of this object
-     *
-     * @return a non-null version
-     */
-    public Version version(){
-        if(version == null){
-            this.version = MetadataHelper.getVersion(device.osType(), business).join();
-        }
-
-        return version;
-    }
-
-    /**
      * Sets the proxy used by this session
      *
      * @return the same instance
      */
-    public Store proxy(URI proxy) {
-        if(proxy != null && proxy.getUserInfo() != null){
+    public Store setProxy(URI proxy) {
+        if (proxy != null && proxy.getUserInfo() != null) {
             ProxyAuthenticator.register(proxy);
-        }else if(proxy == null && this.proxy != null && this.proxy.getUserInfo() != null){
+        } else if (proxy == null && this.proxy != null && this.proxy.getUserInfo() != null) {
             ProxyAuthenticator.unregister(this.proxy);
         }
-        
+
         this.proxy = proxy;
         return this;
     }
@@ -1418,7 +1441,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<String> businessAddress(){
+    public Optional<String> businessAddress() {
         return Optional.ofNullable(businessAddress);
     }
 
@@ -1427,7 +1450,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<Double> businessLongitude(){
+    public Optional<Double> businessLongitude() {
         return Optional.ofNullable(businessLongitude);
     }
 
@@ -1436,7 +1459,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<Double> businessLatitude(){
+    public Optional<Double> businessLatitude() {
         return Optional.ofNullable(businessLatitude);
     }
 
@@ -1445,7 +1468,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<String> businessDescription(){
+    public Optional<String> businessDescription() {
         return Optional.ofNullable(businessDescription);
     }
 
@@ -1454,7 +1477,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<String> businessWebsite(){
+    public Optional<String> businessWebsite() {
         return Optional.ofNullable(businessWebsite);
     }
 
@@ -1463,7 +1486,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<String> businessEmail(){
+    public Optional<String> businessEmail() {
         return Optional.ofNullable(businessEmail);
     }
 
@@ -1472,14 +1495,13 @@ public final class Store extends Controller<Store> {
      *
      * @return an optional
      */
-    public Optional<BusinessCategory> businessCategory(){
+    public Optional<BusinessCategory> businessCategory() {
         return Optional.ofNullable(businessCategory);
     }
 
     public void dispose() {
         serialize(false);
         mediaConnectionLatch.countDown();
-        mediaConnectionLatch = new CountDownLatch(1);
     }
 
     @Override
@@ -1507,14 +1529,233 @@ public final class Store extends Controller<Store> {
         return callId == null ? Optional.empty() : Optional.ofNullable(calls.get(callId));
     }
 
-    public static abstract class StoreBuilder<C extends Store, B extends StoreBuilder<C, B>> extends ControllerBuilder<Store, C, B> {
-        public StoreBuilder<C, B> proxy(URI proxy) {
-            if(proxy != null && proxy.getUserInfo() != null){
-                ProxyAuthenticator.register(proxy);
-            }
+    public String tag() {
+        return tag;
+    }
 
-            this.proxy = proxy;
-            return this;
-        }
+    @JsonGetter("version")
+    public Version version() {
+        return version.value();
+    }
+
+    public boolean online() {
+        return this.online;
+    }
+
+    public Optional<String> locale() {
+        return Optional.ofNullable(this.locale);
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public boolean business() {
+        return this.business;
+    }
+
+    public Optional<String> deviceHash() {
+        return Optional.ofNullable(this.deviceHash);
+    }
+
+    public Optional<String> about() {
+        return Optional.ofNullable(this.about);
+    }
+
+    public Optional<ContactJid> jid() {
+        return Optional.ofNullable(this.jid);
+    }
+
+    public Optional<ContactJid> lid() {
+        return Optional.ofNullable(this.lid);
+    }
+
+    public boolean unarchiveChats() {
+        return this.unarchiveChats;
+    }
+
+    public boolean twentyFourHourFormat() {
+        return this.twentyFourHourFormat;
+    }
+
+    public long initializationTimeStamp() {
+        return this.initializationTimeStamp;
+    }
+
+    public ChatEphemeralTimer newChatsEphemeralTimer() {
+        return this.newChatsEphemeralTimer;
+    }
+
+    public TextPreviewSetting textPreviewSetting() {
+        return this.textPreviewSetting;
+    }
+
+    public WebHistoryLength historyLength() {
+        return this.historyLength;
+    }
+
+    public boolean autodetectListeners() {
+        return this.autodetectListeners;
+    }
+
+    public boolean automaticPresenceUpdates() {
+        return this.automaticPresenceUpdates;
+    }
+
+    public UserAgentReleaseChannel releaseChannel() {
+        return this.releaseChannel;
+    }
+
+    public CompanionDevice device() {
+        return this.device;
+    }
+
+    public boolean checkPatchMacs() {
+        return this.checkPatchMacs;
+    }
+
+    public Store setOnline(boolean online) {
+        this.online = online;
+        return this;
+    }
+
+    public Store setLocale(String locale) {
+        this.locale = locale;
+        return this;
+    }
+
+    public Store setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public Store setBusiness(boolean business) {
+        this.business = business;
+        return this;
+    }
+
+    public Store setBusinessAddress(String businessAddress) {
+        this.businessAddress = businessAddress;
+        return this;
+    }
+
+    public Store setBusinessLongitude(Double businessLongitude) {
+        this.businessLongitude = businessLongitude;
+        return this;
+    }
+
+    public Store setBusinessLatitude(Double businessLatitude) {
+        this.businessLatitude = businessLatitude;
+        return this;
+    }
+
+    public Store setBusinessDescription(String businessDescription) {
+        this.businessDescription = businessDescription;
+        return this;
+    }
+
+    public Store setBusinessWebsite(String businessWebsite) {
+        this.businessWebsite = businessWebsite;
+        return this;
+    }
+
+    public Store setBusinessEmail(String businessEmail) {
+        this.businessEmail = businessEmail;
+        return this;
+    }
+
+    public Store setBusinessCategory(BusinessCategory businessCategory) {
+        this.businessCategory = businessCategory;
+        return this;
+    }
+
+    public Store setDeviceHash(String deviceHash) {
+        this.deviceHash = deviceHash;
+        return this;
+    }
+
+    public Store setLinkedDevicesKeys(LinkedHashMap<ContactJid, Integer> linkedDevicesKeys) {
+        this.linkedDevicesKeys = linkedDevicesKeys;
+        return this;
+    }
+
+    public Store setProfilePicture(URI profilePicture) {
+        this.profilePicture = profilePicture;
+        return this;
+    }
+
+    public Store setAbout(String about) {
+        this.about = about;
+        return this;
+    }
+
+    public Store setJid(ContactJid jid) {
+        this.jid = jid;
+        return this;
+    }
+
+    public Store setLid(ContactJid lid) {
+        this.lid = lid;
+        return this;
+    }
+
+    public Store setUnarchiveChats(boolean unarchiveChats) {
+        this.unarchiveChats = unarchiveChats;
+        return this;
+    }
+
+    public Store setTwentyFourHourFormat(boolean twentyFourHourFormat) {
+        this.twentyFourHourFormat = twentyFourHourFormat;
+        return this;
+    }
+
+    public Store setNewChatsEphemeralTimer(ChatEphemeralTimer newChatsEphemeralTimer) {
+        this.newChatsEphemeralTimer = newChatsEphemeralTimer;
+        return this;
+    }
+
+    public Store setTextPreviewSetting(TextPreviewSetting textPreviewSetting) {
+        this.textPreviewSetting = textPreviewSetting;
+        return this;
+    }
+
+    public Store setHistoryLength(WebHistoryLength historyLength) {
+        this.historyLength = historyLength;
+        return this;
+    }
+
+    public Store setAutodetectListeners(boolean autodetectListeners) {
+        this.autodetectListeners = autodetectListeners;
+        return this;
+    }
+
+    public Store setAutomaticPresenceUpdates(boolean automaticPresenceUpdates) {
+        this.automaticPresenceUpdates = automaticPresenceUpdates;
+        return this;
+    }
+
+    public Store setReleaseChannel(UserAgentReleaseChannel releaseChannel) {
+        this.releaseChannel = releaseChannel;
+        return this;
+    }
+
+    public Store setDevice(CompanionDevice device) {
+        this.device = device;
+        return this;
+    }
+
+    public Store setCompanionDeviceOs(UserAgentPlatform companionDeviceOs) {
+        this.companionDeviceOs = companionDeviceOs;
+        return this;
+    }
+
+    public Store setCheckPatchMacs(boolean checkPatchMacs) {
+        this.checkPatchMacs = checkPatchMacs;
+        return this;
+    }
+
+    public Store setVersion(@NonNull Version version) {
+        this.version.setValue(version);
+        return this;
     }
 }

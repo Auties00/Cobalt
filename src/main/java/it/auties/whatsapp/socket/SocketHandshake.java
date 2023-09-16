@@ -43,8 +43,8 @@ public class SocketHandshake {
 
     public void finish() {
         var expanded = Hkdf.extractAndExpand(new byte[0], salt, null, 64);
-        keys.writeKey(Arrays.copyOfRange(expanded, 0, 32));
-        keys.readKey(Arrays.copyOfRange(expanded, 32, 64));
+        keys.setWriteKey(Arrays.copyOfRange(expanded, 0, 32));
+        keys.setReadKey(Arrays.copyOfRange(expanded, 32, 64));
         dispose();
     }
 

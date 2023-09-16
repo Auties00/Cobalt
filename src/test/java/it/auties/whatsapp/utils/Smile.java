@@ -1,4 +1,4 @@
-package it.auties.whatsapp.util;
+package it.auties.whatsapp.utils;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

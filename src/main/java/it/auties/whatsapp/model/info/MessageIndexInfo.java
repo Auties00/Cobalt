@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.info;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -38,7 +37,7 @@ public record MessageIndexInfo(@NonNull String type, Optional<ContactJid> chatJi
      * @return a non-null index info
      */
     public static MessageIndexInfo ofJson(@NonNull String json) {
-        var array = Json.readValue(json, new TypeReference<List<String>>() {});
+        var array = Json.readList(json, String.class);
         var type = getProperty(array, 0).orElseThrow(() -> new NoSuchElementException("Cannot parse MessageSync: missing type"));
         var chatJid = getProperty(array, 1).map(ContactJid::of);
         var messageId = getProperty(array, 2);

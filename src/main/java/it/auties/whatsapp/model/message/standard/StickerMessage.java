@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -85,6 +86,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
     private final boolean avatar;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public StickerMessage(@Nullable String mediaUrl, byte @Nullable [] mediaSha256, byte @Nullable [] mediaEncryptedSha256, byte @Nullable [] mediaKey, @Nullable String mimetype, @Nullable Integer height, @Nullable Integer width, @Nullable String mediaDirectPath, @Nullable Long mediaSize, @Nullable Long mediaKeyTimestampSeconds, @Nullable Integer firstFrameLength, byte @Nullable [] firstFrameSidecar, boolean animated, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, long stickerSentTimestamp, boolean avatar) {
         this.mediaUrl = mediaUrl;
         this.mediaSha256 = mediaSha256;

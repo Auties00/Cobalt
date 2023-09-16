@@ -303,7 +303,8 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {
-        return appStateHandler.push(store.jid(), List.of(request));
+        var jid = store.jid().orElseThrow(() -> new IllegalStateException("The session isn't connected"));
+        return appStateHandler.push(jid, List.of(request));
     }
 
     public CompletableFuture<Void> pushPatches(ContactJid jid, List<PatchRequest> requests) {
@@ -327,13 +328,14 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
 
+        var jid = store.jid().orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         var key = new MessageKeyBuilder()
                 .chatJid(companion)
                 .fromMe(true)
-                .senderJid(store().jid())
+                .senderJid(jid)
                 .build();
         var info = new MessageInfoBuilder()
-                .senderJid(store().jid())
+                .senderJid(jid)
                 .key(key)
                 .message(MessageContainer.of(message))
                 .timestampSeconds(Clock.nowSeconds())
@@ -820,9 +822,13 @@ public class SocketHandler implements SocketListener {
             sendWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")));
             onUserNameChange(newName, oldName);
         }
-        var self = store().jid().toWhatsappJid();
-        store().findContactByJid(self).orElseGet(() -> store().addContact(self)).setChosenName(newName);
-        store().name(newName);
+        var self = store.jid()
+                .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
+                .toWhatsappJid();
+        store().findContactByJid(self)
+                .orElseGet(() -> store().addContact(self))
+                .setChosenName(newName);
+        store().setName(newName);
     }
 
     private void onUserNameChange(String newName, String oldName) {
@@ -839,7 +845,7 @@ public class SocketHandler implements SocketListener {
         if (oldLocale != null) {
             onUserLocaleChange(newLocale, oldLocale);
         }
-        store().locale(newLocale);
+        store().setLocale(newLocale);
     }
 
     private void onUserLocaleChange(String newLocale, String oldLocale) {

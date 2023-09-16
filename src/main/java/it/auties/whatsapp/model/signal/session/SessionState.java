@@ -1,9 +1,9 @@
 package it.auties.whatsapp.model.signal.session;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import lombok.Builder;
-import lombok.Builder.Default;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jilt.Builder;
 
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -11,8 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Builder
-public class SessionState {
+public final class SessionState {
     private final int version;
 
     private final int registrationId;
@@ -22,8 +21,7 @@ public class SessionState {
     private final byte @NonNull [] remoteIdentityKey;
 
     @NonNull
-    @Default
-    private ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SessionChain> chains;
 
     private byte @NonNull [] rootKey;
 
@@ -37,6 +35,22 @@ public class SessionState {
     private int previousCounter;
 
     private boolean closed;
+
+    @Builder(factoryMethod = "builder")
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public SessionState(int version, int registrationId, byte @NonNull [] baseKey, byte @NonNull [] remoteIdentityKey, @NonNull ConcurrentHashMap<String, SessionChain> chains, byte @NonNull [] rootKey, SessionPreKey pendingPreKey, @NonNull SignalKeyPair ephemeralKeyPair, byte @NonNull [] lastRemoteEphemeralKey, int previousCounter, boolean closed) {
+        this.version = version;
+        this.registrationId = registrationId;
+        this.baseKey = baseKey;
+        this.remoteIdentityKey = remoteIdentityKey;
+        this.chains = Objects.requireNonNullElseGet(chains, ConcurrentHashMap::new);
+        this.rootKey = rootKey;
+        this.pendingPreKey = pendingPreKey;
+        this.ephemeralKeyPair = ephemeralKeyPair;
+        this.lastRemoteEphemeralKey = lastRemoteEphemeralKey;
+        this.previousCounter = previousCounter;
+        this.closed = closed;
+    }
 
     public boolean hasChain(byte[] senderEphemeral) {
         return chains.containsKey(HexFormat.of().formatHex(senderEphemeral));

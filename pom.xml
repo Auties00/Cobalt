@@ -37,17 +37,6 @@
         </repository>
     </distributionManagement>
 
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-        <repository>
-            <id>projectlombok.org</id>
-            <url>https://projectlombok.org/edge-releases</url>
-        </repository>
-    </repositories>
-
     <profiles>
         <profile>
             <id>sign</id>
@@ -74,32 +63,7 @@
                         </executions>
                     </plugin>
 
-                    <!-- Delombok the project to prepare for javadoc generation -->
-                    <plugin>
-                        <groupId>com.github.auties00</groupId>
-                        <artifactId>delombok-plugin</artifactId>
-                        <version>${delombok.plugin.version}</version>
-                        <configuration>
-                            <rootDirectory>${project.build.sourceDirectory}</rootDirectory>
-                            <outputDirectory>${delombok.output}</outputDirectory>
-                            <excludedFiles>
-                                <excludedFile>module-info.java</excludedFile>
-                            </excludedFiles>
-                            <parameters>
-                                <encoding>UTF-8</encoding>
-                            </parameters>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <phase>process-sources</phase>
-                                <goals>
-                                    <goal>delombok</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!-- Generate and attach javadocs from delomboked source -->
+                    <!-- Generate and attach javadocs from source -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -113,7 +77,6 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <sourcepath>${delombok.output}</sourcepath>
                             <release>${java.version}</release>
                             <failOnError>true</failOnError>
                             <show>private</show>
@@ -167,6 +130,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
+        <jilt.version>1.2</jilt.version>
         <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
         <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
@@ -175,8 +139,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>2.0.0</protoc.version>
-        <lombok.version>edge-SNAPSHOT</lombok.version>
+        <protoc.version>3.0.0</protoc.version>
         <checker.framework.version>3.37.0</checker.framework.version>
         <junit.version>5.10.0-M1</junit.version>
         <jna.version>5.13.0</jna.version>
@@ -195,10 +158,8 @@
         <netty.buffer.version>4.1.93.Final</netty.buffer.version>
         <sl4j.version>2.0.7</sl4j.version>
         <log4j.version>2.20.0</log4j.version>
-        <delombok.plugin.version>1.18.24.1</delombok.plugin.version>
-        <delombok.input>${project.basedir}/src/main/java</delombok.input>
-        <delombok.output>${project.build.directory}/delombok</delombok.output>
         <maven.versions.version>2.15.0</maven.versions.version>
+        <dsl-json.version>2.0.2</dsl-json.version>
     </properties>
 
     <build>
@@ -221,16 +182,19 @@
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <annotationProcessorPath>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </annotationProcessorPath>
-                        <annotationProcessorPath>
                             <groupId>com.github.auties00</groupId>
                             <artifactId>protobuf-serialization-plugin</artifactId>
                             <version>${protoc.version}</version>
                         </annotationProcessorPath>
+                        <annotationProcessorPath>
+                            <groupId>cc.jilt</groupId>
+                            <artifactId>jilt</artifactId>
+                            <version>${jilt.version}</version>
+                        </annotationProcessorPath>
                     </annotationProcessorPaths>
+                    <compilerArgs>
+                        <compilerArg>-parameters</compilerArg>
+                    </compilerArgs>
                     <failOnError>true</failOnError>
                 </configuration>
             </plugin>
@@ -253,10 +217,10 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>compile</scope>
+            <groupId>cc.jilt</groupId>
+            <artifactId>jilt</artifactId>
+            <version>${jilt.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.checkerframework</groupId>
@@ -277,6 +241,11 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
             <version>${bouncy.castle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.dslplatform</groupId>
+            <artifactId>dsl-json</artifactId>
+            <version>${dsl-json.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
@@ -302,6 +271,11 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-smile</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+            <version>2.15.2</version>
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
