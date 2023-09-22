@@ -80,7 +80,7 @@ public class SocketHandler implements SocketListener {
     private final Executor socketExecutor;
 
     @NonNull
-    private SocketState state;
+    private volatile SocketState state;
 
     @NonNull
     private Keys keys;
@@ -214,6 +214,7 @@ public class SocketHandler implements SocketListener {
             disconnect(DisconnectReason.RECONNECTING);
             return;
         }
+        System.out.println("State: " + state);
         onDisconnected(state.toReason());
         onShutdown(state == SocketState.RECONNECTING);
     }
@@ -259,10 +260,10 @@ public class SocketHandler implements SocketListener {
         return logoutFuture;
     }
 
-    public CompletableFuture<Void> disconnect(DisconnectReason reason) {
+    public synchronized CompletableFuture<Void> disconnect(DisconnectReason reason) {
         var newState = SocketState.of(reason);
         if(state == newState) {
-            return  CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         setState(newState);
@@ -335,11 +336,13 @@ public class SocketHandler implements SocketListener {
 
         var jid = store.jid().orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         var key = new MessageKeyBuilder()
+                .id(MessageKey.randomId())
                 .chatJid(companion)
                 .fromMe(true)
                 .senderJid(jid)
                 .build();
         var info = new MessageInfoBuilder()
+                .status(MessageStatus.PENDING)
                 .senderJid(jid)
                 .key(key)
                 .message(MessageContainer.of(message))

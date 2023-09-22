@@ -10,8 +10,8 @@ public class WebTest {
     @Test
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
-                .lastConnection()
-                .historyLength(WebHistoryLength.ZERO)
+                .newConnection()
+                .historyLength(WebHistoryLength.EXTENDED)
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
@@ -23,7 +23,7 @@ public class WebTest {
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
                 .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact, chat.name(), status.name()))
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
-                .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
+                .addChatMessagesSyncListener((api, chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
                 .join();

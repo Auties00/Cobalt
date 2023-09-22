@@ -1,11 +1,13 @@
 package it.auties.whatsapp.model.mobile;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum VerificationCodeStatus {
-    OK,
-    SENT,
+    SUCCESS,
     ERROR;
 
-    public boolean isSuccessful() {
-        return this == OK || this == SENT;
+    @JsonCreator
+    public static VerificationCodeStatus of(String name) {
+        return name.equalsIgnoreCase("ok") || name.equalsIgnoreCase("sent") ? SUCCESS : ERROR;
     }
 }

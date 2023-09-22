@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
 import it.auties.whatsapp.model.info.StubType;
 import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
@@ -454,10 +455,12 @@ class StreamHandler {
                 .orElse(null);
         var parameters = getStubTypeParameters(metadata);
         var key = new MessageKeyBuilder()
+                .id(MessageKey.randomId())
                 .chatJid(chat.jid())
                 .senderJid(participantJid)
                 .build();
         var message = new MessageInfoBuilder()
+                .status(MessageStatus.PENDING)
                 .timestampSeconds(timestamp)
                 .key(key)
                 .ignore(true)
@@ -680,6 +683,7 @@ class StreamHandler {
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
             case 515, 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            case 500 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             case 401 -> handleStreamError(node);
             default -> node.children().forEach(error -> socketHandler.store().resolvePendingRequest(error, true));
         }

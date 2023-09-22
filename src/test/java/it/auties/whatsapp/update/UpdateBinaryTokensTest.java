@@ -1,4 +1,4 @@
-package it.auties.whatsapp.test;
+package it.auties.whatsapp.update;
 
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.util.Spec.Whatsapp;
@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-public class TokensCollectorTest {
+public class UpdateBinaryTokensTest {
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
     private static final String SOURCE_NAME = "BinaryTokens.java";
     private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/app.([^\"]*).js\">";

@@ -10,10 +10,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
+import java.util.*;
 
 /**
  * A model that represents the receipt for a message
@@ -30,18 +27,18 @@ public final class MessageReceipt implements ProtobufMessage {
     private Long playedTimestampSeconds;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING, repeated = true)
     @NonNull
-    private final List<ContactJid> deliveredJids;
+    private final Set<ContactJid> deliveredJids;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING, repeated = true)
     @NonNull
-    private final List<ContactJid> readJids;
+    private final Set<ContactJid> readJids;
 
     public MessageReceipt() {
-        this.deliveredJids = new ArrayList<>();
-        this.readJids = new ArrayList<>();
+        this.deliveredJids = new HashSet<>();
+        this.readJids = new HashSet<>();
     }
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public MessageReceipt(@Nullable Long deliveredTimestampSeconds, @Nullable Long readTimestampSeconds, @Nullable Long playedTimestampSeconds, @NonNull List<ContactJid> deliveredJids, @NonNull List<ContactJid> readJids) {
+    public MessageReceipt(@Nullable Long deliveredTimestampSeconds, @Nullable Long readTimestampSeconds, @Nullable Long playedTimestampSeconds, @NonNull Set<ContactJid> deliveredJids, @NonNull Set<ContactJid> readJids) {
         this.deliveredTimestampSeconds = deliveredTimestampSeconds;
         this.readTimestampSeconds = readTimestampSeconds;
         this.playedTimestampSeconds = playedTimestampSeconds;
@@ -88,11 +85,11 @@ public final class MessageReceipt implements ProtobufMessage {
         return Clock.parseSeconds(playedTimestampSeconds);
     }
 
-    public List<ContactJid> deliveredJids() {
+    public Set<ContactJid> deliveredJids() {
         return deliveredJids;
     }
 
-    public List<ContactJid> readJids() {
+    public Set<ContactJid> readJids() {
         return readJids;
     }
 

@@ -7,13 +7,12 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
-import it.auties.whatsapp.model.mobile.VerificationCodeError;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.model.mobile.*;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 
+import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
@@ -37,49 +36,62 @@ public final class RegistrationHelper {
             return sendVerificationCode(store, keys, codeHandler, captchaHandler);
         }
 
-        return requestVerificationCode(store, keys, method, false)
+        return requestVerificationCode(store, keys, method)
                 .thenComposeAsync(ignored -> sendVerificationCode(store, keys, codeHandler, captchaHandler));
     }
 
     public static CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method) {
-        return requestVerificationCode(store, keys, method, false);
+        return requestVerificationCode(store, keys, method, null);
     }
 
-    private static CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
+    private static CompletableFuture<Void> requestVerificationCode(Store store, Keys keys, VerificationCodeMethod method, VerificationCodeError lastError) {
         if (method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }
 
-        return requestVerificationCodeOptions(store, keys, method, badToken)
+        return requestVerificationCodeOptions(store, keys, method, lastError)
                 .thenComposeAsync(attrs -> sendRegistrationRequest(store, "/code", attrs))
-                .thenComposeAsync(result -> checkRequestResponse(store, keys, method, result))
+                .thenComposeAsync(result -> checkRequestResponse(store, keys, result.statusCode(), result.body(), lastError, method))
                 .thenRunAsync(() -> saveRegistrationStatus(store, keys, false));
     }
 
-    private static CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, VerificationCodeMethod method, HttpResponse<String> result) {
-        Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
-                "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
-        var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        if (response.status().isSuccessful()) {
-            return CompletableFuture.completedFuture(null);
-        }
+    private static CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, int statusCode, String body, VerificationCodeError lastError, VerificationCodeMethod method) {
+        try {
+            System.out.println(body);
+            if(statusCode != HttpURLConnection.HTTP_OK) {
+                throw new RegistrationException(null, body);
+            }
 
-        if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
-            return requestVerificationCode(store, keys, method, true);
-        }
+            var response = Json.readValue(body, VerificationCodeResponse.class);
+            if (response.status() == VerificationCodeStatus.SUCCESS) {
+                return CompletableFuture.completedFuture(null);
+            }
 
-        throw new RegistrationException(response, result.body());
+            var newErrorReason = response.errorReason();
+            if (newErrorReason != lastError) {
+                return requestVerificationCode(store, keys, method, newErrorReason);
+            }
+
+            throw new RegistrationException(response, body);
+        }catch (UncheckedIOException exception) {
+            throw new RegistrationException(null, body);
+        }
     }
 
-    private static CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method, boolean badToken) {
-        return getRegistrationOptions(store, keys, badToken,
-                Map.entry("mcc", store.phoneNumber().orElseThrow().countryCode().mcc()),
-                Map.entry("mnc", store.phoneNumber().orElseThrow().countryCode().mnc()),
-                Map.entry("sim_mcc", "000"),
-                Map.entry("sim_mnc", "000"),
+    private static CompletableFuture<Map<String, Object>> requestVerificationCodeOptions(Store store, Keys keys, VerificationCodeMethod method, VerificationCodeError lastError) {
+        var countryCode = store.phoneNumber()
+                .orElseThrow()
+                .countryCode();
+        return getRegistrationOptions(store,
+                keys,
+                lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN,
+                Map.entry("mcc", countryCode.mcc()),
+                Map.entry("mnc", countryCode.mnc()),
+                Map.entry("sim_mcc", countryCode.mcc()),
+                Map.entry("sim_mnc", countryCode.mnc()),
                 Map.entry("method", method.type()),
-                Map.entry("reason", ""),
-                Map.entry("hasav", "1"));
+                Map.entry("reason", lastError != null ? lastError.data() : "")
+        );
     }
 
     public static CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, AsyncVerificationCodeSupplier handler, AsyncCaptchaCodeSupplier captchaHandler) {
@@ -112,25 +124,30 @@ public final class RegistrationHelper {
     }
 
     private static CompletableFuture<Void> checkVerificationResponse(Store store, Keys keys, String code, HttpResponse<String> result, AsyncCaptchaCodeSupplier captchaHandler) {
-        System.out.println(result.body());
-        Validate.isTrue(result.statusCode() == HttpURLConnection.HTTP_OK,
-                "Invalid status code: %s", RegistrationException.class, result.statusCode(), result.body());
-        var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-        if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
-            return sendVerificationCode(store, keys, code, captchaHandler, true);
-        }
+       try {
+           if(result.statusCode() != HttpURLConnection.HTTP_OK) {
+               throw new RegistrationException(null, result.body());
+           }
 
-        if (response.errorReason() == VerificationCodeError.CAPTCHA) {
-            Objects.requireNonNull(captchaHandler, "Received captcha error, but no handler was specified in the options");
-            return captchaHandler.apply(response)
-                    .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
-        }
+           var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+           if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
+               return sendVerificationCode(store, keys, code, captchaHandler, true);
+           }
 
-        if (!response.status().isSuccessful()) {
-            throw new RegistrationException(response, result.body());
-        }
+           if (response.errorReason() == VerificationCodeError.CAPTCHA) {
+               Objects.requireNonNull(captchaHandler, "Received captcha error, but no handler was specified in the options");
+               return captchaHandler.apply(response)
+                       .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
+           }
 
-        return CompletableFuture.completedFuture(null);
+           if (response.status() == VerificationCodeStatus.SUCCESS) {
+               return CompletableFuture.completedFuture(null);
+           }
+
+           throw new RegistrationException(response, result.body());
+       }catch (UncheckedIOException exception) {
+           throw new RegistrationException(null, result.body());
+       }
     }
 
     private static String normalizeCodeResult(String captcha) {
@@ -149,7 +166,6 @@ public final class RegistrationHelper {
                     .GET()
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .header("User-Agent", getUserAgent(store))
-                    .header("WaMsysRequest", "1")
                     .header("request_token", UUID.randomUUID().toString())
                     .build();
             return client.sendAsync(request, BodyHandlers.ofString());
@@ -193,9 +209,6 @@ public final class RegistrationHelper {
                 .put("cc", store.phoneNumber().orElseThrow().countryCode().prefix())
                 .put("in", store.phoneNumber().orElseThrow().numberWithoutPrefix())
                 .put("rc", store.releaseChannel().index())
-                .put("lg", "en")
-                .put("lc", "GB") // Locale
-                .put("mistyped", "6")
                 .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
                 .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
                 .put("e_keytype", "BQ")
@@ -203,12 +216,6 @@ public final class RegistrationHelper {
                 .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
                 .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
                 .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
-                .put("fdid", keys.phoneId())
-                .put("network_ratio_type", "1")
-                .put("simnum", "1")
-                .put("hasinrc", "1")
-                .put("expid", keys.deviceId())
-                .put("pid", ProcessHandle.current().pid())
                 .put("id", keys.recoveryToken())
                 .put("token", token)
                 .toMap();

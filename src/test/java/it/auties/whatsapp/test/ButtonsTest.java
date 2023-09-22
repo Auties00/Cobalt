@@ -22,9 +22,7 @@ import it.auties.whatsapp.model.interactive.InteractiveButton;
 import it.auties.whatsapp.model.interactive.InteractiveHeaderSimpleBuilder;
 import it.auties.whatsapp.model.interactive.InteractiveNativeFlowBuilder;
 import it.auties.whatsapp.model.message.button.*;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageContainerBuilder;
-import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Json;
@@ -249,11 +247,13 @@ public class ButtonsTest implements Listener {
                 .jid()
                 .orElseThrow();
         var keyInfo = new MessageKeyBuilder()
+                .id(MessageKey.randomId())
                 .chatJid(contact)
                 .senderJid(jid)
                 .fromMe(true)
                 .build();
         var messageInfo = new MessageInfoBuilder()
+                .status(MessageStatus.PENDING)
                 .key(keyInfo)
                 .senderJid(jid)
                 .message(container)

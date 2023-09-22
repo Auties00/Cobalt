@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class UpdateCITest {
+public class UpdateGPGTest {
     @Test
     public void updateCredentials() throws IOException {
         if (GithubActions.isActionsEnvironment()) {

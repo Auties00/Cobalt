@@ -1,5 +1,9 @@
 package it.auties.whatsapp.model.mobile;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
+import java.util.Arrays;
+
 public enum VerificationCodeError {
     NETWORK_ERROR("network_error"),
     GENERAL_ERROR("error"),
@@ -23,13 +27,21 @@ public enum VerificationCodeError {
     NEXT_METHOD("next_method"),
     WRONG_CODE("mismatch"),
     OLD_VERSION("old_version"),
-
-    CAPTCHA("code_checkpoint");
+    CAPTCHA("code_checkpoint"),
+    INVALID_SIGNED_KEY("invalid_skey");
 
     private final String data;
 
     VerificationCodeError(String data) {
         this.data = data;
+    }
+
+    @JsonCreator
+    public static VerificationCodeError of(String name) {
+        return Arrays.stream(values())
+                .filter(entry -> entry.data.equalsIgnoreCase(name))
+                .findFirst()
+                .orElse(UNKNOWN);
     }
 
     public String data() {

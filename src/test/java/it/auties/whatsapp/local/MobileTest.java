@@ -14,13 +14,12 @@ public class MobileTest {
     @Test
     public void run() {
         Whatsapp.mobileBuilder()
-                .lastConnection()
-                .business(true)
+                .newConnection()
                 .unregistered()
-                .verificationCodeMethod(VerificationCodeMethod.SMS)
+                .verificationCodeMethod(VerificationCodeMethod.CALL)
                 .verificationCodeSupplier(MobileTest::onScanCode)
                 .verificationCaptchaSupplier(MobileTest::onCaptcha)
-                .register(15707404120L)
+                .register(18019091753L)
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");

@@ -2,7 +2,6 @@ open module it.auties.cobalt {
     requires static jilt;
     requires transitive java.desktop;
     requires java.net.http;
-    requires dsl.json;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.datatype.jdk8;

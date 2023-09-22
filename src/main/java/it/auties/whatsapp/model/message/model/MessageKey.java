@@ -11,6 +11,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -32,10 +33,10 @@ public final class MessageKey implements ProtobufMessage {
     private @Nullable ContactJid senderJid;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public MessageKey(@NonNull ContactJid chatJid, boolean fromMe, @NonNull String id, @Nullable ContactJid senderJid) {
+    public MessageKey(@NonNull ContactJid chatJid, boolean fromMe, @Nullable String id, @Nullable ContactJid senderJid) {
         this.chatJid = chatJid;
         this.fromMe = fromMe;
-        this.id = id;
+        this.id = Objects.requireNonNull(id, MessageKey::randomId);
         this.senderJid = senderJid;
     }
 
@@ -54,7 +55,8 @@ public final class MessageKey implements ProtobufMessage {
      */
     public static String randomId() {
         return HexFormat.of()
-                .formatHex(BytesHelper.random(5));
+                .formatHex(BytesHelper.random(8))
+                .toUpperCase(Locale.ROOT);
     }
 
     public @NonNull ContactJid chatJid() {

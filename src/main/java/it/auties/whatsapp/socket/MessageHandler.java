@@ -42,7 +42,7 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 class MessageHandler {
-    private static final int HISTORY_SYNC_TIMEOUT = 10;
+    private static final int HISTORY_SYNC_TIMEOUT = 25;
 
     private final SocketHandler socketHandler;
     private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
@@ -144,15 +144,15 @@ class MessageHandler {
         }
 
         var encodedMessage = BytesHelper.messageToBytes(request.info().message());
-        var knownDevices = getRecipients(request, sender);
-        var chatJid = request.info().chatJid();
         if(request.peer()){
+            var chatJid = request.info().chatJid();
             var peerNode = createMessageNode(request, chatJid, encodedMessage, true);
             var encodedMessageNode = createEncodedMessageNode(request, List.of(peerNode), null);
             return socketHandler.send(encodedMessageNode);
         }
 
-        var deviceMessage = new DeviceSentMessage(request.info().chatJid(), request.info().message(), null);
+        var knownDevices = getRecipients(request, sender);
+        var deviceMessage = new DeviceSentMessage(request.info().chatJid(), request.info().message(), Optional.empty());
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
         return getDevices(knownDevices, true)
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
@@ -454,8 +454,10 @@ class MessageHandler {
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
             var recipient = infoNode.attributes().getJid("recipient").orElse(from);
             var participant = infoNode.attributes().getJid("participant").orElse(null);
-            var messageBuilder = new MessageInfoBuilder();
-            var keyBuilder = new MessageKeyBuilder();
+            var messageBuilder = new MessageInfoBuilder()
+                    .status(MessageStatus.PENDING);
+            var keyBuilder = new MessageKeyBuilder()
+                    .id(MessageKey.randomId());
             var receiver = socketHandler.store()
                     .jid()
                     .map(ContactJid::toWhatsappJid)

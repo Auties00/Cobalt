@@ -432,6 +432,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, String reaction) {
         var key = new MessageKeyBuilder()
+                .id(MessageKey.randomId())
                 .chatJid(message.chatJid())
                 .senderJid(message.senderJid())
                 .fromMe(Objects.equals(message.senderJid().toWhatsappJid(), jidOrThrowError().toWhatsappJid()))
@@ -476,11 +477,13 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull MessageContainer message) {
         var key = new MessageKeyBuilder()
+                .id(MessageKey.randomId())
                 .chatJid(chat.toJid())
                 .fromMe(true)
                 .senderJid(jidOrThrowError())
                 .build();
         var info = new MessageInfoBuilder()
+                .status(MessageStatus.PENDING)
                 .senderJid(jidOrThrowError())
                 .key(key)
                 .message(message)
@@ -1658,8 +1661,14 @@ public class Whatsapp {
                     .key(info.key())
                     .build();
             var sender = info.chatJid().hasServer(ContactJidServer.GROUP) ? jidOrThrowError() : null;
-            var key = new MessageKeyBuilder().chatJid(info.chatJid()).fromMe(true).senderJid(sender).build();
+            var key = new MessageKeyBuilder()
+                    .id(MessageKey.randomId())
+                    .chatJid(info.chatJid())
+                    .fromMe(true)
+                    .senderJid(sender)
+                    .build();
             var revokeInfo = new MessageInfoBuilder()
+                    .status(MessageStatus.PENDING)
                     .senderJid(sender)
                     .key(key)
                     .message(MessageContainer.of(message))

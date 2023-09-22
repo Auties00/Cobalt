@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
-public class UpdateTokenTest {
+public class UpdateMobileTokensTest {
     @Test
     public void updateCredentials() {
         if (GithubActions.isActionsEnvironment()) {

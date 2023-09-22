@@ -414,7 +414,7 @@ public final class Store extends Controller<Store> {
         this.requests = Objects.requireNonNullElseGet(requests, ConcurrentHashMap::new);
         this.replyHandlers = Objects.requireNonNullElseGet(replyHandlers, ConcurrentHashMap::new);
         this.tag = Objects.requireNonNullElseGet(tag, () -> HexFormat.of().formatHex(BytesHelper.random(1)));
-        this.initializationTimeStamp = Objects.requireNonNullElseGet(initializationTimeStamp, Clock::nowMilliseconds);
+        this.initializationTimeStamp = Objects.requireNonNullElseGet(initializationTimeStamp, Clock::nowSeconds);
         this.mediaConnection = mediaConnection;
         this.mediaConnectionLatch = new CountDownLatch(1);
         this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
