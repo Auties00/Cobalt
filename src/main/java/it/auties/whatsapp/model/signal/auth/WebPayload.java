@@ -1,11 +1,13 @@
 package it.auties.whatsapp.model.signal.auth;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
 
+@ProtobufMessageName("ClientPayload.WebInfo.WebdPayload")
 public record WebPayload(@ProtobufProperty(index = 1, type = BOOL) boolean usesParticipantInKey,
                           @ProtobufProperty(index = 2, type = BOOL) boolean supportsStarredMessages,
                           @ProtobufProperty(index = 3, type = BOOL) boolean supportsDocumentMessages,

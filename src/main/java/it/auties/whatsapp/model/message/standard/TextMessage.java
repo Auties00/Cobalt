@@ -1,7 +1,10 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -19,6 +22,7 @@ import java.util.OptionalLong;
 /**
  * A model class that represents a message holding text inside
  */
+@ProtobufMessageName("Message.TextMessage")
 public final class TextMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     @NonNull
@@ -43,10 +47,10 @@ public final class TextMessage implements ContextualMessage {
     private @Nullable Integer backgroundArgb;
 
     @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
-    private @Nullable TextMessageFontType font;
+    private @Nullable FontType font;
 
     @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-    private @Nullable TextMessagePreviewType previewType;
+    private @Nullable PreviewType previewType;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private byte @Nullable [] thumbnail;
@@ -94,7 +98,7 @@ public final class TextMessage implements ContextualMessage {
     private boolean viewOnce;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public TextMessage(@NonNull String text, @Nullable String matchedText, @Nullable String canonicalUrl, @Nullable String description, @Nullable String title, @Nullable Integer textArgb, @Nullable Integer backgroundArgb, @Nullable TextMessageFontType font, @Nullable TextMessagePreviewType previewType, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, boolean doNotPlayInline, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, byte @Nullable [] mediaKey, @Nullable Long mediaKeyTimestampSeconds, @Nullable Integer thumbnailHeight, @Nullable Integer thumbnailWidth, @Nullable InviteLinkGroupType inviteLinkGroupType, @Nullable String inviteLinkParentGroupSubjectV2, byte @Nullable [] inviteLinkParentGroupThumbnailV2, @Nullable InviteLinkGroupType inviteLinkGroupTypeV2, boolean viewOnce) {
+    public TextMessage(@NonNull String text, @Nullable String matchedText, @Nullable String canonicalUrl, @Nullable String description, @Nullable String title, @Nullable Integer textArgb, @Nullable Integer backgroundArgb, @Nullable FontType font, @Nullable PreviewType previewType, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, boolean doNotPlayInline, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, byte @Nullable [] mediaKey, @Nullable Long mediaKeyTimestampSeconds, @Nullable Integer thumbnailHeight, @Nullable Integer thumbnailWidth, @Nullable InviteLinkGroupType inviteLinkGroupType, @Nullable String inviteLinkParentGroupSubjectV2, byte @Nullable [] inviteLinkParentGroupThumbnailV2, @Nullable InviteLinkGroupType inviteLinkGroupTypeV2, boolean viewOnce) {
         this.text = text;
         this.matchedText = matchedText;
         this.canonicalUrl = canonicalUrl;
@@ -165,11 +169,11 @@ public final class TextMessage implements ContextualMessage {
         return backgroundArgb == null ? OptionalInt.empty() : OptionalInt.of(backgroundArgb);
     }
 
-    public Optional<TextMessageFontType> font() {
+    public Optional<FontType> font() {
         return Optional.ofNullable(font);
     }
 
-    public Optional<TextMessagePreviewType> previewType() {
+    public Optional<PreviewType> previewType() {
         return Optional.ofNullable(previewType);
     }
 
@@ -269,12 +273,12 @@ public final class TextMessage implements ContextualMessage {
         return this;
     }
 
-    public TextMessage setFont(TextMessageFontType font) {
+    public TextMessage setFont(FontType font) {
         this.font = font;
         return this;
     }
 
-    public TextMessage setPreviewType(TextMessagePreviewType previewType) {
+    public TextMessage setPreviewType(PreviewType previewType) {
         this.previewType = previewType;
         return this;
     }
@@ -352,5 +356,92 @@ public final class TextMessage implements ContextualMessage {
     public TextMessage setViewOnce(boolean viewOnce) {
         this.viewOnce = viewOnce;
         return this;
+    }
+
+    @ProtobufMessageName("Message.TextMessage.InviteLinkGroupType")
+    public enum InviteLinkGroupType implements ProtobufEnum {
+        DEFAULT(0),
+        PARENT(1),
+        SUB(2),
+        DEFAULT_SUB(3);
+
+        final int index;
+
+        InviteLinkGroupType(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return this.index;
+        }
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of fonts that a
+     * {@link TextMessage} supports. Not all clients currently display all fonts correctly.
+     */
+    @ProtobufMessageName("Message.TextMessage.FontType")
+    public enum FontType implements ProtobufEnum {
+        /**
+         * Sans Serif
+         */
+        SANS_SERIF(0),
+        /**
+         * Serif
+         */
+        SERIF(1),
+        /**
+         * Norican Regular
+         */
+        NORICAN_REGULAR(2),
+        /**
+         * Brydan Write
+         */
+        BRYNDAN_WRITE(3),
+        /**
+         * Bebasnue Regular
+         */
+        BEBASNEUE_REGULAR(4),
+        /**
+         * Oswald Heavy
+         */
+        OSWALD_HEAVY(5);
+
+        final int index;
+
+        FontType(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return this.index;
+        }
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of previuew that a
+     * {@link TextMessage} can provide.
+     */
+    @ProtobufMessageName("Message.TextMessage.PreviewType")
+    public enum PreviewType implements ProtobufEnum {
+        /**
+         * No preview
+         */
+        NONE(0),
+
+        /**
+         * Video preview
+         */
+        VIDEO(1);
+
+        final int index;
+
+        PreviewType(int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return this.index;
+        }
     }
 }

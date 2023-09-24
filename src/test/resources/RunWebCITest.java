@@ -8,6 +8,7 @@ import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonText;
+import it.auties.whatsapp.model.button.interactive.*;
 import it.auties.whatsapp.model.button.misc.ButtonRow;
 import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.button.template.hydrated.*;
@@ -17,7 +18,6 @@ import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.interactive.*;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
@@ -425,7 +425,7 @@ public class RunWebCITest implements Listener {
             testGroupCreation();
         }
         for(var setting : GroupSetting.values()) {
-            for (var policy : SettingPolicy.values()) {
+            for (var policy : GroupSettingPolicy.values()) {
                 log("Changing settings to %s...", policy.name());
                 api.changeGroupSetting(group, setting, policy).join();
                 log("Changed settings to %s", policy.name());
@@ -844,7 +844,7 @@ public class RunWebCITest implements Listener {
         var shopMessage = InteractiveShop.builder()
                 .id(randomId())
                 .version(3)
-                .surfaceType(InteractiveShopSurfaceType.WHATSAPP)
+                .surfaceType(InteractiveShop.SurfaceType.WHATSAPP)
                 .build();
         var interactiveMessageWithShop = InteractiveMessage.simpleBuilder().content(shopMessage).build();
         api.sendMessage(contact, interactiveMessageWithShop).join();
@@ -897,7 +897,7 @@ public class RunWebCITest implements Listener {
                 .title("A nice title")
                 .description("A nice description")
                 .footer("A nice footer")
-                .listType(ListMessageType.SINGLE_SELECT)
+                .listType(ListMessage.Type.SINGLE_SELECT)
                 .build();
         var result = api.sendMessage(contact, listMessage).join();
         log("Sent list message: " + result);

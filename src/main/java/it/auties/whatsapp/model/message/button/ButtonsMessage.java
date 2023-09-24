@@ -1,10 +1,12 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.message.button.ButtonsMessageHeader.Type;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -20,6 +22,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message that contains buttons inside
  */
+@ProtobufMessageName("Message.ButtonsMessage")
 public record ButtonsMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
@@ -43,7 +46,7 @@ public record ButtonsMessage(
         List<Button> buttons,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
         @NonNull
-        ButtonsMessageHeaderType headerType
+        Type headerType
 ) implements ButtonMessage, ContextualMessage {
     @ProtobufBuilder(className = "ButtonsMessageSimpleBuilder")
     static ButtonsMessage customBuilder(ButtonsMessageHeader header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {

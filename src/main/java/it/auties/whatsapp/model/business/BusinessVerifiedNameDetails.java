@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.business;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -14,6 +15,7 @@ import java.util.Optional;
 /**
  * A model class that represents a verified name
  */
+@ProtobufMessageName("VerifiedNameCertificate.Details")
 public record BusinessVerifiedNameDetails(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
         long serial,

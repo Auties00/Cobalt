@@ -14,13 +14,12 @@ import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
-import it.auties.whatsapp.model.message.server.ProtocolMessageType;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.setting.EphemeralSetting;
+import it.auties.whatsapp.model.setting.EphemeralSettings;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentitySpec;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
@@ -28,12 +27,15 @@ import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.sync.*;
+import it.auties.whatsapp.model.sync.HistorySync.Type;
 import it.auties.whatsapp.util.*;
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,10 +47,11 @@ class MessageHandler {
     private static final int HISTORY_SYNC_TIMEOUT = 25;
 
     private final SocketHandler socketHandler;
-    private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
+    private final Map<ContactJid, List<GroupPastParticipant>> pastParticipantsQueue;
     private final Set<Chat> historyCache;
     private final Logger logger;
-    private final EnumSet<HistorySyncType> historySyncTypes;
+    private final EnumSet<Type> historySyncTypes;
+    private final ReentrantLock lock;
     private ExecutorService executor;
     private CompletableFuture<?> historySyncTask;
 
@@ -57,30 +60,48 @@ class MessageHandler {
         this.pastParticipantsQueue = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.logger = System.getLogger("MessageHandler");
-        this.historySyncTypes = EnumSet.noneOf(HistorySyncType.class);
-    }
-
-    private synchronized ExecutorService getOrCreateMessageService(){
-        if(executor == null || executor.isShutdown()){
-            executor = Executors.newSingleThreadExecutor();
-        }
-
-        return executor;
+        this.historySyncTypes = EnumSet.noneOf(Type.class);
+        this.lock = new ReentrantLock(true);
     }
 
     protected synchronized CompletableFuture<Void> encode(MessageSendRequest request) {
-        var future = new CompletableFuture<Void>();
-        getOrCreateMessageService().execute(() -> {
-            encodeMessageNode(request)
-                    .thenRunAsync(() -> attributeOutgoingMessage(request))
-                    .exceptionallyAsync(throwable -> onEncodeError(request, throwable))
-                    .join();
-            future.complete(null);
-        });
-        return future;
+        lock.lock();
+        return encodeMessage(request)
+                .thenRunAsync(() -> attributeOutgoingMessage(request))
+                .exceptionallyAsync(throwable -> onEncodeError(request, throwable))
+                .thenRun(lock::unlock);
     }
 
-    private CompletableFuture<Node> encodeMessageNode(MessageSendRequest request) {
+    private CompletableFuture<?> encodeMessage(MessageSendRequest request) {
+        return request.info().chatJid().hasServer(ContactJidServer.CHANNEL) ? encodePlainMessage(request) : encodeE2EMessage(request);
+    }
+
+    private CompletableFuture<Void> encodePlainMessage(MessageSendRequest request) {
+        //// Media
+        //Sent Binary Message: Node[description=message, attributes={media_id=wa_channel_image/flat/7B47F3C0F34315B5EB3BA9A273F5649E, to=120363180154968187@s.whatsapp.net, id=3EB003DD89821A2EB4DC94, type=media}, content=[Node[description=plaintext, attributes={mediatype=image}, content=ABC]]]]
+        var message = request.info().message();
+        var messageAttributes = Attributes.ofNullable(request.additionalAttributes())
+                .put("mediatype", getMediaType(message), Objects::nonNull)
+                .toMap();
+        var messageNode = switch (message.content()) {
+            case TextMessage textMessage -> Node.of("plaintext", textMessage.text().getBytes(StandardCharsets.UTF_8));
+            case ImageMessage imageMessage -> imageMessage.caption()
+                    .map(caption -> Node.of("plaintext", messageAttributes, caption.getBytes(StandardCharsets.UTF_8)));
+            case VideoOrGifMessage imageMessage -> imageMessage.caption()
+                    .map(caption -> Node.of("plaintext", messageAttributes, caption.getBytes(StandardCharsets.UTF_8)));
+            default -> throw new UnsupportedOperationException("Unsupported message type in channel: " + message.type());
+        };
+        var type = message.content().type() == MessageType.TEXT ? "text" : "media";
+        var attributes = Attributes.of()
+                .put("id", request.info().id())
+                .put("to", request.info().chatJid().withServer(ContactJidServer.WHATSAPP))
+                .put("type", type)
+                .toMap();
+        return socketHandler.send(Node.of("message", attributes, messageNode))
+                .thenRunAsync(() -> attributeOutgoingMessage(request));
+    }
+
+    private CompletableFuture<Node> encodeE2EMessage(MessageSendRequest request) {
         return request.peer() || isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
     }
 
@@ -169,7 +190,7 @@ class MessageHandler {
             return request.recipients();
         }
 
-        return List.of(sender.toWhatsappJid(), request.info().chatJid());
+        return List.of(sender.withoutDevice(), request.info().chatJid());
     }
 
     private boolean isConversation(MessageInfo info) {
@@ -212,7 +233,7 @@ class MessageHandler {
     private boolean isAppStateKeyShare(MessageSendRequest request) {
         return request.peer()
                 && request.info().message().content() instanceof ProtocolMessage protocolMessage
-                && protocolMessage.protocolType() == ProtocolMessageType.APP_STATE_SYNC_KEY_SHARE;
+                && protocolMessage.protocolType() == ProtocolMessage.Type.APP_STATE_SYNC_KEY_SHARE;
     }
 
     private boolean hasPreKeyMessage(List<Node> participants) {
@@ -381,20 +402,22 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public synchronized void decode(Node node) {
-        getOrCreateMessageService().execute(() -> {
-            try {
-                var businessName = getBusinessName(node);
-                var encrypted = node.findNodes("enc");
-                if (node.hasNode("unavailable") && !node.hasNode("enc")) {
-                    decodeMessage(node, null, businessName);
-                    return;
-                }
-                encrypted.forEach(message -> decodeMessage(node, message, businessName));
-            } catch (Throwable throwable) {
-                socketHandler.handleFailure(MESSAGE, throwable);
+    public synchronized CompletableFuture<Void> decode(Node node) {
+        try {
+            var businessName = getBusinessName(node);
+            var encrypted = node.findNodes("enc");
+            if (node.hasNode("unavailable") && !node.hasNode("enc")) {
+                return decodeMessage(node, null, businessName);
             }
-        });
+
+            var futures = encrypted.stream()
+                    .map(message -> decodeMessage(node, message, businessName))
+                    .toArray(CompletableFuture[]::new);
+            return CompletableFuture.allOf(futures);
+        } catch (Throwable throwable) {
+            socketHandler.handleFailure(MESSAGE, throwable);
+            return CompletableFuture.failedFuture(throwable);
+        }
     }
 
     private String getBusinessName(Node node) {
@@ -428,7 +451,7 @@ class MessageHandler {
             case AudioMessage audioMessage -> audioMessage.voiceMessage() ? "ptt" : "audio";
             case ContactMessage contactMessage -> "vcard";
             case DocumentMessage documentMessage -> "document";
-            case ContactsArrayMessage contactsArrayMessage -> "contact_array";
+            case ContactsMessage contactsMessage -> "contact_array";
             case LiveLocationMessage liveLocationMessage -> "livelocation";
             case StickerMessage stickerMessage -> "sticker";
             case ListMessage listMessage -> "list";
@@ -443,8 +466,9 @@ class MessageHandler {
         };
     }
 
-    private void decodeMessage(Node infoNode, Node messageNode, String businessName) {
+    private CompletableFuture<Void> decodeMessage(Node infoNode, Node messageNode, String businessName) {
         try {
+            lock.lock();
             var offline = infoNode.attributes().hasKey("offline");
             var pushName = infoNode.attributes().getNullableString("notify");
             var timestamp = infoNode.attributes().getLong("t");
@@ -460,33 +484,31 @@ class MessageHandler {
                     .id(MessageKey.randomId());
             var receiver = socketHandler.store()
                     .jid()
-                    .map(ContactJid::toWhatsappJid)
+                    .map(ContactJid::withoutDevice)
                     .orElse(null);
             if(receiver == null){
-                return; // This means that the session got disconnected while processing
+                return CompletableFuture.completedFuture(null); // This means that the session got disconnected while processing
             }
 
             if (from.hasServer(ContactJidServer.WHATSAPP) || from.hasServer(ContactJidServer.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                keyBuilder.fromMe(Objects.equals(from, receiver));
+                keyBuilder.fromMe(Objects.equals(from.withoutDevice(), receiver));
                 messageBuilder.senderJid(from);
             } else {
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.toWhatsappJid(), receiver));
+                keyBuilder.fromMe(Objects.equals(participant.withoutDevice(), receiver));
                 messageBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
             }
             var key = keyBuilder.id(id).build();
             if(Objects.equals(key.senderJid().orElse(null), socketHandler.store().jid().orElse(null))) {
-                sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
-                return;
+                return sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
             }
 
             if (messageNode == null) {
                 logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s)".formatted(id, from));
-                sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
-                return;
+                return sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
             }
 
             var type = messageNode.attributes().getRequiredString("type");
@@ -494,8 +516,7 @@ class MessageHandler {
             var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
             if (decodedMessage.hasError()) {
                 logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage.error().getMessage()));
-                sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
-                return;
+                return sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
             }
 
             var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
@@ -510,19 +531,22 @@ class MessageHandler {
             attributeMessageReceipt(info);
             socketHandler.store().attribute(info);
             saveMessage(info, offline);
-            sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
             socketHandler.onReply(info);
+            return sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
+            return CompletableFuture.failedFuture(throwable);
+        }finally {
+            lock.unlock();
         }
     }
 
-    private void sendReceipt(Node infoNode, String id, ContactJid chatJid, ContactJid senderJid, boolean fromMe) {
+    private CompletableFuture<Void> sendReceipt(Node infoNode, String id, ContactJid chatJid, ContactJid senderJid, boolean fromMe) {
         var participant = fromMe && senderJid == null ? chatJid : senderJid;
         var category = infoNode.attributes().getString("category");
         var receiptType = getReceiptType(category, fromMe);
-        socketHandler.sendMessageAck(infoNode);
-        socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType);
+        return socketHandler.sendMessageAck(infoNode)
+                .thenComposeAsync(ignored -> socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType));
     }
 
     private String getReceiptType(String category, boolean fromMe) {
@@ -578,7 +602,7 @@ class MessageHandler {
     private void attributeMessageReceipt(MessageInfo info) {
         var self = socketHandler.store()
                 .jid()
-                .map(ContactJid::toWhatsappJid)
+                .map(ContactJid::withoutDevice)
                 .orElse(null);
         if (!info.fromMe() || (self != null && !info.chatJid().equals(self))) {
             return;
@@ -648,7 +672,7 @@ class MessageHandler {
             chat.setEphemeralMessagesToggleTimeSeconds(info.timestampSeconds());
             chat.setEphemeralMessageDuration(ChatEphemeralTimer.of((int) protocolMessage.ephemeralExpiration()));
         }
-        var setting = new EphemeralSetting((int) protocolMessage.ephemeralExpiration(), info.timestampSeconds());
+        var setting = new EphemeralSettings((int) protocolMessage.ephemeralExpiration(), info.timestampSeconds());
         socketHandler.onSetting(setting);
     }
 
@@ -682,10 +706,10 @@ class MessageHandler {
 
     private boolean isZeroHistorySyncComplete() {
         return socketHandler.store().historyLength() == WebHistoryLength.ZERO
-                && historySyncTypes.contains(HistorySyncType.INITIAL_STATUS_V3)
-                && historySyncTypes.contains(HistorySyncType.PUSH_NAME)
-                && historySyncTypes.contains(HistorySyncType.INITIAL_BOOTSTRAP)
-                && historySyncTypes.contains(HistorySyncType.NON_BLOCKING_DATA);
+                && historySyncTypes.contains(Type.INITIAL_STATUS_V3)
+                && historySyncTypes.contains(Type.PUSH_NAME)
+                && historySyncTypes.contains(Type.INITIAL_BOOTSTRAP)
+                && historySyncTypes.contains(Type.NON_BLOCKING_DATA);
     }
 
     private boolean isTyping(Contact sender) {
@@ -710,7 +734,7 @@ class MessageHandler {
         handleHistorySync(history);
         if (history.progress() != null) {
             scheduleTimeoutSync(history);
-            socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == HistorySyncType.RECENT);
+            socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == Type.RECENT);
         }
         socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync");
     }
@@ -796,7 +820,7 @@ class MessageHandler {
             var done = forceDone || !history.conversations().contains(cached);
             if(done){
                 chat.setEndOfHistoryTransfer(true);
-                chat.setEndOfHistoryTransferType(EndOfHistoryTransferType.COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY);
+                chat.setEndOfHistoryTransferType(Chat.EndOfHistoryTransferType.COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY);
             }
             socketHandler.onChatRecentMessages(chat, done);
         }
@@ -821,7 +845,7 @@ class MessageHandler {
         }
     }
 
-    private void handlePastParticipants(PastParticipants pastParticipants) {
+    private void handlePastParticipants(GroupPastParticipants pastParticipants) {
         socketHandler.store()
                 .findChatByJid(pastParticipants.groupJid())
                 .ifPresentOrElse(chat -> chat.addPastParticipants(pastParticipants.pastParticipants()),

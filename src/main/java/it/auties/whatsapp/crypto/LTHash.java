@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.model.sync.LTHashState;
+import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.sync.RecordSync;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -23,7 +23,7 @@ public class LTHash {
     @NonNull
     private final List<byte[]> add, subtract;
 
-    public LTHash(LTHashState hash) {
+    public LTHash(CompanionHashState hash) {
         this.salt = SALT.getBytes(StandardCharsets.UTF_8);
         this.hash = hash.hash();
         this.indexValueMap = new HashMap<>(hash.indexValueMap());

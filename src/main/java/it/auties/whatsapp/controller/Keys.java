@@ -1,7 +1,9 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
@@ -14,20 +16,13 @@ import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
-import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.Spec;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.jilt.Builder;
-import org.jilt.BuilderStyle;
-import org.jilt.Opt;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNullElseGet;
@@ -140,7 +135,7 @@ public final class Keys extends Controller<Keys> {
      * Hash state
      */
     @NonNull
-    private final Map<ContactJid, Map<PatchType, LTHashState>> hashStates;
+    private final Map<ContactJid, Map<PatchType, CompanionHashState>> hashStates;
 
     @NonNull
     private final Map<ContactJid, Collection<ContactJid>> groupsPreKeys;
@@ -180,55 +175,28 @@ public final class Keys extends Controller<Keys> {
     @JsonIgnore
     private byte[] writeKey, readKey;
 
-    @Builder(style = BuilderStyle.TYPE_SAFE_UNGROUPED_OPTIONALS, factoryMethod = "builder")
-    public Keys(UUID uuid,
-                @NonNull ClientType clientType,
-                @Nullable @Opt PhoneNumber phoneNumber,
-                @Nullable @Opt ControllerSerializer serializer,
-                @Nullable @Opt List<String> alias,
-                @Nullable @Opt Integer registrationId,
-                @Nullable @Opt SignalKeyPair noiseKeyPair,
-                @Nullable @Opt SignalKeyPair ephemeralKeyPair,
-                @Nullable @Opt SignalKeyPair identityKeyPair,
-                @Nullable @Opt SignalKeyPair companionKeyPair,
-                @Nullable @Opt SignalSignedKeyPair signedKeyPair,
-                @Opt byte @Nullable [] signedKeyIndex,
-                @Opt @Nullable Long signedKeyIndexTimestamp,
-                @Nullable @Opt List<SignalPreKeyPair> preKeys,
-                @Opt byte @Nullable [] prologue,
-                @Nullable @Opt String phoneId,
-                @Nullable @Opt String deviceId,
-                @Nullable @Opt String recoveryToken,
-                @Nullable @Opt SignedDeviceIdentity companionIdentity,
-                @Nullable @Opt Map<SenderKeyName, SenderKeyRecord> senderKeys,
-                @Nullable @Opt Map<ContactJid, LinkedList<AppStateSyncKey>> appStateKeys,
-                @Nullable @Opt Map<SessionAddress, Session> sessions,
-                @Nullable @Opt Map<ContactJid, Map<PatchType, LTHashState>> hashStates,
-                @Nullable @Opt Map<ContactJid, Collection<ContactJid>> groupsPreKeys,
-                @Opt boolean registered,
-                @Opt boolean businessCertificate,
-                @Opt boolean initialAppSync
-    ) {
-        super(uuid, phoneNumber, Objects.requireNonNullElseGet(serializer, DefaultControllerSerializer::instance), clientType, Objects.requireNonNullElseGet(alias, ArrayList::new));
-        this.registrationId = Objects.requireNonNullElseGet(registrationId, KeyHelper::registrationId);
-        this.noiseKeyPair = Objects.requireNonNullElseGet(noiseKeyPair, SignalKeyPair::random);
-        this.ephemeralKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalKeyPair::random);
-        this.identityKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalKeyPair::random);
-        this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(this.registrationId, this.identityKeyPair));
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    Keys(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, int registrationId, @NonNull SignalKeyPair noiseKeyPair, @NonNull SignalKeyPair ephemeralKeyPair, @NonNull SignalKeyPair identityKeyPair, @NonNull SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte @Nullable [] signedKeyIndex, @Nullable Long signedKeyIndexTimestamp, @NonNull List<SignalPreKeyPair> preKeys, byte @NonNull [] prologue, @NonNull String phoneId, @NonNull String deviceId, @NonNull String recoveryToken, @Nullable SignedDeviceIdentity companionIdentity, @NonNull Map<SenderKeyName, SenderKeyRecord> senderKeys, @NonNull Map<ContactJid, LinkedList<AppStateSyncKey>> appStateKeys, @NonNull Map<SessionAddress, Session> sessions, @NonNull Map<ContactJid, Map<PatchType, CompanionHashState>> hashStates, @NonNull Map<ContactJid, Collection<ContactJid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+        super(uuid, phoneNumber, serializer, clientType, alias);
+        this.registrationId = registrationId;
+        this.noiseKeyPair = noiseKeyPair;
+        this.ephemeralKeyPair = ephemeralKeyPair;
+        this.identityKeyPair = identityKeyPair;
+        this.companionKeyPair = companionKeyPair;
+        this.signedKeyPair = signedKeyPair;
         this.signedKeyIndex = signedKeyIndex;
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
-        this.preKeys = Objects.requireNonNullElseGet(preKeys, ArrayList::new);
-        this.companionKeyPair = Objects.requireNonNullElseGet(companionKeyPair, SignalKeyPair::random);
-        this.prologue = Objects.requireNonNullElseGet(prologue, this::getDefaultPrologue);
-        this.phoneId = Objects.requireNonNullElseGet(phoneId, KeyHelper::phoneId);
-        this.deviceId = Objects.requireNonNullElseGet(deviceId, KeyHelper::deviceId);
-        this.recoveryToken = Objects.requireNonNullElseGet(recoveryToken, KeyHelper::identityId);
+        this.preKeys = preKeys;
+        this.prologue = prologue;
+        this.phoneId = phoneId;
+        this.deviceId = deviceId;
+        this.recoveryToken = recoveryToken;
         this.companionIdentity = companionIdentity;
-        this.senderKeys = Objects.requireNonNullElseGet(senderKeys, ConcurrentHashMap::new);
-        this.appStateKeys = Objects.requireNonNullElseGet(appStateKeys, ConcurrentHashMap::new);
-        this.sessions = Objects.requireNonNullElseGet(sessions, ConcurrentHashMap::new);
-        this.hashStates = Objects.requireNonNullElseGet(hashStates, ConcurrentHashMap::new);
-        this.groupsPreKeys = Objects.requireNonNullElseGet(groupsPreKeys, ConcurrentHashMap::new);
+        this.senderKeys = senderKeys;
+        this.appStateKeys = appStateKeys;
+        this.sessions = sessions;
+        this.hashStates = hashStates;
+        this.groupsPreKeys = groupsPreKeys;
         this.registered = registered;
         this.businessCertificate = businessCertificate;
         this.initialAppSync = initialAppSync;
@@ -236,204 +204,13 @@ public final class Keys extends Controller<Keys> {
         this.readCounter = new AtomicLong();
     }
 
-    private byte[] getDefaultPrologue() {
-        return switch (clientType()) {
-            case WEB -> Spec.Whatsapp.WEB_PROLOGUE;
-            case MOBILE -> Spec.Whatsapp.APP_PROLOGUE;
-        };
-    }
-
     /**
-     * Returns the Keys saved in memory or constructs a new clean instance
+     * Creates a builder
      *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null Keys
+     * @return a builder
      */
-    public static Keys of(UUID uuid, @NonNull ClientType clientType) {
-        return of(uuid, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the Keys saved in memory or constructs a new clean instance
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null Keys
-     */
-    public static Keys of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return ofNullable(uuid, clientType, serializer)
-                .orElseGet(() -> random(uuid, null, clientType, serializer));
-    }
-
-    /**
-     * Returns the Keys saved in memory or returns an empty optional
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null Keys
-     */
-    public static Optional<Keys> ofNullable(UUID uuid, @NonNull ClientType clientType) {
-        return ofNullable(uuid, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the Keys saved in memory or returns an empty optional
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null Keys
-     */
-    public static Optional<Keys> ofNullable(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if (uuid == null) {
-            return Optional.empty();
-        }
-
-        var result = serializer.deserializeKeys(clientType, uuid);
-        result.ifPresent(entry -> entry.setSerializer(serializer));
-        return result;
-    }
-
-    /**
-     * Returns the Keys saved in memory or constructs a new clean instance
-     *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @return a non-null Keys
-     */
-    public static Keys of(UUID uuid, long phoneNumber, @NonNull ClientType clientType) {
-        return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the Keys saved in memory or constructs a new clean instance
-     *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @return a non-null Keys
-     */
-    public static Keys of(UUID uuid, long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return ofNullable(phoneNumber, clientType, serializer)
-                .orElseGet(() -> random(uuid, phoneNumber, clientType, serializer));
-    }
-
-    /**
-     * Returns the Keys saved in memory or returns an empty optional
-     *
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @return a non-null Keys
-     */
-    public static Optional<Keys> ofNullable(Long phoneNumber, @NonNull ClientType clientType) {
-        return ofNullable(phoneNumber, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the Keys saved in memory or returns an empty optional
-     *
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @return a non-null Keys
-     */
-    public static Optional<Keys> ofNullable(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if (phoneNumber == null) {
-            return Optional.empty();
-        }
-
-        return serializer.deserializeKeys(clientType, phoneNumber);
-    }
-
-    /**
-     * Returns the Keys saved in memory or constructs a new clean instance
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null Keys
-     */
-    public static Keys of(UUID uuid, String alias, @NonNull ClientType clientType) {
-        return of(uuid, alias, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the Keys saved in memory or constructs a new clean instance
-     *
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null Keys
-     */
-    public static Keys of(UUID uuid, String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return ofNullable(alias, clientType, serializer)
-                .orElseGet(() -> random(uuid, null, clientType, serializer, alias));
-    }
-
-    /**
-     * Returns the Keys saved in memory or returns an empty optional
-     *
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null Keys
-     */
-    public static Optional<Keys> ofNullable(String alias, @NonNull ClientType clientType) {
-        return ofNullable(alias, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the Keys saved in memory or returns an empty optional
-     *
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null Keys
-     */
-    public static Optional<Keys> ofNullable(String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if (alias == null) {
-            return Optional.empty();
-        }
-
-        return serializer.deserializeKeys(clientType, alias);
-    }
-
-    /**
-     * Returns a new instance of random keys
-     *
-     * @param uuid        the uuid of the session to create, can be null
-     * @param phoneNumber the phone number of the session to create, can be null
-     * @param clientType  the non-null type of the client
-     * @param alias       the alias of the controller
-     * @return a non-null instance
-     */
-    public static Keys random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, String... alias) {
-        return random(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns a new instance of random keys
-     *
-     * @param uuid        the uuid of the session to create, can be null
-     * @param phoneNumber the phone number of the session to create, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @param alias       the alias of the controller
-     * @return a non-null instance
-     */
-    public static Keys random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, String... alias) {
-        var result = KeysBuilder.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
-                .serializer(serializer)
-                .alias(alias != null ? new ArrayList<>(List.of(alias)) : null)
-                .build();
-        result.serialize(true);
-        return result;
+    public static KeysBuilder builder() {
+        return new KeysBuilder();
     }
 
     /**
@@ -529,7 +306,7 @@ public final class Keys extends Controller<Keys> {
      * @param patchType the non-null name to search
      * @return a non-null hash state
      */
-    public Optional<LTHashState> findHashStateByName(@NonNull ContactJid device, @NonNull PatchType patchType) {
+    public Optional<CompanionHashState> findHashStateByName(@NonNull ContactJid device, @NonNull PatchType patchType) {
         return Optional.ofNullable(hashStates.get(device))
                 .map(entry -> entry.get(patchType));
     }
@@ -574,8 +351,8 @@ public final class Keys extends Controller<Keys> {
      * @param state  the non-null hash state
      * @return this
      */
-    public Keys putState(@NonNull ContactJid device, @NonNull LTHashState state) {
-        var oldData = Objects.requireNonNullElseGet(hashStates.get(device), HashMap<PatchType, LTHashState>::new);
+    public Keys putState(@NonNull ContactJid device, @NonNull CompanionHashState state) {
+        var oldData = Objects.requireNonNullElseGet(hashStates.get(device), HashMap<PatchType, CompanionHashState>::new);
         oldData.put(state.name(), state);
         hashStates.put(device, oldData);
         return this;
@@ -781,7 +558,7 @@ public final class Keys extends Controller<Keys> {
         return this.sessions;
     }
 
-    public @NonNull Map<ContactJid, Map<PatchType, LTHashState>> hashStates() {
+    public @NonNull Map<ContactJid, Map<PatchType, CompanionHashState>> hashStates() {
         return this.hashStates;
     }
 

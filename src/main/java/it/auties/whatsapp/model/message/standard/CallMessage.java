@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.Message;
@@ -11,6 +12,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 /**
  * A message that contains information related to a call
  */
+@ProtobufMessageName("Message.Call")
 public record CallMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
         byte @NonNull [] key,

@@ -1,6 +1,9 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -16,6 +19,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message that contains a list of buttons or a list of products
  */
+@ProtobufMessageName("Message.ListMessage")
 public record ListMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
@@ -27,7 +31,7 @@ public record ListMessage(
         String button,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         @NonNull
-        ListMessageType listType,
+        Type listType,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT, repeated = true)
         @NonNull
         List<ButtonSection> sections,
@@ -44,4 +48,32 @@ public record ListMessage(
         return MessageType.LIST;
     }
 
+    /**
+     * The constants of this enumerated type describe the various types of {@link ListMessage}
+     */
+    @ProtobufMessageName("Message.ListMessage.Type")
+    public enum Type implements ProtobufEnum {
+        /**
+         * Unknown
+         */
+        UNKNOWN(0),
+        /**
+         * Only one option can be selected
+         */
+        SINGLE_SELECT(1),
+        /**
+         * A list of products
+         */
+        PRODUCT_LIST(2);
+
+        final int index;
+
+        Type(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return index;
+        }
+    }
 }

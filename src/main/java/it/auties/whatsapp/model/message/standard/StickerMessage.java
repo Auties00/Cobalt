@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -25,6 +26,7 @@ import static java.util.Objects.requireNonNullElse;
 /**
  * A model class that represents a message holding a sticker inside
  */
+@ProtobufMessageName("Message.StickerMessage")
 public final class StickerMessage extends LocalMediaMessage<StickerMessage> implements MediaMessage<StickerMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     @Nullable

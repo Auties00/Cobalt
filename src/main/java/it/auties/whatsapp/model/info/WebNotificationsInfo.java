@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -9,7 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
-
+@ProtobufMessageName("WebNotificationsInfo")
 public record WebNotificationsInfo(
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long timestampSeconds,

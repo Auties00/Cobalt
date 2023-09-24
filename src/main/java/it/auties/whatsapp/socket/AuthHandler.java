@@ -4,12 +4,13 @@ import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.WebHistoryLength;
+import it.auties.whatsapp.model.mobile.CountryCode;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
-import it.auties.whatsapp.model.signal.auth.CompanionProperties.CompanionPropsPlatformType;
-import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMethod;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
+import it.auties.whatsapp.model.signal.auth.DNSSource.ResolutionMethod;
+import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Spec;
 
@@ -34,22 +35,21 @@ class AuthHandler {
             var handshake = new SocketHandshake(socketHandler.keys());
             handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
             handshake.updateHash(serverHello.get().ephemeral());
-            var sharedEphemeral = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys()
-                    .ephemeralKeyPair()
-                    .privateKey());
+            var sharedEphemeral = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys().ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedEphemeral);
             var decodedStaticText = handshake.cipher(serverHello.get().staticText(), false);
-            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys()
-                    .ephemeralKeyPair()
-                    .privateKey());
+            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys().ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedStatic);
             handshake.cipher(serverHello.get().payload(), false);
             var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
-            var sharedPrivate = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys()
-                    .noiseKeyPair()
-                    .privateKey());
+            var sharedPrivate = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys().noiseKeyPair().privateKey());
             handshake.mixIntoKey(sharedPrivate);
-            var handshakeMessage = createHandshakeMessage(handshake, encodedKey, encodeUserPayload());
+            var payload = createUserClientPayload();
+            var encodedPayload = handshake.cipher(ClientPayloadSpec.encode(payload), true);
+            var clientFinish = new ClientFinish(encodedKey, encodedPayload);
+            var handshakeMessage = new HandshakeMessageBuilder()
+                    .clientFinish(clientFinish)
+                    .build();
             return sendHandshake(session, handshake, handshakeMessage);
         }catch (Throwable throwable){
             return CompletableFuture.failedFuture(throwable);
@@ -77,55 +77,77 @@ class AuthHandler {
         return true;
     }
 
-    private HandshakeMessage createHandshakeMessage(SocketHandshake handshake, byte[] encodedKey, byte[] userPayload) {
-        var encodedPayload = handshake.cipher(userPayload, true);
-        var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-        return new HandshakeMessageBuilder()
-                .clientFinish(clientFinish)
+    private WebInfo createWebInfo() {
+        return new WebInfoBuilder()
+                .webSubPlatform(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED ? WebInfo.Platform.WIN_STORE : WebInfo.Platform.WEB_BROWSER)
                 .build();
-    }
-
-    private byte[] encodeUserPayload() {
-        var userAgent = createUserAgent();
-        var builder = createUserPayloadBuilder(userAgent);
-        return ClientPayloadSpec.encode(finishUserPayload(builder));
-    }
-
-    public ClientPayloadBuilder createUserPayloadBuilder(UserAgent userAgent){
-        return new ClientPayloadBuilder()
-                .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
-                .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
-                .userAgent(userAgent);
     }
 
     private UserAgent createUserAgent() {
         var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
+        var device = socketHandler.store().device();
         return new UserAgentBuilder()
                 .appVersion(socketHandler.store().version())
-                .osVersion(mobile ? socketHandler.store().device().osVersion().toString() : null)
-                .device(mobile ? socketHandler.store().device().model() : null)
-                .manufacturer(mobile ? socketHandler.store().device().manufacturer() : null)
-                .phoneId(mobile ? socketHandler.keys().phoneId() : null)
-                .platform(getPlatform())
+                .platform(getUserAgentPlatform(mobile))
                 .releaseChannel(socketHandler.store().releaseChannel())
-                .mcc("000")
-                .mnc("000")
+                .mcc(getDeviceMcc(mobile))
+                .mnc(getDeviceMnc(mobile))
+                .osVersion(mobile ? device.orElseThrow().osVersion().toString() : null)
+                .manufacturer(mobile ? device.orElseThrow().manufacturer() : null)
+                .device(mobile ? device.orElseThrow().model() : null)
+                .osBuildNumber(mobile ? device.orElseThrow().osVersion().toString() : null)
+                .localeLanguageIso6391("en")
+                .localeCountryIso31661Alpha2("US")
+                .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .build();
     }
 
-    private UserAgentPlatform getPlatform() {
-        if(!socketHandler.store().business()){
-            return socketHandler.store().device().osType();
+    private String getDeviceMcc(boolean mobile) {
+        if(!mobile) {
+            return "000";
         }
 
-        return switch (socketHandler.store().device().osType()){
-            case ANDROID -> UserAgentPlatform.SMB_ANDROID;
-            case IOS -> UserAgentPlatform.SMB_IOS;
-            default -> throw new IllegalStateException("Unexpected platform: " + socketHandler.store().device().osType());
-        };
+        return socketHandler.store()
+                .phoneNumber()
+                .map(PhoneNumber::countryCode)
+                .map(CountryCode::mcc)
+                .map(Object::toString)
+                .orElse("000");
     }
 
-    private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
+    private String getDeviceMnc(boolean mobile) {
+        if(!mobile) {
+            return "000";
+        }
+
+        return socketHandler.store()
+                .phoneNumber()
+                .map(PhoneNumber::countryCode)
+                .map(CountryCode::mnc)
+                .orElse("000");
+    }
+
+    private Platform getUserAgentPlatform(boolean mobile) {
+        if(mobile) {
+            var device = socketHandler.store()
+                    .device()
+                    .orElseThrow();
+            return socketHandler.store().business() ? device.businessPlatform() : device.platform();
+        }
+
+        if(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED) {
+            return Platform.WINDOWS;
+        }
+
+        return Platform.WEB;
+    }
+
+    private ClientPayload createUserClientPayload() {
+        var agent = createUserAgent();
+        var builder = new ClientPayloadBuilder()
+                .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                .userAgent(agent);
         return switch (socketHandler.store().clientType()){
             case MOBILE -> {
                 var phoneNumber = socketHandler.store()
@@ -145,13 +167,15 @@ class AuthHandler {
             case WEB -> {
                 var jid = socketHandler.store().jid();
                 if (jid.isPresent()) {
-                    yield builder.username(Long.parseLong(jid.get().user()))
+                    yield builder.webInfo(createWebInfo())
+                            .username(Long.parseLong(jid.get().user()))
                             .passive(true)
                             .device(jid.get().device())
                             .build();
                 }
 
-                yield builder.regData(createRegisterData())
+                yield builder.webInfo(createWebInfo())
+                        .regData(createRegisterData())
                         .passive(false)
                         .build();
             }
@@ -161,7 +185,7 @@ class AuthHandler {
     private DNSSource getDnsSource() {
         return new DNSSourceBuilder()
                 .appCached(false)
-                .dnsMethod(DNSSourceDNSResolutionMethod.SYSTEM)
+                .dnsMethod(ResolutionMethod.SYSTEM)
                 .build();
     }
 
@@ -184,14 +208,22 @@ class AuthHandler {
     }
 
     private CompanionProperties createCompanionProps() {
-        if (socketHandler.store().clientType() != ClientType.WEB) {
-            return null;
-        }
-
-        return new CompanionPropertiesBuilder()
-                .os(socketHandler.store().name())
-                .platformType(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
-                .requireFullSync(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED)
-                .build();
+        return switch (socketHandler.store().clientType()) {
+            case WEB -> {
+                var config = new HistorySyncConfigBuilder()
+                        .inlineInitialPayloadInE2EeMsg(true)
+                        .supportBotUserAgentChatHistory(true)
+                        .storageQuotaMb(59206)
+                        .build();
+                var fullSync = socketHandler.store().historyLength() == WebHistoryLength.EXTENDED;
+                yield new CompanionPropertiesBuilder()
+                        .os(socketHandler.store().name())
+                        .platformType(fullSync ? CompanionProperties.PlatformType.DESKTOP : CompanionProperties.PlatformType.CHROME)
+                        .requireFullSync(fullSync)
+                        .historySyncConfig(config)
+                        .build();
+            }
+            case MOBILE -> null;
+        };
     }
 }

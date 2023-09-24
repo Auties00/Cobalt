@@ -1,6 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.binary.BinaryTokens;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.signal.auth.Version;
 
 import java.net.URI;
@@ -10,6 +11,7 @@ import java.util.HexFormat;
 
 public class Spec {
     public final static class Whatsapp {
+        public static final String DEFAULT_NAME = "Cobalt";
         public static final byte[] PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
         public static final String WEB_ORIGIN = "https://web.whatsapp.com";
         public static final String WEB_HOST = "web.whatsapp.com";
@@ -38,6 +40,7 @@ public class Spec {
         public static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
         public static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
         public static final int COMPANION_PAIRING_TIMEOUT = 10;
+        public static CompanionDevice DEFAULT_MOBILE_DEVICE = CompanionDevice.android();
     }
 
     public final static class Signal {

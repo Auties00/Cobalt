@@ -1,11 +1,13 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+@ProtobufMessageName("Message.InteractiveResponseMessage.NativeFlowResponseMessage")
 public record NativeFlowResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull

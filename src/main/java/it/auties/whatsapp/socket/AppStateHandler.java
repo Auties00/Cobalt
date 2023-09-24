@@ -8,16 +8,17 @@ import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
+import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.model.setting.EphemeralSetting;
-import it.auties.whatsapp.model.setting.LocaleSetting;
-import it.auties.whatsapp.model.setting.PushNameSetting;
-import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
+import it.auties.whatsapp.model.setting.EphemeralSettings;
+import it.auties.whatsapp.model.setting.LocaleSettings;
+import it.auties.whatsapp.model.setting.PushNameSettings;
+import it.auties.whatsapp.model.setting.UnarchiveChatsSettings;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.util.BytesHelper;
@@ -112,7 +113,7 @@ class AppStateHandler {
     private PushRequest createPushRequest(ContactJid jid, PatchRequest request) {
         var oldState = socketHandler.keys()
                 .findHashStateByName(jid, request.type())
-                .orElseGet(() -> new LTHashState(request.type()));
+                .orElseGet(() -> new CompanionHashState(request.type()));
         var newState = oldState.copy();
         var key = socketHandler.keys().getLatestAppKey(jid);
         var mutationKeys = MutationKeys.of(key.keyData().keyData());
@@ -262,7 +263,7 @@ class AppStateHandler {
     }
 
     private CompletableFuture<Boolean> pullUninterruptedly(ContactJid jid, Set<PatchType> patchTypes) {
-        var tempStates = new HashMap<PatchType, LTHashState>();
+        var tempStates = new HashMap<PatchType, CompanionHashState>();
         var nodes = getPullNodes(jid, patchTypes, tempStates);
         return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync", nodes))
                 .thenApplyAsync(this::parseSyncRequest)
@@ -275,21 +276,21 @@ class AppStateHandler {
         return remaining.isEmpty() ? CompletableFuture.completedFuture(true) : pullUninterruptedly(jid, remaining);
     }
 
-    private List<Node> getPullNodes(ContactJid jid, Set<PatchType> patchTypes, Map<PatchType, LTHashState> tempStates) {
+    private List<Node> getPullNodes(ContactJid jid, Set<PatchType> patchTypes, Map<PatchType, CompanionHashState> tempStates) {
         return patchTypes.stream()
                 .map(name -> createStateWithVersion(jid, name))
                 .peek(state -> tempStates.put(state.name(), state))
-                .map(LTHashState::toNode)
+                .map(CompanionHashState::toNode)
                 .toList();
     }
 
-    private LTHashState createStateWithVersion(ContactJid jid, PatchType name) {
+    private CompanionHashState createStateWithVersion(ContactJid jid, PatchType name) {
         return socketHandler.keys()
                 .findHashStateByName(jid, name)
-                .orElseGet(() -> new LTHashState(name));
+                .orElseGet(() -> new CompanionHashState(name));
     }
 
-    private Set<PatchType> decodeSyncs(ContactJid jid, Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
+    private Set<PatchType> decodeSyncs(ContactJid jid, Map<PatchType, CompanionHashState> tempStates, List<SnapshotSyncRecord> records) {
         return records.stream()
                 .map(record -> {
                     var chunk = decodeSync(jid, record, tempStates);
@@ -301,7 +302,7 @@ class AppStateHandler {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private PatchChunk decodeSync(ContactJid jid, SnapshotSyncRecord record, Map<PatchType, LTHashState> tempStates) {
+    private PatchChunk decodeSync(ContactJid jid, SnapshotSyncRecord record, Map<PatchType, CompanionHashState> tempStates) {
         try {
             var results = new ArrayList<ActionDataSync>();
             if (record.hasSnapshot()) {
@@ -319,7 +320,7 @@ class AppStateHandler {
             }
             return new PatchChunk(record.patchType(), results, record.hasMore());
         } catch (Throwable throwable) {
-            var hashState = new LTHashState(record.patchType());
+            var hashState = new CompanionHashState(record.patchType());
             socketHandler.keys().putState(jid, hashState);
             attempts.put(record.patchType(), attempts.getOrDefault(record.patchType(), 0) + 1);
             if (attempts.get(record.patchType()) >= PULL_ATTEMPTS) {
@@ -419,13 +420,13 @@ class AppStateHandler {
         var setting = value.setting().orElse(null);
         if (setting != null) {
             switch (setting) {
-                case EphemeralSetting ephemeralSetting -> showEphemeralMessageWarning(ephemeralSetting);
-                case LocaleSetting localeSetting ->
-                        socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().locale().orElse(null));
-                case PushNameSetting pushNameSetting ->
-                        socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().name());
-                case UnarchiveChatsSetting unarchiveChatsSetting ->
-                        socketHandler.store().setUnarchiveChats(unarchiveChatsSetting.unarchiveChats());
+                case EphemeralSettings ephemeralSettings -> showEphemeralMessageWarning(ephemeralSettings);
+                case LocaleSettings localeSettings ->
+                        socketHandler.updateLocale(localeSettings.locale(), socketHandler.store().locale().orElse(null));
+                case PushNameSettings pushNameSettings ->
+                        socketHandler.updateUserName(pushNameSettings.name(), socketHandler.store().name());
+                case UnarchiveChatsSettings unarchiveChatsSettings ->
+                        socketHandler.store().setUnarchiveChats(unarchiveChatsSettings.unarchiveChats());
                 default -> {}
             }
             socketHandler.onSetting(setting);
@@ -448,9 +449,9 @@ class AppStateHandler {
         return contact;
     }
 
-    private void showEphemeralMessageWarning(EphemeralSetting ephemeralSetting) {
+    private void showEphemeralMessageWarning(EphemeralSettings ephemeralSettings) {
         var logger = System.getLogger("AppStateHandler");
-        logger.log(WARNING, "An ephemeral status update was received as a setting. " + "Data: %s".formatted(ephemeralSetting) + "This should not be possible." + " Open an issue on Github please");
+        logger.log(WARNING, "An ephemeral status update was received as a setting. " + "Data: %s".formatted(ephemeralSettings) + "This should not be possible." + " Open an issue on Github please");
     }
 
     private void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {
@@ -483,7 +484,7 @@ class AppStateHandler {
         socketHandler.onMessageDeleted(message, false);
     }
 
-    private SyncRecord decodePatches(ContactJid jid, PatchType name, List<PatchSync> patches, LTHashState state) {
+    private SyncRecord decodePatches(ContactJid jid, PatchType name, List<PatchSync> patches, CompanionHashState state) {
         var newState = state.copy();
         var results = patches.stream()
                 .map(patch -> decodePatch(jid, name, newState, patch))
@@ -493,7 +494,7 @@ class AppStateHandler {
         return new SyncRecord(newState, results);
     }
 
-    private MutationsRecord decodePatch(ContactJid jid, PatchType patchType, LTHashState newState, PatchSync patch) {
+    private MutationsRecord decodePatch(ContactJid jid, PatchType patchType, CompanionHashState newState, PatchSync patch) {
         if (patch.hasExternalMutations()) {
             Medias.download(patch.externalMutations())
                     .join()
@@ -516,7 +517,7 @@ class AppStateHandler {
         patch.mutations().addAll(mutationsSync.mutations());
     }
 
-    private Optional<byte[]> calculateSnapshotMac(ContactJid jid, PatchType name, LTHashState newState, PatchSync patch) {
+    private Optional<byte[]> calculateSnapshotMac(ContactJid jid, PatchType name, CompanionHashState newState, PatchSync patch) {
         return getMutationKeys(jid, patch.keyId())
                 .map(mutationKeys -> generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey()));
     }
@@ -539,7 +540,7 @@ class AppStateHandler {
         if (mutationKeys.isEmpty()) {
             return Optional.empty();
         }
-        var newState = new LTHashState(name, snapshot.version().version());
+        var newState = new CompanionHashState(name, snapshot.version().version());
         var mutations = decodeMutations(jid, snapshot.records(), newState);
         newState.hash(mutations.result().hash());
         newState.indexValueMap(mutations.result().indexValueMap());
@@ -556,7 +557,7 @@ class AppStateHandler {
                 .map(MutationKeys::of);
     }
 
-    private MutationsRecord decodeMutations(ContactJid jid, List<? extends Syncable> syncs, LTHashState state) {
+    private MutationsRecord decodeMutations(ContactJid jid, List<? extends Syncable> syncs, CompanionHashState state) {
         var generator = new LTHash(state);
         var mutations = syncs.stream()
                 .map(mutation -> decodeMutation(jid, mutation.operation(), mutation.record(), generator))
@@ -618,7 +619,7 @@ class AppStateHandler {
         }
     }
 
-    private record SyncRecord(LTHashState state, List<ActionDataSync> records) {
+    private record SyncRecord(CompanionHashState state, List<ActionDataSync> records) {
 
     }
 
@@ -641,7 +642,7 @@ class AppStateHandler {
 
     }
 
-    private record PushRequest(PatchType type, LTHashState oldState, LTHashState newState, PatchSync sync) {
+    private record PushRequest(PatchType type, CompanionHashState oldState, CompanionHashState newState, PatchSync sync) {
 
     }
 

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.action;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -7,7 +8,7 @@ import it.auties.whatsapp.model.sync.PatchType;
 /**
  * A model clas that represents a label association
  */
-
+@ProtobufMessageName("SyncActionValue.LabelAssociationAction")
 public record LabelAssociationAction(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean labeled

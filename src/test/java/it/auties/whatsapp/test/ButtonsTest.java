@@ -10,6 +10,9 @@ import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonText;
+import it.auties.whatsapp.model.button.interactive.InteractiveButton;
+import it.auties.whatsapp.model.button.interactive.InteractiveHeaderSimpleBuilder;
+import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlowBuilder;
 import it.auties.whatsapp.model.button.misc.ButtonRow;
 import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.button.template.hydrated.*;
@@ -18,9 +21,6 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
-import it.auties.whatsapp.model.interactive.InteractiveButton;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderSimpleBuilder;
-import it.auties.whatsapp.model.interactive.InteractiveNativeFlowBuilder;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.standard.TextMessage;
@@ -237,7 +237,7 @@ public class ButtonsTest implements Listener {
                 .title("A nice title")
                 .description("A nice description")
                 .footer("A nice footer")
-                .listType(ListMessageType.SINGLE_SELECT)
+                .listType(ListMessage.Type.SINGLE_SELECT)
                 .build();
         var container = new MessageContainerBuilder()
                 .listMessage(listMessage)

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.action;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -8,6 +9,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 /**
  * A model class that contains the main Whatsapp version being used
  */
+@ProtobufMessageName("SyncActionValue.PrimaryVersionAction")
 public record PrimaryVersionAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull

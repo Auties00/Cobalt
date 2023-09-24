@@ -1,9 +1,10 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.interactive.InteractiveBody;
+import it.auties.whatsapp.model.button.interactive.InteractiveBody;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -11,6 +12,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
+@ProtobufMessageName("Message.InteractiveResponseMessage")
 public record InteractiveResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         @NonNull
@@ -31,7 +33,7 @@ public record InteractiveResponseMessage(
         return MessageCategory.BUTTON;
     }
 
-    public InteractiveMessageContentType interactiveResponseMessageType() {
-        return InteractiveMessageContentType.COLLECTION;
+    public InteractiveMessageContent.Type interactiveResponseMessageType() {
+        return InteractiveMessageContent.Type.COLLECTION;
     }
 }

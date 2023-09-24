@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.signal.auth;
 
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
@@ -8,7 +9,8 @@ import it.auties.protobuf.model.ProtobufMessage;
 import static it.auties.protobuf.model.ProtobufType.OBJECT;
 import static it.auties.protobuf.model.ProtobufType.STRING;
 
-public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) UserAgentPlatform platform,
+@ProtobufMessageName("ClientPayload.UserAgent")
+public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) Platform platform,
                         @ProtobufProperty(index = 2, type = OBJECT) Version appVersion,
                         @ProtobufProperty(index = 3, type = STRING) String mcc,
                         @ProtobufProperty(index = 4, type = STRING) String mnc,
@@ -17,12 +19,13 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) UserAgentPla
                         @ProtobufProperty(index = 7, type = STRING) String device,
                         @ProtobufProperty(index = 8, type = STRING) String osBuildNumber,
                         @ProtobufProperty(index = 9, type = STRING) String phoneId,
-                        @ProtobufProperty(index = 10, type = OBJECT) UserAgentReleaseChannel releaseChannel,
+                        @ProtobufProperty(index = 10, type = OBJECT) ReleaseChannel releaseChannel,
                         @ProtobufProperty(index = 11, type = STRING) String localeLanguageIso6391,
                         @ProtobufProperty(index = 12, type = STRING) String localeCountryIso31661Alpha2,
                         @ProtobufProperty(index = 13, type = STRING) String deviceBoard) implements ProtobufMessage {
 
-    public enum UserAgentPlatform implements ProtobufEnum {
+    @ProtobufMessageName("ClientPayload.UserAgent.Platform")
+    public enum Platform implements ProtobufEnum {
         UNKNOWN(999),
         ANDROID(0),
         IOS(1),
@@ -54,7 +57,7 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) UserAgentPla
         MILAN(27),
         CAPI(28);
 
-        UserAgentPlatform(@ProtobufEnumIndex int index) {
+        Platform(@ProtobufEnumIndex int index) {
             this.index = index;
         }
 
@@ -63,16 +66,21 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) UserAgentPla
         public int index() {
             return this.index;
         }
+
+        public boolean isBusiness() {
+            return this == SMB_ANDROID || this == SMB_IOS || this == ENTERPRISE;
+        }
     }
 
-    public enum UserAgentReleaseChannel implements ProtobufEnum {
+    @ProtobufMessageName("ClientPayload.UserAgent.ReleaseChannel")
+    public enum ReleaseChannel implements ProtobufEnum {
 
         RELEASE(0),
         BETA(1),
         ALPHA(2),
         DEBUG(3);
 
-        UserAgentReleaseChannel(@ProtobufEnumIndex int index) {
+        ReleaseChannel(@ProtobufEnumIndex int index) {
             this.index = index;
         }
 

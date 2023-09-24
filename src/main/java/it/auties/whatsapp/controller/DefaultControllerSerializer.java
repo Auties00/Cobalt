@@ -1,14 +1,11 @@
 package it.auties.whatsapp.controller;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import it.auties.map.SimpleMapModule;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
@@ -37,7 +34,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
@@ -411,20 +408,18 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             instances = new ConcurrentHashMap<>();
             logger = System.getLogger("Smile");
             smile = SmileMapper.builder()
-                    .withConfigOverride(List.class, config -> config.setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY)))
                     .build()
                     .registerModule(new Jdk8Module())
-                    .registerModule(new SimpleMapModule())
                     .registerModule(new JavaTimeModule())
                     .registerModule(new ParameterNamesModule())
-                    .setSerializationInclusion(NON_DEFAULT)
+                    .setSerializationInclusion(NON_NULL)
                     .enable(WRITE_ENUMS_USING_INDEX)
                     .enable(FAIL_ON_EMPTY_BEANS)
                     .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
                     .disable(FAIL_ON_UNKNOWN_PROPERTIES)
-                    .setVisibility(ALL, ANY)
-                    .setVisibility(GETTER, NONE)
-                    .setVisibility(IS_GETTER, NONE);
+                    .setVisibility(ALL, NONE)
+                    .setVisibility(CREATOR, ANY)
+                    .setVisibility(FIELD, ANY);
         }
 
         private SmileFile {
@@ -459,6 +454,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             if (Files.notExists(file)) {
                 return Optional.empty();
             }
+
             try (var input = new GZIPInputStream(Files.newInputStream(file))) {
                 return Optional.of(smile.readValue(input, reference));
             } catch (IOException exception) {

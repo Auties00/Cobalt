@@ -2,7 +2,7 @@ package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.model.response.WebVersionResponse;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import net.dongliu.apk.parser.ByteArrayApkFile;
@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.Pattern;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
@@ -44,7 +43,6 @@ public final class MetadataHelper {
     }
 
     private static final Logger LOGGER = System.getLogger("Metadata");
-    private static final Pattern IOS_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )\\d+\\.\\d+\\.\\d+");
 
     private static volatile Version webVersion;
     private static volatile Version iosVersion;
@@ -62,37 +60,18 @@ public final class MetadataHelper {
         }
     }
 
-    public static CompletableFuture<Version> getVersion(UserAgentPlatform platform, boolean business) {
-        return getVersion(platform, business, true);
+    public static CompletableFuture<Version> getVersion(Platform platform) {
+        return getVersion(platform, true);
     }
 
-    public static CompletableFuture<Version> getVersion(UserAgentPlatform platform, boolean business, boolean useJarCache) {
+    public static CompletableFuture<Version> getVersion(Platform platform, boolean useJarCache) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS -> getWebVersion();
-            case ANDROID -> getAndroidData(business, useJarCache)
+            case ANDROID -> getAndroidData(platform.isBusiness(), useJarCache)
                     .thenApply(WhatsappApk::version);
-            case IOS -> getIosVersion();
+            case IOS -> CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_IOS_VERSION); // Fetching the latest ios version is harder than one might hope
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
-    }
-
-    private static CompletableFuture<Version> getIosVersion() {
-        // var client = HttpClient.newHttpClient();
-        //        var request = HttpRequest.newBuilder()
-        //                .GET()
-        //                .uri(URI.create(Whatsapp.IOS_UPDATE_URL))
-        //                .build();
-        //        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-        //                .thenApplyAsync(MetadataHelper::parseIosVersion);
-        //    private Version parseIosVersion(HttpResponse<String> result) {
-        //        return iosVersion = IOS_VERSION_PATTERN.matcher(result.body())
-        //                .results()
-        //                .map(MatchResult::group)
-        //                .reduce((first, second) -> second)
-        //                .map(version -> Version.of("2." + version))
-        //                .orElseGet(MetadataHelper::getDefaultIosVersion);
-        //    }
-        return CompletableFuture.completedFuture(Objects.requireNonNullElse(iosVersion, Whatsapp.DEFAULT_MOBILE_IOS_VERSION));
     }
 
     private static Version getDefaultIosVersion() {
@@ -118,16 +97,16 @@ public final class MetadataHelper {
         }
     }
 
-    public static CompletableFuture<String> getToken(long phoneNumber, UserAgentPlatform platform, boolean business, boolean useJarCache) {
+    public static CompletableFuture<String> getToken(long phoneNumber, Platform platform, boolean useJarCache) {
         return switch (platform) {
-            case ANDROID -> getAndroidToken(String.valueOf(phoneNumber), business, useJarCache);
-            case IOS -> getIosToken(phoneNumber, platform, business, useJarCache);
+            case ANDROID -> getAndroidToken(String.valueOf(phoneNumber), platform.isBusiness(), useJarCache);
+            case IOS -> getIosToken(phoneNumber, platform, useJarCache);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
 
-    private static CompletableFuture<String> getIosToken(long phoneNumber, UserAgentPlatform platform, boolean business, boolean useJarCache) {
-        return getVersion(platform, business, useJarCache)
+    private static CompletableFuture<String> getIosToken(long phoneNumber, Platform platform, boolean useJarCache) {
+        return getVersion(platform, useJarCache)
                 .thenApply(version -> getIosToken(phoneNumber, version));
     }
 

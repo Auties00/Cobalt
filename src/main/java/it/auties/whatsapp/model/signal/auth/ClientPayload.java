@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.signal.auth;
 
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
@@ -9,6 +10,7 @@ import java.util.List;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
+@ProtobufMessageName("ClientPayload")
 public record ClientPayload(@ProtobufProperty(index = 1, type = UINT64) Long username,
                             @ProtobufProperty(index = 3, type = BOOL) Boolean passive,
                             @ProtobufProperty(index = 5, type = OBJECT) UserAgent userAgent,

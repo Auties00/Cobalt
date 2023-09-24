@@ -109,7 +109,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         if (session.hasState(message.version(), message.baseKey())) {
             return;
         }
-        var preKeyPair = keys.findPreKeyById(message.preKeyId()).orElse(null);
+        var preKeyPair = keys.findPreKeyById(message.preKeyId())
+                .orElse(null);
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
                 .orElseThrow(() -> new NoSuchElementException("Cannot find signed pre key with id %s".formatted(message.signedPreKeyId())));
         session.closeCurrentState();

@@ -1,6 +1,7 @@
 package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.QrHandler;
+import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import org.junit.jupiter.api.Test;
 
@@ -10,15 +11,11 @@ public class WebTest {
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
                 .newConnection()
+                .historyLength(WebHistoryLength.ZERO)
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
-                .addNewMessageListener((api, message, offline) -> {
-                    if(message.fromMe()) {
-                        api.sendMessage(message.chatJid(), "Hello");
-                    }
-
-                    System.out.println(message.toJson());
-                })
+                .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
+                .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))

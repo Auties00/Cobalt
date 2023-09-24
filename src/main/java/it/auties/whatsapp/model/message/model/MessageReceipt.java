@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -15,6 +16,7 @@ import java.util.*;
 /**
  * A model that represents the receipt for a message
  */
+@ProtobufMessageName("UserReceipt")
 public final class MessageReceipt implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)
     @Nullable

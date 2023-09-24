@@ -1,35 +1,33 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.KeysBuilder;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.listener.RegisterListener;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
+import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URI;
-import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 
 @SuppressWarnings("unused")
 public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOptionsBuilder, WebOptionsBuilder {
-    protected Store store;
-    protected Keys keys;
-    protected ErrorHandler errorHandler;
-    protected Executor socketExecutor;
-    protected OptionsBuilder(Store store, Keys keys){
-        this.store = store;
-        this.keys = keys;
+    Store store;
+    Keys keys;
+    StoreBuilder storeBuilder;
+    KeysBuilder keysBuilder;
+    ErrorHandler errorHandler;
+    Executor socketExecutor;
+    OptionsBuilder(StoreBuilder storeBuilder, KeysBuilder keysBuilder){
+        this.storeBuilder = storeBuilder;
+        this.keysBuilder = keysBuilder;
     }
 
-    protected static UUID getCorrectUuid(UUID uuid, ControllerSerializer serializer, ConnectionType connectionType, ClientType clientType) {
-        return switch (connectionType){
-            case NEW -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-            case FIRST -> Objects.requireNonNullElseGet(serializer.listIds(clientType).peekFirst(), () -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID));
-            case LAST -> Objects.requireNonNullElseGet(serializer.listIds(clientType).peekLast(), () -> Objects.requireNonNullElseGet(uuid, UUID::randomUUID));
-        };
+    OptionsBuilder(Store store, Keys keys){
+        this.store = store;
+        this.keys = keys;
     }
 
     /**
@@ -43,6 +41,8 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     public T name(@NonNull String name) {
         if(store != null) {
             store.setName(name);
+        }else {
+            storeBuilder.name(name);
         }
         return (T) this;
     }
@@ -59,6 +59,8 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     public T version(@NonNull Version version) {
         if(store != null) {
             store.setVersion(version);
+        }else {
+            storeBuilder.version(version);
         }
         return (T) this;
     }
@@ -73,6 +75,8 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     public T autodetectListeners(boolean autodetectListeners) {
         if(store != null) {
             store.setAutodetectListeners(autodetectListeners);
+        }else {
+            storeBuilder.autodetectListeners(autodetectListeners);
         }
         return (T) this;
     }
@@ -87,6 +91,8 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     public T textPreviewSetting(@NonNull TextPreviewSetting textPreviewSetting) {
         if(store != null) {
             store.setTextPreviewSetting(textPreviewSetting);
+        }else {
+            storeBuilder.textPreviewSetting(textPreviewSetting);
         }
         return (T) this;
     }
@@ -120,9 +126,11 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T releaseChannel(@NonNull UserAgentReleaseChannel releaseChannel) {
+    public T releaseChannel(@NonNull ReleaseChannel releaseChannel) {
         if(store != null) {
             store.setReleaseChannel(releaseChannel);
+        }else {
+            storeBuilder.releaseChannel(releaseChannel);
         }
         return (T) this;
     }
@@ -136,20 +144,23 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     public T proxy(URI proxy) {
         if(store != null) {
             store.setProxy(proxy);
+        }else {
+            storeBuilder.proxy(proxy);
         }
         return (T) this;
     }
 
     /**
-     * Whether acknowledgements should be sent for incoming messages
-     * If this option is set to true, you will not receive notifications on your companion
+     * Whether presence updates should be handled automatically
      *
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T acknowledgeMessages(boolean acknowledgeMessages) {
+    public T automaticPresenceUpdates(boolean automaticPresenceUpdates) {
         if(store != null) {
-            store.setAutomaticPresenceUpdates(acknowledgeMessages);
+            store.setAutomaticPresenceUpdates(automaticPresenceUpdates);
+        }else {
+            storeBuilder.automaticPresenceUpdates(automaticPresenceUpdates);
         }
         return (T) this;
     }
@@ -162,7 +173,11 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T checkPatchMacks(boolean checkPatchMacs) {
-        store.setCheckPatchMacs(checkPatchMacs);
+        if(store != null) {
+            store.setCheckPatchMacs(checkPatchMacs);
+        }else {
+            storeBuilder.checkPatchMacs(checkPatchMacs);
+        }
         return (T) this;
     }
 }

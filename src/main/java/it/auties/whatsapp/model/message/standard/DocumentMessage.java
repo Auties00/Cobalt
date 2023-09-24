@@ -5,15 +5,11 @@ import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachmentType;
+import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
-import it.auties.whatsapp.model.message.button.ButtonsMessageHeaderType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
@@ -271,23 +267,23 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
     }
 
     @Override
-    public HighlyStructuredFourRowTemplateTitleType titleType() {
-        return HighlyStructuredFourRowTemplateTitleType.DOCUMENT;
+    public HighlyStructuredFourRowTemplateTitle.Type titleType() {
+        return HighlyStructuredFourRowTemplateTitle.Type.DOCUMENT;
     }
 
     @Override
-    public ButtonsMessageHeaderType buttonHeaderType() {
-        return ButtonsMessageHeaderType.DOCUMENT;
+    public ButtonsMessageHeader.Type buttonHeaderType() {
+        return ButtonsMessageHeader.Type.DOCUMENT;
     }
 
     @Override
-    public HydratedFourRowTemplateTitleType hydratedTitleType() {
-        return HydratedFourRowTemplateTitleType.DOCUMENT;
+    public HydratedFourRowTemplateTitle.Type hydratedTitleType() {
+        return HydratedFourRowTemplateTitle.Type.DOCUMENT;
     }
 
     @Override
-    public InteractiveHeaderAttachmentType interactiveHeaderType() {
-        return InteractiveHeaderAttachmentType.DOCUMENT;
+    public InteractiveHeaderAttachment.Type interactiveHeaderType() {
+        return InteractiveHeaderAttachment.Type.DOCUMENT;
     }
 
     public Optional<String> mimetype() {

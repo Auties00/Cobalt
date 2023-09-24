@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.action;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
@@ -10,6 +11,7 @@ import java.util.Optional;
 /**
  * A model clas that represents a new read status for a chat
  */
+@ProtobufMessageName("SyncActionValue.MarkChatAsReadAction")
 public record MarkChatAsReadAction(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean read,

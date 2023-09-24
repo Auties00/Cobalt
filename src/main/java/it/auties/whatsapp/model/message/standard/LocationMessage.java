@@ -1,14 +1,12 @@
 package it.auties.whatsapp.model.message.standard;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
-import it.auties.whatsapp.model.message.button.ButtonsMessageHeaderType;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -19,6 +17,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a location inside
  */
+@ProtobufMessageName("Message.LocationMessage")
 public record LocationMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.DOUBLE)
         double latitude,
@@ -57,17 +56,17 @@ public record LocationMessage(
     }
 
     @Override
-    public HighlyStructuredFourRowTemplateTitleType titleType() {
-        return HighlyStructuredFourRowTemplateTitleType.LOCATION;
+    public HighlyStructuredFourRowTemplateTitle.Type titleType() {
+        return HighlyStructuredFourRowTemplateTitle.Type.LOCATION;
     }
 
     @Override
-    public HydratedFourRowTemplateTitleType hydratedTitleType() {
-        return HydratedFourRowTemplateTitleType.LOCATION;
+    public HydratedFourRowTemplateTitle.Type hydratedTitleType() {
+        return HydratedFourRowTemplateTitle.Type.LOCATION;
     }
 
     @Override
-    public ButtonsMessageHeaderType buttonHeaderType() {
-        return ButtonsMessageHeaderType.LOCATION;
+    public ButtonsMessageHeader.Type buttonHeaderType() {
+        return ButtonsMessageHeader.Type.LOCATION;
     }
 }

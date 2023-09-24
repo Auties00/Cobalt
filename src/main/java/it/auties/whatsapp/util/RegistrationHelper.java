@@ -7,7 +7,10 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
-import it.auties.whatsapp.model.mobile.*;
+import it.auties.whatsapp.model.mobile.VerificationCodeError;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
+import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Spec.Whatsapp;
@@ -57,7 +60,6 @@ public final class RegistrationHelper {
 
     private static CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, int statusCode, String body, VerificationCodeError lastError, VerificationCodeMethod method) {
         try {
-            System.out.println(body);
             if(statusCode != HttpURLConnection.HTTP_OK) {
                 throw new RegistrationException(null, body);
             }
@@ -65,6 +67,10 @@ public final class RegistrationHelper {
             var response = Json.readValue(body, VerificationCodeResponse.class);
             if (response.status() == VerificationCodeStatus.SUCCESS) {
                 return CompletableFuture.completedFuture(null);
+            }
+
+            if(response.errorReason() == VerificationCodeError.NO_ROUTES) {
+                throw new RegistrationException(response, "VOIPs are not supported by Whatsapp");
             }
 
             var newErrorReason = response.errorReason();
@@ -135,7 +141,7 @@ public final class RegistrationHelper {
            }
 
            if (response.errorReason() == VerificationCodeError.CAPTCHA) {
-               Objects.requireNonNull(captchaHandler, "Received captcha error, but no handler was specified in the options");
+               Objects.requireNonNull(captchaHandler, "Received captcha, but no handler was specified in the options");
                return captchaHandler.apply(response)
                        .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
            }
@@ -174,17 +180,21 @@ public final class RegistrationHelper {
 
     private static String getUserAgent(Store store) {
         var osName = getMobileOsName(store);
-        var osVersion = store.device().osVersion();
-        var manufacturer = store.device().manufacturer();
-        var model = store.device().model().replaceAll(" ", "_");
+        var device = store.device().orElseThrow();
+        var osVersion = device.osVersion();
+        var manufacturer = device.manufacturer();
+        var model = device.model().replaceAll(" ", "_");
         return "WhatsApp/%s %s/%s Device/%s-%s".formatted(store.version(), osName, osVersion, manufacturer, model);
     }
 
     private static String getMobileOsName(Store store) {
-        return switch (store.device().osType()) {
-            case ANDROID -> store.business() ? "SMBA" : "Android";
-            case IOS -> store.business() ? "SMBI" : "iOS";
-            default -> throw new IllegalStateException("Unsupported mobile os: " + store.device().osType());
+        var device = store.device().orElseThrow();
+        return switch (device.platform()) {
+            case ANDROID -> "Android";
+            case SMB_ANDROID -> "SMBA";
+            case IOS -> "iOS";
+            case SMB_IOS -> "SMBI";
+            default -> throw new IllegalStateException("Unsupported mobile os: " + device.platform());
         };
     }
 
@@ -199,7 +209,8 @@ public final class RegistrationHelper {
 
     @SafeVarargs
     private static CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean isRetry, Entry<String, Object>... attributes) {
-        return MetadataHelper.getToken(store.phoneNumber().orElseThrow().numberWithoutPrefix(), store.device().osType(), store.business(), !isRetry)
+        var device = store.device().orElseThrow();
+        return MetadataHelper.getToken(store.phoneNumber().orElseThrow().numberWithoutPrefix(), store.business() ? device.businessPlatform() : device.platform(), !isRetry)
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 

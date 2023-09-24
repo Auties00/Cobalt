@@ -1,5 +1,7 @@
 package it.auties.whatsapp.model.button.base;
 
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
 
@@ -12,5 +14,20 @@ public sealed interface ButtonBody extends ProtobufMessage permits ButtonText, N
      *
      * @return a non-null type
      */
-    ButtonBodyType bodyType();
+    Type bodyType();
+
+    enum Type implements ProtobufEnum {
+        UNKNOWN(0),
+        TEXT(1),
+        NATIVE_FLOW(2);
+
+        final int index;
+        Type(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return index;
+        }
+    }
 }

@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
 
@@ -44,12 +45,12 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     @NonNull
     protected final List<String> alias;
 
-    public Controller(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @NonNull List<String> alias) {
+    public Controller(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias) {
         this.uuid = uuid;
         this.phoneNumber = phoneNumber;
         this.serializer = serializer;
         this.clientType = clientType;
-        this.alias = alias;
+        this.alias = Objects.requireNonNullElseGet(alias, ArrayList::new);
     }
 
     /**

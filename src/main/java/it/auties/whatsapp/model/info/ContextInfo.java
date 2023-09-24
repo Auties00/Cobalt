@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -9,7 +10,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.button.ButtonActionLink;
+import it.auties.whatsapp.model.button.base.ButtonActionLink;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageMetadataProvider;
@@ -23,6 +24,7 @@ import java.util.Optional;
 /**
  * A model class that holds the information related to a {@link it.auties.whatsapp.model.message.model.ContextualMessage}.
  */
+@ProtobufMessageName("ContextInfo")
 public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * The jid of the message that this ContextualMessage quotes

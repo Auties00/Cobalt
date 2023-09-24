@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.action;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
@@ -10,6 +11,7 @@ import java.util.Optional;
 /**
  * A model clas that represents a deleted chat
  */
+@ProtobufMessageName("SyncActionValue.DeleteChatAction")
 public record DeleteChatAction(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<ActionMessageRangeSync> messageRange

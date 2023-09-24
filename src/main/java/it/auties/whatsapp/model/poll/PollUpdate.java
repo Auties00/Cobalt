@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.poll;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -15,6 +16,7 @@ import java.util.Optional;
  * {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage} Not currently used, so it's
  * package private
  */
+@ProtobufMessageName("PollUpdate")
 public record PollUpdate(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         @NonNull

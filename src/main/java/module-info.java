@@ -9,7 +9,6 @@ open module it.auties.cobalt {
     requires com.fasterxml.jackson.dataformat.smile;
     requires com.fasterxml.jackson.module.paramnames;
     requires it.auties.protobuf.base;
-    requires it.auties.map;
     requires com.google.zxing;
     requires com.google.zxing.javase;
     requires it.auties.qr;
@@ -50,7 +49,7 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.privacy;
     exports it.auties.whatsapp.model.poll;
     exports it.auties.whatsapp.model.mobile;
-    exports it.auties.whatsapp.model.interactive;
+    exports it.auties.whatsapp.model.button.interactive;
     exports it.auties.whatsapp.model.button.base;
     exports it.auties.whatsapp.model.button.misc;
     exports it.auties.whatsapp.model.button.template.hydrated;
@@ -65,4 +64,5 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.signal.keypair;
     exports it.auties.whatsapp.model.call;
     exports it.auties.whatsapp.model.node;
+    exports it.auties.whatsapp.model.button.template.highlyStructured;
 }

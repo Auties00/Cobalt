@@ -1,8 +1,10 @@
 package it.auties.whatsapp.model.button.base;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.button.base.ButtonBody.Type;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
 import it.auties.whatsapp.util.BytesHelper;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -13,7 +15,7 @@ import java.util.Optional;
 /**
  * A model class that represents a button
  */
-
+@ProtobufMessageName("Message.ButtonsMessage.Button")
 public record Button(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
@@ -24,7 +26,7 @@ public record Button(
         Optional<NativeFlowInfo> bodyNativeFlow,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         @NonNull
-        ButtonBodyType bodyType
+        Type bodyType
 ) implements ProtobufMessage {
     /**
      * Constructs a new button
@@ -48,9 +50,9 @@ public record Button(
         var builder = new ButtonBuilder()
                 .id(id);
         switch (body) {
-            case ButtonText buttonText -> builder.bodyText(buttonText).bodyType(ButtonBodyType.TEXT);
-            case NativeFlowInfo flowInfo -> builder.bodyNativeFlow(flowInfo).bodyType(ButtonBodyType.NATIVE_FLOW);
-            case null -> builder.bodyType(ButtonBodyType.UNKNOWN);
+            case ButtonText buttonText -> builder.bodyText(buttonText).bodyType(Type.TEXT);
+            case NativeFlowInfo flowInfo -> builder.bodyNativeFlow(flowInfo).bodyType(Type.NATIVE_FLOW);
+            case null -> builder.bodyType(Type.UNKNOWN);
         }
         return builder.build();
     }

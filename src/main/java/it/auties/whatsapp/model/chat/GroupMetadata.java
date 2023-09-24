@@ -23,7 +23,7 @@ public record GroupMetadata(
         Optional<String> description,
         Optional<String> descriptionId,
         @NonNull
-        Map<GroupSetting, SettingPolicy> policies,
+        Map<GroupSetting, GroupSettingPolicy> policies,
         @NonNull
         List<GroupParticipant> participants,
         Optional<ZonedDateTime> ephemeralExpiration,

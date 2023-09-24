@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -10,6 +11,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
+@ProtobufMessageName("SyncActionValue")
 public record ActionValueSync(
         @ProtobufProperty(index = 1, type = ProtobufType.INT64)
         long timestamp,
@@ -23,8 +25,6 @@ public record ActionValueSync(
         Optional<PinAction> pinAction,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
         Optional<QuickReplyAction> quickReplyAction,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
-        Optional<RecentStickerWeightsAction> recentStickerWeightsAction,
         @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
         Optional<RecentEmojiWeightsAction> recentEmojiWeightsAction,
         @ProtobufProperty(index = 14, type = ProtobufType.OBJECT)
@@ -42,7 +42,7 @@ public record ActionValueSync(
         @ProtobufProperty(index = 22, type = ProtobufType.OBJECT)
         Optional<DeleteChatAction> deleteChatAction,
         @ProtobufProperty(index = 25, type = ProtobufType.OBJECT)
-        Optional<FavoriteStickerAction> favoriteStickerAction,
+        Optional<StickerAction> favoriteStickerAction,
         @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
         Optional<AndroidUnsupportedActions> androidUnsupportedActions,
         @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
@@ -66,13 +66,13 @@ public record ActionValueSync(
         @ProtobufProperty(index = 36, type = ProtobufType.OBJECT)
         Optional<ChatAssignmentOpenedStatusAction> chatAssignmentOpenedStatusAction,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-        Optional<SecurityNotificationSetting> securityNotificationSetting,
+        Optional<SecurityNotificationSettings> securityNotificationSetting,
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
-        Optional<PushNameSetting> pushNameSetting,
+        Optional<PushNameSettings> pushNameSetting,
         @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
-        Optional<LocaleSetting> localeSetting,
+        Optional<LocaleSettings> localeSetting,
         @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
-        Optional<UnarchiveChatsSetting> unarchiveChatsSetting,
+        Optional<UnarchiveChatsSettings> unarchiveChatsSetting,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
         Optional<StickerMetadata> stickerMetadata,
         @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
@@ -88,7 +88,6 @@ public record ActionValueSync(
             case MuteAction muteAction -> builder.muteAction(muteAction);
             case PinAction pinAction -> builder.pinAction(pinAction);
             case QuickReplyAction quickReplyAction -> builder.quickReplyAction(quickReplyAction);
-            case RecentStickerWeightsAction recentStickerWeightsAction -> builder.recentStickerWeightsAction(recentStickerWeightsAction);
             case RecentEmojiWeightsAction recentEmojiWeightsAction -> builder.recentEmojiWeightsAction(recentEmojiWeightsAction);
             case LabelEditAction labelEditAction -> builder.labelEditAction(labelEditAction);
             case LabelAssociationAction labelAssociationAction -> builder.labelAssociationAction(labelAssociationAction);
@@ -97,7 +96,6 @@ public record ActionValueSync(
             case MarkChatAsReadAction markChatAsReadAction -> builder.markChatAsReadAction(markChatAsReadAction);
             case ClearChatAction clearChatAction -> builder.clearChatAction(clearChatAction);
             case DeleteChatAction deleteChatAction -> builder.deleteChatAction(deleteChatAction);
-            case FavoriteStickerAction favoriteStickerAction -> builder.favoriteStickerAction(favoriteStickerAction);
             case AndroidUnsupportedActions androidUnsupportedActions -> builder.androidUnsupportedActions(androidUnsupportedActions);
             case AgentAction agentAction -> builder.agentAction(agentAction);
             case ChatAssignmentAction chatAssignmentAction -> builder.chatAssignmentAction(chatAssignmentAction);
@@ -117,10 +115,10 @@ public record ActionValueSync(
     public static ActionValueSync of(@NonNull Setting setting) {
         var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
         switch (setting) {
-            case SecurityNotificationSetting securityNotificationSetting -> builder.securityNotificationSetting(securityNotificationSetting);
-            case PushNameSetting pushNameSetting -> builder.pushNameSetting(pushNameSetting);
-            case LocaleSetting localeSetting -> builder.localeSetting(localeSetting);
-            case UnarchiveChatsSetting unarchiveChatsSetting -> builder.unarchiveChatsSetting(unarchiveChatsSetting);
+            case SecurityNotificationSettings securityNotificationSettings -> builder.securityNotificationSetting(securityNotificationSettings);
+            case PushNameSettings pushNameSettings -> builder.pushNameSetting(pushNameSettings);
+            case LocaleSettings localeSettings -> builder.localeSetting(localeSettings);
+            case UnarchiveChatsSettings unarchiveChatsSettings -> builder.unarchiveChatsSetting(unarchiveChatsSettings);
             default -> throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
         }
         return builder.build();
@@ -141,9 +139,6 @@ public record ActionValueSync(
         }
         if (quickReplyAction.isPresent()) {
             return quickReplyAction;
-        }
-        if (recentStickerWeightsAction.isPresent()) {
-            return recentStickerWeightsAction;
         }
         if (recentEmojiWeightsAction.isPresent()) {
             return recentEmojiWeightsAction;

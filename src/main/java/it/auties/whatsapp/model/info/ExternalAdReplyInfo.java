@@ -1,6 +1,9 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
@@ -10,13 +13,14 @@ import java.util.Optional;
 /**
  * A model class that holds the information related to an advertisement.
  */
+@ProtobufMessageName("ContextInfo.ExternalAdReplyInfo")
 public record ExternalAdReplyInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String>  title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String>  body,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        Optional<ExternalAdReplyInfoMediaType> mediaType,
+        Optional<MediaType> mediaType,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Optional<String>  thumbnailUrl,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
@@ -38,5 +42,32 @@ public record ExternalAdReplyInfo(
         @ProtobufProperty(index = 13, type = ProtobufType.STRING)
         Optional<String> ctwaClid
 ) implements Info, ProtobufMessage {
+        /**
+         * The constants of this enumerated type describe the various types of media that an ad can wrap
+         */
+        @ProtobufMessageName("ChatRowOpaqueData.DraftMessage.CtwaContextData.ContextInfoExternalAdReplyInfoMediaType")
+        public enum MediaType implements ProtobufEnum {
+            /**
+             * No media
+             */
+            NONE(0),
+            /**
+             * Image
+             */
+            IMAGE(1),
+            /**
+             * Video
+             */
+            VIDEO(2);
 
+            final int index;
+
+            MediaType(@ProtobufEnumIndex int index) {
+                this.index = index;
+            }
+
+            public int index() {
+                return index;
+            }
+        }
 }

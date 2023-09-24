@@ -19,7 +19,7 @@ public record HydratedFourRowTemplateTextTitle(
     }
 
     @Override
-    public HydratedFourRowTemplateTitleType hydratedTitleType() {
-        return HydratedFourRowTemplateTitleType.TEXT;
+    public Type hydratedTitleType() {
+        return Type.TEXT;
     }
 }

@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -15,6 +16,8 @@ import java.util.stream.Stream;
 
 import static java.lang.Integer.parseInt;
 
+
+@ProtobufMessageName("ClientPayload.UserAgent.AppVersion")
 public record Version(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
         Integer primary,

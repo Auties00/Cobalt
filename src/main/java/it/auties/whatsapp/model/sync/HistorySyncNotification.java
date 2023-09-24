@@ -1,7 +1,10 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MutableAttachmentProvider;
 
@@ -10,6 +13,7 @@ import java.util.OptionalLong;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
+@ProtobufMessageName("Message.HistorySyncNotification")
 public final class HistorySyncNotification implements MutableAttachmentProvider<HistorySyncNotification> {
     @ProtobufProperty(index = 1, type = BYTES)
     private byte[] mediaSha256;
@@ -22,14 +26,14 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     @ProtobufProperty(index = 5, type = STRING)
     private String mediaDirectPath;
     @ProtobufProperty(index = 6, type = OBJECT)
-    private final HistorySyncType syncType;
+    private final HistorySync.Type syncType;
     @ProtobufProperty(index = 7, type = UINT32)
     private final Integer chunkOrder;
     @ProtobufProperty(index = 8, type = STRING)
     private final String originalMessageId;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public HistorySyncNotification(byte[] mediaSha256, long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySyncType syncType, Integer chunkOrder, String originalMessageId) {
+    public HistorySyncNotification(byte[] mediaSha256, long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId) {
         this.mediaSha256 = mediaSha256;
         this.mediaSize = mediaSize;
         this.mediaKey = mediaKey;
@@ -110,7 +114,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         return AttachmentType.HISTORY_SYNC;
     }
 
-    public HistorySyncType syncType() {
+    public HistorySync.Type syncType() {
         return syncType;
     }
 
@@ -120,5 +124,26 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
 
     public Optional<String> originalMessageId() {
         return Optional.ofNullable(originalMessageId);
+    }
+
+    @ProtobufMessageName("Message.HistorySyncNotification.HistorySyncType")
+    public enum Type implements ProtobufEnum {
+
+        INITIAL_BOOTSTRAP(0),
+        INITIAL_STATUS_V3(1),
+        FULL(2),
+        RECENT(3),
+        PUSH_NAME(4),
+        NON_BLOCKING_DATA(5);
+
+        Type(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
+        }
     }
 }

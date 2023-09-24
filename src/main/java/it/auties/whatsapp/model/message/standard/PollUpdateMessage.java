@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
@@ -25,6 +26,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a vote for a poll inside
  */
+@ProtobufMessageName("Message.PollUpdateMessage")
 public final class PollUpdateMessage implements Message, EncryptedMessage {
     @Nullable
     private ContactJid voter;

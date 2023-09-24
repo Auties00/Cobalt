@@ -1,6 +1,9 @@
 package it.auties.whatsapp.model.message.standard;
 
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -17,6 +20,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a whatsapp group invite inside
  */
+@ProtobufMessageName("Message.GroupInviteMessage")
 public record GroupInviteMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
@@ -36,7 +40,7 @@ public record GroupInviteMessage(
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
-        GroupInviteType groupType
+        Type groupType
 ) implements ContextualMessage {
     @Override
     public MessageType type() {
@@ -50,5 +54,21 @@ public record GroupInviteMessage(
 
     public Optional<ZonedDateTime> expiration() {
         return Clock.parseSeconds(expirationSeconds);
+    }
+
+    @ProtobufMessageName("Message.GroupInviteMessage.GroupType")
+    public enum Type implements ProtobufEnum {
+        DEFAULT(0),
+        PARENT(1);
+
+        final int index;
+
+        Type(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return this.index;
+        }
     }
 }

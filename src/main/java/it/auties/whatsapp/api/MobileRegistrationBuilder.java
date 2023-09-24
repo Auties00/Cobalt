@@ -19,15 +19,15 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings("unused")
 public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilder<T>> {
-    protected Whatsapp whatsapp;
-    protected final Store store;
-    protected final Keys keys;
-    protected final ErrorHandler errorHandler;
-    protected final Executor socketExecutor;
-    protected AsyncVerificationCodeSupplier verificationCodeSupplier;
-    protected AsyncCaptchaCodeSupplier verificationCaptchaSupplier;
+    final Store store;
+    final Keys keys;
+    final ErrorHandler errorHandler;
+    final Executor socketExecutor;
+    Whatsapp whatsapp;
+    AsyncVerificationCodeSupplier verificationCodeSupplier;
+    AsyncCaptchaCodeSupplier verificationCaptchaSupplier;
 
-    public MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
+    MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
         this.store = store;
         this.keys = keys;
         this.errorHandler = errorHandler;
@@ -84,7 +84,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
         return (T) this;
     }
 
-    protected Whatsapp buildWhatsapp() {
+    Whatsapp buildWhatsapp() {
         return this.whatsapp = Whatsapp.customBuilder()
                 .store(store)
                 .keys(keys)
@@ -96,7 +96,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     public final static class Unregistered extends MobileRegistrationBuilder<Unregistered> {
         private VerificationCodeMethod verificationCodeMethod;
 
-        public Unregistered(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
+        Unregistered(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
             super(store, keys, errorHandler, socketExecutor);
             this.verificationCodeMethod = VerificationCodeMethod.SMS;
         }
@@ -157,9 +157,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     }
 
     public final static class Unverified extends MobileRegistrationBuilder<Unverified> {
-
-
-        public Unverified(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
+        Unverified(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
             super(store, keys, errorHandler, socketExecutor);
         }
 

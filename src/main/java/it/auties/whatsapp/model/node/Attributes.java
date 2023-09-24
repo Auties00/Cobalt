@@ -5,11 +5,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.model.contact.ContactJid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -176,8 +173,11 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public Optional<Integer> getOptionalInt(String key) {
-        return get(key, Object.class).map(this::parseInt);
+    public OptionalInt getOptionalInt(String key) {
+        return get(key, Object.class)
+                .stream()
+                .mapToInt(this::parseInt)
+                .findFirst();
     }
 
     private int parseInt(Object value) {
@@ -206,8 +206,11 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public Optional<Long> getOptionalLong(@NonNull String key) {
-        return get(key, Object.class).map(this::parseLong);
+    public OptionalLong getOptionalLong(@NonNull String key) {
+        return get(key, Object.class)
+                .stream()
+                .mapToLong(this::parseLong)
+                .findFirst();
     }
 
     private long parseLong(Object value) {

@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -8,7 +9,7 @@ import it.auties.whatsapp.model.sync.DeviceListMetadata;
 
 import java.util.Optional;
 
-
+@ProtobufMessageName("MessageContextInfo")
 public final class DeviceContextInfo implements Info, ProtobufMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private final DeviceListMetadata deviceListMetadata;

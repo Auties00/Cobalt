@@ -33,7 +33,11 @@ public enum ContactJidServer {
     /**
      * Lid
      */
-    LID("lid");
+    LID("lid"),
+    /**
+     * Newsletter
+     */
+    CHANNEL("newsletter");
 
     private final String address;
 

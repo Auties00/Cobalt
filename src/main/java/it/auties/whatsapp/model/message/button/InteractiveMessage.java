@@ -1,11 +1,12 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.button.interactive.*;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.interactive.*;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -18,6 +19,7 @@ import java.util.Optional;
  * A model class that represents a message holding an interactive message inside. Not really clear
  * how this could be used, contributions are welcomed.
  */
+@ProtobufMessageName("Message.InteractiveMessage")
 public record InteractiveMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<InteractiveHeader> header,
@@ -55,10 +57,10 @@ public record InteractiveMessage(
      *
      * @return a non-null content type
      */
-    public InteractiveMessageContentType contentType() {
+    public InteractiveMessageContent.Type contentType() {
         return content()
                 .map(InteractiveMessageContent::contentType)
-                .orElse(InteractiveMessageContentType.NONE);
+                .orElse(InteractiveMessageContent.Type.NONE);
     }
 
     /**
@@ -79,8 +81,8 @@ public record InteractiveMessage(
     }
 
     @Override
-    public TemplateFormatterType templateType() {
-        return TemplateFormatterType.INTERACTIVE;
+    public Type templateType() {
+        return TemplateFormatter.Type.INTERACTIVE;
     }
 
     @Override

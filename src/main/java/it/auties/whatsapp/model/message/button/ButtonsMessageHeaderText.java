@@ -15,7 +15,7 @@ public record ButtonsMessageHeaderText(@NonNull String text) implements ButtonsM
     }
 
     @Override
-    public ButtonsMessageHeaderType buttonHeaderType() {
-        return ButtonsMessageHeaderType.TEXT;
+    public Type buttonHeaderType() {
+        return Type.TEXT;
     }
 }

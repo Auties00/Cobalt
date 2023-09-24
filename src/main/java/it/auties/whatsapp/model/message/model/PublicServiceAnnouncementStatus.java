@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -9,6 +10,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+@ProtobufMessageName("StatusPSA")
 public record PublicServiceAnnouncementStatus(
         @ProtobufProperty(index = 44, type = ProtobufType.STRING)
         @NonNull

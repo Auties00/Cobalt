@@ -1,8 +1,10 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.payment.*;
@@ -29,6 +31,7 @@ import java.util.Optional;
  * <li>Standard messages</li>
  * </ul>
  */
+@ProtobufMessageName("Message")
 public record MessageContainer(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String> textWithNoContextMessage,
@@ -53,7 +56,7 @@ public record MessageContainer(
         @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
         Optional<ProtocolMessage> protocolMessage,
         @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
-        Optional<ContactsArrayMessage> contactsArrayMessage,
+        Optional<ContactsMessage> contactsArrayMessage,
         @ProtobufProperty(index = 14, type = ProtobufType.OBJECT)
         Optional<HighlyStructuredMessage> highlyStructuredMessage,
         @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
@@ -161,7 +164,7 @@ public record MessageContainer(
             case AudioMessage audio -> builder.audioMessage(Optional.of(audio));
             case VideoOrGifMessage video -> builder.videoMessage(Optional.of(video));
             case ProtocolMessage protocol -> builder.protocolMessage(Optional.of(protocol));
-            case ContactsArrayMessage contactsArray -> builder.contactsArrayMessage(Optional.of(contactsArray));
+            case ContactsMessage contactsArray -> builder.contactsArrayMessage(Optional.of(contactsArray));
             case HighlyStructuredMessage highlyStructured ->
                     builder.highlyStructuredMessage(Optional.of(highlyStructured));
             case SendPaymentMessage sendPayment -> builder.sendPaymentMessage(Optional.of(sendPayment));

@@ -154,6 +154,7 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
             case BROADCAST -> Objects.equals(user(), "status") ? ContactJidType.STATUS : ContactJidType.BROADCAST;
             case GROUP -> ContactJidType.GROUP;
             case GROUP_CALL -> ContactJidType.GROUP_CALL;
+            case CHANNEL -> ContactJidType.CHANNEL;
             case USER -> switch (user()) {
                 case "server" -> ContactJidType.SERVER;
                 case "0" -> ContactJidType.ANNOUNCEMENT;
@@ -194,11 +195,21 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
     }
 
     /**
+     * Returns a new jid using with a different server
+     *
+     * @param server the new server
+     * @return a non-null jid
+     */
+    public ContactJid withServer(@NonNull ContactJidServer server) {
+        return new ContactJid(user(), server, device, agent);
+    }
+
+    /**
      * Converts this jid to a user jid
      *
      * @return a non-null jid
      */
-    public ContactJid toWhatsappJid() {
+    public ContactJid withoutDevice() {
         return of(user(), server());
     }
 

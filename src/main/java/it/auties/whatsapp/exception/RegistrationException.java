@@ -1,29 +1,23 @@
 package it.auties.whatsapp.exception;
 
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.Optional;
 
 /**
  * This exception is thrown when a phone number cannot be registered by the Whatsapp API
  */
 public class RegistrationException extends RuntimeException {
+    @Nullable
     private final VerificationCodeResponse erroneousResponse;
-    private final String erroneousRawResponse;
 
-    public RegistrationException(VerificationCodeResponse erroneousResponse, String erroneousRawResponse) {
+    public RegistrationException(@Nullable VerificationCodeResponse erroneousResponse, String message) {
+        super(message);
         this.erroneousResponse = erroneousResponse;
-        this.erroneousRawResponse = erroneousRawResponse;
     }
 
-    public VerificationCodeResponse erroneousResponse() {
-        return this.erroneousResponse;
-    }
-
-    public String erroneousRawResponse() {
-        return this.erroneousRawResponse;
-    }
-
-    @Override
-    public String getMessage() {
-        return erroneousRawResponse;
+    public Optional<VerificationCodeResponse> erroneousResponse() {
+        return Optional.ofNullable(erroneousResponse);
     }
 }

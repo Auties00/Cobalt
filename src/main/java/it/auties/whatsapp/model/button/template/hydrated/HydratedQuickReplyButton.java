@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
@@ -10,6 +11,7 @@ import java.util.HexFormat;
 /**
  * A model class that represents a hydrated quick reply button
  */
+@ProtobufMessageName("HydratedTemplateButton.HydratedQuickReplyButton")
 public record HydratedQuickReplyButton(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
@@ -30,7 +32,7 @@ public record HydratedQuickReplyButton(
     }
 
     @Override
-    public HydratedButtonType buttonType() {
-        return HydratedButtonType.QUICK_REPLY;
+    public Type buttonType() {
+        return Type.QUICK_REPLY;
     }
 }

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.companion;
 
 /**
- * The constants of this enumeration describe the various types of results that can be yielded by a new device's registration through the mobile api
+ * The constants of this enumeration describe the various types of recommendedChannels that can be yielded by a new device's registration through the mobile api
  */
 public enum CompanionLinkResult {
     /**

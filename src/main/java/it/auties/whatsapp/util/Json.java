@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -24,6 +25,7 @@ public final class Json {
         try {
             json = new ObjectMapper().registerModule(new Jdk8Module())
                     .registerModule(new JavaTimeModule())
+                    .registerModule(new ParameterNamesModule())
                     .setSerializationInclusion(NON_DEFAULT)
                     .enable(FAIL_ON_EMPTY_BEANS)
                     .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)

@@ -2,20 +2,17 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachmentType;
-import it.auties.whatsapp.model.interactive.InteractiveLocationAnnotation;
+import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
+import it.auties.whatsapp.model.button.interactive.InteractiveLocationAnnotation;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
-import it.auties.whatsapp.model.message.button.ButtonsMessageHeaderType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
@@ -34,6 +31,7 @@ import static java.util.Objects.requireNonNullElse;
 /**
  * A model class that represents a message holding an image inside
  */
+@ProtobufMessageName("Message.ImageMessage")
 public final class ImageMessage extends LocalMediaMessage<ImageMessage>
         implements MediaMessage<ImageMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
@@ -274,23 +272,23 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     }
 
     @Override
-    public HighlyStructuredFourRowTemplateTitleType titleType() {
-        return HighlyStructuredFourRowTemplateTitleType.IMAGE;
+    public HighlyStructuredFourRowTemplateTitle.Type titleType() {
+        return HighlyStructuredFourRowTemplateTitle.Type.IMAGE;
     }
 
     @Override
-    public HydratedFourRowTemplateTitleType hydratedTitleType() {
-        return HydratedFourRowTemplateTitleType.IMAGE;
+    public HydratedFourRowTemplateTitle.Type hydratedTitleType() {
+        return HydratedFourRowTemplateTitle.Type.IMAGE;
     }
 
     @Override
-    public InteractiveHeaderAttachmentType interactiveHeaderType() {
-        return InteractiveHeaderAttachmentType.IMAGE;
+    public InteractiveHeaderAttachment.Type interactiveHeaderType() {
+        return InteractiveHeaderAttachment.Type.IMAGE;
     }
 
     @Override
-    public ButtonsMessageHeaderType buttonHeaderType() {
-        return ButtonsMessageHeaderType.IMAGE;
+    public ButtonsMessageHeader.Type buttonHeaderType() {
+        return ButtonsMessageHeader.Type.IMAGE;
     }
 
     public Optional<String> mimetype() {

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.button.misc;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -11,6 +12,7 @@ import java.util.HexFormat;
 /**
  * A model class that represents a row of buttons
  */
+@ProtobufMessageName("Message.ListMessage.Row")
 public record ButtonRow(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull

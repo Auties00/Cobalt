@@ -2,18 +2,16 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitleType;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
-import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachment;
-import it.auties.whatsapp.model.interactive.InteractiveHeaderAttachmentType;
-import it.auties.whatsapp.model.interactive.InteractiveLocationAnnotation;
+import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
+import it.auties.whatsapp.model.button.interactive.InteractiveLocationAnnotation;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
-import it.auties.whatsapp.model.message.button.ButtonsMessageHeaderType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
@@ -32,6 +30,7 @@ import static java.util.Objects.requireNonNullElse;
 /**
  * A model class that represents a message holding a video inside
  */
+@ProtobufMessageName("Message.VideoMessage")
 public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage>
         implements MediaMessage<VideoOrGifMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
@@ -87,7 +86,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     private final byte[] streamingSidecar;
 
     @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
-    private final VideoMessageAttribution gifAttribution;
+    private final Attribution gifAttribution;
 
     @ProtobufProperty(index = 20, type = ProtobufType.BOOL)
     private final boolean viewOnce;
@@ -105,7 +104,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     private final String staticUrl;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public VideoOrGifMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, byte[] mediaKey, String caption, boolean gifPlayback, Integer height, Integer width, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, long mediaKeyTimestampSeconds, byte[] thumbnail, @Nullable ContextInfo contextInfo, byte[] streamingSidecar, VideoMessageAttribution gifAttribution, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
+    public VideoOrGifMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, byte[] mediaKey, String caption, boolean gifPlayback, Integer height, Integer width, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, long mediaKeyTimestampSeconds, byte[] thumbnail, @Nullable ContextInfo contextInfo, byte[] streamingSidecar, Attribution gifAttribution, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.mediaSha256 = mediaSha256;
@@ -149,7 +148,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     }
 
     @ProtobufBuilder(className = "GifMessageSimpleBuilder")
-    static VideoOrGifMessage gifBuilder(byte @NonNull [] media, @Nullable String mimeType, @Nullable String caption, @Nullable VideoMessageAttribution gifAttribution, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo) {
+    static VideoOrGifMessage gifBuilder(byte @NonNull [] media, @Nullable String mimeType, @Nullable String caption, @Nullable Attribution gifAttribution, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo) {
         Validate.isTrue(isNotGif(media, mimeType), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
@@ -162,7 +161,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
                 .height(dimensions.height())
                 .duration(duration)
                 .gifPlayback(true)
-                .gifAttribution(requireNonNullElse(gifAttribution, VideoMessageAttribution.NONE))
+                .gifAttribution(requireNonNullElse(gifAttribution, Attribution.NONE))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build()
                 .setDecodedMedia(media);
@@ -250,8 +249,8 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
         return this;
     }
 
-    public String caption() {
-        return caption;
+    public Optional<String> caption() {
+        return Optional.ofNullable(caption);
     }
 
     public OptionalInt height() {
@@ -272,23 +271,23 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     }
 
     @Override
-    public HighlyStructuredFourRowTemplateTitleType titleType() {
-        return HighlyStructuredFourRowTemplateTitleType.VIDEO;
+    public HighlyStructuredFourRowTemplateTitle.Type titleType() {
+        return HighlyStructuredFourRowTemplateTitle.Type.VIDEO;
     }
 
     @Override
-    public HydratedFourRowTemplateTitleType hydratedTitleType() {
-        return HydratedFourRowTemplateTitleType.VIDEO;
+    public HydratedFourRowTemplateTitle.Type hydratedTitleType() {
+        return HydratedFourRowTemplateTitle.Type.VIDEO;
     }
 
     @Override
-    public InteractiveHeaderAttachmentType interactiveHeaderType() {
-        return InteractiveHeaderAttachmentType.VIDEO;
+    public InteractiveHeaderAttachment.Type interactiveHeaderType() {
+        return InteractiveHeaderAttachment.Type.VIDEO;
     }
 
     @Override
-    public ButtonsMessageHeaderType buttonHeaderType() {
-        return ButtonsMessageHeaderType.VIDEO;
+    public ButtonsMessageHeader.Type buttonHeaderType() {
+        return ButtonsMessageHeader.Type.VIDEO;
     }
 
     @Override
@@ -316,7 +315,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
         return Optional.ofNullable(streamingSidecar);
     }
 
-    public Optional<VideoMessageAttribution> gifAttribution() {
+    public Optional<Attribution> gifAttribution() {
         return Optional.ofNullable(gifAttribution);
     }
 
@@ -338,5 +337,35 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
 
     public Optional<String> staticUrl() {
         return Optional.ofNullable(staticUrl);
+    }
+
+    /**
+     * The constants of this enumerated type describe the various sources from where a gif can come
+     * from
+     */
+    @ProtobufMessageName("Message.VideoMessage.Attribution")
+    public enum Attribution implements ProtobufEnum {
+        /**
+         * No source was specified
+         */
+        NONE(0),
+        /**
+         * Giphy
+         */
+        GIPHY(1),
+        /**
+         * Tenor
+         */
+        TENOR(2);
+
+        final int index;
+
+        Attribution(int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return this.index;
+        }
     }
 }

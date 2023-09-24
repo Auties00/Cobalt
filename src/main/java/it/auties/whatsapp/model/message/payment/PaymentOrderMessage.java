@@ -1,6 +1,9 @@
 package it.auties.whatsapp.model.message.payment;
 
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -15,7 +18,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message to pay an order.
  */
-
+@ProtobufMessageName("Message.PaymentOrderMessage")
 public record PaymentOrderMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
@@ -26,7 +29,7 @@ public record PaymentOrderMessage(
         int itemCount,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         @NonNull
-        PaymentOrderStatus status,
+        Status status,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         @NonNull
         PaymentOrderSurface surface,
@@ -48,8 +51,44 @@ public record PaymentOrderMessage(
         @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage, PaymentMessage {
-    @Override
-    public MessageType type() {
-        return MessageType.PAYMENT_ORDER;
-    }
+        @Override
+        public MessageType type() {
+                return MessageType.PAYMENT_ORDER;
+        }
+
+        @ProtobufMessageName("Message.OrderMessage.OrderStatus")
+        public enum Status implements ProtobufEnum {
+                /**
+                 * Inquiry
+                 */
+                INQUIRY(1);
+
+                final int index;
+
+                Status(@ProtobufEnumIndex int index) {
+                        this.index = index;
+                }
+
+                public int index() {
+                        return this.index;
+                }
+        }
+
+        @ProtobufMessageName("Message.OrderMessage.OrderSurface")
+        public enum PaymentOrderSurface implements ProtobufEnum {
+            /**
+             * Catalog
+             */
+            CATALOG(1);
+
+            final int index;
+
+            PaymentOrderSurface(@ProtobufEnumIndex int index) {
+                this.index = index;
+            }
+
+            public int index() {
+                return this.index;
+            }
+        }
 }

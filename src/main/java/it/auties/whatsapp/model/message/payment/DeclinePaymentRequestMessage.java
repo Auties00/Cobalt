@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -10,7 +11,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 /**
  * A model class that represents a message to decline a {@link RequestPaymentMessage}.
  */
-
+@ProtobufMessageName("Message.DeclinePaymentRequestMessage")
 public record DeclinePaymentRequestMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         @NonNull

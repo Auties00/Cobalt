@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.action;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -10,6 +11,7 @@ import java.util.List;
 /**
  * A model clas that represents the addition or deletion of a quick reply
  */
+@ProtobufMessageName("SyncActionValue.QuickReplyAction")
 public record QuickReplyAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull

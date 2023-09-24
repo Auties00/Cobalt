@@ -41,11 +41,11 @@ public class SocketSession {
         return CompletableFuture.runAsync(() -> {
             try {
                 this.listener = listener;
-                this.closed = false;
                 this.socket = new Socket(getProxy());
                 socket.setKeepAlive(true);
                 socket.connect(new InetSocketAddress(APP_ENDPOINT_HOST, APP_ENDPOINT_PORT));
                 executor.execute(this::readMessages);
+                this.closed = false;
                 listener.onOpen(this);
             } catch (IOException exception) {
                 throw new UncheckedIOException("Cannot connect to host", exception);
@@ -84,7 +84,6 @@ public class SocketSession {
 
         return CompletableFuture.runAsync(() -> {
             try {
-                this.closed = true;
                 socket.close();
                 closeResources();
             } catch (IOException exception) {
@@ -130,9 +129,7 @@ public class SocketSession {
         } catch(Throwable throwable) {
             listener.onError(throwable);
         } finally {
-            if (closed) {
-                closeResources();
-            }
+            closeResources();
         }
     }
 
@@ -152,6 +149,11 @@ public class SocketSession {
     }
 
     private void closeResources() {
+        if(closed) {
+            return;
+        }
+
+        this.closed = true;
         this.socket = null;
         if (executor instanceof ExecutorService service) {
             service.shutdownNow();

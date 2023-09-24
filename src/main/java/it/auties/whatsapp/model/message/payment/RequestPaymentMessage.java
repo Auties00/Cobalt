@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -18,6 +19,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message to try to place a {@link PaymentMessage}.
  */
+@ProtobufMessageName("Message.RequestPaymentMessage")
 public record RequestPaymentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull

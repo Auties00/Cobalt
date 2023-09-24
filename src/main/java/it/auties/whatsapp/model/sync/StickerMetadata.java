@@ -1,10 +1,12 @@
 package it.auties.whatsapp.model.sync;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
+@ProtobufMessageName("StickerMetadata")
 public record StickerMetadata(@ProtobufProperty(index = 1, type = STRING) String url,
                               @ProtobufProperty(index = 2, type = BYTES) byte[] fileSha256,
                               @ProtobufProperty(index = 3, type = BYTES) byte[] fileEncSha256,

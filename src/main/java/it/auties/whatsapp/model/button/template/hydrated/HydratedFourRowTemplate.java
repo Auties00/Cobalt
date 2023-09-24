@@ -1,10 +1,10 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
-import it.auties.whatsapp.model.message.button.TemplateFormatterType;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -18,6 +18,7 @@ import java.util.stream.IntStream;
 /**
  * A model class that represents a hydrated four row template
  */
+@ProtobufMessageName("Message.TemplateMessage.HydratedFourRowTemplate")
 public record HydratedFourRowTemplate(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<DocumentMessage> titleDocument,
@@ -71,9 +72,9 @@ public record HydratedFourRowTemplate(
      *
      * @return a non-null title type
      */
-    public HydratedFourRowTemplateTitleType titleType() {
+    public HydratedFourRowTemplateTitle.Type titleType() {
         return title().map(HydratedFourRowTemplateTitle::hydratedTitleType)
-                .orElse(HydratedFourRowTemplateTitleType.NONE);
+                .orElse(HydratedFourRowTemplateTitle.Type.NONE);
     }
 
     /**
@@ -102,7 +103,7 @@ public record HydratedFourRowTemplate(
     }
 
     @Override
-    public TemplateFormatterType templateType() {
-        return TemplateFormatterType.HYDRATED_FOUR_ROW;
+    public Type templateType() {
+        return TemplateFormatter.Type.HYDRATED_FOUR_ROW;
     }
 }

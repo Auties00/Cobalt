@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -7,6 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
 /**
  * A container for a future message
  */
+@ProtobufMessageName("Message.FutureProofMessage")
 public record FutureMessageContainer(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         MessageContainer content

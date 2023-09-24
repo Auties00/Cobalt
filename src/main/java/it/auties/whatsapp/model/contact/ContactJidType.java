@@ -55,5 +55,9 @@ public enum ContactJidType {
     /**
      * Unknown Jid type
      */
-    UNKNOWN
+    UNKNOWN,
+    /**
+     * Channel
+     */
+    CHANNEL
 }

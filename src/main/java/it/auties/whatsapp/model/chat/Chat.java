@@ -1,7 +1,10 @@
 package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
@@ -10,6 +13,7 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactJidType;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaVisibility;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Clock;
@@ -29,6 +33,7 @@ import java.util.function.Predicate;
  * or a group. This class is only a model, this means that changing its values will have no real
  * effect on WhatsappWeb's servers
  */
+@ProtobufMessageName("Conversation")
 public final class Chat implements ProtobufMessage, ContactJidProvider {
     @NonNull
     private final UUID uuid;
@@ -102,7 +107,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private ChatWallpaper wallpaper;
 
     @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
-    private @NonNull ChatMediaVisibility mediaVisibility;
+    private @NonNull MediaVisibility mediaVisibility;
 
     @ProtobufProperty(index = 28, type = ProtobufType.UINT64)
     private long tokenSenderTimestampSeconds;
@@ -149,10 +154,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
 
     private final @NonNull Set<ContactJid> participantsPreKeys;
 
-    private final @NonNull Set<PastParticipant> pastParticipants;
+    private final @NonNull Set<GroupPastParticipant> pastParticipants;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Chat(@NonNull UUID uuid, @NonNull ContactJid jid, @NonNull ConcurrentLinkedDeque<HistorySyncMessage> historySyncMessages, ContactJid newJid, ContactJid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @NonNull ChatMute mute, ChatWallpaper wallpaper, @NonNull ChatMediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, ContactJid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, ContactJid parentGroupJid, String displayName, ContactJid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, ContactJid lidJid, @NonNull ConcurrentHashMap<ContactJid, ContactStatus> presences, @NonNull Set<ContactJid> participantsPreKeys, @NonNull Set<PastParticipant> pastParticipants) {
+    public Chat(@NonNull UUID uuid, @NonNull ContactJid jid, @NonNull ConcurrentLinkedDeque<HistorySyncMessage> historySyncMessages, ContactJid newJid, ContactJid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @NonNull ChatMute mute, ChatWallpaper wallpaper, @NonNull MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, ContactJid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, ContactJid parentGroupJid, String displayName, ContactJid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, ContactJid lidJid, @NonNull ConcurrentHashMap<ContactJid, ContactStatus> presences, @NonNull Set<ContactJid> participantsPreKeys, @NonNull Set<GroupPastParticipant> pastParticipants) {
         this.uuid = uuid;
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
@@ -198,7 +203,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         this.pastParticipants = pastParticipants;
     }
 
-    public Chat(@NonNull ContactJid jid, @NonNull ConcurrentLinkedDeque<HistorySyncMessage> historySyncMessages, ContactJid newJid, ContactJid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @Nullable ChatMute mute, ChatWallpaper wallpaper, @Nullable ChatMediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, ContactJid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, ContactJid parentGroupJid, String displayName, ContactJid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, ContactJid lidJid) {
+    public Chat(@NonNull ContactJid jid, @NonNull ConcurrentLinkedDeque<HistorySyncMessage> historySyncMessages, ContactJid newJid, ContactJid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @Nullable ChatMute mute, ChatWallpaper wallpaper, @Nullable MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, ContactJid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, ContactJid parentGroupJid, String displayName, ContactJid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, ContactJid lidJid) {
         this.uuid = UUID.randomUUID();
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
@@ -223,7 +228,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         this.pinnedTimestampSeconds = pinnedTimestampSeconds;
         this.mute = Objects.requireNonNullElseGet(mute, ChatMute::notMuted);
         this.wallpaper = wallpaper;
-        this.mediaVisibility = Objects.requireNonNullElse(mediaVisibility, ChatMediaVisibility.ON);
+        this.mediaVisibility = Objects.requireNonNullElse(mediaVisibility, MediaVisibility.ON);
         this.tokenSenderTimestampSeconds = tokenSenderTimestampSeconds;
         this.suspended = suspended;
         this.terminated = terminated;
@@ -650,7 +655,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param participant the non-null jid of the past participant
      * @return whether the participant was added
      */
-    public boolean addPastParticipant(@NonNull PastParticipant participant) {
+    public boolean addPastParticipant(@NonNull GroupPastParticipant participant) {
         return pastParticipants.add(participant);
     }
 
@@ -660,7 +665,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param pastParticipants the non-null list of past participants
      * @return whether the participant were added
      */
-    public boolean addPastParticipants(List<PastParticipant> pastParticipants) {
+    public boolean addPastParticipants(List<GroupPastParticipant> pastParticipants) {
         var result = true;
         for (var pastParticipant : pastParticipants) {
             result &= this.pastParticipants.add(pastParticipant);
@@ -685,7 +690,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param jid the non-null jid of the past participant
      * @return the past participant, if present
      */
-    public Optional<PastParticipant> findPastParticipant(@NonNull ContactJid jid) {
+    public Optional<GroupPastParticipant> findPastParticipant(@NonNull ContactJid jid) {
         return pastParticipants.stream()
                 .filter(entry -> Objects.equals(entry.jid(), jid))
                 .findFirst();
@@ -827,7 +832,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         return Optional.ofNullable(wallpaper);
     }
 
-    public @NonNull ChatMediaVisibility mediaVisibility() {
+    public @NonNull MediaVisibility mediaVisibility() {
         return mediaVisibility;
     }
 
@@ -895,7 +900,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         return presences;
     }
 
-    public @NonNull Set<PastParticipant> pastParticipants() {
+    public @NonNull Set<GroupPastParticipant> pastParticipants() {
         return pastParticipants;
     }
 
@@ -997,7 +1002,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         return this;
     }
 
-    public Chat setMediaVisibility(ChatMediaVisibility mediaVisibility) {
+    public Chat setMediaVisibility(MediaVisibility mediaVisibility) {
         this.mediaVisibility = mediaVisibility;
         return this;
     }
@@ -1070,5 +1075,32 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Chat setLidJid(ContactJid lidJid) {
         this.lidJid = lidJid;
         return this;
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of transfers that can regard a
+     * chat history sync
+     */
+    @ProtobufMessageName("Conversation.EndOfHistoryTransferType")
+    public enum EndOfHistoryTransferType implements ProtobufEnum {
+        /**
+         * Complete, but more messages remain on the phone
+         */
+        COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY(0),
+
+        /**
+         * Complete and no more messages remain on the phone
+         */
+        COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY(1);
+
+        final int index;
+
+        EndOfHistoryTransferType(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        public int index() {
+            return index;
+        }
     }
 }

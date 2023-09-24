@@ -2,73 +2,25 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unregistered;
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unverified;
-import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.KeysBuilder;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 @SuppressWarnings("unused")
 public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuilder> {
-    private MobileOptionsBuilder(Store store, Keys keys) {
+    MobileOptionsBuilder(StoreBuilder store, KeysBuilder keys) {
         super(store, keys);
     }
 
-    static MobileOptionsBuilder of(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
-        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.MOBILE);
-        var store = Store.of(uuid, ClientType.MOBILE, serializer);
-        var keys = Keys.of(uuid, ClientType.MOBILE, serializer);
-        return new MobileOptionsBuilder(store, keys);
-    }
-
-    static Optional<MobileOptionsBuilder> ofNullable(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
-        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.MOBILE);
-        var store = Store.ofNullable(uuid, ClientType.MOBILE, serializer);
-        var keys = Keys.ofNullable(uuid, ClientType.MOBILE, serializer);
-        if(store.isEmpty() || keys.isEmpty()){
-            return Optional.empty();
-        }
-
-        return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
-    }
-
-    static MobileOptionsBuilder of(long phoneNumber, ControllerSerializer serializer){
-        var uuid = UUID.randomUUID();
-        var store = Store.of(uuid, phoneNumber, ClientType.MOBILE, serializer);
-        var keys = Keys.of(uuid, phoneNumber, ClientType.MOBILE, serializer);
-        return new MobileOptionsBuilder(store, keys);
-    }
-
-    static Optional<MobileOptionsBuilder> ofNullable(Long phoneNumber, ControllerSerializer serializer){
-        var store = Store.ofNullable(phoneNumber, ClientType.MOBILE, serializer);
-        var keys = Keys.ofNullable(phoneNumber, ClientType.MOBILE, serializer);
-        if(store.isEmpty() || keys.isEmpty()){
-            return Optional.empty();
-        }
-
-        return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
-    }
-
-
-    static MobileOptionsBuilder of(String alias, ControllerSerializer serializer){
-        var uuid = UUID.randomUUID();
-        var store = Store.of(uuid, alias, ClientType.MOBILE, serializer);
-        var keys = Keys.of(uuid, alias, ClientType.MOBILE, serializer);
-        return new MobileOptionsBuilder(store, keys);
-    }
-
-    static Optional<MobileOptionsBuilder> ofNullable(String alias, ControllerSerializer serializer){
-        var store = Store.ofNullable(alias, ClientType.MOBILE, serializer);
-        var keys = Keys.ofNullable(alias, ClientType.MOBILE, serializer);
-        if(store.isEmpty() || keys.isEmpty()){
-            return Optional.empty();
-        }
-
-        return Optional.of(new MobileOptionsBuilder(store.get(), keys.get()));
+    MobileOptionsBuilder(Store store, Keys keys) {
+        super(store, keys);
     }
 
     /**
@@ -77,8 +29,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder device(@NonNull CompanionDevice device){
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setDevice(device);
+        } else {
+            storeBuilder.device(device);
         }
         return this;
     }
@@ -89,8 +43,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder business(boolean business){
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusiness(business);
+        } else {
+            storeBuilder.business(business);
         }
         return this;
     }
@@ -101,8 +57,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessAddress(String businessAddress) {
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusinessAddress(businessAddress);
+        } else {
+            storeBuilder.businessAddress(businessAddress);
         }
         return this;
     }
@@ -113,8 +71,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessLongitude(Double businessLongitude) {
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusinessLongitude(businessLongitude);
+        } else {
+            storeBuilder.businessLongitude(businessLongitude);
         }
         return this;
     }
@@ -125,8 +85,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessLatitude(Double businessLatitude) {
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusinessLatitude(businessLatitude);
+        } else {
+            storeBuilder.businessLatitude(businessLatitude);
         }
         return this;
     }
@@ -137,8 +99,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessDescription(String businessDescription) {
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusinessDescription(businessDescription);
+        } else {
+            storeBuilder.businessDescription(businessDescription);
         }
         return this;
     }
@@ -149,8 +113,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessWebsite(String businessWebsite) {
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusinessWebsite(businessWebsite);
+        } else {
+            storeBuilder.businessWebsite(businessWebsite);
         }
         return this;
     }
@@ -161,8 +127,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessEmail(String businessEmail) {
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusinessEmail(businessEmail);
+        } else {
+            storeBuilder.businessEmail(businessEmail);
         }
         return this;
     }
@@ -173,8 +141,10 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessCategory(BusinessCategory businessCategory) {
-        if(store != null) {
+        if (storeBuilder == null) {
             store.setBusinessCategory(businessCategory);
+        } else {
+            storeBuilder.businessCategory(businessCategory);
         }
         return this;
     }
@@ -187,12 +157,13 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null optional of whatsapp
      */
     public Optional<Whatsapp> registered() {
+        var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
         if(!keys.registered()){
             return Optional.empty();
         }
 
         return Optional.of(Whatsapp.customBuilder()
-                .store(store)
+                .store(Objects.requireNonNullElseGet(store, storeBuilder::build))
                 .keys(keys)
                 .errorHandler(errorHandler)
                 .socketExecutor(socketExecutor)
@@ -206,6 +177,8 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unregistered unregistered() {
+        var store = Objects.requireNonNullElseGet(this.store, storeBuilder::build);
+        var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
         return new Unregistered(store, keys, errorHandler, socketExecutor);
     }
 
@@ -216,6 +189,8 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unverified unverified() {
+        var store = Objects.requireNonNullElseGet(this.store, storeBuilder::build);
+        var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
         return new Unverified(store, keys, errorHandler, socketExecutor);
     }
 }

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -9,6 +10,7 @@ import java.util.Optional;
 /**
  * A model class that represents a hydrated template for a button
  */
+@ProtobufMessageName("HydratedTemplateButton")
 public record HydratedTemplateButton(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         HydratedQuickReplyButton quickReplyButton,
@@ -74,8 +76,8 @@ public record HydratedTemplateButton(
      *
      * @return a non-null button type
      */
-    public HydratedButtonType buttonType() {
+    public HydratedButton.Type buttonType() {
         return button().map(HydratedButton::buttonType)
-                .orElse(HydratedButtonType.NONE);
+                .orElse(HydratedButton.Type.NONE);
     }
 }

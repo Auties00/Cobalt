@@ -19,7 +19,6 @@ import it.auties.whatsapp.model.chat.GroupRole;
 import it.auties.whatsapp.model.contact.*;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
-import it.auties.whatsapp.model.info.StubType;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
@@ -31,9 +30,10 @@ import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.MessageSendRequest;
+import it.auties.whatsapp.model.response.ChannelResponse;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.signal.auth.*;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -261,13 +261,12 @@ class StreamHandler {
                 .getJid("call-creator")
                 .orElse(from);
         var status = getCallStatus(callNode);
-        var timestamp = callNode.attributes()
+        var timestampSeconds = callNode.attributes()
                 .getOptionalLong("t")
-                .flatMap(Clock::parseSeconds)
-                .orElseGet(ZonedDateTime::now);
+                .orElse(0L);
         var isOffline = callNode.attributes().hasKey("offline");
         var hasVideo = callNode.hasNode("video");
-        var call = new Call(from, caller, callId, timestamp, hasVideo, status, isOffline);
+        var call = new Call(from, caller, callId, Clock.parseSeconds(timestampSeconds).orElseGet(ZonedDateTime::now), hasVideo, status, isOffline);
         socketHandler.store().addCall(call);
         socketHandler.onCall(call);
     }
@@ -337,11 +336,43 @@ class StreamHandler {
             case "encrypt" -> handleEncryptNotification(node);
             case "picture" -> handlePictureNotification(node);
             case "registration" -> handleRegistrationNotification(node);
-            case "link_code_companion_reg" -> confirmCompanionWebRegistration(node);
+            case "link_code_companion_reg" -> handleCompanionRegistration(node);
+            case "mex" -> handleMexNamespace(node);
         }
     }
 
-    private void confirmCompanionWebRegistration(Node node) {
+    private void handleMexNamespace(Node node) {
+        var update = node.findNode("update")
+                .orElse(null);
+        if(update == null) {
+            return;
+        }
+
+        switch (update.attributes().getString("op_name")) {
+            case "NotificationNewsletterJoin" -> {
+                update.contentAsString()
+                        .flatMap(ChannelResponse::ofJson)
+                        .ifPresent(result -> socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("jid", result.jid().withServer(ContactJidServer.WHATSAPP), "count", 1, "type", "Jid"))));
+            }
+            case "NotificationNewsletterMuteChange" -> {
+
+            }
+            case "NotificationNewsletterLeave" -> {
+
+            }
+            case "NotificationNewsletterStateChange" -> {
+
+            }
+            case "NotificationNewsletterAdminMetadataUpdate" -> {
+
+            }
+            case "NotificationNewsletterUpdate" -> {
+
+            }
+        }
+    }
+
+    private void handleCompanionRegistration(Node node) {
         var phoneNumber = getPhoneNumberAsJid();
         var linkCodeCompanionReg = node.findNode("link_code_companion_reg")
                 .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
@@ -400,7 +431,7 @@ class StreamHandler {
             return;
         }
 
-        socketHandler.onRegistrationCode(code.get());
+        socketHandler.onRegistrationCode(code.getAsLong());
     }
 
     private void handlePictureNotification(Node node) {
@@ -412,7 +443,7 @@ class StreamHandler {
                 .orElseGet(() -> socketHandler.store().addNewChat(fromJid));
         var timestamp = node.attributes().getLong("t");
         if (fromChat.isGroup()) {
-            addMessageForGroupStubType(fromChat, StubType.GROUP_CHANGE_ICON, timestamp, node);
+            addMessageForGroupStubType(fromChat, MessageInfo.StubType.GROUP_CHANGE_ICON, timestamp, node);
             socketHandler.onGroupPictureChange(fromChat);
             return;
         }
@@ -430,7 +461,7 @@ class StreamHandler {
             return;
         }
 
-        var stubType = StubType.of(child.get().description());
+        var stubType = MessageInfo.StubType.of(child.get().description());
         if(stubType.isEmpty()){
             return;
         }
@@ -438,7 +469,7 @@ class StreamHandler {
         handleGroupStubNotification(node, stubType.get());
     }
 
-    private void handleGroupStubNotification(Node node, StubType stubType) {
+    private void handleGroupStubNotification(Node node, MessageInfo.StubType stubType) {
         var timestamp = node.attributes().getLong("t");
         var fromJid = node.attributes()
                 .getJid("from")
@@ -449,7 +480,7 @@ class StreamHandler {
         addMessageForGroupStubType(fromChat, stubType, timestamp, node);
     }
 
-    private void addMessageForGroupStubType(Chat chat, StubType stubType, long timestamp, Node metadata) {
+    private void addMessageForGroupStubType(Chat chat, MessageInfo.StubType stubType, long timestamp, Node metadata) {
         var participantJid = metadata.attributes()
                 .getJid("participant")
                 .orElse(null);
@@ -478,7 +509,7 @@ class StreamHandler {
         handleGroupStubType(chat, stubType, participantJid);
     }
 
-    private void handleGroupStubType(Chat chat, StubType stubType, ContactJid participantJid) {
+    private void handleGroupStubType(Chat chat, MessageInfo.StubType stubType, ContactJid participantJid) {
         switch (stubType){
             case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
             case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
@@ -533,7 +564,7 @@ class StreamHandler {
             case "devices" -> handleDevices(child.get());
             case "privacy" -> changeUserPrivacySetting(child.get());
             case "disappearing_mode" -> updateUserDisappearingMode(child.get());
-            case "status" -> updateUserStatus(true);
+            case "status" -> updateUserAbout(true);
             case "picture" -> updateUserPicture(true);
             case "blocklist" -> updateBlocklist(child.orElse(null));
         }
@@ -553,7 +584,7 @@ class StreamHandler {
         var companionJid = socketHandler.store()
                 .jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
-                .toWhatsappJid();
+                .withoutDevice();
         var companionDevice = devices.remove(companionJid);
         devices.put(companionJid, companionDevice);
         socketHandler.store().setLinkedDevicesKeys(devices);
@@ -815,35 +846,47 @@ class StreamHandler {
 
     private CompletableFuture<Void> queryInitialInfo() {
         return queryRequiredInfo()
-                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false)));
+                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserAbout(false), updateUserPicture(false), queryChannelsInfo()));
+    }
+
+    // TODO: Process and save data
+    private CompletableFuture<Void> queryChannelsInfo() {
+        return socketHandler.sendQuery("get", "tos", Node.of("get_user_disclosures", Map.of("t", Clock.nowSeconds())))
+                .thenComposeAsync(result -> socketHandler.sendQuery("get", "newsletter", Node.of("my_reactions", Map.of("limit", 5000))))
+                .thenAcceptAsync(result -> {});
     }
 
     private CompletableFuture<Void> queryRequiredInfo() {
         return switch (socketHandler.store().clientType()) {
-            case WEB -> {
-                var requiredFuture = socketHandler.sendQuery("get", "w", Node.of("props"))
-                        .thenAcceptAsync(this::parseProps)
-                        .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", "1")))
-                        .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                yield requiredFuture;
-            }
-            case MOBILE -> {
-                var requiredFuture = socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")))
-                        .thenAcceptAsync(this::parseProps)
-                        .thenComposeAsync(ignored -> checkBusinessStatus())
-                        .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
-                        .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestampSeconds", 0, "type", "account_sync")))
-                        .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                if(socketHandler.store().business()){
-                    socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
-                            .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                }
-                yield requiredFuture;
-            }
+            case WEB -> queryRequiredWebInfo();
+            case MOBILE -> queryRequiredMobileInfo();
         };
+    }
+
+    private CompletableFuture<Void> queryRequiredMobileInfo() {
+        var requiredFuture = socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")))
+                .thenAcceptAsync(this::parseProps)
+                .thenComposeAsync(ignored -> checkBusinessStatus())
+                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+        socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
+                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestampSeconds", 0, "type", "account_sync")))
+                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+        if(socketHandler.store().business()){
+            socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
+                    .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+        }
+        return requiredFuture;
+    }
+
+    private CompletableFuture<Void> queryRequiredWebInfo() {
+        return socketHandler.sendQuery("get", "w", Node.of("props"))
+                .thenAcceptAsync(this::parseProps)
+                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", "1"))))
+                .thenAcceptAsync(result -> {
+                    // TODO: Handle AB props
+                })
+                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
     }
 
     private CompletableFuture<Void> checkBusinessStatus() {
@@ -887,26 +930,30 @@ class StreamHandler {
                 .ifPresent(entry -> entry.setLastKnownPresence(ContactStatus.AVAILABLE).setLastSeen(ZonedDateTime.now()));
     }
 
-    private CompletableFuture<Void> updateUserStatus(boolean update) {
+    private CompletableFuture<Void> updateUserAbout(boolean update) {
         var jid = socketHandler.store().jid();
         if(jid.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
 
-        return socketHandler.queryAbout(jid.get().toWhatsappJid())
-                .thenAcceptAsync(result -> parseNewStatus(result.orElse(null), update));
+        return socketHandler.queryAbout(jid.get().withoutDevice())
+                .thenAcceptAsync(result -> parseNewAbout(result.orElse(null), update));
     }
 
-    private void parseNewStatus(ContactStatusResponse result, boolean update) {
+    private void parseNewAbout(ContactStatusResponse result, boolean update) {
         if (result == null) {
             return;
         }
-        var oldStatus = socketHandler.store().about();
-        socketHandler.store().setAbout(result.status());
-        if (!update) {
-            return;
-        }
-        socketHandler.onUserAboutChange(result.status(), oldStatus.orElse(null));
+
+        result.status().ifPresent(about -> {
+            socketHandler.store().setAbout(about);
+            if (!update) {
+                return;
+            }
+
+            var oldStatus = socketHandler.store().about();
+            socketHandler.onUserAboutChange(about, oldStatus.orElse(null));
+        });
     }
 
     private CompletableFuture<Void> updateUserPicture(boolean update) {
@@ -915,7 +962,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return socketHandler.queryPicture(jid.get().toWhatsappJid())
+        return socketHandler.queryPicture(jid.get().withoutDevice())
                 .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
     }
 
@@ -1176,17 +1223,17 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Unknown platform: " + container));
         socketHandler.store().setCompanionDeviceOs(companionOs);
         socketHandler.store().setBusiness(isBusiness);
-        var me = new Contact(companion.toWhatsappJid(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, ZonedDateTime.now(), false);
+        var me = new Contact(companion.withoutDevice(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, ZonedDateTime.now(), false);
         socketHandler.store().addContact(me);
     }
 
-    private UserAgentPlatform getCompanionOs(String name) {
+    private Platform getCompanionOs(String name) {
         return switch (name.toLowerCase()) {
-            case "smba" -> UserAgentPlatform.SMB_ANDROID;
-            case "smbi" -> UserAgentPlatform.SMB_IOS;
-            case "android" -> UserAgentPlatform.ANDROID;
-            case "iphone", "ipad", "ios" -> UserAgentPlatform.IOS;
-            default -> UserAgentPlatform.UNKNOWN;
+            case "smba" -> Platform.SMB_ANDROID;
+            case "smbi" -> Platform.SMB_IOS;
+            case "android" -> UserAgent.Platform.ANDROID;
+            case "iphone", "ipad", "ios" -> Platform.IOS;
+            default -> UserAgent.Platform.UNKNOWN;
         };
     }
 

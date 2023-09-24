@@ -1,10 +1,15 @@
 package it.auties.whatsapp.update;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,8 +17,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
@@ -22,10 +30,10 @@ public class UpdateBinaryTokensTest {
     private static final String SOURCE_NAME = "BinaryTokens.java";
     private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/app.([^\"]*).js\">";
     private static final String SINGLE_BYTE_REGEX = "t.SINGLE_BYTE_TOKEN=\\[\"(.*?)\"]";
-    private static final String DICTIONARY_0_REGEX = "const r=\\[\"(.*?)\"]";
-    private static final String DICTIONARY_1_REGEX = "const n=\\[\"(.*?)\"]";
-    private static final String DICTIONARY_2_REGEX = "const i=\\[\"(.*?)\"]";
-    private static final String DICTIONARY_3_REGEX = "const a=\\[\"(.*?)\"]";
+    private static final String DICTIONARY_ASSIGNMENT_REGEX = "\\.DICTIONARY_[0-9]_TOKEN=([a-z]);";
+    private static final String DICTIONARY_DECLARATION_REGEX = "const %s=\\[\"(.*?)\"]";
+    private static final String PROPS_REGEX = "\\.ABPropConfigs=\\{(.*?)]}},";
+    private static final String PARSE_PROPS_REGEX = "([a-zA-Z0-9_]+):\\[([^]]*)]";
 
     private static HttpRequest createRequest(String url) {
         return HttpRequest.newBuilder()
@@ -50,7 +58,8 @@ public class UpdateBinaryTokensTest {
         var javascriptSource = getJavascriptSource();
         var singleByteToken = getSingleByteTokens(javascriptSource);
         var doubleByteTokens = getDoubleByteTokens(javascriptSource);
-        var sourceFile = getSourceFile().formatted(singleByteToken, doubleByteTokens);
+        var props = getAbPropsList(javascriptSource);
+        var sourceFile = getSourceFile().formatted(singleByteToken, doubleByteTokens, props);
         Files.writeString(findTokensFile(), sourceFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         System.out.printf("Created tokens class at %s%n", findTokensFile());
     }
@@ -60,15 +69,55 @@ public class UpdateBinaryTokensTest {
     }
 
     private String getSingleByteTokens(String javascriptSource) {
-        return getTokens(javascriptSource, SINGLE_BYTE_REGEX);
+        return '"' + findResult(javascriptSource, SINGLE_BYTE_REGEX) + '"';
     }
 
     private String getDoubleByteTokens(String javascriptSource) {
-        return "%s,%s,%s,%s".formatted(getTokens(javascriptSource, DICTIONARY_0_REGEX), getTokens(javascriptSource, DICTIONARY_1_REGEX), getTokens(javascriptSource, DICTIONARY_2_REGEX), getTokens(javascriptSource, DICTIONARY_3_REGEX));
+        return Pattern.compile(DICTIONARY_ASSIGNMENT_REGEX, Pattern.MULTILINE)
+                .matcher(javascriptSource)
+                .results()
+                .map(result -> result.group(1))
+                .map(letter -> '"' + findResult(javascriptSource, DICTIONARY_DECLARATION_REGEX.formatted(letter)) + '"')
+                .collect(Collectors.joining(", "));
     }
 
-    private String getTokens(String source, String regex) {
-        return "\"%s\"".formatted(findResult(source, regex));
+    private String getAbPropsList(String source) {
+       try {
+           var props = findResult(source, PROPS_REGEX) + "]";
+           var json = '{' + props.replaceAll("!0", "true").replaceAll("!1", "false") + '}';
+           return new ObjectMapper().enable(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES)
+                   .enable(JsonParser.Feature.ALLOW_SINGLE_QUOTES)
+                   .reader()
+                   .forType(new TypeReference<Map<String, List<Object>>>() {})
+                   .with(JsonReadFeature.ALLOW_LEADING_DECIMAL_POINT_FOR_NUMBERS)
+                   .<Map<String, List<Object>>>readValue(json)
+                   .entrySet()
+                   .stream()
+                   .map(entry -> {
+                       var code = entry.getValue().get(0);
+                       var type = entry.getValue().get(1);
+                       var on = parseValue(entry.getValue().get(2), type);
+                       var off = parseValue(entry.getValue().get(3), type);
+                       var value =  "new BinaryProperty(\"%s\", %s, %s, %s)".formatted(entry.getKey(), code, on, off);
+                       return "        properties.put(%s, %s);".formatted((int) Double.parseDouble(code.toString()), value);
+                   })
+                   .collect(Collectors.joining("\n"));
+       }catch (IOException exception) {
+           throw new UncheckedIOException("Cannot read json", exception);
+       }
+    }
+
+    private Object parseValue(Object value, Object type) {
+        if (!type.equals("string")) {
+            return value;
+        }
+
+        var string = value.toString();
+        if(string.contains("\"")) {
+            return "\"\"\"\n%s\"\"\"".formatted(string);
+        }
+
+        return '"' + string.replaceAll("\\\\/", "\\\\\\\\/").replaceAll("\\\\\\.", "\\\\\\\\.") + '"';
     }
 
     private String getSourceFile() throws IOException {

@@ -11,6 +11,7 @@ import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Spec.Signal;
 import it.auties.whatsapp.util.Validate;
@@ -114,8 +115,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     public byte[] decrypt(SignalMessage message) {
-        var session = loadSession();
-        return session.states()
+        return loadSession().states()
                 .stream()
                 .map(state -> tryDecrypt(message, state))
                 .flatMap(Optional::stream)
@@ -189,6 +189,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     private Session loadSession(Supplier<Optional<Session>> defaultSupplier) {
+        System.out.printf("Data for %s: %s%n", address, Json.writeValueAsString(keys.findSessionByAddress(address).orElse(null), true));
         return keys.findSessionByAddress(address)
                 .or(defaultSupplier)
                 .orElseThrow(() -> new NoSuchElementException("Missing session for: %s".formatted(address)));

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -7,6 +8,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 /**
  * A model class that represents a hydrated button that can start a phone call
  */
+@ProtobufMessageName("HydratedTemplateButton.HydratedCallButton")
 public record HydratedCallButton(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
@@ -16,7 +18,7 @@ public record HydratedCallButton(
         String phoneNumber
 ) implements HydratedButton {
     @Override
-    public HydratedButtonType buttonType() {
-        return HydratedButtonType.CALL;
+    public Type buttonType() {
+        return Type.CALL;
     }
 }

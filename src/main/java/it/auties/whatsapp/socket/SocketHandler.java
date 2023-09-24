@@ -214,7 +214,6 @@ public class SocketHandler implements SocketListener {
             disconnect(DisconnectReason.RECONNECTING);
             return;
         }
-        System.out.println("State: " + state);
         onDisconnected(state.toReason());
         onShutdown(state == SocketState.RECONNECTING);
     }
@@ -300,8 +299,15 @@ public class SocketHandler implements SocketListener {
                 var number = store.phoneNumber()
                         .map(PhoneNumber::number)
                         .orElse(null);
-                this.keys = Keys.random(uuid, number, store.clientType(), store.serializer());
-                this.store = Store.random(uuid, number, store.clientType(), store.serializer());
+                this.keys = Keys.builder()
+                        .uuid(uuid)
+                        .clientType(keys.clientType())
+                        .build();
+                this.store = Store.builder()
+                        .uuid(uuid)
+                        .clientType(store.clientType())
+                        .device(store.device().orElse(null))
+                        .build();
                 store.addListeners(oldListeners);
                 yield connect();
             }
@@ -410,7 +416,7 @@ public class SocketHandler implements SocketListener {
                 .map(entry -> entry.findNode("status"))
                 .flatMap(Optional::stream)
                 .findFirst()
-                .map(ContactStatusResponse::new);
+                .map(ContactStatusResponse::ofNode);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body) {
@@ -429,16 +435,20 @@ public class SocketHandler implements SocketListener {
 
     public CompletableFuture<Node> sendQuery(String id, ContactJid to, String method, String category, Map<String, Object> metadata, Node... body) {
         var attributes = Attributes.ofNullable(metadata)
-                .put("id", id, Objects::nonNull)
-                .put("type", method)
-                .put("to", to)
                 .put("xmlns", category, Objects::nonNull)
+                .put("id", id, Objects::nonNull)
+                .put("to", to)
+                .put("type", method)
                 .toMap();
         return send(Node.of("iq", attributes, body));
     }
 
     public CompletableFuture<Node> send(Node node) {
         return send(node, null);
+    }
+
+    public CompletableFuture<Node> send(Request request) {
+        return request.send(session, keys, store);
     }
 
     public CompletableFuture<Node> send(Node node, Function<Node, Boolean> filter) {
@@ -523,17 +533,17 @@ public class SocketHandler implements SocketListener {
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
         var subjectAuthor = node.attributes().getJid("s_o");
-        var subjectTimestamp = node.attributes()
+        var subjectTimestampSeconds = node.attributes()
                 .getOptionalLong("s_t")
-                .flatMap(Clock::parseSeconds);
-        var foundationTimestamp = node.attributes()
+                .orElse(0L);
+        var foundationTimestampSeconds = node.attributes()
                 .getOptionalLong("creation")
-                .flatMap(Clock::parseSeconds);
+                .orElse(0L);
         var founder = node.attributes().getJid("creator");
-        var policies = new HashMap<GroupSetting, SettingPolicy>();
-        policies.put(SEND_MESSAGES, SettingPolicy.of(node.hasNode("restrict")));
-        policies.put(EDIT_GROUP_INFO, SettingPolicy.of(node.hasNode("announce")));
-        policies.put(APPROVE_NEW_PARTICIPANTS, SettingPolicy.of(node.hasNode("membership_approval_mode")));
+        var policies = new HashMap<GroupSetting, GroupSettingPolicy>();
+        policies.put(SEND_MESSAGES, GroupSettingPolicy.of(node.hasNode("restrict")));
+        policies.put(EDIT_GROUP_INFO, GroupSettingPolicy.of(node.hasNode("announce")));
+        policies.put(APPROVE_NEW_PARTICIPANTS, GroupSettingPolicy.of(node.hasNode("membership_approval_mode")));
         var description = node.findNode("description")
                 .flatMap(parent -> parent.findNode("body"))
                 .flatMap(Node::contentAsString);
@@ -553,7 +563,7 @@ public class SocketHandler implements SocketListener {
                 .stream()
                 .map(this::parseGroupParticipant)
                 .toList();
-        return new GroupMetadata(groupId, subject, subjectAuthor, subjectTimestamp, foundationTimestamp, founder, description, descriptionId, Collections.unmodifiableMap(policies), participants, ephemeral, community, openCommunity);
+        return new GroupMetadata(groupId, subject, subjectAuthor, Clock.parseSeconds(subjectTimestampSeconds), Clock.parseSeconds(foundationTimestampSeconds), founder, description, descriptionId, Collections.unmodifiableMap(policies), participants, ephemeral, community, openCommunity);
     }
 
     private GroupParticipant parseGroupParticipant(Node node) {
@@ -568,10 +578,11 @@ public class SocketHandler implements SocketListener {
         return sendQuery(null, to, method, category, null, body);
     }
 
-    public void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
+    public CompletableFuture<Void> sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
         if (messages.isEmpty()) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
+
         var attributes = Attributes.of()
                 .put("id", messages.get(0))
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
@@ -585,7 +596,7 @@ public class SocketHandler implements SocketListener {
             attributes.put("participant", participant, Objects::nonNull);
         }
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
-        sendWithNoResponse(receipt);
+        return sendWithNoResponse(receipt);
     }
 
     private List<Node> toMessagesNode(List<String> messages) {
@@ -598,7 +609,7 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    protected void sendMessageAck(Node node) {
+    protected CompletableFuture<Void> sendMessageAck(Node node) {
         var attrs = node.attributes();
         var type = attrs.getOptionalString("type")
                 .filter(entry -> !Objects.equals(entry, "message"))
@@ -611,7 +622,7 @@ public class SocketHandler implements SocketListener {
                 .put("recipient", attrs.getNullableString("recipient"), Objects::nonNull)
                 .put("type", type, Objects::nonNull)
                 .toMap();
-        sendWithNoResponse(Node.of("ack", attributes));
+        return sendWithNoResponse(Node.of("ack", attributes));
     }
 
     protected void onRegistrationCode(long code) {
@@ -833,7 +844,7 @@ public class SocketHandler implements SocketListener {
         }
         var self = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
-                .toWhatsappJid();
+                .withoutDevice();
         store().findContactByJid(self)
                 .orElseGet(() -> store().addContact(self))
                 .setChosenName(newName);

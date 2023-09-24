@@ -13,7 +13,7 @@ public record ButtonText(
         String content
 ) implements ButtonBody {
     @Override
-    public ButtonBodyType bodyType() {
-        return ButtonBodyType.TEXT;
+    public Type bodyType() {
+        return Type.TEXT;
     }
 }

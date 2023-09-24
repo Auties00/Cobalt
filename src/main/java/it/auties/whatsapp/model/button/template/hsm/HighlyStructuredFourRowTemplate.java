@@ -1,11 +1,11 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
-import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
-import it.auties.whatsapp.model.message.button.TemplateFormatterType;
+import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -19,6 +19,7 @@ import java.util.stream.IntStream;
 /**
  * A model class that represents a four row template
  */
+@ProtobufMessageName("Message.TemplateMessage.FourRowTemplate")
 public record HighlyStructuredFourRowTemplate(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<DocumentMessage> titleDocument,
@@ -65,9 +66,9 @@ public record HighlyStructuredFourRowTemplate(
      *
      * @return a non-null title type
      */
-    public HighlyStructuredFourRowTemplateTitleType titleType() {
+    public HighlyStructuredFourRowTemplateTitle.Type titleType() {
         return title().map(HighlyStructuredFourRowTemplateTitle::titleType)
-                .orElse(HighlyStructuredFourRowTemplateTitleType.NONE);
+                .orElse(HighlyStructuredFourRowTemplateTitle.Type.NONE);
     }
 
     /**
@@ -96,7 +97,7 @@ public record HighlyStructuredFourRowTemplate(
     }
 
     @Override
-    public TemplateFormatterType templateType() {
-        return TemplateFormatterType.FOUR_ROW;
+    public Type templateType() {
+        return TemplateFormatter.Type.FOUR_ROW;
     }
 }

@@ -1,71 +1,24 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.KeysBuilder;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 @SuppressWarnings("unused")
 public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     private Whatsapp whatsapp;
-    private WebOptionsBuilder(Store store, Keys keys) {
+    WebOptionsBuilder(StoreBuilder storeBuilder, KeysBuilder keysBuilder) {
+        super(storeBuilder, keysBuilder);
+    }
+
+    WebOptionsBuilder(Store store, Keys keys) {
         super(store, keys);
-    }
-
-    static WebOptionsBuilder of(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
-        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.WEB);
-        var store = Store.of(uuid, ClientType.WEB, serializer);
-        var keys = Keys.of(uuid, ClientType.WEB, serializer);
-        return new WebOptionsBuilder(store, keys);
-    }
-
-    static Optional<WebOptionsBuilder> ofNullable(UUID connectionUuid, ControllerSerializer serializer, ConnectionType connectionType){
-        var uuid = getCorrectUuid(connectionUuid, serializer, connectionType, ClientType.WEB);
-        var store = Store.ofNullable(uuid, ClientType.WEB, serializer);
-        var keys = Keys.ofNullable(uuid, ClientType.WEB, serializer);
-        if(store.isEmpty() || keys.isEmpty()){
-            return Optional.empty();
-        }
-
-        return Optional.of(new WebOptionsBuilder(store.get(), keys.get()));
-    }
-
-    static WebOptionsBuilder of(long phoneNumber, ControllerSerializer serializer){
-        var uuid = UUID.randomUUID();
-        var store = Store.of(uuid, phoneNumber, ClientType.WEB, serializer);
-        var keys = Keys.of(uuid, phoneNumber, ClientType.WEB, serializer);
-        return new WebOptionsBuilder(store, keys);
-    }
-
-    static Optional<WebOptionsBuilder> ofNullable(Long phoneNumber, ControllerSerializer serializer){;
-        var store = Store.ofNullable(phoneNumber, ClientType.WEB, serializer);
-        var keys = Keys.ofNullable(phoneNumber, ClientType.WEB, serializer);
-        if(store.isEmpty() || keys.isEmpty()){
-            return Optional.empty();
-        }
-
-        return Optional.of(new WebOptionsBuilder(store.get(), keys.get()));
-    }
-
-    static WebOptionsBuilder of(String alias, ControllerSerializer serializer){
-        var uuid = UUID.randomUUID();
-        var store = Store.of(uuid, alias, ClientType.WEB, serializer);
-        var keys = Keys.of(uuid, alias, ClientType.WEB, serializer);
-        return new WebOptionsBuilder(store, keys);
-    }
-
-    static Optional<WebOptionsBuilder> ofNullable(String alias, ControllerSerializer serializer){
-        var store = Store.ofNullable(alias, ClientType.WEB, serializer);
-        var keys = Keys.ofNullable(alias, ClientType.WEB, serializer);
-        if(store.isEmpty() || keys.isEmpty()){
-            return Optional.empty();
-        }
-
-        return Optional.of(new WebOptionsBuilder(store.get(), keys.get()));
     }
 
     /**
@@ -75,7 +28,11 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      * @return the same instance for chaining
      */
     public WebOptionsBuilder historyLength(@NonNull WebHistoryLength historyLength) {
-        store.setHistoryLength(historyLength);
+        if(store != null) {
+            store.setHistoryLength(historyLength);
+        }else {
+            storeBuilder.historyLength(historyLength);
+        }
         return this;
     }
 
@@ -88,8 +45,8 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     public Whatsapp unregistered(@NonNull QrHandler qrHandler) {
         if (whatsapp == null) {
             this.whatsapp = Whatsapp.customBuilder()
-                    .store(store)
-                    .keys(keys)
+                    .store(Objects.requireNonNullElseGet(store, storeBuilder::build))
+                    .keys(Objects.requireNonNullElseGet(keys, keysBuilder::build))
                     .errorHandler(errorHandler)
                     .webVerificationSupport(qrHandler)
                     .socketExecutor(socketExecutor)
@@ -108,10 +65,15 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      */
     public Whatsapp unregistered(long phoneNumber, @NonNull PairingCodeHandler pairingCodeHandler) {
         if (whatsapp == null) {
-            store.setPhoneNumber(PhoneNumber.of(phoneNumber));
+            if(store != null) {
+                store.setPhoneNumber(PhoneNumber.of(phoneNumber));
+            }else {
+                storeBuilder.phoneNumber(PhoneNumber.of(phoneNumber));
+            }
+
             this.whatsapp = Whatsapp.customBuilder()
-                    .store(store)
-                    .keys(keys)
+                    .store(Objects.requireNonNullElseGet(store, storeBuilder::build))
+                    .keys(Objects.requireNonNullElseGet(keys, keysBuilder::build))
                     .errorHandler(errorHandler)
                     .webVerificationSupport(pairingCodeHandler)
                     .socketExecutor(socketExecutor)
@@ -129,13 +91,14 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      * @return an optional
      */
     public Optional<Whatsapp> registered() {
+        var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
         if(!keys.registered()){
             return Optional.empty();
         }
 
         if (whatsapp == null) {
             this.whatsapp = Whatsapp.customBuilder()
-                    .store(store)
+                    .store(Objects.requireNonNullElseGet(store, storeBuilder::build))
                     .keys(keys)
                     .errorHandler(errorHandler)
                     .socketExecutor(socketExecutor)

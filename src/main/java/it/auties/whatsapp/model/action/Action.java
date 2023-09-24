@@ -6,7 +6,7 @@ import it.auties.whatsapp.model.sync.PatchType;
 /**
  * A model interface that represents an action
  */
-public sealed interface Action extends ProtobufMessage permits AgentAction, AndroidUnsupportedActions, ArchiveChatAction, ChatAssignmentAction, ChatAssignmentOpenedStatusAction, ClearChatAction, ContactAction, DeleteChatAction, DeleteMessageForMeAction, FavoriteStickerAction, LabelAssociationAction, LabelEditAction, MarkChatAsReadAction, MuteAction, NuxAction, PinAction, PrimaryVersionAction, QuickReplyAction, RecentEmojiWeightsAction, RecentStickerWeightsAction, RemoveRecentStickerAction, StarAction, StickerAction, SubscriptionAction, TimeFormatAction, UserStatusMuteAction {
+public sealed interface Action extends ProtobufMessage permits AgentAction, AndroidUnsupportedActions, ArchiveChatAction, ChatAssignmentAction, ChatAssignmentOpenedStatusAction, ClearChatAction, ContactAction, DeleteChatAction, DeleteMessageForMeAction, LabelAssociationAction, LabelEditAction, MarkChatAsReadAction, MuteAction, NuxAction, PinAction, PrimaryVersionAction, QuickReplyAction, RecentEmojiWeightsAction, RemoveRecentStickerAction, StarAction, StickerAction, SubscriptionAction, TimeFormatAction, UserStatusMuteAction {
     /**
      * The name of this action
      *

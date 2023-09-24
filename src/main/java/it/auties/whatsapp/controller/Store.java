@@ -1,5 +1,6 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
@@ -35,16 +36,13 @@ import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptionsSpec;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
-import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentReleaseChannel;
+import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.jilt.Builder;
-import org.jilt.BuilderStyle;
-import org.jilt.Opt;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -71,7 +69,7 @@ public final class Store extends Controller<Store> {
      * The version used by this session
      */
     @NonNull
-    private final FutureReference<Version> version;
+    private FutureReference<Version> version;
 
     /**
      * Whether this account is online for other users
@@ -310,85 +308,40 @@ public final class Store extends Controller<Store> {
      * This should allow the use of beta features
      */
     @NonNull
-    private UserAgentReleaseChannel releaseChannel;
+    private ReleaseChannel releaseChannel;
 
     /**
      * Metadata about the device that is being simulated for Whatsapp
      */
-    @NonNull
+    @Nullable
     private CompanionDevice device;
 
     /**
      * The os of the associated device, available only for the web api
      */
     @Nullable
-    private UserAgentPlatform companionDeviceOs;
+    private Platform companionDeviceOs;
 
     /**
      * Whether the mac of every app state request should be checked
      */
     private boolean checkPatchMacs;
 
-    @SuppressWarnings("ClassEscapesDefinedScope")
-    @Builder(style = BuilderStyle.TYPE_SAFE_UNGROUPED_OPTIONALS, factoryMethod = "builder")
-    public Store(
-            @NonNull UUID uuid,
-            @NonNull ClientType clientType,
-            @NonNull CompanionDevice device,
-            @Nullable @Opt PhoneNumber phoneNumber,
-            @Nullable @Opt ControllerSerializer serializer,
-            @Nullable @Opt List<String> alias,
-            @Nullable @Opt URI proxy,
-            @Nullable @Opt Version version,
-            @Opt boolean online,
-            @Nullable @Opt String locale,
-            @Nullable @Opt String name,
-            @Opt boolean business,
-            @Nullable @Opt String businessAddress,
-            @Nullable @Opt Double businessLongitude,
-            @Nullable @Opt Double businessLatitude,
-            @Nullable @Opt String businessDescription,
-            @Nullable @Opt String businessWebsite,
-            @Nullable @Opt String businessEmail,
-            @Nullable @Opt BusinessCategory businessCategory,
-            @Nullable @Opt String deviceHash,
-            @Nullable @Opt LinkedHashMap<ContactJid, Integer> linkedDevicesKeys,
-            @Nullable @Opt URI profilePicture,
-            @Nullable @Opt String about,
-            @Nullable @Opt ContactJid jid,
-            @Nullable @Opt ContactJid lid,
-            @Nullable @Opt ConcurrentHashMap<String, String> properties,
-            @Nullable @Opt ConcurrentHashMap<ContactJid, Chat> chats,
-            @Nullable @Opt ConcurrentHashMap<ContactJid, Contact> contacts,
-            @Nullable @Opt ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status,
-            @Nullable @Opt ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings,
-            @Nullable @Opt ConcurrentHashMap<String, Call> calls,
-            @Opt boolean unarchiveChats,
-            @Opt boolean twentyFourHourFormat,
-            @Nullable @Opt ConcurrentHashMap<String, Request> requests,
-            @Nullable @Opt ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers,
-            @Nullable @Opt String tag,
-            @Nullable @Opt Long initializationTimeStamp,
-            @Nullable @Opt MediaConnection mediaConnection,
-            @Nullable @Opt ChatEphemeralTimer newChatsEphemeralTimer,
-            @Nullable @Opt TextPreviewSetting textPreviewSetting,
-            @Nullable @Opt WebHistoryLength historyLength,
-            @Opt @Nullable Boolean autodetectListeners,
-            @Opt @Nullable Boolean automaticPresenceUpdates,
-            @Opt @Nullable UserAgentReleaseChannel releaseChannel,
-            @Nullable @Opt UserAgentPlatform companionDeviceOs,
-            @Opt boolean checkPatchMacs
-    ) {
-        super(uuid, phoneNumber, Objects.requireNonNullElseGet(serializer, DefaultControllerSerializer::instance), clientType, Objects.requireNonNullElseGet(alias, ArrayList::new));
-        this.proxy = proxy;
+    /**
+     * All args constructor
+     */
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<ContactJid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable ContactJid jid, @Nullable ContactJid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<ContactJid, Chat> chats, @NonNull ConcurrentHashMap<ContactJid, Contact> contacts, @NonNull ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, @NonNull ConcurrentHashMap<String, Request> requests, @NonNull ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers, @NonNull KeySetView<Listener, Boolean> listeners, @NonNull String tag, long initializationTimeStamp, @Nullable MediaConnection mediaConnection, @NonNull CountDownLatch mediaConnectionLatch, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable Platform companionDeviceOs, boolean checkPatchMacs) {
+        super(uuid, phoneNumber, serializer, clientType, alias);
         if(proxy != null) {
             ProxyAuthenticator.register(proxy);
         }
-        
-        this.version = new FutureReference<>(version, () -> MetadataHelper.getVersion(device.osType(), business));
+
+        this.proxy = proxy;
+        this.version = version;
         this.online = online;
         this.locale = locale;
-        this.name = Objects.requireNonNullElse(name, "Cobalt");
+        this.name = name;
         this.business = business;
         this.businessAddress = businessAddress;
         this.businessLongitude = businessLongitude;
@@ -398,246 +351,47 @@ public final class Store extends Controller<Store> {
         this.businessEmail = businessEmail;
         this.businessCategory = businessCategory;
         this.deviceHash = deviceHash;
-        this.linkedDevicesKeys = Objects.requireNonNullElseGet(linkedDevicesKeys, LinkedHashMap::new);
+        this.linkedDevicesKeys = linkedDevicesKeys;
         this.profilePicture = profilePicture;
         this.about = about;
         this.jid = jid;
         this.lid = lid;
-        this.properties = Objects.requireNonNullElseGet(properties, ConcurrentHashMap::new);
-        this.chats = Objects.requireNonNullElseGet(chats, ConcurrentHashMap::new);
-        this.contacts = Objects.requireNonNullElseGet(contacts, ConcurrentHashMap::new);
-        this.status = Objects.requireNonNullElseGet(status, ConcurrentHashMap::new);
-        this.privacySettings = Objects.requireNonNullElseGet(privacySettings, ConcurrentHashMap::new);
-        this.calls = Objects.requireNonNullElseGet(calls, ConcurrentHashMap::new);
+        this.properties = properties;
+        this.chats = chats;
+        this.contacts = contacts;
+        this.status = status;
+        this.privacySettings = privacySettings;
+        this.calls = calls;
         this.unarchiveChats = unarchiveChats;
         this.twentyFourHourFormat = twentyFourHourFormat;
-        this.requests = Objects.requireNonNullElseGet(requests, ConcurrentHashMap::new);
-        this.replyHandlers = Objects.requireNonNullElseGet(replyHandlers, ConcurrentHashMap::new);
-        this.tag = Objects.requireNonNullElseGet(tag, () -> HexFormat.of().formatHex(BytesHelper.random(1)));
-        this.initializationTimeStamp = Objects.requireNonNullElseGet(initializationTimeStamp, Clock::nowSeconds);
+        this.requests = requests;
+        this.replyHandlers = replyHandlers;
+        this.listeners = listeners;
+        this.tag = tag;
+        this.initializationTimeStamp = initializationTimeStamp;
         this.mediaConnection = mediaConnection;
-        this.mediaConnectionLatch = new CountDownLatch(1);
-        this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
-        this.textPreviewSetting = Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE);
-        this.historyLength = Objects.requireNonNullElse(historyLength, WebHistoryLength.STANDARD);
-        this.autodetectListeners = Objects.requireNonNullElse(autodetectListeners, true);
-        this.automaticPresenceUpdates = Objects.requireNonNullElse(automaticPresenceUpdates, true);
-        this.releaseChannel = Objects.requireNonNullElse(releaseChannel, UserAgentReleaseChannel.RELEASE);
-        this.listeners = ConcurrentHashMap.newKeySet();
+        this.mediaConnectionLatch = mediaConnectionLatch;
+        this.newChatsEphemeralTimer = newChatsEphemeralTimer;
+        this.textPreviewSetting = textPreviewSetting;
+        this.historyLength = historyLength;
+        this.autodetectListeners = autodetectListeners;
+        this.automaticPresenceUpdates = automaticPresenceUpdates;
+        this.releaseChannel = releaseChannel;
         this.device = device;
         this.companionDeviceOs = companionDeviceOs;
         this.checkPatchMacs = checkPatchMacs;
+        serializer.linkMetadata(this);
     }
 
     /**
-     * Returns the store saved in memory or constructs a new clean instance
+     * Creates a builder
      *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null store
+     * @return a builder
      */
-    public static Store of(UUID uuid, @NonNull ClientType clientType) {
-        return of(uuid, clientType, DefaultControllerSerializer.instance());
+    public static StoreBuilder builder() {
+        return new StoreBuilder();
     }
 
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return ofNullable(uuid, clientType, serializer)
-                .map(result -> result.setSerializer(serializer))
-                .orElseGet(() -> random(uuid, null, clientType, serializer));
-    }
-
-    /**
-     * Returns the store saved in memory or returns an empty optional
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null store
-     */
-    public static Optional<Store> ofNullable(UUID uuid, @NonNull ClientType clientType) {
-        return ofNullable(uuid, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the store saved in memory or returns an empty optional
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null store
-     */
-    public static Optional<Store> ofNullable(UUID uuid, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if (uuid == null) {
-            return Optional.empty();
-        }
-
-        var store = serializer.deserializeStore(clientType, uuid);
-        store.ifPresent(serializer::attributeStore);
-        return store;
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param phoneNumber the phone number of the session to load
-     * @param clientType  the non-null type of the client
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, long phoneNumber, @NonNull ClientType clientType) {
-        return of(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param uuid        the uuid of the session to load, can be null
-     * @param phoneNumber the phone number of the session to load
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return ofNullable(phoneNumber, clientType, serializer)
-                .orElseGet(() -> random(uuid, phoneNumber, clientType, serializer));
-    }
-
-    /**
-     * Returns the store saved in memory or returns an empty optional
-     *
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @return a non-null store
-     */
-    public static Optional<Store> ofNullable(Long phoneNumber, @NonNull ClientType clientType) {
-        return ofNullable(phoneNumber, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the store saved in memory or returns an empty optional
-     *
-     * @param phoneNumber the phone number of the session to load, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @return a non-null store
-     */
-    public static Optional<Store> ofNullable(Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if (phoneNumber == null) {
-            return Optional.empty();
-        }
-
-        var store = serializer.deserializeStore(clientType, phoneNumber);
-        store.ifPresent(entry -> {
-            entry.setSerializer(serializer);
-            serializer.attributeStore(entry);
-        });
-        return store;
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, String alias, @NonNull ClientType clientType) {
-        return of(uuid, alias, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the store saved in memory or constructs a new clean instance
-     *
-     * @param uuid       the uuid of the session to load, can be null
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null store
-     */
-    public static Store of(UUID uuid, String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        return ofNullable(alias, clientType, serializer)
-                .orElseGet(() -> random(uuid, null, clientType, serializer, alias));
-    }
-
-    /**
-     * Returns the store saved in memory or returns an empty optional
-     *
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @return a non-null store
-     */
-    public static Optional<Store> ofNullable(String alias, @NonNull ClientType clientType) {
-        return ofNullable(alias, clientType, DefaultControllerSerializer.instance());
-    }
-
-    /**
-     * Returns the store saved in memory or returns an empty optional
-     *
-     * @param alias      the alias of the session to load, can be null
-     * @param clientType the non-null type of the client
-     * @param serializer the non-null serializer
-     * @return a non-null store
-     */
-    public static Optional<Store> ofNullable(String alias, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer) {
-        if (alias == null) {
-            return Optional.empty();
-        }
-
-        var store = serializer.deserializeStore(clientType, alias);
-        store.ifPresent(serializer::attributeStore);
-        return store;
-    }
-
-    /**
-     * Constructs a new default instance of WhatsappStore
-     *
-     * @param uuid        the uuid of the session to create, can be null
-     * @param phoneNumber the phone number of the session to create, can be null
-     * @param clientType  the non-null type of the client
-     * @param alias       the alias of the controller
-     * @return a non-null store
-     */
-    public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, String... alias) {
-        return random(uuid, phoneNumber, clientType, DefaultControllerSerializer.instance(), alias);
-    }
-
-    /**
-     * Constructs a new default instance of WhatsappStore
-     *
-     * @param uuid        the uuid of the session to create, can be null
-     * @param phoneNumber the phone number of the session to create, can be null
-     * @param clientType  the non-null type of the client
-     * @param serializer  the non-null serializer
-     * @param alias       the alias of the controller
-     * @return a non-null store
-     */
-    public static Store random(UUID uuid, Long phoneNumber, @NonNull ClientType clientType, @NonNull ControllerSerializer serializer, String... alias) {
-        var phone = PhoneNumber.ofNullable(phoneNumber).orElse(null);
-        var result = StoreBuilder.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .device(getDefaultDevice(clientType))
-                .phoneNumber(phone)
-                .serializer(serializer)
-                .jid(phone == null ? null : phone.toJid())
-                .build();
-        serializer.linkMetadata(result);
-        return result;
-    }
-
-    private static CompanionDevice getDefaultDevice(ClientType clientType) {
-        return switch (clientType) {
-            case WEB -> CompanionDevice.windows();
-            case MOBILE -> CompanionDevice.android();
-        };
-    }
 
     /**
      * Queries the first contact whose jid is equal to {@code jid}
@@ -1017,7 +771,7 @@ public final class Store extends Controller<Store> {
                 .orElseGet(() -> addNewChat(info.chatJid()));
         info.setChat(chat);
         if (info.fromMe() && jid != null) {
-            info.key().setSenderJid(jid.toWhatsappJid());
+            info.key().setSenderJid(jid.withoutDevice());
         }
         info.key()
                 .senderJid()
@@ -1083,10 +837,10 @@ public final class Store extends Controller<Store> {
         var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
         pollUpdateMessage.setPollCreationMessage(originalPollMessage);
         var originalPollSender = originalPollInfo.senderJid()
-                .toWhatsappJid()
+                .withoutDevice()
                 .toString()
                 .getBytes(StandardCharsets.UTF_8);
-        var modificationSenderJid = info.senderJid().toWhatsappJid();
+        var modificationSenderJid = info.senderJid().withoutDevice();
         pollUpdateMessage.setVoter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
@@ -1432,7 +1186,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null optional
      */
-    public Optional<UserAgentPlatform> companionDeviceOs() {
+    public Optional<Platform> companionDeviceOs() {
         return Optional.ofNullable(companionDeviceOs);
     }
 
@@ -1602,12 +1356,12 @@ public final class Store extends Controller<Store> {
         return this.automaticPresenceUpdates;
     }
 
-    public UserAgentReleaseChannel releaseChannel() {
+    public ReleaseChannel releaseChannel() {
         return this.releaseChannel;
     }
 
-    public CompanionDevice device() {
-        return this.device;
+    public Optional<CompanionDevice> device() {
+        return Optional.ofNullable(device);
     }
 
     public boolean checkPatchMacs() {
@@ -1734,17 +1488,18 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setReleaseChannel(UserAgentReleaseChannel releaseChannel) {
+    public Store setReleaseChannel(ReleaseChannel releaseChannel) {
         this.releaseChannel = releaseChannel;
         return this;
     }
 
     public Store setDevice(CompanionDevice device) {
         this.device = device;
+        this.version = new FutureReference<>(null, () -> MetadataHelper.getVersion(device.platform(), business));
         return this;
     }
 
-    public Store setCompanionDeviceOs(UserAgentPlatform companionDeviceOs) {
+    public Store setCompanionDeviceOs(Platform companionDeviceOs) {
         this.companionDeviceOs = companionDeviceOs;
         return this;
     }
