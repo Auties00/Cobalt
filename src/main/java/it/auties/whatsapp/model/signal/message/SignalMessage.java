@@ -5,6 +5,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -24,9 +25,18 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private final byte @NonNull [] ciphertext;
 
-    private byte[] signature;
+    private byte @Nullable [] signature;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public SignalMessage(byte @NonNull [] ephemeralPublicKey, Integer counter, Integer previousCounter, byte @NonNull [] ciphertext, byte @Nullable [] signature) {
+        this.ephemeralPublicKey = ephemeralPublicKey;
+        this.counter = counter;
+        this.previousCounter = previousCounter;
+        this.ciphertext = ciphertext;
+        this.signature = signature;
+    }
+
+
     public SignalMessage(byte @NonNull [] ephemeralPublicKey, Integer counter, Integer previousCounter, byte @NonNull [] ciphertext) {
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;

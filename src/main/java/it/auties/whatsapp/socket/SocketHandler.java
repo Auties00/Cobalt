@@ -445,6 +445,7 @@ public class SocketHandler implements SocketListener {
         if (state() == SocketState.RESTORE) {
             return CompletableFuture.completedFuture(node);
         }
+
         var request = node.toRequest(filter, true);
         var result = request.send(session, keys, store);
         onNodeSent(node);

@@ -52,7 +52,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
 
     private byte[] encrypt(SessionState state, SessionChain chain, byte[] key, byte[] encrypted) {
         var message = new SignalMessage(state.ephemeralKeyPair().encodedPublicKey(), chain.counter().get(), state.previousCounter(), encrypted);
-        message.setSignature(createMessageSignature(state, key, SignalMessageSpec.encode(message)));
+        message.setSignature(createMessageSignature(state, key, message));
         if (!state.hasPreKey()) {
             return message.serialized();
         }
@@ -68,7 +68,11 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         return preKeyMessage.serialized();
     }
 
-    private byte[] createMessageSignature(SessionState state, byte[] key, byte[] encodedMessage) {
+    private byte[] createMessageSignature(SessionState state, byte[] key, SignalMessage message) {
+        var encodedMessage = BytesHelper.concat(
+                message.serializedVersion(),
+                SignalMessageSpec.encode(message)
+        );
         var macInput = BytesHelper.concat(
                 keys.identityKeyPair().encodedPublicKey(),
                 state.remoteIdentityKey(),
