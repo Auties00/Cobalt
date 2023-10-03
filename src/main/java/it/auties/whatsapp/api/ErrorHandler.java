@@ -118,7 +118,11 @@ public interface ErrorHandler {
         /**
          * Called when an error occurs when serializing or deserializing a Whatsapp message
          */
-        MESSAGE
+        MESSAGE,
+        /**
+         * Called when syncing messages after first QR scan
+         */
+        HISTORY_SYNC
     }
 
     /**

@@ -3,6 +3,7 @@ package it.auties.whatsapp.local;
 import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.info.MessageInfo;
 import org.junit.jupiter.api.Test;
 
 // Just used for testing locally
@@ -10,8 +11,8 @@ public class WebTest {
     @Test
     public void run() {
         var whatsapp = Whatsapp.webBuilder()
-                .newConnection()
-                .historyLength(WebHistoryLength.ZERO)
+                .lastConnection()
+                .historyLength(WebHistoryLength.extended())
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
@@ -24,7 +25,7 @@ public class WebTest {
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
                 .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact, chat.name(), status.name()))
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
-                .addChatMessagesSyncListener((api, chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
+                .addChatMessagesSyncListener((api, chat, last) -> System.out.printf("%s now has %s messages: %s(oldest message: %s)%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done", chat.oldestMessage().flatMap(MessageInfo::timestamp).orElse(null)))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
                 .join();

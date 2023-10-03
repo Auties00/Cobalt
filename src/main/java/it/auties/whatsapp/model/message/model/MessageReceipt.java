@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Clock;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -29,10 +29,10 @@ public final class MessageReceipt implements ProtobufMessage {
     private Long playedTimestampSeconds;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING, repeated = true)
     @NonNull
-    private final Set<ContactJid> deliveredJids;
+    private final Set<Jid> deliveredJids;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING, repeated = true)
     @NonNull
-    private final Set<ContactJid> readJids;
+    private final Set<Jid> readJids;
 
     public MessageReceipt() {
         this.deliveredJids = new HashSet<>();
@@ -40,7 +40,7 @@ public final class MessageReceipt implements ProtobufMessage {
     }
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public MessageReceipt(@Nullable Long deliveredTimestampSeconds, @Nullable Long readTimestampSeconds, @Nullable Long playedTimestampSeconds, @NonNull Set<ContactJid> deliveredJids, @NonNull Set<ContactJid> readJids) {
+    public MessageReceipt(@Nullable Long deliveredTimestampSeconds, @Nullable Long readTimestampSeconds, @Nullable Long playedTimestampSeconds, @NonNull Set<Jid> deliveredJids, @NonNull Set<Jid> readJids) {
         this.deliveredTimestampSeconds = deliveredTimestampSeconds;
         this.readTimestampSeconds = readTimestampSeconds;
         this.playedTimestampSeconds = playedTimestampSeconds;
@@ -87,11 +87,11 @@ public final class MessageReceipt implements ProtobufMessage {
         return Clock.parseSeconds(playedTimestampSeconds);
     }
 
-    public Set<ContactJid> deliveredJids() {
+    public Set<Jid> deliveredJids() {
         return deliveredJids;
     }
 
-    public Set<ContactJid> readJids() {
+    public Set<Jid> readJids() {
         return readJids;
     }
 

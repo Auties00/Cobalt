@@ -7,6 +7,8 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.MessageInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Objects;
+
 @ProtobufMessageName("HistorySyncMsg")
 public record HistorySyncMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
@@ -15,5 +17,13 @@ public record HistorySyncMessage(
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long messageOrderId
 ) implements ProtobufMessage {
+        @Override
+        public boolean equals(Object obj) {
+                return obj instanceof HistorySyncMessage that && Objects.equals(messageInfo, that.messageInfo());
+        }
 
+        @Override
+        public int hashCode() {
+                return Objects.hashCode(messageInfo);
+        }
 }

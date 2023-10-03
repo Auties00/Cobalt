@@ -19,6 +19,9 @@ import it.auties.whatsapp.model.chat.GroupRole;
 import it.auties.whatsapp.model.contact.*;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.jid.JidType;
+import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
@@ -33,7 +36,11 @@ import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.response.ChannelResponse;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.signal.auth.*;
-import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityBuilder;
+import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMACSpec;
+import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentitySpec;
+import it.auties.whatsapp.model.signal.auth.DeviceIdentitySpec;
+import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -152,7 +159,7 @@ class StreamHandler {
                 .orElse(ContactStatus.AVAILABLE);
     }
 
-    private void updateContactPresence(ContactJid chatJid, ContactStatus status, ContactJid contact) {
+    private void updateContactPresence(Jid chatJid, ContactStatus status, Jid contact) {
         socketHandler.store()
                 .findChatByJid(chatJid)
                 .ifPresent(chat -> socketHandler.onUpdateChatPresence(status, contact, chat));
@@ -161,7 +168,7 @@ class StreamHandler {
     private void digestReceipt(Node node) {
         var chat = node.attributes()
                 .getJid("from")
-                .filter(jid -> jid.type() != ContactJidType.STATUS)
+                .filter(jid -> jid.type() != JidType.STATUS)
                 .flatMap(socketHandler.store()::findChatByJid)
                 .orElse(null);
         getReceiptsMessageIds(node)
@@ -311,7 +318,7 @@ class StreamHandler {
                 .forEach(to -> sendRelay(callCreator, callId, to));
     }
 
-    private void sendRelay(ContactJid callCreator, String callId, ContactJid to) {
+    private void sendRelay(Jid callCreator, String callId, Jid to) {
         var values = new byte[][]{
                 new byte[]{-105, 99, -47, -29, 13, -106},
                 new byte[]{-99, -16, -53, 62, 13, -106},
@@ -352,7 +359,7 @@ class StreamHandler {
             case "NotificationNewsletterJoin" -> {
                 update.contentAsString()
                         .flatMap(ChannelResponse::ofJson)
-                        .ifPresent(result -> socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("jid", result.jid().withServer(ContactJidServer.WHATSAPP), "count", 1, "type", "Jid"))));
+                        .ifPresent(result -> socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("jid", result.jid().withServer(JidServer.WHATSAPP), "count", 1, "type", "Jid"))));
             }
             case "NotificationNewsletterMuteChange" -> {
 
@@ -509,7 +516,7 @@ class StreamHandler {
         handleGroupStubType(chat, stubType, participantJid);
     }
 
-    private void handleGroupStubType(Chat chat, MessageInfo.StubType stubType, ContactJid participantJid) {
+    private void handleGroupStubType(Chat chat, MessageInfo.StubType stubType, Jid participantJid) {
         switch (stubType){
             case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
             case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
@@ -542,7 +549,7 @@ class StreamHandler {
         var chat = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
-        if (!chat.isServerJid(ContactJidServer.WHATSAPP)) {
+        if (!chat.isServerJid(JidServer.WHATSAPP)) {
             return;
         }
         var keysSize = node.findNode("count")
@@ -639,7 +646,7 @@ class StreamHandler {
         return CompletableFuture.completedFuture(null);
     }
 
-    private List<ContactJid> getUpdatedBlockedList(Node node, PrivacySettingEntry privacyEntry, PrivacySettingValue privacyValue) {
+    private List<Jid> getUpdatedBlockedList(Node node, PrivacySettingEntry privacyEntry, PrivacySettingValue privacyValue) {
         if(privacyValue != PrivacySettingValue.CONTACTS_EXCEPT){
             return List.of();
         }
@@ -659,7 +666,7 @@ class StreamHandler {
         return newValues;
     }
 
-    private CompletableFuture<List<ContactJid>> queryPrivacyExcludedContacts(PrivacySettingType type, PrivacySettingValue value) {
+    private CompletableFuture<List<Jid>> queryPrivacyExcludedContacts(PrivacySettingType type, PrivacySettingValue value) {
         if(value != PrivacySettingValue.CONTACTS_EXCEPT){
             return CompletableFuture.completedFuture(List.of());
         }
@@ -668,7 +675,7 @@ class StreamHandler {
                 .thenApplyAsync(this::parsePrivacyExcludedContacts);
     }
 
-    private List<ContactJid> parsePrivacyExcludedContacts(Node result) {
+    private List<Jid> parsePrivacyExcludedContacts(Node result) {
         return result.findNode("privacy")
                 .orElseThrow(() -> new NoSuchElementException("Missing privacy in result: %s".formatted(result)))
                 .findNode("list")
@@ -758,7 +765,7 @@ class StreamHandler {
     }
 
     private void queryGroups() {
-        socketHandler.sendQuery(ContactJidServer.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
+        socketHandler.sendQuery(JidServer.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
                 .thenAcceptAsync(this::onGroupsQuery);
     }
 
@@ -978,7 +985,7 @@ class StreamHandler {
         socketHandler.onUserPictureChange(newPicture, oldStatus);
     }
 
-    private void markBlocked(ContactJid entry) {
+    private void markBlocked(Jid entry) {
         socketHandler.store().findContactByJid(entry).orElseGet(() -> {
             var contact = socketHandler.store().addContact(entry);
             socketHandler.onNewContact(contact);
@@ -1011,9 +1018,12 @@ class StreamHandler {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return;
         }
+
         socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
                         .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
         socketHandler.onSocketEvent(SocketEvent.PING);
+        socketHandler.store().serialize(true);
+        socketHandler.keys().serialize(true);
     }
 
     private void createMediaConnection(int tries, Throwable error) {
@@ -1124,7 +1134,7 @@ class StreamHandler {
         codeHandler.accept(code);
     }
 
-    private ContactJid getPhoneNumberAsJid() {
+    private Jid getPhoneNumberAsJid() {
         return socketHandler.store()
                 .phoneNumber()
                 .map(PhoneNumber::toJid)
@@ -1201,7 +1211,7 @@ class StreamHandler {
         var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("type", "result")
-                .put("to", ContactJidServer.WHATSAPP.toJid())
+                .put("to", JidServer.WHATSAPP.toJid())
                 .toMap();
         var request = Node.of("iq", attributes, content);
         socketHandler.sendWithNoResponse(request);
@@ -1227,13 +1237,13 @@ class StreamHandler {
         socketHandler.store().addContact(me);
     }
 
-    private Platform getCompanionOs(String name) {
+    private UserAgent.PlatformType getCompanionOs(String name) {
         return switch (name.toLowerCase()) {
-            case "smba" -> Platform.SMB_ANDROID;
-            case "smbi" -> Platform.SMB_IOS;
-            case "android" -> UserAgent.Platform.ANDROID;
-            case "iphone", "ipad", "ios" -> Platform.IOS;
-            default -> UserAgent.Platform.UNKNOWN;
+            case "smba" -> UserAgent.PlatformType.SMB_ANDROID;
+            case "smbi" -> UserAgent.PlatformType.SMB_IOS;
+            case "android" -> PlatformType.ANDROID;
+            case "iphone", "ipad", "ios" -> UserAgent.PlatformType.IOS;
+            default -> UserAgent.PlatformType.UNKNOWN;
         };
     }
 

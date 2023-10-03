@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.response;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -11,7 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public record ChannelResponse(@JsonProperty("id") ContactJid jid, ChannelState state,
+public record ChannelResponse(@JsonProperty("id") Jid jid, ChannelState state,
                               @JsonProperty("thread_metadata") ChannelMetadata metadata,
                               @JsonProperty("viewer_metadata") ChannelViewerMetadata viewerMetadata
 

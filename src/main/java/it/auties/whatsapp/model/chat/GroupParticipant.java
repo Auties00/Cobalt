@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.Objects;
 
@@ -15,18 +15,18 @@ import java.util.Objects;
 @ProtobufMessageName("GroupParticipant")
 public final class GroupParticipant implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final ContactJid jid;
+    private final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
     private GroupRole role;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public GroupParticipant(ContactJid jid, GroupRole role) {
+    public GroupParticipant(Jid jid, GroupRole role) {
         this.jid = jid;
         this.role = Objects.requireNonNullElse(role, GroupRole.USER);
     }
 
-    public ContactJid jid() {
+    public Jid jid() {
         return jid;
     }
 

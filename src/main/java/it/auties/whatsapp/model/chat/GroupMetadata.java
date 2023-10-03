@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
@@ -13,13 +13,13 @@ import java.util.Optional;
  */
 public record GroupMetadata(
         @NonNull
-        ContactJid jid,
+        Jid jid,
         @NonNull
         String subject,
-        Optional<ContactJid> subjectAuthor,
+        Optional<Jid> subjectAuthor,
         Optional<ZonedDateTime> subjectTimestamp,
         Optional<ZonedDateTime> foundationTimestamp,
-        Optional<ContactJid> founder,
+        Optional<Jid> founder,
         Optional<String> description,
         Optional<String> descriptionId,
         @NonNull

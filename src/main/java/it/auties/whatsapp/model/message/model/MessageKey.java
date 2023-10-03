@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.util.BytesHelper;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -23,7 +23,7 @@ import java.util.Optional;
 @ProtobufMessageName("MessageKey")
 public final class MessageKey implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private @NonNull ContactJid chatJid;
+    private @NonNull Jid chatJid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.BOOL)
     private final boolean fromMe;
@@ -32,21 +32,21 @@ public final class MessageKey implements ProtobufMessage {
     private final @NonNull String id;
 
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private @Nullable ContactJid senderJid;
+    private @Nullable Jid senderJid;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public MessageKey(@NonNull ContactJid chatJid, boolean fromMe, @Nullable String id, @Nullable ContactJid senderJid) {
+    public MessageKey(@NonNull Jid chatJid, boolean fromMe, @Nullable String id, @Nullable Jid senderJid) {
         this.chatJid = chatJid;
         this.fromMe = fromMe;
         this.id = Objects.requireNonNull(id, MessageKey::randomId);
         this.senderJid = senderJid;
     }
 
-    public MessageKey(@NonNull ContactJid chatJid, boolean fromMe) {
+    public MessageKey(@NonNull Jid chatJid, boolean fromMe) {
         this(chatJid, fromMe, null);
     }
 
-    public MessageKey(@NonNull ContactJid chatJid, boolean fromMe, @Nullable ContactJid senderJid) {
+    public MessageKey(@NonNull Jid chatJid, boolean fromMe, @Nullable Jid senderJid) {
         this(chatJid, fromMe, randomId(), senderJid);
     }
 
@@ -61,11 +61,11 @@ public final class MessageKey implements ProtobufMessage {
                 .toUpperCase(Locale.ROOT);
     }
 
-    public @NonNull ContactJid chatJid() {
+    public @NonNull Jid chatJid() {
         return chatJid;
     }
 
-    public MessageKey setChatJid(ContactJid chatJid) {
+    public MessageKey setChatJid(Jid chatJid) {
         this.chatJid = chatJid;
         return this;
     }
@@ -78,11 +78,11 @@ public final class MessageKey implements ProtobufMessage {
         return id;
     }
 
-    public Optional<ContactJid> senderJid() {
+    public Optional<Jid> senderJid() {
         return Optional.ofNullable(senderJid);
     }
 
-    public MessageKey setSenderJid(ContactJid senderJid) {
+    public MessageKey setSenderJid(Jid senderJid) {
         this.senderJid = senderJid;
         return this;
     }

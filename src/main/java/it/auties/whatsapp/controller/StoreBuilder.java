@@ -7,15 +7,18 @@ import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.signal.auth.UserAgent;
+import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.FutureReference;
+import it.auties.whatsapp.util.MetadataHelper;
+import it.auties.whatsapp.util.Spec;
 
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 
 public class StoreBuilder {
     private UUID uuid;
@@ -202,7 +205,7 @@ public class StoreBuilder {
             }
 
             var serializer = Objects.requireNonNullElseGet(this.serializer, DefaultControllerSerializer::instance);
-            return new Store(
+            var result = new Store(
                     Objects.requireNonNull(uuid, "Uuid is required if the StoreBuilder can't find a serialized session"),
                     phoneNumber,
                     serializer,
@@ -235,16 +238,10 @@ public class StoreBuilder {
                     new ConcurrentHashMap<>(),
                     false,
                     false,
-                    new ConcurrentHashMap<>(),
-                    new ConcurrentHashMap<>(),
-                    ConcurrentHashMap.newKeySet(),
-                    HexFormat.of().formatHex(BytesHelper.random(1)),
                     Clock.nowSeconds(),
-                    null,
-                    new CountDownLatch(1),
                     ChatEphemeralTimer.OFF,
                     Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE),
-                    Objects.requireNonNullElse(historyLength, WebHistoryLength.STANDARD),
+                    Objects.requireNonNullElse(historyLength, WebHistoryLength.standard()),
                     autodetectListeners,
                     automaticPresenceUpdates,
                     Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE),
@@ -252,12 +249,14 @@ public class StoreBuilder {
                     null,
                     checkPatchMacs
             );
+            serializer.linkMetadata(result);
+            return result;
         });
     }
 
-    private Platform getPlatform(ClientType clientType) {
+    private UserAgent.PlatformType getPlatform(ClientType clientType) {
         return switch (clientType) {
-            case WEB -> Platform.WEB;
+            case WEB -> PlatformType.WEB;
             case MOBILE -> business ? device.businessPlatform() : device.platform();
         };
     }

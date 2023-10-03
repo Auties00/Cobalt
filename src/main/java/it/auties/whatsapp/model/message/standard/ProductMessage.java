@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.standard;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -25,7 +25,7 @@ public record ProductMessage(
         Product product,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         @NonNull
-        ContactJid businessOwnerJid,
+        Jid businessOwnerJid,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         @NonNull
         ProductCatalog catalog,

@@ -41,6 +41,7 @@ public class Spec {
         public static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
         public static final int COMPANION_PAIRING_TIMEOUT = 10;
         public static CompanionDevice DEFAULT_MOBILE_DEVICE = CompanionDevice.android();
+        public static int DEFAULT_HISTORY_SIZE = 59206;
     }
 
     public final static class Signal {

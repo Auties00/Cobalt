@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.mobile;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
@@ -41,8 +41,8 @@ public record PhoneNumber(@NonNull CountryCode countryCode, long numberWithoutPr
         return countryCode.prefix();
     }
 
-    public ContactJid toJid(){
-        return ContactJid.of(toString());
+    public Jid toJid(){
+        return Jid.of(toString());
     }
 
     @Override

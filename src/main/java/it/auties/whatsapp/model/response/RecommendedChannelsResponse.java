@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -26,7 +26,7 @@ public record RecommendedChannelsResponse(List<RecommendedChannel> recommendedCh
     }
 
 
-    public record RecommendedChannel(@JsonProperty("id") ContactJid jid,
+    public record RecommendedChannel(@JsonProperty("id") Jid jid,
                                      @JsonProperty("thread_metadata") ChannelMetadata metadata) {
 
     }

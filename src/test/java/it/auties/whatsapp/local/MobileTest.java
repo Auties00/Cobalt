@@ -1,7 +1,7 @@
 package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ public class MobileTest {
                 .join()
                 .addLoggedInListener(api -> {
                     System.out.println("Connected");
-                    var call = api.startCall(ContactJid.of("393495089819")).join();
+                    var call = api.startCall(Jid.of("393495089819")).join();
                     System.out.println(call);
                     CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)
                             .execute(() -> api.stopCall(call).join());

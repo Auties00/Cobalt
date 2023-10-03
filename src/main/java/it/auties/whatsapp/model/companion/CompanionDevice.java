@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.companion;
 
-import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -12,9 +12,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  * @param platform the non-null os of the device
  * @param osVersion the non-null os version of the device
  */
-public record CompanionDevice(@NonNull String model, @NonNull String manufacturer, @NonNull Platform platform, @NonNull Platform businessPlatform, @NonNull Version osVersion) {
-    private static final CompanionDevice IPHONE_7 = new CompanionDevice("iPhone 7", "Apple", Platform.IOS, Platform.SMB_IOS, Version.of("15.3.1"));
-    private static final CompanionDevice SAMSUNG_GALAXY_S9 = new CompanionDevice("star2lte", "Samsung", Platform.ANDROID, Platform.SMB_ANDROID, Version.of("8.0.0"));
+public record CompanionDevice(@NonNull String model, @NonNull String manufacturer, @NonNull PlatformType platform, @NonNull PlatformType businessPlatform, @NonNull Version osVersion) {
+    private static final CompanionDevice IPHONE_7 = new CompanionDevice("iPhone 7", "Apple", PlatformType.IOS, PlatformType.SMB_IOS, Version.of("15.3.1"));
+    private static final CompanionDevice SAMSUNG_GALAXY_S9 = new CompanionDevice("star2lte", "Samsung", PlatformType.ANDROID, PlatformType.SMB_ANDROID, Version.of("8.0.0"));
 
     /**
      * Returns an Iphone 7

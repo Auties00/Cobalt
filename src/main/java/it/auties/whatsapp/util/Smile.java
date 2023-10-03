@@ -1,10 +1,11 @@
-package it.auties.whatsapp.utils;
+package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +13,7 @@ import java.io.OutputStream;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
@@ -25,17 +26,19 @@ public final class Smile {
 
     static {
         try {
-            smile = new SmileMapper()
+            smile = SmileMapper.builder()
+                    .build()
                     .registerModule(new Jdk8Module())
                     .registerModule(new JavaTimeModule())
-                    .setSerializationInclusion(NON_DEFAULT)
+                    .registerModule(new ParameterNamesModule())
+                    .setSerializationInclusion(NON_NULL)
                     .enable(WRITE_ENUMS_USING_INDEX)
                     .enable(FAIL_ON_EMPTY_BEANS)
                     .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
                     .disable(FAIL_ON_UNKNOWN_PROPERTIES)
-                    .setVisibility(ALL, ANY)
-                    .setVisibility(GETTER, NONE)
-                    .setVisibility(IS_GETTER, NONE);
+                    .setVisibility(ALL, NONE)
+                    .setVisibility(CREATOR, ANY)
+                    .setVisibility(FIELD, ANY);
         } catch (Throwable throwable) {
             var logger = System.getLogger("Smile");
             logger.log(ERROR, "An exception occurred while initializing smile", throwable);

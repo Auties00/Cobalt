@@ -189,7 +189,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     private Session loadSession(Supplier<Optional<Session>> defaultSupplier) {
-        System.out.printf("Data for %s: %s%n", address, Json.writeValueAsString(keys.findSessionByAddress(address).orElse(null), true));
         return keys.findSessionByAddress(address)
                 .or(defaultSupplier)
                 .orElseThrow(() -> new NoSuchElementException("Missing session for: %s".formatted(address)));

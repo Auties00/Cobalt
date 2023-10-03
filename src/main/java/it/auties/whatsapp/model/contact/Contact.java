@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.contact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidProvider;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -14,12 +16,12 @@ import java.util.Optional;
  * A model class that represents a Contact. This class is only a model, this means that changing its
  * values will have no real effect on WhatsappWeb's servers.
  */
-public final class Contact implements ContactJidProvider {
+public final class Contact implements JidProvider {
     /**
      * The non-null unique jid used to identify this contact
      */
     @NonNull
-    private final ContactJid jid;
+    private final Jid jid;
 
     /**
      * The nullable name specified by this contact when he created a Whatsapp account. Theoretically,
@@ -48,7 +50,7 @@ public final class Contact implements ContactJidProvider {
      * composing, recording or paused in a group this field will not be affected. Instead,
      * {@link Chat#presences()} should be used. By default, Whatsapp will not send updates about a
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
-     * send updates, use {@link Whatsapp#subscribeToPresence(ContactJidProvider)}.
+     * send updates, use {@link Whatsapp#subscribeToPresence(JidProvider)}.
      */
     @NonNull
     private ContactStatus lastKnownPresence;
@@ -65,13 +67,13 @@ public final class Contact implements ContactJidProvider {
      */
     private boolean blocked;
 
-    public Contact(@NonNull ContactJid jid) {
+    public Contact(@NonNull Jid jid) {
         this.jid = jid;
         this.lastKnownPresence = ContactStatus.UNAVAILABLE;
     }
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Contact(@NonNull ContactJid jid, @Nullable String chosenName, @Nullable String fullName, @Nullable String shortName, @NonNull ContactStatus lastKnownPresence, @Nullable ZonedDateTime lastSeen, boolean blocked) {
+    public Contact(@NonNull Jid jid, @Nullable String chosenName, @Nullable String fullName, @Nullable String shortName, @NonNull ContactStatus lastKnownPresence, @Nullable ZonedDateTime lastSeen, boolean blocked) {
         this.jid = jid;
         this.chosenName = chosenName;
         this.fullName = fullName;
@@ -81,7 +83,7 @@ public final class Contact implements ContactJidProvider {
         this.blocked = blocked;
     }
 
-    public ContactJid jid() {
+    public Jid jid() {
         return this.jid;
     }
 
@@ -165,7 +167,7 @@ public final class Contact implements ContactJidProvider {
     }
 
     @Override
-    public @NonNull ContactJid toJid() {
+    public @NonNull Jid toJid() {
         return jid();
     }
 }

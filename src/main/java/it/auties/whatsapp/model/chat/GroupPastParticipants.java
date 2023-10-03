@@ -4,7 +4,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.List;
 public record GroupPastParticipants(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
-        ContactJid groupJid,
+        Jid groupJid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
         @NonNull
         List<GroupPastParticipant> pastParticipants

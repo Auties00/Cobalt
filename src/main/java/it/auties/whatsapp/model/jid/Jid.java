@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.contact;
+package it.auties.whatsapp.model.jid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -13,11 +13,11 @@ import java.util.Objects;
  * A model class that represents a jid. This class is only a model, this means that changing its
  * values will have no real effect on WhatsappWeb's servers.
  */
-public record ContactJid(String user, @NonNull ContactJidServer server, int device, int agent) implements ContactJidProvider {
+public record Jid(String user, @NonNull JidServer server, int device, int agent) implements JidProvider {
     /**
      * Default constructor
      */
-    public ContactJid(String user, @NonNull ContactJidServer server, int device, int agent){
+    public Jid(String user, @NonNull JidServer server, int device, int agent){
         this.user = user != null && user.startsWith("+") ? user.substring(1) : user;
         this.server = server;
         this.device = device;
@@ -29,13 +29,13 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param server the non-null custom server
      * @return a non-null contact jid
      */
-    public static ContactJid ofServer(@NonNull ContactJidServer server) {
+    public static Jid ofServer(@NonNull JidServer server) {
         return of(null, server);
     }
 
     @ProtobufConverter // Reserved for protobuf
-    public static ContactJid ofProtobuf(@Nullable String input) {
-        return input == null ? null : ContactJid.of(input);
+    public static Jid ofProtobuf(@Nullable String input) {
+        return input == null ? null : Jid.of(input);
     }
 
     /**
@@ -45,10 +45,10 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param server the non-null custom server
      * @return a non-null contact jid
      */
-    public static ContactJid of(String jid, @NonNull ContactJidServer server) {
+    public static Jid of(String jid, @NonNull JidServer server) {
         var complexUser = withoutServer(jid);
         if (complexUser == null) {
-            return new ContactJid(null, server, 0, 0);
+            return new Jid(null, server, 0, 0);
         }
         if (complexUser.contains(":")) {
             var simpleUser = complexUser.split(":", 2);
@@ -57,16 +57,16 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
             if (user.contains("_")) {
                 var simpleUserAgent = user.split("_", 2);
                 var agent = tryParseAgent(simpleUserAgent[1]);
-                return new ContactJid(simpleUserAgent[0], server, device, agent);
+                return new Jid(simpleUserAgent[0], server, device, agent);
             }
-            return new ContactJid(user, server, device, 0);
+            return new Jid(user, server, device, 0);
         }
         if (!complexUser.contains("_")) {
-            return new ContactJid(complexUser, server, 0, 0);
+            return new Jid(complexUser, server, 0, 0);
         }
         var simpleUserAgent = complexUser.split("_", 2);
         var agent = tryParseAgent(simpleUserAgent[1]);
-        return new ContactJid(simpleUserAgent[0], server, 0, agent);
+        return new Jid(simpleUserAgent[0], server, 0, agent);
     }
 
     /**
@@ -79,7 +79,7 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
         if (jid == null) {
             return null;
         }
-        for (var server : ContactJidServer.values()) {
+        for (var server : JidServer.values()) {
             jid = jid.replace("@%s".formatted(server), "");
         }
         return jid;
@@ -101,8 +101,8 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param device the device jid
      * @return a non-null contact jid
      */
-    public static ContactJid ofDevice(String jid, int device, int agent) {
-        return new ContactJid(withoutServer(jid), ContactJidServer.WHATSAPP, device, agent);
+    public static Jid ofDevice(String jid, int device, int agent) {
+        return new Jid(withoutServer(jid), JidServer.WHATSAPP, device, agent);
     }
 
     /**
@@ -112,8 +112,8 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param device the device jid
      * @return a non-null contact jid
      */
-    public static ContactJid ofDevice(String jid, int device) {
-        return new ContactJid(withoutServer(jid), ContactJidServer.WHATSAPP, device, 0);
+    public static Jid ofDevice(String jid, int device) {
+        return new Jid(withoutServer(jid), JidServer.WHATSAPP, device, 0);
     }
 
     @ProtobufConverter
@@ -128,8 +128,8 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @return a non-null contact jid
      */
     @JsonCreator
-    public static ContactJid of(@NonNull String jid) {
-        return of(jid, ContactJidServer.of(jid));
+    public static Jid of(@NonNull String jid) {
+        return of(jid, JidServer.of(jid));
     }
 
     /**
@@ -138,8 +138,8 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param jid the non-null jid of the user
      * @return a non-null contact jid
      */
-    public static ContactJid of(long jid) {
-        return of(String.valueOf(jid), ContactJidServer.WHATSAPP);
+    public static Jid of(long jid) {
+        return of(String.valueOf(jid), JidServer.WHATSAPP);
     }
 
     /**
@@ -147,20 +147,20 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      *
      * @return a non null type
      */
-    public ContactJidType type() {
-        return isCompanion() ? ContactJidType.COMPANION : switch (server()) {
-            case WHATSAPP -> Objects.equals(user(), "16505361212") ? ContactJidType.OFFICIAL_SURVEY_ACCOUNT : ContactJidType.USER;
-            case LID -> ContactJidType.LID;
-            case BROADCAST -> Objects.equals(user(), "status") ? ContactJidType.STATUS : ContactJidType.BROADCAST;
-            case GROUP -> ContactJidType.GROUP;
-            case GROUP_CALL -> ContactJidType.GROUP_CALL;
-            case CHANNEL -> ContactJidType.CHANNEL;
+    public JidType type() {
+        return isCompanion() ? JidType.COMPANION : switch (server()) {
+            case WHATSAPP -> Objects.equals(user(), "16505361212") ? JidType.OFFICIAL_SURVEY_ACCOUNT : JidType.USER;
+            case LID -> JidType.LID;
+            case BROADCAST -> Objects.equals(user(), "status") ? JidType.STATUS : JidType.BROADCAST;
+            case GROUP -> JidType.GROUP;
+            case GROUP_CALL -> JidType.GROUP_CALL;
+            case CHANNEL -> JidType.CHANNEL;
             case USER -> switch (user()) {
-                case "server" -> ContactJidType.SERVER;
-                case "0" -> ContactJidType.ANNOUNCEMENT;
-                case "16508638904" -> ContactJidType.IAS;
-                case "16505361212" -> ContactJidType.OFFICIAL_BUSINESS_ACCOUNT;
-                default -> ContactJidType.UNKNOWN;
+                case "server" -> JidType.SERVER;
+                case "0" -> JidType.ANNOUNCEMENT;
+                case "16508638904" -> JidType.IAS;
+                case "16505361212" -> JidType.OFFICIAL_BUSINESS_ACCOUNT;
+                default -> JidType.UNKNOWN;
             };
         };
     }
@@ -180,7 +180,7 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param server the server to check against
      * @return a boolean
      */
-    public boolean hasServer(ContactJidServer server) {
+    public boolean hasServer(JidServer server) {
         return server() == server;
     }
 
@@ -190,7 +190,7 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param server the server to check against
      * @return a boolean
      */
-    public boolean isServerJid(ContactJidServer server) {
+    public boolean isServerJid(JidServer server) {
         return user() == null && server() == server;
     }
 
@@ -200,8 +200,8 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      * @param server the new server
      * @return a non-null jid
      */
-    public ContactJid withServer(@NonNull ContactJidServer server) {
-        return new ContactJid(user(), server, device, agent);
+    public Jid withServer(@NonNull JidServer server) {
+        return new Jid(user(), server, device, agent);
     }
 
     /**
@@ -209,7 +209,7 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      *
      * @return a non-null jid
      */
-    public ContactJid withoutDevice() {
+    public Jid withoutDevice() {
         return of(user(), server());
     }
 
@@ -253,7 +253,7 @@ public record ContactJid(String user, @NonNull ContactJidServer server, int devi
      */
     @Override
     @NonNull
-    public ContactJid toJid() {
+    public Jid toJid() {
         return this;
     }
 

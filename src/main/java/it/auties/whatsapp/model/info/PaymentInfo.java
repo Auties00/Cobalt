@@ -6,7 +6,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.payment.PaymentMoney;
 import it.auties.whatsapp.util.Clock;
@@ -29,7 +29,7 @@ public record PaymentInfo(
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         @NonNull
-        ContactJid receiverJid,
+        Jid receiverJid,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         @NonNull
         Status status,

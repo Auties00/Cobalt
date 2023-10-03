@@ -14,7 +14,7 @@ import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.button.*;
@@ -59,8 +59,8 @@ public class RunMobileCITest implements Listener {
     private static Whatsapp api;
     private static CompletableFuture<Void> future;
     private static CountDownLatch latch;
-    private static ContactJid contact;
-    private static ContactJid group;
+    private static Jid contact;
+    private static Jid group;
     private static boolean skip;
 
     static {
@@ -121,13 +121,13 @@ public class RunMobileCITest implements Listener {
     private void loadConfig() throws IOException {
         if (GithubActions.isActionsEnvironment()) {
             log("Loading environment variables...");
-            contact = ContactJid.of(System.getenv(GithubActions.CONTACT_NAME));
+            contact = Jid.of(System.getenv(GithubActions.CONTACT_NAME));
             log("Loaded environment variables...");
             return;
         }
         log("Loading configuration file...");
         var props = ConfigUtils.loadConfiguration();
-        contact = ContactJid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
+        contact = Jid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
         log("Loaded configuration file");
     }
 
@@ -142,7 +142,7 @@ public class RunMobileCITest implements Listener {
             return;
         }
 
-        var response = api.hasWhatsapp(contact, ContactJid.of("123456789")).join();
+        var response = api.hasWhatsapp(contact, Jid.of("123456789")).join();
         log("Has whatsapp? %s", response);
     }
 
@@ -819,7 +819,7 @@ public class RunMobileCITest implements Listener {
         }
         log("Sending interactive messages..");
         var collectionMessage = InteractiveCollection.builder()
-                .business(ContactJid.of("15086146312@s.whatsapp.net"))
+                .business(Jid.of("15086146312@s.whatsapp.net"))
                 .id("15086146312")
                 .version(3)
                 .build();

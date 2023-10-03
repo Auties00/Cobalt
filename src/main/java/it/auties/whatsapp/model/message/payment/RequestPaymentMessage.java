@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.payment;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
@@ -27,7 +27,7 @@ public record RequestPaymentMessage(
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        ContactJid requestFrom,
+        Jid requestFrom,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Optional<MessageContainer> noteMessage,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)

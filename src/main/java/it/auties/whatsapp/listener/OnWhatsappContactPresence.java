@@ -2,7 +2,7 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 
 public interface OnWhatsappContactPresence extends Listener {
@@ -11,9 +11,9 @@ public interface OnWhatsappContactPresence extends Listener {
      *
      * @param whatsapp   an instance to the calling api
      * @param chat       the chat that this update regards
-     * @param contactJid the contact that this update regards
+     * @param jid the contact that this update regards
      * @param status     the new status of the contact
      */
     @Override
-    void onContactPresence(Whatsapp whatsapp, Chat chat, ContactJid contactJid, ContactStatus status);
+    void onContactPresence(Whatsapp whatsapp, Chat chat, Jid jid, ContactStatus status);
 }

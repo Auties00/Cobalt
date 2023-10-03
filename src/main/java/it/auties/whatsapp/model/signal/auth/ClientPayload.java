@@ -32,7 +32,8 @@ public record ClientPayload(@ProtobufProperty(index = 1, type = UINT64) Long use
                             @ProtobufProperty(index = 24, type = INT32) Integer lc,
                             @ProtobufProperty(index = 30, type = OBJECT) ClientPayloadIOSAppExtension iosAppExtension,
                             @ProtobufProperty(index = 31, type = UINT64) Long fbAppId,
-                            @ProtobufProperty(index = 32, type = BYTES) byte[] fbDeviceId) implements ProtobufMessage {
+                            @ProtobufProperty(index = 32, type = BYTES) byte[] fbDeviceId,
+                            @ProtobufProperty(index = 33, type = BOOL) Boolean pull) implements ProtobufMessage {
 
     public enum ClientPayloadConnectType implements ProtobufEnum {
 

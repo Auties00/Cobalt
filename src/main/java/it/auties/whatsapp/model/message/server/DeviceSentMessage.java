@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.server;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
@@ -19,7 +19,7 @@ import java.util.Optional;
 public record DeviceSentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         @NonNull
-        ContactJid destinationJid,
+        Jid destinationJid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         @NonNull
         MessageContainer message,

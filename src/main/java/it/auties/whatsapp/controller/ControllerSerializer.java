@@ -36,7 +36,7 @@ public interface ControllerSerializer {
      * @param keys  the non-null keys to serialize
      * @param async whether the operation should be executed asynchronously
      */
-    void serializeKeys(Keys keys, boolean async);
+    CompletableFuture<Void> serializeKeys(Keys keys, boolean async);
 
     /**
      * Serializes the store
@@ -44,7 +44,7 @@ public interface ControllerSerializer {
      * @param store the non-null store to serialize
      * @param async whether the operation should be executed asynchronously
      */
-    void serializeStore(Store store, boolean async);
+    CompletableFuture<Void> serializeStore(Store store, boolean async);
 
     /**
      * Serializes the keys

@@ -1,9 +1,9 @@
-package it.auties.whatsapp.model.contact;
+package it.auties.whatsapp.model.jid;
 
 /**
  * The constants of this enumerated type describe the various types of jids currently supported
  */
-public enum ContactJidType {
+public enum JidType {
     /**
      * Represents a device connected using the multi device beta
      */

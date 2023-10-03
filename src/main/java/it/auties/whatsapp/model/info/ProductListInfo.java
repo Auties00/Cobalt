@@ -4,7 +4,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.product.ProductListHeaderImage;
 import it.auties.whatsapp.model.product.ProductSection;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -23,7 +23,7 @@ public record ProductListInfo(
         ProductListHeaderImage headerImage,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         @NonNull
-        ContactJid seller
+        Jid seller
 ) implements Info, ProtobufMessage {
 
 }

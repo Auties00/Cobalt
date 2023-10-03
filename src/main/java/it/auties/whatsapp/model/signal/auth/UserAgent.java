@@ -10,7 +10,7 @@ import static it.auties.protobuf.model.ProtobufType.OBJECT;
 import static it.auties.protobuf.model.ProtobufType.STRING;
 
 @ProtobufMessageName("ClientPayload.UserAgent")
-public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) Platform platform,
+public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType platform,
                         @ProtobufProperty(index = 2, type = OBJECT) Version appVersion,
                         @ProtobufProperty(index = 3, type = STRING) String mcc,
                         @ProtobufProperty(index = 4, type = STRING) String mnc,
@@ -25,7 +25,7 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) Platform pla
                         @ProtobufProperty(index = 13, type = STRING) String deviceBoard) implements ProtobufMessage {
 
     @ProtobufMessageName("ClientPayload.UserAgent.Platform")
-    public enum Platform implements ProtobufEnum {
+    public enum PlatformType implements ProtobufEnum {
         UNKNOWN(999),
         ANDROID(0),
         IOS(1),
@@ -57,7 +57,7 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) Platform pla
         MILAN(27),
         CAPI(28);
 
-        Platform(@ProtobufEnumIndex int index) {
+        PlatformType(@ProtobufEnumIndex int index) {
             this.index = index;
         }
 

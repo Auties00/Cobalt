@@ -10,7 +10,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.node.Attributes;
@@ -20,7 +20,16 @@ import it.auties.whatsapp.model.setting.LocaleSettings;
 import it.auties.whatsapp.model.setting.PushNameSettings;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSettings;
 import it.auties.whatsapp.model.sync.*;
+import it.auties.whatsapp.model.sync.ActionDataSyncBuilder;
+import it.auties.whatsapp.model.sync.ActionDataSyncSpec;
+import it.auties.whatsapp.model.sync.ExternalBlobReferenceSpec;
+import it.auties.whatsapp.model.sync.MutationSyncBuilder;
+import it.auties.whatsapp.model.sync.MutationsSyncSpec;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
+import it.auties.whatsapp.model.sync.PatchSyncBuilder;
+import it.auties.whatsapp.model.sync.PatchSyncSpec;
+import it.auties.whatsapp.model.sync.RecordSyncBuilder;
+import it.auties.whatsapp.model.sync.SnapshotSyncSpec;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Spec;
@@ -61,7 +70,7 @@ class AppStateHandler {
         return executor;
     }
 
-    protected CompletableFuture<Void> push(@NonNull ContactJid jid, @NonNull List<PatchRequest> patches) {
+    protected CompletableFuture<Void> push(@NonNull Jid jid, @NonNull List<PatchRequest> patches) {
         return runPushTask(() -> {
             var clientType = socketHandler.store().clientType();
             var pullOperation = switch (clientType){
@@ -94,7 +103,7 @@ class AppStateHandler {
         return future;
     }
 
-    private CompletableFuture<Void> sendPush(ContactJid jid, List<PatchRequest> patches, boolean readPatches) {
+    private CompletableFuture<Void> sendPush(Jid jid, List<PatchRequest> patches, boolean readPatches) {
         var requests = patches.stream()
                 .map(entry -> createPushRequest(jid, entry))
                 .toList();
@@ -110,7 +119,7 @@ class AppStateHandler {
                 .thenRunAsync(() -> onPush(jid, requests, readPatches));
     }
 
-    private PushRequest createPushRequest(ContactJid jid, PatchRequest request) {
+    private PushRequest createPushRequest(Jid jid, PatchRequest request) {
         var oldState = socketHandler.keys()
                 .findHashStateByName(jid, request.type())
                 .orElseGet(() -> new CompanionHashState(request.type()));
@@ -181,7 +190,7 @@ class AppStateHandler {
                 Node.of("patch", PatchSyncSpec.encode(request.sync())));
     }
 
-    private void onPush(ContactJid jid, List<PushRequest> requests, boolean readPatches) {
+    private void onPush(Jid jid, List<PushRequest> requests, boolean readPatches) {
         requests.forEach(request -> {
             socketHandler.keys().putState(jid, request.newState());
             if (!readPatches) {
@@ -262,7 +271,7 @@ class AppStateHandler {
         return socketHandler.handleFailure(PULL_APP_STATE, exception);
     }
 
-    private CompletableFuture<Boolean> pullUninterruptedly(ContactJid jid, Set<PatchType> patchTypes) {
+    private CompletableFuture<Boolean> pullUninterruptedly(Jid jid, Set<PatchType> patchTypes) {
         var tempStates = new HashMap<PatchType, CompanionHashState>();
         var nodes = getPullNodes(jid, patchTypes, tempStates);
         return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync", nodes))
@@ -272,11 +281,11 @@ class AppStateHandler {
                 .orTimeout(TIMEOUT, TimeUnit.SECONDS);
     }
 
-    private CompletableFuture<Boolean> handlePullResult(ContactJid jid, Set<PatchType> remaining) {
+    private CompletableFuture<Boolean> handlePullResult(Jid jid, Set<PatchType> remaining) {
         return remaining.isEmpty() ? CompletableFuture.completedFuture(true) : pullUninterruptedly(jid, remaining);
     }
 
-    private List<Node> getPullNodes(ContactJid jid, Set<PatchType> patchTypes, Map<PatchType, CompanionHashState> tempStates) {
+    private List<Node> getPullNodes(Jid jid, Set<PatchType> patchTypes, Map<PatchType, CompanionHashState> tempStates) {
         return patchTypes.stream()
                 .map(name -> createStateWithVersion(jid, name))
                 .peek(state -> tempStates.put(state.name(), state))
@@ -284,13 +293,13 @@ class AppStateHandler {
                 .toList();
     }
 
-    private CompanionHashState createStateWithVersion(ContactJid jid, PatchType name) {
+    private CompanionHashState createStateWithVersion(Jid jid, PatchType name) {
         return socketHandler.keys()
                 .findHashStateByName(jid, name)
                 .orElseGet(() -> new CompanionHashState(name));
     }
 
-    private Set<PatchType> decodeSyncs(ContactJid jid, Map<PatchType, CompanionHashState> tempStates, List<SnapshotSyncRecord> records) {
+    private Set<PatchType> decodeSyncs(Jid jid, Map<PatchType, CompanionHashState> tempStates, List<SnapshotSyncRecord> records) {
         return records.stream()
                 .map(record -> {
                     var chunk = decodeSync(jid, record, tempStates);
@@ -302,7 +311,7 @@ class AppStateHandler {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private PatchChunk decodeSync(ContactJid jid, SnapshotSyncRecord record, Map<PatchType, CompanionHashState> tempStates) {
+    private PatchChunk decodeSync(Jid jid, SnapshotSyncRecord record, Map<PatchType, CompanionHashState> tempStates) {
         try {
             var results = new ArrayList<ActionDataSync>();
             if (record.hasSnapshot()) {
@@ -484,7 +493,7 @@ class AppStateHandler {
         socketHandler.onMessageDeleted(message, false);
     }
 
-    private SyncRecord decodePatches(ContactJid jid, PatchType name, List<PatchSync> patches, CompanionHashState state) {
+    private SyncRecord decodePatches(Jid jid, PatchType name, List<PatchSync> patches, CompanionHashState state) {
         var newState = state.copy();
         var results = patches.stream()
                 .map(patch -> decodePatch(jid, name, newState, patch))
@@ -494,7 +503,7 @@ class AppStateHandler {
         return new SyncRecord(newState, results);
     }
 
-    private MutationsRecord decodePatch(ContactJid jid, PatchType patchType, CompanionHashState newState, PatchSync patch) {
+    private MutationsRecord decodePatch(Jid jid, PatchType patchType, CompanionHashState newState, PatchSync patch) {
         if (patch.hasExternalMutations()) {
             Medias.download(patch.externalMutations())
                     .join()
@@ -517,12 +526,12 @@ class AppStateHandler {
         patch.mutations().addAll(mutationsSync.mutations());
     }
 
-    private Optional<byte[]> calculateSnapshotMac(ContactJid jid, PatchType name, CompanionHashState newState, PatchSync patch) {
+    private Optional<byte[]> calculateSnapshotMac(Jid jid, PatchType name, CompanionHashState newState, PatchSync patch) {
         return getMutationKeys(jid, patch.keyId())
                 .map(mutationKeys -> generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey()));
     }
 
-    private Optional<byte[]> calculatePatchMac(ContactJid jid, PatchSync patch, PatchType patchType) {
+    private Optional<byte[]> calculatePatchMac(Jid jid, PatchSync patch, PatchType patchType) {
         return getMutationKeys(jid, patch.keyId())
                 .map(mutationKeys -> generatePatchMac(patch.snapshotMac(), getSyncMutationMac(patch), patch.encodedVersion(), patchType, mutationKeys.patchMacKey()));
     }
@@ -535,7 +544,7 @@ class AppStateHandler {
                 .toArray(byte[][]::new);
     }
 
-    private Optional<SyncRecord> decodeSnapshot(ContactJid jid, PatchType name, SnapshotSync snapshot) {
+    private Optional<SyncRecord> decodeSnapshot(Jid jid, PatchType name, SnapshotSync snapshot) {
         var mutationKeys = getMutationKeys(jid, snapshot.keyId());
         if (mutationKeys.isEmpty()) {
             return Optional.empty();
@@ -549,7 +558,7 @@ class AppStateHandler {
         return Optional.of(new SyncRecord(newState, mutations.records()));
     }
 
-    private Optional<MutationKeys> getMutationKeys(ContactJid jid, KeyId snapshot) {
+    private Optional<MutationKeys> getMutationKeys(Jid jid, KeyId snapshot) {
         return socketHandler.keys()
                 .findAppKeyById(jid, snapshot.id())
                 .map(AppStateSyncKey::keyData)
@@ -557,7 +566,7 @@ class AppStateHandler {
                 .map(MutationKeys::of);
     }
 
-    private MutationsRecord decodeMutations(ContactJid jid, List<? extends Syncable> syncs, CompanionHashState state) {
+    private MutationsRecord decodeMutations(Jid jid, List<? extends Syncable> syncs, CompanionHashState state) {
         var generator = new LTHash(state);
         var mutations = syncs.stream()
                 .map(mutation -> decodeMutation(jid, mutation.operation(), mutation.record(), generator))
@@ -566,7 +575,7 @@ class AppStateHandler {
         return new MutationsRecord(generator.finish(), mutations);
     }
 
-    private Optional<ActionDataSync> decodeMutation(ContactJid jid, RecordSync.Operation operation, RecordSync sync, LTHash generator) {
+    private Optional<ActionDataSync> decodeMutation(Jid jid, RecordSync.Operation operation, RecordSync sync, LTHash generator) {
         var mutationKeys = getMutationKeys(jid, sync.keyId());
         if (mutationKeys.isEmpty()) {
             return Optional.empty();

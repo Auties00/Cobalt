@@ -9,7 +9,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.button.base.ButtonActionLink;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -38,7 +38,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     @Nullable
-    private final ContactJid quotedMessageSenderJid;
+    private final Jid quotedMessageSenderJid;
 
     /**
      * The message container that this ContextualMessage quotes
@@ -52,14 +52,14 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     @Nullable
-    private final ContactJid quotedMessageChatJid;
+    private final Jid quotedMessageChatJid;
 
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
     @ProtobufProperty(index = 15, type = ProtobufType.STRING, repeated = true)
     @NonNull
-    private final List<ContactJid> mentions;
+    private final List<Jid> mentions;
 
     /**
      * Conversation source
@@ -180,7 +180,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     @ProtobufProperty(index = 35, type = ProtobufType.STRING)
     @Nullable
-    private final ContactJid parentGroup;
+    private final Jid parentGroup;
 
     /**
      * Trust banner type
@@ -209,7 +209,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
     private Chat quotedMessageChat;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public ContextInfo(@Nullable String quotedMessageId, @Nullable ContactJid quotedMessageSenderJid, @Nullable MessageContainer quotedMessage, @Nullable ContactJid quotedMessageChatJid, @NonNull List<ContactJid> mentions, @Nullable String conversionSource, byte @Nullable [] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, @Nullable AdReplyInfo quotedAd, @Nullable MessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte @Nullable [] ephemeralSharedSecret, @Nullable ExternalAdReplyInfo externalAdReply, @Nullable String entryPointConversionSource, @Nullable String entryPointConversionApp, int entryPointConversionDelaySeconds, @Nullable ChatDisappear disappearingMode, @Nullable ButtonActionLink actionLink, @Nullable String groupSubject, @Nullable ContactJid parentGroup, @Nullable String trustBannerType, int trustBannerAction) {
+    public ContextInfo(@Nullable String quotedMessageId, @Nullable Jid quotedMessageSenderJid, @Nullable MessageContainer quotedMessage, @Nullable Jid quotedMessageChatJid, @NonNull List<Jid> mentions, @Nullable String conversionSource, byte @Nullable [] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, @Nullable AdReplyInfo quotedAd, @Nullable MessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte @Nullable [] ephemeralSharedSecret, @Nullable ExternalAdReplyInfo externalAdReply, @Nullable String entryPointConversionSource, @Nullable String entryPointConversionApp, int entryPointConversionDelaySeconds, @Nullable ChatDisappear disappearingMode, @Nullable ButtonActionLink actionLink, @Nullable String groupSubject, @Nullable Jid parentGroup, @Nullable String trustBannerType, int trustBannerAction) {
         this.quotedMessageId = quotedMessageId;
         this.quotedMessageSenderJid = quotedMessageSenderJid;
         this.quotedMessage = quotedMessage;
@@ -272,7 +272,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
      *
      * @return an optional
      */
-    public Optional<ContactJid> quotedMessageChatJid() {
+    public Optional<Jid> quotedMessageChatJid() {
         return Optional.ofNullable(quotedMessageChatJid).or(this::quotedMessageSenderJid);
     }
 
@@ -281,7 +281,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
      *
      * @return an optional
      */
-    public Optional<ContactJid> quotedMessageSenderJid() {
+    public Optional<Jid> quotedMessageSenderJid() {
         return Optional.ofNullable(quotedMessageSenderJid);
     }
 
@@ -329,7 +329,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
         return this;
     }
 
-    public List<ContactJid> mentions() {
+    public List<Jid> mentions() {
         return mentions;
     }
 
@@ -411,7 +411,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
         return Optional.ofNullable(groupSubject);
     }
 
-    public Optional<ContactJid> parentGroup() {
+    public Optional<Jid> parentGroup() {
         return Optional.ofNullable(parentGroup);
     }
 

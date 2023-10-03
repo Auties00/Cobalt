@@ -31,9 +31,17 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     private final Integer chunkOrder;
     @ProtobufProperty(index = 8, type = STRING)
     private final String originalMessageId;
+    @ProtobufProperty(index = 9, type = UINT32)
+    private final int progress;
+    @ProtobufProperty(index = 10, type = INT64)
+    private final long oldestMsgInChunkTimestampSec;
+    @ProtobufProperty(index = 11, type = BYTES)
+    private final byte[] initialHistBootstrapInlinePayload;
+    @ProtobufProperty(index = 12, type = STRING)
+    private final String peerDataRequestSessionId;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public HistorySyncNotification(byte[] mediaSha256, long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId) {
+    public HistorySyncNotification(byte[] mediaSha256, Long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId, int progress, long oldestMsgInChunkTimestampSec, byte[] initialHistBootstrapInlinePayload, String peerDataRequestSessionId) {
         this.mediaSha256 = mediaSha256;
         this.mediaSize = mediaSize;
         this.mediaKey = mediaKey;
@@ -42,6 +50,10 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         this.syncType = syncType;
         this.chunkOrder = chunkOrder;
         this.originalMessageId = originalMessageId;
+        this.progress = progress;
+        this.oldestMsgInChunkTimestampSec = oldestMsgInChunkTimestampSec;
+        this.initialHistBootstrapInlinePayload = initialHistBootstrapInlinePayload;
+        this.peerDataRequestSessionId = peerDataRequestSessionId;
     }
 
     @Override
@@ -126,6 +138,23 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         return Optional.ofNullable(originalMessageId);
     }
 
+
+    public int progress() {
+        return progress;
+    }
+
+    public long oldestMsgInChunkTimestampSec() {
+        return oldestMsgInChunkTimestampSec;
+    }
+
+    public Optional<byte[]> initialHistBootstrapInlinePayload() {
+        return Optional.ofNullable(initialHistBootstrapInlinePayload);
+    }
+
+    public Optional<String> peerDataRequestSessionId() {
+        return Optional.ofNullable(peerDataRequestSessionId);
+    }
+
     @ProtobufMessageName("Message.HistorySyncNotification.HistorySyncType")
     public enum Type implements ProtobufEnum {
 
@@ -134,7 +163,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         FULL(2),
         RECENT(3),
         PUSH_NAME(4),
-        NON_BLOCKING_DATA(5);
+        NON_BLOCKING_DATA(5),
+        ON_DEMAND(6);
 
         Type(@ProtobufEnumIndex int index) {
             this.index = index;

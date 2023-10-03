@@ -15,6 +15,9 @@ import it.auties.whatsapp.model.contact.*;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidProvider;
+import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
@@ -319,7 +322,7 @@ public class SocketHandler implements SocketListener {
         return appStateHandler.push(jid, List.of(request));
     }
 
-    public CompletableFuture<Void> pushPatches(ContactJid jid, List<PatchRequest> requests) {
+    public CompletableFuture<Void> pushPatches(Jid jid, List<PatchRequest> requests) {
         return appStateHandler.push(jid, requests);
     }
 
@@ -335,7 +338,7 @@ public class SocketHandler implements SocketListener {
         messageHandler.decode(node);
     }
 
-    public CompletableFuture<Void> sendPeerMessage(ContactJid companion, ProtocolMessage message) {
+    public CompletableFuture<Void> sendPeerMessage(Jid companion, ProtocolMessage message) {
         if (message == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -365,10 +368,10 @@ public class SocketHandler implements SocketListener {
 
     @SuppressWarnings("UnusedReturnValue")
     public CompletableFuture<Void> sendQueryWithNoResponse(String method, String category, Node... body) {
-        return sendQueryWithNoResponse(null, ContactJidServer.WHATSAPP.toJid(), method, category, null, body);
+        return sendQueryWithNoResponse(null, JidServer.WHATSAPP.toJid(), method, category, null, body);
     }
 
-    public CompletableFuture<Void> sendQueryWithNoResponse(String id, ContactJid to, String method, String category, Map<String, Object> metadata, Node... body) {
+    public CompletableFuture<Void> sendQueryWithNoResponse(String id, Jid to, String method, String category, Map<String, Object> metadata, Node... body) {
         var attributes = Attributes.ofNullable(metadata)
                 .put("id", id, Objects::nonNull)
                 .put("type", method)
@@ -396,7 +399,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(@NonNull JidProvider chat) {
         var query = Node.of("status");
         var body = Node.of("user", Map.of("jid", chat.toJid()));
         return sendInteractiveQuery(query, body).thenApplyAsync(this::parseStatus);
@@ -420,7 +423,7 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body) {
-        return sendQuery(null, ContactJidServer.WHATSAPP.toJid(), method, category, null, body);
+        return sendQuery(null, JidServer.WHATSAPP.toJid(), method, category, null, body);
     }
 
     private List<Node> parseQueryResult(Node result) {
@@ -433,7 +436,7 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    public CompletableFuture<Node> sendQuery(String id, ContactJid to, String method, String category, Map<String, Object> metadata, Node... body) {
+    public CompletableFuture<Node> sendQuery(String id, Jid to, String method, String category, Map<String, Object> metadata, Node... body) {
         var attributes = Attributes.ofNullable(metadata)
                 .put("xmlns", category, Objects::nonNull)
                 .put("id", id, Objects::nonNull)
@@ -462,9 +465,9 @@ public class SocketHandler implements SocketListener {
         return result;
     }
 
-    public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Optional<URI>> queryPicture(@NonNull JidProvider chat) {
         var body = Node.of("picture", Map.of("query", "url", "type", "image"));
-        if (chat.toJid().hasServer(ContactJidServer.GROUP)) {
+        if (chat.toJid().hasServer(JidServer.GROUP)) {
             return queryGroupMetadata(chat.toJid())
                     .thenComposeAsync(result -> sendQuery("get", "w:profile:picture", Map.of(result.community() ? "parent_group_jid" : "target", chat.toJid()), body))
                     .thenApplyAsync(this::parseChatPicture);
@@ -475,7 +478,7 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata, Node... body) {
-        return sendQuery(null, ContactJidServer.WHATSAPP.toJid(), method, category, metadata, body);
+        return sendQuery(null, JidServer.WHATSAPP.toJid(), method, category, metadata, body);
     }
 
     private Optional<URI> parseChatPicture(Node result) {
@@ -484,12 +487,12 @@ public class SocketHandler implements SocketListener {
                 .map(URI::create);
     }
 
-    public CompletableFuture<List<ContactJid>> queryBlockList() {
+    public CompletableFuture<List<Jid>> queryBlockList() {
         return sendQuery("get", "blocklist", (Node) null)
                 .thenApplyAsync(this::parseBlockList);
     }
 
-    private List<ContactJid> parseBlockList(Node result) {
+    private List<Jid> parseBlockList(Node result) {
         return result.findNode("list")
                 .orElseThrow(() -> new NoSuchElementException("Missing block list in response"))
                 .findNodes("item")
@@ -499,12 +502,12 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    public CompletableFuture<Void> subscribeToPresence(ContactJidProvider jid) {
+    public CompletableFuture<Void> subscribeToPresence(JidProvider jid) {
         var node = Node.of("presence", Map.of("to", jid.toJid(), "type", "subscribe"));
         return sendWithNoResponse(node);
     }
 
-    public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJidProvider group) {
+    public CompletableFuture<GroupMetadata> queryGroupMetadata(JidProvider group) {
         var body = Node.of("query", Map.of("request", "interactive"));
         return sendQuery(group.toJid(), "get", "w:g2", body)
                 .thenApplyAsync(this::handleGroupMetadata);
@@ -529,7 +532,7 @@ public class SocketHandler implements SocketListener {
     public GroupMetadata parseGroupMetadata(@NonNull Node node) {
         var groupId = node.attributes()
                 .getOptionalString("id")
-                .map(id -> ContactJid.of(id, ContactJidServer.GROUP))
+                .map(id -> Jid.of(id, JidServer.GROUP))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
         var subjectAuthor = node.attributes().getJid("s_o");
@@ -574,11 +577,11 @@ public class SocketHandler implements SocketListener {
         return new GroupParticipant(id, role);
     }
 
-    public CompletableFuture<Node> sendQuery(ContactJid to, String method, String category, Node... body) {
+    public CompletableFuture<Node> sendQuery(Jid to, String method, String category, Node... body) {
         return sendQuery(null, to, method, category, null, body);
     }
 
-    public CompletableFuture<Void> sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
+    public CompletableFuture<Void> sendReceipt(Jid jid, Jid participant, List<String> messages, String type) {
         if (messages.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
@@ -588,7 +591,7 @@ public class SocketHandler implements SocketListener {
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
                 .put("to", jid)
                 .put("type", type, Objects::nonNull);
-        if (Objects.equals(type, "sender") && jid.hasServer(ContactJidServer.WHATSAPP)) {
+        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.WHATSAPP)) {
             attributes.put("recipient", jid);
             attributes.put("to", participant);
         } else {
@@ -650,8 +653,8 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onUpdateChatPresence(ContactStatus status, ContactJid contactJid, Chat chat) {
-        var contact = store.findContactByJid(contactJid);
+    protected void onUpdateChatPresence(ContactStatus status, Jid jid, Chat chat) {
+        var contact = store.findContactByJid(jid);
         if (contact.isPresent()) {
             contact.get().setLastKnownPresence(status);
             if (status == contact.get().lastKnownPresence()) {
@@ -661,10 +664,10 @@ public class SocketHandler implements SocketListener {
             contact.get().setLastSeen(ZonedDateTime.now());
         }
 
-        chat.presences().put(contactJid, status);
+        chat.presences().put(jid, status);
         callListenersAsync(listener -> {
-            listener.onContactPresence(whatsapp, chat, contactJid, status);
-            listener.onContactPresence(chat, contactJid, status);
+            listener.onContactPresence(whatsapp, chat, jid, status);
+            listener.onContactPresence(chat, jid, status);
         });
     }
 
@@ -889,7 +892,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onDevices(LinkedHashMap<ContactJid, Integer> devices) {
+    protected void onDevices(LinkedHashMap<Jid, Integer> devices) {
         callListenersAsync(listener -> {
             listener.onLinkedDevices(whatsapp, devices.keySet());
             listener.onLinkedDevices(devices.keySet());
@@ -910,8 +913,8 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void querySessionsForcefully(ContactJid contactJid) {
-        messageHandler.querySessions(List.of(contactJid), true);
+    protected void querySessionsForcefully(Jid jid) {
+        messageHandler.querySessions(List.of(jid), true);
     }
 
     private void dispose() {
@@ -946,7 +949,7 @@ public class SocketHandler implements SocketListener {
         return null;
     }
 
-    public CompletableFuture<Void> querySessions(@NonNull ContactJid jid) {
+    public CompletableFuture<Void> querySessions(@NonNull Jid jid) {
         return messageHandler.getDevices(List.of(jid), true)
                 .thenCompose(values -> messageHandler.querySessions(values, false));
     }

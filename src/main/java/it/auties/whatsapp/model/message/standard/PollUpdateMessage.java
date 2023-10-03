@@ -6,7 +6,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.poll.PollOption;
@@ -29,7 +29,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.PollUpdateMessage")
 public final class PollUpdateMessage implements Message, EncryptedMessage {
     @Nullable
-    private ContactJid voter;
+    private Jid voter;
 
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     @NonNull
@@ -91,11 +91,11 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
         return this;
     }
 
-    public Optional<ContactJid> voter() {
+    public Optional<Jid> voter() {
         return Optional.ofNullable(voter);
     }
 
-    public PollUpdateMessage setVoter(ContactJid voter) {
+    public PollUpdateMessage setVoter(Jid voter) {
         this.voter = voter;
         return this;
     }

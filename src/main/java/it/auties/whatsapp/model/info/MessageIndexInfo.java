@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -17,7 +17,7 @@ import java.util.Optional;
  * @param messageId the nullable id of the message regarding the chane
  * @param fromMe    whether the change regards yourself
  */
-public record MessageIndexInfo(@NonNull String type, Optional<ContactJid> chatJid, Optional<String> messageId, boolean fromMe) implements Info {
+public record MessageIndexInfo(@NonNull String type, Optional<Jid> chatJid, Optional<String> messageId, boolean fromMe) implements Info {
     /**
      * Constructs a new message index info
      *
@@ -27,7 +27,7 @@ public record MessageIndexInfo(@NonNull String type, Optional<ContactJid> chatJi
      * @param fromMe    whether the change regards yourself
      * @return a non-null message index info
      */
-    public static MessageIndexInfo of(@NonNull String type, ContactJid chatJid, String messageId, boolean fromMe) {
+    public static MessageIndexInfo of(@NonNull String type, Jid chatJid, String messageId, boolean fromMe) {
         return new MessageIndexInfo(type, Optional.ofNullable(chatJid), Optional.ofNullable(messageId), fromMe);
     }
 
@@ -40,7 +40,7 @@ public record MessageIndexInfo(@NonNull String type, Optional<ContactJid> chatJi
     public static MessageIndexInfo ofJson(@NonNull String json) {
         var array = Json.readValue(json, new TypeReference<List<String>>() {});
         var type = getProperty(array, 0).orElseThrow(() -> new NoSuchElementException("Cannot parse MessageSync: missing type"));
-        var chatJid = getProperty(array, 1).map(ContactJid::of);
+        var chatJid = getProperty(array, 1).map(Jid::of);
         var messageId = getProperty(array, 2);
         var fromMe = getProperty(array, 3).map(Boolean::parseBoolean).orElse(false);
         return new MessageIndexInfo(type, chatJid, messageId, fromMe);

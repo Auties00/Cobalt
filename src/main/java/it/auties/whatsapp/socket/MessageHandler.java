@@ -1,6 +1,5 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
@@ -9,6 +8,9 @@ import it.auties.whatsapp.model.contact.*;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.jid.JidType;
+import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
@@ -26,29 +28,34 @@ import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
-import it.auties.whatsapp.model.sync.*;
+import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.HistorySync.Type;
+import it.auties.whatsapp.model.sync.HistorySyncNotification;
+import it.auties.whatsapp.model.sync.HistorySyncSpec;
+import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
-import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.util.Spec.Signal.*;
 
 class MessageHandler {
     private static final int HISTORY_SYNC_TIMEOUT = 25;
 
     private final SocketHandler socketHandler;
-    private final Map<ContactJid, List<GroupPastParticipant>> pastParticipantsQueue;
-    private final Set<Chat> historyCache;
+    private final Map<Jid, List<GroupPastParticipant>> pastParticipantsQueue;
+    private final Set<Jid> historyCache;
     private final Logger logger;
     private final EnumSet<Type> historySyncTypes;
     private final ReentrantLock lock;
@@ -73,12 +80,10 @@ class MessageHandler {
     }
 
     private CompletableFuture<?> encodeMessage(MessageSendRequest request) {
-        return request.info().chatJid().hasServer(ContactJidServer.CHANNEL) ? encodePlainMessage(request) : encodeE2EMessage(request);
+        return request.info().chatJid().hasServer(JidServer.CHANNEL) ? encodePlainMessage(request) : encodeE2EMessage(request);
     }
 
     private CompletableFuture<Void> encodePlainMessage(MessageSendRequest request) {
-        //// Media
-        //Sent Binary Message: Node[description=message, attributes={media_id=wa_channel_image/flat/7B47F3C0F34315B5EB3BA9A273F5649E, to=120363180154968187@s.whatsapp.net, id=3EB003DD89821A2EB4DC94, type=media}, content=[Node[description=plaintext, attributes={mediatype=image}, content=ABC]]]]
         var message = request.info().message();
         var messageAttributes = Attributes.ofNullable(request.additionalAttributes())
                 .put("mediatype", getMediaType(message), Objects::nonNull)
@@ -94,7 +99,7 @@ class MessageHandler {
         var type = message.content().type() == MessageType.TEXT ? "text" : "media";
         var attributes = Attributes.of()
                 .put("id", request.info().id())
-                .put("to", request.info().chatJid().withServer(ContactJidServer.WHATSAPP))
+                .put("to", request.info().chatJid().withServer(JidServer.WHATSAPP))
                 .put("type", type)
                 .toMap();
         return socketHandler.send(Node.of("message", attributes, messageNode))
@@ -181,7 +186,7 @@ class MessageHandler {
                 .thenComposeAsync(socketHandler::send);
     }
 
-    private List<ContactJid> getRecipients(MessageSendRequest request, ContactJid sender) {
+    private List<Jid> getRecipients(MessageSendRequest request, Jid sender) {
         if(request.peer()){
             return List.of(request.info().chatJid());
         }
@@ -194,8 +199,8 @@ class MessageHandler {
     }
 
     private boolean isConversation(MessageInfo info) {
-        return info.chatJid().hasServer(ContactJidServer.WHATSAPP)
-                || info.chatJid().hasServer(ContactJidServer.USER);
+        return info.chatJid().hasServer(JidServer.WHATSAPP)
+                || info.chatJid().hasServer(JidServer.USER);
     }
 
     private Node createEncodedMessageNode(MessageSendRequest request, List<Node> preKeys, Node descriptor) {
@@ -245,7 +250,7 @@ class MessageHandler {
                 .anyMatch(PKMSG::equals);
     }
 
-    private CompletableFuture<List<Node>> createConversationNodes(MessageSendRequest request, List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
+    private CompletableFuture<List<Node>> createConversationNodes(MessageSendRequest request, List<Jid> contacts, byte[] message, byte[] deviceMessage) {
         var jid = socketHandler.store()
                 .jid()
                 .orElse(null);
@@ -262,7 +267,7 @@ class MessageHandler {
         return companions.thenCombineAsync(others, (first, second) -> toSingleList(first, second));
     }
 
-    private CompletableFuture<List<Node>> createGroupNodes(MessageSendRequest request, byte[] distributionMessage, List<ContactJid> participants, boolean force) {
+    private CompletableFuture<List<Node>> createGroupNodes(MessageSendRequest request, byte[] distributionMessage, List<Jid> participants, boolean force) {
         var missingParticipants = participants.stream()
                 .filter(participant -> force || !socketHandler.keys().hasGroupKeys(request.info().chatJid(), participant))
                 .toList();
@@ -279,7 +284,7 @@ class MessageHandler {
                 });
     }
 
-    protected CompletableFuture<Void> querySessions(List<ContactJid> contacts, boolean force) {
+    protected CompletableFuture<Void> querySessions(List<Jid> contacts, boolean force) {
         var missingSessions = contacts.stream()
                 .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
                 .map(contact -> Node.of("user", Map.of("jid", contact)))
@@ -292,20 +297,20 @@ class MessageHandler {
                 .thenAcceptAsync(this::parseSessions);
     }
 
-    private List<Node> createMessageNodes(MessageSendRequest request, List<ContactJid> contacts, byte[] message) {
+    private List<Node> createMessageNodes(MessageSendRequest request, List<Jid> contacts, byte[] message) {
         return contacts.stream()
                 .map(contact -> createMessageNode(request, contact, message, false))
                 .toList();
     }
 
-    private Node createMessageNode(MessageSendRequest request, ContactJid contact, byte[] message, boolean peer) {
+    private Node createMessageNode(MessageSendRequest request, Jid contact, byte[] message, boolean peer) {
         var cipher = new SessionCipher(contact.toSignalAddress(), socketHandler.keys());
         var encrypted = cipher.encrypt(message);
         var messageNode = createMessageNode(request, encrypted);
         return peer ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
     }
 
-    private CompletableFuture<List<ContactJid>> getGroupDevices(GroupMetadata metadata) {
+    private CompletableFuture<List<Jid>> getGroupDevices(GroupMetadata metadata) {
         var jids = metadata.participants()
                 .stream()
                 .map(GroupParticipant::jid)
@@ -313,12 +318,12 @@ class MessageHandler {
         return getDevices(jids, false);
     }
 
-    protected CompletableFuture<List<ContactJid>> getDevices(List<ContactJid> contacts, boolean excludeSelf) {
+    protected CompletableFuture<List<Jid>> getDevices(List<Jid> contacts, boolean excludeSelf) {
         return queryDevices(contacts, excludeSelf)
                 .thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, missingDevices) : missingDevices);
     }
 
-    private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
+    private CompletableFuture<List<Jid>> queryDevices(List<Jid> contacts, boolean excludeSelf) {
         var contactNodes = contacts.stream()
                 .map(contact -> Node.of("user", Map.of("jid", contact)))
                 .toList();
@@ -330,7 +335,7 @@ class MessageHandler {
                 .thenApplyAsync(result -> parseDevices(result, excludeSelf));
     }
 
-    private List<ContactJid> parseDevices(Node node, boolean excludeSelf) {
+    private List<Jid> parseDevices(Node node, boolean excludeSelf) {
         return node.children()
                 .stream()
                 .map(child -> child.findNode("list"))
@@ -342,7 +347,7 @@ class MessageHandler {
                 .toList();
     }
 
-    private List<ContactJid> parseDevice(Node wrapper, boolean excludeSelf) {
+    private List<Jid> parseDevice(Node wrapper, boolean excludeSelf) {
         var jid = wrapper.attributes()
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing jid for sync device"));
@@ -354,11 +359,11 @@ class MessageHandler {
                 .stream()
                 .map(child -> parseDeviceId(child, jid, excludeSelf))
                 .flatMap(Optional::stream)
-                .map(id -> ContactJid.ofDevice(jid.user(), id))
+                .map(id -> Jid.ofDevice(jid.user(), id))
                 .toList();
     }
 
-    private Optional<Integer> parseDeviceId(Node child, ContactJid jid, boolean excludeSelf) {
+    private Optional<Integer> parseDeviceId(Node child, Jid jid, boolean excludeSelf) {
         var self = socketHandler.store()
                 .jid()
                 .orElse(null);
@@ -484,13 +489,13 @@ class MessageHandler {
                     .id(MessageKey.randomId());
             var receiver = socketHandler.store()
                     .jid()
-                    .map(ContactJid::withoutDevice)
+                    .map(Jid::withoutDevice)
                     .orElse(null);
             if(receiver == null){
                 return CompletableFuture.completedFuture(null); // This means that the session got disconnected while processing
             }
 
-            if (from.hasServer(ContactJidServer.WHATSAPP) || from.hasServer(ContactJidServer.USER)) {
+            if (from.hasServer(JidServer.WHATSAPP) || from.hasServer(JidServer.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
                 keyBuilder.fromMe(Objects.equals(from.withoutDevice(), receiver));
@@ -521,7 +526,7 @@ class MessageHandler {
 
             var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
             var info = messageBuilder.key(key)
-                    .broadcast(key.chatJid().hasServer(ContactJidServer.BROADCAST))
+                    .broadcast(key.chatJid().hasServer(JidServer.BROADCAST))
                     .pushName(pushName)
                     .status(MessageStatus.DELIVERED)
                     .businessVerifiedName(businessName)
@@ -541,7 +546,7 @@ class MessageHandler {
         }
     }
 
-    private CompletableFuture<Void> sendReceipt(Node infoNode, String id, ContactJid chatJid, ContactJid senderJid, boolean fromMe) {
+    private CompletableFuture<Void> sendReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {
         var participant = fromMe && senderJid == null ? chatJid : senderJid;
         var category = infoNode.attributes().getString("category");
         var receiptType = getReceiptType(category, fromMe);
@@ -565,7 +570,7 @@ class MessageHandler {
         return null;
     }
 
-    private MessageDecodeResult decodeMessageBytes(String type, byte[] encodedMessage, ContactJid from, ContactJid participant) {
+    private MessageDecodeResult decodeMessageBytes(String type, byte[] encodedMessage, Jid from, Jid participant) {
         try {
             if (encodedMessage == null) {
                 return new MessageDecodeResult(null, new IllegalArgumentException("Missing encoded message"));
@@ -578,14 +583,14 @@ class MessageHandler {
                     yield signalGroup.decrypt(encodedMessage);
                 }
                 case PKMSG -> {
-                    var user = from.hasServer(ContactJidServer.WHATSAPP) ? from : participant;
+                    var user = from.hasServer(JidServer.WHATSAPP) ? from : participant;
                     Objects.requireNonNull(user, "Cannot decipher pkmsg without user");
                     var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
                     yield session.decrypt(preKey);
                 }
                 case MSG -> {
-                    var user = from.hasServer(ContactJidServer.WHATSAPP) ? from : participant;
+                    var user = from.hasServer(JidServer.WHATSAPP) ? from : participant;
                     Objects.requireNonNull(user, "Cannot decipher msg without user");
                     var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var signalMessage = SignalMessage.ofSerialized(encodedMessage);
@@ -602,7 +607,7 @@ class MessageHandler {
     private void attributeMessageReceipt(MessageInfo info) {
         var self = socketHandler.store()
                 .jid()
-                .map(ContactJid::withoutDevice)
+                .map(Jid::withoutDevice)
                 .orElse(null);
         if (!info.fromMe() || (self != null && !info.chatJid().equals(self))) {
             return;
@@ -617,7 +622,7 @@ class MessageHandler {
         if(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
             handleDistributionMessage(distributionMessage, info.senderJid());
         }
-        if (info.chatJid().type() == ContactJidType.STATUS) {
+        if (info.chatJid().type() == JidType.STATUS) {
             socketHandler.store().addStatus(info);
             socketHandler.onNewStatus(info);
             return;
@@ -650,7 +655,7 @@ class MessageHandler {
         socketHandler.onNewMessage(info, offline);
     }
 
-    private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
+    private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, Jid from) {
         var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
         var builder = new GroupBuilder(socketHandler.keys());
         var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
@@ -701,11 +706,12 @@ class MessageHandler {
 
         downloadHistorySync(protocolMessage)
                 .thenAcceptAsync(history -> onHistoryNotification(info, history))
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(HISTORY_SYNC, throwable))
+                .thenRunAsync(() -> socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync"));
     }
 
     private boolean isZeroHistorySyncComplete() {
-        return socketHandler.store().historyLength() == WebHistoryLength.ZERO
+        return socketHandler.store().historyLength().size() == 0
                 && historySyncTypes.contains(Type.INITIAL_STATUS_V3)
                 && historySyncTypes.contains(Type.PUSH_NAME)
                 && historySyncTypes.contains(Type.INITIAL_BOOTSTRAP)
@@ -725,26 +731,20 @@ class MessageHandler {
     }
 
     private CompletableFuture<HistorySync> downloadHistorySyncNotification(HistorySyncNotification notification) {
-        return Medias.download(notification)
-                .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
-                .thenApplyAsync(result -> HistorySyncSpec.decode(BytesHelper.decompress(result)));
+        return notification.initialHistBootstrapInlinePayload()
+                .map(result -> CompletableFuture.completedFuture(HistorySyncSpec.decode(BytesHelper.decompress(result))))
+                .orElseGet(() -> Medias.download(notification)
+                        .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
+                        .thenApplyAsync(result -> HistorySyncSpec.decode(BytesHelper.decompress(result))));
     }
 
     private void onHistoryNotification(MessageInfo info, HistorySync history) {
         handleHistorySync(history);
-        if (history.progress() != null) {
-            scheduleTimeoutSync(history);
-            socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == Type.RECENT);
+        if (history.progress() == null) {
+            return;
         }
-        socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync");
-    }
 
-    private void scheduleTimeoutSync(HistorySync history) {
-        var executor = CompletableFuture.delayedExecutor(HISTORY_SYNC_TIMEOUT, TimeUnit.SECONDS);
-        if(historySyncTask != null){
-            historySyncTask.cancel(true);
-        }
-        this.historySyncTask = CompletableFuture.runAsync(() -> handleChatsSync(history, true), executor);
+        socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == Type.RECENT);
     }
 
     private void onMessageDeleted(MessageInfo info, MessageInfo message) {
@@ -759,7 +759,7 @@ class MessageHandler {
                 case INITIAL_STATUS_V3 -> handleInitialStatus(history);
                 case PUSH_NAME -> handlePushNames(history);
                 case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
-                case RECENT, FULL -> handleChatsSync(history, false);
+                case RECENT, FULL -> handleChatsSync(history);
                 case NON_BLOCKING_DATA -> handleNonBlockingData(history);
             }
         }finally {
@@ -783,7 +783,7 @@ class MessageHandler {
     }
 
     private void handNewPushName(PushName pushName) {
-        var jid = ContactJid.of(pushName.id());
+        var jid = Jid.of(pushName.id());
         var contact = socketHandler.store()
                 .findContactByJid(jid)
                 .orElseGet(() -> createNewContact(jid));
@@ -792,40 +792,82 @@ class MessageHandler {
         socketHandler.onAction(action, MessageIndexInfo.of("contact", jid, null, true));
     }
 
-    private Contact createNewContact(ContactJid jid) {
+    private Contact createNewContact(Jid jid) {
         var contact = socketHandler.store().addContact(jid);
         socketHandler.onNewContact(contact);
         return contact;
     }
 
     private void handleInitialBootstrap(HistorySync history) {
-        if(socketHandler.store().historyLength() != WebHistoryLength.ZERO){
-            historyCache.addAll(history.conversations());
+        if(socketHandler.store().historyLength().size() != 0){
+            var jids = history.conversations()
+                    .stream()
+                    .map(Chat::jid)
+                    .toList();
+            historyCache.addAll(jids);
         }
 
         handleConversations(history);
         socketHandler.onChats();
     }
 
-    private void handleChatsSync(HistorySync history, boolean forceDone) {
-        if(socketHandler.store().historyLength() == WebHistoryLength.ZERO){
+    private void handleChatsSync(HistorySync history) {
+        if(socketHandler.store().historyLength().size() == 0){
             return;
         }
 
         handleConversations(history);
-        for (var cached : historyCache) {
+        handleConversationsNotifications(history);
+        scheduleHistorySyncTimeout();
+    }
+
+    private void handleConversationsNotifications(HistorySync history) {
+        var toRemove = new HashSet<Jid>();
+        for (var cachedJid : historyCache) {
             var chat = socketHandler.store()
-                    .findChatByJid(cached.jid())
-                    .orElse(cached);
-            var done = forceDone || !history.conversations().contains(cached);
+                    .findChatByJid(cachedJid)
+                    .orElse(null);
+            if(chat == null) {
+                continue;
+            }
+
+            var done = !history.conversations().contains(chat);
             if(done){
                 chat.setEndOfHistoryTransfer(true);
                 chat.setEndOfHistoryTransferType(Chat.EndOfHistoryTransferType.COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY);
+                toRemove.add(cachedJid);
             }
+
             socketHandler.onChatRecentMessages(chat, done);
         }
-        historyCache.removeIf(entry -> !history.conversations().contains(entry));
+
+        historyCache.removeAll(toRemove);
     }
+
+    private void scheduleHistorySyncTimeout() {
+        var executor = CompletableFuture.delayedExecutor(HISTORY_SYNC_TIMEOUT, TimeUnit.SECONDS);
+        if(historySyncTask != null){
+            historySyncTask.cancel(true);
+        }
+
+        this.historySyncTask = CompletableFuture.runAsync(this::onForcedHistorySyncCompletion, executor);
+    }
+
+    private void onForcedHistorySyncCompletion() {
+        for (var cachedJid : historyCache) {
+            var chat = socketHandler.store()
+                    .findChatByJid(cachedJid)
+                    .orElse(null);
+            if(chat == null) {
+                continue;
+            }
+
+            socketHandler.onChatRecentMessages(chat, true);
+        }
+
+        historyCache.clear();
+    }
+
 
     private void handleConversations(HistorySync history) {
         var store = socketHandler.store();

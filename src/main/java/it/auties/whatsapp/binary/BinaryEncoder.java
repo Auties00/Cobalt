@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.BytesHelper;
 
@@ -215,7 +215,7 @@ public final class BinaryEncoder {
             writeString(number.toString());
         } else if (input instanceof byte[] bytes) {
             writeBytes(bytes);
-        } else if (input instanceof ContactJid jid) {
+        } else if (input instanceof Jid jid) {
             writeJid(jid);
         } else if (input instanceof Collection<?> collection) {
             writeList(collection);
@@ -241,7 +241,7 @@ public final class BinaryEncoder {
         buffer.writeBytes(bytes);
     }
 
-    private void writeJid(ContactJid jid) {
+    private void writeJid(Jid jid) {
         if (jid.isCompanion()) {
             buffer.writeByte(COMPANION_JID.data());
             buffer.writeByte(jid.agent());

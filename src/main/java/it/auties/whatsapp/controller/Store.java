@@ -16,9 +16,9 @@ import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactJidProvider;
-import it.auties.whatsapp.model.contact.ContactJidServer;
+import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidProvider;
+import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -36,7 +36,7 @@ import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptionsSpec;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
@@ -149,7 +149,7 @@ public final class Store extends Controller<Store> {
      * The value is the device's companion jid
      */
     @NonNull
-    private LinkedHashMap<ContactJid, Integer> linkedDevicesKeys;
+    private LinkedHashMap<Jid, Integer> linkedDevicesKeys;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
@@ -170,13 +170,13 @@ public final class Store extends Controller<Store> {
      * The user linked to this account. This field will be null while the user hasn't logged in yet.
      */
     @Nullable
-    private ContactJid jid;
+    private Jid jid;
 
     /**
      * The lid user linked to this account. This field will be null while the user hasn't logged in yet.
      */
     @Nullable
-    private ContactJid lid;
+    private Jid lid;
 
     /**
      * The non-null map of properties received by whatsapp
@@ -189,19 +189,26 @@ public final class Store extends Controller<Store> {
      */
     @NonNull
     @JsonIgnore
-    private final ConcurrentHashMap<ContactJid, Chat> chats;
+    private final ConcurrentHashMap<Jid, Chat> chats;
+
+    /**
+     * A map of chats and their last known unique id
+     * Useful for serialization
+     */
+    @NonNull
+    private final ConcurrentHashMap<Jid, Integer> chatsUpdateIds;
 
     /**
      * The non-null map of contacts
      */
     @NonNull
-    private final ConcurrentHashMap<ContactJid, Contact> contacts;
+    private final ConcurrentHashMap<Jid, Contact> contacts;
 
     /**
      * The non-null list of status messages
      */
     @NonNull
-    private final ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status;
+    private final ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status;
 
     /**
      * The non-null map of privacy settings
@@ -320,7 +327,7 @@ public final class Store extends Controller<Store> {
      * The os of the associated device, available only for the web api
      */
     @Nullable
-    private Platform companionDeviceOs;
+    private PlatformType companionDeviceOs;
 
     /**
      * Whether the mac of every app state request should be checked
@@ -331,7 +338,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<ContactJid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable ContactJid jid, @Nullable ContactJid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<ContactJid, Chat> chats, @NonNull ConcurrentHashMap<ContactJid, Contact> contacts, @NonNull ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, @NonNull ConcurrentHashMap<String, Request> requests, @NonNull ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers, @NonNull KeySetView<Listener, Boolean> listeners, @NonNull String tag, long initializationTimeStamp, @Nullable MediaConnection mediaConnection, @NonNull CountDownLatch mediaConnectionLatch, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable Platform companionDeviceOs, boolean checkPatchMacs) {
+    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Integer> chatsUpdateIds, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if(proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -357,20 +364,20 @@ public final class Store extends Controller<Store> {
         this.jid = jid;
         this.lid = lid;
         this.properties = properties;
-        this.chats = chats;
+        this.chats = new ConcurrentHashMap<>();
+        this.chatsUpdateIds = chatsUpdateIds;
         this.contacts = contacts;
         this.status = status;
         this.privacySettings = privacySettings;
         this.calls = calls;
         this.unarchiveChats = unarchiveChats;
         this.twentyFourHourFormat = twentyFourHourFormat;
-        this.requests = requests;
-        this.replyHandlers = replyHandlers;
-        this.listeners = listeners;
-        this.tag = tag;
+        this.requests = new ConcurrentHashMap<>();
+        this.replyHandlers = new ConcurrentHashMap<>();
+        this.listeners = ConcurrentHashMap.newKeySet();
+        this.tag = HexFormat.of().formatHex(BytesHelper.random(1));
         this.initializationTimeStamp = initializationTimeStamp;
-        this.mediaConnection = mediaConnection;
-        this.mediaConnectionLatch = mediaConnectionLatch;
+        this.mediaConnectionLatch = new CountDownLatch(1);
         this.newChatsEphemeralTimer = newChatsEphemeralTimer;
         this.textPreviewSetting = textPreviewSetting;
         this.historyLength = historyLength;
@@ -380,7 +387,6 @@ public final class Store extends Controller<Store> {
         this.device = device;
         this.companionDeviceOs = companionDeviceOs;
         this.checkPatchMacs = checkPatchMacs;
-        serializer.linkMetadata(this);
     }
 
     /**
@@ -399,7 +405,7 @@ public final class Store extends Controller<Store> {
      * @param jid the jid to search
      * @return a non-null optional
      */
-    public Optional<Contact> findContactByJid(ContactJidProvider jid) {
+    public Optional<Contact> findContactByJid(JidProvider jid) {
         if (jid == null) {
             return Optional.empty();
         }
@@ -462,7 +468,7 @@ public final class Store extends Controller<Store> {
      * @param id       the jid to search
      * @return a non-null optional
      */
-    public Optional<MessageInfo> findMessageById(ContactJidProvider provider, String id) {
+    public Optional<MessageInfo> findMessageById(JidProvider provider, String id) {
         if (provider == null || id == null) {
             return Optional.empty();
         }
@@ -486,7 +492,7 @@ public final class Store extends Controller<Store> {
      * @param jid the jid to search
      * @return a non-null optional
      */
-    public Optional<Chat> findChatByJid(ContactJidProvider jid) {
+    public Optional<Chat> findChatByJid(JidProvider jid) {
         if (jid == null) {
             return Optional.empty();
         }
@@ -579,7 +585,7 @@ public final class Store extends Controller<Store> {
      * @param jid the sender of the status
      * @return a non-null immutable list
      */
-    public Collection<MessageInfo> findStatusBySender(ContactJidProvider jid) {
+    public Collection<MessageInfo> findStatusBySender(JidProvider jid) {
         return Optional.ofNullable(status.get(jid.toJid()))
                 .map(Collections::unmodifiableCollection)
                 .orElseGet(Set::of);
@@ -663,9 +669,8 @@ public final class Store extends Controller<Store> {
      * @param chatJid the chat to add
      * @return the input chat
      */
-    public Chat addNewChat(@NonNull ContactJid chatJid) {
+    public Chat addNewChat(@NonNull Jid chatJid) {
         var chat = new ChatBuilder()
-                .historySyncMessages(new ConcurrentLinkedDeque<>())
                 .jid(chatJid)
                 .build();
         addChat(chat);
@@ -680,7 +685,7 @@ public final class Store extends Controller<Store> {
      */
     public Optional<Chat> addChat(@NonNull Chat chat) {
         chat.messages().forEach(this::attribute);
-        if (chat.hasName() && chat.jid().hasServer(ContactJidServer.WHATSAPP)) {
+        if (chat.hasName() && chat.jid().hasServer(JidServer.WHATSAPP)) {
             var contact = findContactByJid(chat.jid())
                     .orElseGet(() -> addContact(new Contact(chat.jid())));
             contact.setFullName(chat.name());
@@ -725,18 +730,18 @@ public final class Store extends Controller<Store> {
      * @param chatJid the chat to remove
      * @return the chat that was deleted wrapped by an optional
      */
-    public Optional<Chat> removeChat(@NonNull ContactJid chatJid) {
+    public Optional<Chat> removeChat(@NonNull Jid chatJid) {
         return Optional.ofNullable(chats.remove(chatJid));
     }
 
     /**
      * Adds a contact in memory
      *
-     * @param contactJid the contact to add
+     * @param jid the contact to add
      * @return the input contact
      */
-    public Contact addContact(@NonNull ContactJid contactJid) {
-        return addContact(new Contact(contactJid));
+    public Contact addContact(@NonNull Jid jid) {
+        return addContact(new Contact(jid));
     }
 
     /**
@@ -784,7 +789,7 @@ public final class Store extends Controller<Store> {
         return info;
     }
 
-    private MessageKey attributeSender(MessageInfo info, ContactJid senderJid) {
+    private MessageKey attributeSender(MessageInfo info, Jid senderJid) {
         var contact = findContactByJid(senderJid)
                 .orElseGet(() -> addContact(new Contact(senderJid)));
         info.setSender(contact);
@@ -796,13 +801,13 @@ public final class Store extends Controller<Store> {
         contextInfo.quotedMessageChatJid().ifPresent(chatJid -> attributeContextChat(contextInfo, chatJid));
     }
 
-    private void attributeContextChat(ContextInfo contextInfo, ContactJid chatJid) {
+    private void attributeContextChat(ContextInfo contextInfo, Jid chatJid) {
         var chat = findChatByJid(chatJid)
                 .orElseGet(() -> addNewChat(chatJid));
         contextInfo.setQuotedMessageChat(chat);
     }
 
-    private void attributeContextSender(ContextInfo contextInfo, ContactJid senderJid) {
+    private void attributeContextSender(ContextInfo contextInfo, Jid senderJid) {
         var contact = findContactByJid(senderJid)
                 .orElseGet(() -> addContact(new Contact(senderJid)));
         contextInfo.setQuotedMessageSender(contact);
@@ -1059,7 +1064,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an unmodifiable map
      */
-    public Map<ContactJid, Integer> linkedDevicesKeys() {
+    public Map<Jid, Integer> linkedDevicesKeys() {
         return Collections.unmodifiableMap(linkedDevicesKeys);
     }
 
@@ -1069,7 +1074,7 @@ public final class Store extends Controller<Store> {
      *
      * @return an unmodifiable list
      */
-    public Collection<ContactJid> linkedDevices() {
+    public Collection<Jid> linkedDevices() {
         return Collections.unmodifiableCollection(linkedDevicesKeys.keySet());
     }
 
@@ -1081,7 +1086,7 @@ public final class Store extends Controller<Store> {
      * @param keyId     the id of its key
      * @return the nullable old key
      */
-    public Optional<Integer> addLinkedDevice(@NonNull ContactJid companion, int keyId) {
+    public Optional<Integer> addLinkedDevice(@NonNull Jid companion, int keyId) {
         return Optional.ofNullable(linkedDevicesKeys.put(companion, keyId));
     }
 
@@ -1092,7 +1097,7 @@ public final class Store extends Controller<Store> {
      * @param companion a non-null companion
      * @return the nullable old key
      */
-    public Optional<Integer> removeLinkedCompanion(@NonNull ContactJid companion) {
+    public Optional<Integer> removeLinkedCompanion(@NonNull Jid companion) {
         return Optional.ofNullable(linkedDevicesKeys.remove(companion));
     }
 
@@ -1186,7 +1191,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null optional
      */
-    public Optional<Platform> companionDeviceOs() {
+    public Optional<PlatformType> companionDeviceOs() {
         return Optional.ofNullable(companionDeviceOs);
     }
 
@@ -1283,6 +1288,23 @@ public final class Store extends Controller<Store> {
         return callId == null ? Optional.empty() : Optional.ofNullable(calls.get(callId));
     }
 
+    /**
+     * Checks whether the provided chat was updated since this method was last invoked
+     *
+     * @param chat the non-null chat to check
+     * @return a boolean
+     */
+    public boolean hasUpdate(@NonNull Chat chat) {
+        var lastId = chatsUpdateIds.getOrDefault(chat.jid(), -1);
+        var newId = chat.updateId();
+        if(lastId == newId) {
+            return false;
+        }
+
+        chatsUpdateIds.put(chat.jid(), newId);
+        return true;
+    }
+
     public String tag() {
         return tag;
     }
@@ -1316,11 +1338,11 @@ public final class Store extends Controller<Store> {
         return Optional.ofNullable(this.about);
     }
 
-    public Optional<ContactJid> jid() {
+    public Optional<Jid> jid() {
         return Optional.ofNullable(this.jid);
     }
 
-    public Optional<ContactJid> lid() {
+    public Optional<Jid> lid() {
         return Optional.ofNullable(this.lid);
     }
 
@@ -1428,7 +1450,7 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setLinkedDevicesKeys(LinkedHashMap<ContactJid, Integer> linkedDevicesKeys) {
+    public Store setLinkedDevicesKeys(LinkedHashMap<Jid, Integer> linkedDevicesKeys) {
         this.linkedDevicesKeys = linkedDevicesKeys;
         return this;
     }
@@ -1443,12 +1465,12 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setJid(ContactJid jid) {
+    public Store setJid(Jid jid) {
         this.jid = jid;
         return this;
     }
 
-    public Store setLid(ContactJid lid) {
+    public Store setLid(Jid lid) {
         this.lid = lid;
         return this;
     }
@@ -1499,7 +1521,7 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setCompanionDeviceOs(Platform companionDeviceOs) {
+    public Store setCompanionDeviceOs(PlatformType companionDeviceOs) {
         this.companionDeviceOs = companionDeviceOs;
         return this;
     }

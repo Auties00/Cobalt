@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.node;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
@@ -304,15 +304,15 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return a non-null optional
      */
-    public Optional<ContactJid> getJid(@NonNull String key) {
+    public Optional<Jid> getJid(@NonNull String key) {
         return get(key, Object.class).map(this::parseJid);
     }
 
-    private ContactJid parseJid(Object value) {
-        if (value instanceof ContactJid jid) {
+    private Jid parseJid(Object value) {
+        if (value instanceof Jid jid) {
             return jid;
         } else if (value instanceof String encodedJid) {
-            return ContactJid.of(encodedJid);
+            return Jid.of(encodedJid);
         } else {
             throw new IllegalStateException("Unexpected value: " + value);
         }

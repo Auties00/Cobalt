@@ -2,7 +2,8 @@ package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.model.response.WebVersionResponse;
-import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.signal.auth.UserAgent;
+import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Spec.Whatsapp;
 import net.dongliu.apk.parser.ByteArrayApkFile;
@@ -60,11 +61,11 @@ public final class MetadataHelper {
         }
     }
 
-    public static CompletableFuture<Version> getVersion(Platform platform) {
+    public static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform) {
         return getVersion(platform, true);
     }
 
-    public static CompletableFuture<Version> getVersion(Platform platform, boolean useJarCache) {
+    public static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform, boolean useJarCache) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS -> getWebVersion();
             case ANDROID -> getAndroidData(platform.isBusiness(), useJarCache)
@@ -97,7 +98,7 @@ public final class MetadataHelper {
         }
     }
 
-    public static CompletableFuture<String> getToken(long phoneNumber, Platform platform, boolean useJarCache) {
+    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, boolean useJarCache) {
         return switch (platform) {
             case ANDROID -> getAndroidToken(String.valueOf(phoneNumber), platform.isBusiness(), useJarCache);
             case IOS -> getIosToken(phoneNumber, platform, useJarCache);
@@ -105,7 +106,7 @@ public final class MetadataHelper {
         };
     }
 
-    private static CompletableFuture<String> getIosToken(long phoneNumber, Platform platform, boolean useJarCache) {
+    private static CompletableFuture<String> getIosToken(long phoneNumber, UserAgent.PlatformType platform, boolean useJarCache) {
         return getVersion(platform, useJarCache)
                 .thenApply(version -> getIosToken(phoneNumber, version));
     }

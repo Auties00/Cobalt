@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.ContextInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -63,7 +63,7 @@ public final class QuotedMessage implements MessageMetadataProvider {
     }
 
     @Override
-    public ContactJid chatJid() {
+    public Jid chatJid() {
         return chat.jid();
     }
 
@@ -73,7 +73,7 @@ public final class QuotedMessage implements MessageMetadataProvider {
      * @return a jid
      */
     @Override
-    public ContactJid senderJid() {
+    public Jid senderJid() {
         return Objects.requireNonNullElseGet(sender.jid(), this::chatJid);
     }
 

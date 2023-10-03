@@ -1,7 +1,7 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.Collection;
 
@@ -13,5 +13,5 @@ public interface OnWhatsappLinkedDevices extends Listener {
      * @param devices  the non-null devices
      */
     @Override
-    void onLinkedDevices(Whatsapp whatsapp, Collection<ContactJid> devices);
+    void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices);
 }

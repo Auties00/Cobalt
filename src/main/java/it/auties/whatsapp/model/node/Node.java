@@ -163,6 +163,10 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
             }
 
             var results = (Collection<Node>) entries;
+            if(results.isEmpty()) {
+                return null;
+            }
+
             return results.stream()
                     .filter(Objects::nonNull)
                     .toList();

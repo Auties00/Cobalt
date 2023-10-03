@@ -7,8 +7,8 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.crypto.Sha256;
-import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactJidProvider;
+import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -46,10 +46,10 @@ public final class PollCreationMessage implements ContextualMessage {
 
     private final Map<String, PollOption> selectableOptionsMap;
 
-    private final Map<ContactJid, Collection<PollOption>> selectedOptionsMap;
+    private final Map<Jid, Collection<PollOption>> selectedOptionsMap;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public PollCreationMessage(byte @Nullable [] encryptionKey, @NonNull String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, Map<ContactJid, Collection<PollOption>> selectedOptionsMap) {
+    public PollCreationMessage(byte @Nullable [] encryptionKey, @NonNull String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, Map<Jid, Collection<PollOption>> selectedOptionsMap) {
         this.encryptionKey = encryptionKey;
         this.title = title;
         this.selectableOptions = selectableOptions;
@@ -101,7 +101,7 @@ public final class PollCreationMessage implements ContextualMessage {
      * @param voter the non-null contact that voted in this poll
      * @return a non-null unmodifiable map
      */
-    public Collection<PollOption> getSelectedOptions(@NonNull ContactJidProvider voter) {
+    public Collection<PollOption> getSelectedOptions(@NonNull JidProvider voter) {
         var results = selectedOptionsMap.get(voter.toJid());
         if(results == null) {
             return List.of();
@@ -110,7 +110,7 @@ public final class PollCreationMessage implements ContextualMessage {
         return Collections.unmodifiableCollection(results);
     }
 
-    public void addSelectedOptions(ContactJidProvider voter, Collection<PollOption> voted) {
+    public void addSelectedOptions(JidProvider voter, Collection<PollOption> voted) {
         selectedOptionsMap.put(voter.toJid(), voted);
     }
 

@@ -18,7 +18,7 @@ import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
 import it.auties.whatsapp.model.message.button.*;
@@ -27,7 +27,7 @@ import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.utils.ConfigUtils;
-import it.auties.whatsapp.utils.Smile;
+import it.auties.whatsapp.util.Smile;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
@@ -53,7 +53,7 @@ public class ButtonsTest implements Listener {
     private static Whatsapp api;
     private static CompletableFuture<Void> future;
     private static CountDownLatch latch;
-    private static ContactJid contact;
+    private static Jid contact;
     private static boolean skip;
 
     static {
@@ -82,7 +82,7 @@ public class ButtonsTest implements Listener {
             }
             api = Whatsapp.webBuilder()
                     .lastConnection()
-                    .historyLength(WebHistoryLength.ZERO)
+                    .historyLength(WebHistoryLength.zero())
                     .unregistered(QrHandler.toTerminal())
                     .addListener(this)
                     .connect()
@@ -111,13 +111,13 @@ public class ButtonsTest implements Listener {
     private void loadConfig() throws IOException {
         if (GithubActions.isActionsEnvironment()) {
             log("Loading environment variables...");
-            contact = ContactJid.of(System.getenv(GithubActions.CONTACT_NAME));
+            contact = Jid.of(System.getenv(GithubActions.CONTACT_NAME));
             log("Loaded environment variables...");
             return;
         }
         log("Loading configuration file...");
         var props = ConfigUtils.loadConfiguration();
-        contact = ContactJid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
+        contact = Jid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
         log("Loaded configuration file");
     }
 

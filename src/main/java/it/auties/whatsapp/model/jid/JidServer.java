@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.contact;
+package it.auties.whatsapp.model.jid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -9,7 +9,7 @@ import java.util.Arrays;
  * The constants of this enumerated type describe the various servers that a jid might be linked
  * to
  */
-public enum ContactJidServer {
+public enum JidServer {
     /**
      * User
      */
@@ -41,12 +41,12 @@ public enum ContactJidServer {
 
     private final String address;
 
-    ContactJidServer(String address) {
+    JidServer(String address) {
         this.address = address;
     }
 
     @JsonCreator
-    public static ContactJidServer of(String address) {
+    public static JidServer of(String address) {
         return Arrays.stream(values())
                 .filter(entry -> address != null && address.endsWith(entry.address()))
                 .findFirst()
@@ -57,8 +57,8 @@ public enum ContactJidServer {
         return address;
     }
 
-    public ContactJid toJid() {
-        return ContactJid.ofServer(this);
+    public Jid toJid() {
+        return Jid.ofServer(this);
     }
 
     @Override

@@ -3,13 +3,12 @@ package it.auties.whatsapp.socket;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.model.mobile.CountryCode;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.DNSSource.ResolutionMethod;
-import it.auties.whatsapp.model.signal.auth.UserAgent.Platform;
+import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Spec;
@@ -78,8 +77,12 @@ class AuthHandler {
     }
 
     private WebInfo createWebInfo() {
+        if(socketHandler.store().historyLength().size() > Spec.Whatsapp.DEFAULT_HISTORY_SIZE) {
+            return null;
+        }
+
         return new WebInfoBuilder()
-                .webSubPlatform(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED ? WebInfo.Platform.WIN_STORE : WebInfo.Platform.WEB_BROWSER)
+                .webSubPlatform(WebInfo.Platform.WEB_BROWSER)
                 .build();
     }
 
@@ -127,7 +130,7 @@ class AuthHandler {
                 .orElse("000");
     }
 
-    private Platform getUserAgentPlatform(boolean mobile) {
+    private PlatformType getUserAgentPlatform(boolean mobile) {
         if(mobile) {
             var device = socketHandler.store()
                     .device()
@@ -135,11 +138,11 @@ class AuthHandler {
             return socketHandler.store().business() ? device.businessPlatform() : device.platform();
         }
 
-        if(socketHandler.store().historyLength() == WebHistoryLength.EXTENDED) {
-            return Platform.WINDOWS;
+        if(socketHandler.store().historyLength().size() > Spec.Whatsapp.DEFAULT_HISTORY_SIZE) {
+            return PlatformType.WINDOWS;
         }
 
-        return Platform.WEB;
+        return PlatformType.WEB;
     }
 
     private ClientPayload createUserClientPayload() {
@@ -170,6 +173,7 @@ class AuthHandler {
                     yield builder.webInfo(createWebInfo())
                             .username(Long.parseLong(jid.get().user()))
                             .passive(true)
+                            .pull(true)
                             .device(jid.get().device())
                             .build();
                 }
@@ -177,6 +181,7 @@ class AuthHandler {
                 yield builder.webInfo(createWebInfo())
                         .regData(createRegisterData())
                         .passive(false)
+                        .pull(false)
                         .build();
             }
         };
@@ -210,12 +215,13 @@ class AuthHandler {
     private CompanionProperties createCompanionProps() {
         return switch (socketHandler.store().clientType()) {
             case WEB -> {
+                var syncSize = socketHandler.store().historyLength().size();
+                var fullSync = syncSize > Spec.Whatsapp.DEFAULT_HISTORY_SIZE;
                 var config = new HistorySyncConfigBuilder()
                         .inlineInitialPayloadInE2EeMsg(true)
                         .supportBotUserAgentChatHistory(true)
-                        .storageQuotaMb(59206)
+                        .storageQuotaMb(syncSize)
                         .build();
-                var fullSync = socketHandler.store().historyLength() == WebHistoryLength.EXTENDED;
                 yield new CompanionPropertiesBuilder()
                         .os(socketHandler.store().name())
                         .platformType(fullSync ? CompanionProperties.PlatformType.DESKTOP : CompanionProperties.PlatformType.CHROME)

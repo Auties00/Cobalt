@@ -6,6 +6,7 @@ import ezvcard.VCardVersion;
 import ezvcard.property.SimpleProperty;
 import ezvcard.property.Telephone;
 import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.whatsapp.model.jid.Jid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
@@ -19,7 +20,7 @@ public record ContactCard(
         Optional<String> version,
         Optional<String> name,
         @NonNull
-        Map<String, List<ContactJid>> phoneNumbers,
+        Map<String, List<Jid>> phoneNumbers,
         Optional<String> businessName
 ) {
     private static final String BUSINESS_NAME_PROPERTY = "X-WA-BIZ-NAME";
@@ -62,30 +63,30 @@ public record ContactCard(
         return entry.getParameters().getType();
     }
 
-    private static List<ContactJid> getPhoneValue(Telephone entry) {
-        return List.of(ContactJid.of(entry.getParameter(PHONE_NUMBER_PROPERTY)));
+    private static List<Jid> getPhoneValue(Telephone entry) {
+        return List.of(Jid.of(entry.getParameter(PHONE_NUMBER_PROPERTY)));
     }
 
-    private static List<ContactJid> joinPhoneNumbers(List<ContactJid> first, List<ContactJid> second) {
+    private static List<Jid> joinPhoneNumbers(List<Jid> first, List<Jid> second) {
         return Stream.of(first, second).flatMap(Collection::stream).toList();
     }
 
-    public List<ContactJid> getPhoneNumber(@NonNull ContactJid contact) {
+    public List<Jid> getPhoneNumber(@NonNull Jid contact) {
         return Objects.requireNonNullElseGet(phoneNumbers.get(DEFAULT_NUMBER_TYPE), List::of);
     }
 
-    private void addPhoneNumber(VCard vcard, String type, ContactJid contact) {
+    private void addPhoneNumber(VCard vcard, String type, Jid contact) {
         var telephone = new Telephone(contact.toPhoneNumber());
         telephone.getParameters().setType(type);
         telephone.getParameters().put(PHONE_NUMBER_PROPERTY, contact.user());
         vcard.addTelephoneNumber(telephone);
     }
 
-    public void addPhoneNumber(@NonNull ContactJid contact) {
+    public void addPhoneNumber(@NonNull Jid contact) {
         addPhoneNumber(DEFAULT_NUMBER_TYPE, contact);
     }
 
-    public void addPhoneNumber(@NonNull String category, @NonNull ContactJid contact) {
+    public void addPhoneNumber(@NonNull String category, @NonNull Jid contact) {
         var oldValue = phoneNumbers.get(category);
         if(oldValue == null){
             phoneNumbers.put(category, List.of(contact));

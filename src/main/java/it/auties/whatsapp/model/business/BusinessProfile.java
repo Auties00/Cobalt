@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.node.Node;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -15,7 +15,7 @@ import java.util.Optional;
  */
 public record BusinessProfile(
         @NonNull
-        ContactJid jid,
+        Jid jid,
         Optional<String> description,
         Optional<String> address,
         Optional<String> email,

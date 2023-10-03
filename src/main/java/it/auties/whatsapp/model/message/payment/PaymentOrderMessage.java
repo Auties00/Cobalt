@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -39,7 +39,7 @@ public record PaymentOrderMessage(
         Optional<String> title,
         @ProtobufProperty(index = 8, type = ProtobufType.STRING)
         @NonNull
-        ContactJid sellerId,
+        Jid sellerId,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
         @NonNull
         String token,

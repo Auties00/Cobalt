@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -203,20 +203,20 @@ public interface Listener {
      *
      * @param whatsapp   an instance to the calling api
      * @param chat       the chat that this update regards
-     * @param contactJid the contact that this update regards
+     * @param jid the contact that this update regards
      * @param status     the new status of the contact
      */
-    default void onContactPresence(Whatsapp whatsapp, Chat chat, ContactJid contactJid, ContactStatus status) {
+    default void onContactPresence(Whatsapp whatsapp, Chat chat, Jid jid, ContactStatus status) {
     }
 
     /**
      * Called when the socket receives an update regarding the presence of a contact
      *
      * @param chat       the chat that this update regards
-     * @param contactJid the contact that this update regards
+     * @param jid the contact that this update regards
      * @param status     the new status of the contact
      */
-    default void onContactPresence(Chat chat, ContactJid contactJid, ContactStatus status) {
+    default void onContactPresence(Chat chat, Jid jid, ContactStatus status) {
     }
 
     /**
@@ -643,7 +643,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param devices  the non-null devices
      */
-    default void onLinkedDevices(Whatsapp whatsapp, Collection<ContactJid> devices){
+    default void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices){
 
     }
 
@@ -652,7 +652,7 @@ public interface Listener {
      *
      * @param devices  the non-null devices
      */
-    default void onLinkedDevices(Collection<ContactJid> devices){
+    default void onLinkedDevices(Collection<Jid> devices){
 
     }
 
