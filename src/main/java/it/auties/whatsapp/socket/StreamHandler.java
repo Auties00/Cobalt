@@ -72,9 +72,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.util.Spec.Signal.KEY_BUNDLE_TYPE;
-import static it.auties.whatsapp.util.Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER;
-import static it.auties.whatsapp.util.Spec.Whatsapp.DEVICE_WEB_SIGNATURE_HEADER;
+import static it.auties.whatsapp.util.Specification.Signal.KEY_BUNDLE_TYPE;
+import static it.auties.whatsapp.util.Specification.Whatsapp.ACCOUNT_SIGNATURE_HEADER;
+import static it.auties.whatsapp.util.Specification.Whatsapp.DEVICE_WEB_SIGNATURE_HEADER;
 
 class StreamHandler {
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
@@ -706,9 +706,9 @@ class StreamHandler {
         if (!Objects.equals(type, "account_sync")) {
             return;
         }
-        var timestamp = dirty.get().attributes().getString("timestampSeconds");
+        var timestamp = dirty.get().attributes().getString("timestamp");
         socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty",
-                Node.of("clean", Map.of("type", type, "timestampSeconds", timestamp)));
+                Node.of("clean", Map.of("type", type, "timestamp", timestamp)));
     }
 
     private void digestError(Node node) {
@@ -877,7 +877,7 @@ class StreamHandler {
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
         socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestampSeconds", 0, "type", "account_sync")))
+        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
         if(socketHandler.store().business()){
             socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
@@ -1220,7 +1220,6 @@ class StreamHandler {
     private void saveCompanion(Node container) {
         var node = container.findNode("device")
                 .orElseThrow(() -> new NoSuchElementException("Missing device"));
-        var isBusiness = container.hasNode("business");
         var companion = node.attributes()
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
@@ -1232,7 +1231,7 @@ class StreamHandler {
                 .map(this::getCompanionOs)
                 .orElseThrow(() -> new NoSuchElementException("Unknown platform: " + container));
         socketHandler.store().setCompanionDeviceOs(companionOs);
-        socketHandler.store().setBusiness(isBusiness);
+        socketHandler.store().setBusiness(companionOs == PlatformType.SMB_ANDROID || companionOs == PlatformType.SMB_IOS);
         var me = new Contact(companion.withoutDevice(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, ZonedDateTime.now(), false);
         socketHandler.store().addContact(me);
     }

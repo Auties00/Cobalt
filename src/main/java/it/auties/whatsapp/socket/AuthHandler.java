@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.signal.auth.DNSSource.ResolutionMethod;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Specification;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -31,7 +31,7 @@ class AuthHandler {
                 return CompletableFuture.completedFuture(false);
             }
 
-            var handshake = new SocketHandshake(socketHandler.keys());
+            var handshake = new SocketHandshake(socketHandler.keys(), getPrologueData());
             handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
             handshake.updateHash(serverHello.get().ephemeral());
             var sharedEphemeral = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys().ephemeralKeyPair().privateKey());
@@ -53,6 +53,13 @@ class AuthHandler {
         }catch (Throwable throwable){
             return CompletableFuture.failedFuture(throwable);
         }
+    }
+
+    private byte[] getPrologueData() {
+        return switch (socketHandler.store().clientType()) {
+            case WEB -> Specification.Whatsapp.WEB_PROLOGUE;
+            case MOBILE -> Specification.Whatsapp.MOBILE_PROLOGUE;
+        };
     }
 
     private Optional<ServerHello> readHandshake(byte[] message) {
@@ -77,7 +84,7 @@ class AuthHandler {
     }
 
     private WebInfo createWebInfo() {
-        if(socketHandler.store().historyLength().size() > Spec.Whatsapp.DEFAULT_HISTORY_SIZE) {
+        if(socketHandler.store().historyLength().isExtended()) {
             return null;
         }
 
@@ -138,7 +145,7 @@ class AuthHandler {
             return socketHandler.store().business() ? device.businessPlatform() : device.platform();
         }
 
-        if(socketHandler.store().historyLength().size() > Spec.Whatsapp.DEFAULT_HISTORY_SIZE) {
+        if(socketHandler.store().historyLength().isExtended()) {
             return PlatformType.WINDOWS;
         }
 
@@ -198,7 +205,7 @@ class AuthHandler {
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(socketHandler.store().version().toHash())
                 .eRegid(socketHandler.keys().encodedRegistrationId())
-                .eKeytype(BytesHelper.intToBytes(Spec.Signal.KEY_TYPE, 1))
+                .eKeytype(BytesHelper.intToBytes(Specification.Signal.KEY_TYPE, 1))
                 .eIdent(socketHandler.keys().identityKeyPair().publicKey())
                 .eSkeyId(socketHandler.keys().signedKeyPair().encodedId())
                 .eSkeyVal(socketHandler.keys().signedKeyPair().keyPair().publicKey())
@@ -215,17 +222,16 @@ class AuthHandler {
     private CompanionProperties createCompanionProps() {
         return switch (socketHandler.store().clientType()) {
             case WEB -> {
-                var syncSize = socketHandler.store().historyLength().size();
-                var fullSync = syncSize > Spec.Whatsapp.DEFAULT_HISTORY_SIZE;
+                var historyLength = socketHandler.store().historyLength();
                 var config = new HistorySyncConfigBuilder()
                         .inlineInitialPayloadInE2EeMsg(true)
                         .supportBotUserAgentChatHistory(true)
-                        .storageQuotaMb(syncSize)
+                        .storageQuotaMb(historyLength.size())
                         .build();
                 yield new CompanionPropertiesBuilder()
                         .os(socketHandler.store().name())
-                        .platformType(fullSync ? CompanionProperties.PlatformType.DESKTOP : CompanionProperties.PlatformType.CHROME)
-                        .requireFullSync(fullSync)
+                        .platformType(CompanionProperties.PlatformType.CHROME)
+                        .requireFullSync(historyLength.isExtended())
                         .historySyncConfig(config)
                         .build();
             }

@@ -73,7 +73,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     private String mediaDirectPath;
 
     @ProtobufProperty(index = 14, type = ProtobufType.INT64)
-    private final long mediaKeyTimestampSeconds;
+    private long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
@@ -135,7 +135,6 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
         return new VideoOrGifMessageBuilder()
-                .mediaKeyTimestampSeconds(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
                 .caption(caption)
@@ -153,7 +152,6 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
         return new VideoOrGifMessageBuilder()
-                .mediaKeyTimestampSeconds(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
                 .caption(caption)
@@ -203,6 +201,12 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     @Override
     public VideoOrGifMessage setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public VideoOrGifMessage setMediaKeyTimestamp(Long timestamp) {
+        this.mediaKeyTimestampSeconds = timestamp;
         return this;
     }
 

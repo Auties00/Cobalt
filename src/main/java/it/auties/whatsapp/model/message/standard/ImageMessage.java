@@ -77,7 +77,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     
     @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
     @Nullable
-    private final Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
     
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte @Nullable [] thumbnail;
@@ -173,7 +173,6 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     static ImageMessage simpleBuilder(byte @Nullable [] media, String mimeType, String caption, byte @Nullable [] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         return new ImageMessageBuilder()
-                .mediaKeyTimestampSeconds(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
                 .caption(caption)
                 .width(dimensions.width())
@@ -215,6 +214,12 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     @Override
     public ImageMessage setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public ImageMessage setMediaKeyTimestamp(Long timestamp) {
+        this.mediaKeyTimestampSeconds = timestamp;
         return this;
     }
 

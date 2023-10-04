@@ -4,15 +4,17 @@ import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.chat.*;
-import it.auties.whatsapp.model.contact.*;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
-import it.auties.whatsapp.model.jid.JidType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidServer;
+import it.auties.whatsapp.model.jid.JidType;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
@@ -35,6 +37,7 @@ import it.auties.whatsapp.model.sync.HistorySyncSpec;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.nio.charset.StandardCharsets;
@@ -48,7 +51,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.util.Spec.Signal.*;
+import static it.auties.whatsapp.util.Specification.Signal.*;
 
 class MessageHandler {
     private static final int HISTORY_SYNC_TIMEOUT = 25;
@@ -72,11 +75,9 @@ class MessageHandler {
     }
 
     protected synchronized CompletableFuture<Void> encode(MessageSendRequest request) {
-        lock.lock();
         return encodeMessage(request)
                 .thenRunAsync(() -> attributeOutgoingMessage(request))
-                .exceptionallyAsync(throwable -> onEncodeError(request, throwable))
-                .thenRun(lock::unlock);
+                .exceptionallyAsync(throwable -> onEncodeError(request, throwable));
     }
 
     private CompletableFuture<?> encodeMessage(MessageSendRequest request) {
@@ -85,29 +86,51 @@ class MessageHandler {
 
     private CompletableFuture<Void> encodePlainMessage(MessageSendRequest request) {
         var message = request.info().message();
-        var messageAttributes = Attributes.ofNullable(request.additionalAttributes())
-                .put("mediatype", getMediaType(message), Objects::nonNull)
-                .toMap();
-        var messageNode = switch (message.content()) {
-            case TextMessage textMessage -> Node.of("plaintext", textMessage.text().getBytes(StandardCharsets.UTF_8));
-            case ImageMessage imageMessage -> imageMessage.caption()
-                    .map(caption -> Node.of("plaintext", messageAttributes, caption.getBytes(StandardCharsets.UTF_8)));
-            case VideoOrGifMessage imageMessage -> imageMessage.caption()
-                    .map(caption -> Node.of("plaintext", messageAttributes, caption.getBytes(StandardCharsets.UTF_8)));
-            default -> throw new UnsupportedOperationException("Unsupported message type in channel: " + message.type());
-        };
+        var messageNode = getPlainMessageNode(message, request.additionalAttributes());
         var type = message.content().type() == MessageType.TEXT ? "text" : "media";
         var attributes = Attributes.of()
                 .put("id", request.info().id())
-                .put("to", request.info().chatJid().withServer(JidServer.WHATSAPP))
+                .put("to", request.info().chatJid())
                 .put("type", type)
+                .put("media_id", getPlainMessageHandle(request), Objects::nonNull)
                 .toMap();
         return socketHandler.send(Node.of("message", attributes, messageNode))
                 .thenRunAsync(() -> attributeOutgoingMessage(request));
     }
 
+    private String getPlainMessageHandle(MessageSendRequest request) {
+        var message = request.info().message().content();
+        if (!(message instanceof LocalMediaMessage<?> localMediaMessage)) {
+            return null;
+        }
+
+        return localMediaMessage.handle().orElse(null);
+    }
+
+    private Node getPlainMessageNode(MessageContainer message, Map<String, ?> additionalAttributes) {
+        var messageAttributes = Attributes.ofNullable(additionalAttributes)
+                .put("mediatype", getMediaType(message), Objects::nonNull)
+                .toMap();
+        return switch (message.content()) {
+            case TextMessage textMessage -> {
+                var byteArrayOutputStream = new ByteArrayOutputStream();
+                byteArrayOutputStream.write(10);
+                byteArrayOutputStream.writeBytes(BytesHelper.intToVarInt(textMessage.text().length()));
+                byteArrayOutputStream.writeBytes(textMessage.text().getBytes(StandardCharsets.UTF_8));
+                yield Node.of("plaintext", byteArrayOutputStream.toByteArray());
+            }
+            case ReactionMessage reactionMessage -> Node.of("reaction", Map.of("code", reactionMessage.content()));
+            default -> Node.of("plaintext", messageAttributes, MessageContainerSpec.encode(message));
+        };
+    }
+
     private CompletableFuture<Node> encodeE2EMessage(MessageSendRequest request) {
-        return request.peer() || isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
+        try {
+            lock.lock();
+            return request.peer() || isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
+        }finally {
+            lock.unlock();
+        }
     }
 
     private Void onEncodeError(MessageSendRequest request, Throwable throwable) {
@@ -711,7 +734,7 @@ class MessageHandler {
     }
 
     private boolean isZeroHistorySyncComplete() {
-        return socketHandler.store().historyLength().size() == 0
+        return socketHandler.store().historyLength().isZero()
                 && historySyncTypes.contains(Type.INITIAL_STATUS_V3)
                 && historySyncTypes.contains(Type.PUSH_NAME)
                 && historySyncTypes.contains(Type.INITIAL_BOOTSTRAP)
@@ -799,7 +822,7 @@ class MessageHandler {
     }
 
     private void handleInitialBootstrap(HistorySync history) {
-        if(socketHandler.store().historyLength().size() != 0){
+        if(!socketHandler.store().historyLength().isZero()){
             var jids = history.conversations()
                     .stream()
                     .map(Chat::jid)
@@ -812,7 +835,7 @@ class MessageHandler {
     }
 
     private void handleChatsSync(HistorySync history) {
-        if(socketHandler.store().historyLength().size() == 0){
+        if(socketHandler.store().historyLength().isZero()){
             return;
         }
 

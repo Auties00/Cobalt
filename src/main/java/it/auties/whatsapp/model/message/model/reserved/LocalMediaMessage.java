@@ -8,6 +8,11 @@ import java.util.Optional;
 
 public abstract sealed class LocalMediaMessage<T extends LocalMediaMessage<T>> implements MediaMessage<T> permits AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
     private byte @Nullable [] decodedMedia;
+    private String handle;
+
+    public Optional<String> handle() {
+        return Optional.ofNullable(handle);
+    }
 
     public Optional<byte[]> decodedMedia() {
         return Optional.ofNullable(decodedMedia);
@@ -16,6 +21,12 @@ public abstract sealed class LocalMediaMessage<T extends LocalMediaMessage<T>> i
     @SuppressWarnings("unchecked")
     public T setDecodedMedia(byte @Nullable [] decodedMedia) {
         this.decodedMedia = decodedMedia;
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setHandle(String handle) {
+        this.handle = handle;
         return (T) this;
     }
 }

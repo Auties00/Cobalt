@@ -5,7 +5,7 @@ import it.auties.whatsapp.model.signal.message.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
-import it.auties.whatsapp.util.Spec.Signal;
+import it.auties.whatsapp.util.Specification.Signal;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.NoSuchElementException;

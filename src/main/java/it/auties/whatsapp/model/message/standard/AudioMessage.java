@@ -56,7 +56,7 @@ public final class AudioMessage extends LocalMediaMessage<AudioMessage> implemen
 
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
     @Nullable
-    private final Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
     @Nullable
@@ -93,7 +93,6 @@ public final class AudioMessage extends LocalMediaMessage<AudioMessage> implemen
     @ProtobufBuilder(className = "AudioMessageSimpleBuilder")
     static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
         return new AudioMessageBuilder()
-                .mediaKeyTimestampSeconds(Clock.nowSeconds())
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .duration(Medias.getDuration(media))
                 .mimetype(getMimeType(media, mimeType))
@@ -163,6 +162,12 @@ public final class AudioMessage extends LocalMediaMessage<AudioMessage> implemen
     @Override
     public AudioMessage setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public AudioMessage setMediaKeyTimestamp(Long timestamp) {
+        this.mediaKeyTimestampSeconds = timestamp;
         return this;
     }
 

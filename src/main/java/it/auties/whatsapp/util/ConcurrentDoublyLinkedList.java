@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <E>
  *            the type of elements held in this collection
  */
-
+@SuppressWarnings("ALL")
 public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
         implements java.io.Serializable {
 
@@ -686,17 +686,17 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
  * Linked Nodes. As a minor efficiency hack, this class opportunistically
  * inherits from AtomicReference, with the atomic ref used as the "next"
  * link.
- *
+ * <p>
  * Nodes are in doubly-linked lists. There are three kinds of special nodes,
  * distinguished by: * The list header has a null prev link * The list
  * trailer has a null next link * A deletion marker has a prev link pointing
  * to itself. All three kinds of special nodes have null element fields.
- *
+ * <p>
  * Regular nodes have non-null element, next, and prev fields. To avoid
  * visible inconsistencies when deletions overlap element replacement,
  * replacements are done by replacing the node, not just setting the
  * element.
- *
+ * <p>
  * Nodes can be traversed by read-only ConcurrentLinkedDeque class
  * operations just by following raw next pointers, so long as they ignore
  * any special nodes seen along the way. (This is automated in method
@@ -704,7 +704,7 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
  * all live nodes since a prev pointer of a deleted node can become
  * unrecoverably stale.
  */
-
+@SuppressWarnings("ALL")
 class Node<E> extends AtomicReference<Node<E>> {
     private volatile Node<E> prev;
 

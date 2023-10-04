@@ -89,6 +89,11 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
+    public HistorySyncNotification setMediaKeyTimestamp(Long timestamp) {
+        return this;
+    }
+
+    @Override
     public Optional<byte[]> mediaSha256() {
         return Optional.ofNullable(mediaSha256);
     }

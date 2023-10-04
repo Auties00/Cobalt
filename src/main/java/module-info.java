@@ -1,6 +1,7 @@
 open module it.auties.cobalt {
     requires static jilt;
     requires transitive java.desktop;
+    requires jakarta.websocket.client;
     requires java.net.http;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;

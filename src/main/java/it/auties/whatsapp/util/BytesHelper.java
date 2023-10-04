@@ -16,7 +16,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import static it.auties.whatsapp.util.Spec.Signal.CURRENT_VERSION;
+import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
 
 public final class BytesHelper {
     private static final String CROCKFORD_CHARACTERS = "123456789ABCDEFGHJKLMNPQRSTVWXYZ";
@@ -154,6 +154,17 @@ public final class BytesHelper {
         }
         return result;
     }
+
+    public static byte[] intToVarInt(int value) {
+        var out = new ByteArrayOutputStream();
+        while ((value & 0xFFFFFF80) != 0L) {
+            out.write((byte) ((value & 0x7F) | 0x80));
+            value >>>= 7;
+        }
+        out.write((byte) (value & 0x7F));
+        return out.toByteArray();
+    }
+
 
     public static int bytesToInt(byte[] bytes, int length) {
         var result = 0;

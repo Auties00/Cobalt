@@ -5,33 +5,33 @@ import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Specification;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 
-public class SocketHandshake {
+class SocketHandshake {
     private final Keys keys;
     private byte[] hash;
     private byte[] salt;
     private byte[] cryptoKey;
     private long counter;
 
-    public SocketHandshake(Keys keys) {
+    SocketHandshake(Keys keys, byte[] prologue) {
         this.keys = keys;
-        this.hash = Spec.Whatsapp.PROTOCOL;
-        this.salt = Spec.Whatsapp.PROTOCOL;
-        this.cryptoKey = Spec.Whatsapp.PROTOCOL;
+        this.hash = Specification.Whatsapp.NOISE_PROTOCOL;
+        this.salt = Specification.Whatsapp.NOISE_PROTOCOL;
+        this.cryptoKey = Specification.Whatsapp.NOISE_PROTOCOL;
         this.counter = 0;
-        updateHash(keys.prologue());
+        updateHash(prologue);
     }
 
-    public void updateHash(byte @NonNull [] data) {
+    void updateHash(byte @NonNull [] data) {
         var input = BytesHelper.concat(hash, data);
         this.hash = Sha256.calculate(input);
     }
 
-    public byte[] cipher(byte @NonNull [] bytes, boolean encrypt) {
+    byte[] cipher(byte @NonNull [] bytes, boolean encrypt) {
         var cyphered = encrypt ? AesGcm.encrypt(counter++, bytes, cryptoKey, hash) : AesGcm.decrypt(counter++, bytes, cryptoKey, hash);
         if (!encrypt) {
             updateHash(bytes);
@@ -41,24 +41,24 @@ public class SocketHandshake {
         return cyphered;
     }
 
-    public void finish() {
+    void finish() {
         var expanded = Hkdf.extractAndExpand(new byte[0], salt, null, 64);
         keys.setWriteKey(Arrays.copyOfRange(expanded, 0, 32));
         keys.setReadKey(Arrays.copyOfRange(expanded, 32, 64));
         dispose();
     }
 
-    private void dispose() {
-        this.hash = null;
-        this.salt = null;
-        this.cryptoKey = null;
-        this.counter = 0;
-    }
-
-    public void mixIntoKey(byte @NonNull [] bytes) {
+    void mixIntoKey(byte @NonNull [] bytes) {
         var expanded = Hkdf.extractAndExpand(bytes, salt, null, 64);
         this.salt = Arrays.copyOfRange(expanded, 0, 32);
         this.cryptoKey = Arrays.copyOfRange(expanded, 32, 64);
+        this.counter = 0;
+    }
+
+    void dispose() {
+        this.hash = null;
+        this.salt = null;
+        this.cryptoKey = null;
         this.counter = 0;
     }
 }

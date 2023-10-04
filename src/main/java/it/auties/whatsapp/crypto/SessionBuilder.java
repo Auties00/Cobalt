@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.Spec.Signal;
+import it.auties.whatsapp.util.Specification.Signal;
 import it.auties.whatsapp.util.Validate;
 import org.checkerframework.checker.nullness.qual.NonNull;
 

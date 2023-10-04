@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.socket.SocketSession;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Exceptions;
+import it.auties.whatsapp.util.Specification;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -93,7 +94,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     public CompletableFuture<Node> send(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store, boolean prologue, boolean response) {
         var ciphered = encryptMessage(keys);
         var buffer = BytesHelper.newBuffer();
-        buffer.writeBytes(prologue ? keys.prologue() : new byte[0]);
+        buffer.writeBytes(prologue ? getPrologueData(store) : new byte[0]);
         buffer.writeInt(ciphered.length >> 16);
         buffer.writeShort(65535 & ciphered.length);
         buffer.writeBytes(ciphered);
@@ -102,6 +103,14 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
                 .exceptionallyAsync(this::onSendError);
         return future;
     }
+
+    private byte[] getPrologueData(@NonNull Store store) {
+        return switch (store.clientType()) {
+            case WEB -> Specification.Whatsapp.WEB_PROLOGUE;
+            case MOBILE -> Specification.Whatsapp.MOBILE_PROLOGUE;
+        };
+    }
+
 
     private byte[] encryptMessage(Keys keys) {
         var encodedBody = body();

@@ -74,6 +74,11 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
+    public ExternalBlobReference setMediaKeyTimestamp(Long timestamp) {
+        return this;
+    }
+
+    @Override
     public Optional<byte[]> mediaSha256() {
         return Optional.ofNullable(mediaSha256);
     }

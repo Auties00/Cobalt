@@ -2,14 +2,14 @@ package it.auties.whatsapp.model.signal.message;
 
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Specification;
 
 public abstract sealed class SignalProtocolMessage<T extends SignalProtocolMessage<T>> implements ProtobufMessage permits SenderKeyMessage, SignalDistributionMessage, SignalMessage, SignalPreKeyMessage {
     private int version;
     protected byte[] serialized;
 
     public SignalProtocolMessage() {
-        this.version = Spec.Signal.CURRENT_VERSION;
+        this.version = Specification.Signal.CURRENT_VERSION;
     }
 
     public SignalProtocolMessage(int version, byte[] serialized) {

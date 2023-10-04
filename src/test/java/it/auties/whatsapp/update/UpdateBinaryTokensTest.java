@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.github.GithubActions;
-import it.auties.whatsapp.util.Spec.Whatsapp;
+import it.auties.whatsapp.util.Specification.Whatsapp;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

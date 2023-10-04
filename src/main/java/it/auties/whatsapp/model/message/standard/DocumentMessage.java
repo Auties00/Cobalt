@@ -15,7 +15,7 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -72,7 +72,7 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
 
     @ProtobufProperty(index = 11, type = ProtobufType.UINT64)
     @Nullable
-    private final Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte @Nullable [] thumbnail;
@@ -136,16 +136,16 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
         Validate.isTrue(extensionIndex != -1 && extensionIndex + 1 < fileName.length(), "Expected fileName to be formatted as name.extension");
         var extension = fileName.substring(extensionIndex + 1);
         return new DocumentMessageBuilder()
-                .mediaKeyTimestampSeconds(Clock.nowSeconds())
                 .mimetype(getMimeType(media, fileName, mimeType))
                 .fileName(fileName)
                 .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media, extension).orElse(1))
                 .title(title)
                 .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, extension).orElse(null))
-                .thumbnailWidth(Spec.Whatsapp.THUMBNAIL_WIDTH)
-                .thumbnailHeight(Spec.Whatsapp.THUMBNAIL_HEIGHT)
+                .thumbnailWidth(Specification.Whatsapp.THUMBNAIL_WIDTH)
+                .thumbnailHeight(Specification.Whatsapp.THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build();
+                .build()
+                .setDecodedMedia(media);
     }
 
     private static String getMimeType(byte[] media, @NonNull String fileName, String mimeType) {
@@ -205,6 +205,12 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
     @Override
     public DocumentMessage setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public DocumentMessage setMediaKeyTimestamp(Long timestamp) {
+        this.mediaKeyTimestampSeconds = timestamp;
         return this;
     }
 

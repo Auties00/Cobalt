@@ -475,6 +475,10 @@ public record MessageContainer(
         if (viewOnceMessage.isPresent() || viewOnceV2Message.isPresent() || viewOnceV2ExtensionMessage.isPresent()) {
             return MessageType.VIEW_ONCE;
         }
+
+        if (editedMessage.isPresent()) {
+            return MessageType.EDITED;
+        }
         
         return content().type();
     }

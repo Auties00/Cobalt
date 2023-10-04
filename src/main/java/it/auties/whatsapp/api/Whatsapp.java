@@ -334,8 +334,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(@NonNull ChatEphemeralTimer timer) {
-        return socketHandler.sendQuery("set", "disappearing_mode", Node.of("disappearing_mode", Map.of("duration", timer.period()
-                        .toSeconds())))
+        return socketHandler.sendQuery("set", "disappearing_mode", Node.of("disappearing_mode", Map.of("duration", timer.period().toSeconds())))
                 .thenRunAsync(() -> store().setNewChatsEphemeralTimer(timer))
                 .thenApply(ignored -> this);
     }
@@ -361,7 +360,7 @@ public class Whatsapp {
     // TODO: Implement ready and error states
     public CompletableFuture<GdprAccountReport> getGdprAccountInfoStatus() {
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("gdpr", Map.of("gdpr", "status")))
-                .thenApplyAsync(result -> GdprAccountReport.ofPending(result.attributes().getLong("timestampSeconds")));
+                .thenApplyAsync(result -> GdprAccountReport.ofPending(result.attributes().getLong("timestamp")));
     }
 
     /**
@@ -513,7 +512,7 @@ public class Whatsapp {
         fixEphemeralMessage(info);
         var content = info.message().content();
         return switch (content) {
-            case LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(mediaMessage);
+            case LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(info.chatJid(), mediaMessage);
             case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
             case TextMessage textMessage -> attributeTextMessage(textMessage);
             case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
@@ -594,16 +593,41 @@ public class Whatsapp {
         return CompletableFuture.completedFuture(null);
     }
 
-    private CompletableFuture<Void> attributeMediaMessage(LocalMediaMessage<?> mediaMessage) {
-        return Medias.upload(mediaMessage.decodedMedia().orElseThrow(), mediaMessage.mediaType().toAttachmentType(), store().mediaConnection())
+    private CompletableFuture<Void> attributeMediaMessage(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
+        var media = mediaMessage.decodedMedia()
+                .orElseThrow(() -> new IllegalArgumentException("Missing media to upload"));
+        var attachmentType = getAttachmentType(chatJid, mediaMessage);
+        var mediaConnection = store().mediaConnection();
+        return Medias.upload(media, attachmentType, mediaConnection)
                 .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
     }
 
+    private AttachmentType getAttachmentType(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
+        if (!chatJid.hasServer(JidServer.CHANNEL)) {
+            return mediaMessage.attachmentType();
+        }
+
+        return switch (mediaMessage.mediaType()) {
+            case IMAGE -> AttachmentType.NEWSLETTER_IMAGE;
+            case DOCUMENT -> AttachmentType.NEWSLETTER_DOCUMENT;
+            case AUDIO -> AttachmentType.NEWSLETTER_AUDIO;
+            case VIDEO -> AttachmentType.NEWSLETTER_VIDEO;
+            case STICKER -> AttachmentType.NEWSLETTER_STICKER;
+            case NONE -> throw new IllegalArgumentException("Unexpected empty message");
+        };
+    }
+
+
     private MutableAttachmentProvider<?> attributeMediaMessage(MutableAttachmentProvider<?> mediaMessage, MediaFile upload) {
+        if(mediaMessage instanceof LocalMediaMessage<?> localMediaMessage) {
+            localMediaMessage.setHandle(upload.handle());
+        }
+
         return mediaMessage.setMediaSha256(upload.fileSha256())
                 .setMediaEncryptedSha256(upload.fileEncSha256())
                 .setMediaKey(upload.mediaKey())
                 .setMediaUrl(upload.url())
+                .setMediaKeyTimestamp(upload.timestamp())
                 .setMediaDirectPath(upload.directPath())
                 .setMediaSize(upload.fileLength());
     }
@@ -657,22 +681,22 @@ public class Whatsapp {
     private CompletableFuture<Void> attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
         return switch (buttonMessage) {
             case ButtonsMessage buttonsMessage when buttonsMessage.header().isPresent()
-                    && buttonsMessage.header().get() instanceof LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(mediaMessage);
+                    && buttonsMessage.header().get() instanceof LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(info.chatJid(), mediaMessage);
             case TemplateMessage templateMessage when templateMessage.format().isPresent() -> {
                 var templateFormatter = templateMessage.format().get();
                 yield switch (templateFormatter) {
                     case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
                             when highlyStructuredFourRowTemplate.title().isPresent() && highlyStructuredFourRowTemplate.title().get() instanceof LocalMediaMessage<?> fourRowMedia ->
-                            attributeMediaMessage(fourRowMedia);
-                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof LocalMediaMessage<?> hydreatedFourRowMedia ->
-                            attributeMediaMessage(hydreatedFourRowMedia);
+                            attributeMediaMessage(info.chatJid(), fourRowMedia);
+                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof LocalMediaMessage<?> hydratedFourRowMedia ->
+                            attributeMediaMessage(info.chatJid(), hydratedFourRowMedia);
                     case null, default -> CompletableFuture.completedFuture(null);
                 };
             }
             case InteractiveMessage interactiveMessage
                     when interactiveMessage.header().isPresent()
                     && interactiveMessage.header().get().attachment().isPresent()
-                    && interactiveMessage.header().get().attachment().get() instanceof LocalMediaMessage<?> interactiveMedia -> attributeMediaMessage(interactiveMedia);
+                    && interactiveMessage.header().get().attachment().get() instanceof LocalMediaMessage<?> interactiveMedia -> attributeMediaMessage(info.chatJid(), interactiveMedia);
             default -> CompletableFuture.completedFuture(null);
         };
     }
@@ -1237,7 +1261,7 @@ public class Whatsapp {
      * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull JidProvider... contacts) {
+    public CompletableFuture<Optional<GroupMetadata>> createGroup(@NonNull String subject, @NonNull JidProvider... contacts) {
         return createGroup(subject, ChatEphemeralTimer.OFF, contacts);
     }
 
@@ -1249,7 +1273,7 @@ public class Whatsapp {
      * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, @NonNull JidProvider... contacts) {
+    public CompletableFuture<Optional<GroupMetadata>> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, @NonNull JidProvider... contacts) {
         return createGroup(subject, timer, null, contacts);
     }
 
@@ -1261,7 +1285,7 @@ public class Whatsapp {
      * @param parentGroup the community to whom the new group will be linked
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, JidProvider parentGroup) {
+    public CompletableFuture<Optional<GroupMetadata>> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, JidProvider parentGroup) {
         return createGroup(subject, timer, parentGroup, new JidProvider[0]);
     }
 
@@ -1274,7 +1298,7 @@ public class Whatsapp {
      * @param contacts    at least one contact to add to the group, not enforced if part of a community
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, JidProvider parentCommunity, @NonNull JidProvider... contacts) {
+    public CompletableFuture<Optional<GroupMetadata>> createGroup(@NonNull String subject, @NonNull ChatEphemeralTimer timer, JidProvider parentCommunity, @NonNull JidProvider... contacts) {
         Validate.isTrue(!subject.isBlank(), "The subject of a group cannot be blank");
         var minimumMembersCount = parentCommunity == null ? 1 : 0;
         Validate.isTrue(contacts.length >= minimumMembersCount, "Expected at least %s members for this group", minimumMembersCount);
@@ -1294,12 +1318,11 @@ public class Whatsapp {
                 .thenApplyAsync(this::parseGroupResponse);
     }
 
-    private GroupMetadata parseGroupResponse(Node response) {
+    private Optional<GroupMetadata> parseGroupResponse(Node response) {
         return Optional.ofNullable(response)
                 .flatMap(node -> node.findNode("group"))
                 .map(socketHandler::parseGroupMetadata)
-                .map(this::addNewGroup)
-                .orElseThrow(() -> new NoSuchElementException("Missing group response, something went wrong: %s".formatted(findErrorNode(response))));
+                .map(this::addNewGroup);
     }
 
     private GroupMetadata addNewGroup(GroupMetadata result) {
@@ -2145,7 +2168,7 @@ public class Whatsapp {
                 .build();
         var deviceIdentityBytes = DeviceIdentitySpec.encode(deviceIdentity);
         var accountSignatureMessage = BytesHelper.concat(
-                Spec.Whatsapp.ACCOUNT_SIGNATURE_HEADER,
+                Specification.Whatsapp.ACCOUNT_SIGNATURE_HEADER,
                 deviceIdentityBytes,
                 advIdentity
         );
@@ -2170,7 +2193,7 @@ public class Whatsapp {
                 .validIndexes(knownDevices)
                 .build();
         var keyIndexListBytes = KeyIndexListSpec.encode(keyIndexList);
-        var deviceSignatureMessage = BytesHelper.concat(Spec.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
+        var deviceSignatureMessage = BytesHelper.concat(Specification.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
         var keyAccountSignature = Curve25519.sign(keys().identityKeyPair().privateKey(), deviceSignatureMessage, true);
         var signedKeyIndexList = new SignedKeyIndexListBuilder()
                 .accountSignature(keyAccountSignature)
@@ -2187,13 +2210,13 @@ public class Whatsapp {
     private int getMaxLinkedDevices() {
         var maxDevices = socketHandler.store().properties().get("linked_device_max_count");
         if(maxDevices == null){
-            return Spec.Whatsapp.MAX_COMPANIONS;
+            return Specification.Whatsapp.MAX_COMPANIONS;
         }
 
         try {
             return Integer.parseInt(maxDevices);
         }catch (NumberFormatException exception){
-            return Spec.Whatsapp.MAX_COMPANIONS;
+            return Specification.Whatsapp.MAX_COMPANIONS;
         }
     }
 
@@ -2226,7 +2249,7 @@ public class Whatsapp {
             }
         };
         addLinkedDevicesListener(listener);
-        return future.orTimeout(Spec.Whatsapp.COMPANION_PAIRING_TIMEOUT, TimeUnit.SECONDS)
+        return future.orTimeout(Specification.Whatsapp.COMPANION_PAIRING_TIMEOUT, TimeUnit.SECONDS)
                 .exceptionally(ignored -> null)
                 .thenRun(() -> removeListener(listener));
     }
@@ -2585,6 +2608,7 @@ public class Whatsapp {
         return Node.of("enc",
                 Map.of("v", 2, "type", cipheredMessage.type(), "count", 0), cipheredMessage.message());
     }
+
 
     /**
      * Rejects an incoming call or stops an active call

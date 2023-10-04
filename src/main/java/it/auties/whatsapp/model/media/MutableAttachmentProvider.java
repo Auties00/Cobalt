@@ -56,6 +56,13 @@ public sealed interface MutableAttachmentProvider<T extends MutableAttachmentPro
     T setMediaKey(byte[] bytes);
 
     /**
+     * Sets the timestamp of the media key
+     *
+     * @return the same provider
+     */
+    T setMediaKeyTimestamp(Long timestamp);
+
+    /**
      * Returns the sha256 of this media
      *
      * @return a non-null array of bytes

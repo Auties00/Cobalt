@@ -7,8 +7,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Spec.Signal.IV_LENGTH;
-import static it.auties.whatsapp.util.Spec.Signal.KEY_LENGTH;
+import static it.auties.whatsapp.util.Specification.Signal.IV_LENGTH;
+import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
 
 public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) {
     private static final int EXPANDED_SIZE = 112;

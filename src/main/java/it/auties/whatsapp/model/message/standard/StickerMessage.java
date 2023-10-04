@@ -63,7 +63,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     
     @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
     @Nullable
-    private final Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
     
     @ProtobufProperty(index = 11, type = ProtobufType.UINT32)
     @Nullable
@@ -112,7 +112,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
     static StickerMessage simpleBuilder(byte @Nullable [] media, String mimeType, byte @Nullable [] thumbnail, boolean animated, ContextInfo contextInfo) {
         return new StickerMessageBuilder()
-                .mediaKeyTimestampSeconds(Clock.nowSeconds())
+               
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
                 .animated(animated)
@@ -167,6 +167,12 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     @Override
     public StickerMessage setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public StickerMessage setMediaKeyTimestamp(Long timestamp) {
+        this.mediaKeyTimestampSeconds = timestamp;
         return this;
     }
 

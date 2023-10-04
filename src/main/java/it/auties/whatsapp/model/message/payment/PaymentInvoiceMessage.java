@@ -41,7 +41,7 @@ public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
     @Nullable
-    private final Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
     private byte @Nullable [] mediaSha256;
@@ -103,6 +103,12 @@ public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage
     @Override
     public PaymentInvoiceMessage setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
+        return this;
+    }
+
+    @Override
+    public PaymentInvoiceMessage setMediaKeyTimestamp(Long timestamp) {
+        this.mediaKeyTimestampSeconds = timestamp;
         return this;
     }
 

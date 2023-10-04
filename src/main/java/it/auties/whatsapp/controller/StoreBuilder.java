@@ -14,7 +14,7 @@ import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.FutureReference;
 import it.auties.whatsapp.util.MetadataHelper;
-import it.auties.whatsapp.util.Spec;
+import it.auties.whatsapp.util.Specification;
 
 import java.net.URI;
 import java.util.*;
@@ -201,7 +201,7 @@ public class StoreBuilder {
     public Store build() {
         return deserialize().orElseGet(() -> {
             if(device == null) {
-                device = Spec.Whatsapp.DEFAULT_MOBILE_DEVICE;
+                device = Specification.Whatsapp.DEFAULT_MOBILE_DEVICE;
             }
 
             var serializer = Objects.requireNonNullElseGet(this.serializer, DefaultControllerSerializer::instance);
@@ -215,7 +215,7 @@ public class StoreBuilder {
                     new FutureReference<>(version, () -> MetadataHelper.getVersion(getPlatform(clientType))),
                     false,
                     null,
-                    Objects.requireNonNullElse(name, Spec.Whatsapp.DEFAULT_NAME),
+                    Objects.requireNonNullElse(name, Specification.Whatsapp.DEFAULT_NAME),
                     business,
                     businessAddress,
                     businessLongitude,

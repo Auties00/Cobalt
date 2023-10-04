@@ -11,7 +11,8 @@ import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.*;
-import it.auties.whatsapp.model.contact.*;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
@@ -249,9 +250,14 @@ public class SocketHandler implements SocketListener {
             this.logoutFuture = new CompletableFuture<>();
         }
 
-        this.session = new SocketSession(store.proxy().orElse(null), socketExecutor);
+        this.session = SocketSession.of(store.proxy().orElse(null), socketExecutor, isWebSocket());
         return session.connect(this)
                 .thenCompose(ignored -> loginFuture);
+    }
+
+    private boolean isWebSocket() {
+        return store.clientType() == ClientType.WEB
+                && !store.historyLength().isExtended();
     }
 
     public CompletableFuture<Void> loginFuture() {
@@ -273,13 +279,13 @@ public class SocketHandler implements SocketListener {
         return switch (reason) {
             case DISCONNECTED -> {
                 if (session != null) {
-                    session.close();
+                    session.disconnect();
                 }
                 yield CompletableFuture.completedFuture(null);
             }
             case RECONNECTING -> {
                 if (session != null) {
-                    session.close();
+                    session.disconnect();
                 }
                 yield connect();
             }
@@ -287,7 +293,7 @@ public class SocketHandler implements SocketListener {
                 store.deleteSession();
                 store.resolveAllPendingRequests();
                 if (session != null) {
-                    session.close();
+                    session.disconnect();
                 }
                 yield CompletableFuture.completedFuture(null);
             }
@@ -296,7 +302,7 @@ public class SocketHandler implements SocketListener {
                 store.resolveAllPendingRequests();
                 var oldListeners = new ArrayList<>(store.listeners());
                 if (session != null) {
-                    session.close();
+                    session.disconnect();
                 }
                 var uuid = UUID.randomUUID();
                 var number = store.phoneNumber()

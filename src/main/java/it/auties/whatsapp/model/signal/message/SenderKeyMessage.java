@@ -10,7 +10,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Spec.Signal.SIGNATURE_LENGTH;
+import static it.auties.whatsapp.util.Specification.Signal.SIGNATURE_LENGTH;
 
 @ProtobufMessageName("SenderKeyMessage")
 public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessage> {

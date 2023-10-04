@@ -11,15 +11,12 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -312,7 +309,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     public void deleteSession(@NonNull Controller<?> controller) {
         try {
             var folderPath = getSessionDirectory(controller.clientType(), controller.uuid().toString());
-            Files.deleteIfExists(folderPath);
+            delete(folderPath);
             var phoneNumber = controller.phoneNumber().orElse(null);
             if (phoneNumber == null) {
                 return;
@@ -322,6 +319,22 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }catch (IOException exception) {
             throw new UncheckedIOException("Cannot delete session", exception);
         }
+    }
+
+    private Path delete(Path path) throws IOException {
+        return Files.walkFileTree(path, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     @Override
@@ -343,9 +356,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private void deserializeChat(Store store, Path chatFile) {
         try (var input = new GZIPInputStream(Files.newInputStream(chatFile))) {
-            store.addChat(Smile.readValue(input, Chat.class));
+            store.addChatDirect(Smile.readValue(input, Chat.class));
         } catch (IOException exception) {
-            store.addChat(rescueChat(chatFile));
+            store.addChatDirect(rescueChat(chatFile));
         }
     }
 
@@ -361,7 +374,6 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 .replaceAll("~~", ":");
         return new ChatBuilder()
                 .jid(Jid.of(chatName))
-                .historySyncMessages(new ConcurrentLinkedDeque<>())
                 .build();
     }
 

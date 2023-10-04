@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Spec.Signal.KEY_LENGTH;
+import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
 
 public final class Hkdf {
     private static final int ITERATION_START_OFFSET = 1; // v3

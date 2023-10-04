@@ -5,7 +5,6 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.Spec;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,7 +95,6 @@ public class KeysBuilder {
                     null,
                     null,
                     new ArrayList<>(),
-                    getDefaultPrologue(clientType),
                     KeyHelper.phoneId(),
                     KeyHelper.deviceId(),
                     KeyHelper.identityId(),
@@ -113,12 +111,5 @@ public class KeysBuilder {
             safeSerializer.serializeKeys(result, true);
             return result;
         });
-    }
-
-    private static byte[] getDefaultPrologue(ClientType clientType) {
-        return switch (clientType) {
-            case WEB -> Spec.Whatsapp.WEB_PROLOGUE;
-            case MOBILE -> Spec.Whatsapp.APP_PROLOGUE;
-        };
     }
 }

@@ -13,7 +13,7 @@ import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.util.Spec.Whatsapp;
+import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;

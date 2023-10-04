@@ -5,7 +5,7 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
-import it.auties.whatsapp.util.Spec.Whatsapp;
+import it.auties.whatsapp.util.Specification.Whatsapp;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
@@ -115,26 +115,48 @@ public final class Medias {
     public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
         var uploadData = type.inflatable() ? BytesHelper.compress(file) : file;
-        var fileSha256 = Sha256.calculate(uploadData);
-        var keys = MediaKeys.random(type.keyName());
-        var encryptedMedia = AesCbc.encrypt(keys.iv(), uploadData, keys.cipherKey());
-        var hmac = calculateMac(encryptedMedia, keys);
-        var encrypted = BytesHelper.concat(encryptedMedia, hmac);
-        var fileEncSha256 = Sha256.calculate(encrypted);
-        var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
-        var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, type.path(), token, auth, token));
+        var mediaFile = prepareMediaFile(type, uploadData);
+        var path = type.path().orElseThrow(() -> new UnsupportedOperationException(type + " cannot be uploaded"));
+        var token = Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(Objects.requireNonNullElse(mediaFile.fileEncSha256(), mediaFile.fileSha256()));
+        var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, path, token, auth, token));
         var request = HttpRequest.newBuilder()
-                .POST(ofByteArray(encrypted))
+                .POST(ofByteArray(Objects.requireNonNullElse(mediaFile.encryptedFile(), file)))
                 .uri(uri)
                 .header("Content-Type", "application/octet-stream")
                 .header("Accept", "application/json")
                 .header("Origin", Whatsapp.WEB_ORIGIN)
                 .build();
         return CLIENT.sendAsync(request, ofString()).thenApplyAsync(response -> {
-            Validate.isTrue(response.statusCode() == 200, "Invalid status countryCode: %s", response.statusCode());
+            Validate.isTrue(response.statusCode() == 200, "Invalid status code: %s", response.statusCode());
             var upload = Json.readValue(response.body(), MediaUpload.class);
-            return new MediaFile(fileSha256, fileEncSha256, keys.mediaKey(), uploadData.length, upload.directPath(), upload.url());
+            return new MediaFile(
+                    mediaFile.encryptedFile(),
+                    mediaFile.fileSha256(),
+                    mediaFile.fileEncSha256(),
+                    mediaFile.mediaKey(),
+                    mediaFile.fileLength(),
+                    upload.directPath(),
+                    upload.url(),
+                    upload.handle(),
+                    mediaFile.timestamp()
+            );
         });
+    }
+
+    private static MediaFile prepareMediaFile(AttachmentType type, byte[] uploadData) {
+        var fileSha256 = Sha256.calculate(uploadData);
+        if(type.keyName().isEmpty()) {
+            return new MediaFile(null, fileSha256, null, null, uploadData.length, null, null, null, null);
+        }
+
+        var keys = MediaKeys.random(type.keyName().orElseThrow());
+        var encryptedMedia = AesCbc.encrypt(keys.iv(), uploadData, keys.cipherKey());
+        var hmac = calculateMac(encryptedMedia, keys);
+        var encrypted = BytesHelper.concat(encryptedMedia, hmac);
+        var fileEncSha256 = Sha256.calculate(encrypted);
+        return new MediaFile(encrypted, fileSha256, fileEncSha256, keys.mediaKey(), uploadData.length, null, null, null, Clock.nowSeconds());
     }
 
     private static byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
@@ -174,7 +196,13 @@ public final class Medias {
                 "Cannot decode media: Invalid sha256 signature", SecurityException.class);
         var encryptedMedia = Arrays.copyOf(body, body.length - 10);
         var mediaMac = Arrays.copyOfRange(body, body.length - 10, body.length);
-        var keys = MediaKeys.of(provider.mediaKey().orElseThrow(() -> new NoSuchElementException("Missing media key")), provider.attachmentType().keyName());
+        var keyName = provider.attachmentType().keyName();
+        if(keyName.isEmpty()) {
+            return Optional.of(encryptedMedia);
+        }
+
+        var mediaKey = provider.mediaKey().orElseThrow(() -> new NoSuchElementException("Missing media key"));
+        var keys = MediaKeys.of(mediaKey, keyName.get());
         var hmac = calculateMac(encryptedMedia, keys);
         Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
         var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
@@ -372,7 +400,7 @@ public final class Medias {
         try (var document = PDDocument.load(file); var outputStream = new ByteArrayOutputStream()) {
             var renderer = new PDFRenderer(document);
             var image = renderer.renderImage(0);
-            var thumb = new BufferedImage(Spec.Whatsapp.THUMBNAIL_WIDTH, Spec.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            var thumb = new BufferedImage(Specification.Whatsapp.THUMBNAIL_WIDTH, Specification.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
             var graphics2D = thumb.createGraphics();
             graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             graphics2D.drawImage(image, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
@@ -389,7 +417,7 @@ public final class Medias {
             if (ppt.getSlides().isEmpty()) {
                 return Optional.empty();
             }
-            var thumb = new BufferedImage(Spec.Whatsapp.THUMBNAIL_WIDTH, Spec.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            var thumb = new BufferedImage(Specification.Whatsapp.THUMBNAIL_WIDTH, Specification.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
             var graphics2D = thumb.createGraphics();
             graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             ppt.getSlides().get(0).draw(graphics2D);

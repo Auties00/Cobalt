@@ -85,11 +85,6 @@ public final class Keys extends Controller<Keys> {
     private final List<SignalPreKeyPair> preKeys;
 
     /**
-     * The prologue to send in a message
-     */
-    private final byte @NonNull [] prologue;
-
-    /**
      * The phone id for the mobile api
      */
     @NonNull
@@ -176,7 +171,7 @@ public final class Keys extends Controller<Keys> {
     private byte[] writeKey, readKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Keys(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, int registrationId, @NonNull SignalKeyPair noiseKeyPair, @NonNull SignalKeyPair ephemeralKeyPair, @NonNull SignalKeyPair identityKeyPair, @NonNull SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte @Nullable [] signedKeyIndex, @Nullable Long signedKeyIndexTimestamp, @NonNull List<SignalPreKeyPair> preKeys, byte @NonNull [] prologue, @NonNull String phoneId, @NonNull String deviceId, @NonNull String recoveryToken, @Nullable SignedDeviceIdentity companionIdentity, @NonNull Map<SenderKeyName, SenderKeyRecord> senderKeys, @NonNull Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, @NonNull Map<SessionAddress, Session> sessions, @NonNull Map<Jid, Map<PatchType, CompanionHashState>> hashStates, @NonNull Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    Keys(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, int registrationId, @NonNull SignalKeyPair noiseKeyPair, @NonNull SignalKeyPair ephemeralKeyPair, @NonNull SignalKeyPair identityKeyPair, @NonNull SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte @Nullable [] signedKeyIndex, @Nullable Long signedKeyIndexTimestamp, @NonNull List<SignalPreKeyPair> preKeys, @NonNull String phoneId, @NonNull String deviceId, @NonNull String recoveryToken, @Nullable SignedDeviceIdentity companionIdentity, @NonNull Map<SenderKeyName, SenderKeyRecord> senderKeys, @NonNull Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, @NonNull Map<SessionAddress, Session> sessions, @NonNull Map<Jid, Map<PatchType, CompanionHashState>> hashStates, @NonNull Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         this.registrationId = registrationId;
         this.noiseKeyPair = noiseKeyPair;
@@ -187,7 +182,6 @@ public final class Keys extends Controller<Keys> {
         this.signedKeyIndex = signedKeyIndex;
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
         this.preKeys = preKeys;
-        this.prologue = prologue;
         this.phoneId = phoneId;
         this.deviceId = deviceId;
         this.recoveryToken = recoveryToken;
@@ -528,10 +522,6 @@ public final class Keys extends Controller<Keys> {
 
     public SignalKeyPair companionKeyPair() {
         return this.companionKeyPair;
-    }
-
-    public byte [] prologue() {
-        return this.prologue;
     }
 
     public String phoneId() {

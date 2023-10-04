@@ -180,5 +180,9 @@ public enum MessageType {
     /**
      * Sticker sync
      */
-    STICKER_SYNC
+    STICKER_SYNC,
+    /**
+     * Text edit
+     */
+    EDITED
 }
