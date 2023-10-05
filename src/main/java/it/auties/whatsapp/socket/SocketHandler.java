@@ -237,7 +237,7 @@ public class SocketHandler implements SocketListener {
                 && (state() == SocketState.RECONNECTING || state() == SocketState.DISCONNECTED);
     }
 
-    public synchronized CompletableFuture<Void> connect() {
+    public CompletableFuture<Void> connect() {
         if (state == SocketState.CONNECTED) {
             return CompletableFuture.completedFuture(null);
         }
@@ -250,14 +250,9 @@ public class SocketHandler implements SocketListener {
             this.logoutFuture = new CompletableFuture<>();
         }
 
-        this.session = SocketSession.of(store.proxy().orElse(null), socketExecutor, isWebSocket());
+        this.session = SocketSession.of(store.proxy().orElse(null), socketExecutor, store.clientType() == ClientType.WEB);
         return session.connect(this)
                 .thenCompose(ignored -> loginFuture);
-    }
-
-    private boolean isWebSocket() {
-        return store.clientType() == ClientType.WEB
-                && !store.historyLength().isExtended();
     }
 
     public CompletableFuture<Void> loginFuture() {
@@ -268,7 +263,7 @@ public class SocketHandler implements SocketListener {
         return logoutFuture;
     }
 
-    public synchronized CompletableFuture<Void> disconnect(DisconnectReason reason) {
+    public CompletableFuture<Void> disconnect(DisconnectReason reason) {
         var newState = SocketState.of(reason);
         if(state == newState) {
             return CompletableFuture.completedFuture(null);
@@ -933,7 +928,7 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-    private synchronized ExecutorService getOrCreateListenersService() {
+    private ExecutorService getOrCreateListenersService() {
         if (listenersService == null || listenersService.isShutdown()) {
             listenersService = Executors.newCachedThreadPool();
         }

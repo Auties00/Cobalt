@@ -161,14 +161,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             return task;
         }
 
-        var storePath = getSessionFile(store, STORE_NAME);
-        var storeFuture = CompletableFuture.runAsync(() -> writeFile(store, STORE_NAME, storePath));
-        var chatsFutures = store.chats()
-                .stream()
-                .map(chat -> serializeChatAsync(store, chat))
-                .toArray(CompletableFuture[]::new);
-        var chatsFuture = CompletableFuture.allOf(chatsFutures);
-        var result = CompletableFuture.allOf(storeFuture, chatsFuture);
+        var chatsFutures = serializeChatsAsync(store);
+        var result = CompletableFuture.allOf(chatsFutures).thenRunAsync(() -> {
+            var storePath = getSessionFile(store, STORE_NAME);
+            writeFile(store, STORE_NAME, storePath);
+        });
         if (async) {
             return result;
         }
@@ -177,8 +174,15 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         return CompletableFuture.completedFuture(null);
     }
 
+    private CompletableFuture<?>[] serializeChatsAsync(Store store) {
+        return store.chats()
+                .stream()
+                .map(chat -> serializeChatAsync(store, chat))
+                .toArray(CompletableFuture[]::new);
+    }
+
     private CompletableFuture<Void> serializeChatAsync(Store store, Chat chat) {
-        if(!store.hasUpdate(chat)) {
+        if(!chat.hasUpdate()) {
             return CompletableFuture.completedFuture(null);
         }
 

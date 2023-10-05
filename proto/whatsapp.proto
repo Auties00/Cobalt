@@ -430,6 +430,7 @@ message ClientPayload {
 
 message CommentMetadata {
     optional MessageKey commentParentKey = 1;
+    optional uint32 replyCount = 2;
 }
 
 message ContextInfo {
@@ -465,6 +466,7 @@ message ContextInfo {
     optional BusinessMessageForwardInfo businessMessageForwardInfo = 44;
     optional string smbClientCampaignId = 45;
     optional string smbServerCampaignId = 46;
+    optional DataSharingContext dataSharingContext = 47;
     message AdReplyInfo {
         optional string advertiserName = 1;
         optional MediaType mediaType = 2;
@@ -479,6 +481,10 @@ message ContextInfo {
     
     message BusinessMessageForwardInfo {
         optional string businessOwnerJid = 1;
+    }
+    
+    message DataSharingContext {
+        optional bool showMmDisclosure = 1;
     }
     
     message ExternalAdReplyInfo {
@@ -560,6 +566,7 @@ message Conversation {
     optional bool pnhDuplicateLidThread = 41;
     optional string lidJid = 42;
     optional string username = 43;
+    optional string lidOriginType = 44;
     enum EndOfHistoryTransferType {
         COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY = 0;
         COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY = 1;
@@ -635,7 +642,8 @@ message DeviceProps {
 message DisappearingMode {
     optional Initiator initiator = 1;
     optional Trigger trigger = 2;
-    optional bool initiatedByMe = 3;
+    optional string initiatorDeviceJid = 3;
+    optional bool initiatedByMe = 4;
     enum Initiator {
         CHANGED_IN_CHAT = 0;
         INITIATED_BY_ME = 1;
@@ -781,6 +789,7 @@ message HydratedTemplateButton {
     message HydratedURLButton {
         optional string displayText = 1;
         optional string url = 2;
+        optional string consentedUsersUrl = 3;
     }
     
 }
@@ -918,6 +927,9 @@ message Message {
     optional MessageHistoryBundle messageHistoryBundle = 70;
     optional EncCommentMessage encCommentMessage = 71;
     optional BCallMessage bcallMessage = 72;
+    optional FutureProofMessage commentMessage = 73;
+    optional FutureProofMessage lottieStickerMessage = 74;
+    optional EventMessage eventMessage = 75;
     message AppStateFatalExceptionNotification {
         repeated string collectionNames = 1;
         optional int64 timestamp = 2;
@@ -994,6 +1006,8 @@ message Message {
             BOT_FEEDBACK_NEGATIVE_SAFE = 5;
             BOT_FEEDBACK_NEGATIVE_OTHER = 6;
             BOT_FEEDBACK_NEGATIVE_REFUSED = 7;
+            BOT_FEEDBACK_NEGATIVE_NOT_VISUALLY_APPEALING = 8;
+            BOT_FEEDBACK_NEGATIVE_NOT_RELEVANT_TO_TEXT = 9;
         }
     }
     
@@ -1154,6 +1168,16 @@ message Message {
         optional MessageKey targetMessageKey = 1;
         optional bytes encPayload = 2;
         optional bytes encIv = 3;
+    }
+    
+    message EventMessage {
+        optional ContextInfo contextInfo = 1;
+        optional bool isCanceled = 2;
+        optional string name = 3;
+        optional string description = 4;
+        optional Message.LocationMessage location = 5;
+        optional string joinLink = 6;
+        optional int64 startTime = 7;
     }
     
     message ExtendedTextMessage {
@@ -3050,6 +3074,10 @@ message WebMessageInfo {
         SUGGESTED_SUBGROUP_ANNOUNCE = 191;
         BIZ_BOT_1P_MESSAGING_ENABLED = 192;
         CHANGE_USERNAME = 193;
+        BIZ_COEX_PRIVACY_INIT_SELF = 194;
+        BIZ_COEX_PRIVACY_TRANSITION_SELF = 195;
+        SUPPORT_AI_EDUCATION = 196;
+        BIZ_BOT_3P_MESSAGING_ENABLED = 197;
     }
 }
 

@@ -829,7 +829,7 @@ class StreamHandler {
                         .thenApplyAsync(entries -> Node.of("category", Map.of("id", entries.get(0).id()))));
     }
 
-    private synchronized void schedulePing(){
+    private void schedulePing(){
         if (service != null && !service.isShutdown()) {
             return;
         }

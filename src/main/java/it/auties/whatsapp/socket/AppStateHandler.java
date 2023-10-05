@@ -62,7 +62,7 @@ class AppStateHandler {
         this.attempts = new HashMap<>();
     }
 
-    private synchronized ExecutorService getOrCreateAppService(){
+    private ExecutorService getOrCreateAppService(){
         if(executor == null || executor.isShutdown()){
             executor = Executors.newSingleThreadExecutor();
         }

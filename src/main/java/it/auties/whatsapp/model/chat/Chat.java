@@ -35,9 +35,6 @@ import java.util.function.Predicate;
  */
 @ProtobufMessageName("Conversation")
 public final class Chat implements ProtobufMessage, JidProvider {
-    @NonNull
-    private final UUID uuid;
-
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final @NonNull Jid jid;
 
@@ -150,6 +147,8 @@ public final class Chat implements ProtobufMessage, JidProvider {
     @ProtobufProperty(index = 42, type = ProtobufType.STRING)
     private Jid lidJid;
 
+    private boolean update;
+
     private final @NonNull ConcurrentHashMap<Jid, ContactStatus> presences;
 
     private final @NonNull Set<Jid> participantsPreKeys;
@@ -157,8 +156,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     private final @NonNull Set<GroupPastParticipant> pastParticipants;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Chat(@NonNull UUID uuid, @NonNull Jid jid, @NonNull ConcurrentDoublyLinkedList<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @NonNull ChatMute mute, ChatWallpaper wallpaper, @NonNull MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, @NonNull ConcurrentHashMap<Jid, ContactStatus> presences, @NonNull Set<Jid> participantsPreKeys, @NonNull Set<GroupPastParticipant> pastParticipants) {
-        this.uuid = uuid;
+    public Chat(@NonNull Jid jid, @NonNull ConcurrentDoublyLinkedList<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @NonNull ChatMute mute, ChatWallpaper wallpaper, @NonNull MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, @NonNull ConcurrentHashMap<Jid, ContactStatus> presences, @NonNull Set<Jid> participantsPreKeys, @NonNull Set<GroupPastParticipant> pastParticipants) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -204,7 +202,6 @@ public final class Chat implements ProtobufMessage, JidProvider {
     }
 
     public Chat(@NonNull Jid jid, @NonNull ConcurrentDoublyLinkedList<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @Nullable ChatMute mute, ChatWallpaper wallpaper, @Nullable MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid) {
-        this.uuid = UUID.randomUUID();
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -498,6 +495,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public void addMessages(@NonNull Collection<HistorySyncMessage> newMessages) {
         historySyncMessages.addAll(newMessages);
+        this.update = true;
     }
 
     /**
@@ -507,6 +505,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public void addOldMessages(@NonNull Collection<HistorySyncMessage> oldMessages) {
         oldMessages.forEach(historySyncMessages::addFirst);
+        this.update = true;
     }
 
     /**
@@ -521,6 +520,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
             return false;
         }
         historySyncMessages.add(sync);
+        this.update = true;
         updateChatTimestamp(info);
         return true;
     }
@@ -533,6 +533,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public boolean addOldMessage(@NonNull HistorySyncMessage info) {
         historySyncMessages.addFirst(info);
+        this.update = true;
         return true;
     }
 
@@ -544,6 +545,10 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public boolean removeMessage(@NonNull MessageInfo info) {
         var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.messageInfo().id(), info.id()));
+        if(result) {
+            this.update = true;
+        }
+
         refreshChatTimestamp();
         return result;
     }
@@ -576,6 +581,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         }
 
         this.timestampSeconds = info.timestampSeconds();
+        this.update = true;
     }
 
     /**
@@ -583,6 +589,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public void removeMessages() {
         historySyncMessages.clear();
+        this.update = true;
     }
 
     /**
@@ -602,6 +609,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public void addParticipants(Collection<GroupParticipant> participants) {
         participants.forEach(this::addParticipant);
+        this.update = true;
     }
 
     /**
@@ -612,7 +620,12 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @return whether the participant was added
      */
     public boolean addParticipant(@NonNull Jid jid, GroupRole role) {
-        return addParticipant(new GroupParticipant(jid, role));
+        var result = addParticipant(new GroupParticipant(jid, role));
+        if(result) {
+            this.update = true;
+        }
+
+        return result;
     }
 
     /**
@@ -622,7 +635,12 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @return whether the participant was added
      */
     public boolean addParticipant(@NonNull GroupParticipant participant) {
-        return participants.add(participant);
+        var result = participants.add(participant);
+        if(result) {
+            this.update = true;
+        }
+
+        return result;
     }
 
     /**
@@ -632,7 +650,12 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @return whether the participant was removed
      */
     public boolean removeParticipant(@NonNull Jid jid) {
-        return participants.removeIf(entry -> Objects.equals(entry.jid(), jid));
+        var result = participants.removeIf(entry -> Objects.equals(entry.jid(), jid));
+        if(result) {
+            this.update = true;
+        }
+
+        return result;
     }
 
     /**
@@ -656,7 +679,12 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @return whether the participant was added
      */
     public boolean addPastParticipant(@NonNull GroupPastParticipant participant) {
-        return pastParticipants.add(participant);
+        var result = pastParticipants.add(participant);
+        if(result) {
+            this.update = true;
+        }
+
+        return result;
     }
 
     /**
@@ -671,6 +699,10 @@ public final class Chat implements ProtobufMessage, JidProvider {
             result &= this.pastParticipants.add(pastParticipant);
         }
 
+        if(result) {
+            this.update = true;
+        }
+
         return result;
     }
 
@@ -681,7 +713,12 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @return whether the participant was removed
      */
     public boolean removePastParticipant(@NonNull Jid jid) {
-        return pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), jid));
+        var result = pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), jid));
+        if(result) {
+            this.update = true;
+        }
+
+        return result;
     }
 
     /**
@@ -702,10 +739,12 @@ public final class Chat implements ProtobufMessage, JidProvider {
 
     public void addParticipantsPreKeys(Collection<Jid> jids) {
         participantsPreKeys.addAll(jids);
+        this.update = true;
     }
 
     public void clearParticipantsPreKeys() {
         participantsPreKeys.clear();
+        this.update = true;
     }
 
     /**
@@ -738,23 +777,6 @@ public final class Chat implements ProtobufMessage, JidProvider {
     @Override
     public int hashCode() {
         return Objects.hash(jid());
-    }
-
-    /**
-     * Generates a unique identifier using all the properties in this object
-     * This is not a hash code as the actual hash code needs to follow the equality contract
-     *
-     * @return an unsigned int
-     */
-    public int updateId() {
-        int result = Objects.hash(uuid, jid, historySyncMessages, newJid, oldJid, unreadMessagesCount, readOnly, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTimeSeconds, endOfHistoryTransferType, timestampSeconds, name, notSpam, archived, disappearInitiator, markedAsUnread, participants, tokenTimestampSeconds, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, tokenSenderTimestampSeconds, suspended, terminated, foundationTimestampSeconds, founder, description, support, parentGroup, defaultSubGroup, parentGroupJid, displayName, phoneJid, shareOwnPhoneNumber, pnhDuplicateLidThread, lidJid, presences, participantsPreKeys, pastParticipants);
-        result = 31 * result + Arrays.hashCode(token);
-        result = 31 * result + Arrays.hashCode(identityKey);
-        return result;
-    }
-
-    public @NonNull UUID uuid() {
-        return uuid;
     }
 
     public @NonNull Jid jid() {
@@ -927,167 +949,204 @@ public final class Chat implements ProtobufMessage, JidProvider {
 
     public Chat setUnreadMessagesCount(int unreadMessagesCount) {
         this.unreadMessagesCount = unreadMessagesCount;
+        this.update = true;
         return this;
     }
 
     public Chat setReadOnly(boolean readOnly) {
         this.readOnly = readOnly;
+        this.update = true;
         return this;
     }
 
     public Chat setEndOfHistoryTransfer(boolean endOfHistoryTransfer) {
         this.endOfHistoryTransfer = endOfHistoryTransfer;
+        this.update = true;
         return this;
     }
 
     public Chat setEphemeralMessageDuration(ChatEphemeralTimer ephemeralMessageDuration) {
         this.ephemeralMessageDuration = ephemeralMessageDuration;
+        this.update = true;
         return this;
     }
 
     public Chat setEphemeralMessagesToggleTimeSeconds(long ephemeralMessagesToggleTimeSeconds) {
         this.ephemeralMessagesToggleTimeSeconds = ephemeralMessagesToggleTimeSeconds;
+        this.update = true;
         return this;
     }
 
     public Chat setEndOfHistoryTransferType(EndOfHistoryTransferType endOfHistoryTransferType) {
         this.endOfHistoryTransferType = endOfHistoryTransferType;
+        this.update = true;
         return this;
     }
 
     public Chat setTimestampSeconds(long timestampSeconds) {
         this.timestampSeconds = timestampSeconds;
+        this.update = true;
         return this;
     }
 
     public Chat setName(String name) {
         this.name = name;
+        this.update = true;
         return this;
     }
 
     public Chat setNotSpam(boolean notSpam) {
         this.notSpam = notSpam;
+        this.update = true;
         return this;
     }
 
     public Chat setArchived(boolean archived) {
         this.archived = archived;
+        this.update = true;
         return this;
     }
 
     public Chat setDisappearInitiator(ChatDisappear disappearInitiator) {
         this.disappearInitiator = disappearInitiator;
+        this.update = true;
         return this;
     }
 
     public Chat setMarkedAsUnread(boolean markedAsUnread) {
         this.markedAsUnread = markedAsUnread;
+        this.update = true;
         return this;
     }
 
     public Chat setToken(byte[] token) {
         this.token = token;
+        this.update = true;
         return this;
     }
 
     public Chat setTokenTimestampSeconds(long tokenTimestampSeconds) {
         this.tokenTimestampSeconds = tokenTimestampSeconds;
+        this.update = true;
         return this;
     }
 
     public Chat setIdentityKey(byte[] identityKey) {
         this.identityKey = identityKey;
+        this.update = true;
         return this;
     }
 
     public Chat setPinnedTimestampSeconds(int pinnedTimestampSeconds) {
         this.pinnedTimestampSeconds = pinnedTimestampSeconds;
+        this.update = true;
         return this;
     }
 
     public Chat setMute(ChatMute mute) {
         this.mute = mute;
+        this.update = true;
         return this;
     }
 
     public Chat setWallpaper(ChatWallpaper wallpaper) {
         this.wallpaper = wallpaper;
+        this.update = true;
         return this;
     }
 
     public Chat setMediaVisibility(MediaVisibility mediaVisibility) {
         this.mediaVisibility = mediaVisibility;
+        this.update = true;
         return this;
     }
 
     public Chat setTokenSenderTimestampSeconds(long tokenSenderTimestampSeconds) {
         this.tokenSenderTimestampSeconds = tokenSenderTimestampSeconds;
+        this.update = true;
         return this;
     }
 
     public Chat setSuspended(boolean suspended) {
         this.suspended = suspended;
+        this.update = true;
         return this;
     }
 
     public Chat setTerminated(boolean terminated) {
         this.terminated = terminated;
+        this.update = true;
         return this;
     }
 
     public Chat setFoundationTimestampSeconds(long foundationTimestampSeconds) {
         this.foundationTimestampSeconds = foundationTimestampSeconds;
+        this.update = true;
         return this;
     }
 
     public Chat setFounder(Jid founder) {
         this.founder = founder;
+        this.update = true;
         return this;
     }
 
     public Chat setDescription(String description) {
         this.description = description;
+        this.update = true;
         return this;
     }
 
     public Chat setSupport(boolean support) {
         this.support = support;
+        this.update = true;
         return this;
     }
 
     public Chat setParentGroup(boolean parentGroup) {
         this.parentGroup = parentGroup;
+        this.update = true;
         return this;
     }
 
     public Chat setDefaultSubGroup(boolean defaultSubGroup) {
         this.defaultSubGroup = defaultSubGroup;
+        this.update = true;
         return this;
     }
 
     public Chat setDisplayName(String displayName) {
         this.displayName = displayName;
+        this.update = true;
         return this;
     }
 
     public Chat setPhoneJid(Jid phoneJid) {
         this.phoneJid = phoneJid;
+        this.update = true;
         return this;
     }
 
     public Chat setShareOwnPhoneNumber(boolean shareOwnPhoneNumber) {
         this.shareOwnPhoneNumber = shareOwnPhoneNumber;
+        this.update = true;
         return this;
     }
 
     public Chat setPnhDuplicateLidThread(boolean pnhDuplicateLidThread) {
         this.pnhDuplicateLidThread = pnhDuplicateLidThread;
+        this.update = true;
         return this;
     }
 
     public Chat setLidJid(Jid lidJid) {
         this.lidJid = lidJid;
+        this.update = true;
         return this;
+    }
+
+    public boolean hasUpdate() {
+        return update;
     }
 
     /**

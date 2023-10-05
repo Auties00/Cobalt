@@ -8,8 +8,10 @@ import it.auties.whatsapp.model.message.model.MessageContainerSpec;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.DataFormatException;
@@ -70,6 +72,18 @@ public final class BytesHelper {
     public static ByteBuf newBuffer(byte @NonNull [] data) {
         var buffer = newBuffer(data.length);
         buffer.writeBytes(data);
+        return buffer;
+    }
+
+    public static ByteBuf newBuffer(@NonNull ByteBuffer data) {
+        var buffer = newBuffer(data.capacity());
+        buffer.writeBytes(data);
+        return buffer;
+    }
+
+    public static ByteBuf newBuffer(@NonNull Collection<ByteBuffer> data) {
+        var buffer = newBuffer(data.stream().mapToInt(Buffer::capacity).sum());
+        data.forEach(buffer::writeBytes);
         return buffer;
     }
 

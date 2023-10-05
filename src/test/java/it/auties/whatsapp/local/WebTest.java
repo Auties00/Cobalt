@@ -4,10 +4,6 @@ import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.message.standard.ImageMessageSimpleBuilder;
-import it.auties.whatsapp.model.signal.auth.UserAgent;
-import it.auties.whatsapp.utils.MediaUtils;
 import org.junit.jupiter.api.Test;
 
 // Just used for testing locally
@@ -17,13 +13,8 @@ public class WebTest {
         var whatsapp = Whatsapp.webBuilder()
                 .lastConnection()
                 .historyLength(WebHistoryLength.zero())
-                .releaseChannel(UserAgent.ReleaseChannel.BETA)
                 .unregistered(QrHandler.toTerminal())
-                .addLoggedInListener(api -> {
-                    System.out.printf("Connected: %s%n", api.store().privacySettings());
-                    var chat = Jid.of("120363185259738473@newsletter");
-                    api.sendMessage(chat, new ImageMessageSimpleBuilder().media(MediaUtils.readBytes("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/481px-Cat03.jpg")).caption("Test").build()).join();
-                })
+                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

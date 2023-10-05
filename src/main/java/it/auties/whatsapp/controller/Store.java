@@ -192,13 +192,6 @@ public final class Store extends Controller<Store> {
     private final ConcurrentHashMap<Jid, Chat> chats;
 
     /**
-     * A map of chats and their last known unique id
-     * Useful for serialization
-     */
-    @NonNull
-    private final ConcurrentHashMap<Jid, Integer> chatsUpdateIds;
-
-    /**
      * The non-null map of contacts
      */
     @NonNull
@@ -338,7 +331,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Integer> chatsUpdateIds, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
+    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if(proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -365,7 +358,6 @@ public final class Store extends Controller<Store> {
         this.lid = lid;
         this.properties = properties;
         this.chats = new ConcurrentHashMap<>();
-        this.chatsUpdateIds = chatsUpdateIds;
         this.contacts = contacts;
         this.status = status;
         this.privacySettings = privacySettings;
@@ -1286,23 +1278,6 @@ public final class Store extends Controller<Store> {
      */
     public Optional<Call> findCallById(String callId) {
         return callId == null ? Optional.empty() : Optional.ofNullable(calls.get(callId));
-    }
-
-    /**
-     * Checks whether the provided chat was updated since this method was last invoked
-     *
-     * @param chat the non-null chat to check
-     * @return a boolean
-     */
-    public boolean hasUpdate(@NonNull Chat chat) {
-        var lastId = chatsUpdateIds.getOrDefault(chat.jid(), -1);
-        var newId = chat.updateId();
-        if(lastId == newId) {
-            return false;
-        }
-
-        chatsUpdateIds.put(chat.jid(), newId);
-        return true;
     }
 
     public String tag() {

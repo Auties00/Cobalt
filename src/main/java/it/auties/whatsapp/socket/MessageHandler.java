@@ -74,7 +74,7 @@ class MessageHandler {
         this.lock = new ReentrantLock(true);
     }
 
-    protected synchronized CompletableFuture<Void> encode(MessageSendRequest request) {
+    protected CompletableFuture<Void> encode(MessageSendRequest request) {
         return encodeMessage(request)
                 .thenRunAsync(() -> attributeOutgoingMessage(request))
                 .exceptionallyAsync(throwable -> onEncodeError(request, throwable));
@@ -430,7 +430,7 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public synchronized CompletableFuture<Void> decode(Node node) {
+    public CompletableFuture<Void> decode(Node node) {
         try {
             var businessName = getBusinessName(node);
             var encrypted = node.findNodes("enc");

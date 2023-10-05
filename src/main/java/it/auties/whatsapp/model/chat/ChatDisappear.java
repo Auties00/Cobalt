@@ -8,6 +8,8 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Objects;
+
 /**
  * A model that represents a chat disappear mode
  */
@@ -46,4 +48,9 @@ public record ChatDisappear(
                 return index;
             }
         }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(initiator.index());
+    }
 }

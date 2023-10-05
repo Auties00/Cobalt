@@ -2,23 +2,24 @@ package it.auties.whatsapp.socket;
 
 import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.ConcurrentDoublyLinkedList;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
-import jakarta.websocket.*;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.*;
 import java.net.Proxy.Type;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
 import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_PORT;
@@ -37,10 +38,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
     abstract boolean isOpen();
 
-    int decodeLength(ByteBuf buffer) {
-        return (buffer.readByte() << 16) | buffer.readUnsignedShort();
-    }
-
     static SocketSession of(URI proxy, Executor executor, boolean webSocket){
         if(webSocket) {
             return new WebSocketSession(proxy, executor);
@@ -49,104 +46,131 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         return new RawSocketSession(proxy, executor);
     }
 
-    @ClientEndpoint(configurator = WebSocketSession.OriginPatcher.class)
-    public static final class WebSocketSession extends SocketSession {
-        private Session session;
+    Proxy getProxy() {
+        if (proxy == null) {
+            return Proxy.NO_PROXY;
+        }
+
+        var scheme = Objects.requireNonNull(proxy.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(proxy));
+        var host = Objects.requireNonNull(proxy.getHost(), "Invalid proxy, expected a host: %s".formatted(proxy));
+        var port = getProxyPort(scheme).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(proxy)));
+        return switch (scheme) {
+            case "http", "https" -> new Proxy(Type.HTTP, new InetSocketAddress(host, port));
+            case "socks4", "socks5" -> new Proxy(Type.SOCKS, new InetSocketAddress(host, port));
+            default -> throw new IllegalStateException("Unexpected scheme: " + scheme);
+        };
+    }
+
+    private OptionalInt getProxyPort(String scheme) {
+        return proxy.getPort() != -1 ? OptionalInt.of(proxy.getPort()) : switch (scheme) {
+            case "http" -> OptionalInt.of(80);
+            case "https" -> OptionalInt.of(443);
+            default -> OptionalInt.empty();
+        };
+    }
+
+
+    int decodeLength(ByteBuf buffer) {
+        return (buffer.readByte() << 16) | buffer.readUnsignedShort();
+    }
+
+    public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
+        private final Collection<ByteBuffer> inputParts;
+        private final ReentrantLock outputLock;
+        private WebSocket session;
 
         WebSocketSession(URI proxy, Executor executor) {
             super(proxy, executor);
+            this.inputParts = new ConcurrentDoublyLinkedList<>();
+            this.outputLock = new ReentrantLock();
         }
 
         @Override
         public CompletableFuture<Void> connect(SocketListener listener) {
-            return CompletableFuture.runAsync(() -> {
-                try {
-                    this.listener = listener;
-                    this.session = ContainerProvider.getWebSocketContainer().connectToServer(this, Specification.Whatsapp.WEB_SOCKET_ENDPOINT);
-                } catch (IOException exception) {
-                    throw new UncheckedIOException(exception);
-                } catch (DeploymentException exception) {
-                    throw new RuntimeException(exception);
-                }
-            });
+            this.listener = listener;
+            try(var client = createHttpClient()) {
+                this.session = client.newWebSocketBuilder()
+                        .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
+                        .join();
+                listener.onOpen(this);
+                return CompletableFuture.completedFuture(null);
+            }
+        }
+
+        private HttpClient createHttpClient() {
+            return HttpClient.newBuilder()
+                    .executor(executor)
+                    .proxy(ProxySelector.of((InetSocketAddress) getProxy().address()))
+                    .authenticator(new ProxyAuthenticator())
+                    .build();
         }
 
         @Override
         public CompletableFuture<Void> disconnect() {
-            try {
-                session.close();
-                return CompletableFuture.completedFuture(null);
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
-            }
+            return session.sendClose(WebSocket.NORMAL_CLOSURE, "")
+                    .thenRun(() -> {});
         }
 
         @Override
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
-            var future = new CompletableFuture<Void>();
-            try {
-                session.getAsyncRemote().sendBinary(ByteBuffer.wrap(bytes), result -> {
-                    if (result.isOK()) {
-                        future.complete(null);
-                        return;
-                    }
-
-                    future.completeExceptionally(result.getException());
-                });
-            } catch (Throwable throwable) {
-                future.completeExceptionally(throwable);
-            }
-
-            return future;
+            outputLock.lock();
+            return session.sendBinary(ByteBuffer.wrap(bytes), true)
+                    .thenRun(outputLock::unlock);
         }
 
         @Override
         public boolean isOpen() {
-            return session == null || session.isOpen();
+            return session != null && !session.isInputClosed() && !session.isOutputClosed();
         }
 
-        @OnOpen
-        @SuppressWarnings("unused")
-        public void onOpen(Session session) {
-            this.session = session;
-            listener.onOpen(this);
-        }
-
-        @OnClose
-        @SuppressWarnings("unused")
-        public void onClose() {
+        @Override
+        public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+            inputParts.clear();
             listener.onClose();
+            return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         }
 
-        @OnError
-        @SuppressWarnings("unused")
-        public void onError(Throwable throwable) {
-            listener.onError(throwable);
+        @Override
+        public void onError(WebSocket webSocket, Throwable error) {
+            listener.onError(error);
         }
 
-        @OnMessage
-        @SuppressWarnings("unused")
-        public void onBinary(byte[] message) {
-            var buffer = BytesHelper.newBuffer(message);
-            while (buffer.readableBytes() >= 3) {
-                var length = decodeLength(buffer);
+        @Override
+        public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
+            var buffer = getRequestBuffer(data, last);
+            if (buffer.isEmpty()) {
+                inputParts.add(data);
+                return WebSocket.Listener.super.onBinary(webSocket, data, last);
+            }
+
+            while (buffer.get().readableBytes() >= 3) {
+                var length = decodeLength(buffer.get());
                 if (length < 0) {
-                    continue;
+                    break;
                 }
 
-                var result = buffer.readBytes(length);
+                var result = buffer.get().readBytes(length);
                 listener.onMessage(BytesHelper.readBuffer(result));
                 result.release();
             }
-            buffer.release();
+
+            inputParts.clear();
+            buffer.get().release();
+            return WebSocket.Listener.super.onBinary(webSocket, data, true);
         }
 
-        public static class OriginPatcher extends ClientEndpointConfig.Configurator {
-            @Override
-            public void beforeRequest(Map<String, List<String>> headers) {
-                headers.put("Origin", List.of(Specification.Whatsapp.WEB_ORIGIN));
-                headers.put("Host", List.of(Specification.Whatsapp.WEB_HOST));
+        private Optional<ByteBuf> getRequestBuffer(ByteBuffer data, boolean last) {
+            if (!last) {
+                inputParts.add(data);
+                return Optional.empty();
             }
+
+            if (inputParts.isEmpty()) {
+                return Optional.of(BytesHelper.newBuffer(data));
+            }
+
+            inputParts.add(data);
+            return Optional.of(BytesHelper.newBuffer(inputParts));
         }
     }
 
@@ -181,29 +205,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     throw new UncheckedIOException("Cannot connect to host", exception);
                 }
             }, executor);
-        }
-
-        private Proxy getProxy() {
-            if (proxy == null) {
-                return Proxy.NO_PROXY;
-            }
-
-            var scheme = Objects.requireNonNull(proxy.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(proxy));
-            var host = Objects.requireNonNull(proxy.getHost(), "Invalid proxy, expected a host: %s".formatted(proxy));
-            var port = getProxyPort(scheme).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(proxy)));
-            return switch (scheme) {
-                case "http", "https" -> new Proxy(Type.HTTP, new InetSocketAddress(host, port));
-                case "socks4", "socks5" -> new Proxy(Type.SOCKS, new InetSocketAddress(host, port));
-                default -> throw new IllegalStateException("Unexpected scheme: " + scheme);
-            };
-        }
-
-        private OptionalInt getProxyPort(String scheme) {
-            return proxy.getPort() != -1 ? OptionalInt.of(proxy.getPort()) : switch (scheme) {
-                case "http" -> OptionalInt.of(80);
-                case "https" -> OptionalInt.of(443);
-                default -> OptionalInt.empty();
-            };
         }
 
         @Override

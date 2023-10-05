@@ -37,4 +37,9 @@ public final class GroupParticipant implements ProtobufMessage {
     public void setRole(GroupRole role) {
         this.role = role;
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(jid, role.index());
+    }
 }

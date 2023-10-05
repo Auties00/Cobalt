@@ -136,7 +136,7 @@ public final class MetadataHelper {
         }
     }
 
-    private static synchronized CompletableFuture<WhatsappApk> getAndroidData(boolean business, boolean useJarCache) {
+    private static CompletableFuture<WhatsappApk> getAndroidData(boolean business, boolean useJarCache) {
         if (!business && cachedApk != null) {
             return CompletableFuture.completedFuture(cachedApk);
         }

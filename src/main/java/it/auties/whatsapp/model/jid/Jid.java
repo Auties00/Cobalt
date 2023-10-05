@@ -274,4 +274,9 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
     public boolean hasAgent() {
         return agent != 0;
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(toString());
+    }
 }

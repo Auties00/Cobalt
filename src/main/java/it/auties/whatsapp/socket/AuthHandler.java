@@ -84,10 +84,6 @@ class AuthHandler {
     }
 
     private WebInfo createWebInfo() {
-        if(socketHandler.store().historyLength().isExtended()) {
-            return null;
-        }
-
         return new WebInfoBuilder()
                 .webSubPlatform(WebInfo.Platform.WEB_BROWSER)
                 .build();
@@ -138,18 +134,14 @@ class AuthHandler {
     }
 
     private PlatformType getUserAgentPlatform(boolean mobile) {
-        if(mobile) {
-            var device = socketHandler.store()
-                    .device()
-                    .orElseThrow();
-            return socketHandler.store().business() ? device.businessPlatform() : device.platform();
+        if (!mobile) {
+            return PlatformType.WEB;
         }
 
-        if(socketHandler.store().historyLength().isExtended()) {
-            return PlatformType.WINDOWS;
-        }
-
-        return PlatformType.WEB;
+        var device = socketHandler.store()
+                .device()
+                .orElseThrow();
+        return socketHandler.store().business() ? device.businessPlatform() : device.platform();
     }
 
     private ClientPayload createUserClientPayload() {

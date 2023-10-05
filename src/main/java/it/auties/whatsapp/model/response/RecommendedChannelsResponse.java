@@ -12,6 +12,7 @@ import java.util.Optional;
 
 public record RecommendedChannelsResponse(List<RecommendedChannel> recommendedChannels) {
     public static Optional<RecommendedChannelsResponse> ofJson(@NonNull String json) {
+        System.out.println(json);
         return Json.readValue(json, JsonResponse.class)
                 .data()
                 .flatMap(JsonData::response);

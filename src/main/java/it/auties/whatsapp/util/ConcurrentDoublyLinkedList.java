@@ -7,6 +7,8 @@ package it.auties.whatsapp.util;
  * http://creativecommons.org/licenses/publicdomain
  */
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -154,6 +156,7 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
     /**
      * Constructs an empty deque.
      */
+    @JsonCreator
     public ConcurrentDoublyLinkedList() {
         Node h = new Node(null, null, null);
         Node t = new Node(null, null, h);

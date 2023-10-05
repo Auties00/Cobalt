@@ -263,7 +263,12 @@ public class Whatsapp {
      * Waits for this connection to close
      */
     public void awaitDisconnection() {
-        socketHandler.logoutFuture().join();
+        var future = socketHandler.logoutFuture();
+        if(future == null) {
+            return;
+        }
+
+        future.join();
     }
 
     /**
