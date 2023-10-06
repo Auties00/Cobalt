@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonText;

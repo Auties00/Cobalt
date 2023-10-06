@@ -1,11 +1,11 @@
-package it.auties.whatsapp.model.request;
+package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
+import it.auties.whatsapp.exception.RequestException;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.socket.SocketSession;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Specification;
@@ -24,8 +24,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * An abstract model class that represents a request made from the client to the server.
  */
 @SuppressWarnings("UnusedReturnValue")
-public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future,
-                      Function<Node, Boolean> filter, Throwable caller) {
+public record SocketRequest(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future,
+                            Function<Node, Boolean> filter, Throwable caller) {
     /**
      * The timeout in seconds before a Request wrapping a Node fails
      */
@@ -36,19 +36,18 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
 
-    private Request(String id, Function<Node, Boolean> filter, @NonNull Object body) {
+    private SocketRequest(String id, Function<Node, Boolean> filter, @NonNull Object body) {
         this(id, body, new CompletableFuture<>(), filter, trace(body));
         EXECUTOR.execute(this::cancelTimedFuture);
     }
 
     private static Throwable trace(Object body) {
-        var message = body instanceof Node node ? "%s node timed out".formatted(node.toString()) : "Binary timed out";
-        var current = Exceptions.current(message);
+        var current = Exceptions.current(null);
         var actualStackTrace = Arrays.stream(current.getStackTrace())
-                .filter(entry -> !entry.getClassName().equals(Request.class.getName()) && !entry.getClassName().equals(Node.class.getName()))
+                .filter(entry -> !entry.getClassName().equals(SocketRequest.class.getName()) && !entry.getClassName().equals(Node.class.getName()))
                 .toArray(StackTraceElement[]::new);
         current.setStackTrace(actualStackTrace);
-        return current;
+        return new RequestException(body instanceof Node node ? "%s node timed out".formatted(node.toString()) : "Binary timed out", current);
     }
 
     private void cancelTimedFuture() {
@@ -59,17 +58,17 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     }
 
     /**
-     * Constructs a new request with the provided body expecting a response
+     * Constructs a new request with the provided body expecting a newsletters
      */
-    public static Request of(@NonNull Node body, Function<Node, Boolean> filter) {
-        return new Request(body.id(), filter, body);
+    public static SocketRequest of(@NonNull Node body, Function<Node, Boolean> filter) {
+        return new SocketRequest(body.id(), filter, body);
     }
 
     /**
-     * Constructs a new request with the provided body expecting a response
+     * Constructs a new request with the provided body expecting a newsletters
      */
-    public static Request of(byte @NonNull [] body) {
-        return new Request(null, null, body);
+    public static SocketRequest of(byte @NonNull [] body) {
+        return new SocketRequest(null, null, body);
     }
 
     /**
@@ -88,7 +87,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param store    the store
      * @param session  the WhatsappWeb's WebSocket session
      * @param prologue whether the prologue should be prepended to the request
-     * @param response whether the request expects a response
+     * @param response whether the request expects a newsletters
      * @return this request
      */
     public CompletableFuture<Node> send(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store, boolean prologue, boolean response) {
@@ -122,14 +121,14 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     }
 
     private byte[] getBody(Object encodedBody) {
-        if (encodedBody instanceof byte[] bytes) {
-            return bytes;
-        } else if (encodedBody instanceof Node node) {
-            var encoder = new BinaryEncoder();
-            return encoder.encode(node);
-        } else {
-            throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
-        }
+        return switch (encodedBody) {
+            case byte[] bytes -> bytes;
+            case Node node -> {
+                var encoder = new BinaryEncoder();
+                yield encoder.encode(node);
+            }
+            case null, default -> throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
+        };
     }
 
     private void onSendSuccess(Store store, boolean response) {
@@ -170,9 +169,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     }
 
     /**
-     * Completes this request using {@code response}
+     * Completes this request using {@code newsletters}
      *
-     * @param response the response used to complete {@link Request#future}
+     * @param response the newsletters used to complete {@link SocketRequest#future}
      */
     public boolean complete(Node response, boolean exceptionally) {
         if (response == null) {

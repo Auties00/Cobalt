@@ -235,6 +235,7 @@ public class StoreBuilder {
                     new ConcurrentHashMap<>(),
                     new ConcurrentHashMap<>(),
                     new ConcurrentHashMap<>(),
+                    new ConcurrentHashMap<>(),
                     false,
                     false,
                     Clock.nowSeconds(),

@@ -14,6 +14,7 @@ import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.model.QuotedMessage;
+import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.setting.Setting;
@@ -110,7 +111,7 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
+     * Called when the socket successfully disconnects from WhatsappWeb's Socket
      *
      * @param whatsapp an instance to the calling api
      * @param reason   the errorReason why the session was disconnected
@@ -120,7 +121,7 @@ public interface Listener {
 
 
     /**
-     * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
+     * Called when the socket successfully disconnects from WhatsappWeb's Socket
      *
      * @param reason the errorReason why the session was disconnected
      */
@@ -182,7 +183,7 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives all the contacts from WhatsappWeb's WebSocket
+     * Called when the socket receives all the contacts from WhatsappWeb's Socket
      *
      * @param whatsapp an instance to the calling api
      * @param contacts the contacts
@@ -191,7 +192,7 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives all the contacts from WhatsappWeb's WebSocket
+     * Called when the socket receives all the contacts from WhatsappWeb's Socket
      *
      * @param contacts the contacts
      */
@@ -220,7 +221,7 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives all the chats from WhatsappWeb's WebSocket. When this event is
+     * Called when the socket receives all the chats from WhatsappWeb's Socket. When this event is
      * fired, it is guaranteed that all metadata excluding messages will be present. If you also need
      * the messages to be loaded, please refer to {@link Listener#onChatMessagesSync(Chat, boolean)}.
      * Particularly old chats may come later through
@@ -233,7 +234,7 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives all the chats from WhatsappWeb's WebSocket. When this event is
+     * Called when the socket receives all the chats from WhatsappWeb's Socket. When this event is
      * fired, it is guaranteed that all metadata excluding messages will be present. To access this
      * data use {@link Store#chats()}. If you also need the messages to be loaded, please refer to
      * {@link Listener#onChatMessagesSync(Chat, boolean)}. Particularly old chats may come later
@@ -244,6 +245,24 @@ public interface Listener {
     default void onChats(Collection<Chat> chats) {
     }
 
+
+    /**
+     * Called when the socket receives all the newsletters from WhatsappWeb's Socket
+     *
+     * @param whatsapp    an instance to the calling api
+     * @param newsletters the newsletters
+     */
+    default void onNewsletters(Whatsapp whatsapp, Collection<Newsletter> newsletters) {
+    }
+
+    /**
+     * Called when the socket receives all the newsletters from WhatsappWeb's Socket
+     *
+     * @param newsletters the newsletters
+     */
+    default void onNewsletters(Collection<Newsletter> newsletters) {
+    }
+    
     /**
      * Called when the socket receives the messages for a chat. This method is only called when the QR
      * is first scanned and history is being synced. From all subsequent runs, the messages will

@@ -52,8 +52,11 @@ import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
-import it.auties.whatsapp.model.request.ContactStatusQuery;
-import it.auties.whatsapp.model.request.MessageSendRequest;
+import it.auties.whatsapp.model.request.*;
+import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.request.UpdateChannelRequest.UpdatePayload;
+import it.auties.whatsapp.model.response.NewsletterResponse;
+import it.auties.whatsapp.model.response.RecommendedNewslettersResponse;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.model.setting.LocaleSettings;
@@ -67,6 +70,7 @@ import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.util.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jilt.Builder;
 import org.jilt.BuilderStyle;
 import org.jilt.Opt;
@@ -81,10 +85,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -206,21 +207,10 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public synchronized CompletableFuture<Whatsapp> connect(){
+    public CompletableFuture<Whatsapp> connect(){
         return socketHandler.connect()
                 .thenRunAsync(() -> instances.put(store().uuid(), this))
                 .thenApply(ignored -> this);
-    }
-
-    /**
-     * Connects to Whatsapp
-     *
-     * @return a future
-     */
-    public synchronized CompletableFuture<Void> connectAwaitingLogout(){
-        return socketHandler.connect()
-                .thenRunAsync(() -> instances.put(store().uuid(), this))
-                .thenCompose(ignored -> socketHandler.logoutFuture());
     }
 
     /**
@@ -255,20 +245,8 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public synchronized CompletableFuture<Void> disconnect() {
+    public CompletableFuture<Void> disconnect() {
         return socketHandler.disconnect(DisconnectReason.DISCONNECTED);
-    }
-
-    /**
-     * Waits for this connection to close
-     */
-    public void awaitDisconnection() {
-        var future = socketHandler.logoutFuture();
-        if(future == null) {
-            return;
-        }
-
-        future.join();
     }
 
     /**
@@ -321,7 +299,7 @@ public class Whatsapp {
                 .map(entry -> Node.of("user", Map.of("jid", entry, "action", "add")))
                 .toList();
         return socketHandler.sendQuery("set", "privacy", Node.of("privacy", Node.of("category", attributes, children)))
-                .thenRunAsync(() -> onPrivacyFeatureChanged(type, value, excludedJids))
+                .thenRun(() -> onPrivacyFeatureChanged(type, value, excludedJids))
                 .thenApply(ignored -> this);
     }
 
@@ -340,13 +318,13 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(@NonNull ChatEphemeralTimer timer) {
         return socketHandler.sendQuery("set", "disappearing_mode", Node.of("disappearing_mode", Map.of("duration", timer.period().toSeconds())))
-                .thenRunAsync(() -> store().setNewChatsEphemeralTimer(timer))
+                .thenRun(() -> store().setNewChatsEphemeralTimer(timer))
                 .thenApply(ignored -> this);
     }
 
     /**
      * Creates a new request to get a document containing all the data that was collected by Whatsapp
-     * about this user. It takes three business days to receive it. To query the result status, use
+     * about this user. It takes three business days to receive it. To query the newsletters status, use
      * {@link Whatsapp#getGdprAccountInfoStatus()}
      *
      * @return the same instance wrapped in a completable future
@@ -377,7 +355,7 @@ public class Whatsapp {
     public CompletableFuture<Whatsapp> changeName(@NonNull String newName) {
         var oldName = store().name();
         return socketHandler.send(Node.of("presence", Map.of("name", newName)))
-                .thenRunAsync(() -> socketHandler.updateUserName(newName, oldName))
+                .thenRun(() -> socketHandler.updateUserName(newName, oldName))
                 .thenApply(ignored -> this);
     }
 
@@ -389,7 +367,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> changeStatus(@NonNull String newStatus) {
         return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))
-                .thenRunAsync(() -> store().setName(newStatus))
+                .thenRun(() -> store().setName(newStatus))
                 .thenApply(ignored -> this);
     }
 
@@ -608,7 +586,7 @@ public class Whatsapp {
     }
 
     private AttachmentType getAttachmentType(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
-        if (!chatJid.hasServer(JidServer.CHANNEL)) {
+        if (!chatJid.hasServer(JidServer.NEWSLETTER)) {
             return mediaMessage.attachmentType();
         }
 
@@ -798,20 +776,20 @@ public class Whatsapp {
     }
 
     /**
-     * Awaits for a single response to a message
+     * Awaits for a single newsletters to a message
      *
-     * @param info the non-null message whose response is pending
-     * @return a non-null result
+     * @param info the non-null message whose newsletters is pending
+     * @return a non-null newsletters
      */
     public CompletableFuture<MessageInfo> awaitReply(@NonNull MessageInfo info) {
         return awaitReply(info.id());
     }
 
     /**
-     * Awaits for a single response to a message
+     * Awaits for a single newsletters to a message
      *
-     * @param id the non-null id of message whose response is pending
-     * @return a non-null result
+     * @param id the non-null id of message whose newsletters is pending
+     * @return a non-null newsletters
      */
     public CompletableFuture<MessageInfo> awaitReply(@NonNull String id) {
         return store().addPendingReply(id);
@@ -821,7 +799,7 @@ public class Whatsapp {
      * Executes a query to determine whether a user has an account on Whatsapp
      *
      * @param contact the contact to check
-     * @return a CompletableFuture that wraps a non-null response
+     * @return a CompletableFuture that wraps a non-null newsletters
      */
     public CompletableFuture<HasWhatsappResponse> hasWhatsapp(@NonNull JidProvider contact) {
         return hasWhatsapp(new JidProvider[]{contact}).thenApply(result -> result.get(contact.toJid()));
@@ -881,7 +859,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Optional<String>> queryNameFromServer(@NonNull JidProvider contactJid) {
-        var query = new ContactStatusQuery(MessageKey.randomId(), List.of(new ContactStatusQuery.Variable(contactJid.toJid().user(), List.of("STATUS"))));
+        var query = new ContactStatusRequest(MessageKey.randomId(), List.of(new ContactStatusRequest.Variable(contactJid.toJid().user(), List.of("STATUS"))));
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Json.writeValueAsBytes(query)))
                 .thenApplyAsync(this::parseNameResponse);
     }
@@ -897,7 +875,7 @@ public class Whatsapp {
      * Queries the written whatsapp status of a Contact
      *
      * @param chat the target contact
-     * @return a CompletableFuture that wraps an optional contact status response
+     * @return a CompletableFuture that wraps an optional contact status newsletters
      */
     public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(@NonNull JidProvider chat) {
         return socketHandler.queryAbout(chat);
@@ -963,7 +941,7 @@ public class Whatsapp {
 
     private static String parseInviteCode(Node result) {
         return result.findNode("invite")
-                .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite response"))
+                .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite newsletters"))
                 .attributes()
                 .getRequiredString("code");
     }
@@ -1196,7 +1174,7 @@ public class Whatsapp {
                 .toMap();
         var body = Node.of("description", attributes, descriptionNode);
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenRunAsync(() -> onDescriptionSet(group, description));
+                .thenRun(() -> onDescriptionSet(group, description));
     }
 
     private void onDescriptionSet(JidProvider groupJid, String description) {
@@ -1724,7 +1702,7 @@ public class Whatsapp {
     }
 
     private int getEditBit(@NonNull MessageInfo info) {
-        if(info.chatJid().hasServer(JidServer.CHANNEL)) {
+        if(info.chatJid().hasServer(JidServer.NEWSLETTER)) {
             return 8;
         }
 
@@ -1805,7 +1783,7 @@ public class Whatsapp {
         }
         var actual = keyNode.get()
                 .contentAsString()
-                .orElseThrow(() -> new NoSuchElementException("Missing business %s response, something went wrong: %s".formatted(key, findErrorNode(result))));
+                .orElseThrow(() -> new NoSuchElementException("Missing business %s newsletters, something went wrong: %s".formatted(key, findErrorNode(result))));
         Validate.isTrue(value == null || value.equals(actual), "Cannot change business %s: conflict(expected %s, got %s)", key, value, actual);
     }
 
@@ -1907,7 +1885,7 @@ public class Whatsapp {
     }
 
     private List<BusinessCatalogEntry> parseCatalog(Node result) {
-        return Objects.requireNonNull(result, "Cannot query business catalog, missing response node")
+        return Objects.requireNonNull(result, "Cannot query business catalog, missing newsletters node")
                 .findNode("product_catalog")
                 .map(entry -> entry.findNodes("product"))
                 .stream()
@@ -1960,7 +1938,7 @@ public class Whatsapp {
     }
 
     private List<BusinessCollectionEntry> parseCollections(Node result) {
-        return Objects.requireNonNull(result, "Cannot query business collections, missing response node")
+        return Objects.requireNonNull(result, "Cannot query business collections, missing newsletters node")
                 .findNode("collections")
                 .stream()
                 .map(entry -> entry.findNodes("collection"))
@@ -2033,7 +2011,7 @@ public class Whatsapp {
     }
 
     private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
-        Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s", node.attributes()
+        Validate.isTrue(!node.hasNode("error"), "Erroneous newsletters from media reupload: %s", node.attributes()
                 .getInt("code"));
         var encryptNode = node.findNode("encrypt")
                 .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
@@ -2056,7 +2034,7 @@ public class Whatsapp {
      * Sends a custom node to Whatsapp
      *
      * @param node the non-null node to send
-     * @return the response from Whatsapp
+     * @return the newsletters from Whatsapp
      */
     public CompletableFuture<Node> sendNode(@NonNull Node node) {
         return socketHandler.send(node);
@@ -2077,7 +2055,7 @@ public class Whatsapp {
                 Node.of("parent", Map.of("default_membership_approval_mode", "request_required")),
                 Node.of("allow_non_admin_sub_group_creation"));
         return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", entry).thenApplyAsync(node -> {
-            node.assertNode("group", () -> "Missing community response, something went wrong: " + findErrorNode(node));
+            node.assertNode("group", () -> "Missing community newsletters, something went wrong: " + findErrorNode(node));
             return socketHandler.parseGroupMetadata(node);
         });
     }
@@ -2652,6 +2630,157 @@ public class Whatsapp {
                 .thenApplyAsync(result -> !result.hasNode("error"));
     }
 
+
+    /**
+     * Queries a list of fifty recommended newsletters by country
+     *
+     * @param countryCode the non-null country code
+     * @return a list of recommended newsletters, if the feature is available
+     */
+    public CompletableFuture<Optional<RecommendedNewslettersResponse>> queryRecommendedNewsletters(@NonNull String countryCode) {
+        return queryRecommendedNewsletters(countryCode, 50);
+    }
+
+
+    /**
+     * Queries a list of recommended newsletters by country
+     *
+     * @param countryCode the non-null country code
+     * @param limit how many entries should be returned
+     * @return a list of recommended newsletters, if the feature is available
+     */
+    public CompletableFuture<Optional<RecommendedNewslettersResponse>> queryRecommendedNewsletters(@NonNull String countryCode, int limit) {
+        var filters = new RecommendedNewslettersRequest.Filters(List.of(countryCode));
+        var input = new RecommendedNewslettersRequest.Input("RECOMMENDED", filters, limit);
+        var variable = new RecommendedNewslettersRequest.Variable(input);
+        var query = new RecommendedNewslettersRequest(variable);
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6190824427689257"), Json.writeValueAsBytes(query)))
+                .thenApplyAsync(this::parseRecommendedNewsletters);
+    }
+
+    private Optional<RecommendedNewslettersResponse> parseRecommendedNewsletters(Node response) {
+        return response.findNode("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(RecommendedNewslettersResponse::ofJson);
+    }
+
+    /**
+     * Queries any number of messages from a newsletter
+     *
+     * @param newsletterJid the non-null jid of the newsletter
+     * @param count how many messages should be queried
+     * @return a future
+     */
+    public <T extends JidProvider> CompletableFuture<T> queryNewsletterMessages(@NonNull T newsletterJid, int count) {
+        var newsletterHandle = store().findNewsletterByJid(newsletterJid)
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"))
+                .metadata()
+                .handle();
+        return socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterHandle)))
+                .thenApplyAsync(result -> newsletterJid);
+    }
+
+    /**
+     * Subscribes to a public newsletter's event stream
+     *
+     * @param channel the non-null channel
+     * @return the time, in minutes, during which updates will be sent
+     */
+    public CompletableFuture<OptionalLong> subscribeToNewsletterUpdates(@NonNull JidProvider channel) {
+        return socketHandler.subscribeToNewsletterUpdates(channel);
+    }
+
+    /**
+     * Creates a newsletter
+     * Web/Mobile Business API only
+     *
+     * @param name the non-null name of the newsletter
+     * @return a future
+     */
+    public CompletableFuture<Optional<Newsletter>> createNewsletter(@NonNull String name) {
+        return createNewsletter(name, null, null);
+    }
+
+    /**
+     * Creates newsletter channel
+     * Web/Mobile Business API only
+     *
+     * @param name the non-null name of the newsletter
+     * @param description the nullable description of the newsletter
+     * @return a future
+     */
+    public CompletableFuture<Optional<Newsletter>> createNewsletter(@NonNull String name, @Nullable String description) {
+        return createNewsletter(name, description, null);
+    }
+
+    /**
+     * Creates a newsletter
+     * Web/Mobile Business API only
+     *
+     * @param name the non-null name of the newsletter
+     * @param description the nullable description of the newsletter
+     * @param picture the nullable profile picture of the newsletter
+     * @return a future
+     */
+    public CompletableFuture<Optional<Newsletter>> createNewsletter(@NonNull String name, @Nullable String description, byte @Nullable [] picture) {
+        Validate.isTrue(store().business(), "Only business users can create channels");
+        var input = new CreateNewsletterRequest.NewsletterInput(name, description, picture != null ? Base64.getEncoder().encodeToString(picture) : null);
+        var variable = new CreateNewsletterRequest.Variable(input);
+        var request = new CreateNewsletterRequest(variable);
+        return socketHandler.sendQuery("set", "tos", Node.of("notice", Map.of("stage", 5, "id", MessageKey.randomId())))
+                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6234210096708695"), Json.writeValueAsBytes(request))))
+                .thenApplyAsync(this::parseNewsletterCreation)
+                .thenComposeAsync(this::onNewsletterCreation);
+    }
+
+    private Optional<Newsletter> parseNewsletterCreation(Node response) {
+        return response.findNode("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(NewsletterResponse::ofJson)
+                .map(NewsletterResponse::newsletter);
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private CompletableFuture<Optional<Newsletter>> onNewsletterCreation(Optional<Newsletter> result) {
+        if (result.isEmpty()) {
+            return CompletableFuture.completedFuture(result);
+        }
+
+        return subscribeToNewsletterUpdates(result.get().jid())
+                .thenApply(ignored -> result);
+    }
+
+    /**
+     * Changes the description of a newsletter
+     *
+     * @param newsletter the non-null target newsletter
+     * @param description the nullable new description
+     * @return a future
+     */
+    public <T extends JidProvider> CompletableFuture<T> changeNewsletterDescription(@NonNull T newsletter, String description) {
+        var request = new UpdateChannelRequest(new UpdateChannelRequest.Variable(newsletter.toJid().withServer(JidServer.NEWSLETTER), new UpdatePayload(Objects.requireNonNullElse(description, ""))));
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "future"), Json.writeValueAsBytes(request)))
+                .thenApply(ignored -> newsletter);
+    }
+
+
+    public CompletableFuture<Void> deleteNewsletter(@NonNull JidProvider newsletter) {
+        //// Delete channel
+        // content=[Node[description=query, attributes={query_id=6432288716838852}, content={"variables":{"newsletter_id":"120363182769055130@newsletter"}}]]]
+        //Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=51378.56848-47, type=newsletters}, content=[Node[description=newsletters, content={"data":{"xwa2_newsletter_delete_v2":{"id":"120363182769055130@newsletter","newsletter_state":{"type":"DELETED"}}}}]]]
+        //Received Binary Message Node[description=notification, attributes={t=1695660335, from=120363182769055130@s.whatsapp.net, id=150547312, type=mex}, content=[Node[description=update, attributes={op_name=NotificationNewsletterStateChange}, content={"data":{"xwa2_notify_newsletter_on_state_change":{"id":"120363182769055130@newsletter","is_requestor":true,"state":{"type":"DELETED"}}}}]]]
+        return CompletableFuture.completedFuture(null);
+    }
+
+    public CompletableFuture<Void> joinNewsletter(@NonNull JidProvider newsletter) {
+        //// Join
+        //Sent Binary Message: Node[description=iq, attributes={xmlns=newsletter, to=s.whatsapp.net, id=51378.56848-27, type=get}, content=[Node[description=messages, attributes={count=100, type=invite, key=0029Va5QXI9002SzWZkTGb08}]]]
+        //Sent Binary Message: Node[description=iq, attributes={xmlns=w:mex, id=51378.56848-26, to=s.whatsapp.net, type=get}, content=[Node[description=query, attributes={query_id=6563316087068696}, content={"variables":{"input":{"key":"0029Va5QXI9002SzWZkTGb08","type":"INVITE"},"fetch_viewer_metadata":false,"fetch_full_image":false,"fetch_creation_time":true}}]]]
+        //Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=51378.56848-26, type=newsletters}, content=[Node[description=newsletters, content={"data":{"xwa2_newsletter":{"id":"120363143762876559@newsletter","state":{"type":"ACTIVE"},"thread_metadata":{"creation_time":"1690027896","description":{"id":"1690027896133409","text":"\u0623\u0648\u0644 \u062a\u0644\u0641\u0632\u0629 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629 \u0641\u064a \u0627\u0644\u0645\u063a\u0631\u0628","update_time":"1690027896133409"},"handle":null,"invite":"0029Va5QXI9002SzWZkTGb08","name":{"id":"1690027896133409","text":"ChoufTV","update_time":"1690027896133409"},"preview":{"direct_path":"\/v\/t61.24694-24\/362577403_1498863267607148_1704284266667109463_n.jpg?stp=dst-jpg_s192x192&ccb=11-4&oh=01_AdSVelVs7Fhgl0TerrmgOKsZ9Dd6P0mQ2WU--S7OxP5GRQ&oe=65151B59&_nc_sid=000000&_nc_cat=103","id":"1690284725670945","type":"PREVIEW"},"settings":{"reaction_codes":{"value":"ALL"}},"subscribers_count":"521758","verification":"VERIFIED"}}}}]]]
+        //Sent Binary Message: Node[description=iq, attributes={xmlns=newsletter, to=120363143762876559@s.whatsapp.net, id=51378.56848-28, type=set}, content=[Node[description=live_updates]]]
+        return CompletableFuture.completedFuture(null);
+    }
+
     /**
      * Registers a listener
      *
@@ -2703,6 +2832,37 @@ public class Whatsapp {
     public Whatsapp addChatsListener(OnChats onChats) {
         return addListener(onChats);
     }
+
+    /**
+     * Registers a chats listener
+     *
+     * @param onChats the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addChatsListener(OnWhatsappChats onChats) {
+        return addListener(onChats);
+    }
+
+    /**
+     * Registers a newsletters listener
+     *
+     * @param onNewsletters the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewslettersListener(OnNewsletters onNewsletters) {
+        return addListener(onNewsletters);
+    }
+
+    /**
+     * Registers a newsletters listener
+     *
+     * @param onNewsletters the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewslettersListener(OnWhatsappNewsletters onNewsletters) {
+        return addListener(onNewsletters);
+    }
+
 
     /**
      * Registers a contact presence listener

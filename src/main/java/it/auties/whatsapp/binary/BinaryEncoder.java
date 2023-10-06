@@ -31,7 +31,7 @@ public final class BinaryEncoder {
         this.doubleByteTokens = doubleByteTokens;
     }
 
-    public synchronized byte[] encode(Node node) {
+    public byte[] encode(Node node) {
         buffer.clear();
         var encoded = writeNode(node);
         var result = new byte[1 + encoded.length];
@@ -205,26 +205,19 @@ public final class BinaryEncoder {
     }
 
     private void write(Object input) {
-        if (input == null) {
-            buffer.writeByte(LIST_EMPTY.data());
-        } else if (input instanceof String str) {
-            writeString(str);
-        } else if (input instanceof Boolean bool) {
-            writeString(Boolean.toString(bool));
-        } else if (input instanceof Number number) {
-            writeString(number.toString());
-        } else if (input instanceof byte[] bytes) {
-            writeBytes(bytes);
-        } else if (input instanceof Jid jid) {
-            writeJid(jid);
-        } else if (input instanceof Collection<?> collection) {
-            writeList(collection);
-        } else if (input instanceof Enum<?> serializable) {
-            writeString(Objects.toString(serializable));
-        } else if (input instanceof Node) {
-            throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
-        } else {
-            throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
+        switch (input) {
+            case null -> buffer.writeByte(LIST_EMPTY.data());
+            case String str -> writeString(str);
+            case Boolean bool -> writeString(Boolean.toString(bool));
+            case Number number -> writeString(number.toString());
+            case byte[] bytes -> writeBytes(bytes);
+            case Jid jid -> writeJid(jid);
+            case Collection<?> collection -> writeList(collection);
+            case Enum<?> serializable -> writeString(Objects.toString(serializable));
+            case Node node ->
+                    throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
+            default ->
+                    throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
         }
     }
 

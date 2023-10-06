@@ -4,15 +4,13 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class MobileTest {
-    @Test
-    public void run() {
+    public static void main(String[] args) {
         Whatsapp.mobileBuilder()
                 .newConnection()
                 .unregistered()
@@ -38,7 +36,7 @@ public class MobileTest {
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
                 .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
-                .connectAwaitingLogout()
+                .connect()
                 .join();
     }
 

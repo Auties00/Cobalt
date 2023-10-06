@@ -16,36 +16,37 @@ import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupRole;
-import it.auties.whatsapp.model.contact.*;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
-import it.auties.whatsapp.model.jid.JidType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidServer;
+import it.auties.whatsapp.model.jid.JidType;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.response.ChannelResponse;
+import it.auties.whatsapp.model.request.SubscribedNewslettersRequest;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
+import it.auties.whatsapp.model.response.NewsletterResponse;
+import it.auties.whatsapp.model.response.SubscribedNewslettersResponse;
 import it.auties.whatsapp.model.signal.auth.*;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityBuilder;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMACSpec;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentitySpec;
-import it.auties.whatsapp.model.signal.auth.DeviceIdentitySpec;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -82,6 +83,7 @@ class StreamHandler {
     private static final int PING_INTERVAL = 30;
     private static final int MEDIA_CONNECTION_DEFAULT_INTERVAL = 60;
     private static final int MAX_ATTEMPTS = 5;
+    private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
 
     private final SocketHandler socketHandler;
     private final WebVerificationSupport webVerificationSupport;
@@ -344,8 +346,13 @@ class StreamHandler {
             case "picture" -> handlePictureNotification(node);
             case "registration" -> handleRegistrationNotification(node);
             case "link_code_companion_reg" -> handleCompanionRegistration(node);
+            case "newsletter" -> handleNewsletter(node);
             case "mex" -> handleMexNamespace(node);
         }
+    }
+
+    private void handleNewsletter(Node node) {
+        // Received node Node[description=notification, attributes={t=1696615183, from=120363174593809831@newsletter, id=1485455203, type=newsletter}, content=[Node[description=live_updates, content=[Node[description=messages, attributes={t=1696615183}, content=[Node[description=message, attributes={server_id=138}, content=[Node[description=views_count, attributes={count=16206}], Node[description=reactions, content=[Node[description=reaction, attributes={code=❤️, count=62}], Node[description=reaction, attributes={code=👍, count=126}], Node[description=reaction, attributes={code=👏, count=1}], Node[description=reaction, attributes={code=😂, count=14}], Node[description=reaction, attributes={code=😍, count=1}], Node[description=reaction, attributes={code=😢, count=24}], Node[description=reaction, attributes={code=😮, count=10}], Node[description=reaction, attributes={code=🙏, count=18}]]]]], Node[description=message, attributes={server_id=139}, content=[Node[description=views_count, attributes={count=10869}], Node[description=reactions, content=[Node[description=reaction, attributes={code=⚡, count=1}], Node[description=reaction, attributes={code=❤️, count=64}], Node[description=reaction, attributes={code=👍, count=56}], Node[description=reaction, attributes={code=😂, count=10}], Node[description=reaction, attributes={code=😢, count=1}], Node[description=reaction, attributes={code=😮, count=29}], Node[description=reaction, attributes={code=🙏, count=13}]]]]], Node[description=message, attributes={server_id=140}, content=[Node[description=views_count, attributes={count=7509}], Node[description=reactions, content=[Node[description=reaction, attributes={code=⚡, count=1}], Node[description=reaction, attributes={code=❤️, count=30}], Node[description=reaction, attributes={code=👍, count=80}], Node[description=reaction, attributes={code=😂, count=17}], Node[description=reaction, attributes={code=😢, count=1}], Node[description=reaction, attributes={code=😮, count=40}], Node[description=reaction, attributes={code=🙏, count=4}]]]]]]]]]]]
     }
 
     private void handleMexNamespace(Node node) {
@@ -358,7 +365,8 @@ class StreamHandler {
         switch (update.attributes().getString("op_name")) {
             case "NotificationNewsletterJoin" -> {
                 update.contentAsString()
-                        .flatMap(ChannelResponse::ofJson)
+                        .flatMap(NewsletterResponse::ofJson)
+                        .map(NewsletterResponse::newsletter)
                         .ifPresent(result -> socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("jid", result.jid().withServer(JidServer.WHATSAPP), "count", 1, "type", "Jid"))));
             }
             case "NotificationNewsletterMuteChange" -> {
@@ -655,7 +663,7 @@ class StreamHandler {
         for (var entry : node.findNodes("user")) {
             var jid = entry.attributes()
                     .getJid("jid")
-                    .orElseThrow(() -> new NoSuchElementException("Missing jid in response: %s".formatted(entry)));
+                    .orElseThrow(() -> new NoSuchElementException("Missing jid in newsletters: %s".formatted(entry)));
             if (entry.attributes().hasValue("action", "add")) {
                 newValues.add(jid);
                 continue;
@@ -677,9 +685,9 @@ class StreamHandler {
 
     private List<Jid> parsePrivacyExcludedContacts(Node result) {
         return result.findNode("privacy")
-                .orElseThrow(() -> new NoSuchElementException("Missing privacy in result: %s".formatted(result)))
+                .orElseThrow(() -> new NoSuchElementException("Missing privacy in newsletters: %s".formatted(result)))
                 .findNode("list")
-                .orElseThrow(() -> new NoSuchElementException("Missing list in result: %s".formatted(result)))
+                .orElseThrow(() -> new NoSuchElementException("Missing list in newsletters: %s".formatted(result)))
                 .findNodes("user")
                 .stream()
                 .map(user -> user.attributes().getJid("jid"))
@@ -714,7 +722,7 @@ class StreamHandler {
     private void digestError(Node node) {
         if (node.hasNode("bad-mac")) {
             badMac.set(true);
-            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac, last node: %s".formatted(socketHandler.lastNode())));
+            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
             return;
         }
 
@@ -752,6 +760,8 @@ class StreamHandler {
         var loggedInFuture = queryInitialInfo()
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+        queryNewsletters();
+
         if (!socketHandler.keys().registered()) {
             queryGroups();
             return;
@@ -762,6 +772,47 @@ class StreamHandler {
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, chatsFuture)
                 .thenRunAsync(socketHandler::onChats);
+    }
+
+    private void queryNewsletters() {
+        var query = new SubscribedNewslettersRequest(new SubscribedNewslettersRequest.Variable());
+        socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), Json.writeValueAsBytes(query)))
+                .thenAcceptAsync(this::parseNewsletters);
+    }
+
+    private void parseNewsletters(Node result) {
+        result.findNode("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(SubscribedNewslettersResponse::ofJson)
+                .ifPresent(this::onNewsletters);
+    }
+
+    private void onNewsletters(SubscribedNewslettersResponse result) {
+        var futures = new CompletableFuture<?>[result.newsletters().size()];
+        for (var index = 0; index < result.newsletters().size(); index++) {
+            var newsletter = result.newsletters().get(index);
+            socketHandler.store().addNewsletter(newsletter);
+            subscribeToNewsletterUpdatesForever(newsletter);
+            futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES);
+        }
+
+        CompletableFuture.allOf(futures)
+                .thenRun(socketHandler::onNewsletters)
+                .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+    }
+
+    private void subscribeToNewsletterUpdatesForever(Newsletter newsletter) {
+        socketHandler.subscribeToNewsletterUpdates(newsletter)
+                .thenAcceptAsync(result -> scheduleNewsletterSubscription(newsletter, result.orElse(-1)));
+    }
+
+    private void scheduleNewsletterSubscription(Newsletter newsletter, long timeout) {
+        if(timeout <= 0) {
+            return;
+        }
+
+        var executor = CompletableFuture.delayedExecutor(timeout, TimeUnit.SECONDS);
+        executor.execute(() -> subscribeToNewsletterUpdatesForever(newsletter));
     }
 
     private void queryGroups() {
@@ -853,14 +904,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> queryInitialInfo() {
         return queryRequiredInfo()
-                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserAbout(false), updateUserPicture(false), queryChannelsInfo()));
-    }
-
-    // TODO: Process and save data
-    private CompletableFuture<Void> queryChannelsInfo() {
-        return socketHandler.sendQuery("get", "tos", Node.of("get_user_disclosures", Map.of("t", Clock.nowSeconds())))
-                .thenComposeAsync(result -> socketHandler.sendQuery("get", "newsletter", Node.of("my_reactions", Map.of("limit", 5000))))
-                .thenAcceptAsync(result -> {});
+                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserAbout(false), updateUserPicture(false)));
     }
 
     private CompletableFuture<Void> queryRequiredInfo() {
@@ -995,7 +1039,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> parsePrivacySettings(Node result) {
         var privacy = result.findNode("privacy")
-                .orElseThrow(() -> new NoSuchElementException("Missing privacy in response: %s".formatted(result)))
+                .orElseThrow(() -> new NoSuchElementException("Missing privacy in newsletters: %s".formatted(result)))
                 .children()
                 .stream()
                 .map(entry -> addPrivacySetting(entry, false))

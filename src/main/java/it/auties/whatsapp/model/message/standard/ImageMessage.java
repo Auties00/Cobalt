@@ -158,7 +158,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     }
 
     /**
-     * Constructs a new builder to create a ImageMessage. The result can be later sent using
+     * Constructs a new builder to create a ImageMessage. The newsletters can be later sent using
      * {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param media       the non-null image that the new message wraps

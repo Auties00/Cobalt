@@ -16,30 +16,30 @@ import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.jid.JidProvider;
-import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidProvider;
+import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptionsSpec;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
-import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -204,6 +204,13 @@ public final class Store extends Controller<Store> {
     private final ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status;
 
     /**
+     * The non-null map of newsletters
+     */
+    @NonNull
+    private final ConcurrentHashMap<Jid, Newsletter> newsletters;
+
+
+    /**
      * The non-null map of privacy settings
      */
     @NonNull
@@ -227,11 +234,11 @@ public final class Store extends Controller<Store> {
 
     /**
      * The non-null list of requests that were sent to Whatsapp. They might or might not be waiting
-     * for a response
+     * for a newsletters
      */
     @NonNull
     @JsonIgnore
-    private final ConcurrentHashMap<String, Request> requests;
+    private final ConcurrentHashMap<String, SocketRequest> requests;
 
     /**
      * The non-null list of replies waiting to be fulfilled
@@ -331,7 +338,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
+    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<Jid, Newsletter> newsletters, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if(proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -360,6 +367,7 @@ public final class Store extends Controller<Store> {
         this.chats = new ConcurrentHashMap<>();
         this.contacts = contacts;
         this.status = status;
+        this.newsletters = newsletters;
         this.privacySettings = privacySettings;
         this.calls = calls;
         this.unarchiveChats = unarchiveChats;
@@ -497,19 +505,54 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Queries the first newsletter whose jid is equal to {@code jid}
+     *
+     * @param jid the jid to search
+     * @return a non-null optional
+     */
+    public Optional<Newsletter> findNewsletterByJid(JidProvider jid) {
+        if (jid == null) {
+            return Optional.empty();
+        }
+
+        if (jid instanceof Newsletter newsletter) {
+            return Optional.of(newsletter);
+        }
+
+        return Optional.ofNullable(newsletters.get(jid.toJid()));
+    }
+
+    /**
      * Queries the first chat whose name is equal to {@code name}
      *
      * @param name the name to search
      * @return a non-null optional
      */
     public Optional<Chat> findChatByName(String name) {
-        return findChatsStream(name).findAny();
+        return findChatsByNameStream(name).findAny();
     }
 
-    private Stream<Chat> findChatsStream(String name) {
+    /**
+     * Queries the first newsletter whose name is equal to {@code name}
+     *
+     * @param name the name to search
+     * @return a non-null optional
+     */
+    public Optional<Newsletter> findNewsletterByName(String name) {
+        return findNewslettersByNameStream(name).findAny();
+    }
+
+
+    private Stream<Chat> findChatsByNameStream(String name) {
         return name == null ? Stream.empty() : chats.values()
                 .parallelStream()
                 .filter(chat -> chat.name().equalsIgnoreCase(name));
+    }
+
+    private Stream<Newsletter> findNewslettersByNameStream(String name) {
+        return name == null ? Stream.empty() : newsletters.values()
+                .parallelStream()
+                .filter(chat -> chat.metadata().name().text().equalsIgnoreCase(name));
     }
 
     /**
@@ -525,13 +568,38 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Queries the first newsletter that matches the provided function
+     *
+     * @param function the non-null filter
+     * @return a non-null optional
+     */
+    public Optional<Newsletter> findNewsletterBy(@NonNull Function<Newsletter, Boolean> function) {
+        return newsletters.values()
+                .parallelStream()
+                .filter(function::apply)
+                .findFirst();
+    }
+
+    /**
      * Queries every chat whose name is equal to {@code name}
      *
      * @param name the name to search
      * @return a non-null immutable set
      */
     public Set<Chat> findChatsByName(String name) {
-        return findChatsStream(name).collect(Collectors.toUnmodifiableSet());
+        return findChatsByNameStream(name)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * Queries every newsletter whose name is equal to {@code name}
+     *
+     * @param name the name to search
+     * @return a non-null immutable set
+     */
+    public Set<Newsletter> findNewslettersByName(String name) {
+        return findNewslettersByNameStream(name)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -572,6 +640,15 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Returns all the newsletters
+     *
+     * @return an immutable collection
+     */
+    public Collection<Newsletter> newsletters() {
+        return Collections.unmodifiableCollection(newsletters.values());
+    }
+
+    /**
      * Queries all the status of a contact
      *
      * @param jid the sender of the status
@@ -584,11 +661,11 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * Queries the first request whose id equals the one stored by the response and, if any is found,
+     * Queries the first request whose id equals the one stored by the newsletters and, if any is found,
      * it completes it
      *
-     * @param response      the response to complete the request with
-     * @param exceptionally whether the response is erroneous
+     * @param response      the newsletters to complete the request with
+     * @param exceptionally whether the newsletters is erroneous
      * @return a boolean
      */
     public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
@@ -603,11 +680,11 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     @SuppressWarnings("ClassEscapesDefinedScope")
-    public Optional<Request> findPendingRequest(String id) {
+    public Optional<SocketRequest> findPendingRequest(String id) {
         return id == null ? Optional.empty() : Optional.ofNullable(requests.get(id));
     }
 
-    private Request deleteAndComplete(Request request, Node response, boolean exceptionally) {
+    private SocketRequest deleteAndComplete(SocketRequest request, Node response, boolean exceptionally) {
         if (request.complete(response, exceptionally)) {
             requests.remove(request.id());
         }
@@ -628,14 +705,14 @@ public final class Store extends Controller<Store> {
      * @return a non-null collection
      */
     @SuppressWarnings("ClassEscapesDefinedScope")
-    public Collection<Request> pendingRequests() {
+    public Collection<SocketRequest> pendingRequests() {
         return Collections.unmodifiableCollection(requests.values());
     }
 
     /**
      * Queries the first reply waiting and completes it with the input message
      *
-     * @param response the response to complete the reply with
+     * @param response the newsletters to complete the reply with
      * @return a boolean
      */
     public boolean resolvePendingReply(@NonNull MessageInfo response) {
@@ -712,18 +789,8 @@ public final class Store extends Controller<Store> {
      * @param chat the chat to add
      * @return the old chat, if present
      */
-    public Optional<Chat> addChatDirect(Chat chat) {
+    public Optional<Chat> addChatDirect(@NonNull Chat chat) {
         return Optional.ofNullable(chats.put(chat.jid(), chat));
-    }
-
-    /**
-     * Removes a chat from memory
-     *
-     * @param chatJid the chat to remove
-     * @return the chat that was deleted wrapped by an optional
-     */
-    public Optional<Chat> removeChat(@NonNull Jid chatJid) {
-        return Optional.ofNullable(chats.remove(chatJid));
     }
 
     /**
@@ -748,6 +815,46 @@ public final class Store extends Controller<Store> {
     }
 
     /**
+     * Adds a newsletter in memory
+     *
+     * @param newsletter the newsletter to add
+     * @return the old newsletter, if present
+     */
+    public Optional<Newsletter> addNewsletter(@NonNull Newsletter newsletter) {
+        return Optional.ofNullable(newsletters.put(newsletter.jid(), newsletter));
+    }
+
+    /**
+     * Removes a chat from memory
+     *
+     * @param chatJid the chat to remove
+     * @return the chat that was deleted wrapped by an optional
+     */
+    public Optional<Chat> removeChat(@NonNull JidProvider chatJid) {
+        return Optional.ofNullable(chats.remove(chatJid.toJid()));
+    }
+
+    /**
+     * Removes a newsletter from memory
+     *
+     * @param newsletterJid the newsletter to remove
+     * @return the newsletter that was deleted wrapped by an optional
+     */
+    public Optional<Newsletter> removeNewsletter(@NonNull JidProvider newsletterJid) {
+        return Optional.ofNullable(newsletters.remove(newsletterJid.toJid()));
+    }
+
+    /**
+     * Removes a contact from memory
+     *
+     * @param contactJid the contact to remove
+     * @return the contact that was deleted wrapped by an optional
+     */
+    public Optional<Contact> removeContact(@NonNull JidProvider contactJid) {
+        return Optional.ofNullable(contacts.remove(contactJid.toJid()));
+    }
+
+    /**
      * Attributes a message Usually used by the socket handler
      *
      * @param historySyncMessage a non-null message
@@ -757,6 +864,7 @@ public final class Store extends Controller<Store> {
         return attribute(historySyncMessage.messageInfo());
     }
 
+    // TODO: Move attribution logic to the correct Socket handler
     /**
      * Attributes a message Usually used by the socket handler
      *
@@ -806,13 +914,11 @@ public final class Store extends Controller<Store> {
     }
 
     private void processMessage(MessageInfo info) {
-        Message content = info.message().content();
-        if (Objects.requireNonNull(content) instanceof PollCreationMessage pollCreationMessage) {
-            handlePollCreation(info, pollCreationMessage);
-        } else if (content instanceof PollUpdateMessage pollUpdateMessage) {
-            handlePollUpdate(info, pollUpdateMessage);
-        } else if (content instanceof ReactionMessage reactionMessage) {
-            handleReactionMessage(info, reactionMessage);
+        switch (info.message().content()) {
+            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
+            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
+            default -> {}
         }
     }
 
@@ -988,10 +1094,10 @@ public final class Store extends Controller<Store> {
      * Adds a request to this store
      *
      * @param request the non-null request to add
-     * @return the non-null completable result of the request
+     * @return the non-null completable newsletters of the request
      */
     @SuppressWarnings("ClassEscapesDefinedScope")
-    public CompletableFuture<Node> addRequest(@NonNull Request request) {
+    public CompletableFuture<Node> addRequest(@NonNull SocketRequest request) {
         if (request.id() == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -1004,7 +1110,7 @@ public final class Store extends Controller<Store> {
      * Adds a replay handler to this store
      *
      * @param messageId the non-null message id to listen for
-     * @return the non-null completable result of the reply handler
+     * @return the non-null completable newsletters of the reply handler
      */
     public CompletableFuture<MessageInfo> addPendingReply(@NonNull String messageId) {
         var result = new CompletableFuture<MessageInfo>();

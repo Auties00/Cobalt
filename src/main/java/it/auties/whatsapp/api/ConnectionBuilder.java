@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * A builder to specify the type of connection to use
  *
- * @param <T> the type of the result
+ * @param <T> the type of the newsletters
  */
 @SuppressWarnings("unused")
 public final class ConnectionBuilder<T extends OptionsBuilder<T>> {

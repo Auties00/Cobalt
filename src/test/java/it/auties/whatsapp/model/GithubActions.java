@@ -1,4 +1,4 @@
-package it.auties.whatsapp.github;
+package it.auties.whatsapp.model;
 
 public final class GithubActions {
     public static final String CREDENTIALS_NAME = "WHATSAPP_KEYS";

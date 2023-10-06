@@ -42,7 +42,7 @@ public final class Exceptions {
             actual.printStackTrace(stackTracePrinter);
             Files.writeString(path, stackTraceWriter.toString(), StandardOpenOption.CREATE);
         } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot serialize exception. Here is the non-serialized stack trace", exception);
+            throw new UncheckedIOException("Cannot serialize exception", exception);
         }
     }
 }

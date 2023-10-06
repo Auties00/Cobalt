@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.node;
 
 import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.request.Request;
+import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -295,7 +295,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * Returns all the nodes that match the description provided
      *
      * @param description the nullable description
-     * @return an optional body, present if a result was found
+     * @return an optional body, present if a newsletters was found
      */
     public List<Node> findNodes(String description) {
         return children().stream().filter(node -> Objects.equals(node.description(), description)).toList();
@@ -335,12 +335,12 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a non null request
      * @throws NullPointerException if no valid jid can be found
      */
-    public Request toRequest(Function<Node, Boolean> filter, boolean response) {
+    public SocketRequest toRequest(Function<Node, Boolean> filter, boolean response) {
         if (response && id() == null) {
             attributes.put("id", MessageKey.randomId());
         }
 
-        return Request.of(this, filter);
+        return SocketRequest.of(this, filter);
     }
 
     /**

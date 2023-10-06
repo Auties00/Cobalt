@@ -47,7 +47,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     }
 
     /**
-     * Sets the handler that provides the captcha result when verifying an account
+     * Sets the handler that provides the captcha newsletters when verifying an account
      * Happens only on business devices
      *
      * @param verificationCaptchaSupplier the non-null supplier
@@ -72,7 +72,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     }
 
     /**
-     * Sets the handler that provides the captcha result when verifying an account
+     * Sets the handler that provides the captcha newsletters when verifying an account
      * Happens only on business devices
      *
      * @param verificationCaptchaSupplier the non-null supplier

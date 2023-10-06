@@ -18,7 +18,7 @@ import static it.auties.whatsapp.binary.BinaryTag.*;
 public final class BinaryDecoder {
     private ByteBuf buffer;
 
-    public synchronized Node decode(byte[] input) {
+    public Node decode(byte[] input) {
         var buffer = BytesHelper.newBuffer(input);
         var token = buffer.readByte() & 2;
         allocateBuffer(token, buffer);

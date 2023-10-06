@@ -467,7 +467,7 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
      * constant-time operation. Because of the asynchronous nature of these
      * deques, determining the current number of elements requires traversing
      * them all to count them. Additionally, it is possible for the size to
-     * change during execution of this method, in which case the returned result
+     * change during execution of this method, in which case the returned newsletters
      * will be inaccurate. Thus, this method is typically not very useful in
      * concurrent applications.
      *
@@ -505,7 +505,7 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
      *
      * @param c
      *            the elements to be inserted into this deque.
-     * @return <tt>true</tt> if this deque changed as a result of the call.
+     * @return <tt>true</tt> if this deque changed as a newsletters of the call.
      * @throws NullPointerException
      *             if <tt>c</tt> or any element within it is <tt>null</tt>
      */

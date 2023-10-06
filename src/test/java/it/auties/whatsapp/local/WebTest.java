@@ -4,12 +4,10 @@ import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
-import org.junit.jupiter.api.Test;
 
 // Just used for testing locally
 public class WebTest {
-    @Test
-    public void run() {
+    public static void main(String[] args) {
         var whatsapp = Whatsapp.webBuilder()
                 .lastConnection()
                 .historyLength(WebHistoryLength.zero())
@@ -19,6 +17,7 @@ public class WebTest {
                 .addNewMessageListener((api, message, offline) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
+                .addNewslettersListener((newsletters) -> System.out.printf("Newsletters: %s%n", newsletters.size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addActionListener ((action, info) -> System.out.printf("New action: %s, info: %s%n", action, info))
@@ -29,8 +28,5 @@ public class WebTest {
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
                 .join();
-        System.out.println("Connected");
-        whatsapp.awaitDisconnection();
-        System.out.println("Disconnected");
     }
 }

@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.mobile;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * A model that represents a response from Whatsapp regarding the registration of a phone number
+ * A model that represents a newsletters from Whatsapp regarding the registration of a phone number
  *
  * @param number              the number that was registered
  * @param lid                 the lid of the number that was registered

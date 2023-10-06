@@ -1,7 +1,7 @@
 package it.auties.whatsapp.update;
 
-import it.auties.whatsapp.github.GithubActions;
-import it.auties.whatsapp.github.GithubSecrets;
+import it.auties.whatsapp.model.GithubActions;
+import it.auties.whatsapp.model.GithubSecrets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

@@ -288,7 +288,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public synchronized CompletableFuture<Void> attributeStore(Store store) {
+    public CompletableFuture<Void> attributeStore(Store store) {
         var oldTask = attributeStoreSerializers.get(store.uuid());
         if (oldTask != null) {
             return oldTask;

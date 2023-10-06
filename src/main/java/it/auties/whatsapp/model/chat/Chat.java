@@ -919,10 +919,6 @@ public final class Chat implements ProtobufMessage, JidProvider {
         return Optional.ofNullable(phoneJid);
     }
 
-    public boolean shareOwnPn() {
-        return shareOwnPhoneNumber;
-    }
-
     public boolean pnhDuplicateLidThread() {
         return pnhDuplicateLidThread;
     }

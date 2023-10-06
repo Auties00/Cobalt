@@ -13,7 +13,7 @@ import java.util.Optional;
 
 
 /**
- * A model class that represents a message that contains a response to a previous
+ * A model class that represents a message that contains a newsletters to a previous
  * {@link HighlyStructuredMessage}
  */
 @ProtobufMessageName("Message.TemplateButtonReplyMessage")

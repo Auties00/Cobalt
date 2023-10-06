@@ -18,12 +18,13 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
 import static java.lang.System.Logger.Level.ERROR;
 
+@SuppressWarnings("deprecation")
 public final class Json {
     private static final ObjectMapper json;
 
     static {
         try {
-            json = new ObjectMapper().registerModule(new Jdk8Module())
+            json = new ObjectMapper().registerModule(new Jdk8Module().configureAbsentsAsNulls(true))
                     .registerModule(new JavaTimeModule())
                     .registerModule(new ParameterNamesModule())
                     .setSerializationInclusion(NON_DEFAULT)

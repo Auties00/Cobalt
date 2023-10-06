@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public record RecommendedChannelsQuery(Variable variables) {
+public record RecommendedNewslettersRequest(Variable variables) {
     public record Variable(Input input) {
 
     }

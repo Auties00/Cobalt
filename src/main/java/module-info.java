@@ -66,4 +66,5 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.node;
     exports it.auties.whatsapp.model.button.template.highlyStructured;
     exports it.auties.whatsapp.model.jid;
+    exports it.auties.whatsapp.model.newsletter;
 }

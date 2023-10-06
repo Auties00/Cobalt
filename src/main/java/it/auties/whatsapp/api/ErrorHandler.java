@@ -22,7 +22,7 @@ public interface ErrorHandler {
      * @param type the type of client experiencing the error
      * @param location the location where the error occurred
      * @param throwable a stacktrace of the error, if available
-     * @return a result determining what should be done
+     * @return a newsletters determining what should be done
      */
     Result handleError(ClientType type, Location location, Throwable throwable);
     
@@ -127,7 +127,7 @@ public interface ErrorHandler {
 
     /**
      * The constants of this enumerated type describe the various types of actions that can be
-     * performed by an error handler in response to a throwable
+     * performed by an error handler in newsletters to a throwable
      */
     enum Result {
         /**

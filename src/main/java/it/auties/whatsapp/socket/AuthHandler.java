@@ -5,7 +5,6 @@ import it.auties.protobuf.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.CountryCode;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.DNSSource.ResolutionMethod;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
@@ -72,7 +71,7 @@ class AuthHandler {
     }
 
     private CompletableFuture<Boolean> sendHandshake(SocketSession session, SocketHandshake handshake, HandshakeMessage handshakeMessage) {
-        return Request.of(HandshakeMessageSpec.encode(handshakeMessage))
+        return SocketRequest.of(HandshakeMessageSpec.encode(handshakeMessage))
                 .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
                 .thenApplyAsync(result -> onHandshakeSent(handshake));
     }

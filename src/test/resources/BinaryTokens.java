@@ -1,5 +1,6 @@
 package it.auties.whatsapp.binary;
 
+import it.auties.whatsapp.model.companion.CompanionProperty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
@@ -23,11 +24,12 @@ public final class BinaryTokens {
 
     public static final String HEX_REGEX = "[^0-9A-F]+?";
 
-    public static final Map<Integer, BinaryProperty> PROPERTIES;
+    public static final Map<Integer, CompanionProperty> PROPERTIES;
 
     static {
-        var properties = new HashMap<Integer, BinaryProperty>();
+        var properties = new HashMap<Integer, CompanionProperty>();
 %s
+        //noinspection Java9CollectionFactory
         PROPERTIES = Collections.unmodifiableMap(properties);
     }
 

@@ -114,7 +114,7 @@ public enum MessageType {
      */
     PAYMENT_ORDER,
     /**
-     * List response
+     * List newsletters
      */
     LIST_RESPONSE,
     /**
@@ -126,11 +126,11 @@ public enum MessageType {
      */
     PAYMENT_INVOICE,
     /**
-     * Buttons response
+     * Buttons newsletters
      */
     BUTTONS,
     /**
-     * Buttons response
+     * Buttons newsletters
      */
     BUTTONS_RESPONSE,
     /**
@@ -146,11 +146,11 @@ public enum MessageType {
      */
     REACTION,
     /**
-     * Interactive response
+     * Interactive newsletters
      */
     INTERACTIVE_RESPONSE,
     /**
-     * Native flow response
+     * Native flow newsletters
      */
     NATIVE_FLOW_RESPONSE,
     /**

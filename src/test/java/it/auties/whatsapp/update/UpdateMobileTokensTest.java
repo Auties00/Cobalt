@@ -1,6 +1,6 @@
 package it.auties.whatsapp.update;
 
-import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.util.MetadataHelper;
 import org.junit.jupiter.api.Test;
 

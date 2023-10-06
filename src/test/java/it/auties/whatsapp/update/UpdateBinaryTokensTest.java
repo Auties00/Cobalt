@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 import org.junit.jupiter.api.Test;
 

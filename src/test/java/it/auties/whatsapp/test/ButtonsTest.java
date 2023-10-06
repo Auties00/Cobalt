@@ -6,7 +6,7 @@ import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonText;
@@ -51,7 +51,7 @@ import java.util.stream.IntStream;
 @TestMethodOrder(OrderAnnotation.class)
 public class ButtonsTest implements Listener {
     private static Whatsapp api;
-    private static CompletableFuture<Void> future;
+    private static CompletableFuture<?> future;
     private static CountDownLatch latch;
     private static Jid contact;
     private static boolean skip;
@@ -68,7 +68,7 @@ public class ButtonsTest implements Listener {
             return;
         }
         loadConfig();
-        future = api.connectAwaitingLogout();
+        future = api.connect();
         latch.await();
     }
 

@@ -67,7 +67,7 @@ public sealed interface GdprAccountReport {
     /**
      * A pending gdpr request
      *
-     * @param dateTime the eta for the result of the request
+     * @param dateTime the eta for the newsletters of the request
      */
     record Pending(@NonNull ZonedDateTime dateTime) implements GdprAccountReport {
         @Override

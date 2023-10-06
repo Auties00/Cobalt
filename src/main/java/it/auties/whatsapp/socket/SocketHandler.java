@@ -16,20 +16,19 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
-import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterReaction;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
@@ -94,13 +93,7 @@ public class SocketHandler implements SocketListener {
 
     private Thread shutdownHook;
 
-    private CompletableFuture<Void> loginFuture;
-
-    private CompletableFuture<Void> logoutFuture;
-
     private ExecutorService listenersService;
-
-    private Node lastNode;
 
     public static boolean isConnected(@NonNull UUID uuid) {
         return connectedUuids.contains(uuid);
@@ -170,7 +163,7 @@ public class SocketHandler implements SocketListener {
         var handshakeMessage = new HandshakeMessageBuilder()
                 .clientHello(clientHello)
                 .build();
-        Request.of(HandshakeMessageSpec.encode(handshakeMessage))
+        SocketRequest.of(HandshakeMessageSpec.encode(handshakeMessage))
                 .sendWithPrologue(session, keys, store)
                 .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
     }
@@ -197,9 +190,6 @@ public class SocketHandler implements SocketListener {
         var plainText = AesGcm.decrypt(keys.readCounter(true), message, keys.readKey());
         var decoder = new BinaryDecoder();
         var node = decoder.decode(plainText);
-        if (!node.hasNode("bad-mac")) {
-            this.lastNode = node;
-        }
         onNodeReceived(node);
         store.resolvePendingRequest(node, false);
         streamHandler.digest(node);
@@ -242,25 +232,8 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
 
-        if (loginFuture == null || loginFuture.isDone()) {
-            this.loginFuture = new CompletableFuture<>();
-        }
-
-        if (logoutFuture == null || logoutFuture.isDone()) {
-            this.logoutFuture = new CompletableFuture<>();
-        }
-
         this.session = SocketSession.of(store.proxy().orElse(null), socketExecutor, store.clientType() == ClientType.WEB);
-        return session.connect(this)
-                .thenCompose(ignored -> loginFuture);
-    }
-
-    public CompletableFuture<Void> loginFuture() {
-        return loginFuture;
-    }
-
-    public CompletableFuture<Void> logoutFuture() {
-        return logoutFuture;
+        return session.connect(this);
     }
 
     public CompletableFuture<Void> disconnect(DisconnectReason reason) {
@@ -451,7 +424,7 @@ public class SocketHandler implements SocketListener {
         return send(node, null);
     }
 
-    public CompletableFuture<Node> send(Request request) {
+    public CompletableFuture<Node> send(SocketRequest request) {
         return request.send(session, keys, store);
     }
 
@@ -495,7 +468,7 @@ public class SocketHandler implements SocketListener {
 
     private List<Jid> parseBlockList(Node result) {
         return result.findNode("list")
-                .orElseThrow(() -> new NoSuchElementException("Missing block list in response"))
+                .orElseThrow(() -> new NoSuchElementException("Missing block list in newsletters"))
                 .findNodes("item")
                 .stream()
                 .map(item -> item.attributes().getJid("jid"))
@@ -508,6 +481,54 @@ public class SocketHandler implements SocketListener {
         return sendWithNoResponse(node);
     }
 
+    public CompletableFuture<OptionalLong> subscribeToNewsletterUpdates(JidProvider channel) {
+        return sendQuery(channel.toJid(), "set", "newsletter", Node.of("live_updates"))
+                .thenApplyAsync(this::parseNewsletterSubscription);
+    }
+
+    private OptionalLong parseNewsletterSubscription(Node result) {
+        return result.findNode("live_updates").stream()
+                .map(node -> node.attributes().getOptionalLong("duration"))
+                .flatMapToLong(OptionalLong::stream)
+                .findFirst();
+    }
+
+    public CompletableFuture<Void> queryNewsletterMessages(JidProvider newsletterJid, int count) {
+        var newsletter = store.findNewsletterByJid(newsletterJid)
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+        return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletter.metadata().invite())))
+                .thenAcceptAsync(result -> onNewsletterMessages(result, newsletter));
+    }
+
+    private void onNewsletterMessages(Node result, Newsletter newsletter) {
+        var results = result.findNode("messages")
+                .stream()
+                .map(messages -> messages.findNodes("message"))
+                .flatMap(Collection::stream)
+                .map(this::parseNewsletterMessage)
+                .flatMap(Optional::stream)
+                .toList();
+        newsletter.addMessages(results);
+    }
+
+    private Optional<NewsletterMessageInfo> parseNewsletterMessage(Node message) {
+        var id = message.attributes().getString("id");
+        var timestamp = message.attributes().getLong("t");
+        var views = message.findNode("views_count")
+                .map(viewCounter -> viewCounter.attributes().getLong("count"))
+                .orElseThrow(() -> new NoSuchElementException("Missing views"));
+        var reactions = message.findNode("reactions")
+                .stream()
+                .map(node -> node.findNodes("reaction"))
+                .flatMap(Collection::stream)
+                .map(entry -> new NewsletterReaction(entry.attributes().getString("code"), entry.attributes().getLong("count")))
+                .toList();
+        return message.findNode("plaintext")
+                .flatMap(Node::contentAsBytes)
+                .map(MessageContainerSpec::decode)
+                .map(messageContainer -> new NewsletterMessageInfo(id, timestamp, views, reactions, messageContainer));
+    }
+
     public CompletableFuture<GroupMetadata> queryGroupMetadata(JidProvider group) {
         var body = Node.of("query", Map.of("request", "interactive"));
         return sendQuery(group.toJid(), "get", "w:g2", body)
@@ -517,7 +538,7 @@ public class SocketHandler implements SocketListener {
     protected GroupMetadata handleGroupMetadata(Node response) {
         var metadata = response.findNode("group")
                 .map(this::parseGroupMetadata)
-                .orElseThrow(() -> new NoSuchElementException("Erroneous response: %s".formatted(response)));
+                .orElseThrow(() -> new NoSuchElementException("Erroneous newsletters: %s".formatted(response)));
         var chat = store.findChatByJid(metadata.jid())
                 .orElseGet(() -> store().addNewChat(metadata.jid()));
         if (chat != null) {
@@ -573,7 +594,7 @@ public class SocketHandler implements SocketListener {
     private GroupParticipant parseGroupParticipant(Node node) {
         var id = node.attributes()
                 .getJid("jid")
-                .orElseThrow(() -> new NoSuchElementException("Missing participant in group response"));
+                .orElseThrow(() -> new NoSuchElementException("Missing participant in group newsletters"));
         var role = GroupRole.of(node.attributes().getString("type", null));
         return new GroupParticipant(id, role);
     }
@@ -732,12 +753,6 @@ public class SocketHandler implements SocketListener {
             if (shutdownHook != null) {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             }
-            if (loginFuture != null && !loginFuture.isDone()) {
-                loginFuture.complete(null);
-            }
-            if (logoutFuture != null && !logoutFuture.isDone()) {
-                logoutFuture.complete(null);
-            }
         }
         callListenersSync(listener -> {
             listener.onDisconnected(whatsapp, loggedOut);
@@ -746,9 +761,6 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void onLoggedIn() {
-        if (!loginFuture.isDone()) {
-            loginFuture.complete(null);
-        }
         callListenersAsync(listener -> {
             listener.onLoggedIn(whatsapp);
             listener.onLoggedIn();
@@ -776,6 +788,13 @@ public class SocketHandler implements SocketListener {
         callListenersAsync(listener -> {
             listener.onChats(whatsapp, store().chats());
             listener.onChats(store().chats());
+        });
+    }
+
+    protected void onNewsletters() {
+        callListenersAsync(listener -> {
+            listener.onNewsletters(whatsapp, store().newsletters());
+            listener.onNewsletters(store().newsletters());
         });
     }
 
@@ -965,7 +984,7 @@ public class SocketHandler implements SocketListener {
     }
 
     private List<BusinessCategory> parseBusinessCategories(Node result) {
-        return result.findNode("response")
+        return result.findNode("result")
                 .flatMap(entry -> entry.findNode("categories"))
                 .stream()
                 .map(entry -> entry.findNodes("category"))
@@ -993,9 +1012,5 @@ public class SocketHandler implements SocketListener {
     protected SocketHandler setState(@NonNull SocketState state) {
         this.state = state;
         return this;
-    }
-
-    protected Node lastNode() {
-        return lastNode;
     }
 }

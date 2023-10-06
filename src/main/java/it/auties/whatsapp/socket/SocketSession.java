@@ -1,8 +1,8 @@
 package it.auties.whatsapp.socket;
 
 import io.netty.buffer.ByteBuf;
+import it.auties.whatsapp.exception.RequestException;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.ConcurrentDoublyLinkedList;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
 
@@ -14,10 +14,7 @@ import java.net.Proxy.Type;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -27,14 +24,16 @@ import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_PORT;
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     final URI proxy;
     final Executor executor;
+    final ReentrantLock outputLock;
     SocketListener listener;
     private SocketSession(URI proxy, Executor executor) {
         this.proxy = proxy;
         this.executor = executor;
+        this.outputLock = new ReentrantLock(true);
     }
 
     abstract CompletableFuture<Void> connect(SocketListener listener);
-    abstract CompletableFuture<Void> disconnect();
+    abstract void disconnect();
     public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
     abstract boolean isOpen();
 
@@ -76,51 +75,60 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
     public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
         private final Collection<ByteBuffer> inputParts;
-        private final ReentrantLock outputLock;
         private WebSocket session;
 
         WebSocketSession(URI proxy, Executor executor) {
             super(proxy, executor);
-            this.inputParts = new ConcurrentDoublyLinkedList<>();
-            this.outputLock = new ReentrantLock();
+            this.inputParts = new ConcurrentLinkedDeque<>();
         }
 
+        @SuppressWarnings("resource") // Not needed
         @Override
-        public CompletableFuture<Void> connect(SocketListener listener) {
-            this.listener = listener;
-            try(var client = createHttpClient()) {
-                this.session = client.newWebSocketBuilder()
-                        .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
-                        .join();
-                listener.onOpen(this);
+        CompletableFuture<Void> connect(SocketListener listener) {
+            if(isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
-        }
 
-        private HttpClient createHttpClient() {
+            this.listener = listener;
             return HttpClient.newBuilder()
                     .executor(executor)
                     .proxy(ProxySelector.of((InetSocketAddress) getProxy().address()))
                     .authenticator(new ProxyAuthenticator())
-                    .build();
+                    .build()
+                    .newWebSocketBuilder()
+                    .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
+                    .thenRun(() -> listener.onOpen(this));
         }
 
         @Override
-        public CompletableFuture<Void> disconnect() {
-            return session.sendClose(WebSocket.NORMAL_CLOSURE, "")
-                    .thenRun(() -> {});
+        void disconnect() {
+            if(!isOpen()) {
+                return;
+            }
+
+            session.sendClose(WebSocket.NORMAL_CLOSURE, "");
         }
 
         @Override
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
             outputLock.lock();
             return session.sendBinary(ByteBuffer.wrap(bytes), true)
-                    .thenRun(outputLock::unlock);
+                    .thenRun(outputLock::unlock)
+                    .exceptionally(exception -> {
+                        outputLock.unlock();
+                        throw new RequestException(exception);
+                    });
         }
 
         @Override
-        public boolean isOpen() {
+        boolean isOpen() {
             return session != null && !session.isInputClosed() && !session.isOutputClosed();
+        }
+
+        @Override
+        public void onOpen(WebSocket webSocket) {
+            this.session = webSocket;
+            WebSocket.Listener.super.onOpen(webSocket);
         }
 
         @Override
@@ -150,11 +158,15 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 }
 
                 var result = buffer.get().readBytes(length);
-                listener.onMessage(BytesHelper.readBuffer(result));
+                try {
+                    listener.onMessage(BytesHelper.readBuffer(result));
+                }catch (Throwable throwable) {
+                    listener.onError(throwable);
+                }
+
                 result.release();
             }
 
-            inputParts.clear();
             buffer.get().release();
             return WebSocket.Listener.super.onBinary(webSocket, data, true);
         }
@@ -170,7 +182,9 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             inputParts.add(data);
-            return Optional.of(BytesHelper.newBuffer(inputParts));
+            var result = Optional.of(BytesHelper.newBuffer(inputParts));
+            inputParts.clear();
+            return result;
         }
     }
 
@@ -179,6 +193,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             Authenticator.setDefault(new ProxyAuthenticator());
         }
 
+        // TODO: Explore AsynchronousSocketChannel
         private Socket socket;
         private boolean closed;
 
@@ -188,7 +203,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
-            if (socket != null && isOpen()) {
+            if (isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -209,19 +224,17 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         @SuppressWarnings("UnusedReturnValue")
-        CompletableFuture<Void> disconnect() {
-            if (socket == null || !isOpen()) {
-                return CompletableFuture.completedFuture(null);
+        void disconnect() {
+            if (!isOpen()) {
+                return;
             }
 
-            return CompletableFuture.runAsync(() -> {
-                try {
-                    socket.close();
-                    closeResources();
-                } catch (IOException exception) {
-                    throw new UncheckedIOException("Cannot close connection to host", exception);
-                }
-            }, executor);
+            try {
+                socket.close();
+                closeResources();
+            } catch (IOException exception) {
+                throw new UncheckedIOException("Cannot close connection to host", exception);
+            }
         }
 
         @Override
@@ -233,6 +246,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
             return CompletableFuture.runAsync(() -> {
                 try {
+                    outputLock.lock();
                     if (socket == null) {
                         return;
                     }
@@ -242,7 +256,9 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 }catch (SocketException exception) {
                     closeResources();
                 } catch (IOException exception) {
-                    throw new UncheckedIOException("Cannot send message", exception);
+                    throw new RequestException(exception);
+                }finally {
+                    outputLock.unlock();
                 }
             }, executor);
         }

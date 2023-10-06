@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public record ContactStatusResponse(@NonNull Optional<String> status, @NonNull Optional<ZonedDateTime> timestamp) implements ResponseWrapper {
+public record ContactStatusResponse(@NonNull Optional<String> status, @NonNull Optional<ZonedDateTime> timestamp) {
     public static ContactStatusResponse ofNode(@NonNull Node source) {
         return new ContactStatusResponse(
                 source.contentAsString(),

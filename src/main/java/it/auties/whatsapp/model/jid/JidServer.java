@@ -37,7 +37,7 @@ public enum JidServer {
     /**
      * Newsletter
      */
-    CHANNEL("newsletter");
+    NEWSLETTER("newsletter");
 
     private final String address;
 

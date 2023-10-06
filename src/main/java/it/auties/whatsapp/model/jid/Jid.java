@@ -154,7 +154,7 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
             case BROADCAST -> Objects.equals(user(), "status") ? JidType.STATUS : JidType.BROADCAST;
             case GROUP -> JidType.GROUP;
             case GROUP_CALL -> JidType.GROUP_CALL;
-            case CHANNEL -> JidType.CHANNEL;
+            case NEWSLETTER -> JidType.CHANNEL;
             case USER -> switch (user()) {
                 case "server" -> JidType.SERVER;
                 case "0" -> JidType.ANNOUNCEMENT;

@@ -19,7 +19,6 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.System.Logger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -42,8 +41,6 @@ public final class MetadataHelper {
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
-
-    private static final Logger LOGGER = System.getLogger("Metadata");
 
     private static volatile Version webVersion;
     private static volatile Version iosVersion;
@@ -76,7 +73,6 @@ public final class MetadataHelper {
     }
 
     private static Version getDefaultIosVersion() {
-        LOGGER.log(Logger.Level.WARNING, "Cannot fetch latest IOS version, falling back to %s".formatted(Whatsapp.DEFAULT_MOBILE_IOS_VERSION));
         return Whatsapp.DEFAULT_MOBILE_IOS_VERSION;
     }
 
@@ -198,28 +194,29 @@ public final class MetadataHelper {
             var certificates = getCertificates(apkFile);
             if (business) {
                 var result = new WhatsappApk(version, md5Hash, secretKey.getEncoded(), certificates, true);
-                return cachedBusinessApk = cacheWhatsappData(result);
+                cacheWhatsappData(result);
+                return cachedBusinessApk = result;
             }
 
             var result = new WhatsappApk(version, md5Hash, secretKey.getEncoded(), certificates, false);
-            return cachedApk = cacheWhatsappData(result);
+            cacheWhatsappData(result);
+            return cachedApk = result;
         } catch (IOException | GeneralSecurityException exception) {
             throw new RuntimeException("Cannot extract certificates from APK", exception);
         }
     }
 
-    private static WhatsappApk cacheWhatsappData(WhatsappApk apk) {
+    private static void cacheWhatsappData(WhatsappApk apk) {
         CompletableFuture.runAsync(() -> {
             try {
                 var json = Json.writeValueAsString(apk, true);
                 var file = getAndroidLocalCache(apk.business());
                 Files.createDirectories(file.getParent());
                 Files.writeString(file, json);
-            } catch (Throwable throwable) {
-                LOGGER.log(Logger.Level.WARNING, "Cannot update local cache", throwable);
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
             }
         });
-        return apk;
     }
 
     private static byte[] getAboutLogo(ByteArrayApkFile apkFile) throws IOException {

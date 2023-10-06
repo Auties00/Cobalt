@@ -81,7 +81,7 @@ class MessageHandler {
     }
 
     private CompletableFuture<?> encodeMessage(MessageSendRequest request) {
-        return request.info().chatJid().hasServer(JidServer.CHANNEL) ? encodePlainMessage(request) : encodeE2EMessage(request);
+        return request.info().chatJid().hasServer(JidServer.NEWSLETTER) ? encodePlainMessage(request) : encodeE2EMessage(request);
     }
 
     private CompletableFuture<Void> encodePlainMessage(MessageSendRequest request) {
