@@ -1,17 +1,25 @@
 package it.auties.whatsapp.socket;
 
+import it.auties.linkpreview.LinkPreview;
+import it.auties.linkpreview.LinkPreviewMedia;
+import it.auties.linkpreview.LinkPreviewResult;
+import it.auties.whatsapp.api.TextPreviewSetting;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
+import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.MessageIndexInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.info.*;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.jid.JidType;
+import it.auties.whatsapp.model.media.AttachmentType;
+import it.auties.whatsapp.model.media.MediaFile;
+import it.auties.whatsapp.model.media.MutableAttachmentProvider;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
@@ -20,8 +28,10 @@ import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.newsletter.NewsletterReaction;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.model.poll.*;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.setting.EphemeralSettings;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentitySpec;
@@ -30,16 +40,15 @@ import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
-import it.auties.whatsapp.model.sync.HistorySync;
+import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.HistorySync.Type;
-import it.auties.whatsapp.model.sync.HistorySyncNotification;
-import it.auties.whatsapp.model.sync.HistorySyncSpec;
-import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -75,9 +84,240 @@ class MessageHandler {
     }
 
     protected CompletableFuture<Void> encode(MessageSendRequest request) {
-        return encodeMessage(request)
+        attributeMessage(request.info());
+        return prepareOutgoingMessage(request.info())
+                .thenComposeAsync(ignored -> encodeMessage(request))
                 .thenRunAsync(() -> attributeOutgoingMessage(request))
                 .exceptionallyAsync(throwable -> onEncodeError(request, throwable));
+    }
+
+    private CompletableFuture<Void> prepareOutgoingMessage(MessageInfo info) {
+        info.key().setChatJid(info.chatJid().withoutDevice());
+        info.key().setSenderJid(info.senderJid() == null ? null : info.senderJid().withoutDevice());
+        fixEphemeralMessage(info);
+        var content = info.message().content();
+        return switch (content) {
+            case LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(info.chatJid(), mediaMessage);
+            case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
+            case TextMessage textMessage -> attributeTextMessage(textMessage);
+            case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(info, pollUpdateMessage);
+            case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
+            case null, default -> CompletableFuture.completedFuture(null);
+        };
+    }
+
+    // TODO: Fix this
+    private CompletableFuture<Void> attributeGroupInviteMessage(MessageInfo info, GroupInviteMessage groupInviteMessage) {
+        var url = "https://chat.whatsapp.com/%s".formatted(groupInviteMessage.code());
+        var preview = LinkPreview.createPreview(URI.create(url))
+                .stream()
+                .map(LinkPreviewResult::images)
+                .map(Collection::stream)
+                .map(Stream::findFirst)
+                .flatMap(Optional::stream)
+                .findFirst()
+                .map(LinkPreviewMedia::uri)
+                .orElse(null);
+        var parsedCaption = groupInviteMessage.caption()
+                .map(caption -> "%s: %s".formatted(caption, url))
+                .orElse(url);
+        var replacement = new TextMessageBuilder()
+                .text(parsedCaption)
+                .description("WhatsApp Group Invite")
+                .title(groupInviteMessage.groupName())
+                .previewType(TextMessage.PreviewType.NONE)
+                .thumbnail(Medias.download(preview).orElse(null))
+                .matchedText(url)
+                .canonicalUrl(url)
+                .build();
+        info.setMessage(MessageContainer.of(replacement));
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private void fixEphemeralMessage(MessageInfo info) {
+        if (info.message().hasCategory(MessageCategory.SERVER)) {
+            return;
+        }
+
+        var chat = info.chat().orElse(null);
+        if (chat != null && chat.isEphemeral()) {
+            info.message()
+                    .contentWithContext()
+                    .flatMap(ContextualMessage::contextInfo)
+                    .ifPresent(contextInfo -> createEphemeralContext(chat, contextInfo));
+            info.setMessage(info.message().toEphemeral());
+            return;
+        }
+
+        if (info.message().type() != MessageType.EPHEMERAL) {
+            return;
+        }
+
+        info.setMessage(info.message().unbox());
+    }
+
+    private void createEphemeralContext(Chat chat, ContextInfo contextInfo) {
+        var period = chat.ephemeralMessageDuration()
+                .period()
+                .toSeconds();
+        contextInfo.setEphemeralExpiration((int) period);
+    }
+
+    // TODO: Async
+    private CompletableFuture<Void> attributeTextMessage(TextMessage textMessage) {
+        if (socketHandler.store().textPreviewSetting() == TextPreviewSetting.DISABLED) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var match = LinkPreview.createPreview(textMessage.text())
+                .orElse(null);
+        if (match == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var uri = match.result().uri().toString();
+        if (socketHandler.store().textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE && !match.text()
+                .equals(uri)) {
+            textMessage.setText(textMessage.text().replace(match.text(), uri));
+        }
+
+        var imageUri = match.result()
+                .images()
+                .stream()
+                .reduce(this::compareDimensions)
+                .map(LinkPreviewMedia::uri)
+                .orElse(null);
+        var videoUri = match.result()
+                .videos()
+                .stream()
+                .reduce(this::compareDimensions)
+                .map(LinkPreviewMedia::uri)
+                .orElse(null);
+        textMessage.setMatchedText(uri);
+        textMessage.setCanonicalUrl(Objects.requireNonNullElse(videoUri, match.result().uri()).toString());
+        textMessage.setThumbnail(Medias.download(imageUri).orElse(null));
+        textMessage.setDescription(match.result().siteDescription());
+        textMessage.setTitle(match.result().title());
+        textMessage.setPreviewType(videoUri != null ? TextMessage.PreviewType.VIDEO : TextMessage.PreviewType.NONE);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {
+        return first.width() * first.height() > second.width() * second.height() ? first : second;
+    }
+
+    private CompletableFuture<Void> attributeMediaMessage(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
+        var media = mediaMessage.decodedMedia()
+                .orElseThrow(() -> new IllegalArgumentException("Missing media to upload"));
+        var attachmentType = getAttachmentType(chatJid, mediaMessage);
+        var mediaConnection = socketHandler.store().mediaConnection();
+        return Medias.upload(media, attachmentType, mediaConnection)
+                .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
+    }
+
+    private AttachmentType getAttachmentType(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
+        if (!chatJid.hasServer(JidServer.NEWSLETTER)) {
+            return mediaMessage.attachmentType();
+        }
+
+        return switch (mediaMessage.mediaType()) {
+            case IMAGE -> AttachmentType.NEWSLETTER_IMAGE;
+            case DOCUMENT -> AttachmentType.NEWSLETTER_DOCUMENT;
+            case AUDIO -> AttachmentType.NEWSLETTER_AUDIO;
+            case VIDEO -> AttachmentType.NEWSLETTER_VIDEO;
+            case STICKER -> AttachmentType.NEWSLETTER_STICKER;
+            case NONE -> throw new IllegalArgumentException("Unexpected empty message");
+        };
+    }
+
+
+    private MutableAttachmentProvider<?> attributeMediaMessage(MutableAttachmentProvider<?> mediaMessage, MediaFile upload) {
+        if(mediaMessage instanceof LocalMediaMessage<?> localMediaMessage) {
+            localMediaMessage.setHandle(upload.handle());
+        }
+
+        return mediaMessage.setMediaSha256(upload.fileSha256())
+                .setMediaEncryptedSha256(upload.fileEncSha256())
+                .setMediaKey(upload.mediaKey())
+                .setMediaUrl(upload.url())
+                .setMediaKeyTimestamp(upload.timestamp())
+                .setMediaDirectPath(upload.directPath())
+                .setMediaSize(upload.fileLength());
+    }
+
+    private CompletableFuture<Void> attributePollCreationMessage(MessageInfo info, PollCreationMessage pollCreationMessage) {
+        var pollEncryptionKey = pollCreationMessage.encryptionKey()
+                .orElseGet(KeyHelper::senderKey);
+        pollCreationMessage.setEncryptionKey(pollEncryptionKey);
+        info.setMessageSecret(pollEncryptionKey);
+        info.message()
+                .deviceInfo()
+                .ifPresent(deviceContextInfo -> deviceContextInfo.setMessageSecret(pollEncryptionKey));
+        var metadata = new PollAdditionalMetadata(false);
+        info.setPollAdditionalMetadata(metadata);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private CompletableFuture<Void> attributePollUpdateMessage(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
+        if (pollUpdateMessage.encryptedMetadata().isPresent()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var iv = BytesHelper.random(12);
+        var me = socketHandler.store().jid();
+        if(me.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(), me.get().withoutDevice());
+        var encryptedOptions = pollUpdateMessage.votes().stream().map(entry -> Sha256.calculate(entry.name())).toList();
+        var pollUpdateEncryptedOptions = PollUpdateEncryptedOptionsSpec.encode(new PollUpdateEncryptedOptions(encryptedOptions));
+        var originalPollInfo = socketHandler.store()
+                .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
+                .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
+        var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
+        var originalPollSender = originalPollInfo.senderJid().withoutDevice().toString().getBytes(StandardCharsets.UTF_8);
+        var modificationSenderJid = info.senderJid().withoutDevice();
+        pollUpdateMessage.setVoter(modificationSenderJid);
+        var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
+        var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
+        var useSecretPayload = BytesHelper.concat(
+                pollUpdateMessage.pollCreationMessageKey().id().getBytes(StandardCharsets.UTF_8),
+                originalPollSender,
+                modificationSender,
+                secretName
+        );
+        var encryptionKey = originalPollMessage.encryptionKey()
+                .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
+        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
+        var pollUpdateEncryptedPayload = AesGcm.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
+        var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadata(pollUpdateEncryptedPayload, iv);
+        pollUpdateMessage.setEncryptedMetadata(pollUpdateEncryptedMetadata);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private CompletableFuture<Void> attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
+        return switch (buttonMessage) {
+            case ButtonsMessage buttonsMessage when buttonsMessage.header().isPresent()
+                    && buttonsMessage.header().get() instanceof LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(info.chatJid(), mediaMessage);
+            case TemplateMessage templateMessage when templateMessage.format().isPresent() -> {
+                var templateFormatter = templateMessage.format().get();
+                yield switch (templateFormatter) {
+                    case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
+                            when highlyStructuredFourRowTemplate.title().isPresent() && highlyStructuredFourRowTemplate.title().get() instanceof LocalMediaMessage<?> fourRowMedia ->
+                            attributeMediaMessage(info.chatJid(), fourRowMedia);
+                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof LocalMediaMessage<?> hydratedFourRowMedia ->
+                            attributeMediaMessage(info.chatJid(), hydratedFourRowMedia);
+                    case null, default -> CompletableFuture.completedFuture(null);
+                };
+            }
+            case InteractiveMessage interactiveMessage
+                    when interactiveMessage.header().isPresent()
+                    && interactiveMessage.header().get().attachment().isPresent()
+                    && interactiveMessage.header().get().attachment().get() instanceof LocalMediaMessage<?> interactiveMedia -> attributeMediaMessage(info.chatJid(), interactiveMedia);
+            default -> CompletableFuture.completedFuture(null);
+        };
     }
 
     private CompletableFuture<?> encodeMessage(MessageSendRequest request) {
@@ -430,18 +670,27 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public CompletableFuture<Void> decode(Node node) {
+    public CompletableFuture<Void> decode(Node node, JidProvider chatOverride, boolean notify) {
         try {
             var businessName = getBusinessName(node);
-            var encrypted = node.findNodes("enc");
-            if (node.hasNode("unavailable") && !node.hasNode("enc")) {
-                return decodeMessage(node, null, businessName);
+            if (node.hasNode("unavailable")) {
+                return decodeChatMessage(node, null, businessName, notify);
             }
 
-            var futures = encrypted.stream()
-                    .map(message -> decodeMessage(node, message, businessName))
-                    .toArray(CompletableFuture[]::new);
-            return CompletableFuture.allOf(futures);
+            var encrypted = node.findNodes("enc");
+            if(!encrypted.isEmpty()) {
+                var futures = encrypted.stream()
+                        .map(message -> decodeChatMessage(node, message, businessName, notify))
+                        .toArray(CompletableFuture[]::new);
+                return CompletableFuture.allOf(futures);
+            }
+
+            if(node.hasNode("plaintext")) {
+                decodeNewsletterMessage(node, businessName, chatOverride, notify);
+                return CompletableFuture.completedFuture(null);
+            }
+
+            return decodeChatMessage(node, null, businessName, notify);
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
             return CompletableFuture.failedFuture(throwable);
@@ -494,10 +743,50 @@ class MessageHandler {
         };
     }
 
-    private CompletableFuture<Void> decodeMessage(Node infoNode, Node messageNode, String businessName) {
+    private void decodeNewsletterMessage(Node messageNode, String businessName, JidProvider chatOverride, boolean notify) {
+        try {
+            var newsletter = messageNode.attributes()
+                    .getJid("from")
+                    .flatMap(socketHandler.store()::findNewsletterByJid)
+                    .or(() -> socketHandler.store().findNewsletterByJid(chatOverride))
+                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+            var id = messageNode.attributes()
+                    .getString("id");
+            socketHandler.sendMessageAck(messageNode);
+            var receiptType = getReceiptType("newsletter", false);
+            socketHandler.sendReceipt(newsletter.jid(), null, List.of(id), receiptType);
+            var timestamp = messageNode.attributes()
+                    .getOptionalLong("t");
+            var viewsContainer = messageNode.findNode("views_count");
+            var views = viewsContainer.isPresent() ? viewsContainer.get().attributes().getOptionalLong("count") : OptionalLong.empty();
+            var reactions = messageNode.findNode("reactions")
+                    .stream()
+                    .map(node -> node.findNodes("reaction"))
+                    .flatMap(Collection::stream)
+                    .map(entry -> new NewsletterReaction(entry.attributes().getString("code"), entry.attributes().getLong("count")))
+                    .toList();
+            var result = messageNode.findNode("plaintext")
+                    .flatMap(Node::contentAsBytes)
+                    .map(MessageContainerSpec::decode)
+                    .map(messageContainer -> new NewsletterMessageInfo(id, timestamp, views, reactions, messageContainer));
+            if(result.isEmpty()) {
+                return;
+            }
+
+            newsletter.addMessage(result.get());
+            if(!notify){
+                return;
+            }
+
+            socketHandler.onNewsletterMessage(result.get());
+        } catch (Throwable throwable) {
+            socketHandler.handleFailure(MESSAGE, throwable);
+        }
+    }
+
+    private CompletableFuture<Void> decodeChatMessage(Node infoNode, Node messageNode, String businessName, boolean notify) {
         try {
             lock.lock();
-            var offline = infoNode.attributes().hasKey("offline");
             var pushName = infoNode.attributes().getNullableString("notify");
             var timestamp = infoNode.attributes().getLong("t");
             var id = infoNode.attributes().getRequiredString("id");
@@ -534,6 +823,7 @@ class MessageHandler {
                 return sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
             }
 
+
             if (messageNode == null) {
                 logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s)".formatted(id, from));
                 return sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
@@ -557,8 +847,8 @@ class MessageHandler {
                     .message(messageContainer)
                     .build();
             attributeMessageReceipt(info);
-            socketHandler.store().attribute(info);
-            saveMessage(info, offline);
+            attributeMessage(info);
+            saveMessage(info, notify);
             socketHandler.onReply(info);
             return sendReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
         } catch (Throwable throwable) {
@@ -641,7 +931,7 @@ class MessageHandler {
         info.setStatus(MessageStatus.READ);
     }
 
-    private void saveMessage(MessageInfo info, boolean offline) {
+    private void saveMessage(MessageInfo info, boolean notify) {
         if(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
             handleDistributionMessage(distributionMessage, info.senderJid());
         }
@@ -675,7 +965,10 @@ class MessageHandler {
         if (!info.ignore() && !info.fromMe()) {
             chat.setUnreadMessagesCount(chat.unreadMessagesCount() + 1);
         }
-        socketHandler.onNewMessage(info, offline);
+
+        if(notify) {
+            socketHandler.onNewMessage(info);
+        }
     }
 
     private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, Jid from) {
@@ -793,7 +1086,7 @@ class MessageHandler {
     private void handleInitialStatus(HistorySync history) {
         var store = socketHandler.store();
         for (var messageInfo : history.statusV3Messages()) {
-            store.addStatus(messageInfo);
+            socketHandler.store().addStatus(messageInfo);
         }
         socketHandler.onStatus();
     }
@@ -895,12 +1188,16 @@ class MessageHandler {
     private void handleConversations(HistorySync history) {
         var store = socketHandler.store();
         for (var chat : history.conversations()) {
+            for(var message : chat.messages()) {
+                attributeMessage(message.messageInfo());
+            }
+
             var pastParticipants = pastParticipantsQueue.remove(chat.jid());
             if (pastParticipants != null) {
                 chat.addPastParticipants(pastParticipants);
             }
 
-            store.addChat(chat);
+            socketHandler.store().addChat(chat);
         }
     }
 
@@ -923,6 +1220,118 @@ class MessageHandler {
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .toList();
+    }
+
+    protected MessageInfo attributeMessage(@NonNull MessageInfo info) {
+        var chat = socketHandler.store().findChatByJid(info.chatJid())
+                .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
+        info.setChat(chat);
+        var me = socketHandler.store().jid().orElse(null);
+        if (info.fromMe() && me != null) {
+            info.key().setSenderJid(me.withoutDevice());
+        }
+
+        info.key()
+                .senderJid()
+                .ifPresent(senderJid -> attributeSender(info, senderJid));
+        info.message()
+                .contentWithContext()
+                .flatMap(ContextualMessage::contextInfo)
+                .ifPresent(this::attributeContext);
+        processMessage(info);
+        return info;
+    }
+
+    private MessageKey attributeSender(MessageInfo info, Jid senderJid) {
+        var contact = socketHandler.store().findContactByJid(senderJid)
+                .orElseGet(() -> socketHandler.store().addContact(new Contact(senderJid)));
+        info.setSender(contact);
+        return info.key();
+    }
+
+    private void attributeContext(ContextInfo contextInfo) {
+        contextInfo.quotedMessageSenderJid().ifPresent(senderJid -> attributeContextSender(contextInfo, senderJid));
+        contextInfo.quotedMessageChatJid().ifPresent(chatJid -> attributeContextChat(contextInfo, chatJid));
+    }
+
+    private void attributeContextChat(ContextInfo contextInfo, Jid chatJid) {
+        var chat = socketHandler.store().findChatByJid(chatJid)
+                .orElseGet(() -> socketHandler.store().addNewChat(chatJid));
+        contextInfo.setQuotedMessageChat(chat);
+    }
+
+    private void attributeContextSender(ContextInfo contextInfo, Jid senderJid) {
+        var contact = socketHandler.store().findContactByJid(senderJid)
+                .orElseGet(() -> socketHandler.store().addContact(new Contact(senderJid)));
+        contextInfo.setQuotedMessageSender(contact);
+    }
+
+    private void processMessage(MessageInfo info) {
+        switch (info.message().content()) {
+            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
+            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
+            default -> {}
+        }
+    }
+
+    private void handlePollCreation(MessageInfo info, PollCreationMessage pollCreationMessage) {
+        if (pollCreationMessage.encryptionKey().isPresent()) {
+            return;
+        }
+
+        info.message()
+                .deviceInfo()
+                .flatMap(DeviceContextInfo::messageSecret)
+                .or(info::messageSecret)
+                .ifPresent(pollCreationMessage::setEncryptionKey);
+    }
+
+    private void handlePollUpdate(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
+        var originalPollInfo = socketHandler.store().findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
+                .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
+        var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
+        pollUpdateMessage.setPollCreationMessage(originalPollMessage);
+        var originalPollSender = originalPollInfo.senderJid()
+                .withoutDevice()
+                .toString()
+                .getBytes(StandardCharsets.UTF_8);
+        var modificationSenderJid = info.senderJid().withoutDevice();
+        pollUpdateMessage.setVoter(modificationSenderJid);
+        var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
+        var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
+        var useSecretPayload = BytesHelper.concat(
+                originalPollInfo.id().getBytes(StandardCharsets.UTF_8),
+                originalPollSender,
+                modificationSender,
+                secretName
+        );
+        var encryptionKey = originalPollMessage.encryptionKey()
+                .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
+        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
+        var additionalData = "%s\0%s".formatted(
+                originalPollInfo.id(),
+                modificationSenderJid
+        );
+        var metadata = pollUpdateMessage.encryptedMetadata()
+                .orElseThrow(() -> new NoSuchElementException("Missing encrypted metadata"));
+        var decrypted = AesGcm.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
+        var pollVoteMessage = PollUpdateEncryptedOptionsSpec.decode(decrypted);
+        var selectedOptions = pollVoteMessage.selectedOptions()
+                .stream()
+                .map(sha256 -> originalPollMessage.getSelectableOption(HexFormat.of().formatHex(sha256)))
+                .flatMap(Optional::stream)
+                .toList();
+        originalPollMessage.addSelectedOptions(modificationSenderJid, selectedOptions);
+        pollUpdateMessage.setVotes(selectedOptions);
+        var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowMilliseconds());
+        info.pollUpdates().add(update);
+    }
+
+    private void handleReactionMessage(MessageInfo info, ReactionMessage reactionMessage) {
+        info.setIgnore(true);
+        socketHandler.store().findMessageByKey(reactionMessage.key())
+                .ifPresent(message -> message.reactions().add(reactionMessage));
     }
 
     protected void dispose() {

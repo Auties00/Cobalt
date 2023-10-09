@@ -576,12 +576,12 @@ public final class Keys extends Controller<Keys> {
         return this.readCounter;
     }
 
-    public byte[] writeKey() {
-        return this.writeKey;
+    public Optional<byte[]> writeKey() {
+        return Optional.ofNullable(this.writeKey);
     }
 
-    public byte[] readKey() {
-        return this.readKey;
+    public Optional<byte[]> readKey() {
+        return Optional.ofNullable(this.readKey);
     }
 
     public Keys setCompanionKeyPair(SignalKeyPair companionKeyPair) {

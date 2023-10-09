@@ -56,13 +56,19 @@ public record ButtonsMessage(
                 .contextInfo(contextInfo)
                 .buttons(buttons);
         switch (header) {
-            case ButtonsMessageHeaderText textMessage -> builder.headerText(textMessage);
-            case DocumentMessage documentMessage -> builder.headerDocument(documentMessage);
-            case ImageMessage imageMessage -> builder.headerImage(imageMessage);
-            case VideoOrGifMessage videoMessage -> builder.headerVideo(videoMessage);
-            case LocationMessage locationMessage -> builder.headerLocation(locationMessage);
-            case null -> {}
+            case ButtonsMessageHeaderText textMessage -> builder.headerText(textMessage)
+                    .headerType(Type.TEXT);
+            case DocumentMessage documentMessage -> builder.headerDocument(documentMessage)
+                    .headerType(Type.DOCUMENT);
+            case ImageMessage imageMessage -> builder.headerImage(imageMessage)
+                    .headerType(Type.IMAGE);
+            case VideoOrGifMessage videoMessage -> builder.headerVideo(videoMessage)
+                    .headerType(Type.VIDEO);
+            case LocationMessage locationMessage -> builder.headerLocation(locationMessage)
+                    .headerType(Type.LOCATION);
+            case null -> builder.headerType(Type.UNKNOWN);
         }
+
         return builder.build();
     }
 

@@ -26,8 +26,7 @@ public final class Smile {
 
     static {
         try {
-            smile = SmileMapper.builder()
-                    .build()
+            smile = new SmileMapper()
                     .registerModule(new Jdk8Module())
                     .registerModule(new JavaTimeModule())
                     .registerModule(new ParameterNamesModule())

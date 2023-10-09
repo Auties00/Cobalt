@@ -5,6 +5,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.util.Validate;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -18,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -29,6 +31,7 @@ import java.util.zip.GZIPOutputStream;
 public class DefaultControllerSerializer implements ControllerSerializer {
     private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.cobalt/");
     private static final String CHAT_PREFIX = "chat_";
+    private static final String NEWSLETTER_PREFIX = "newsletter_";
     private static final String STORE_NAME = "store.smile";
     private static final String KEYS_NAME = "keys.smile";
     private static final ControllerSerializer DEFAULT_SERIALIZER = new DefaultControllerSerializer();
@@ -162,7 +165,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
 
         var chatsFutures = serializeChatsAsync(store);
-        var result = CompletableFuture.allOf(chatsFutures).thenRunAsync(() -> {
+        var newslettersFutures = serializeNewslettersAsync(store);
+        var dependableFutures = Stream.of(chatsFutures, newslettersFutures)
+                .flatMap(Arrays::stream)
+                .toArray(CompletableFuture[]::new);
+        var result = CompletableFuture.allOf(dependableFutures).thenRunAsync(() -> {
             var storePath = getSessionFile(store, STORE_NAME);
             writeFile(store, STORE_NAME, storePath);
         });
@@ -189,6 +196,19 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         var fileName = CHAT_PREFIX + chat.jid() + ".smile";
         var outputFile = getSessionFile(store, fileName);
         return CompletableFuture.runAsync(() -> writeFile(chat, fileName, outputFile));
+    }
+
+    private CompletableFuture<?>[] serializeNewslettersAsync(Store store) {
+        return store.newsletters()
+                .stream()
+                .map(newsletter -> serializeNewsletterAsync(store, newsletter))
+                .toArray(CompletableFuture[]::new);
+    }
+
+    private CompletableFuture<Void> serializeNewsletterAsync(Store store, Newsletter newsletter) {
+        var fileName = NEWSLETTER_PREFIX + newsletter.jid() + ".smile";
+        var outputFile = getSessionFile(store, fileName);
+        return CompletableFuture.runAsync(() -> writeFile(newsletter, fileName, outputFile));
     }
 
     private void writeFile(Object object, String fileName, Path outputFile) {
@@ -298,14 +318,45 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             return CompletableFuture.completedFuture(null);
         }
         try (var walker = Files.walk(directory)) {
-            var futures = walker.filter(entry -> entry.getFileName().toString().startsWith(CHAT_PREFIX))
-                    .map(entry -> CompletableFuture.runAsync(() -> deserializeChat(store, entry)))
+            var futures = walker.map(entry -> handleStoreFile(store, entry))
+                    .filter(Objects::nonNull)
                     .toArray(CompletableFuture[]::new);
             var result = CompletableFuture.allOf(futures);
             attributeStoreSerializers.put(store.uuid(), result);
             return result;
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot deserialize store", exception);
+        }
+    }
+
+    private CompletableFuture<Void> handleStoreFile(Store store, Path entry) {
+        return switch (FileType.of(entry)) {
+            case UNKNOWN -> null;
+            case NEWSLETTER -> CompletableFuture.runAsync(() -> deserializeNewsletter(store, entry));
+            case CHAT -> CompletableFuture.runAsync(() -> deserializeChat(store, entry));
+        };
+    }
+
+    private enum FileType {
+        UNKNOWN(null),
+        CHAT(CHAT_PREFIX),
+        NEWSLETTER(NEWSLETTER_PREFIX);
+
+        private final String prefix;
+
+        FileType(String prefix) {
+            this.prefix = prefix;
+        }
+
+        private static FileType of(Path path) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.prefix() != null && path.getFileName().toString().startsWith(entry.prefix()))
+                    .findFirst()
+                    .orElse(UNKNOWN);
+        }
+
+        private String prefix() {
+            return prefix;
         }
     }
 
@@ -381,12 +432,39 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 .build();
     }
 
+    private void deserializeNewsletter(Store store, Path newsletterFile) {
+        try (var input = new GZIPInputStream(Files.newInputStream(newsletterFile))) {
+            store.addNewsletter(Smile.readValue(input, Newsletter.class));
+        } catch (IOException exception) {
+            store.addNewsletter(rescueNewsletter(newsletterFile));
+        }
+    }
+
+    private Newsletter rescueNewsletter(Path entry) {
+        try {
+            Files.deleteIfExists(entry);
+        } catch (IOException ignored) {
+
+        }
+        var newsletterName = entry.getFileName().toString()
+                .replaceFirst(CHAT_PREFIX, "")
+                .replace(".smile", "")
+                .replaceAll("~~", ":");
+        return new Newsletter(Jid.of(newsletterName), null, null, null);
+    }
+
     private Path getHome(ClientType type) {
         return baseDirectory.resolve(type == ClientType.MOBILE ? "mobile" : "web");
     }
 
     private Path getSessionDirectory(ClientType clientType, String path) {
-        return getHome(clientType).resolve(path);
+       try {
+           var result = getHome(clientType).resolve(path);
+           Files.createDirectories(result.getParent());
+           return result;
+       }catch (IOException exception) {
+           throw new UncheckedIOException(exception);
+       }
     }
 
     private Path getSessionFile(Store store, String fileName) {

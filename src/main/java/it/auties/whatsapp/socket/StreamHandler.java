@@ -36,9 +36,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.SubscribedNewslettersRequest;
-import it.auties.whatsapp.model.response.ContactStatusResponse;
-import it.auties.whatsapp.model.response.NewsletterResponse;
-import it.auties.whatsapp.model.response.SubscribedNewslettersResponse;
+import it.auties.whatsapp.model.response.*;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -66,7 +64,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -88,7 +85,6 @@ class StreamHandler {
     private final SocketHandler socketHandler;
     private final WebVerificationSupport webVerificationSupport;
     private final Map<String, Integer> retries;
-    private final AtomicBoolean badMac;
     private final AtomicReference<String> lastLinkCodeKey;
     private ScheduledExecutorService service;
 
@@ -96,7 +92,6 @@ class StreamHandler {
         this.socketHandler = socketHandler;
         this.webVerificationSupport = webVerificationSupport;
         this.retries = new HashMap<>();
-        this.badMac = new AtomicBoolean();
         this.lastLinkCodeKey = new AtomicReference<>();
     }
 
@@ -110,18 +105,10 @@ class StreamHandler {
             case "receipt" -> digestReceipt(node);
             case "stream:error" -> digestError(node);
             case "success" -> digestSuccess(node);
-            case "message" -> socketHandler.decodeMessage(node);
+            case "message" -> socketHandler.decodeMessage(node, null, true);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
-            case "xmlstreamend" -> digestStreamEnd();
         }
-    }
-
-    private void digestStreamEnd() {
-        if (socketHandler.state() != SocketState.CONNECTED || badMac.get()) {
-            return;
-        }
-        socketHandler.disconnect(DisconnectReason.DISCONNECTED);
     }
 
     private void digestFailure(Node node) {
@@ -352,7 +339,20 @@ class StreamHandler {
     }
 
     private void handleNewsletter(Node node) {
-        // Received node Node[description=notification, attributes={t=1696615183, from=120363174593809831@newsletter, id=1485455203, type=newsletter}, content=[Node[description=live_updates, content=[Node[description=messages, attributes={t=1696615183}, content=[Node[description=message, attributes={server_id=138}, content=[Node[description=views_count, attributes={count=16206}], Node[description=reactions, content=[Node[description=reaction, attributes={code=❤️, count=62}], Node[description=reaction, attributes={code=👍, count=126}], Node[description=reaction, attributes={code=👏, count=1}], Node[description=reaction, attributes={code=😂, count=14}], Node[description=reaction, attributes={code=😍, count=1}], Node[description=reaction, attributes={code=😢, count=24}], Node[description=reaction, attributes={code=😮, count=10}], Node[description=reaction, attributes={code=🙏, count=18}]]]]], Node[description=message, attributes={server_id=139}, content=[Node[description=views_count, attributes={count=10869}], Node[description=reactions, content=[Node[description=reaction, attributes={code=⚡, count=1}], Node[description=reaction, attributes={code=❤️, count=64}], Node[description=reaction, attributes={code=👍, count=56}], Node[description=reaction, attributes={code=😂, count=10}], Node[description=reaction, attributes={code=😢, count=1}], Node[description=reaction, attributes={code=😮, count=29}], Node[description=reaction, attributes={code=🙏, count=13}]]]]], Node[description=message, attributes={server_id=140}, content=[Node[description=views_count, attributes={count=7509}], Node[description=reactions, content=[Node[description=reaction, attributes={code=⚡, count=1}], Node[description=reaction, attributes={code=❤️, count=30}], Node[description=reaction, attributes={code=👍, count=80}], Node[description=reaction, attributes={code=😂, count=17}], Node[description=reaction, attributes={code=😢, count=1}], Node[description=reaction, attributes={code=😮, count=40}], Node[description=reaction, attributes={code=🙏, count=4}]]]]]]]]]]]
+        var liveUpdates = node.findNode("live_updates");
+        if(liveUpdates.isEmpty()) {
+            return;
+        }
+
+
+        var messages = liveUpdates.get().findNode("messages");
+        if(messages.isEmpty()) {
+            return;
+        }
+
+        messages.get()
+                .findNodes("message")
+                .forEach(entry -> socketHandler.decodeMessage(entry, null, false));
     }
 
     private void handleMexNamespace(Node node) {
@@ -363,28 +363,40 @@ class StreamHandler {
         }
 
         switch (update.attributes().getString("op_name")) {
-            case "NotificationNewsletterJoin" -> {
-                update.contentAsString()
-                        .flatMap(NewsletterResponse::ofJson)
-                        .map(NewsletterResponse::newsletter)
-                        .ifPresent(result -> socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("jid", result.jid().withServer(JidServer.WHATSAPP), "count", 1, "type", "Jid"))));
-            }
-            case "NotificationNewsletterMuteChange" -> {
-
-            }
-            case "NotificationNewsletterLeave" -> {
-
-            }
-            case "NotificationNewsletterStateChange" -> {
-
-            }
-            case "NotificationNewsletterAdminMetadataUpdate" -> {
-
-            }
-            case "NotificationNewsletterUpdate" -> {
-
-            }
+            case "NotificationNewsletterJoin" -> handleNewsletterJoin(update);
+            case "NotificationNewsletterMuteChange" -> handleNewsletterMute(update);
+            case "NotificationNewsletterLeave" -> handleNewsletterLeave(update);
+            case "NotificationNewsletterStateChange", "NotificationNewsletterAdminMetadataUpdate", "NotificationNewsletterUpdate" -> {}
         }
+    }
+
+    private void handleNewsletterJoin(Node update) {
+        var joinPayload = update.contentAsString()
+                 .orElseThrow(() -> new NoSuchElementException("Missing join payload"));
+        var joinJson = NewsletterResponse.ofJson(joinPayload)
+                .orElseThrow(() -> new NoSuchElementException("Malformed join payload"));
+        socketHandler.store().addNewsletter(joinJson.newsletter());
+        socketHandler.queryNewsletterMessages(joinJson.newsletter().jid(), DEFAULT_NEWSLETTER_MESSAGES);
+    }
+
+    private void handleNewsletterMute(Node update) {
+        var mutePayload = update.contentAsString()
+                .orElseThrow(() -> new NoSuchElementException("Missing mute payload"));
+        var muteJson = NewsletterMuteResponse.ofJson(mutePayload)
+                .orElseThrow(() -> new NoSuchElementException("Malformed mute payload"));
+        var newsletter = socketHandler.store()
+                .findNewsletterByJid(muteJson.jid())
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+        newsletter.viewerMetadata()
+                .ifPresent(viewerMetadata -> viewerMetadata.setMute(muteJson.mute()));
+    }
+
+    private void handleNewsletterLeave(Node update) {
+        var leavePayload = update.contentAsString()
+                .orElseThrow(() -> new NoSuchElementException("Missing leave payload"));
+        var leaveJson = NewsletterLeaveResponse.ofJson(leavePayload)
+                .orElseThrow(() -> new NoSuchElementException("Malformed leave payload"));
+        socketHandler.store().removeNewsletter(leaveJson.jid());
     }
 
     private void handleCompanionRegistration(Node node) {
@@ -516,7 +528,7 @@ class StreamHandler {
                 .build();
         socketHandler.store().attribute(message);
         chat.addNewMessage(message);
-        socketHandler.onNewMessage(message, false);
+        socketHandler.onNewMessage(message);
         if(participantJid == null){
             return;
         }
@@ -721,14 +733,13 @@ class StreamHandler {
 
     private void digestError(Node node) {
         if (node.hasNode("bad-mac")) {
-            badMac.set(true);
             socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
             return;
         }
 
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
-            case 515, 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            case 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
             case 500 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             case 401 -> handleStreamError(node);
             default -> node.children().forEach(error -> socketHandler.store().resolvePendingRequest(error, true));
@@ -755,36 +766,50 @@ class StreamHandler {
             sendPreKeys();
         }
 
-        schedulePing();
         createMediaConnection(0, null);
         var loggedInFuture = queryInitialInfo()
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        queryNewsletters();
-
-        if (!socketHandler.keys().registered()) {
-            queryGroups();
+        var registered = socketHandler.keys().registered();
+        if (!registered) {
+            CompletableFuture.allOf(queryGroups(), queryNewsletters())
+                    .exceptionally(throwable -> socketHandler.handleFailure(LOGIN, throwable))
+                    .thenRun(this::onRegistration);
             return;
         }
 
-        var chatsFuture = socketHandler.store().serializer()
+        var attributionFuture = socketHandler.store()
+                .serializer()
                 .attributeStore(socketHandler.store())
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
-        CompletableFuture.allOf(loggedInFuture, chatsFuture)
-                .thenRunAsync(socketHandler::onChats);
+        CompletableFuture.allOf(loggedInFuture, attributionFuture)
+                .thenRunAsync(this::onAttribution);
     }
 
-    private void queryNewsletters() {
+    private void onRegistration() {
+        socketHandler.store().serialize(true);
+        socketHandler.keys().serialize(true);
+    }
+
+    private void onAttribution() {
+        socketHandler.onChats();
+        socketHandler.onNewsletters();
+    }
+
+    private CompletableFuture<Void> queryNewsletters() {
         var query = new SubscribedNewslettersRequest(new SubscribedNewslettersRequest.Variable());
-        socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), Json.writeValueAsBytes(query)))
-                .thenAcceptAsync(this::parseNewsletters);
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), Json.writeValueAsBytes(query)))
+                .thenAcceptAsync(this::parseNewsletters)
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
     }
 
     private void parseNewsletters(Node result) {
-        result.findNode("result")
+        var newslettersPayload = result.findNode("result")
                 .flatMap(Node::contentAsString)
-                .flatMap(SubscribedNewslettersResponse::ofJson)
-                .ifPresent(this::onNewsletters);
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter payload"));
+        var newslettersJson = SubscribedNewslettersResponse.ofJson(newslettersPayload)
+                .orElseThrow(() -> new NoSuchElementException("Malformed newsletters payload: " + newslettersPayload));
+        onNewsletters(newslettersJson);
     }
 
     private void onNewsletters(SubscribedNewslettersResponse result) {
@@ -815,8 +840,8 @@ class StreamHandler {
         executor.execute(() -> subscribeToNewsletterUpdatesForever(newsletter));
     }
 
-    private void queryGroups() {
-        socketHandler.sendQuery(JidServer.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
+    private CompletableFuture<Void> queryGroups() {
+        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
                 .thenAcceptAsync(this::onGroupsQuery);
     }
 
@@ -886,16 +911,14 @@ class StreamHandler {
         }
 
         service = Executors.newSingleThreadScheduledExecutor();
-        service.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
+        service.scheduleAtFixedRate(this::sendPing, 0, PING_INTERVAL, TimeUnit.SECONDS);
     }
 
     private void onInitialInfo() {
+        schedulePing();
         socketHandler.onLoggedIn();
         if (!socketHandler.keys().registered()) {
-            if(socketHandler.store().clientType() == ClientType.WEB){
-                socketHandler.keys().setRegistered(true);
-            }
-
+            socketHandler.keys().setRegistered(socketHandler.keys().registered() || socketHandler.store().clientType() == ClientType.WEB);
             return;
         }
 
@@ -915,19 +938,20 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryRequiredMobileInfo() {
-        var requiredFuture = socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")))
+        return socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")))
                 .thenAcceptAsync(this::parseProps)
                 .thenComposeAsync(ignored -> checkBusinessStatus())
+                .thenRunAsync(() -> {
+                    socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
+                            .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+                    socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
+                            .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+                    if(socketHandler.store().business()){
+                        socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
+                                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+                    }
+                })
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-        socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
-                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
-                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-        if(socketHandler.store().business()){
-            socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
-                    .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-        }
-        return requiredFuture;
     }
 
     private CompletableFuture<Void> queryRequiredWebInfo() {
@@ -1063,9 +1087,9 @@ class StreamHandler {
             return;
         }
 
-        socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"))
-                        .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
-        socketHandler.onSocketEvent(SocketEvent.PING);
+        socketHandler.sendQuery("get", "w:p", Node.of("ping"))
+                .thenRun(() -> socketHandler.onSocketEvent(SocketEvent.PING))
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
         socketHandler.store().serialize(true);
         socketHandler.keys().serialize(true);
     }
@@ -1295,7 +1319,7 @@ class StreamHandler {
         if(service != null){
             service.shutdownNow();
         }
-        badMac.set(false);
+
         lastLinkCodeKey.set(null);
     }
 }

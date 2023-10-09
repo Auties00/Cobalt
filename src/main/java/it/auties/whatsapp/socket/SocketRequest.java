@@ -114,10 +114,9 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
     private byte[] encryptMessage(Keys keys) {
         var encodedBody = body();
         var body = getBody(encodedBody);
-        if (keys.writeKey() == null) {
-            return body;
-        }
-        return AesGcm.encrypt(keys.writeCounter(true), body, keys.writeKey());
+        return keys.writeKey()
+                .map(bytes -> AesGcm.encrypt(keys.writeCounter(true), body, bytes))
+                .orElse(body);
     }
 
     private byte[] getBody(Object encodedBody) {

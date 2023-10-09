@@ -29,7 +29,6 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -60,6 +59,7 @@ public final class RegistrationHelper {
 
     private static CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, int statusCode, String body, VerificationCodeError lastError, VerificationCodeMethod method) {
         try {
+            System.out.println(body);
             if(statusCode != HttpURLConnection.HTTP_OK) {
                 throw new RegistrationException(null, body);
             }
@@ -91,13 +91,28 @@ public final class RegistrationHelper {
         return getRegistrationOptions(store,
                 keys,
                 lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN,
-                Map.entry("mcc", countryCode.mcc()),
-                Map.entry("mnc", countryCode.mnc()),
-                Map.entry("sim_mcc", countryCode.mcc()),
-                Map.entry("sim_mnc", countryCode.mnc()),
+                Map.entry("mcc", padCountryCodeValue(String.valueOf(countryCode.mcc()))),
+                Map.entry("mnc", padCountryCodeValue(countryCode.mnc())),
+                Map.entry("sim_mcc", "000"),
+                Map.entry("sim_mnc", "000"),
                 Map.entry("method", method.type()),
-                Map.entry("reason", lastError != null ? lastError.data() : "")
+                Map.entry("reason", ""),
+                Map.entry("hasav", 1)
         );
+    }
+
+    private static String padCountryCodeValue(String inputString) {
+        if (inputString.length() >= 3) {
+            return inputString;
+        }
+
+        var stringBuilder = new StringBuilder();
+        while (stringBuilder.length() < 3 - inputString.length()) {
+            stringBuilder.append('0');
+        }
+
+        stringBuilder.append(inputString);
+        return stringBuilder.toString();
     }
 
     public static CompletableFuture<Void> sendVerificationCode(Store store, Keys keys, AsyncVerificationCodeSupplier handler, AsyncCaptchaCodeSupplier captchaHandler) {
@@ -172,7 +187,6 @@ public final class RegistrationHelper {
                     .GET()
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .header("User-Agent", getUserAgent(store))
-                    .header("request_token", UUID.randomUUID().toString())
                     .build();
             return client.sendAsync(request, BodyHandlers.ofString());
         }
@@ -214,12 +228,13 @@ public final class RegistrationHelper {
                 .thenApplyAsync(token -> getRegistrationOptions(store, keys, token, attributes));
     }
 
-    // TODO: Add backup token, locale and language and expid
     private static Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
         return Attributes.of(attributes)
                 .put("cc", store.phoneNumber().orElseThrow().countryCode().prefix())
                 .put("in", store.phoneNumber().orElseThrow().numberWithoutPrefix())
-                .put("rc", store.releaseChannel().index())
+                .put("Rc", store.releaseChannel().index())
+                .put("lg", "en")
+                .put("lc", "US")
                 .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
                 .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
                 .put("e_keytype", "BQ")
@@ -227,6 +242,12 @@ public final class RegistrationHelper {
                 .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
                 .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
                 .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
+                .put("fdid", keys.phoneId())
+                .put("network_ratio_type", 1)
+                .put("expid", keys.deviceId())
+                .put("simnum", 1)
+                .put("hasinrc", 1)
+                .put("pid", Math.floor(Math.random() * 1000))
                 .put("id", keys.recoveryToken())
                 .put("token", token)
                 .toMap();

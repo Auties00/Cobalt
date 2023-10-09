@@ -6,8 +6,8 @@ import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonText;
 import it.auties.whatsapp.model.button.interactive.InteractiveButton;
@@ -18,16 +18,18 @@ import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.button.*;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.MessageContainerBuilder;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
+import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.util.Smile;
+import it.auties.whatsapp.utils.ConfigUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
@@ -84,9 +86,7 @@ public class ButtonsTest implements Listener {
                     .lastConnection()
                     .historyLength(WebHistoryLength.zero())
                     .unregistered(QrHandler.toTerminal())
-                    .addListener(this)
-                    .connect()
-                    .join();
+                    .addListener(this);
             return;
         }
         log("Detected github actions environment");
@@ -151,67 +151,6 @@ public class ButtonsTest implements Listener {
                 .build();
         api.sendMessage(contact, imageButtons).join();
         log("Sent buttons");
-    }
-
-    @Test
-    @Order(1)
-    public void testButtonReplyMessage() {
-        if (skip) {
-            return;
-        }
-        log("Sending button reply...");
-        var imageButtons = Json.readValue("""
-                {
-                   "buttonsResponseMessage":{
-                      "contextInfo":{
-                         "quotedMessageId":"0E7F901C06D16F2A",
-                         "quotedMessageSenderJid":"393495089819@s.whatsapp.net",
-                         "quotedMessageSender":{
-                            "jid":"393495089819@s.whatsapp.net",
-                            "chosenName":"Alessandro Autiero",
-                            "lastKnownPresence":"AVAILABLE",
-                            "lastSeen":1681323820.337021700
-                         },
-                         "quotedMessage":{
-                            "buttonsMessage":{
-                               "headerText":"Header",
-                               "body":"A nice body",
-                               "footer":"A nice footer",
-                               "buttons":[
-                                  {
-                                     "id":"089c872c1759",
-                                     "text":{
-                                        "content":"Button 0"
-                                     },
-                                     "type":1
-                                  },
-                                  {
-                                     "id":"9043a40b60da",
-                                     "text":{
-                                        "content":"Button 1"
-                                     },
-                                     "type":1
-                                  },
-                                  {
-                                     "id":"d2a5a445a2de",
-                                     "text":{
-                                        "content":"Button 2"
-                                     },
-                                     "type":1
-                                  }
-                               ],
-                               "headerType":2
-                            }
-                         }
-                      },
-                      "buttonId":"d2a5a445a2de",
-                      "buttonText":"Button 2",
-                      "responseType":1
-                   }
-                }
-                """, MessageContainer.class);
-        api.sendMessage(contact, imageButtons).join();
-        log("Sent button reply");
     }
 
     private List<Button> createButtons() {

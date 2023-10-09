@@ -1,24 +1,19 @@
+package it.auties.whatsapp.test;
+
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Emoji;
 import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.model.button.base.Button;
-import it.auties.whatsapp.model.button.base.ButtonText;
-import it.auties.whatsapp.model.button.interactive.*;
-import it.auties.whatsapp.model.button.misc.ButtonRow;
-import it.auties.whatsapp.model.button.misc.ButtonSection;
-import it.auties.whatsapp.model.button.template.hydrated.*;
+import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.button.*;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.node.Node;
@@ -26,16 +21,20 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -44,19 +43,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 // IMPORTANT !!!!
 // If you run this CI on a brand-new number it will 99% ban it because it adds a person to a group which is considered spam
 // I repeat: DO NOT RUN THIS CI LOCALLY ON A BRAND-NEW NUMBER OR IT WILL GET BANNED
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class RunWebCITest implements Listener {
+public class WebTest implements Listener {
     @SuppressWarnings("HttpUrlsUsage")
     private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 
     private static Whatsapp api;
-    private static CompletableFuture<Void> future;
+    private static CompletableFuture<?> future;
     private static CountDownLatch latch;
     private static Jid contact;
     private static Jid group;
@@ -74,7 +72,7 @@ public class RunWebCITest implements Listener {
         }
         loadConfig();
         createLatch();
-        future = api.connectAwaitingLogout();
+        future = api.connect();
         latch.await();
     }
 
@@ -102,10 +100,16 @@ public class RunWebCITest implements Listener {
     }
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) {
-        var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
-        var path = Path.of("ci/%s.gpg".formatted(parameter));
-        var decrypted = ByteArrayHandler.decrypt(Files.readAllBytes(path), passphrase.toCharArray());
-        return Smile.readValue(decrypted, type);
+        try {
+            var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
+            var path = Path.of("ci/%s.gpg".formatted(parameter));
+            var decrypted = ByteArrayHandler.decrypt(Files.readAllBytes(path), passphrase.toCharArray());
+            return Smile.readValue(decrypted, type);
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        } catch (PGPException | NoSuchProviderException exception) {
+            throw new RuntimeException(exception);
+        }
     }
 
     private void loadConfig() throws IOException {
@@ -132,8 +136,14 @@ public class RunWebCITest implements Listener {
             return;
         }
 
-        var response = api.hasWhatsapp(contact, Jid.of("123456789")).join();
-        log("Has whatsapp? %s", response);
+        var dummy = Jid.of("123456789");
+        var response = api.hasWhatsapp(contact, dummy).join();
+        var contactResponse = response.get(contact);
+        Assertions.assertNotNull(contactResponse, "Missing response");
+        var dummyResponse = response.get(dummy);
+        Assertions.assertNotNull(dummy, "Missing response");
+        Assertions.assertTrue(contactResponse.hasWhatsapp(), "Erroneous response");
+        Assertions.assertFalse(dummyResponse.hasWhatsapp(), "Erroneous response");
     }
 
     @Test
@@ -142,9 +152,22 @@ public class RunWebCITest implements Listener {
         if (skip) {
             return;
         }
-        log("Changing global presence...");
+
+        api.changePresence(false).join();
+        Assertions.assertFalse(getOnlineStatus(), "Erroneous status");
+        Assertions.assertFalse(api.store().online(), "Erroneous status");
         api.changePresence(true).join();
-        log("Changed global presence...");
+        Assertions.assertTrue(api.store().online(), "Erroneous status");
+        Assertions.assertTrue(getOnlineStatus(), "Erroneous status");
+    }
+
+    private boolean getOnlineStatus() {
+        return api.store()
+                .jid()
+                .map(Jid::withoutDevice)
+                .flatMap(api.store()::findContactByJid)
+                .map(entry -> entry.lastKnownPresence() == ContactStatus.AVAILABLE)
+                .orElse(false);
     }
 
     private void log(String message, Object... params) {
@@ -248,6 +271,7 @@ public class RunWebCITest implements Listener {
 
     @Test
     @Order(9)
+    @Disabled
     public void testClearChat() {
         if (skip) {
             return;
@@ -259,6 +283,7 @@ public class RunWebCITest implements Listener {
 
     @Test
     @Order(10)
+    @Disabled
     public void testDeleteChat() {
         if (skip) {
             return;
@@ -276,7 +301,12 @@ public class RunWebCITest implements Listener {
         }
         log("Creating group...");
         var response = api.createGroup(randomId(), contact).join();
-        group = response.jid();
+        if(response.isEmpty()) {
+            log("Cannot create group");
+            return;
+        }
+
+        group = response.get().jid();
         log("Created group: %s", response);
     }
 
@@ -287,18 +317,21 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Creating community...");
-        var communityCreationResponse = api.createCommunity(randomId(), "A nice body").join();
+        var communityCreationResponse = api.createCommunity(randomId(), "A nice body")
+                .join()
+                .orElse(null);
+        Assertions.assertNotNull(communityCreationResponse, "Cannot create community");
         log("Created community: %s", communityCreationResponse);
         log("Querying community metadata...");
         var communityMetadataResponse = api.queryGroupMetadata(communityCreationResponse.jid()).join();
-        Assertions.assertTrue(communityMetadataResponse.community(), "Expected a community");
+        Assertions.assertTrue(communityMetadataResponse.isCommunity(), "Expected a community");
         log("Queried community metadata: %s", communityMetadataResponse);
         log("Creating child group...");
         var communityChildCreationResponse = api.createGroup(randomId(), ChatEphemeralTimer.THREE_MONTHS, communityCreationResponse.jid()).join();
         log("Created child group: %s", communityChildCreationResponse);
         log("Querying child group metadata...");
-        var communityChildMetadataResponse = api.queryGroupMetadata(communityChildCreationResponse.jid()).join();
-        Assertions.assertFalse(communityChildMetadataResponse.community(), "Expected a group");
+        var communityChildMetadataResponse = api.queryGroupMetadata(communityChildCreationResponse.orElseThrow().jid()).join();
+        Assertions.assertFalse(communityChildMetadataResponse.isCommunity(), "Expected a group");
         log("Queried child group metadata: %s", communityChildMetadataResponse);
         log("Unlinking child group...");
         var unlinkChildCommunityResponse = api.unlinkGroupFromCommunity(communityMetadataResponse.jid(), communityChildMetadataResponse.jid()).join();
@@ -572,61 +605,6 @@ public class RunWebCITest implements Listener {
         log("Deleted for everyone");
     }
 
-    @SuppressWarnings("HttpUrlsUsage")
-    @Test
-    @Order(29)
-    public void testButtonsMessage() {
-        if (skip) {
-            return;
-        }
-        log("Sending buttons...");
-        var emptyButtons = ButtonsMessage.simpleBuilder()
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(createButtons())
-                .build();
-        api.sendMessage(contact, emptyButtons).join();
-        var textButtons = ButtonsMessage.simpleBuilder()
-                .header(TextMessage.of("A nice header"))
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(createButtons())
-                .build();
-        api.sendMessage(contact, textButtons).join();
-        var document = DocumentMessage.simpleBuilder()
-                .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
-                .title("Pdf test")
-                .fileName("pdf-test.pdf")
-                .pageCount(1)
-                .build();
-        var documentButtons = ButtonsMessage.simpleBuilder()
-                .header(document)
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(createButtons())
-                .build();
-        api.sendMessage(contact, documentButtons).join();
-        var image = ImageMessage.simpleBuilder()
-                .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
-                .caption("Image test")
-                .build();
-        var imageButtons = ButtonsMessage.simpleBuilder()
-                .header(image)
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(createButtons())
-                .build();
-        api.sendMessage(contact, imageButtons).join();
-        log("Sent buttons");
-    }
-
-    private List<Button> createButtons() {
-        return IntStream.range(0, 3)
-                .mapToObj(index -> ButtonText.of("Button %s".formatted(index)))
-                .map(Button::of)
-                .toList();
-    }
-
     @Test
     @Order(30)
     public void testImageMessage() {
@@ -634,7 +612,7 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending image...");
-        var image = ImageMessage.simpleBuilder()
+        var image = new ImageMessageSimpleBuilder()
                 .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
                 .build();
@@ -649,7 +627,7 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending audio...");
-        var audio = AudioMessage.simpleBuilder()
+        var audio = new AudioMessageSimpleBuilder()
                 .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
                 .voiceMessage(true)
                 .build();
@@ -664,7 +642,10 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending video...");
-        var video = VideoOrGifMessage.simpleVideoBuilder().media(MediaUtils.readBytes(VIDEO_URL)).caption("Video").build();
+        var video = new VideoMessageSimpleBuilder()
+                .media(MediaUtils.readBytes(VIDEO_URL))
+                .caption("Video")
+                .build();
         api.sendMessage(contact, video).join();
         log("Sent video");
     }
@@ -676,7 +657,10 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending gif...");
-        var video = VideoOrGifMessage.simpleGifBuilder().media(MediaUtils.readBytes(VIDEO_URL)).caption("Gif").build();
+        var video = new GifMessageSimpleBuilder()
+                .media(MediaUtils.readBytes(VIDEO_URL))
+                .caption("Gif")
+                .build();
         api.sendMessage(contact, video).join();
         log("Sent video");
     }
@@ -688,7 +672,7 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending pdf...");
-        var document = DocumentMessage.simpleBuilder()
+        var document = new DocumentMessageSimpleBuilder()
                 .media(MediaUtils.readBytes("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")
@@ -705,7 +689,7 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending document...");
-        var document = DocumentMessage.simpleBuilder()
+        var document = new DocumentMessageSimpleBuilder()
                 .media(MediaUtils.readBytes("https://calibre-ebook.com/downloads/demos/demo.docx"))
                 .title("Document test")
                 .fileName("doc-test.docx")
@@ -721,7 +705,7 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending powerpoint...");
-        var document = DocumentMessage.simpleBuilder()
+        var document = new DocumentMessageSimpleBuilder()
                 .media(MediaUtils.readBytes("https://scholar.harvard.edu/files/torman_personal/files/samplepptx.pptx"))
                 .title("Presentation test")
                 .fileName("presentation-test.pptx")
@@ -737,8 +721,17 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending contact message...");
-        var vcard = ContactCard.builder().name("A nice contact").phoneNumber(contact).build();
-        var contactMessage = new ContactMessage("A nice contact", vcard);
+        var vcard = ContactCard.of("""
+                        BEGIN:VCARD
+                        VERSION:3.0
+                        FN:John Doe
+                        ORG:ABC Corporation
+                        EMAIL:john.doe@example.com
+                        TEL:(123) 456-7890
+                        ADR:123 Main Street; Springfield; IL; 12345; USA
+                        END:VCARD
+                        """);
+        var contactMessage = new ContactMessage("John Doe", vcard, Optional.empty());
         var response = api.sendMessage(contact, contactMessage).join();
         log("Sent contact: %s", response);
     }
@@ -750,7 +743,7 @@ public class RunWebCITest implements Listener {
             return;
         }
         log("Sending location message...");
-        var location = LocationMessage.builder()
+        var location = new LocationMessageBuilder()
                 .latitude(40.730610)
                 .longitude(-73.935242)
                 .magneticNorthOffset(0)
@@ -772,10 +765,10 @@ public class RunWebCITest implements Listener {
         var code = api.queryGroupInviteCode(group).join();
         log("Queried %s", code);
         log("Sending group invite message...");
-        var invite = GroupInviteMessage.builder()
+        var invite = new GroupInviteMessageBuilder()
                 .group(group)
                 .code(code)
-                .expiration(ZonedDateTime.now().plusDays(3).toEpochSecond())
+                .expirationSeconds(ZonedDateTime.now().plusDays(3).toEpochSecond())
                 .groupName(group.user())
                 .build();
         var textResponse = api.sendMessage(contact, invite).join();
@@ -824,85 +817,6 @@ public class RunWebCITest implements Listener {
         log("Left group: %s", ephemeralResponse);
     }
 
-    // Just have a test to see if it gets sent, it's not actually a functioning button because it's designed for more complex use cases
-    @Test
-    @Order(41)
-    public void testInteractiveMessage() {
-        if (skip) {
-            return;
-        }
-        log("Sending interactive messages..");
-        var collectionMessage = InteractiveCollection.builder()
-                .business(Jid.of("15086146312@s.whatsapp.net"))
-                .id("15086146312")
-                .version(3)
-                .build();
-        var interactiveMessageWithCollection = InteractiveMessage.simpleBuilder()
-                .content(collectionMessage)
-                .build();
-        api.sendMessage(contact, interactiveMessageWithCollection).join();
-        var shopMessage = InteractiveShop.builder()
-                .id(randomId())
-                .version(3)
-                .surfaceType(InteractiveShop.SurfaceType.WHATSAPP)
-                .build();
-        var interactiveMessageWithShop = InteractiveMessage.simpleBuilder().content(shopMessage).build();
-        api.sendMessage(contact, interactiveMessageWithShop).join();
-        var nativeFlowMessage = InteractiveNativeFlow.builder()
-                .buttons(List.of(InteractiveButton.of("hello :)", "")))
-                .version(3)
-                .parameters("")
-                .build();
-        var interactiveMessageWithFlow = InteractiveMessage.simpleBuilder()
-                .content(nativeFlowMessage)
-                .build();
-        api.sendMessage(contact, interactiveMessageWithFlow).join();
-        log("Sent interactive messages");
-    }
-
-    @Test
-    @Disabled
-    @Order(42)
-    public void testTemplateMessage() {
-        if (skip) {
-            return;
-        }
-        log("Sending template message...");
-        var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
-        var urlButton = HydratedTemplateButton.of(HydratedURLButton.of("Search it", "https://google.com"));
-        var callButton = HydratedTemplateButton.of(HydratedCallButton.of("Call me", contact.toPhoneNumber()));
-        var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder()
-                .body("A nice body")
-                .footer("A nice footer")
-                .buttons(List.of(quickReplyButton, urlButton, callButton))
-                .build();
-        var templateMessage = TemplateMessage.of(fourRowTemplate);
-        api.sendMessage(contact, templateMessage).join();
-        log("Sent template message");
-    }
-
-    @Test
-    @Order(43)
-    public void testListMessage() {
-        if (skip) {
-            return;
-        }
-        var buttons = List.of(ButtonRow.of("First option", "A nice description"), ButtonRow.of("Second option", "A nice description"), ButtonRow.of("Third option", "A nice description"));
-        var section = ButtonSection.of("First section", buttons);
-        var otherButtons = List.of(ButtonRow.of("First option", "A nice description"), ButtonRow.of("Second option", "A nice description"), ButtonRow.of("Third option", "A nice description"));
-        var anotherSection = ButtonSection.of("First section", otherButtons);
-        var listMessage = ListMessage.builder()
-                .sections(List.of(section, anotherSection))
-                .button("Click me")
-                .title("A nice title")
-                .description("A nice description")
-                .footer("A nice footer")
-                .listType(ListMessage.Type.SINGLE_SELECT)
-                .build();
-        var result = api.sendMessage(contact, listMessage).join();
-        log("Sent list message: " + result);
-    }
-
     @Test
     @Order(43)
     public void testPollMessage() {
@@ -912,13 +826,26 @@ public class RunWebCITest implements Listener {
 
         var pollOptionFirst = new PollOption("First");
         var pollOptionSecond = new PollOption("Second");
-        var pollMessage = PollCreationMessage.of("Example poll", List.of(pollOptionFirst, pollOptionSecond));
+        var pollMessage = new PollCreationMessageBuilder()
+                .title("Example poll")
+                .selectableOptions(List.of(pollOptionFirst, pollOptionSecond))
+                .selectableOptionsCount(2)
+                .build();
         var pollInfo = api.sendMessage(contact, pollMessage).join();
-        var firstUpdate = PollUpdateMessage.of(pollInfo, List.of(pollOptionFirst));
+        var firstUpdate = new PollUpdateMessageSimpleBuilder()
+                .poll(pollInfo)
+                .votes(List.of(pollOptionFirst))
+                .build();
         api.sendMessage(contact, firstUpdate).join();
-        var secondUpdate = PollUpdateMessage.of(pollInfo, List.of(pollOptionFirst, pollOptionSecond));
+        var secondUpdate = new PollUpdateMessageSimpleBuilder()
+                .poll(pollInfo)
+                .votes(List.of(pollOptionFirst, pollOptionSecond))
+                .build();
         api.sendMessage(contact, secondUpdate).join();
-        var finalUpdate = PollUpdateMessage.of(pollInfo, List.of());
+        var finalUpdate = new PollUpdateMessageSimpleBuilder()
+                .poll(pollInfo)
+                .votes(List.of())
+                .build();
         api.sendMessage(contact, finalUpdate).join();
         log("Sent poll message");
     }

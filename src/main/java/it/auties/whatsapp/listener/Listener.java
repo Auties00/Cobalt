@@ -8,10 +8,11 @@ import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.NewsletterMessageInfo;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.model.QuotedMessage;
 import it.auties.whatsapp.model.newsletter.Newsletter;
@@ -325,22 +326,20 @@ public interface Listener {
     }
 
     /**
-     * Called when a new message is received in a chat
+     * Called when a new message is received in a newsletter
      *
      * @param whatsapp an instance to the calling api
      * @param info     the message that was sent
-     * @param offline  whether this message was received while the client was offline
      */
-    default void onNewMessage(Whatsapp whatsapp, MessageInfo info, boolean offline) {
+    default void onNewMessage(Whatsapp whatsapp, NewsletterMessageInfo info) {
     }
 
     /**
-     * Called when a new message is received in a chat
+     * Called when a new message is received in a newsletter
      *
      * @param info the message that was sent
-     * @param offline  whether this message was received while the client was offline
      */
-    default void onNewMessage(MessageInfo info, boolean offline) {
+    default void onNewMessage(NewsletterMessageInfo info) {
     }
 
     /**

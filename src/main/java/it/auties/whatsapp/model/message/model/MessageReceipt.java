@@ -11,7 +11,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.Set;
 
 /**
  * A model that represents the receipt for a message

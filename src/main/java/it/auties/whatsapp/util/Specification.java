@@ -20,7 +20,7 @@ public class Specification {
         public static final int SOCKET_PORT = 443;
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
-        public static final Version DEFAULT_MOBILE_IOS_VERSION = Version.of("2.23.12.75");
+        public static final Version DEFAULT_MOBILE_IOS_VERSION = Version.of("2.23.13.82");
         private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
         private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = BytesHelper.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);

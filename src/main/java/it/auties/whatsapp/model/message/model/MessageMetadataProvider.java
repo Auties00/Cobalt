@@ -2,8 +2,8 @@ package it.auties.whatsapp.model.message.model;
 
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.Optional;
 

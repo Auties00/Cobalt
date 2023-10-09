@@ -3,8 +3,8 @@ package it.auties.whatsapp.model.message.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.jid.Jid;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;

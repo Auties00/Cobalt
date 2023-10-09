@@ -47,6 +47,18 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     }
 
     /**
+     * Sets the handler that provides the verification code when verifying an account
+     *
+     * @param verificationCodeSupplier the non-null supplier
+     * @return the same instance
+     */
+    @SuppressWarnings("unchecked")
+    public T verificationCodeSupplier(@NonNull AsyncVerificationCodeSupplier verificationCodeSupplier) {
+        this.verificationCodeSupplier = verificationCodeSupplier;
+        return (T) this;
+    }
+
+    /**
      * Sets the handler that provides the captcha newsletters when verifying an account
      * Happens only on business devices
      *
@@ -56,18 +68,6 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     @SuppressWarnings("unchecked")
     public T verificationCaptchaSupplier(@NonNull Function<VerificationCodeResponse, String> verificationCaptchaSupplier) {
         this.verificationCaptchaSupplier = AsyncCaptchaCodeSupplier.of(verificationCaptchaSupplier);
-        return (T) this;
-    }
-
-    /**
-     * Sets the handler that provides the verification code when verifying an account
-     *
-     * @param verificationCodeSupplier the non-null supplier
-     * @return the same instance
-     */
-    @SuppressWarnings("unchecked")
-    public T verificationCodeSupplier(@NonNull AsyncVerificationCodeSupplier verificationCodeSupplier) {
-        this.verificationCodeSupplier = verificationCodeSupplier;
         return (T) this;
     }
 

@@ -7,6 +7,7 @@ import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.*;
@@ -14,8 +15,14 @@ import java.net.Proxy.Type;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
@@ -25,11 +32,13 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     final URI proxy;
     final Executor executor;
     final ReentrantLock outputLock;
+    final Collection<ByteBuffer> inputParts;
     SocketListener listener;
     private SocketSession(URI proxy, Executor executor) {
         this.proxy = proxy;
         this.executor = executor;
         this.outputLock = new ReentrantLock(true);
+        this.inputParts = new ConcurrentLinkedDeque<>();
     }
 
     abstract CompletableFuture<Void> connect(SocketListener listener);
@@ -74,12 +83,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
-        private final Collection<ByteBuffer> inputParts;
         private WebSocket session;
 
         WebSocketSession(URI proxy, Executor executor) {
             super(proxy, executor);
-            this.inputParts = new ConcurrentLinkedDeque<>();
         }
 
         @SuppressWarnings("resource") // Not needed
@@ -193,7 +200,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             Authenticator.setDefault(new ProxyAuthenticator());
         }
 
-        // TODO: Explore AsynchronousSocketChannel
         private Socket socket;
         private boolean closed;
 
@@ -223,17 +229,18 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
 
         @Override
-        @SuppressWarnings("UnusedReturnValue")
         void disconnect() {
-            if (!isOpen()) {
+            if(closed) {
                 return;
             }
 
             try {
                 socket.close();
-                closeResources();
-            } catch (IOException exception) {
-                throw new UncheckedIOException("Cannot close connection to host", exception);
+                this.closed = true;
+                this.socket = null;
+                listener.onClose();
+            }catch (IOException exception) {
+                listener.onError(exception);
             }
         }
 
@@ -254,7 +261,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     stream.write(bytes);
                     stream.flush();
                 }catch (SocketException exception) {
-                    closeResources();
+                    disconnect();
                 } catch (IOException exception) {
                     throw new RequestException(exception);
                 }finally {
@@ -266,45 +273,27 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         private void readMessages() {
             try (var input = new DataInputStream(socket.getInputStream())) {
                 while (isOpen()) {
-                    var length = decodeLength(input);
+                    var lengthBytes = new byte[3];
+                    input.readFully(lengthBytes);
+                    var lengthBuffer = BytesHelper.newBuffer(lengthBytes);
+                    var length = decodeLength(lengthBuffer);
+                    lengthBuffer.release();
                     if (length < 0) {
                         break;
                     }
+
                     var message = new byte[length];
-                    if(isOpen()) {
-                        input.readFully(message);
-                    }
+                    input.readFully(message);
+                    System.out.println(message.length);
                     listener.onMessage(message);
                 }
+            } catch (EOFException ignored) {
+
             } catch(Throwable throwable) {
                 listener.onError(throwable);
             } finally {
-                closeResources();
+                disconnect();
             }
-        }
-
-        private int decodeLength(DataInputStream input) {
-            try {
-                var lengthBytes = new byte[3];
-                input.readFully(lengthBytes);
-                return decodeLength(BytesHelper.newBuffer(lengthBytes));
-            } catch (IOException exception) {
-                return -1;
-            }
-        }
-
-        private void closeResources() {
-            if(closed) {
-                return;
-            }
-
-            this.closed = true;
-            this.socket = null;
-            if (executor instanceof ExecutorService service) {
-                service.shutdownNow();
-            }
-
-            listener.onClose();
         }
     }
 }

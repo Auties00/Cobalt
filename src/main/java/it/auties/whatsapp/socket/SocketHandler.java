@@ -20,11 +20,13 @@ import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
+import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.model.newsletter.NewsletterReaction;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -184,15 +186,22 @@ public class SocketHandler implements SocketListener {
                     .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
             return;
         }
-        if (keys.readKey() == null) {
+
+        var readKey = keys.readKey();
+        if (readKey.isEmpty()) {
             return;
         }
-        var plainText = AesGcm.decrypt(keys.readCounter(true), message, keys.readKey());
-        var decoder = new BinaryDecoder();
-        var node = decoder.decode(plainText);
-        onNodeReceived(node);
-        store.resolvePendingRequest(node, false);
-        streamHandler.digest(node);
+
+        try {
+            var plainText = AesGcm.decrypt(keys.readCounter(true), message, readKey.get());
+            var decoder = new BinaryDecoder();
+            var node = decoder.decode(plainText);
+            onNodeReceived(node);
+            store.resolvePendingRequest(node, false);
+            streamHandler.digest(node);
+        }catch (Throwable throwable) {
+            handleFailure(CRYPTOGRAPHY, throwable);
+        }
     }
 
     private void onNodeReceived(Node deciphered) {
@@ -308,8 +317,8 @@ public class SocketHandler implements SocketListener {
         return appStateHandler.pullInitial();
     }
 
-    public void decodeMessage(Node node) {
-        messageHandler.decode(node);
+    public void decodeMessage(Node node, JidProvider chatOverride, boolean notify) {
+        messageHandler.decode(node, chatOverride, notify);
     }
 
     public CompletableFuture<Void> sendPeerMessage(Jid companion, ProtocolMessage message) {
@@ -336,7 +345,6 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> sendMessage(MessageSendRequest request) {
-        store.attribute(request.info());
         return messageHandler.encode(request);
     }
 
@@ -443,7 +451,7 @@ public class SocketHandler implements SocketListener {
         var body = Node.of("picture", Map.of("query", "url", "type", "image"));
         if (chat.toJid().hasServer(JidServer.GROUP)) {
             return queryGroupMetadata(chat.toJid())
-                    .thenComposeAsync(result -> sendQuery("get", "w:profile:picture", Map.of(result.community() ? "parent_group_jid" : "target", chat.toJid()), body))
+                    .thenComposeAsync(result -> sendQuery("get", "w:profile:picture", Map.of(result.isCommunity() ? "parent_group_jid" : "target", chat.toJid()), body))
                     .thenApplyAsync(this::parseChatPicture);
         }
 
@@ -497,36 +505,15 @@ public class SocketHandler implements SocketListener {
         var newsletter = store.findNewsletterByJid(newsletterJid)
                 .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
         return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletter.metadata().invite())))
-                .thenAcceptAsync(result -> onNewsletterMessages(result, newsletter));
+                .thenAcceptAsync(result -> onNewsletterMessages(newsletter, result));
     }
 
-    private void onNewsletterMessages(Node result, Newsletter newsletter) {
-        var results = result.findNode("messages")
+    private void onNewsletterMessages(Newsletter newsletter, Node result) {
+        result.findNode("messages")
                 .stream()
                 .map(messages -> messages.findNodes("message"))
                 .flatMap(Collection::stream)
-                .map(this::parseNewsletterMessage)
-                .flatMap(Optional::stream)
-                .toList();
-        newsletter.addMessages(results);
-    }
-
-    private Optional<NewsletterMessageInfo> parseNewsletterMessage(Node message) {
-        var id = message.attributes().getString("id");
-        var timestamp = message.attributes().getLong("t");
-        var views = message.findNode("views_count")
-                .map(viewCounter -> viewCounter.attributes().getLong("count"))
-                .orElseThrow(() -> new NoSuchElementException("Missing views"));
-        var reactions = message.findNode("reactions")
-                .stream()
-                .map(node -> node.findNodes("reaction"))
-                .flatMap(Collection::stream)
-                .map(entry -> new NewsletterReaction(entry.attributes().getString("code"), entry.attributes().getLong("count")))
-                .toList();
-        return message.findNode("plaintext")
-                .flatMap(Node::contentAsBytes)
-                .map(MessageContainerSpec::decode)
-                .map(messageContainer -> new NewsletterMessageInfo(id, timestamp, views, reactions, messageContainer));
+                .forEach(messages -> decodeMessage(messages, newsletter, false));
     }
 
     public CompletableFuture<GroupMetadata> queryGroupMetadata(JidProvider group) {
@@ -536,9 +523,11 @@ public class SocketHandler implements SocketListener {
     }
 
     protected GroupMetadata handleGroupMetadata(Node response) {
-        var metadata = response.findNode("group")
+        var metadata = Optional.of(response)
+                .filter(entry -> entry.hasDescription("group"))
+                .or(() -> response.findNode("group"))
                 .map(this::parseGroupMetadata)
-                .orElseThrow(() -> new NoSuchElementException("Erroneous newsletters: %s".formatted(response)));
+                .orElseThrow(() -> new NoSuchElementException("Erroneous response: %s".formatted(response)));
         var chat = store.findChatByJid(metadata.jid())
                 .orElseGet(() -> store().addNewChat(metadata.jid()));
         if (chat != null) {
@@ -693,12 +682,10 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onNewMessage(MessageInfo info, boolean offline) {
+    protected void onNewMessage(MessageInfo info) {
         callListenersAsync(listener -> {
             listener.onNewMessage(whatsapp, info);
             listener.onNewMessage(info);
-            listener.onNewMessage(whatsapp, info, offline);
-            listener.onNewMessage(info, offline);
         });
     }
 
@@ -795,6 +782,13 @@ public class SocketHandler implements SocketListener {
         callListenersAsync(listener -> {
             listener.onNewsletters(whatsapp, store().newsletters());
             listener.onNewsletters(store().newsletters());
+        });
+    }
+
+    protected void onNewsletterMessage(NewsletterMessageInfo messageInfo) {
+        callListenersAsync(listener -> {
+            listener.onNewMessage(whatsapp, messageInfo);
+            listener.onNewMessage(messageInfo);
         });
     }
 

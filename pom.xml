@@ -139,7 +139,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>3.0.0</protoc.version>
+        <protoc.version>3.0.1</protoc.version>
         <checker.framework.version>3.37.0</checker.framework.version>
         <junit.version>5.10.0-M1</junit.version>
         <jna.version>5.13.0</jna.version>

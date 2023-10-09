@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.TextPreviewSetting;
 import it.auties.whatsapp.api.WebHistoryLength;
-import it.auties.whatsapp.crypto.AesGcm;
-import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -17,7 +15,6 @@ import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
@@ -25,14 +22,9 @@ import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.standard.PollCreationMessage;
-import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
-import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.model.poll.PollUpdate;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptionsSpec;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
@@ -40,12 +32,14 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.socket.SocketRequest;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.FutureReference;
+import it.auties.whatsapp.util.MetadataHelper;
+import it.auties.whatsapp.util.ProxyAuthenticator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -201,7 +195,7 @@ public final class Store extends Controller<Store> {
      * The non-null list of status messages
      */
     @NonNull
-    private final ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status;
+    private final ConcurrentHashMap<Jid, CopyOnWriteArrayList<MessageInfo>> status;
 
     /**
      * The non-null map of newsletters
@@ -338,7 +332,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentLinkedDeque<MessageInfo>> status, @NonNull ConcurrentHashMap<Jid, Newsletter> newsletters, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
+    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, CopyOnWriteArrayList<MessageInfo>> status, @NonNull ConcurrentHashMap<Jid, Newsletter> newsletters, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if(proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -753,7 +747,6 @@ public final class Store extends Controller<Store> {
      * @return the old chat, if present
      */
     public Optional<Chat> addChat(@NonNull Chat chat) {
-        chat.messages().forEach(this::attribute);
         if (chat.hasName() && chat.jid().hasServer(JidServer.WHATSAPP)) {
             var contact = findContactByJid(chat.jid())
                     .orElseGet(() -> addContact(new Contact(chat.jid())));
@@ -852,133 +845,6 @@ public final class Store extends Controller<Store> {
      */
     public Optional<Contact> removeContact(@NonNull JidProvider contactJid) {
         return Optional.ofNullable(contacts.remove(contactJid.toJid()));
-    }
-
-    /**
-     * Attributes a message Usually used by the socket handler
-     *
-     * @param historySyncMessage a non-null message
-     * @return the same incoming message
-     */
-    public MessageInfo attribute(@NonNull HistorySyncMessage historySyncMessage) {
-        return attribute(historySyncMessage.messageInfo());
-    }
-
-    // TODO: Move attribution logic to the correct Socket handler
-    /**
-     * Attributes a message Usually used by the socket handler
-     *
-     * @param info a non-null message
-     * @return the same incoming message
-     */
-    public MessageInfo attribute(@NonNull MessageInfo info) {
-        var chat = findChatByJid(info.chatJid())
-                .orElseGet(() -> addNewChat(info.chatJid()));
-        info.setChat(chat);
-        if (info.fromMe() && jid != null) {
-            info.key().setSenderJid(jid.withoutDevice());
-        }
-        info.key()
-                .senderJid()
-                .ifPresent(senderJid -> attributeSender(info, senderJid));
-        info.message()
-                .contentWithContext()
-                .flatMap(ContextualMessage::contextInfo)
-                .ifPresent(this::attributeContext);
-        processMessage(info);
-        return info;
-    }
-
-    private MessageKey attributeSender(MessageInfo info, Jid senderJid) {
-        var contact = findContactByJid(senderJid)
-                .orElseGet(() -> addContact(new Contact(senderJid)));
-        info.setSender(contact);
-        return info.key();
-    }
-
-    private void attributeContext(ContextInfo contextInfo) {
-        contextInfo.quotedMessageSenderJid().ifPresent(senderJid -> attributeContextSender(contextInfo, senderJid));
-        contextInfo.quotedMessageChatJid().ifPresent(chatJid -> attributeContextChat(contextInfo, chatJid));
-    }
-
-    private void attributeContextChat(ContextInfo contextInfo, Jid chatJid) {
-        var chat = findChatByJid(chatJid)
-                .orElseGet(() -> addNewChat(chatJid));
-        contextInfo.setQuotedMessageChat(chat);
-    }
-
-    private void attributeContextSender(ContextInfo contextInfo, Jid senderJid) {
-        var contact = findContactByJid(senderJid)
-                .orElseGet(() -> addContact(new Contact(senderJid)));
-        contextInfo.setQuotedMessageSender(contact);
-    }
-
-    private void processMessage(MessageInfo info) {
-        switch (info.message().content()) {
-            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
-            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-            default -> {}
-        }
-    }
-
-    private void handlePollCreation(MessageInfo info, PollCreationMessage pollCreationMessage) {
-        if (pollCreationMessage.encryptionKey().isPresent()) {
-            return;
-        }
-
-        info.message()
-                .deviceInfo()
-                .flatMap(DeviceContextInfo::messageSecret)
-                .or(info::messageSecret)
-                .ifPresent(pollCreationMessage::setEncryptionKey);
-    }
-
-    private void handlePollUpdate(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
-        var originalPollInfo = findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
-                .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
-        var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
-        pollUpdateMessage.setPollCreationMessage(originalPollMessage);
-        var originalPollSender = originalPollInfo.senderJid()
-                .withoutDevice()
-                .toString()
-                .getBytes(StandardCharsets.UTF_8);
-        var modificationSenderJid = info.senderJid().withoutDevice();
-        pollUpdateMessage.setVoter(modificationSenderJid);
-        var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
-        var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
-        var useSecretPayload = BytesHelper.concat(
-                originalPollInfo.id().getBytes(StandardCharsets.UTF_8),
-                originalPollSender,
-                modificationSender,
-                secretName
-        );
-        var encryptionKey = originalPollMessage.encryptionKey()
-                .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
-        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
-        var additionalData = "%s\0%s".formatted(
-                originalPollInfo.id(),
-                modificationSenderJid
-        );
-        var metadata = pollUpdateMessage.encryptedMetadata()
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypted metadata"));
-        var decrypted = AesGcm.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
-        var pollVoteMessage = PollUpdateEncryptedOptionsSpec.decode(decrypted);
-        var selectedOptions = pollVoteMessage.selectedOptions()
-                .stream()
-                .map(sha256 -> originalPollMessage.getSelectableOption(HexFormat.of().formatHex(sha256)))
-                .flatMap(Optional::stream)
-                .toList();
-        originalPollMessage.addSelectedOptions(modificationSenderJid, selectedOptions);
-        pollUpdateMessage.setVotes(selectedOptions);
-        var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowMilliseconds());
-        info.pollUpdates().add(update);
-    }
-
-    private void handleReactionMessage(MessageInfo info, ReactionMessage reactionMessage) {
-        info.setIgnore(true);
-        findMessageByKey(reactionMessage.key())
-                .ifPresent(message -> message.reactions().add(reactionMessage));
     }
 
     /**
@@ -1083,8 +949,7 @@ public final class Store extends Controller<Store> {
      * @return the same instance
      */
     public Store addStatus(@NonNull MessageInfo info) {
-        attribute(info);
-        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentLinkedDeque<MessageInfo>::new);
+        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), CopyOnWriteArrayList<MessageInfo>::new);
         wrapper.add(info);
         status.put(info.senderJid(), wrapper);
         return this;

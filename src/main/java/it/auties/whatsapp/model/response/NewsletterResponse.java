@@ -1,13 +1,23 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public record NewsletterResponse(@JsonAlias({"xwa2_newsletter_update", "xwa2_newsletter_create", "xwa2_newsletter_subscribed", "xwa2_newsletters_directory_list"}) Newsletter newsletter) {
+public record NewsletterResponse(Newsletter newsletter) {
+    @JsonCreator
+    NewsletterResponse(Map<String, Newsletter> json) {
+        this(json.values()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter")));
+    }
+
     public static Optional<NewsletterResponse> ofJson(@NonNull String json) {
         return Json.readValue(json, JsonResponse.class).data();
     }

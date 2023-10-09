@@ -27,8 +27,8 @@ public record GroupMetadata(
         @NonNull
         List<GroupParticipant> participants,
         Optional<ZonedDateTime> ephemeralExpiration,
-        boolean community,
-        boolean openCommunity
+        boolean isCommunity,
+        boolean isOpenCommunity
 ) {
 
 }

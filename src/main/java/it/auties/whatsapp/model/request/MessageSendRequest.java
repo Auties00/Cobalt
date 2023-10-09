@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.request;
 
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.List;
 import java.util.Map;

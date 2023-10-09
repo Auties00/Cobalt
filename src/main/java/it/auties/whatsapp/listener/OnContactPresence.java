@@ -1,8 +1,8 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.jid.Jid;
 
 public interface OnContactPresence extends Listener {
     /**

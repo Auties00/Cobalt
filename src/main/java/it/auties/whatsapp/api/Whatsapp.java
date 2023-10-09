@@ -8,24 +8,21 @@ import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 import it.auties.curve25519.Curve25519;
-import it.auties.linkpreview.LinkPreview;
-import it.auties.linkpreview.LinkPreviewMedia;
-import it.auties.linkpreview.LinkPreviewResult;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.*;
+import it.auties.whatsapp.crypto.AesGcm;
+import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.crypto.Hmac;
+import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
-import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.companion.CompanionLinkResult;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfoBuilder;
 import it.auties.whatsapp.model.jid.Jid;
@@ -33,32 +30,25 @@ import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MediaFile;
-import it.auties.whatsapp.model.media.MutableAttachmentProvider;
-import it.auties.whatsapp.model.message.button.ButtonsMessage;
-import it.auties.whatsapp.model.message.button.InteractiveMessage;
-import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
-import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
+import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
+import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptionsSpec;
 import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.*;
-import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.request.UpdateChannelRequest.UpdatePayload;
-import it.auties.whatsapp.model.response.NewsletterResponse;
-import it.auties.whatsapp.model.response.RecommendedNewslettersResponse;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
+import it.auties.whatsapp.model.response.NewsletterResponse;
+import it.auties.whatsapp.model.response.RecommendedNewslettersResponse;
 import it.auties.whatsapp.model.setting.LocaleSettings;
 import it.auties.whatsapp.model.setting.PushNameSettings;
 import it.auties.whatsapp.model.signal.auth.*;
@@ -85,7 +75,10 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -483,26 +476,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
-        store().attribute(info);
-        return attributeMessageMetadata(info)
-                .thenComposeAsync(ignored -> socketHandler.sendMessage(new MessageSendRequest(info)))
+        return socketHandler.sendMessage(new MessageSendRequest(info))
                 .thenApply(ignored -> info);
-    }
-
-    private CompletableFuture<Void> attributeMessageMetadata(MessageInfo info) {
-        info.key().setChatJid(info.chatJid().withoutDevice());
-        info.key().setSenderJid(info.senderJid() == null ? null : info.senderJid().withoutDevice());
-        fixEphemeralMessage(info);
-        var content = info.message().content();
-        return switch (content) {
-            case LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(info.chatJid(), mediaMessage);
-            case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
-            case TextMessage textMessage -> attributeTextMessage(textMessage);
-            case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(info, pollUpdateMessage);
-            case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
-            case null, default -> CompletableFuture.completedFuture(null);
-        };
     }
 
     /**
@@ -513,203 +488,6 @@ public class Whatsapp {
      */
     public <T extends JidProvider> CompletableFuture<T> markRead(@NonNull T chat) {
         return mark(chat, true).thenComposeAsync(ignored -> markAllAsRead(chat)).thenApplyAsync(ignored -> chat);
-    }
-
-    private void fixEphemeralMessage(MessageInfo info) {
-        if (info.message().hasCategory(MessageCategory.SERVER)) {
-            return;
-        }
-
-        var chat = info.chat().orElse(null);
-        if (chat != null && chat.isEphemeral()) {
-            info.message()
-                    .contentWithContext()
-                    .flatMap(ContextualMessage::contextInfo)
-                    .ifPresent(contextInfo -> createEphemeralContext(chat, contextInfo));
-            info.setMessage(info.message().toEphemeral());
-            return;
-        }
-
-        if (info.message().type() != MessageType.EPHEMERAL) {
-            return;
-        }
-
-        info.setMessage(info.message().unbox());
-    }
-
-    // TODO: Async
-    private CompletableFuture<Void> attributeTextMessage(TextMessage textMessage) {
-        if (store().textPreviewSetting() == TextPreviewSetting.DISABLED) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        var match = LinkPreview.createPreview(textMessage.text())
-                .orElse(null);
-        if (match == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        var uri = match.result().uri().toString();
-        if (store().textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE && !match.text()
-                .equals(uri)) {
-            textMessage.setText(textMessage.text().replace(match.text(), uri));
-        }
-
-        var imageUri = match.result()
-                .images()
-                .stream()
-                .reduce(this::compareDimensions)
-                .map(LinkPreviewMedia::uri)
-                .orElse(null);
-        var videoUri = match.result()
-                .videos()
-                .stream()
-                .reduce(this::compareDimensions)
-                .map(LinkPreviewMedia::uri)
-                .orElse(null);
-        textMessage.setMatchedText(uri);
-        textMessage.setCanonicalUrl(Objects.requireNonNullElse(videoUri, match.result().uri()).toString());
-        textMessage.setThumbnail(Medias.download(imageUri).orElse(null));
-        textMessage.setDescription(match.result().siteDescription());
-        textMessage.setTitle(match.result().title());
-        textMessage.setPreviewType(videoUri != null ? TextMessage.PreviewType.VIDEO : TextMessage.PreviewType.NONE);
-        return CompletableFuture.completedFuture(null);
-    }
-
-    private CompletableFuture<Void> attributeMediaMessage(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
-        var media = mediaMessage.decodedMedia()
-                .orElseThrow(() -> new IllegalArgumentException("Missing media to upload"));
-        var attachmentType = getAttachmentType(chatJid, mediaMessage);
-        var mediaConnection = store().mediaConnection();
-        return Medias.upload(media, attachmentType, mediaConnection)
-                .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
-    }
-
-    private AttachmentType getAttachmentType(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
-        if (!chatJid.hasServer(JidServer.NEWSLETTER)) {
-            return mediaMessage.attachmentType();
-        }
-
-        return switch (mediaMessage.mediaType()) {
-            case IMAGE -> AttachmentType.NEWSLETTER_IMAGE;
-            case DOCUMENT -> AttachmentType.NEWSLETTER_DOCUMENT;
-            case AUDIO -> AttachmentType.NEWSLETTER_AUDIO;
-            case VIDEO -> AttachmentType.NEWSLETTER_VIDEO;
-            case STICKER -> AttachmentType.NEWSLETTER_STICKER;
-            case NONE -> throw new IllegalArgumentException("Unexpected empty message");
-        };
-    }
-
-
-    private MutableAttachmentProvider<?> attributeMediaMessage(MutableAttachmentProvider<?> mediaMessage, MediaFile upload) {
-        if(mediaMessage instanceof LocalMediaMessage<?> localMediaMessage) {
-            localMediaMessage.setHandle(upload.handle());
-        }
-
-        return mediaMessage.setMediaSha256(upload.fileSha256())
-                .setMediaEncryptedSha256(upload.fileEncSha256())
-                .setMediaKey(upload.mediaKey())
-                .setMediaUrl(upload.url())
-                .setMediaKeyTimestamp(upload.timestamp())
-                .setMediaDirectPath(upload.directPath())
-                .setMediaSize(upload.fileLength());
-    }
-
-    private CompletableFuture<Void> attributePollCreationMessage(MessageInfo info, PollCreationMessage pollCreationMessage) {
-        var pollEncryptionKey = pollCreationMessage.encryptionKey()
-                .orElseGet(KeyHelper::senderKey);
-        pollCreationMessage.setEncryptionKey(pollEncryptionKey);
-        info.setMessageSecret(pollEncryptionKey);
-        info.message()
-                .deviceInfo()
-                .ifPresent(deviceContextInfo -> deviceContextInfo.setMessageSecret(pollEncryptionKey));
-        var metadata = new PollAdditionalMetadata(false);
-        info.setPollAdditionalMetadata(metadata);
-        return CompletableFuture.completedFuture(null);
-    }
-
-    private CompletableFuture<Void> attributePollUpdateMessage(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
-        if (pollUpdateMessage.encryptedMetadata().isPresent()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        var iv = BytesHelper.random(12);
-        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(), jidOrThrowError().withoutDevice());
-        var encryptedOptions = pollUpdateMessage.votes().stream().map(entry -> Sha256.calculate(entry.name())).toList();
-        var pollUpdateEncryptedOptions = PollUpdateEncryptedOptionsSpec.encode(new PollUpdateEncryptedOptions(encryptedOptions));
-        var originalPollInfo = store()
-                .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
-                .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
-        var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
-        var originalPollSender = originalPollInfo.senderJid().withoutDevice().toString().getBytes(StandardCharsets.UTF_8);
-        var modificationSenderJid = info.senderJid().withoutDevice();
-        pollUpdateMessage.setVoter(modificationSenderJid);
-        var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
-        var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
-        var useSecretPayload = BytesHelper.concat(
-                pollUpdateMessage.pollCreationMessageKey().id().getBytes(StandardCharsets.UTF_8),
-                originalPollSender,
-                modificationSender,
-                secretName
-        );
-        var encryptionKey = originalPollMessage.encryptionKey()
-                .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
-        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
-        var pollUpdateEncryptedPayload = AesGcm.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
-        var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadata(pollUpdateEncryptedPayload, iv);
-        pollUpdateMessage.setEncryptedMetadata(pollUpdateEncryptedMetadata);
-        return CompletableFuture.completedFuture(null);
-    }
-
-    private CompletableFuture<Void> attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
-        return switch (buttonMessage) {
-            case ButtonsMessage buttonsMessage when buttonsMessage.header().isPresent()
-                    && buttonsMessage.header().get() instanceof LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(info.chatJid(), mediaMessage);
-            case TemplateMessage templateMessage when templateMessage.format().isPresent() -> {
-                var templateFormatter = templateMessage.format().get();
-                yield switch (templateFormatter) {
-                    case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
-                            when highlyStructuredFourRowTemplate.title().isPresent() && highlyStructuredFourRowTemplate.title().get() instanceof LocalMediaMessage<?> fourRowMedia ->
-                            attributeMediaMessage(info.chatJid(), fourRowMedia);
-                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof LocalMediaMessage<?> hydratedFourRowMedia ->
-                            attributeMediaMessage(info.chatJid(), hydratedFourRowMedia);
-                    case null, default -> CompletableFuture.completedFuture(null);
-                };
-            }
-            case InteractiveMessage interactiveMessage
-                    when interactiveMessage.header().isPresent()
-                    && interactiveMessage.header().get().attachment().isPresent()
-                    && interactiveMessage.header().get().attachment().get() instanceof LocalMediaMessage<?> interactiveMedia -> attributeMediaMessage(info.chatJid(), interactiveMedia);
-            default -> CompletableFuture.completedFuture(null);
-        };
-    }
-
-    // TODO: Fix this
-    private CompletableFuture<Void> attributeGroupInviteMessage(MessageInfo info, GroupInviteMessage groupInviteMessage) {
-        var url = "https://chat.whatsapp.com/%s".formatted(groupInviteMessage.code());
-        var preview = LinkPreview.createPreview(URI.create(url))
-                .stream()
-                .map(LinkPreviewResult::images)
-                .map(Collection::stream)
-                .map(Stream::findFirst)
-                .flatMap(Optional::stream)
-                .findFirst()
-                .map(LinkPreviewMedia::uri)
-                .orElse(null);
-        var parsedCaption = groupInviteMessage.caption()
-                .map(caption -> "%s: %s".formatted(caption, url))
-                .orElse(url);
-        var replacement = new TextMessageBuilder()
-                .text(parsedCaption)
-                .description("WhatsApp Group Invite")
-                .title(groupInviteMessage.groupName())
-                .previewType(TextMessage.PreviewType.NONE)
-                .thumbnail(Medias.download(preview).orElse(null))
-                .matchedText(url)
-                .canonicalUrl(url)
-                .build();
-        info.setMessage(MessageContainer.of(replacement));
-        return CompletableFuture.completedFuture(null);
     }
 
     private <T extends JidProvider> CompletableFuture<T> mark(@NonNull T chat, boolean read) {
@@ -739,10 +517,6 @@ public class Whatsapp {
         return CompletableFuture.allOf(all);
     }
 
-    private LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {
-        return first.width() * first.height() > second.width() * second.height() ? first : second;
-    }
-
     private ActionMessageRangeSync createRange(JidProvider chat, boolean allMessages) {
         var known = store().findChatByJid(chat.toJid()).orElseGet(() -> store().addNewChat(chat.toJid()));
         return new ActionMessageRangeSync(known, allMessages);
@@ -766,13 +540,6 @@ public class Whatsapp {
         });
         info.setStatus(MessageStatus.READ);
         return CompletableFuture.completedFuture(info);
-    }
-
-    private void createEphemeralContext(Chat chat, ContextInfo contextInfo) {
-        var period = chat.ephemeralMessageDuration()
-                .period()
-                .toSeconds();
-        contextInfo.setEphemeralExpiration((int) period);
     }
 
     /**
@@ -812,17 +579,24 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps a non-null map
      */
     public CompletableFuture<Map<Jid, HasWhatsappResponse>> hasWhatsapp(@NonNull JidProvider... contacts) {
-        var contactNodes = Arrays.stream(contacts)
-                .map(jid -> Node.of("user", Node.of("contact", jid.toJid().toPhoneNumber())))
+        var jids = Arrays.stream(contacts)
+                .map(JidProvider::toJid)
+                .toList();
+        var contactNodes = jids.stream()
+                .map(jid -> Node.of("user", Node.of("contact", jid.toPhoneNumber())))
                 .toArray(Node[]::new);
         return socketHandler.sendInteractiveQuery(Node.of("contact"), contactNodes)
-                .thenApplyAsync(this::parseHasWhatsappResponse);
+                .thenApplyAsync(result -> parseHasWhatsappResponse(jids, result));
     }
 
-    private Map<Jid, HasWhatsappResponse> parseHasWhatsappResponse(List<Node> nodes) {
-        return nodes.stream()
+    private Map<Jid, HasWhatsappResponse> parseHasWhatsappResponse(List<Jid> contacts, List<Node> nodes) {
+        var result = nodes.stream()
                 .map(this::parseHasWhatsappResponse)
-                .collect(Collectors.toMap(HasWhatsappResponse::contact, Function.identity()));
+                .collect(Collectors.toMap(HasWhatsappResponse::contact, Function.identity(), (first, second) -> first, HashMap::new));
+        contacts.stream()
+                .filter(contact -> !result.containsKey(contact))
+                .forEach(contact -> result.put(contact, new HasWhatsappResponse(contact, false)));
+        return Collections.unmodifiableMap(result);
     }
 
     private HasWhatsappResponse parseHasWhatsappResponse(Node node) {
@@ -1001,6 +775,7 @@ public class Whatsapp {
         if (self.isEmpty()) {
             return;
         }
+
         if (presence == ContactStatus.AVAILABLE || presence == ContactStatus.UNAVAILABLE) {
             self.get().setLastKnownPresence(presence);
         }
@@ -2011,7 +1786,7 @@ public class Whatsapp {
     }
 
     private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
-        Validate.isTrue(!node.hasNode("error"), "Erroneous newsletters from media reupload: %s", node.attributes()
+        Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s", node.attributes()
                 .getInt("code"));
         var encryptNode = node.findNode("encrypt")
                 .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
@@ -2047,17 +1822,15 @@ public class Whatsapp {
      * @param body    the nullable description of the new community
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createCommunity(@NonNull String subject, String body) {
+    public CompletableFuture<Optional<GroupMetadata>> createCommunity(@NonNull String subject, String body) {
         var descriptionId = HexFormat.of().formatHex(BytesHelper.random(12));
         var entry = Node.of("create", Map.of("subject", subject),
                 Node.of("description", Map.of("id", descriptionId),
                         Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))),
                 Node.of("parent", Map.of("default_membership_approval_mode", "request_required")),
                 Node.of("allow_non_admin_sub_group_creation"));
-        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", entry).thenApplyAsync(node -> {
-            node.assertNode("group", () -> "Missing community newsletters, something went wrong: " + findErrorNode(node));
-            return socketHandler.parseGroupMetadata(node);
-        });
+        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", entry)
+                .thenApplyAsync(node -> node.findNode("group").map(socketHandler::parseGroupMetadata));
     }
 
     /**
@@ -2970,7 +2743,7 @@ public class Whatsapp {
      * @param onNewMessage the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewMessageListener(OnNewMessage onNewMessage) {
+    public Whatsapp addNewChatMessageListener(OnNewMessage onNewMessage) {
         return addListener(onNewMessage);
     }
 
@@ -2980,7 +2753,7 @@ public class Whatsapp {
      * @param onNewMessage the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewMessageListener(OnNewMarkedMessage onNewMessage) {
+    public Whatsapp addNewNewsletterMessageListener(OnNewNewsletterMessage onNewMessage) {
         return addListener(onNewMessage);
     }
 
@@ -3180,7 +2953,7 @@ public class Whatsapp {
      * @param onNewMessage the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewMessageListener(OnWhatsappNewMessage onNewMessage) {
+    public Whatsapp addNewChatMessageListener(OnWhatsappNewMessage onNewMessage) {
         return addListener(onNewMessage);
     }
 
@@ -3190,7 +2963,7 @@ public class Whatsapp {
      * @param onNewMessage the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewMessageListener(OnWhatsappNewMarkedMessage onNewMessage) {
+    public Whatsapp addNewNewsletterMessageListener(OnWhatsappNewNewsletterMessage onNewMessage) {
         return addListener(onNewMessage);
     }
 
