@@ -10,14 +10,14 @@ import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Specification.Signal;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
-public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys) {
+public record SessionBuilder(SessionAddress address, Keys keys) {
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey) {
         Validate.isTrue(keys.hasTrust(address, identityKey), "Untrusted key", SecurityException.class);
         Validate.isTrue(Curve25519.verifySignature(KeyHelper.withoutHeader(identityKey), signedPreKey.keyPair()
@@ -82,17 +82,19 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
     }
 
     private SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey, byte[] theirIdentityPubKey, byte[] theirEphemeralPubKey, byte[] theirSignedPubKey, int registrationId, int version, byte[][] masterKey) {
-        return SessionStateBuilder.builder()
-                .version(version)
-                .registrationId(registrationId)
-                .rootKey(masterKey[0])
-                .ephemeralKeyPair(isInitiator ? SignalKeyPair.random() : ourSignedKey)
-                .lastRemoteEphemeralKey(Objects.requireNonNull(theirSignedPubKey))
-                .previousCounter(0)
-                .remoteIdentityKey(theirIdentityPubKey)
-                .baseKey(isInitiator ? ourEphemeralKey.encodedPublicKey() : theirEphemeralPubKey)
-                .closed(false)
-                .build();
+        return new SessionState(
+                version,
+                registrationId,
+                isInitiator ? ourEphemeralKey.encodedPublicKey() : theirEphemeralPubKey,
+                theirIdentityPubKey,
+                new ConcurrentHashMap<>(),
+                masterKey[0],
+                null,
+                isInitiator ? SignalKeyPair.random() : ourSignedKey,
+                Objects.requireNonNull(theirSignedPubKey),
+                0,
+                false
+        );
     }
 
     private SessionState calculateSendingRatchet(SessionState state, byte[] theirSignedPubKey) {

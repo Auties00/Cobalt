@@ -6,7 +6,6 @@ import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Specification;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 
@@ -26,12 +25,12 @@ class SocketHandshake {
         updateHash(prologue);
     }
 
-    void updateHash(byte @NonNull [] data) {
+    void updateHash(byte[] data) {
         var input = BytesHelper.concat(hash, data);
         this.hash = Sha256.calculate(input);
     }
 
-    byte[] cipher(byte @NonNull [] bytes, boolean encrypt) {
+    byte[] cipher(byte[] bytes, boolean encrypt) {
         var cyphered = encrypt ? AesGcm.encrypt(counter++, bytes, cryptoKey, hash) : AesGcm.decrypt(counter++, bytes, cryptoKey, hash);
         if (!encrypt) {
             updateHash(bytes);
@@ -48,7 +47,7 @@ class SocketHandshake {
         dispose();
     }
 
-    void mixIntoKey(byte @NonNull [] bytes) {
+    void mixIntoKey(byte[] bytes) {
         var expanded = Hkdf.extractAndExpand(bytes, salt, null, 64);
         this.salt = Arrays.copyOfRange(expanded, 0, 32);
         this.cryptoKey = Arrays.copyOfRange(expanded, 32, 64);

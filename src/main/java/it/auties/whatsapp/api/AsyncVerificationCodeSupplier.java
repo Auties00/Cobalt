@@ -1,6 +1,5 @@
 package it.auties.whatsapp.api;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -15,7 +14,7 @@ public interface AsyncVerificationCodeSupplier extends Supplier<CompletableFutur
      * @param supplier a non-null supplier
      * @return a non-null async supplier
      */
-    static AsyncVerificationCodeSupplier of(@NonNull Supplier<String> supplier){
+    static AsyncVerificationCodeSupplier of(Supplier<String> supplier){
         return () -> CompletableFuture.completedFuture(supplier.get());
     }
 }

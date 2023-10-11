@@ -13,8 +13,6 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,49 +27,43 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * The jid of the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Nullable
-    private final String quotedMessageId;
+        private final String quotedMessageId;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    @Nullable
-    private final Jid quotedMessageSenderJid;
+        private final Jid quotedMessageSenderJid;
 
     /**
      * The message container that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-    @Nullable
-    private final MessageContainer quotedMessage;
+        private final MessageContainer quotedMessage;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    @Nullable
-    private final Jid quotedMessageChatJid;
+        private final Jid quotedMessageChatJid;
 
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
     @ProtobufProperty(index = 15, type = ProtobufType.STRING, repeated = true)
-    @NonNull
-    private final List<Jid> mentions;
+        private final List<Jid> mentions;
 
     /**
      * Conversation source
      */
     @ProtobufProperty(index = 18, type = ProtobufType.STRING)
-    @Nullable
-    private final String conversionSource;
+        private final String conversionSource;
 
     /**
      * Conversation data
      */
     @ProtobufProperty(index = 19, type = ProtobufType.BYTES)
-    private final byte @Nullable [] conversionData;
+    private final byte[] conversionData;
 
     /**
      * Conversation delay in endTimeStamp
@@ -95,15 +87,13 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * The ad that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
-    @Nullable
-    private final AdReplyInfo quotedAd;
+        private final AdReplyInfo quotedAd;
 
     /**
      * Placeholder key
      */
     @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ChatMessageKey placeholderKey;
+        private final ChatMessageKey placeholderKey;
 
     /**
      * The expiration in seconds for this ContextualMessage. Only valid if the chat where this message
@@ -124,28 +114,25 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * Ephemeral shared secret
      */
     @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
-    private final byte @Nullable [] ephemeralSharedSecret;
+    private final byte[] ephemeralSharedSecret;
 
     /**
      * External ad reply
      */
     @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ExternalAdReplyInfo externalAdReply;
+        private final ExternalAdReplyInfo externalAdReply;
 
     /**
      * Entry point conversion source
      */
     @ProtobufProperty(index = 29, type = ProtobufType.STRING)
-    @Nullable
-    private final String entryPointConversionSource;
+        private final String entryPointConversionSource;
 
     /**
      * Entry point conversion app
      */
     @ProtobufProperty(index = 30, type = ProtobufType.STRING)
-    @Nullable
-    private final String entryPointConversionApp;
+        private final String entryPointConversionApp;
 
     /**
      * Entry point conversion delay in endTimeStamp
@@ -157,36 +144,31 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * Disappearing mode
      */
     @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ChatDisappear disappearingMode;
+        private final ChatDisappear disappearingMode;
 
     /**
      * Action link
      */
     @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ButtonActionLink actionLink;
+        private final ButtonActionLink actionLink;
 
     /**
      * Group subject
      */
     @ProtobufProperty(index = 34, type = ProtobufType.STRING)
-    @Nullable
-    private final String groupSubject;
+        private final String groupSubject;
 
     /**
      * Parent group
      */
     @ProtobufProperty(index = 35, type = ProtobufType.STRING)
-    @Nullable
-    private final Jid parentGroup;
+        private final Jid parentGroup;
 
     /**
      * Trust banner type
      */
     @ProtobufProperty(index = 37, type = ProtobufType.STRING)
-    @Nullable
-    private final String trustBannerType;
+        private final String trustBannerType;
 
     /**
      * Trust banner action
@@ -197,18 +179,16 @@ public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * The contact that sent the message that this ContextualMessage quotes
      */
-    @Nullable
-    private Contact quotedMessageSender;
+        private Contact quotedMessageSender;
 
     /**
      * The contact that sent the message that this ContextualMessage quotes
      */
-    @Nullable
-    @JsonBackReference
+        @JsonBackReference
     private Chat quotedMessageChat;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public ContextInfo(@Nullable String quotedMessageId, @Nullable Jid quotedMessageSenderJid, @Nullable MessageContainer quotedMessage, @Nullable Jid quotedMessageChatJid, @NonNull List<Jid> mentions, @Nullable String conversionSource, byte @Nullable [] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, @Nullable AdReplyInfo quotedAd, @Nullable ChatMessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte @Nullable [] ephemeralSharedSecret, @Nullable ExternalAdReplyInfo externalAdReply, @Nullable String entryPointConversionSource, @Nullable String entryPointConversionApp, int entryPointConversionDelaySeconds, @Nullable ChatDisappear disappearingMode, @Nullable ButtonActionLink actionLink, @Nullable String groupSubject, @Nullable Jid parentGroup, @Nullable String trustBannerType, int trustBannerAction) {
+    public ContextInfo(String quotedMessageId, Jid quotedMessageSenderJid, MessageContainer quotedMessage, Jid quotedMessageChatJid, List<Jid> mentions, String conversionSource, byte[] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, AdReplyInfo quotedAd, ChatMessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte[] ephemeralSharedSecret, ExternalAdReplyInfo externalAdReply, String entryPointConversionSource, String entryPointConversionApp, int entryPointConversionDelaySeconds, ChatDisappear disappearingMode, ButtonActionLink actionLink, String groupSubject, Jid parentGroup, String trustBannerType, int trustBannerAction) {
         this.quotedMessageId = quotedMessageId;
         this.quotedMessageSenderJid = quotedMessageSenderJid;
         this.quotedMessage = quotedMessage;
@@ -236,7 +216,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
         this.trustBannerAction = trustBannerAction;
     }
 
-    public static ContextInfo of(@NonNull MessageInfo quotedMessage) {
+    public static ContextInfo of(MessageInfo quotedMessage) {
         return new ContextInfoBuilder()
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessage(quotedMessage.message())

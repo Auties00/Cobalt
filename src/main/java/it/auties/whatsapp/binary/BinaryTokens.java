@@ -1,7 +1,6 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.whatsapp.model.companion.CompanionProperty;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -1197,7 +1196,7 @@ json:{"sampling":[]}"""));
         PROPERTIES = Collections.unmodifiableMap(properties);
     }
 
-    public static boolean anyMatch(@NonNull String input, @NonNull String regex) {
+    public static boolean anyMatch(String input, String regex) {
         return Pattern.compile(regex)
                 .matcher(input)
                 .results()

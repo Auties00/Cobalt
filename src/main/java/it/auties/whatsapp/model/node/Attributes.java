@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.node;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.model.jid.Jid;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -19,7 +18,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param toMap the non-null wrapped map
  */
-public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> toMap) {
+public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
     /**
      * Constructs a new map using the non-null provided entries
      *
@@ -28,7 +27,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      */
     @SafeVarargs
     @JsonCreator
-    public static Attributes of(@NonNull Entry<String, Object>... entries) {
+    public static Attributes of(Entry<String, Object>... entries) {
         return ofNullable(ofEntries(entries));
     }
 
@@ -51,7 +50,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param map the non-null existing map
      * @return a new instance of Attributes
      */
-    public static Attributes of(@NonNull Map<String, Object> map) {
+    public static Attributes of(Map<String, Object> map) {
         return ofNullable(map);
     }
 
@@ -61,7 +60,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return a boolean
      */
-    public boolean hasKey(@NonNull String key) {
+    public boolean hasKey(String key) {
         return toMap.containsKey(key);
     }
 
@@ -72,7 +71,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param value the nullable value to check against
      * @return a boolean
      */
-    public boolean hasValue(@NonNull String key, String value) {
+    public boolean hasValue(String key, String value) {
         return Objects.equals(toMap.get(key), value);
     }
 
@@ -86,7 +85,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @return the calling instance
      */
     @SafeVarargs
-    public final <T> Attributes put(@NonNull String key, T value, @NonNull Function<T, Boolean>... conditions) {
+    public final <T> Attributes put(String key, T value, Function<T, Boolean>... conditions) {
         var translated = Arrays.stream(conditions)
                 .map(condition -> (BooleanSupplier) () -> condition.apply(value))
                 .toArray(BooleanSupplier[]::new);
@@ -101,7 +100,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param conditions the non-null conditions that must be met to insert the value
      * @return the calling instance
      */
-    public Attributes put(@NonNull String key, Object value, @NonNull BooleanSupplier... conditions) {
+    public Attributes put(String key, Object value, BooleanSupplier... conditions) {
         return put(key, value, Arrays.stream(conditions).allMatch(BooleanSupplier::getAsBoolean));
     }
 
@@ -113,7 +112,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param condition the condition that must be met to insert the value
      * @return the calling instance
      */
-    public Attributes put(@NonNull String key, Object value, boolean condition) {
+    public Attributes put(String key, Object value, boolean condition) {
         if (condition) {
             toMap.put(key, value);
         }
@@ -127,7 +126,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param value the nullable value
      * @return the calling instance
      */
-    public Attributes put(@NonNull String key, Object value) {
+    public Attributes put(String key, Object value) {
         toMap.put(key, value);
         return this;
     }
@@ -141,7 +140,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param <T>          the type of the value that is returned
      * @return the non-null value
      */
-    public <T> T get(@NonNull String key, @NonNull T defaultValue, @NonNull Class<T> clazz) {
+    public <T> T get(String key, T defaultValue, Class<T> clazz) {
         return get(key, clazz).orElse(defaultValue);
     }
 
@@ -153,7 +152,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param <T>   the type of the value that is returned
      * @return the non-null value
      */
-    public <T> Optional<T> get(@NonNull String key, @NonNull Class<T> clazz) {
+    public <T> Optional<T> get(String key, Class<T> clazz) {
         return Optional.ofNullable(toMap.get(key)).map(clazz::cast);
     }
 
@@ -163,7 +162,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public int getInt(@NonNull String key) {
+    public int getInt(String key) {
         return getOptionalInt(key).orElse(0);
     }
 
@@ -196,7 +195,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public long getLong(@NonNull String key) {
+    public long getLong(String key) {
         return getOptionalLong(key).orElse(0L);
     }
 
@@ -206,7 +205,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public OptionalLong getOptionalLong(@NonNull String key) {
+    public OptionalLong getOptionalLong(String key) {
         return get(key, Object.class)
                 .stream()
                 .mapToLong(this::parseLong)
@@ -231,7 +230,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public String getString(@NonNull String key) {
+    public String getString(String key) {
         return getString(key, "unknown");
     }
 
@@ -242,7 +241,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return a non-null string
      */
-    public String getString(@NonNull String key, String defaultValue) {
+    public String getString(String key, String defaultValue) {
         return get(key, Object.class).map(Object::toString).orElse(defaultValue);
     }
 
@@ -252,7 +251,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the nullable value
      */
-    public String getNullableString(@NonNull String key) {
+    public String getNullableString(String key) {
         return getString(key, null);
     }
 
@@ -262,7 +261,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the nullable value
      */
-    public Integer getNullableInt(@NonNull String key) {
+    public Integer getNullableInt(String key) {
         var result = getOptionalInt(key);
         return result.isPresent() ? result.getAsInt() : null;
     }
@@ -273,7 +272,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the nullable value
      */
-    public Long getNullableLong(@NonNull String key) {
+    public Long getNullableLong(String key) {
         var result = getOptionalLong(key);
         return result.isPresent() ? result.getAsLong() : null;
     }
@@ -285,7 +284,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public String getRequiredString(@NonNull String key) {
+    public String getRequiredString(String key) {
         return requireNonNull(getString(key, null), "Missing required attribute %s".formatted(key));
     }
 
@@ -296,7 +295,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public int getRequiredInt(@NonNull String key) {
+    public int getRequiredInt(String key) {
         return getOptionalInt(key)
                 .orElseThrow(() -> new NullPointerException("Missing required attribute %s".formatted(key)));
     }
@@ -308,7 +307,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return the non-null value
      */
-    public long getRequiredLong(@NonNull String key) {
+    public long getRequiredLong(String key) {
         return getOptionalLong(key)
                 .orElseThrow(() -> new NullPointerException("Missing required attribute %s".formatted(key)));
     }
@@ -319,7 +318,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return a non-null optional
      */
-    public Optional<String> getOptionalString(@NonNull String key) {
+    public Optional<String> getOptionalString(String key) {
         return Optional.ofNullable(getString(key, null));
     }
 
@@ -329,7 +328,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return a boolean
      */
-    public boolean getBoolean(@NonNull String key) {
+    public boolean getBoolean(String key) {
         return get(key, Object.class).map(this::parseBool).orElse(false);
     }
 
@@ -350,7 +349,7 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      * @param key the non-null key
      * @return a non-null optional
      */
-    public Optional<Jid> getJid(@NonNull String key) {
+    public Optional<Jid> getJid(String key) {
         return get(key, Object.class).map(this::parseJid);
     }
 

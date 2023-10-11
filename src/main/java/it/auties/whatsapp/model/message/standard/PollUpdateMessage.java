@@ -14,8 +14,6 @@ import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateMessageMetadata;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -28,32 +26,26 @@ import java.util.Optional;
  */
 @ProtobufMessageName("Message.PollUpdateMessage")
 public final class PollUpdateMessage implements Message, EncryptedMessage {
-    @Nullable
-    private Jid voter;
+        private Jid voter;
 
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-    @NonNull
-    private final ChatMessageKey pollCreationMessageKey;
+        private final ChatMessageKey pollCreationMessageKey;
 
-    @Nullable
-    private PollCreationMessage pollCreationMessage;
+        private PollCreationMessage pollCreationMessage;
 
-    @NonNull
-    private List<PollOption> votes;
+        private List<PollOption> votes;
 
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-    @Nullable
-    private PollUpdateEncryptedMetadata encryptedMetadata;
+        private PollUpdateEncryptedMetadata encryptedMetadata;
 
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-    @Nullable
-    private final PollUpdateMessageMetadata metadata;
+        private final PollUpdateMessageMetadata metadata;
 
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
     private final long senderTimestampMilliseconds;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public PollUpdateMessage(@NonNull ChatMessageKey pollCreationMessageKey, @NonNull PollUpdateEncryptedMetadata encryptedMetadata, @Nullable PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds) {
+    public PollUpdateMessage(ChatMessageKey pollCreationMessageKey, PollUpdateEncryptedMetadata encryptedMetadata, PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds) {
         this.pollCreationMessageKey = pollCreationMessageKey;
         this.encryptedMetadata = encryptedMetadata;
         this.metadata = metadata;
@@ -70,7 +62,7 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
      * @return a non-null new message
      */
     @ProtobufBuilder(className = "PollUpdateMessageSimpleBuilder")
-    static PollUpdateMessage simpleBuilder(@NonNull ChatMessageInfo poll, List<PollOption> votes) {
+    static PollUpdateMessage simpleBuilder(ChatMessageInfo poll, List<PollOption> votes) {
         Validate.isTrue(poll.message()
                 .type() == MessageType.POLL_CREATION, "Expected a poll, got %s".formatted(poll.message().type()));
         var result = new PollUpdateMessageBuilder()

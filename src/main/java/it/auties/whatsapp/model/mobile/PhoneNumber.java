@@ -4,11 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import it.auties.whatsapp.model.jid.Jid;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
-public record PhoneNumber(@NonNull CountryCode countryCode, long numberWithoutPrefix) {
+public record PhoneNumber(CountryCode countryCode, long numberWithoutPrefix) {
     public static Optional<PhoneNumber> ofNullable(Long phoneNumber) {
         if(phoneNumber == null){
             return Optional.empty();

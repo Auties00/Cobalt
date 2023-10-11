@@ -8,7 +8,6 @@ import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -20,11 +19,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ReactionMessage")
 public record ReactionMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        ChatMessageKey key,
+                ChatMessageKey key,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String content,
+                String content,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Optional<String> groupingKey,
         @ProtobufProperty(index = 4, type = ProtobufType.INT64)

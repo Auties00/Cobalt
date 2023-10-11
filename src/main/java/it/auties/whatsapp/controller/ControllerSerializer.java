@@ -2,7 +2,6 @@ package it.auties.whatsapp.controller;
 
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.LinkedList;
 import java.util.Optional;
@@ -20,7 +19,7 @@ public interface ControllerSerializer {
      * @param type the non-null type of client
      * @return a non-null linked list
      */
-    LinkedList<UUID> listIds(@NonNull ClientType type);
+    LinkedList<UUID> listIds(ClientType type);
 
     /**
      * Returns all the known IDs
@@ -28,7 +27,7 @@ public interface ControllerSerializer {
      * @param type the non-null type of client
      * @return a non-null linked list
      */
-    LinkedList<PhoneNumber> listPhoneNumbers(@NonNull ClientType type);
+    LinkedList<PhoneNumber> listPhoneNumbers(ClientType type);
 
     /**
      * Serializes the keys
@@ -53,7 +52,7 @@ public interface ControllerSerializer {
      * @param id the id of the keys
      * @return a non-null keys
      */
-    Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id);
+    Optional<Keys> deserializeKeys(ClientType type, UUID id);
 
     /**
      * Serializes the keys
@@ -62,7 +61,7 @@ public interface ControllerSerializer {
      * @param phoneNumber the phone number of the keys
      * @return a non-null keys
      */
-    Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber);
+    Optional<Keys> deserializeKeys(ClientType type, long phoneNumber);
 
 
     /**
@@ -72,7 +71,7 @@ public interface ControllerSerializer {
      * @param alias the alias number of the keys
      * @return a non-null keys
      */
-    Optional<Keys> deserializeKeys(@NonNull ClientType type, String alias);
+    Optional<Keys> deserializeKeys(ClientType type, String alias);
 
     /**
      * Serializes the store
@@ -81,7 +80,7 @@ public interface ControllerSerializer {
      * @param id the id of the store
      * @return a non-null store
      */
-    Optional<Store> deserializeStore(@NonNull ClientType type, UUID id);
+    Optional<Store> deserializeStore(ClientType type, UUID id);
 
     /**
      * Serializes the store
@@ -90,7 +89,7 @@ public interface ControllerSerializer {
      * @param phoneNumber the phone number of the store
      * @return a non-null store
      */
-    Optional<Store> deserializeStore(@NonNull ClientType type, long phoneNumber);
+    Optional<Store> deserializeStore(ClientType type, long phoneNumber);
 
     /**
      * Serializes the store
@@ -99,21 +98,21 @@ public interface ControllerSerializer {
      * @param alias the alias of the store
      * @return a non-null store
      */
-    Optional<Store> deserializeStore(@NonNull ClientType type, String alias);
+    Optional<Store> deserializeStore(ClientType type, String alias);
 
     /**
      * Deletes a session
      *
      * @param controller the non-null controller
      */
-    void deleteSession(@NonNull Controller<?> controller);
+    void deleteSession(Controller<?> controller);
 
     /**
      * Creates a link between the session and its metadata, usually phone number and alias
      *
      * @param controller a non-null controller
      */
-    default void linkMetadata(@NonNull Controller<?> controller) {
+    default void linkMetadata(Controller<?> controller) {
 
     }
 

@@ -6,7 +6,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 
@@ -16,8 +15,7 @@ import java.util.Objects;
 @ProtobufMessageName("DisappearingMode")
 public record ChatDisappear(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        Initiator initiator
+                Initiator initiator
 ) implements ProtobufMessage {
         /**
          * The constants of this enumerated type describe the various actors that can initialize

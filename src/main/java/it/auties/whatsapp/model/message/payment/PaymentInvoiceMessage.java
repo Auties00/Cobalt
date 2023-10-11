@@ -9,8 +9,6 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -22,46 +20,39 @@ import java.util.OptionalLong;
  */
 public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage<PaymentInvoiceMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Nullable
-    private final String note;
+        private final String note;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    @NonNull
-    private final String token;
+        private final String token;
 
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-    @Nullable
-    private final PaymentAttachmentType paymentAttachmentType;
+        private final PaymentAttachmentType paymentAttachmentType;
 
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    @Nullable
-    private final String mimeType;
+        private final String mimeType;
 
     @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaKey;
+    private byte[] mediaKey;
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaKeyTimestampSeconds;
+        private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaSha256;
+    private byte[] mediaSha256;
 
     @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaEncryptedSha256;
+    private byte[] mediaEncryptedSha256;
 
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaDirectPath;
+        private String mediaDirectPath;
 
     @ProtobufProperty(index = 10, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnail;
+    private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ContextInfo contextInfo;
+        private final ContextInfo contextInfo;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public PaymentInvoiceMessage(@Nullable String note, @NonNull String token, @Nullable PaymentAttachmentType paymentAttachmentType, @Nullable String mimeType, byte @Nullable [] mediaKey, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] mediaSha256, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo) {
+    public PaymentInvoiceMessage(String note, String token, PaymentAttachmentType paymentAttachmentType, String mimeType, byte[] mediaKey, Long mediaKeyTimestampSeconds, byte[] mediaSha256, byte[] mediaEncryptedSha256, String mediaDirectPath, byte[] thumbnail, ContextInfo contextInfo) {
         this.note = note;
         this.token = token;
         this.paymentAttachmentType = paymentAttachmentType;

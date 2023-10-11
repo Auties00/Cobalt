@@ -10,7 +10,6 @@ import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.ApkSigner;
 import net.dongliu.apk.parser.bean.CertificateMeta;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -49,7 +48,7 @@ public final class MetadataHelper {
 
     private static Path androidCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/android");
 
-    public static void setAndroidCache(@NonNull Path path) {
+    public static void setAndroidCache(Path path) {
         try {
             Files.createDirectories(path);
             androidCache = path;

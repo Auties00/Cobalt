@@ -1,7 +1,5 @@
 package it.auties.whatsapp.util;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
@@ -18,11 +16,11 @@ public class ProxyAuthenticator extends Authenticator {
         credentials = new ConcurrentHashMap<>();
     }
 
-    public static void register(@NonNull URI uri){
+    public static void register(URI uri){
         credentials.put("%s:%s".formatted(uri.getHost(), uri.getPort()), uri);
     }
 
-    public static void unregister(@NonNull URI uri){
+    public static void unregister(URI uri){
         credentials.remove("%s:%s".formatted(uri.getHost(), uri.getPort()));
     }
 

@@ -6,7 +6,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -17,11 +16,9 @@ import java.util.Optional;
 @ProtobufMessageName("ContextInfo.AdReplyInfo")
 public record AdReplyInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String advertiserName,
+                String advertiserName,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        @NonNull
-        MediaType mediaType,
+                MediaType mediaType,
         @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
         Optional<byte[]> thumbnail,
         @ProtobufProperty(index = 17, type = ProtobufType.STRING)

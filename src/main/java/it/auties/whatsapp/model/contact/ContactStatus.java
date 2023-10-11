@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.contact;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -27,7 +26,7 @@ public enum ContactStatus {
      */
     RECORDING;
 
-    public static Optional<ContactStatus> of(@NonNull String name) {
+    public static Optional<ContactStatus> of(String name) {
         return Arrays.stream(values())
                 .filter(entry -> entry.name().equalsIgnoreCase(name))
                 .findFirst();

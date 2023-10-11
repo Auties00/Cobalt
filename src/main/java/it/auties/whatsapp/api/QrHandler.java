@@ -7,7 +7,6 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import it.auties.qr.QrTerminal;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.awt.*;
 import java.io.IOException;
@@ -39,7 +38,7 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationS
      *
      * @param smallQrConsumer the non-null consumer
      */
-    static QrHandler toString(@NonNull Consumer<String> smallQrConsumer) {
+    static QrHandler toString(Consumer<String> smallQrConsumer) {
         return qr -> {
             var matrix = createMatrix(qr, 10, 0);
             smallQrConsumer.accept(QrTerminal.toString(matrix, true));
@@ -54,7 +53,7 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationS
      * @param margin the margin for the qr countryCode
      * @return a non-null matrix
      */
-    static BitMatrix createMatrix(@NonNull String qr, int size, int margin) {
+    static BitMatrix createMatrix(String qr, int size, int margin) {
         try {
             var writer = new MultiFormatWriter();
             return writer.encode(qr, BarcodeFormat.QR_CODE, size, size, Map.of(EncodeHintType.MARGIN, margin, EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L));
@@ -68,7 +67,7 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationS
      *
      * @param fileConsumer the consumer to digest the created file
      */
-    static QrHandler toFile(@NonNull ToFileConsumer fileConsumer) {
+    static QrHandler toFile(ToFileConsumer fileConsumer) {
         try {
             var file = createTempFile("qr", ".jpg");
             return toFile(file, fileConsumer);
@@ -83,7 +82,7 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationS
      * @param path         the location where the qr will be written
      * @param fileConsumer the consumer to digest the created file
      */
-    static QrHandler toFile(@NonNull Path path, @NonNull ToFileConsumer fileConsumer) {
+    static QrHandler toFile(Path path, ToFileConsumer fileConsumer) {
         return qr -> {
             try {
                 var matrix = createMatrix(qr, 500, 5);

@@ -8,18 +8,15 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
 @ProtobufMessageName("Message.InteractiveResponseMessage")
 public record InteractiveResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        InteractiveBody body,
+                InteractiveBody body,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        @NonNull
-        NativeFlowResponseMessage nativeFlowResponseMessage,
+                NativeFlowResponseMessage nativeFlowResponseMessage,
         @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage {

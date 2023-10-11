@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
 import it.auties.whatsapp.model.sync.*;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -24,8 +23,7 @@ public record ProtocolMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<ChatMessageKey> key,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        @NonNull
-        Type protocolType,
+                Type protocolType,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
         long ephemeralExpiration,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)

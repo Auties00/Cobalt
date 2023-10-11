@@ -25,7 +25,6 @@ import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -61,7 +60,7 @@ class AppStateHandler {
         return executor;
     }
 
-    protected CompletableFuture<Void> push(@NonNull Jid jid, @NonNull List<PatchRequest> patches) {
+    protected CompletableFuture<Void> push(Jid jid, List<PatchRequest> patches) {
         return runPushTask(() -> {
             var clientType = socketHandler.store().clientType();
             var pullOperation = switch (clientType){

@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Json;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -17,7 +16,7 @@ import java.util.Optional;
  * @param messageId the nullable id of the message regarding the chane
  * @param fromMe    whether the change regards yourself
  */
-public record MessageIndexInfo(@NonNull String type, Optional<Jid> chatJid, Optional<String> messageId, boolean fromMe) implements Info {
+public record MessageIndexInfo(String type, Optional<Jid> chatJid, Optional<String> messageId, boolean fromMe) implements Info {
     /**
      * Constructs a new message index info
      *
@@ -27,7 +26,7 @@ public record MessageIndexInfo(@NonNull String type, Optional<Jid> chatJid, Opti
      * @param fromMe    whether the change regards yourself
      * @return a non-null message index info
      */
-    public static MessageIndexInfo of(@NonNull String type, Jid chatJid, String messageId, boolean fromMe) {
+    public static MessageIndexInfo of(String type, Jid chatJid, String messageId, boolean fromMe) {
         return new MessageIndexInfo(type, Optional.ofNullable(chatJid), Optional.ofNullable(messageId), fromMe);
     }
 
@@ -37,7 +36,7 @@ public record MessageIndexInfo(@NonNull String type, Optional<Jid> chatJid, Opti
      * @param json the non-null json string
      * @return a non-null index info
      */
-    public static MessageIndexInfo ofJson(@NonNull String json) {
+    public static MessageIndexInfo ofJson(String json) {
         var array = Json.readValue(json, new TypeReference<List<String>>() {});
         var type = getProperty(array, 0).orElseThrow(() -> new NoSuchElementException("Cannot parse MessageSync: missing type"));
         var chatJid = getProperty(array, 1).map(Jid::of);

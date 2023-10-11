@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -13,8 +12,7 @@ import java.util.Optional;
 @ProtobufMessageName("StatusPSA")
 public record PublicServiceAnnouncementStatus(
         @ProtobufProperty(index = 44, type = ProtobufType.STRING)
-        @NonNull
-        String campaignId,
+                String campaignId,
         @ProtobufProperty(index = 45, type = ProtobufType.UINT64)
         long campaignExpirationTimestampSeconds
 ) implements ProtobufMessage {

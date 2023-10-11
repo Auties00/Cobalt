@@ -2,13 +2,12 @@ package org.example.whatsapp.command;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Set;
 
 public class HelloCommand implements Command {
     @Override
-    public void onCommand(@NonNull Whatsapp api, @NonNull MessageInfo message) {
+    public void onCommand(Whatsapp api, MessageInfo message) {
         api.sendMessage(message.chatJid(), "Hello :)", message);
     }
 

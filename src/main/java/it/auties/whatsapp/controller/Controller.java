@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
 
@@ -18,8 +16,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The id of this controller
      */
-    @NonNull
-    protected final UUID uuid;
+        protected final UUID uuid;
 
     /**
      * The phone number of the associated companion
@@ -29,23 +26,20 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The serializer instance to use
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     protected ControllerSerializer serializer;
 
     /**
      * The client type
      */
-    @NonNull
-    protected final ClientType clientType;
+        protected final ClientType clientType;
 
     /**
      * A list of alias for the controller, can be used in place of UUID1
      */
-    @NonNull
-    protected final List<String> alias;
+        protected final List<String> alias;
 
-    public Controller(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias) {
+    public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias) {
         this.uuid = uuid;
         this.phoneNumber = phoneNumber;
         this.serializer = serializer;
@@ -65,11 +59,11 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      */
     public abstract void dispose();
 
-    public @NonNull UUID uuid() {
+    public UUID uuid() {
         return this.uuid;
     }
 
-    public @NonNull ClientType clientType() {
+    public ClientType clientType() {
         return this.clientType;
     }
 
@@ -88,7 +82,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * @return the same instance
      */
     @SuppressWarnings("unchecked")
-    public T setPhoneNumber(@NonNull PhoneNumber phoneNumber) {
+    public T setPhoneNumber(PhoneNumber phoneNumber) {
         this.phoneNumber = phoneNumber;
         serializer.linkMetadata(this);
         return (T) this;
@@ -129,7 +123,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      *
      * @param entry the non-null alias to add
      */
-    public void addAlias(@NonNull String entry) {
+    public void addAlias(String entry) {
         alias.add(entry);
     }
 
@@ -138,7 +132,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      *
      * @param entry the non-null alias to remove
      */
-    public void removeAlias(@NonNull String entry) {
+    public void removeAlias(String entry) {
         alias.remove(entry);
     }
 

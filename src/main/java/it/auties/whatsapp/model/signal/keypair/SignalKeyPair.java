@@ -4,13 +4,12 @@ import it.auties.curve25519.Curve25519;
 import it.auties.curve25519.XecUtils;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.KeyHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.security.interfaces.XECPrivateKey;
 import java.security.interfaces.XECPublicKey;
 import java.util.Arrays;
 
-public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair {
+public record SignalKeyPair(byte[] publicKey, byte[] privateKey) implements ISignalKeyPair {
     public SignalKeyPair(byte[] publicKey, byte[] privateKey) {
         this.publicKey = KeyHelper.withoutHeader(publicKey);
         this.privateKey = privateKey;

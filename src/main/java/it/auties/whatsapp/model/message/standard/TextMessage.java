@@ -11,8 +11,6 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -25,80 +23,79 @@ import java.util.OptionalLong;
 @ProtobufMessageName("Message.TextMessage")
 public final class TextMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @NonNull
-    private String text;
+        private String text;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private @Nullable String matchedText;
+    private String matchedText;
 
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private @Nullable String canonicalUrl;
+    private String canonicalUrl;
 
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-    private @Nullable String description;
+    private String description;
 
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-    private @Nullable String title;
+    private String title;
 
     @ProtobufProperty(index = 7, type = ProtobufType.FIXED32)
-    private @Nullable Integer textArgb;
+    private Integer textArgb;
 
     @ProtobufProperty(index = 8, type = ProtobufType.FIXED32)
-    private @Nullable Integer backgroundArgb;
+    private Integer backgroundArgb;
 
     @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
-    private @Nullable FontType font;
+    private FontType font;
 
     @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-    private @Nullable PreviewType previewType;
+    private PreviewType previewType;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private byte @Nullable [] thumbnail;
+    private byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private @Nullable ContextInfo contextInfo;
+    private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BOOL)
     private boolean doNotPlayInline;
 
     @ProtobufProperty(index = 19, type = ProtobufType.STRING)
-    private @Nullable String thumbnailDirectPath;
+    private String thumbnailDirectPath;
 
     @ProtobufProperty(index = 20, type = ProtobufType.BYTES)
-    private byte @Nullable [] thumbnailSha256;
+    private byte[] thumbnailSha256;
 
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
-    private byte @Nullable [] thumbnailEncSha256;
+    private byte[] thumbnailEncSha256;
 
     @ProtobufProperty(index = 22, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaKey;
+    private byte[] mediaKey;
 
     @ProtobufProperty(index = 23, type = ProtobufType.INT64)
-    private @Nullable Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 24, type = ProtobufType.UINT32)
-    private @Nullable Integer thumbnailHeight;
+    private Integer thumbnailHeight;
 
     @ProtobufProperty(index = 25, type = ProtobufType.UINT32)
-    private @Nullable Integer thumbnailWidth;
+    private Integer thumbnailWidth;
 
     @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
-    private @Nullable InviteLinkGroupType inviteLinkGroupType;
+    private InviteLinkGroupType inviteLinkGroupType;
 
     @ProtobufProperty(index = 27, type = ProtobufType.STRING)
-    private @Nullable String inviteLinkParentGroupSubjectV2;
+    private String inviteLinkParentGroupSubjectV2;
 
     @ProtobufProperty(index = 28, type = ProtobufType.BYTES)
-    private byte @Nullable [] inviteLinkParentGroupThumbnailV2;
+    private byte[] inviteLinkParentGroupThumbnailV2;
 
     @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
-    private @Nullable InviteLinkGroupType inviteLinkGroupTypeV2;
+    private InviteLinkGroupType inviteLinkGroupTypeV2;
 
     @ProtobufProperty(index = 30, type = ProtobufType.BOOL)
     private boolean viewOnce;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public TextMessage(@NonNull String text, @Nullable String matchedText, @Nullable String canonicalUrl, @Nullable String description, @Nullable String title, @Nullable Integer textArgb, @Nullable Integer backgroundArgb, @Nullable FontType font, @Nullable PreviewType previewType, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, boolean doNotPlayInline, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, byte @Nullable [] mediaKey, @Nullable Long mediaKeyTimestampSeconds, @Nullable Integer thumbnailHeight, @Nullable Integer thumbnailWidth, @Nullable InviteLinkGroupType inviteLinkGroupType, @Nullable String inviteLinkParentGroupSubjectV2, byte @Nullable [] inviteLinkParentGroupThumbnailV2, @Nullable InviteLinkGroupType inviteLinkGroupTypeV2, boolean viewOnce) {
+    public TextMessage(String text, String matchedText, String canonicalUrl, String description, String title, Integer textArgb, Integer backgroundArgb, FontType font, PreviewType previewType, byte[] thumbnail, ContextInfo contextInfo, boolean doNotPlayInline, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, byte[] mediaKey, Long mediaKeyTimestampSeconds, Integer thumbnailHeight, Integer thumbnailWidth, InviteLinkGroupType inviteLinkGroupType, String inviteLinkParentGroupSubjectV2, byte[] inviteLinkParentGroupThumbnailV2, InviteLinkGroupType inviteLinkGroupTypeV2, boolean viewOnce) {
         this.text = text;
         this.matchedText = matchedText;
         this.canonicalUrl = canonicalUrl;
@@ -161,7 +158,7 @@ public final class TextMessage implements ContextualMessage {
         return Optional.ofNullable(title);
     }
 
-    public @Nullable Integer textArgb() {
+    public Integer textArgb() {
         return textArgb;
     }
 

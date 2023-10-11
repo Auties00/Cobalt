@@ -43,7 +43,6 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.*;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -92,7 +91,7 @@ class StreamHandler {
         this.lastLinkCodeKey = new AtomicReference<>();
     }
 
-    protected void digest(@NonNull Node node) {
+    protected void digest(Node node) {
         switch (node.description()) {
             case "ack" -> digestAck(node);
             case "call" -> digestCall(node);
@@ -424,7 +423,7 @@ class StreamHandler {
         var joinJson = NewsletterResponse.ofJson(joinPayload)
                 .orElseThrow(() -> new NoSuchElementException("Malformed join payload"));
         socketHandler.store().addNewsletter(joinJson.newsletter());
-        socketHandler.queryNewsletterMessages(joinJson.newsletter().jid(), DEFAULT_NEWSLETTER_MESSAGES);
+        socketHandler.queryNewsletterMessages(joinJson.newsletter().jid(), socketHandler.store().historyLength().isZero() ? 0 : DEFAULT_NEWSLETTER_MESSAGES);
     }
 
     private void handleNewsletterMute(Node update) {
@@ -865,7 +864,7 @@ class StreamHandler {
             var newsletter = result.newsletters().get(index);
             socketHandler.store().addNewsletter(newsletter);
             subscribeToNewsletterUpdatesForever(newsletter);
-            futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES);
+            futures[index] = socketHandler.queryNewsletterMessages(newsletter, socketHandler.store().historyLength().isZero() ? 0 : DEFAULT_NEWSLETTER_MESSAGES);
         }
 
         CompletableFuture.allOf(futures)
@@ -1347,7 +1346,7 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Unknown platform: " + container));
         socketHandler.store().setCompanionDeviceOs(companionOs);
         socketHandler.store().setBusiness(companionOs == PlatformType.SMB_ANDROID || companionOs == PlatformType.SMB_IOS);
-        var me = new Contact(companion.withoutDevice(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, ZonedDateTime.now(), false);
+        var me = new Contact(companion.withoutDevice(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
         socketHandler.store().addContact(me);
     }
 

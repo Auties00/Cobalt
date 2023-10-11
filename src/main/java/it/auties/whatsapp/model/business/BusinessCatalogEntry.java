@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.business;
 
 import it.auties.whatsapp.model.node.Node;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -21,9 +20,9 @@ import java.util.NoSuchElementException;
  * @param currency       the currency of the price of the catalog entry
  * @param hidden         whether the catalog entry is hidden or not
  */
-public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedImage, @NonNull BusinessReviewStatus reviewStatus,
-                                   @NonNull BusinessItemAvailability availability, @NonNull String name, @NonNull String sellerId,
-                                   @NonNull URI uri, @NonNull String description, long price, @NonNull String currency,
+public record BusinessCatalogEntry(String id, URI encryptedImage, BusinessReviewStatus reviewStatus,
+                                   BusinessItemAvailability availability, String name, String sellerId,
+                                   URI uri, String description, long price, String currency,
                                    boolean hidden) {
     /**
      * A factory method that creates a BusinessCatalogEntry object from a given Node.
@@ -32,7 +31,7 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
      * @return a BusinessCatalogEntry object
      * @throws NoSuchElementException if some required data is missing
      */
-    public static BusinessCatalogEntry of(@NonNull Node node) {
+    public static BusinessCatalogEntry of(Node node) {
         var id = node.attributes().getRequiredString("id");
         var hidden = node.attributes().getBoolean("is_hidden");
         var name = node.findNode("name")

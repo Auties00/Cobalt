@@ -5,9 +5,8 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.util.KeyHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-public record GroupBuilder(@NonNull Keys keys) {
+public record GroupBuilder(Keys keys) {
     public byte[] createOutgoing(SenderKeyName name) {
         var record = keys.findSenderKeyByName(name);
         if (record.isEmpty()) {

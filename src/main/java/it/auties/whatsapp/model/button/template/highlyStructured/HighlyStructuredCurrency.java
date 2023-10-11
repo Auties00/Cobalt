@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.button.template.highlyStructured;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a currency
@@ -11,8 +10,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMCurrency")
 public record HighlyStructuredCurrency(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String currencyCode,
+                String currencyCode,
         @ProtobufProperty(index = 2, type = ProtobufType.INT64)
         long amount1000
 ) implements HighlyStructuredLocalizableParameterValue {

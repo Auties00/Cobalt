@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.message.model.PaymentMessage;
 import it.auties.whatsapp.model.payment.PaymentBackground;
 import it.auties.whatsapp.model.payment.PaymentMoney;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -22,8 +21,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.RequestPaymentMessage")
 public record RequestPaymentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String currency,
+                String currency,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
@@ -33,8 +31,7 @@ public record RequestPaymentMessage(
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-        @NonNull
-        PaymentMoney amount,
+                PaymentMoney amount,
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {

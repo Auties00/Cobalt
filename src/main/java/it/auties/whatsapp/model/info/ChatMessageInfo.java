@@ -20,8 +20,6 @@ import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
 import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -37,13 +35,13 @@ import static java.util.Objects.requireNonNullElseGet;
 @ProtobufMessageName("WebMessageInfo")
 public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<ChatMessageInfo>, ProtobufMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-    private final @NonNull ChatMessageKey key;
+    private final ChatMessageKey key;
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-    private @NonNull MessageContainer message;
+    private MessageContainer message;
     @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
     private final long timestampSeconds;
     @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-    private @NonNull MessageStatus status;
+    private MessageStatus status;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     private final Jid senderJid;
     @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
@@ -97,7 +95,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     @ProtobufProperty(index = 39, type = ProtobufType.OBJECT)
     private final PhotoChange photoChange;
     @ProtobufProperty(index = 40, type = ProtobufType.OBJECT)
-    private final @NonNull MessageReceipt receipt;
+    private final MessageReceipt receipt;
     @ProtobufProperty(index = 41, type = ProtobufType.OBJECT, repeated = true)
     private final List<ReactionMessage> reactions;
     @ProtobufProperty(index = 42, type = ProtobufType.OBJECT)
@@ -124,14 +122,12 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     private long revokeTimestampSeconds;
 
     @JsonBackReference
-    @Nullable
-    private Chat chat;
+        private Chat chat;
 
-    @Nullable
-    private Contact sender;
+        private Contact sender;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public ChatMessageInfo(@NonNull ChatMessageKey key, @NonNull MessageContainer message, long timestampSeconds, @NonNull MessageStatus status, Jid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, StubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, @NonNull MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, Jid originalSender, long revokeTimestampSeconds, @Nullable Chat chat, @Nullable Contact sender) {
+    public ChatMessageInfo(ChatMessageKey key, MessageContainer message, long timestampSeconds, MessageStatus status, Jid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, StubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, Jid originalSender, long revokeTimestampSeconds, Chat chat, Contact sender) {
         this.key = key;
         this.message = message;
         this.timestampSeconds = timestampSeconds;
@@ -180,7 +176,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     }
 
 
-    public ChatMessageInfo(@NonNull ChatMessageKey key, @NonNull MessageContainer message, long timestampSeconds, @NonNull MessageStatus status, Jid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, StubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, @NonNull MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, Jid originalSender, long revokeTimestampSeconds) {
+    public ChatMessageInfo(ChatMessageKey key, MessageContainer message, long timestampSeconds, MessageStatus status, Jid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, StubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, Jid originalSender, long revokeTimestampSeconds) {
         this.key = key;
         this.message = Objects.requireNonNullElseGet(message, MessageContainer::empty);
         this.timestampSeconds = timestampSeconds;
@@ -330,12 +326,12 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
         return chatJid();
     }
 
-    public @NonNull ChatMessageKey key() {
+    public ChatMessageKey key() {
         return key;
     }
 
     @Override
-    public @NonNull MessageContainer message() {
+    public MessageContainer message() {
         return message;
     }
 
@@ -349,7 +345,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     }
 
     @Override
-    public @NonNull MessageStatus status() {
+    public MessageStatus status() {
         return status;
     }
 

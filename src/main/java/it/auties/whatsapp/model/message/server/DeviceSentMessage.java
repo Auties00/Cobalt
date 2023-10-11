@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -18,11 +17,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.DeviceSentMessage")
 public record DeviceSentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        Jid destinationJid,
+                Jid destinationJid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        @NonNull
-        MessageContainer message,
+                MessageContainer message,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Optional<String> phash
 ) implements ServerMessage {

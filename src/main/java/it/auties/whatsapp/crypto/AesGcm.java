@@ -6,7 +6,6 @@ import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.GCMBlockCipher;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class AesGcm {
     private static final int NONCE = 128;
@@ -15,15 +14,15 @@ public final class AesGcm {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
-    public static byte[] encrypt(long iv, byte @NonNull [] input, byte @NonNull [] key) {
+    public static byte[] encrypt(long iv, byte[] input, byte[] key) {
         return encrypt(iv, input, key, null);
     }
 
-    public static byte[] encrypt(long iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData) {
+    public static byte[] encrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
         return cipher(toIv(iv), input, key, additionalData, true);
     }
 
-    private static byte[] cipher(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData, boolean encrypt) {
+    private static byte[] cipher(byte[] iv, byte[] input, byte[] key, byte[] additionalData, boolean encrypt) {
         try {
             var cipher = new GCMBlockCipher(new AESEngine());
             var parameters = new AEADParameters(new KeyParameter(key), NONCE, iv, additionalData);
@@ -45,23 +44,23 @@ public final class AesGcm {
         return BytesHelper.readBuffer(buffer);
     }
 
-    public static byte[] decrypt(long iv, byte @NonNull [] input, byte @NonNull [] key) {
+    public static byte[] decrypt(long iv, byte[] input, byte[] key) {
         return decrypt(iv, input, key, null);
     }
 
-    public static byte[] decrypt(long iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData) {
+    public static byte[] decrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
         return cipher(toIv(iv), input, key, additionalData, false);
     }
 
-    public static byte[] encrypt(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData) {
+    public static byte[] encrypt(byte[] iv, byte[] input, byte[] key, byte[] additionalData) {
         return cipher(iv, input, key, additionalData, true);
     }
 
-    public static byte[] encrypt(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key) {
+    public static byte[] encrypt(byte[] iv, byte[] input, byte[] key) {
         return cipher(iv, input, key, null, true);
     }
 
-    public static byte[] decrypt(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData) {
+    public static byte[] decrypt(byte[] iv, byte[] input, byte[] key, byte[] additionalData) {
         return cipher(iv, input, key, additionalData, false);
     }
 }

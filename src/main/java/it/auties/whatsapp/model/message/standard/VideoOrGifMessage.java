@@ -18,8 +18,6 @@ import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -79,8 +77,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ContextInfo contextInfo;
+        private final ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] streamingSidecar;
@@ -104,7 +101,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     private final String staticUrl;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public VideoOrGifMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, byte[] mediaKey, String caption, boolean gifPlayback, Integer height, Integer width, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, long mediaKeyTimestampSeconds, byte[] thumbnail, @Nullable ContextInfo contextInfo, byte[] streamingSidecar, Attribution gifAttribution, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
+    public VideoOrGifMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, byte[] mediaKey, String caption, boolean gifPlayback, Integer height, Integer width, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, long mediaKeyTimestampSeconds, byte[] thumbnail, ContextInfo contextInfo, byte[] streamingSidecar, Attribution gifAttribution, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.mediaSha256 = mediaSha256;
@@ -131,7 +128,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     }
 
     @ProtobufBuilder(className = "VideoMessageSimpleBuilder")
-    static VideoOrGifMessage videoBuilder(byte @NonNull [] media, @Nullable String mimeType, @Nullable String caption, byte @Nullable[] thumbnail, @Nullable ContextInfo contextInfo) {
+    static VideoOrGifMessage videoBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
         return new VideoOrGifMessageBuilder()
@@ -147,7 +144,7 @@ public final class VideoOrGifMessage extends LocalMediaMessage<VideoOrGifMessage
     }
 
     @ProtobufBuilder(className = "GifMessageSimpleBuilder")
-    static VideoOrGifMessage gifBuilder(byte @NonNull [] media, @Nullable String mimeType, @Nullable String caption, @Nullable Attribution gifAttribution, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo) {
+    static VideoOrGifMessage gifBuilder(byte[] media, String mimeType, String caption, Attribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
         Validate.isTrue(isNotGif(media, mimeType), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.annotation.ProtobufConverter;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Objects;
 
@@ -13,11 +11,11 @@ import java.util.Objects;
  * A model class that represents a jid. This class is only a model, this means that changing its
  * values will have no real effect on WhatsappWeb's servers.
  */
-public record Jid(String user, @NonNull JidServer server, int device, int agent) implements JidProvider {
+public record Jid(String user, JidServer server, int device, int agent) implements JidProvider {
     /**
      * Default constructor
      */
-    public Jid(String user, @NonNull JidServer server, int device, int agent){
+    public Jid(String user, JidServer server, int device, int agent){
         this.user = user != null && user.startsWith("+") ? user.substring(1) : user;
         this.server = server;
         this.device = device;
@@ -29,12 +27,12 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
      * @param server the non-null custom server
      * @return a non-null contact jid
      */
-    public static Jid ofServer(@NonNull JidServer server) {
+    public static Jid ofServer(JidServer server) {
         return of(null, server);
     }
 
     @ProtobufConverter // Reserved for protobuf
-    public static Jid ofProtobuf(@Nullable String input) {
+    public static Jid ofProtobuf(String input) {
         return input == null ? null : Jid.of(input);
     }
 
@@ -45,7 +43,7 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
      * @param server the non-null custom server
      * @return a non-null contact jid
      */
-    public static Jid of(String jid, @NonNull JidServer server) {
+    public static Jid of(String jid, JidServer server) {
         var complexUser = withoutServer(jid);
         if (complexUser == null) {
             return new Jid(null, server, 0, 0);
@@ -128,7 +126,7 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
      * @return a non-null contact jid
      */
     @JsonCreator
-    public static Jid of(@NonNull String jid) {
+    public static Jid of(String jid) {
         return of(jid, JidServer.of(jid));
     }
 
@@ -200,7 +198,7 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
      * @param server the new server
      * @return a non-null jid
      */
-    public Jid withServer(@NonNull JidServer server) {
+    public Jid withServer(JidServer server) {
         return new Jid(user(), server, device, agent);
     }
 
@@ -252,8 +250,7 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
      * @return a non-null jid
      */
     @Override
-    @NonNull
-    public Jid toJid() {
+        public Jid toJid() {
         return this;
     }
 

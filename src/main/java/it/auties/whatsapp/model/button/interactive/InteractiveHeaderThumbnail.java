@@ -1,16 +1,15 @@
 package it.auties.whatsapp.model.button.interactive;
 
 import it.auties.protobuf.annotation.ProtobufConverter;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model that represents the jpeg thumbnail of a {@link InteractiveHeader}
  *
  * @param thumbnail the non-null jpeg thumbnail
  */
-public record InteractiveHeaderThumbnail(byte @NonNull [] thumbnail) implements InteractiveHeaderAttachment {
+public record InteractiveHeaderThumbnail(byte[] thumbnail) implements InteractiveHeaderAttachment {
     @ProtobufConverter
-    public static InteractiveHeaderThumbnail of(byte @NonNull [] thumbnail) {
+    public static InteractiveHeaderThumbnail of(byte[] thumbnail) {
         return new InteractiveHeaderThumbnail(thumbnail);
     }
 

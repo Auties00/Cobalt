@@ -3,13 +3,12 @@ package it.auties.whatsapp.model.signal.keypair;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.BytesHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[] signature) implements ISignalKeyPair {
-    public static SignalSignedKeyPair of(int id, @NonNull SignalKeyPair identityKeyPair) {
+public record SignalSignedKeyPair(int id, SignalKeyPair keyPair, byte[] signature) implements ISignalKeyPair {
+    public static SignalSignedKeyPair of(int id, SignalKeyPair identityKeyPair) {
         var keyPair = SignalKeyPair.random();
         var signature = Curve25519.sign(identityKeyPair.privateKey(), keyPair.encodedPublicKey(), true);
         return new SignalSignedKeyPair(id, keyPair, signature);

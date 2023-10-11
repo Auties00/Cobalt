@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.info.ProductListInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,19 +21,15 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ListMessage")
 public record ListMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String title,
+                String title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> description,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        @NonNull
-        String button,
+                String button,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        @NonNull
-        Type listType,
+                Type listType,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT, repeated = true)
-        @NonNull
-        List<ButtonSection> sections,
+                List<ButtonSection> sections,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
         Optional<ProductListInfo> productListInfo,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)

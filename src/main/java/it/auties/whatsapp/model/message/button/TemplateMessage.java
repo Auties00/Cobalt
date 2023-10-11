@@ -12,8 +12,6 @@ import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.BytesHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HexFormat;
 import java.util.Objects;
@@ -26,11 +24,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.TemplateMessage")
 public record TemplateMessage(
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        @NonNull
-        String id,
+                String id,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        @NonNull
-        HydratedFourRowTemplate content,
+                HydratedFourRowTemplate content,
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<HighlyStructuredFourRowTemplate> highlyStructuredFourRowTemplateFormat,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
@@ -41,7 +37,7 @@ public record TemplateMessage(
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage, ButtonMessage {
     @ProtobufBuilder(className = "TemplateMessageSimpleBuilder")
-    static TemplateMessage customBuilder(@Nullable String id, @NonNull HydratedFourRowTemplate content, @Nullable TemplateFormatter format, @Nullable ContextInfo contextInfo) {
+    static TemplateMessage customBuilder(String id, HydratedFourRowTemplate content, TemplateFormatter format, ContextInfo contextInfo) {
         var builder = new TemplateMessageBuilder()
                 .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(BytesHelper.random(6))))
                 .content(content)

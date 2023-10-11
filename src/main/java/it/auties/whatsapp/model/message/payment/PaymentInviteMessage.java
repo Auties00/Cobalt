@@ -7,7 +7,6 @@ import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.OptionalLong;
 
@@ -17,8 +16,7 @@ import java.util.OptionalLong;
 @ProtobufMessageName("Message.PaymentInviteMessage")
 public record PaymentInviteMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        ServiceType serviceType,
+                ServiceType serviceType,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         OptionalLong expiryTimestamp
 ) implements PaymentMessage {

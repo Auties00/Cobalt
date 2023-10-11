@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Optional;
 
@@ -37,7 +36,7 @@ public record InteractiveMessage(
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage, ButtonMessage, TemplateFormatter {
     @ProtobufBuilder(className = "InteractiveMessageSimpleBuilder")
-    static InteractiveMessage simpleBuilder(@Nullable InteractiveHeader header, @Nullable String body, @Nullable String footer, @Nullable InteractiveMessageContent content, @Nullable ContextInfo contextInfo) {
+    static InteractiveMessage simpleBuilder(InteractiveHeader header, String body, String footer, InteractiveMessageContent content, ContextInfo contextInfo) {
         var builder = new InteractiveMessageBuilder()
                 .header(header)
                 .body(InteractiveBody.ofNullable(body))

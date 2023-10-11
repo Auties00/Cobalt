@@ -7,7 +7,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -80,7 +79,7 @@ public record ActionValueSync(
         @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
         Optional<PrimaryFeature> primaryFeature
 ) implements ProtobufMessage {
-    public static ActionValueSync of(@NonNull Action action) {
+    public static ActionValueSync of(Action action) {
         var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
         switch (action) {
             case StarAction starAction -> builder.starAction(starAction);
@@ -112,7 +111,7 @@ public record ActionValueSync(
         return builder.build();
     }
 
-    public static ActionValueSync of(@NonNull Setting setting) {
+    public static ActionValueSync of(Setting setting) {
         var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
         switch (setting) {
             case SecurityNotificationSettings securityNotificationSettings -> builder.securityNotificationSetting(securityNotificationSettings);

@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.payment.*;
 import it.auties.whatsapp.model.message.server.*;
 import it.auties.whatsapp.model.message.standard.*;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -151,7 +150,7 @@ public record MessageContainer(
      * @param <T>     the type of the message
      * @return a non-null container
      */
-    public static <T extends Message> MessageContainer of(@NonNull T message) {
+    public static <T extends Message> MessageContainer of(T message) {
         var builder = new MessageContainerBuilder();
         switch (message) {
             case SenderKeyDistributionMessage senderKeyDistribution ->
@@ -213,7 +212,7 @@ public record MessageContainer(
      *
      * @param message the text message with no context
      */
-    public static MessageContainer of(@NonNull String message) {
+    public static MessageContainer of(String message) {
         return new MessageContainerBuilder()
                 .textMessage(TextMessage.of(message))
                 .build();
@@ -225,7 +224,7 @@ public record MessageContainer(
      * @param message the message that the new container should wrap
      * @param <T>     the type of the message
      */
-    public static <T extends Message> MessageContainer ofViewOnce(@NonNull T message) {
+    public static <T extends Message> MessageContainer ofViewOnce(T message) {
         return new MessageContainerBuilder()
                 .viewOnceMessage(FutureMessageContainer.of(message))
                 .build();
@@ -238,7 +237,7 @@ public record MessageContainer(
      * @param message the message that the new container should wrap
      * @param <T>     the type of the message
      */
-    public static <T extends Message> MessageContainer ofViewOnceV2(@NonNull T message) {
+    public static <T extends Message> MessageContainer ofViewOnceV2(T message) {
         return new MessageContainerBuilder()
                 .viewOnceV2Message(FutureMessageContainer.of(message))
                 .build();
@@ -250,7 +249,7 @@ public record MessageContainer(
      * @param message the message that the new container should wrap
      * @param <T>     the type of the message
      */
-    public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message) {
+    public static <T extends Message> MessageContainer ofEphemeral(T message) {
         return new MessageContainerBuilder()
                 .ephemeralMessage(FutureMessageContainer.of(message))
                 .build();
@@ -262,7 +261,7 @@ public record MessageContainer(
      * @param message the message that the new container should wrap
      * @param <T>     the type of the message
      */
-    public static <T extends Message> MessageContainer ofEditedMessage(@NonNull T message) {
+    public static <T extends Message> MessageContainer ofEditedMessage(T message) {
         return new MessageContainerBuilder()
                 .editedMessage(FutureMessageContainer.of(message))
                 .build();
@@ -274,7 +273,7 @@ public record MessageContainer(
      * @param message the message that the new container should wrap
      * @param <T>     the type of the message
      */
-    public static <T extends Message> MessageContainer ofDocumentWithCaption(@NonNull T message) {
+    public static <T extends Message> MessageContainer ofDocumentWithCaption(T message) {
         return new MessageContainerBuilder()
                 .documentWithCaptionMessage(FutureMessageContainer.of(message))
                 .build();
@@ -448,7 +447,7 @@ public record MessageContainer(
      * @param type the non-null type to check against
      * @return a boolean
      */
-    public boolean hasType(@NonNull MessageType type) {
+    public boolean hasType(MessageType type) {
         return content().type() == type;
     }
 
@@ -458,7 +457,7 @@ public record MessageContainer(
      * @param category the non-null category to check against
      * @return a boolean
      */
-    public boolean hasCategory(@NonNull MessageCategory category) {
+    public boolean hasCategory(MessageCategory category) {
         return content().category() == category;
     }
 

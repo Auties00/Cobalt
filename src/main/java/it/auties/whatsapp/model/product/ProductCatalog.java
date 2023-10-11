@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a product catalog
@@ -13,14 +12,11 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("Message.ProductMessage.CatalogSnapshot")
 public record ProductCatalog(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        ImageMessage catalogImage,
+                ImageMessage catalogImage,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String title,
+                String title,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        @NonNull
-        String description
+                String description
 ) implements ProtobufMessage {
 
 }

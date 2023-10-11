@@ -17,8 +17,6 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -34,80 +32,67 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
         implements MediaMessage<DocumentMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaUrl;
+        private String mediaUrl;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    @Nullable
-    private final String mimetype;
+        private final String mimetype;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    @Nullable
-    private final String title;
+        private final String title;
 
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaSha256;
+    private byte[] mediaSha256;
 
     @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaSize;
+        private Long mediaSize;
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer pageCount;
+        private final Integer pageCount;
 
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaKey;
+    private byte[] mediaKey;
 
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-    @Nullable
-    private final String fileName;
+        private final String fileName;
 
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaEncryptedSha256;
+    private byte[] mediaEncryptedSha256;
 
     @ProtobufProperty(index = 10, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaDirectPath;
+        private String mediaDirectPath;
 
     @ProtobufProperty(index = 11, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaKeyTimestampSeconds;
+        private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnail;
+    private final byte[] thumbnail;
 
     @ProtobufProperty(index = 12, type = ProtobufType.BOOL)
     private final boolean contactVcard;
 
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
-    @Nullable
-    private final String thumbnailDirectPath;
+        private final String thumbnailDirectPath;
 
     @ProtobufProperty(index = 14, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnailSha256;
+    private final byte[] thumbnailSha256;
 
     @ProtobufProperty(index = 15, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnailEncSha256;
+    private final byte[] thumbnailEncSha256;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ContextInfo contextInfo;
+        private final ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer thumbnailHeight;
+        private final Integer thumbnailHeight;
 
     @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer thumbnailWidth;
+        private final Integer thumbnailWidth;
 
     @ProtobufProperty(index = 20, type = ProtobufType.STRING)
-    @Nullable
-    private final String caption;
+        private final String caption;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public DocumentMessage(@Nullable String mediaUrl, @Nullable String mimetype, @Nullable String title, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer pageCount, byte @Nullable [] mediaKey, @Nullable String fileName, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] thumbnail, boolean contactVcard, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, @Nullable ContextInfo contextInfo, @Nullable Integer thumbnailHeight, @Nullable Integer thumbnailWidth, @Nullable String caption) {
+    public DocumentMessage(String mediaUrl, String mimetype, String title, byte[] mediaSha256, Long mediaSize, Integer pageCount, byte[] mediaKey, String fileName, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, byte[] thumbnail, boolean contactVcard, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, ContextInfo contextInfo, Integer thumbnailHeight, Integer thumbnailWidth, String caption) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.title = title;
@@ -131,7 +116,7 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
     }
 
     @ProtobufBuilder(className = "DocumentMessageSimpleBuilder")
-    static DocumentMessage customBuilder(byte[] media, @NonNull String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
+    static DocumentMessage customBuilder(byte[] media, String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
         var extensionIndex = fileName.lastIndexOf(".");
         Validate.isTrue(extensionIndex != -1 && extensionIndex + 1 < fileName.length(), "Expected fileName to be formatted as name.extension");
         var extension = fileName.substring(extensionIndex + 1);
@@ -148,7 +133,7 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
                 .setDecodedMedia(media);
     }
 
-    private static String getMimeType(byte[] media, @NonNull String fileName, String mimeType) {
+    private static String getMimeType(byte[] media, String fileName, String mimeType) {
         return Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(fileName))
                 .or(() -> Medias.getMimeType(media))

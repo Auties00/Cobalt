@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.privacy;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 
@@ -69,7 +68,7 @@ public sealed interface GdprAccountReport {
      *
      * @param dateTime the eta for the newsletters of the request
      */
-    record Pending(@NonNull ZonedDateTime dateTime) implements GdprAccountReport {
+    record Pending(ZonedDateTime dateTime) implements GdprAccountReport {
         @Override
         public Type type() {
             return Type.PENDING;

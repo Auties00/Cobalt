@@ -8,7 +8,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +30,7 @@ public final class ActionMessageRangeSync implements ProtobufMessage {
         this.messages = messages;
     }
 
-    public ActionMessageRangeSync(@NonNull Chat chat, boolean allMessages) {
+    public ActionMessageRangeSync(Chat chat, boolean allMessages) {
         chat.newestMessage().ifPresent(message -> this.lastMessageTimestamp = message.timestampSeconds());
         chat.newestServerMessage().ifPresent(message -> this.lastSystemMessageTimestamp = message.timestampSeconds());
         this.messages = createMessages(chat, allMessages);

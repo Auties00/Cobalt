@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 @ProtobufMessageName("Money")
 public record PaymentMoney(
@@ -13,8 +12,7 @@ public record PaymentMoney(
         @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
         int offset,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        @NonNull
-        String currencyCode
+                String currencyCode
 ) implements ProtobufMessage {
 
 }

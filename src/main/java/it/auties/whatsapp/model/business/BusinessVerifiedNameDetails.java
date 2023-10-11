@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -20,14 +19,11 @@ public record BusinessVerifiedNameDetails(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
         long serial,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String issuer,
+                String issuer,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-        @NonNull
-        String name,
+                String name,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
-        @NonNull
-        List<BusinessLocalizedName> localizedNames,
+                List<BusinessLocalizedName> localizedNames,
         @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
         long issueTimeSeconds
 ) implements ProtobufMessage {

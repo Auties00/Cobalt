@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -29,58 +28,49 @@ import static java.util.Objects.requireNonNullElse;
 @ProtobufMessageName("Message.StickerMessage")
 public final class StickerMessage extends LocalMediaMessage<StickerMessage> implements MediaMessage<StickerMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaUrl;
+        private String mediaUrl;
     
     @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaSha256;
+    private byte[] mediaSha256;
     
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaEncryptedSha256;
+    private byte[] mediaEncryptedSha256;
     
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaKey;
+    private byte[] mediaKey;
     
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-    @Nullable
-    private final String mimetype;
+        private final String mimetype;
     
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer height;
+        private final Integer height;
     
     @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer width;
+        private final Integer width;
 
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaDirectPath;
+        private String mediaDirectPath;
     
     @ProtobufProperty(index = 9, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaSize;
+        private Long mediaSize;
     
     @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaKeyTimestampSeconds;
+        private Long mediaKeyTimestampSeconds;
     
     @ProtobufProperty(index = 11, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer firstFrameLength;
+        private final Integer firstFrameLength;
     
     @ProtobufProperty(index = 12, type = ProtobufType.BYTES)
-    private final byte @Nullable [] firstFrameSidecar;
+    private final byte[] firstFrameSidecar;
     
     @ProtobufProperty(index = 13, type = ProtobufType.BOOL)
     private final boolean animated;
     
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnail;
+    private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ContextInfo contextInfo;
+        private final ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.INT64)
     private final Long stickerSentTimestamp;
@@ -89,7 +79,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     private final boolean avatar;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public StickerMessage(@Nullable String mediaUrl, byte @Nullable [] mediaSha256, byte @Nullable [] mediaEncryptedSha256, byte @Nullable [] mediaKey, @Nullable String mimetype, @Nullable Integer height, @Nullable Integer width, @Nullable String mediaDirectPath, @Nullable Long mediaSize, @Nullable Long mediaKeyTimestampSeconds, @Nullable Integer firstFrameLength, byte @Nullable [] firstFrameSidecar, boolean animated, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, long stickerSentTimestamp, boolean avatar) {
+    public StickerMessage(String mediaUrl, byte[] mediaSha256, byte[] mediaEncryptedSha256, byte[] mediaKey, String mimetype, Integer height, Integer width, String mediaDirectPath, Long mediaSize, Long mediaKeyTimestampSeconds, Integer firstFrameLength, byte[] firstFrameSidecar, boolean animated, byte[] thumbnail, ContextInfo contextInfo, long stickerSentTimestamp, boolean avatar) {
         this.mediaUrl = mediaUrl;
         this.mediaSha256 = mediaSha256;
         this.mediaEncryptedSha256 = mediaEncryptedSha256;
@@ -110,7 +100,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     }
 
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
-    static StickerMessage simpleBuilder(byte @Nullable [] media, String mimeType, byte @Nullable [] thumbnail, boolean animated, ContextInfo contextInfo) {
+    static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         return new StickerMessageBuilder()
                
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))

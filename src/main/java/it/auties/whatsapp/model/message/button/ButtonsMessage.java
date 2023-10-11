@@ -14,7 +14,6 @@ import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,8 +24,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ButtonsMessage")
 public record ButtonsMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        Optional<ButtonsMessageHeaderText> headerText,
+                Optional<ButtonsMessageHeaderText> headerText,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<DocumentMessage> headerDocument,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
@@ -42,11 +40,9 @@ public record ButtonsMessage(
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
         @ProtobufProperty(index = 9, type = ProtobufType.OBJECT, repeated = true)
-        @NonNull
-        List<Button> buttons,
+                List<Button> buttons,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-        @NonNull
-        Type headerType
+                Type headerType
 ) implements ButtonMessage, ContextualMessage {
     @ProtobufBuilder(className = "ButtonsMessageSimpleBuilder")
     static ButtonsMessage customBuilder(ButtonsMessageHeader header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {

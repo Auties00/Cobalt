@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 
 /**
@@ -14,9 +13,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("PollEncValue")
 public record PollUpdateEncryptedMetadata(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
-        byte @NonNull [] payload,
+        byte[] payload,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
-        byte @NonNull [] iv
+        byte[] iv
 ) implements ProtobufMessage {
 
 }

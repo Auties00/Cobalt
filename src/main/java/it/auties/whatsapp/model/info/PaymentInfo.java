@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.payment.PaymentMoney;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -23,39 +22,31 @@ import java.util.Optional;
 public record PaymentInfo(
         @Deprecated
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        Currency currencyDeprecated,
+                Currency currencyDeprecated,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        @NonNull
-        Jid receiverJid,
+                Jid receiverJid,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        @NonNull
-        Status status,
+                Status status,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long transactionTimestampSeconds,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-        @NonNull
-        ChatMessageKey requestMessageKey,
+                ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
         @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
         boolean futureProofed,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        @NonNull
-        String currency,
+                String currency,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-        @NonNull
-        TransactionStatus transactionStatus,
+                TransactionStatus transactionStatus,
         @ProtobufProperty(index = 11, type = ProtobufType.BOOL)
         boolean useNoviFormat,
         @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
-        @NonNull
-        PaymentMoney primaryAmount,
+                PaymentMoney primaryAmount,
         @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
-        @NonNull
-        PaymentMoney exchangeAmount
+                PaymentMoney exchangeAmount
 ) implements Info, ProtobufMessage {
     /**
      * Returns when the transaction happened

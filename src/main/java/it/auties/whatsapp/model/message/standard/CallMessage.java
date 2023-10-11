@@ -6,7 +6,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 
 /**
@@ -15,12 +14,11 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("Message.Call")
 public record CallMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
-        byte @NonNull [] key,
+        byte[] key,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String source,
+                String source,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-        byte @NonNull [] data,
+        byte[] data,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
         int delay
 ) implements Message {

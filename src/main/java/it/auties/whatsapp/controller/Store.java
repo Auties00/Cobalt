@@ -38,8 +38,6 @@ import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.FutureReference;
 import it.auties.whatsapp.util.MetadataHelper;
 import it.auties.whatsapp.util.ProxyAuthenticator;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.net.URI;
 import java.time.Duration;
@@ -61,14 +59,12 @@ public final class Store extends Controller<Store> {
     /**
      * The version used by this session
      */
-    @Nullable
-    private URI proxy;
+        private URI proxy;
 
     /**
      * The version used by this session
      */
-    @NonNull
-    private FutureReference<Version> version;
+        private FutureReference<Version> version;
 
     /**
      * Whether this account is online for other users
@@ -79,15 +75,13 @@ public final class Store extends Controller<Store> {
      * The locale of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
-    @Nullable
-    private String locale;
+        private String locale;
 
     /**
      * The name of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
-    @NonNull
-    private String name;
+        private String name;
 
     /**
      * Whether the linked companion is a business account or not
@@ -97,129 +91,109 @@ public final class Store extends Controller<Store> {
     /**
      * The address of this account, if it's a business account
      */
-    @Nullable
-    private String businessAddress;
+        private String businessAddress;
 
     /**
      * The longitude of this account's location, if it's a business account
      */
-    @Nullable
-    private Double businessLongitude;
+        private Double businessLongitude;
 
     /**
      * The latitude of this account's location, if it's a business account
      */
-    @Nullable
-    private Double businessLatitude;
+        private Double businessLatitude;
 
     /**
      * The description of this account, if it's a business account
      */
-    @Nullable
-    private String businessDescription;
+        private String businessDescription;
 
     /**
      * The website of this account, if it's a business account
      */
-    @Nullable
-    private String businessWebsite;
+        private String businessWebsite;
 
     /**
      * The email of this account, if it's a business account
      */
-    @Nullable
-    private String businessEmail;
+        private String businessEmail;
 
     /**
      * The category of this account, if it's a business account
      */
-    @Nullable
-    private BusinessCategory businessCategory;
+        private BusinessCategory businessCategory;
 
     /**
      * The hash of the companion associated with this session
      */
-    @Nullable
-    private String deviceHash;
+        private String deviceHash;
 
     /**
      * A map of all the devices that the companion has associated using WhatsappWeb
      * The key here is the index of the device's key
      * The value is the device's companion jid
      */
-    @NonNull
-    private LinkedHashMap<Jid, Integer> linkedDevicesKeys;
+        private LinkedHashMap<Jid, Integer> linkedDevicesKeys;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
-    @Nullable
-    private URI profilePicture;
+        private URI profilePicture;
 
     /**
      * The status of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
      * Assumed to be non-null otherwise.
      */
-    @Nullable
-    private String about;
+        private String about;
 
     /**
      * The user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-    @Nullable
-    private Jid jid;
+        private Jid jid;
 
     /**
      * The lid user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-    @Nullable
-    private Jid lid;
+        private Jid lid;
 
     /**
      * The non-null map of properties received by whatsapp
      */
-    @NonNull
-    private final ConcurrentHashMap<String, String> properties;
+        private final ConcurrentHashMap<String, String> properties;
 
     /**
      * The non-null map of chats
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     private final ConcurrentHashMap<Jid, Chat> chats;
 
     /**
      * The non-null map of contacts
      */
-    @NonNull
-    private final ConcurrentHashMap<Jid, Contact> contacts;
+        private final ConcurrentHashMap<Jid, Contact> contacts;
 
     /**
      * The non-null list of status messages
      */
-    @NonNull
-    private final ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status;
+        private final ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status;
 
     /**
      * The non-null map of newsletters
      */
-    @NonNull
-    private final ConcurrentHashMap<Jid, Newsletter> newsletters;
+        private final ConcurrentHashMap<Jid, Newsletter> newsletters;
 
 
     /**
      * The non-null map of privacy settings
      */
-    @NonNull
-    private final ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings;
+        private final ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings;
 
     /**
      * The non-null map of calls
      */
-    @NonNull
-    private final ConcurrentHashMap<String, Call> calls;
+        private final ConcurrentHashMap<String, Call> calls;
 
     /**
      * Whether chats should be unarchived if a new message arrives
@@ -235,29 +209,25 @@ public final class Store extends Controller<Store> {
      * The non-null list of requests that were sent to Whatsapp. They might or might not be waiting
      * for a newsletters
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     private final ConcurrentHashMap<String, SocketRequest> requests;
 
     /**
      * The non-null list of replies waiting to be fulfilled
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     private final ConcurrentHashMap<String, CompletableFuture<ChatMessageInfo>> replyHandlers;
 
     /**
      * The non-null list of listeners
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     private final KeySetView<Listener, Boolean> listeners;
 
     /**
      * The request tag, used to create messages
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     private final String tag;
 
     /**
@@ -269,33 +239,28 @@ public final class Store extends Controller<Store> {
      * The media connection associated with this store
      */
     @JsonIgnore
-    @Nullable
-    private MediaConnection mediaConnection;
+        private MediaConnection mediaConnection;
 
     /**
      * The media connection latch associated with this store
      */
     @JsonIgnore
-    @NonNull
-    private final CountDownLatch mediaConnectionLatch;
+        private final CountDownLatch mediaConnectionLatch;
 
     /**
      * The request tag, used to create messages
      */
-    @NonNull
-    private ChatEphemeralTimer newChatsEphemeralTimer;
+        private ChatEphemeralTimer newChatsEphemeralTimer;
 
     /**
      * The setting to use when generating previews for text messages that contain links
      */
-    @NonNull
-    private TextPreviewSetting textPreviewSetting;
+        private TextPreviewSetting textPreviewSetting;
 
     /**
      * Describes how much chat history Whatsapp should send
      */
-    @NonNull
-    private WebHistoryLength historyLength;
+        private WebHistoryLength historyLength;
 
     /**
      * Whether listeners should be automatically scanned and registered or not
@@ -313,20 +278,17 @@ public final class Store extends Controller<Store> {
      * The release channel to use when connecting to Whatsapp
      * This should allow the use of beta features
      */
-    @NonNull
-    private ReleaseChannel releaseChannel;
+        private ReleaseChannel releaseChannel;
 
     /**
      * Metadata about the device that is being simulated for Whatsapp
      */
-    @Nullable
-    private CompanionDevice device;
+        private CompanionDevice device;
 
     /**
      * The os of the associated device, available only for the web api
      */
-    @Nullable
-    private PlatformType companionDeviceOs;
+        private PlatformType companionDeviceOs;
 
     /**
      * Whether the mac of every app state request should be checked
@@ -337,7 +299,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, @NonNull ConcurrentHashMap<Jid, Newsletter> newsletters, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
+    Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias, URI proxy, FutureReference<Version> version, boolean online, String locale, String name, boolean business, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if(proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -602,7 +564,7 @@ public final class Store extends Controller<Store> {
      * @param function the non-null filter
      * @return a non-null optional
      */
-    public Optional<Chat> findChatBy(@NonNull Function<Chat, Boolean> function) {
+    public Optional<Chat> findChatBy(Function<Chat, Boolean> function) {
         return chats.values().parallelStream()
                 .filter(function::apply)
                 .findFirst();
@@ -614,7 +576,7 @@ public final class Store extends Controller<Store> {
      * @param function the non-null filter
      * @return a non-null optional
      */
-    public Optional<Newsletter> findNewsletterBy(@NonNull Function<Newsletter, Boolean> function) {
+    public Optional<Newsletter> findNewsletterBy(Function<Newsletter, Boolean> function) {
         return newsletters.values()
                 .parallelStream()
                 .filter(function::apply)
@@ -649,7 +611,7 @@ public final class Store extends Controller<Store> {
      * @param function the non-null filter
      * @return a non-null optional
      */
-    public Set<Chat> findChatsBy(@NonNull Function<Chat, Boolean> function) {
+    public Set<Chat> findChatsBy(Function<Chat, Boolean> function) {
         return chats.values()
                 .stream()
                 .filter(function::apply)
@@ -697,7 +659,7 @@ public final class Store extends Controller<Store> {
      * @param exceptionally whether the newsletters is erroneous
      * @return a boolean
      */
-    public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
+    public boolean resolvePendingRequest(Node response, boolean exceptionally) {
         return findPendingRequest(response.id()).map(request -> deleteAndComplete(request, response, exceptionally))
                 .isPresent();
     }
@@ -744,7 +706,7 @@ public final class Store extends Controller<Store> {
      * @param response the newsletters to complete the reply with
      * @return a boolean
      */
-    public boolean resolvePendingReply(@NonNull ChatMessageInfo response) {
+    public boolean resolvePendingReply(ChatMessageInfo response) {
         return response.message()
                 .contentWithContext()
                 .flatMap(ContextualMessage::contextInfo)
@@ -767,7 +729,7 @@ public final class Store extends Controller<Store> {
      * @param chatJid the chat to add
      * @return the input chat
      */
-    public Chat addNewChat(@NonNull Jid chatJid) {
+    public Chat addNewChat(Jid chatJid) {
         var chat = new ChatBuilder()
                 .jid(chatJid)
                 .build();
@@ -781,7 +743,7 @@ public final class Store extends Controller<Store> {
      * @param chat the chat to add
      * @return the old chat, if present
      */
-    public Optional<Chat> addChat(@NonNull Chat chat) {
+    public Optional<Chat> addChat(Chat chat) {
         if (chat.hasName() && chat.jid().hasServer(JidServer.WHATSAPP)) {
             var contact = findContactByJid(chat.jid())
                     .orElseGet(() -> addContact(new Contact(chat.jid())));
@@ -817,7 +779,7 @@ public final class Store extends Controller<Store> {
      * @param chat the chat to add
      * @return the old chat, if present
      */
-    public Optional<Chat> addChatDirect(@NonNull Chat chat) {
+    public Optional<Chat> addChatDirect(Chat chat) {
         return Optional.ofNullable(chats.put(chat.jid(), chat));
     }
 
@@ -827,7 +789,7 @@ public final class Store extends Controller<Store> {
      * @param jid the contact to add
      * @return the input contact
      */
-    public Contact addContact(@NonNull Jid jid) {
+    public Contact addContact(Jid jid) {
         return addContact(new Contact(jid));
     }
 
@@ -837,7 +799,7 @@ public final class Store extends Controller<Store> {
      * @param contact the contact to add
      * @return the input contact
      */
-    public Contact addContact(@NonNull Contact contact) {
+    public Contact addContact(Contact contact) {
         contacts.put(contact.jid(), contact);
         return contact;
     }
@@ -848,7 +810,7 @@ public final class Store extends Controller<Store> {
      * @param newsletter the newsletter to add
      * @return the old newsletter, if present
      */
-    public Optional<Newsletter> addNewsletter(@NonNull Newsletter newsletter) {
+    public Optional<Newsletter> addNewsletter(Newsletter newsletter) {
         return Optional.ofNullable(newsletters.put(newsletter.jid(), newsletter));
     }
 
@@ -858,7 +820,7 @@ public final class Store extends Controller<Store> {
      * @param chatJid the chat to remove
      * @return the chat that was deleted wrapped by an optional
      */
-    public Optional<Chat> removeChat(@NonNull JidProvider chatJid) {
+    public Optional<Chat> removeChat(JidProvider chatJid) {
         return Optional.ofNullable(chats.remove(chatJid.toJid()));
     }
 
@@ -868,7 +830,7 @@ public final class Store extends Controller<Store> {
      * @param newsletterJid the newsletter to remove
      * @return the newsletter that was deleted wrapped by an optional
      */
-    public Optional<Newsletter> removeNewsletter(@NonNull JidProvider newsletterJid) {
+    public Optional<Newsletter> removeNewsletter(JidProvider newsletterJid) {
         return Optional.ofNullable(newsletters.remove(newsletterJid.toJid()));
     }
 
@@ -878,7 +840,7 @@ public final class Store extends Controller<Store> {
      * @param contactJid the contact to remove
      * @return the contact that was deleted wrapped by an optional
      */
-    public Optional<Contact> removeContact(@NonNull JidProvider contactJid) {
+    public Optional<Contact> removeContact(JidProvider contactJid) {
         return Optional.ofNullable(contacts.remove(contactJid.toJid()));
     }
 
@@ -944,7 +906,7 @@ public final class Store extends Controller<Store> {
      * @param timeout the non-null timeout for the connection to be filled
      * @return the media connection
      */
-    public MediaConnection mediaConnection(@NonNull Duration timeout) {
+    public MediaConnection mediaConnection(Duration timeout) {
         try {
             var result = mediaConnectionLatch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
             if (!result) {
@@ -983,7 +945,7 @@ public final class Store extends Controller<Store> {
      * @param info the non-null status to add
      * @return the same instance
      */
-    public Store addStatus(@NonNull ChatMessageInfo info) {
+    public Store addStatus(ChatMessageInfo info) {
         var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentHashMap<String, ChatMessageInfo>::new);
         wrapper.put(info.id(), info);
         status.put(info.senderJid(), wrapper);
@@ -997,7 +959,7 @@ public final class Store extends Controller<Store> {
      * @return the non-null completable newsletters of the request
      */
     @SuppressWarnings("ClassEscapesDefinedScope")
-    public CompletableFuture<Node> addRequest(@NonNull SocketRequest request) {
+    public CompletableFuture<Node> addRequest(SocketRequest request) {
         if (request.id() == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -1012,7 +974,7 @@ public final class Store extends Controller<Store> {
      * @param messageId the non-null message id to listen for
      * @return the non-null completable newsletters of the reply handler
      */
-    public CompletableFuture<ChatMessageInfo> addPendingReply(@NonNull String messageId) {
+    public CompletableFuture<ChatMessageInfo> addPendingReply(String messageId) {
         var result = new CompletableFuture<ChatMessageInfo>();
         replyHandlers.put(messageId, result);
         return result;
@@ -1042,7 +1004,7 @@ public final class Store extends Controller<Store> {
      * @param type a non-null type
      * @return a non-null entry
      */
-    public PrivacySettingEntry findPrivacySetting(@NonNull PrivacySettingType type) {
+    public PrivacySettingEntry findPrivacySetting(PrivacySettingType type) {
         return privacySettings.get(type);
     }
 
@@ -1053,7 +1015,7 @@ public final class Store extends Controller<Store> {
      * @param entry the non-null entry
      * @return the old privacy setting entry
      */
-    public PrivacySettingEntry addPrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingEntry entry) {
+    public PrivacySettingEntry addPrivacySetting(PrivacySettingType type, PrivacySettingEntry entry) {
         return privacySettings.put(type, entry);
     }
 
@@ -1084,7 +1046,7 @@ public final class Store extends Controller<Store> {
      * @param keyId     the id of its key
      * @return the nullable old key
      */
-    public Optional<Integer> addLinkedDevice(@NonNull Jid companion, int keyId) {
+    public Optional<Integer> addLinkedDevice(Jid companion, int keyId) {
         return Optional.ofNullable(linkedDevicesKeys.put(companion, keyId));
     }
 
@@ -1095,7 +1057,7 @@ public final class Store extends Controller<Store> {
      * @param companion a non-null companion
      * @return the nullable old key
      */
-    public Optional<Integer> removeLinkedCompanion(@NonNull Jid companion) {
+    public Optional<Integer> removeLinkedCompanion(Jid companion) {
         return Optional.ofNullable(linkedDevicesKeys.remove(companion));
     }
 
@@ -1121,7 +1083,7 @@ public final class Store extends Controller<Store> {
      * @param listener the listener to register
      * @return the same instance
      */
-    public Store addListener(@NonNull Listener listener) {
+    public Store addListener(Listener listener) {
         listeners.add(listener);
         return this;
     }
@@ -1132,7 +1094,7 @@ public final class Store extends Controller<Store> {
      * @param listeners the listeners to register
      * @return the same instance
      */
-    public Store addListeners(@NonNull Collection<Listener> listeners) {
+    public Store addListeners(Collection<Listener> listeners) {
         this.listeners.addAll(listeners);
         return this;
     }
@@ -1143,7 +1105,7 @@ public final class Store extends Controller<Store> {
      * @param listener the listener to remove
      * @return the same instance
      */
-    public Store removeListener(@NonNull Listener listener) {
+    public Store removeListener(Listener listener) {
         listeners.remove(listener);
         return this;
     }
@@ -1272,7 +1234,7 @@ public final class Store extends Controller<Store> {
      * @param call a non-null call
      * @return the old value associated with {@link Call#id()}
      */
-    public Optional<Call> addCall(@NonNull Call call) {
+    public Optional<Call> addCall(Call call) {
         return Optional.ofNullable(calls.put(call.id(), call));
     }
 
@@ -1512,7 +1474,7 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setVersion(@NonNull Version version) {
+    public Store setVersion(Version version) {
         this.version.setValue(version);
         return this;
     }

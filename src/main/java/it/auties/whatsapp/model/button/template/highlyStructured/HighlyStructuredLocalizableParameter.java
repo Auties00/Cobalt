@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -14,8 +13,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter")
 public record HighlyStructuredLocalizableParameter(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String defaultValue,
+                String defaultValue,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<HighlyStructuredCurrency> parameterCurrency,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)

@@ -8,7 +8,6 @@ import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import it.auties.whatsapp.model.payment.PaymentBackground;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -20,8 +19,7 @@ public record SendPaymentMessage(
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<MessageContainer> noteMessage,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        @NonNull
-        ChatMessageKey requestMessageKey,
+                ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {

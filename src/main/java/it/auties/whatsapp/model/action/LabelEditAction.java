@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model clas that represents an edit to a label
@@ -12,8 +11,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("SyncActionValue.LabelEditAction")
 public record LabelEditAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String name,
+                String name,
         @ProtobufProperty(index = 2, type = ProtobufType.INT32)
         int color,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)

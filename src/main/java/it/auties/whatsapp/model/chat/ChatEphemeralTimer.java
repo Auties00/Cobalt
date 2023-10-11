@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
 import it.auties.protobuf.annotation.ProtobufConverter;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -31,10 +30,9 @@ public enum ChatEphemeralTimer {
      */
     THREE_MONTHS(Duration.ofDays(90));
 
-    @NonNull
-    private final Duration period;
+        private final Duration period;
 
-    ChatEphemeralTimer(@NonNull Duration period) {
+    ChatEphemeralTimer(Duration period) {
         this.period = period;
     }
 

@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,11 +17,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ContactsArrayMessage")
 public record ContactsMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String name,
+                String name,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
-        @NonNull
-        List<ContactMessage> contacts,
+                List<ContactMessage> contacts,
         @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage {

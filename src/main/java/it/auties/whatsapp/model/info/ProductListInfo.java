@@ -7,7 +7,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.product.ProductListHeaderImage;
 import it.auties.whatsapp.model.product.ProductSection;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
@@ -19,11 +18,9 @@ public record ProductListInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
         List<ProductSection> productSections,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        @NonNull
-        ProductListHeaderImage headerImage,
+                ProductListHeaderImage headerImage,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        @NonNull
-        Jid seller
+                Jid seller
 ) implements Info, ProtobufMessage {
 
 }

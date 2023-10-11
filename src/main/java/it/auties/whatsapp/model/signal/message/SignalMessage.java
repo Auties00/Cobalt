@@ -5,8 +5,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -16,7 +14,7 @@ import static it.auties.whatsapp.util.Specification.Signal.MAC_LENGTH;
 @ProtobufMessageName("SignalMessage")
 public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
-    private final byte @NonNull [] ephemeralPublicKey;
+    private final byte[] ephemeralPublicKey;
 
     @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
     private final Integer counter;
@@ -25,12 +23,12 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     private final Integer previousCounter;
 
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private final byte @NonNull [] ciphertext;
+    private final byte[] ciphertext;
 
-    private byte @Nullable [] signature;
+    private byte[] signature;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SignalMessage(byte @NonNull [] ephemeralPublicKey, Integer counter, Integer previousCounter, byte @NonNull [] ciphertext, byte @Nullable [] signature) {
+    public SignalMessage(byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext, byte[] signature) {
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;
         this.previousCounter = previousCounter;
@@ -39,7 +37,7 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     }
 
 
-    public SignalMessage(byte @NonNull [] ephemeralPublicKey, Integer counter, Integer previousCounter, byte @NonNull [] ciphertext) {
+    public SignalMessage(byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext) {
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;
         this.previousCounter = previousCounter;

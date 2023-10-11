@@ -5,7 +5,6 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -17,14 +16,12 @@ public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The id of the message
      */
-    @NonNull
-    private final String id;
+        private final String id;
 
     /**
      * The chat of the message
      */
-    @NonNull
-    private final Chat chat;
+        private final Chat chat;
 
     /**
      * The sender of the message
@@ -34,11 +31,10 @@ public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The message
      */
-    @NonNull
-    private final MessageContainer message;
+        private final MessageContainer message;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public QuotedMessageInfo(@NonNull String id, @NonNull Chat chat, Contact sender, @NonNull MessageContainer message) {
+    public QuotedMessageInfo(String id, Chat chat, Contact sender, MessageContainer message) {
         this.id = id;
         this.chat = chat;
         this.sender = sender;
@@ -51,7 +47,7 @@ public final class QuotedMessageInfo implements MessageInfo {
      * @param contextInfo the non-null context info
      * @return an optional quoted message
      */
-    public static Optional<QuotedMessageInfo> of(@NonNull ContextInfo contextInfo) {
+    public static Optional<QuotedMessageInfo> of(ContextInfo contextInfo) {
         if (!contextInfo.hasQuotedMessage()) {
             return Optional.empty();
         }

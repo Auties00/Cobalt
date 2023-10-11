@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.business;
 
 import it.auties.whatsapp.model.node.Node;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -13,8 +12,8 @@ import java.util.NoSuchElementException;
  * @param name     the name of the business collection
  * @param products the list of products in the business collection
  */
-public record BusinessCollectionEntry(@NonNull String id, @NonNull String name,
-                                      @NonNull List<BusinessCatalogEntry> products) {
+public record BusinessCollectionEntry(String id, String name,
+                                      List<BusinessCatalogEntry> products) {
     /**
      * Creates a {@code BusinessCollectionEntry} object from a {@code Node} object.
      *
@@ -23,7 +22,7 @@ public record BusinessCollectionEntry(@NonNull String id, @NonNull String name,
      * @throws NoSuchElementException if the id or name of the business collection is missing from the
      *                                node
      */
-    public static BusinessCollectionEntry of(@NonNull Node node) {
+    public static BusinessCollectionEntry of(Node node) {
         var id = node.findNode("id")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing id from business collections"));

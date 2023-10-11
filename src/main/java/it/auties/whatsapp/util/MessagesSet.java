@@ -1,6 +1,5 @@
 package it.auties.whatsapp.util;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,7 +108,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     }
 
     @Override
-    public boolean removeAll(@NonNull Collection<?> collection) {
+    public boolean removeAll(Collection<?> collection) {
         var hashCodes = collection.stream()
                 .map(Objects::hashCode)
                 .collect(Collectors.toUnmodifiableSet());
@@ -199,8 +198,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     }
 
     @Override
-    @NonNull
-    public Iterator<E> iterator() {
+        public Iterator<E> iterator() {
         return new Iterator<>() {
             private Node<E> nextNode = head.get();
 
@@ -222,8 +220,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
         };
     }
 
-    @NonNull
-    public Iterator<E> descendingIterator() {
+        public Iterator<E> descendingIterator() {
         return new Iterator<>() {
             private Node<E> previousNode = tail.get();
 

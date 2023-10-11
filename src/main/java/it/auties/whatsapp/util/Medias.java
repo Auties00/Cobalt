@@ -12,7 +12,6 @@ import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -181,7 +180,7 @@ public final class Medias {
         }
     }
 
-    public static String createMediaUrl(@NonNull String directPath) {
+    public static String createMediaUrl(String directPath) {
         return "https://%s%s".formatted(DEFAULT_HOST, directPath);
     }
 

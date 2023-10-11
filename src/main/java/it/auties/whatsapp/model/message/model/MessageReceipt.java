@@ -7,8 +7,6 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.HashSet;
@@ -22,20 +20,15 @@ import java.util.Set;
 @ProtobufMessageName("UserReceipt")
 public final class MessageReceipt implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)
-    @Nullable
-    private Long deliveredTimestampSeconds;
+        private Long deliveredTimestampSeconds;
     @ProtobufProperty(index = 3, type = ProtobufType.INT64)
-    @Nullable
-    private Long readTimestampSeconds;
+        private Long readTimestampSeconds;
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
-    @Nullable
-    private Long playedTimestampSeconds;
+        private Long playedTimestampSeconds;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING, repeated = true)
-    @NonNull
-    private final Set<Jid> deliveredJids;
+        private final Set<Jid> deliveredJids;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING, repeated = true)
-    @NonNull
-    private final Set<Jid> readJids;
+        private final Set<Jid> readJids;
 
     public MessageReceipt() {
         this.deliveredJids = new HashSet<>();
@@ -43,7 +36,7 @@ public final class MessageReceipt implements ProtobufMessage {
     }
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public MessageReceipt(@Nullable Long deliveredTimestampSeconds, @Nullable Long readTimestampSeconds, @Nullable Long playedTimestampSeconds, @NonNull Set<Jid> deliveredJids, @NonNull Set<Jid> readJids) {
+    public MessageReceipt(Long deliveredTimestampSeconds, Long readTimestampSeconds, Long playedTimestampSeconds, Set<Jid> deliveredJids, Set<Jid> readJids) {
         this.deliveredTimestampSeconds = deliveredTimestampSeconds;
         this.readTimestampSeconds = readTimestampSeconds;
         this.playedTimestampSeconds = playedTimestampSeconds;

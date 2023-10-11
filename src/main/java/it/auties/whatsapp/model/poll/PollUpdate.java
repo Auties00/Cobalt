@@ -6,7 +6,6 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -19,11 +18,9 @@ import java.util.Optional;
 @ProtobufMessageName("PollUpdate")
 public record PollUpdate(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        ChatMessageKey pollUpdateMessageKey,
+                ChatMessageKey pollUpdateMessageKey,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        @NonNull
-        PollUpdateEncryptedOptions vote,
+                PollUpdateEncryptedOptions vote,
         @ProtobufProperty(index = 3, type = ProtobufType.INT64)
         long senderTimestampMilliseconds
 ) implements ProtobufMessage {

@@ -9,7 +9,6 @@ import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,16 +30,13 @@ public record HydratedFourRowTemplate(
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         Optional<LocationMessage> titleLocation,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-        @NonNull
-        String body,
+                String body,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> footer,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
-        @NonNull
-        List<HydratedTemplateButton> hydratedButtons,
+                List<HydratedTemplateButton> hydratedButtons,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        @NonNull
-        String templateId
+                String templateId
 ) implements TemplateFormatter {
     @ProtobufBuilder(className = "HydratedFourRowTemplateSimpleBuilder")
     static HydratedFourRowTemplate customBuilder(HydratedFourRowTemplateTitle title, String body, String footer, List<HydratedTemplateButton> buttons, String templateId) {

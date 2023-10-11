@@ -6,7 +6,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 
@@ -21,19 +20,19 @@ public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessa
     private final Integer iteration;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private final byte @NonNull [] cipherText;
+    private final byte[] cipherText;
 
     private byte[] signingKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SenderKeyMessage(Integer id, Integer iteration, byte @NonNull [] cipherText, byte[] signingKey) {
+    public SenderKeyMessage(Integer id, Integer iteration, byte[] cipherText, byte[] signingKey) {
         this.id = id;
         this.iteration = iteration;
         this.cipherText = cipherText;
         this.signingKey = signingKey;
     }
 
-    public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText) {
+    public SenderKeyMessage(int id, int iteration, byte[] cipherText) {
         this.id = id;
         this.iteration = iteration;
         this.cipherText = cipherText;

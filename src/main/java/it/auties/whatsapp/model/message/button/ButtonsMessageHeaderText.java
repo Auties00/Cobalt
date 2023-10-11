@@ -1,9 +1,8 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.annotation.ProtobufConverter;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-public record ButtonsMessageHeaderText(@NonNull String text) implements ButtonsMessageHeader {
+public record ButtonsMessageHeaderText(String text) implements ButtonsMessageHeader {
     @ProtobufConverter
     public static ButtonsMessageHeaderText of(String text) {
         return new ButtonsMessageHeaderText(text);

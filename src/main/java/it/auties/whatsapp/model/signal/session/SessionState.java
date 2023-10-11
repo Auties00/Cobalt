@@ -2,8 +2,6 @@ package it.auties.whatsapp.model.signal.session;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.jilt.Builder;
 
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -16,29 +14,26 @@ public final class SessionState {
 
     private final int registrationId;
 
-    private final byte @NonNull [] baseKey;
+    private final byte[] baseKey;
 
-    private final byte @NonNull [] remoteIdentityKey;
+    private final byte[] remoteIdentityKey;
 
-    @NonNull
     private final ConcurrentHashMap<String, SessionChain> chains;
 
-    private byte @NonNull [] rootKey;
+    private byte[] rootKey;
 
     private SessionPreKey pendingPreKey;
 
-    @NonNull
     private SignalKeyPair ephemeralKeyPair;
 
-    private byte @NonNull [] lastRemoteEphemeralKey;
+    private byte[] lastRemoteEphemeralKey;
 
     private int previousCounter;
 
     private boolean closed;
 
-    @Builder(factoryMethod = "builder")
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SessionState(int version, int registrationId, byte @NonNull [] baseKey, byte @NonNull [] remoteIdentityKey, @NonNull ConcurrentHashMap<String, SessionChain> chains, byte @NonNull [] rootKey, SessionPreKey pendingPreKey, @NonNull SignalKeyPair ephemeralKeyPair, byte @NonNull [] lastRemoteEphemeralKey, int previousCounter, boolean closed) {
+    public SessionState(int version, int registrationId, byte[] baseKey, byte[] remoteIdentityKey, ConcurrentHashMap<String, SessionChain> chains, byte[] rootKey, SessionPreKey pendingPreKey, SignalKeyPair ephemeralKeyPair, byte[] lastRemoteEphemeralKey, int previousCounter, boolean closed) {
         this.version = version;
         this.registrationId = registrationId;
         this.baseKey = baseKey;
@@ -94,15 +89,15 @@ public final class SessionState {
         return this.registrationId;
     }
 
-    public byte @NonNull [] baseKey() {
+    public byte[] baseKey() {
         return this.baseKey;
     }
 
-    public byte @NonNull [] remoteIdentityKey() {
+    public byte[] remoteIdentityKey() {
         return this.remoteIdentityKey;
     }
 
-    public byte @NonNull [] rootKey() {
+    public byte[] rootKey() {
         return this.rootKey;
     }
 
@@ -110,11 +105,11 @@ public final class SessionState {
         return this.pendingPreKey;
     }
 
-    public @NonNull SignalKeyPair ephemeralKeyPair() {
+    public SignalKeyPair ephemeralKeyPair() {
         return this.ephemeralKeyPair;
     }
 
-    public byte @NonNull [] lastRemoteEphemeralKey() {
+    public byte[] lastRemoteEphemeralKey() {
         return this.lastRemoteEphemeralKey;
     }
 
@@ -126,7 +121,7 @@ public final class SessionState {
         return this.closed;
     }
 
-    public SessionState rootKey(byte @NonNull [] rootKey) {
+    public SessionState rootKey(byte[] rootKey) {
         this.rootKey = rootKey;
         return this;
     }
@@ -136,12 +131,12 @@ public final class SessionState {
         return this;
     }
 
-    public SessionState ephemeralKeyPair(@NonNull SignalKeyPair ephemeralKeyPair) {
+    public SessionState ephemeralKeyPair(SignalKeyPair ephemeralKeyPair) {
         this.ephemeralKeyPair = ephemeralKeyPair;
         return this;
     }
 
-    public SessionState lastRemoteEphemeralKey(byte @NonNull [] lastRemoteEphemeralKey) {
+    public SessionState lastRemoteEphemeralKey(byte[] lastRemoteEphemeralKey) {
         this.lastRemoteEphemeralKey = lastRemoteEphemeralKey;
         return this;
     }

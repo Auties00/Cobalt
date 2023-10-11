@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 
@@ -18,13 +17,13 @@ public final class SignalDistributionMessage extends SignalProtocolMessage<Signa
     private final Integer iteration;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private final byte @NonNull [] chainKey;
+    private final byte[] chainKey;
 
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private final byte @NonNull [] signingKey;
+    private final byte[] signingKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SignalDistributionMessage(int id, int iteration, byte @NonNull [] chainKey, byte @NonNull [] signingKey) {
+    public SignalDistributionMessage(int id, int iteration, byte[] chainKey, byte[] signingKey) {
         this.id = id;
         this.iteration = iteration;
         this.chainKey = chainKey;

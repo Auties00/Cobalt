@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.node;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.Json;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -18,14 +17,14 @@ import java.util.stream.Collectors;
  * @param attributes  a non-null Map that describes the metadata of this object
  * @param content     a nullable object: a List of {@link Node}, a {@link String} or a {@link Number}
  */
-public record Node(@NonNull String description, @NonNull Attributes attributes, Object content) {
+public record Node(String description, Attributes attributes, Object content) {
     /**
      * Constructs a Node that only provides a non-null tag
      *
      * @param description a non-null String that describes the data that this object holds
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description) {
+    public static Node of(String description) {
         return new Node(description, Attributes.of(), null);
     }
 
@@ -36,7 +35,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param contentOrAttributes a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}, or the request's attributes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, Object contentOrAttributes) {
+    public static Node of(String description, Object contentOrAttributes) {
         if (contentOrAttributes instanceof Attributes attributes) {
             return new Node(description, attributes, null);
         }
@@ -71,7 +70,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, Node... content) {
+    public static Node of(String description, Node... content) {
         return new Node(description, Attributes.of(), getNodesOrThrow(content));
     }
 
@@ -83,7 +82,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, Map<String, Object> attributes, Node... content) {
+    public static Node of(String description, Map<String, Object> attributes, Node... content) {
         return of(description, Attributes.of(attributes), getNodesOrThrow(content));
     }
 
@@ -95,7 +94,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, Attributes attributes, Node... content) {
+    public static Node of(String description, Attributes attributes, Node... content) {
         return new Node(description, attributes, getNodesOrThrow(content));
     }
 
@@ -107,7 +106,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, Map<String, Object> attributes, Object content) {
+    public static Node of(String description, Map<String, Object> attributes, Object content) {
         return of(description, Attributes.of(attributes), content);
     }
 
@@ -119,7 +118,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param content     any number of non-null nodes
      * @return a new node with the above characteristics
      */
-    public static Node of(@NonNull String description, Attributes attributes, Object content) {
+    public static Node of(String description, Attributes attributes, Object content) {
         if (content instanceof List<?> list) {
             try {
                 return new Node(description, attributes, getNodesOrThrow(list));
@@ -268,7 +267,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param description the non-null description to check against
      * @return a boolean
      */
-    public boolean hasDescription(@NonNull String description) {
+    public boolean hasDescription(String description) {
         return Objects.equals(description(), description);
     }
 

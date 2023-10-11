@@ -19,8 +19,6 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,26 +38,22 @@ public final class Keys extends Controller<Keys> {
     /**
      * The secret key pair used for buffer messages
      */
-    @NonNull
-    private final SignalKeyPair noiseKeyPair;
+        private final SignalKeyPair noiseKeyPair;
 
     /**
      * The ephemeral key pair
      */
-    @NonNull
-    private final SignalKeyPair ephemeralKeyPair;
+        private final SignalKeyPair ephemeralKeyPair;
 
     /**
      * The signed identity key
      */
-    @NonNull
-    private final SignalKeyPair identityKeyPair;
+        private final SignalKeyPair identityKeyPair;
 
     /**
      * The companion secret key
      */
-    @NonNull
-    private SignalKeyPair companionKeyPair;
+        private SignalKeyPair companionKeyPair;
 
     /**
      * The signed pre key
@@ -70,70 +64,59 @@ public final class Keys extends Controller<Keys> {
      * The signed key of the companion's device
      * This value will be null until it gets synced by whatsapp
      */
-    private byte @Nullable[] signedKeyIndex;
+    private byte[] signedKeyIndex;
 
     /**
      * The timestampSeconds of the signed key companion's device
      */
-    @Nullable
-    private Long signedKeyIndexTimestamp;
+        private Long signedKeyIndexTimestamp;
 
     /**
      * Whether these keys have generated pre keys assigned to them
      */
-    @NonNull
-    private final List<SignalPreKeyPair> preKeys;
+        private final List<SignalPreKeyPair> preKeys;
 
     /**
      * The phone id for the mobile api
      */
-    @NonNull
-    private final String phoneId;
+        private final String phoneId;
 
     /**
      * The device id for the mobile api
      */
-    @NonNull
-    private final String deviceId;
+        private final String deviceId;
 
     /**
      * The identity id for the mobile api
      */
-    @NonNull
-    private final String recoveryToken;
+        private final String recoveryToken;
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
-    @Nullable
-    private SignedDeviceIdentity companionIdentity;
+        private SignedDeviceIdentity companionIdentity;
 
     /**
      * Sender keys for signal implementation
      */
-    @NonNull
-    private final Map<SenderKeyName, SenderKeyRecord> senderKeys;
+        private final Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
      * App state keys
      */
-    @NonNull
-    private final Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys;
+        private final Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys;
 
     /**
      * Sessions map
      */
-    @NonNull
-    private final Map<SessionAddress, Session> sessions;
+        private final Map<SessionAddress, Session> sessions;
 
     /**
      * Hash state
      */
-    @NonNull
-    private final Map<Jid, Map<PatchType, CompanionHashState>> hashStates;
+        private final Map<Jid, Map<PatchType, CompanionHashState>> hashStates;
 
-    @NonNull
-    private final Map<Jid, Collection<Jid>> groupsPreKeys;
+        private final Map<Jid, Collection<Jid>> groupsPreKeys;
 
     /**
      * Whether the client was registered
@@ -153,15 +136,13 @@ public final class Keys extends Controller<Keys> {
     /**
      * Write counter for IV
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     private final AtomicLong writeCounter;
 
     /**
      * Read counter for IV
      */
-    @NonNull
-    @JsonIgnore
+        @JsonIgnore
     private final AtomicLong readCounter;
 
     /**
@@ -171,7 +152,7 @@ public final class Keys extends Controller<Keys> {
     private byte[] writeKey, readKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Keys(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, int registrationId, @NonNull SignalKeyPair noiseKeyPair, @NonNull SignalKeyPair ephemeralKeyPair, @NonNull SignalKeyPair identityKeyPair, @NonNull SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte @Nullable [] signedKeyIndex, @Nullable Long signedKeyIndexTimestamp, @NonNull List<SignalPreKeyPair> preKeys, @NonNull String phoneId, @NonNull String deviceId, @NonNull String recoveryToken, @Nullable SignedDeviceIdentity companionIdentity, @NonNull Map<SenderKeyName, SenderKeyRecord> senderKeys, @NonNull Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, @NonNull Map<SessionAddress, Session> sessions, @NonNull Map<Jid, Map<PatchType, CompanionHashState>> hashStates, @NonNull Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    Keys(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, String deviceId, String recoveryToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, Map<SessionAddress, Session> sessions, Map<Jid, Map<PatchType, CompanionHashState>> hashStates, Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         this.registrationId = registrationId;
         this.noiseKeyPair = noiseKeyPair;
@@ -240,7 +221,7 @@ public final class Keys extends Controller<Keys> {
      * @param name the non-null name to search
      * @return a non-null SenderKeyRecord
      */
-    public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name) {
+    public SenderKeyRecord findSenderKeyByName(SenderKeyName name) {
         return requireNonNullElseGet(senderKeys.get(name), () -> {
             var record = new SenderKeyRecord();
             senderKeys.put(name, record);
@@ -254,7 +235,7 @@ public final class Keys extends Controller<Keys> {
      * @param address the non-null address to search
      * @return a non-null Optional SessionRecord
      */
-    public Optional<Session> findSessionByAddress(@NonNull SessionAddress address) {
+    public Optional<Session> findSessionByAddress(SessionAddress address) {
         return Optional.ofNullable(sessions.get(address));
     }
 
@@ -286,7 +267,7 @@ public final class Keys extends Controller<Keys> {
      * @param id  the non-null id to search
      * @return a non-null Optional app state dataSync key
      */
-    public Optional<AppStateSyncKey> findAppKeyById(@NonNull Jid jid, byte[] id) {
+    public Optional<AppStateSyncKey> findAppKeyById(Jid jid, byte[] id) {
         return Objects.requireNonNull(appStateKeys.get(jid), "Missing keys")
                 .stream()
                 .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId().keyId(), id))
@@ -300,7 +281,7 @@ public final class Keys extends Controller<Keys> {
      * @param patchType the non-null name to search
      * @return a non-null hash state
      */
-    public Optional<CompanionHashState> findHashStateByName(@NonNull Jid device, @NonNull PatchType patchType) {
+    public Optional<CompanionHashState> findHashStateByName(Jid device, PatchType patchType) {
         return Optional.ofNullable(hashStates.get(device))
                 .map(entry -> entry.get(patchType));
     }
@@ -312,7 +293,7 @@ public final class Keys extends Controller<Keys> {
      * @param identityKey the nullable identity key
      * @return true if any match is found
      */
-    public boolean hasTrust(@NonNull SessionAddress address, byte[] identityKey) {
+    public boolean hasTrust(SessionAddress address, byte[] identityKey) {
         return true; // At least for now
     }
 
@@ -322,7 +303,7 @@ public final class Keys extends Controller<Keys> {
      * @param address the address to check
      * @return true if a session for that address already exists
      */
-    public boolean hasSession(@NonNull SessionAddress address) {
+    public boolean hasSession(SessionAddress address) {
         return sessions.containsKey(address);
     }
 
@@ -333,7 +314,7 @@ public final class Keys extends Controller<Keys> {
      * @param record  the non-null record
      * @return this
      */
-    public Keys putSession(@NonNull SessionAddress address, @NonNull Session record) {
+    public Keys putSession(SessionAddress address, Session record) {
         sessions.put(address, record);
         return this;
     }
@@ -345,7 +326,7 @@ public final class Keys extends Controller<Keys> {
      * @param state  the non-null hash state
      * @return this
      */
-    public Keys putState(@NonNull Jid device, @NonNull CompanionHashState state) {
+    public Keys putState(Jid device, CompanionHashState state) {
         var oldData = Objects.requireNonNullElseGet(hashStates.get(device), HashMap<PatchType, CompanionHashState>::new);
         oldData.put(state.name(), state);
         hashStates.put(device, oldData);
@@ -359,7 +340,7 @@ public final class Keys extends Controller<Keys> {
      * @param keys the keys to add
      * @return this
      */
-    public Keys addAppKeys(@NonNull Jid jid, @NonNull Collection<AppStateSyncKey> keys) {
+    public Keys addAppKeys(Jid jid, Collection<AppStateSyncKey> keys) {
         appStateKeys.put(jid, new LinkedList<>(keys));
         return this;
     }
@@ -369,7 +350,7 @@ public final class Keys extends Controller<Keys> {
      *
      * @return a non-null app key
      */
-    public AppStateSyncKey getLatestAppKey(@NonNull Jid jid) {
+    public AppStateSyncKey getLatestAppKey(Jid jid) {
         var keys = Objects.requireNonNull(appStateKeys.get(jid), "Missing keys");
         return keys.getLast();
     }
@@ -379,7 +360,7 @@ public final class Keys extends Controller<Keys> {
      *
      * @return a non-null app key
      */
-    public LinkedList<AppStateSyncKey> getAppKeys(@NonNull Jid jid) {
+    public LinkedList<AppStateSyncKey> getAppKeys(Jid jid) {
         return Objects.requireNonNullElseGet(appStateKeys.get(jid), LinkedList::new);
     }
 
@@ -454,7 +435,7 @@ public final class Keys extends Controller<Keys> {
         return Collections.unmodifiableList(preKeys);
     }
 
-    public void addRecipientWithPreKeys(@NonNull Jid group, @NonNull Jid recipient) {
+    public void addRecipientWithPreKeys(Jid group, Jid recipient) {
         var preKeys = groupsPreKeys.get(group);
         if (preKeys != null) {
             preKeys.add(recipient);
@@ -466,7 +447,7 @@ public final class Keys extends Controller<Keys> {
         groupsPreKeys.put(group, newPreKeys);
     }
 
-    public void addRecipientsWithPreKeys(@NonNull Jid group, @NonNull Collection<Jid> recipients) {
+    public void addRecipientsWithPreKeys(Jid group, Collection<Jid> recipients) {
         var preKeys = groupsPreKeys.get(group);
         if (preKeys != null) {
             preKeys.addAll(recipients);
@@ -477,7 +458,7 @@ public final class Keys extends Controller<Keys> {
         groupsPreKeys.put(group, newPreKeys);
     }
 
-    public boolean hasGroupKeys(@NonNull Jid group, @NonNull Jid recipient) {
+    public boolean hasGroupKeys(Jid group, Jid recipient) {
         var preKeys = groupsPreKeys.get(group);
         return preKeys != null && preKeys.contains(recipient);
     }
@@ -536,23 +517,23 @@ public final class Keys extends Controller<Keys> {
         return this.recoveryToken;
     }
 
-    public @NonNull Map<SenderKeyName, SenderKeyRecord> senderKeys() {
+    public Map<SenderKeyName, SenderKeyRecord> senderKeys() {
         return this.senderKeys;
     }
 
-    public @NonNull Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys() {
+    public Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys() {
         return this.appStateKeys;
     }
 
-    public @NonNull Map<SessionAddress, Session> sessions() {
+    public Map<SessionAddress, Session> sessions() {
         return this.sessions;
     }
 
-    public @NonNull Map<Jid, Map<PatchType, CompanionHashState>> hashStates() {
+    public Map<Jid, Map<PatchType, CompanionHashState>> hashStates() {
         return this.hashStates;
     }
 
-    public @NonNull Map<Jid, Collection<Jid>> groupsPreKeys() {
+    public Map<Jid, Collection<Jid>> groupsPreKeys() {
         return this.groupsPreKeys;
     }
 
@@ -568,11 +549,11 @@ public final class Keys extends Controller<Keys> {
         return this.initialAppSync;
     }
 
-    public @NonNull AtomicLong writeCounter() {
+    public AtomicLong writeCounter() {
         return this.writeCounter;
     }
 
-    public @NonNull AtomicLong readCounter() {
+    public AtomicLong readCounter() {
         return this.readCounter;
     }
 

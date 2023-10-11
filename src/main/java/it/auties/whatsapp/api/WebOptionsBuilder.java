@@ -5,7 +5,6 @@ import it.auties.whatsapp.controller.KeysBuilder;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -27,7 +26,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      *
      * @return the same instance for chaining
      */
-    public WebOptionsBuilder historyLength(@NonNull WebHistoryLength historyLength) {
+    public WebOptionsBuilder historyLength(WebHistoryLength historyLength) {
         if(store != null) {
             store.setHistoryLength(historyLength);
         }else {
@@ -42,7 +41,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      * @param qrHandler the non-null handler to use
      * @return a Whatsapp instance
      */
-    public Whatsapp unregistered(@NonNull QrHandler qrHandler) {
+    public Whatsapp unregistered(QrHandler qrHandler) {
         if (whatsapp == null) {
             this.whatsapp = Whatsapp.customBuilder()
                     .store(Objects.requireNonNullElseGet(store, storeBuilder::build))
@@ -63,7 +62,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      * @param pairingCodeHandler the non-null handler for the pairing code
      * @return a Whatsapp instance
      */
-    public Whatsapp unregistered(long phoneNumber, @NonNull PairingCodeHandler pairingCodeHandler) {
+    public Whatsapp unregistered(long phoneNumber, PairingCodeHandler pairingCodeHandler) {
         if (whatsapp == null) {
             if(store != null) {
                 store.setPhoneNumber(PhoneNumber.of(phoneNumber));

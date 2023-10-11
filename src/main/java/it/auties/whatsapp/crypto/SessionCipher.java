@@ -14,7 +14,6 @@ import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Specification.Signal;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -25,7 +24,7 @@ import java.util.function.Supplier;
 import static it.auties.curve25519.Curve25519.sharedKey;
 import static it.auties.whatsapp.util.Specification.Signal.*;
 
-public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
+public record SessionCipher(SessionAddress address, Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
         if(data == null){
             return new CipheredMessageResult(null, Signal.UNAVAILABLE);

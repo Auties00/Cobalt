@@ -5,7 +5,6 @@ import io.netty.buffer.Unpooled;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageContainerSpec;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.Buffer;
@@ -69,19 +68,19 @@ public final class BytesHelper {
         return Unpooled.buffer(size);
     }
 
-    public static ByteBuf newBuffer(byte @NonNull [] data) {
+    public static ByteBuf newBuffer(byte[] data) {
         var buffer = newBuffer(data.length);
         buffer.writeBytes(data);
         return buffer;
     }
 
-    public static ByteBuf newBuffer(@NonNull ByteBuffer data) {
+    public static ByteBuf newBuffer(ByteBuffer data) {
         var buffer = newBuffer(data.capacity());
         buffer.writeBytes(data);
         return buffer;
     }
 
-    public static ByteBuf newBuffer(@NonNull Collection<ByteBuffer> data) {
+    public static ByteBuf newBuffer(Collection<ByteBuffer> data) {
         var buffer = newBuffer(data.stream().mapToInt(Buffer::capacity).sum());
         data.forEach(buffer::writeBytes);
         return buffer;

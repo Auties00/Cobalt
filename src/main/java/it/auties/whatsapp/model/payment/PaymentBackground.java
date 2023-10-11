@@ -6,15 +6,13 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
 @ProtobufMessageName("PaymentBackground")
 public record PaymentBackground(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String id,
+                String id,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long mediaSize,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
@@ -22,8 +20,7 @@ public record PaymentBackground(
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
         int height,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-        @NonNull
-        String mimetype,
+                String mimetype,
         @ProtobufProperty(index = 6, type = ProtobufType.FIXED32)
         int placeholderArgb,
         @ProtobufProperty(index = 7, type = ProtobufType.FIXED32)
@@ -33,8 +30,7 @@ public record PaymentBackground(
         @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
         Optional<PaymentMediaData> mediaData,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-        @NonNull
-        PaymentBackgroundType type
+                PaymentBackgroundType type
 ) implements ProtobufMessage {
 
     public enum PaymentBackgroundType implements ProtobufEnum  {

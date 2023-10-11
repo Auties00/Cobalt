@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.BytesHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HexFormat;
 
@@ -14,11 +13,9 @@ import java.util.HexFormat;
 @ProtobufMessageName("HydratedTemplateButton.HydratedQuickReplyButton")
 public record HydratedQuickReplyButton(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String text,
+                String text,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String id
+                String id
 ) implements HydratedButton {
     /**
      * Constructs a new HydratedQuickReplyButton from a text with a random id
@@ -26,7 +23,7 @@ public record HydratedQuickReplyButton(
      * @param text the non-null text
      * @return a non-null HydratedQuickReplyButton
      */
-    public static HydratedQuickReplyButton of(@NonNull String text) {
+    public static HydratedQuickReplyButton of(String text) {
         var id = HexFormat.of().formatHex(BytesHelper.random(6));
         return new HydratedQuickReplyButton(text, id);
     }

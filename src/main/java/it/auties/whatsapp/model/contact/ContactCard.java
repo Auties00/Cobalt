@@ -7,7 +7,6 @@ import ezvcard.property.SimpleProperty;
 import ezvcard.property.Telephone;
 import it.auties.protobuf.annotation.ProtobufConverter;
 import it.auties.whatsapp.model.jid.Jid;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,8 +18,7 @@ import java.util.stream.Stream;
 public record ContactCard(
         Optional<String> version,
         Optional<String> name,
-        @NonNull
-        Map<String, List<Jid>> phoneNumbers,
+                Map<String, List<Jid>> phoneNumbers,
         Optional<String> businessName
 ) {
     private static final String BUSINESS_NAME_PROPERTY = "X-WA-BIZ-NAME";
@@ -42,7 +40,7 @@ public record ContactCard(
      * @param vcard the non-null vcard to parse
      * @return a non-null vcard
      */
-    public static ContactCard of(@NonNull String vcard) {
+    public static ContactCard of(String vcard) {
         var parsed = Ezvcard.parse(vcard).first();
         var version = Optional.ofNullable(parsed.getVersion().getVersion());
         var name = Optional.ofNullable(parsed.getFormattedName().getValue());
@@ -71,7 +69,7 @@ public record ContactCard(
         return Stream.of(first, second).flatMap(Collection::stream).toList();
     }
 
-    public List<Jid> getPhoneNumber(@NonNull Jid contact) {
+    public List<Jid> getPhoneNumber(Jid contact) {
         return Objects.requireNonNullElseGet(phoneNumbers.get(DEFAULT_NUMBER_TYPE), List::of);
     }
 
@@ -82,11 +80,11 @@ public record ContactCard(
         vcard.addTelephoneNumber(telephone);
     }
 
-    public void addPhoneNumber(@NonNull Jid contact) {
+    public void addPhoneNumber(Jid contact) {
         addPhoneNumber(DEFAULT_NUMBER_TYPE, contact);
     }
 
-    public void addPhoneNumber(@NonNull String category, @NonNull Jid contact) {
+    public void addPhoneNumber(String category, Jid contact) {
         var oldValue = phoneNumbers.get(category);
         if(oldValue == null){
             phoneNumbers.put(category, List.of(contact));

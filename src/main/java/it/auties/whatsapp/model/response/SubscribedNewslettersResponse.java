@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.response;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.util.Json;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,7 @@ public record SubscribedNewslettersResponse(List<Newsletter> newsletters) {
                 .orElseThrow(() -> new NoSuchElementException("Missing newsletters")));
     }
 
-    public static Optional<SubscribedNewslettersResponse> ofJson(@NonNull String json) {
+    public static Optional<SubscribedNewslettersResponse> ofJson(String json) {
         return Json.readValue(json, JsonResponse.class).data();
     }
 

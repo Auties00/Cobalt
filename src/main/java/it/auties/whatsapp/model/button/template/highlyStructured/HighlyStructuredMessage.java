@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTempl
 import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,28 +18,23 @@ import java.util.Optional;
 @ProtobufMessageName("Message.HighlyStructuredMessage")
 public record HighlyStructuredMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String namespace,
+                String namespace,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String elementName,
+                String elementName,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING, repeated = true)
-        @NonNull
-        List<String> params,
+                List<String> params,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Optional<String> fallbackLg,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         Optional<String> fallbackLc,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, repeated = true)
-        @NonNull
-        List<HighlyStructuredLocalizableParameter> localizableParameters,
+                List<HighlyStructuredLocalizableParameter> localizableParameters,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> deterministicLg,
         @ProtobufProperty(index = 8, type = ProtobufType.STRING)
         Optional<String> deterministicLc,
         @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
-        @NonNull
-        TemplateMessage templateMessage
+                TemplateMessage templateMessage
 ) implements ButtonMessage, HighlyStructuredFourRowTemplateTitle {
     @Override
     public MessageType type() {

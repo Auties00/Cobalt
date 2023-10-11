@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.privacy;
 
 import it.auties.whatsapp.model.jid.Jid;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
@@ -12,11 +11,11 @@ import java.util.List;
  * @param value the non-null value
  * @param excluded the non-null list of excluded contacts if {@link PrivacySettingEntry#value} == {@link PrivacySettingValue#CONTACTS_EXCEPT}
  */
-public record PrivacySettingEntry(@NonNull PrivacySettingType type, @NonNull PrivacySettingValue value, List<Jid> excluded) {
+public record PrivacySettingEntry(PrivacySettingType type, PrivacySettingValue value, List<Jid> excluded) {
     /**
      * Canonical constructor
      */
-    public PrivacySettingEntry(@NonNull PrivacySettingType type, @NonNull PrivacySettingValue value, List<Jid> excluded) {
+    public PrivacySettingEntry(PrivacySettingType type, PrivacySettingValue value, List<Jid> excluded) {
         this.type = type;
         this.value = value;
         this.excluded = excluded == null ? List.of() : excluded;

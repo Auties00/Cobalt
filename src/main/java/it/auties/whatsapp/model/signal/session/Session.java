@@ -1,13 +1,12 @@
 package it.auties.whatsapp.model.signal.session;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public record Session(Set<@NonNull SessionState> states) {
+public record Session(Set<SessionState> states) {
     public Session(Set<SessionState> states) {
         this.states = Objects.requireNonNullElseGet(states, ConcurrentHashMap::newKeySet);
     }

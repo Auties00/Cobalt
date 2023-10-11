@@ -37,7 +37,6 @@ import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.SocketException;
 import java.net.URI;
@@ -60,41 +59,31 @@ public class SocketHandler implements SocketListener {
 
     private SocketSession session;
 
-    @NonNull
     private final Whatsapp whatsapp;
 
-    @NonNull
     private final AuthHandler authHandler;
 
-    @NonNull
     private final StreamHandler streamHandler;
 
-    @NonNull
     private final MessageHandler messageHandler;
 
-    @NonNull
     private final AppStateHandler appStateHandler;
 
-    @NonNull
     private final ErrorHandler errorHandler;
 
-    @NonNull
     private final Executor socketExecutor;
 
-    @NonNull
     private volatile SocketState state;
 
-    @NonNull
     private Keys keys;
 
-    @NonNull
     private Store store;
 
     private Thread shutdownHook;
 
     private ExecutorService listenersService;
 
-    public static boolean isConnected(@NonNull UUID uuid) {
+    public static boolean isConnected(UUID uuid) {
         return connectedUuids.contains(uuid);
     }
 
@@ -102,11 +91,11 @@ public class SocketHandler implements SocketListener {
         return connectedPhoneNumbers.contains(phoneNumber);
     }
 
-    public static boolean isConnected(@NonNull String id) {
+    public static boolean isConnected(String id) {
         return connectedAlias.contains(id);
     }
 
-    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Store store, @NonNull Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, Executor socketExecutor) {
+    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, Executor socketExecutor) {
         this.whatsapp = whatsapp;
         this.store = store;
         this.keys = keys;
@@ -379,7 +368,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(@NonNull JidProvider chat) {
+    public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(JidProvider chat) {
         var query = Node.of("status");
         var body = Node.of("user", Map.of("jid", chat.toJid()));
         return sendInteractiveQuery(query, body).thenApplyAsync(this::parseStatus);
@@ -445,7 +434,7 @@ public class SocketHandler implements SocketListener {
         return result;
     }
 
-    public CompletableFuture<Optional<URI>> queryPicture(@NonNull JidProvider chat) {
+    public CompletableFuture<Optional<URI>> queryPicture(JidProvider chat) {
         var body = Node.of("picture", Map.of("query", "url", "type", "image"));
         if (chat.toJid().hasServer(JidServer.GROUP)) {
             return queryGroupMetadata(chat.toJid())
@@ -539,7 +528,7 @@ public class SocketHandler implements SocketListener {
         return metadata;
     }
 
-    public GroupMetadata parseGroupMetadata(@NonNull Node node) {
+    public GroupMetadata parseGroupMetadata(Node node) {
         var groupId = node.attributes()
                 .getOptionalString("id")
                 .map(id -> Jid.of(id, JidServer.GROUP))
@@ -652,7 +641,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    
+
     protected void onMessageStatus(MessageInfo message) {
         callListenersAsync(listener -> {
             listener.onMessageStatus(whatsapp, message);
@@ -959,7 +948,7 @@ public class SocketHandler implements SocketListener {
         return null;
     }
 
-    public CompletableFuture<Void> querySessions(@NonNull Jid jid) {
+    public CompletableFuture<Void> querySessions(Jid jid) {
         return messageHandler.getDevices(List.of(jid), true)
                 .thenCompose(values -> messageHandler.querySessions(values, false));
     }
@@ -983,23 +972,23 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    public @NonNull Whatsapp whatsapp() {
+    public Whatsapp whatsapp() {
         return this.whatsapp;
     }
 
-    public @NonNull SocketState state() {
+    public SocketState state() {
         return this.state;
     }
 
-    public @NonNull Keys keys() {
+    public Keys keys() {
         return this.keys;
     }
 
-    public @NonNull Store store() {
+    public Store store() {
         return this.store;
     }
 
-    protected SocketHandler setState(@NonNull SocketState state) {
+    protected SocketHandler setState(SocketState state) {
         this.state = state;
         return this;
     }

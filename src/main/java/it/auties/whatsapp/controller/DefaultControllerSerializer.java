@@ -8,7 +8,6 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.util.Smile;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -57,7 +56,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
      *
      * @param baseDirectory the non-null directory where data will be serialized
      */
-    public DefaultControllerSerializer(@NonNull Path baseDirectory) {
+    public DefaultControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
         this.attributeStoreSerializers = new ConcurrentHashMap<>();
         try {
@@ -69,7 +68,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public LinkedList<UUID> listIds(@NonNull ClientType type) {
+    public LinkedList<UUID> listIds(ClientType type) {
         if (cachedUuids != null) {
             return cachedUuids;
         }
@@ -89,7 +88,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public LinkedList<PhoneNumber> listPhoneNumbers(@NonNull ClientType type) {
+    public LinkedList<PhoneNumber> listPhoneNumbers(ClientType type) {
         if (cachedPhoneNumbers != null) {
             return cachedPhoneNumbers;
         }
@@ -224,12 +223,12 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(@NonNull ClientType type, UUID id) {
+    public Optional<Keys> deserializeKeys(ClientType type, UUID id) {
         return deserializeKeysFromId(type, id.toString());
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(@NonNull ClientType type, String alias) {
+    public Optional<Keys> deserializeKeys(ClientType type, String alias) {
         var file = getSessionDirectory(type, alias);
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -243,7 +242,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(@NonNull ClientType type, long phoneNumber) {
+    public Optional<Keys> deserializeKeys(ClientType type, long phoneNumber) {
         var file = getSessionDirectory(type, String.valueOf(phoneNumber));
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -266,12 +265,12 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Store> deserializeStore(@NonNull ClientType type, UUID id) {
+    public Optional<Store> deserializeStore(ClientType type, UUID id) {
         return deserializeStoreFromId(type, id.toString());
     }
 
     @Override
-    public Optional<Store> deserializeStore(@NonNull ClientType type, String alias) {
+    public Optional<Store> deserializeStore(ClientType type, String alias) {
         var file = getSessionDirectory(type, alias);
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -285,7 +284,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Store> deserializeStore(@NonNull ClientType type, long phoneNumber) {
+    public Optional<Store> deserializeStore(ClientType type, long phoneNumber) {
         var file = getSessionDirectory(type, String.valueOf(phoneNumber));
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -361,7 +360,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public void deleteSession(@NonNull Controller<?> controller) {
+    public void deleteSession(Controller<?> controller) {
         try {
             var folderPath = getSessionDirectory(controller.clientType(), controller.uuid().toString());
             delete(folderPath);
@@ -393,7 +392,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public void linkMetadata(@NonNull Controller<?> controller) {
+    public void linkMetadata(Controller<?> controller) {
         controller.phoneNumber()
                 .ifPresent(phoneNumber -> linkToUuid(controller.clientType(), controller.uuid(), phoneNumber.toString()));
         controller.alias()

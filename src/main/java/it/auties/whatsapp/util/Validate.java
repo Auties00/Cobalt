@@ -1,21 +1,19 @@
 package it.auties.whatsapp.util;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
 public final class Validate {
-    public static void isTrue(boolean value, @NonNull String message, Object... args) {
+    public static void isTrue(boolean value, String message, Object... args) {
         isTrue(value, message, IllegalArgumentException.class, args);
     }
 
-    public static <T extends Throwable> void isTrue(boolean value, @NonNull Class<? extends Throwable> throwable) throws T {
+    public static <T extends Throwable> void isTrue(boolean value, Class<? extends Throwable> throwable) throws T {
         isTrue(value, null, throwable);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends Throwable> void isTrue(boolean value, String message, @NonNull Class<? extends Throwable> throwable, Object... args) throws T {
+    public static <T extends Throwable> void isTrue(boolean value, String message, Class<? extends Throwable> throwable, Object... args) throws T {
         if (value) {
             return;
         }

@@ -8,8 +8,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Optional;
 
@@ -20,8 +18,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.InteractiveMessage.Header")
 public record InteractiveHeader(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String title,
+                String title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> subtitle,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
@@ -36,7 +33,7 @@ public record InteractiveHeader(
         Optional<VideoOrGifMessage> attachmentVideo
 ) implements ProtobufMessage {
     @ProtobufBuilder(className = "InteractiveHeaderSimpleBuilder")
-    static InteractiveHeader simpleBuilder(@NonNull String title, @Nullable String subtitle, @Nullable InteractiveHeaderAttachment attachment) {
+    static InteractiveHeader simpleBuilder(String title, String subtitle, InteractiveHeaderAttachment attachment) {
         var builder = new InteractiveHeaderBuilder()
                 .title(title)
                 .subtitle(subtitle);

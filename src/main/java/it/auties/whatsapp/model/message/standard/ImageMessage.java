@@ -18,8 +18,6 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -35,100 +33,85 @@ import static java.util.Objects.requireNonNullElse;
 public final class ImageMessage extends LocalMediaMessage<ImageMessage>
         implements MediaMessage<ImageMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaUrl;
+        private String mediaUrl;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    @Nullable
-    private final String mimetype;
+        private final String mimetype;
     
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    @Nullable
-    private final String caption;
+        private final String caption;
     
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaSha256;
+    private byte[] mediaSha256;
 
     @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaSize;
+        private Long mediaSize;
     
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer height;
+        private final Integer height;
 
     @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer width;
+        private final Integer width;
     
     @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaKey;
+    private byte[] mediaKey;
     
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaEncryptedSha256;
+    private byte[] mediaEncryptedSha256;
     
     @ProtobufProperty(index = 10, type = ProtobufType.OBJECT, repeated = true)
-    @NonNull
-    private final List<InteractiveLocationAnnotation> interactiveAnnotations;
+        private final List<InteractiveLocationAnnotation> interactiveAnnotations;
     
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaDirectPath;
+        private String mediaDirectPath;
     
     @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaKeyTimestampSeconds;
+        private Long mediaKeyTimestampSeconds;
     
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnail;
+    private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ContextInfo contextInfo;
+        private final ContextInfo contextInfo;
     
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
-    private final byte @Nullable [] firstScanSidecar;
+    private final byte[] firstScanSidecar;
     
     @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer firstScanLength;
+        private final Integer firstScanLength;
     
     @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer experimentGroupId;
+        private final Integer experimentGroupId;
     
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
-    private final byte @Nullable [] scansSidecar;
+    private final byte[] scansSidecar;
     
     @ProtobufProperty(index = 22, type = ProtobufType.UINT32, repeated = true)
-    @NonNull
-    private final List<Integer> scanLengths;
+        private final List<Integer> scanLengths;
 
     @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
-    private final byte @Nullable [] midQualityFileSha256;
+    private final byte[] midQualityFileSha256;
     
     @ProtobufProperty(index = 24, type = ProtobufType.BYTES)
-    private final byte @Nullable [] midQualityFileEncSha256;
+    private final byte[] midQualityFileEncSha256;
 
     @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
     private final boolean viewOnce;
 
     @ProtobufProperty(index = 26, type = ProtobufType.STRING)
-    @Nullable
-    private final String thumbnailDirectPath;
+        private final String thumbnailDirectPath;
 
     @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnailSha256;
+    private final byte[] thumbnailSha256;
 
     @ProtobufProperty(index = 28, type = ProtobufType.BYTES)
-    private final byte @Nullable [] thumbnailEncSha256;
+    private final byte[] thumbnailEncSha256;
 
     @ProtobufProperty(index = 29, type = ProtobufType.STRING)
-    @Nullable
-    private final String staticUrl;
+        private final String staticUrl;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public ImageMessage(@Nullable String mediaUrl, @Nullable String mimetype, @Nullable String caption, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer height, @Nullable Integer width, byte @Nullable [] mediaKey, byte @Nullable [] mediaEncryptedSha256, @NonNull List<InteractiveLocationAnnotation> interactiveAnnotations, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, byte @Nullable [] thumbnail, @Nullable ContextInfo contextInfo, byte @Nullable [] firstScanSidecar, @Nullable Integer firstScanLength, @Nullable Integer experimentGroupId, byte @Nullable [] scansSidecar, @NonNull List<Integer> scanLengths, byte @Nullable [] midQualityFileSha256, byte @Nullable [] midQualityFileEncSha256, boolean viewOnce, @Nullable String thumbnailDirectPath, byte @Nullable [] thumbnailSha256, byte @Nullable [] thumbnailEncSha256, @Nullable String staticUrl) {
+    public ImageMessage(String mediaUrl, String mimetype, String caption, byte[] mediaSha256, Long mediaSize, Integer height, Integer width, byte[] mediaKey, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, Long mediaKeyTimestampSeconds, byte[] thumbnail, ContextInfo contextInfo, byte[] firstScanSidecar, Integer firstScanLength, Integer experimentGroupId, byte[] scansSidecar, List<Integer> scanLengths, byte[] midQualityFileSha256, byte[] midQualityFileEncSha256, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.caption = caption;
@@ -170,7 +153,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
      * @return a non-null new message
      */
     @ProtobufBuilder(className = "ImageMessageSimpleBuilder")
-    static ImageMessage simpleBuilder(byte @Nullable [] media, String mimeType, String caption, byte @Nullable [] thumbnail, ContextInfo contextInfo) {
+    static ImageMessage simpleBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         return new ImageMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))

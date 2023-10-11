@@ -6,7 +6,6 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.util.RegistrationHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -41,7 +40,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
      * @return the same instance
      */
     @SuppressWarnings("unchecked")
-    public T verificationCodeSupplier(@NonNull Supplier<String> verificationCodeSupplier) {
+    public T verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
         this.verificationCodeSupplier = AsyncVerificationCodeSupplier.of(verificationCodeSupplier);
         return (T) this;
     }
@@ -53,7 +52,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
      * @return the same instance
      */
     @SuppressWarnings("unchecked")
-    public T verificationCodeSupplier(@NonNull AsyncVerificationCodeSupplier verificationCodeSupplier) {
+    public T verificationCodeSupplier(AsyncVerificationCodeSupplier verificationCodeSupplier) {
         this.verificationCodeSupplier = verificationCodeSupplier;
         return (T) this;
     }
@@ -66,7 +65,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
      * @return the same instance
      */
     @SuppressWarnings("unchecked")
-    public T verificationCaptchaSupplier(@NonNull Function<VerificationCodeResponse, String> verificationCaptchaSupplier) {
+    public T verificationCaptchaSupplier(Function<VerificationCodeResponse, String> verificationCaptchaSupplier) {
         this.verificationCaptchaSupplier = AsyncCaptchaCodeSupplier.of(verificationCaptchaSupplier);
         return (T) this;
     }
@@ -79,7 +78,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
      * @return the same instance
      */
     @SuppressWarnings("unchecked")
-    public T verificationCaptchaSupplier(@NonNull AsyncCaptchaCodeSupplier verificationCaptchaSupplier) {
+    public T verificationCaptchaSupplier(AsyncCaptchaCodeSupplier verificationCaptchaSupplier) {
         this.verificationCaptchaSupplier = verificationCaptchaSupplier;
         return (T) this;
     }
@@ -108,7 +107,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
          * @param verificationCodeMethod the non-null method
          * @return the same instance
          */
-        public Unregistered verificationCodeMethod(@NonNull VerificationCodeMethod verificationCodeMethod) {
+        public Unregistered verificationCodeMethod(VerificationCodeMethod verificationCodeMethod) {
             this.verificationCodeMethod = verificationCodeMethod;
             return this;
         }

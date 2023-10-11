@@ -9,7 +9,6 @@ import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Specification;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -24,7 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * An abstract model class that represents a request made from the client to the server.
  */
 @SuppressWarnings("UnusedReturnValue")
-public record SocketRequest(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future,
+public record SocketRequest(String id, Object body, CompletableFuture<Node> future,
                             Function<Node, Boolean> filter, Throwable caller) {
     /**
      * The timeout in seconds before a Request wrapping a Node fails
@@ -36,7 +35,7 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
      */
     private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
 
-    private SocketRequest(String id, Function<Node, Boolean> filter, @NonNull Object body) {
+    private SocketRequest(String id, Function<Node, Boolean> filter, Object body) {
         this(id, body, new CompletableFuture<>(), filter, trace(body));
         EXECUTOR.execute(this::cancelTimedFuture);
     }
@@ -60,14 +59,14 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
     /**
      * Constructs a new request with the provided body expecting a newsletters
      */
-    public static SocketRequest of(@NonNull Node body, Function<Node, Boolean> filter) {
+    public static SocketRequest of(Node body, Function<Node, Boolean> filter) {
         return new SocketRequest(body.id(), filter, body);
     }
 
     /**
      * Constructs a new request with the provided body expecting a newsletters
      */
-    public static SocketRequest of(byte @NonNull [] body) {
+    public static SocketRequest of(byte[] body) {
         return new SocketRequest(null, null, body);
     }
 
@@ -77,7 +76,7 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
      * @param session the WhatsappWeb's WebSocket session
      * @param store   the store
      */
-    public CompletableFuture<Node> sendWithPrologue(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store) {
+    public CompletableFuture<Node> sendWithPrologue(SocketSession session, Keys keys, Store store) {
         return send(session, keys, store, true, false);
     }
 
@@ -90,7 +89,7 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
      * @param response whether the request expects a newsletters
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store, boolean prologue, boolean response) {
+    public CompletableFuture<Node> send(SocketSession session, Keys keys, Store store, boolean prologue, boolean response) {
         var ciphered = encryptMessage(keys);
         var buffer = BytesHelper.newBuffer();
         buffer.writeBytes(prologue ? getPrologueData(store) : new byte[0]);
@@ -103,7 +102,7 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
         return future;
     }
 
-    private byte[] getPrologueData(@NonNull Store store) {
+    private byte[] getPrologueData(Store store) {
         return switch (store.clientType()) {
             case WEB -> Specification.Whatsapp.WEB_PROLOGUE;
             case MOBILE -> Specification.Whatsapp.MOBILE_PROLOGUE;
@@ -151,7 +150,7 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store) {
+    public CompletableFuture<Node> send(SocketSession session, Keys keys, Store store) {
         return send(session, keys, store, false, true);
     }
 
@@ -162,7 +161,7 @@ public record SocketRequest(String id, @NonNull Object body, @NonNull Completabl
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Void> sendWithNoResponse(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store) {
+    public CompletableFuture<Void> sendWithNoResponse(SocketSession session, Keys keys, Store store) {
         return send(session, keys, store, false, false)
                 .thenRunAsync(() -> {});
     }

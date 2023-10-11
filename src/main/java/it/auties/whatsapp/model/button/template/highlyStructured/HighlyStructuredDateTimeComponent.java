@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a time component
@@ -13,8 +12,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent")
 public record HighlyStructuredDateTimeComponent(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        DayOfWeek dayOfWeek,
+                DayOfWeek dayOfWeek,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
         int year,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
@@ -26,8 +24,7 @@ public record HighlyStructuredDateTimeComponent(
         @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
         int minute,
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
-        @NonNull
-        CalendarType calendar
+                CalendarType calendar
 ) implements HighlyStructuredDateTimeValue {
     @Override
     public HighlyStructuredDateTimeValue.Type dateType() {

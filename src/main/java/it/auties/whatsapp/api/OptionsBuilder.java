@@ -7,7 +7,6 @@ import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URI;
 import java.util.concurrent.Executor;
@@ -38,7 +37,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T name(@NonNull String name) {
+    public T name(String name) {
         if(store != null) {
             store.setName(name);
         }else {
@@ -56,7 +55,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T version(@NonNull Version version) {
+    public T version(Version version) {
         if(store != null) {
             store.setVersion(version);
         }else {
@@ -88,7 +87,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T textPreviewSetting(@NonNull TextPreviewSetting textPreviewSetting) {
+    public T textPreviewSetting(TextPreviewSetting textPreviewSetting) {
         if(store != null) {
             store.setTextPreviewSetting(textPreviewSetting);
         }else {
@@ -103,7 +102,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T errorHandler(@NonNull ErrorHandler errorHandler) {
+    public T errorHandler(ErrorHandler errorHandler) {
         this.errorHandler = errorHandler;
         return (T) this;
     }
@@ -115,7 +114,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T socketExecutor(@NonNull Executor socketExecutor) {
+    public T socketExecutor(Executor socketExecutor) {
         this.socketExecutor = socketExecutor;
         return (T) this;
     }
@@ -126,7 +125,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T releaseChannel(@NonNull ReleaseChannel releaseChannel) {
+    public T releaseChannel(ReleaseChannel releaseChannel) {
         if(store != null) {
             store.setReleaseChannel(releaseChannel);
         }else {

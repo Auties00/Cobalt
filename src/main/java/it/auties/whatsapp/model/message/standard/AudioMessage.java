@@ -12,7 +12,6 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -23,57 +22,49 @@ import java.util.OptionalLong;
 @ProtobufMessageName("Message.AudioMessage")
 public final class AudioMessage extends LocalMediaMessage<AudioMessage> implements MediaMessage<AudioMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaUrl;
+        private String mediaUrl;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    @Nullable
-    private final String mimetype;
+        private final String mimetype;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaSha256;
+    private byte[] mediaSha256;
 
     @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
-    @Nullable
-    private Long mediaSize;
+        private Long mediaSize;
 
     @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
-    @Nullable
-    private final Integer duration;
+        private final Integer duration;
 
     @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
     private final boolean voiceMessage;
 
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaKey;
+    private byte[] mediaKey;
 
     @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
-    private byte @Nullable [] mediaEncryptedSha256;
+    private byte[] mediaEncryptedSha256;
 
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-    @Nullable
-    private String mediaDirectPath;
+        private String mediaDirectPath;
 
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
-    @Nullable
-    private Long mediaKeyTimestampSeconds;
+        private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    @Nullable
-    private final ContextInfo contextInfo;
+        private final ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
-    private final byte @Nullable [] streamingSidecar;
+    private final byte[] streamingSidecar;
 
     @ProtobufProperty(index = 19, type = ProtobufType.BYTES)
-    private final byte @Nullable [] waveform;
+    private final byte[] waveform;
 
     @ProtobufProperty(index = 20, type = ProtobufType.FIXED32)
-    @Nullable
-    private final Integer backgroundArgb;
+        private final Integer backgroundArgb;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public AudioMessage(@Nullable String mediaUrl, @Nullable String mimetype, byte @Nullable [] mediaSha256, @Nullable Long mediaSize, @Nullable Integer duration, boolean voiceMessage, byte @Nullable [] mediaKey, byte @Nullable [] mediaEncryptedSha256, @Nullable String mediaDirectPath, @Nullable Long mediaKeyTimestampSeconds, @Nullable ContextInfo contextInfo, byte @Nullable [] streamingSidecar, byte @Nullable [] waveform, @Nullable Integer backgroundArgb) {
+    public AudioMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, boolean voiceMessage, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, ContextInfo contextInfo, byte[] streamingSidecar, byte[] waveform, Integer backgroundArgb) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.mediaSha256 = mediaSha256;

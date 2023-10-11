@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
@@ -14,14 +13,11 @@ import java.util.List;
 @ProtobufMessageName("SyncActionValue.QuickReplyAction")
 public record QuickReplyAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String shortcut,
+                String shortcut,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String message,
+                String message,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING, repeated = true)
-        @NonNull
-        List<String> keywords,
+                List<String> keywords,
         @ProtobufProperty(index = 4, type = ProtobufType.INT32)
         int count,
         @ProtobufProperty(index = 5, type = ProtobufType.BOOL)

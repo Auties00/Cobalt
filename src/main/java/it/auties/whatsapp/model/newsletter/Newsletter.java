@@ -6,7 +6,6 @@ import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.util.MessagesSet;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -61,8 +60,7 @@ public final class Newsletter implements JidProvider {
     }
 
     @Override
-    @NonNull
-    public Jid toJid() {
+        public Jid toJid() {
         return jid;
     }
 

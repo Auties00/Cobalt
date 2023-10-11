@@ -1,6 +1,5 @@
 package it.auties.whatsapp.crypto;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -10,7 +9,7 @@ public final class Hmac {
     private static final String HMAC_SHA_256 = "HmacSHA256";
     private static final String HMAC_SHA_512 = "HmacSHA512";
 
-    public static byte[] calculateSha256(byte @NonNull [] plain, byte @NonNull [] key) {
+    public static byte[] calculateSha256(byte[] plain, byte[] key) {
         return calculate(HMAC_SHA_256, plain, key);
     }
 
@@ -24,7 +23,7 @@ public final class Hmac {
         }
     }
 
-    public static byte[] calculateSha512(byte @NonNull [] plain, byte @NonNull [] key) {
+    public static byte[] calculateSha512(byte[] plain, byte[] key) {
         return calculate(HMAC_SHA_512, plain, key);
     }
 }

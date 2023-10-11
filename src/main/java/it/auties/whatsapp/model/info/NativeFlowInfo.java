@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonBody;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that holds the information related to a native flow.
@@ -13,11 +12,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("Message.ButtonsMessage.Button.NativeFlowInfo")
 public record NativeFlowInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String name,
+                String name,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String parameters
+                String parameters
 ) implements Info, ButtonBody, ProtobufMessage {
     @Override
     public Type bodyType() {

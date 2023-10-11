@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.business;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
@@ -12,6 +11,6 @@ import java.util.List;
  * @param entries  A list of business hours entries that contains information about the hours of
  *                 operation for each day of the week.
  */
-public record BusinessHours(@NonNull String timeZone, @NonNull List<BusinessHoursEntry> entries) {
+public record BusinessHours(String timeZone, List<BusinessHoursEntry> entries) {
 
 }

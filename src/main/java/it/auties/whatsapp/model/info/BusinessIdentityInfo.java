@@ -8,7 +8,6 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.util.Clock;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -20,21 +19,17 @@ import java.util.Optional;
 @ProtobufMessageName("BizIdentityInfo")
 public record BusinessIdentityInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        VerifiedLevel level,
+                VerifiedLevel level,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        @NonNull
-        BusinessVerifiedNameCertificate certificate,
+                BusinessVerifiedNameCertificate certificate,
         @ProtobufProperty(index = 3, type = ProtobufType.BOOL)
         boolean signed,
         @ProtobufProperty(index = 4, type = ProtobufType.BOOL)
         boolean revoked,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        @NonNull
-        HostStorageType hostStorage,
+                HostStorageType hostStorage,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-        @NonNull
-        ActorsType actualActors,
+                ActorsType actualActors,
         @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
         long privacyModeTimestampSeconds,
         @ProtobufProperty(index = 8, type = ProtobufType.UINT64)

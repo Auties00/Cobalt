@@ -4,15 +4,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Json;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public record ContactStatusResponse(@NonNull Optional<String> status, @NonNull Optional<ZonedDateTime> timestamp) {
-    public static ContactStatusResponse ofNode(@NonNull Node source) {
+public record ContactStatusResponse(Optional<String> status, Optional<ZonedDateTime> timestamp) {
+    public static ContactStatusResponse ofNode(Node source) {
         return new ContactStatusResponse(
                 source.contentAsString(),
                 Clock.parseSeconds(source.attributes().getLong("t"))
@@ -20,7 +19,7 @@ public record ContactStatusResponse(@NonNull Optional<String> status, @NonNull O
     }
 
     @SuppressWarnings("unchecked")
-    public static Optional<ContactStatusResponse> ofJson(@NonNull String json) {
+    public static Optional<ContactStatusResponse> ofJson(String json) {
         try {
             var parsedJson = Json.readValue(json, new TypeReference<Map<String, Object>>(){});
             var data = (Map<String, ?>) parsedJson.get("data");

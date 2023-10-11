@@ -7,17 +7,15 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.EncryptedMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 @ProtobufMessageName("Message.EncReactionMessage")
 public record EncryptedReactionMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        ChatMessageKey targetMessageKey,
+                ChatMessageKey targetMessageKey,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
-        byte @NonNull [] encPayload,
+        byte[] encPayload,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-        byte @NonNull [] encIv
+        byte[] encIv
 ) implements ServerMessage, EncryptedMessage {
     public String secretName() {
         return "Enc Reaction";

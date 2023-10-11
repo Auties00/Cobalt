@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.button.template.highlyStructured;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -23,7 +22,7 @@ public record HighlyStructuredDateTime(
      * @param dateComponent the non-null component
      * @return a non-null date time
      */
-    public static HighlyStructuredDateTime of(@NonNull HighlyStructuredDateTimeValue dateComponent) {
+    public static HighlyStructuredDateTime of(HighlyStructuredDateTimeValue dateComponent) {
         if (dateComponent instanceof HighlyStructuredDateTimeComponent highlyStructuredDateTimeComponent) {
             return new HighlyStructuredDateTime(Optional.of(highlyStructuredDateTimeComponent), Optional.empty());
         } else if (dateComponent instanceof HighlyStructuredDateTimeUnixEpoch highlyStructuredDateTimeUnixEpoch) {

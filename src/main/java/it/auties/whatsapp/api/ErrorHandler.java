@@ -2,7 +2,6 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.Exceptions;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -52,7 +51,7 @@ public interface ErrorHandler {
      * @param directory the directory where the error should be saved
      * @return a non-null error handler
      */
-    static ErrorHandler toFile(@NonNull Path directory) {
+    static ErrorHandler toFile(Path directory) {
         return defaultErrorHandler(throwable -> Exceptions.save(directory, throwable));
     }
     

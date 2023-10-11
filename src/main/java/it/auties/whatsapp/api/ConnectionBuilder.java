@@ -6,8 +6,6 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -22,7 +20,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
     private final ClientType clientType;
     private ControllerSerializer serializer;
     private CompanionDevice device;
-    ConnectionBuilder(@NonNull ClientType clientType){
+    ConnectionBuilder(ClientType clientType){
         this.clientType = clientType;
         this.serializer = DefaultControllerSerializer.instance();
     }
@@ -33,7 +31,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @param serializer the non-null serializer to use
      * @return the same instance for chaining
      */
-    public ConnectionBuilder<T> serializer(@NonNull ControllerSerializer serializer) {
+    public ConnectionBuilder<T> serializer(ControllerSerializer serializer) {
         this.serializer = serializer;
         return this;
     }
@@ -44,7 +42,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @param device the non-null device to use
      * @return the same instance for chaining
      */
-    public ConnectionBuilder<T> device(@NonNull CompanionDevice device) {
+    public ConnectionBuilder<T> device(CompanionDevice device) {
         this.device = device;
         return this;
     }
@@ -67,7 +65,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     @SuppressWarnings("unchecked")
-    public T newConnection(@Nullable UUID uuid) {
+    public T newConnection(UUID uuid) {
         if(uuid == null) {
             uuid = UUID.randomUUID();
         }
@@ -170,7 +168,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     @SuppressWarnings({"unchecked", "OptionalIsPresent"})
-    public Optional<T> newOptionalConnection(@Nullable UUID uuid) {
+    public Optional<T> newOptionalConnection(UUID uuid) {
         if(uuid == null) {
             uuid = UUID.randomUUID();
         }

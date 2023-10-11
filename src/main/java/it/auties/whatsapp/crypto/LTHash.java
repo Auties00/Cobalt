@@ -2,7 +2,6 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.sync.RecordSync;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,15 +12,13 @@ public class LTHash {
     private static final int EXPAND_SIZE = 128;
     public static final String SALT = "WhatsApp Patch Integrity";
 
-    private final byte @NonNull [] salt;
+    private final byte[] salt;
 
-    private final byte @NonNull [] hash;
+    private final byte[] hash;
 
-    @NonNull
-    private final Map<String, byte[]> indexValueMap;
+        private final Map<String, byte[]> indexValueMap;
 
-    @NonNull
-    private final List<byte[]> add, subtract;
+        private final List<byte[]> add, subtract;
 
     public LTHash(CompanionHashState hash) {
         this.salt = SALT.getBytes(StandardCharsets.UTF_8);

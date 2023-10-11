@@ -17,8 +17,6 @@ import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @ProtobufMessageName("Message.PollCreationMessage")
 public final class PollCreationMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
-    private byte @Nullable [] encryptionKey;
+    private byte[] encryptionKey;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final @NonNull String title;
+    private final String title;
 
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT, repeated = true)
     private final List<PollOption> selectableOptions;
@@ -49,7 +47,7 @@ public final class PollCreationMessage implements ContextualMessage {
     private final Map<Jid, Collection<PollOption>> selectedOptionsMap;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public PollCreationMessage(byte @Nullable [] encryptionKey, @NonNull String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, Map<Jid, Collection<PollOption>> selectedOptionsMap) {
+    public PollCreationMessage(byte[] encryptionKey, String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, Map<Jid, Collection<PollOption>> selectedOptionsMap) {
         this.encryptionKey = encryptionKey;
         this.title = title;
         this.selectableOptions = selectableOptions;
@@ -59,7 +57,7 @@ public final class PollCreationMessage implements ContextualMessage {
         this.selectedOptionsMap = selectedOptionsMap;
     }
 
-    public PollCreationMessage(byte @Nullable [] encryptionKey, @NonNull String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo) {
+    public PollCreationMessage(byte[] encryptionKey, String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo) {
         this.encryptionKey = encryptionKey;
         this.title = title;
         this.selectableOptions = selectableOptions;
@@ -79,7 +77,7 @@ public final class PollCreationMessage implements ContextualMessage {
      * @return a non-null new message
      */
     @ProtobufBuilder(className = "PollCreationMessageSimpleBuilder")
-    static PollCreationMessage simpleBuilder(@NonNull String title, @NonNull List<PollOption> selectableOptions) {
+    static PollCreationMessage simpleBuilder(String title, List<PollOption> selectableOptions) {
         Validate.isTrue(!title.isBlank(), "Title cannot be empty");
         Validate.isTrue(selectableOptions.size() > 1, "Options must have at least two entries");
         var result = new PollCreationMessageBuilder()
@@ -101,7 +99,7 @@ public final class PollCreationMessage implements ContextualMessage {
      * @param voter the non-null contact that voted in this poll
      * @return a non-null unmodifiable map
      */
-    public Collection<PollOption> getSelectedOptions(@NonNull JidProvider voter) {
+    public Collection<PollOption> getSelectedOptions(JidProvider voter) {
         var results = selectedOptionsMap.get(voter.toJid());
         if(results == null) {
             return List.of();
@@ -132,7 +130,7 @@ public final class PollCreationMessage implements ContextualMessage {
         return MessageCategory.STANDARD;
     }
 
-    public @NonNull String title() {
+    public String title() {
         return title;
     }
 
@@ -148,7 +146,7 @@ public final class PollCreationMessage implements ContextualMessage {
         return Optional.ofNullable(encryptionKey);
     }
 
-    public void setEncryptionKey(byte @Nullable [] encryptionKey) {
+    public void setEncryptionKey(byte[] encryptionKey) {
         this.encryptionKey = encryptionKey;
     }
 

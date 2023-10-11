@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,14 +31,14 @@ public record HighlyStructuredFourRowTemplate(
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         Optional<LocationMessage> titleLocation,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-        @NonNull HighlyStructuredMessage content,
+        HighlyStructuredMessage content,
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
         Optional<HighlyStructuredMessage> footer,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
-        @NonNull List<HighlyStructuredButtonTemplate> buttons
+        List<HighlyStructuredButtonTemplate> buttons
 ) implements TemplateFormatter {
     @ProtobufBuilder(className = "HighlyStructuredFourRowTemplateSimpleBuilder")
-    static HighlyStructuredFourRowTemplate simpleBuilder(HighlyStructuredFourRowTemplateTitle title, @NonNull HighlyStructuredMessage content, HighlyStructuredMessage footer, List<HighlyStructuredButtonTemplate> buttons) {
+    static HighlyStructuredFourRowTemplate simpleBuilder(HighlyStructuredFourRowTemplateTitle title, HighlyStructuredMessage content, HighlyStructuredMessage footer, List<HighlyStructuredButtonTemplate> buttons) {
         var builder = new HighlyStructuredFourRowTemplateBuilder()
                 .buttons(getIndexedButtons(buttons))
                 .footer(footer);

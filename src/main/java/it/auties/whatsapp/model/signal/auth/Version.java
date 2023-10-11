@@ -8,7 +8,6 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.util.Validate;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -31,7 +30,7 @@ public record Version(
         Integer quinary
 ) implements ProtobufMessage {
     @JsonCreator
-    public static Version of(@NonNull String version) {
+    public static Version of(String version) {
         var tokens = version.split("\\.", 5);
         Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s", version, tokens);
         var primary = tokens.length > 0 ? parseInt(tokens[0]) : null;

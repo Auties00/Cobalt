@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
@@ -18,8 +17,7 @@ public record InteractiveNativeFlow(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
         List<InteractiveButton> buttons,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String parameters,
+                String parameters,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)
         int version
 ) implements InteractiveMessageContent {

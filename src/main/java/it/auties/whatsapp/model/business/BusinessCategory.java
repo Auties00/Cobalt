@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.business;
 
 import it.auties.whatsapp.model.node.Node;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -12,14 +11,14 @@ import java.nio.charset.StandardCharsets;
  * @param id   the non-null id
  * @param name the non-null display name
  */
-public record BusinessCategory(@NonNull String id, @NonNull String name) {
+public record BusinessCategory(String id, String name) {
     /**
      * Constructs a category from a node
      *
      * @param node a non-null node
      * @return a non-null category
      */
-    public static BusinessCategory of(@NonNull Node node) {
+    public static BusinessCategory of(Node node) {
         var id = node.attributes().getRequiredString("id");
         var name = URLDecoder.decode(node.contentAsString().orElseThrow(), StandardCharsets.UTF_8);
         return new BusinessCategory(id, name);

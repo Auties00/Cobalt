@@ -7,7 +7,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonBody.Type;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
 import it.auties.whatsapp.util.BytesHelper;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HexFormat;
 import java.util.Optional;
@@ -18,15 +17,13 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ButtonsMessage.Button")
 public record Button(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String id,
+                String id,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<ButtonText> bodyText,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Optional<NativeFlowInfo> bodyNativeFlow,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        @NonNull
-        Type bodyType
+                Type bodyType
 ) implements ProtobufMessage {
     /**
      * Constructs a new button
@@ -34,7 +31,7 @@ public record Button(
      * @param body the body of this button
      * @return a non-null button
      */
-    public static Button of(@NonNull ButtonBody body) {
+    public static Button of(ButtonBody body) {
         var id = HexFormat.of().formatHex(BytesHelper.random(6));
         return Button.of(id, body);
     }
@@ -46,7 +43,7 @@ public record Button(
      * @param body the body of this button
      * @return a non-null button
      */
-    public static Button of(@NonNull String id, ButtonBody body) {
+    public static Button of(String id, ButtonBody body) {
         var builder = new ButtonBuilder()
                 .id(id);
         switch (body) {

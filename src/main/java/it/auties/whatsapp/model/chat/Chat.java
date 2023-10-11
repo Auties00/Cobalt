@@ -18,8 +18,6 @@ import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.MessagesSet;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -36,10 +34,10 @@ import java.util.function.Predicate;
 @ProtobufMessageName("Conversation")
 public final class Chat implements ProtobufMessage, JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final @NonNull Jid jid;
+    private final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
-    private final @NonNull MessagesSet<HistorySyncMessage> historySyncMessages;
+    private final MessagesSet<HistorySyncMessage> historySyncMessages;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     private final Jid newJid;
@@ -57,7 +55,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     private boolean endOfHistoryTransfer;
 
     @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
-    private @NonNull ChatEphemeralTimer ephemeralMessageDuration;
+    private ChatEphemeralTimer ephemeralMessageDuration;
 
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
     private long ephemeralMessagesToggleTimeSeconds;
@@ -69,7 +67,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     private long timestampSeconds;
 
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
-    private @Nullable String name;
+    private String name;
 
     @ProtobufProperty(index = 15, type = ProtobufType.BOOL)
     private boolean notSpam;
@@ -83,28 +81,28 @@ public final class Chat implements ProtobufMessage, JidProvider {
     private boolean markedAsUnread;
 
     @ProtobufProperty(index = 20, type = ProtobufType.OBJECT, repeated = true)
-    private final @NonNull List<GroupParticipant> participants;
+    private final List<GroupParticipant> participants;
 
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
-    private byte @Nullable [] token;
+    private byte[] token;
 
     @ProtobufProperty(index = 22, type = ProtobufType.UINT64)
     private long tokenTimestampSeconds;
 
     @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
-    private byte @Nullable [] identityKey;
+    private byte[] identityKey;
 
     @ProtobufProperty(index = 24, type = ProtobufType.UINT32)
     private int pinnedTimestampSeconds;
 
     @ProtobufProperty(index = 25, type = ProtobufType.UINT64)
-    private @NonNull ChatMute mute;
+    private ChatMute mute;
 
     @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
     private ChatWallpaper wallpaper;
 
     @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
-    private @NonNull MediaVisibility mediaVisibility;
+    private MediaVisibility mediaVisibility;
 
     @ProtobufProperty(index = 28, type = ProtobufType.UINT64)
     private long tokenSenderTimestampSeconds;
@@ -149,14 +147,14 @@ public final class Chat implements ProtobufMessage, JidProvider {
 
     private boolean update;
 
-    private final @NonNull ConcurrentHashMap<Jid, ContactStatus> presences;
+    private final ConcurrentHashMap<Jid, ContactStatus> presences;
 
-    private final @NonNull Set<Jid> participantsPreKeys;
+    private final Set<Jid> participantsPreKeys;
 
-    private final @NonNull Set<GroupPastParticipant> pastParticipants;
+    private final Set<GroupPastParticipant> pastParticipants;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Chat(@NonNull Jid jid, @NonNull MessagesSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @NonNull ChatMute mute, ChatWallpaper wallpaper, @NonNull MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, @NonNull ConcurrentHashMap<Jid, ContactStatus> presences, @NonNull Set<Jid> participantsPreKeys, @NonNull Set<GroupPastParticipant> pastParticipants) {
+    public Chat(Jid jid, MessagesSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -201,7 +199,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         this.pastParticipants = pastParticipants;
     }
 
-    public Chat(@NonNull Jid jid, @NonNull MessagesSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, @NonNull ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, @Nullable String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, @NonNull List<GroupParticipant> participants, byte @NonNull [] token, long tokenTimestampSeconds, byte @NonNull [] identityKey, int pinnedTimestampSeconds, @Nullable ChatMute mute, ChatWallpaper wallpaper, @Nullable MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid) {
+    public Chat(Jid jid, MessagesSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -493,7 +491,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @param newMessages the non-null messages to add
      */
-    public void addMessages(@NonNull Collection<HistorySyncMessage> newMessages) {
+    public void addMessages(Collection<HistorySyncMessage> newMessages) {
         historySyncMessages.addAll(newMessages);
         this.update = true;
     }
@@ -503,7 +501,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @param oldMessages the non-null messages to add
      */
-    public void addOldMessages(@NonNull Collection<HistorySyncMessage> oldMessages) {
+    public void addOldMessages(Collection<HistorySyncMessage> oldMessages) {
         oldMessages.forEach(historySyncMessages::addFirst);
         this.update = true;
     }
@@ -514,7 +512,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param info the message to add to the chat
      * @return whether the message was added
      */
-    public boolean addNewMessage(@NonNull ChatMessageInfo info) {
+    public boolean addNewMessage(ChatMessageInfo info) {
         var sync = new HistorySyncMessage(info, historySyncMessages.size());
         if (historySyncMessages.contains(sync)) {
             return false;
@@ -531,7 +529,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param info the message to add to the chat
      * @return whether the message was added
      */
-    public boolean addOldMessage(@NonNull HistorySyncMessage info) {
+    public boolean addOldMessage(HistorySyncMessage info) {
         historySyncMessages.addFirst(info);
         this.update = true;
         return true;
@@ -543,7 +541,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param info the message to remove
      * @return whether the message was removed
      */
-    public boolean removeMessage(@NonNull ChatMessageInfo info) {
+    public boolean removeMessage(ChatMessageInfo info) {
         var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.messageInfo().id(), info.id()));
         if(result) {
             this.update = true;
@@ -559,7 +557,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param predicate the predicate that determines if a message should be removed
      * @return whether the message was removed
      */
-    public boolean removeMessage(@NonNull Predicate<? super ChatMessageInfo> predicate) {
+    public boolean removeMessage(Predicate<? super ChatMessageInfo> predicate) {
         var result = historySyncMessages.removeIf(entry -> predicate.test(entry.messageInfo()));
         refreshChatTimestamp();
         return result;
@@ -619,7 +617,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param role the role of the participant
      * @return whether the participant was added
      */
-    public boolean addParticipant(@NonNull Jid jid, GroupRole role) {
+    public boolean addParticipant(Jid jid, GroupRole role) {
         var result = addParticipant(new GroupParticipant(jid, role));
         if(result) {
             this.update = true;
@@ -634,7 +632,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param participant the non-null participant
      * @return whether the participant was added
      */
-    public boolean addParticipant(@NonNull GroupParticipant participant) {
+    public boolean addParticipant(GroupParticipant participant) {
         var result = participants.add(participant);
         this.update = true;
         return true;
@@ -646,7 +644,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param jid the non-null jid of the participant
      * @return whether the participant was removed
      */
-    public boolean removeParticipant(@NonNull Jid jid) {
+    public boolean removeParticipant(Jid jid) {
         var result = participants.removeIf(entry -> Objects.equals(entry.jid(), jid));
         if(result) {
             this.update = true;
@@ -663,7 +661,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param jid the non-null jid of the participant
      * @return the participant, if present
      */
-    public Optional<GroupParticipant> findParticipant(@NonNull Jid jid) {
+    public Optional<GroupParticipant> findParticipant(Jid jid) {
         return participants.stream()
                 .filter(entry -> Objects.equals(entry.jid(), jid))
                 .findFirst();
@@ -675,7 +673,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param participant the non-null jid of the past participant
      * @return whether the participant was added
      */
-    public boolean addPastParticipant(@NonNull GroupPastParticipant participant) {
+    public boolean addPastParticipant(GroupPastParticipant participant) {
         var result = pastParticipants.add(participant);
         if(result) {
             this.update = true;
@@ -709,7 +707,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param jid the non-null jid of the past participant
      * @return whether the participant was removed
      */
-    public boolean removePastParticipant(@NonNull Jid jid) {
+    public boolean removePastParticipant(Jid jid) {
         var result = pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), jid));
         if(result) {
             this.update = true;
@@ -724,7 +722,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param jid the non-null jid of the past participant
      * @return the past participant, if present
      */
-    public Optional<GroupPastParticipant> findPastParticipant(@NonNull Jid jid) {
+    public Optional<GroupPastParticipant> findPastParticipant(Jid jid) {
         return pastParticipants.stream()
                 .filter(entry -> Objects.equals(entry.jid(), jid))
                 .findFirst();
@@ -761,7 +759,6 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @return a non-null jid
      */
     @Override
-    @NonNull
     public Jid toJid() {
         return jid();
     }
@@ -776,11 +773,11 @@ public final class Chat implements ProtobufMessage, JidProvider {
         return Objects.hash(jid());
     }
 
-    public @NonNull Jid jid() {
+    public Jid jid() {
         return jid;
     }
 
-    public @NonNull Collection<HistorySyncMessage> historySyncMessages() {
+    public Collection<HistorySyncMessage> historySyncMessages() {
         return historySyncMessages;
     }
 
@@ -804,7 +801,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         return endOfHistoryTransfer;
     }
 
-    public @NonNull ChatEphemeralTimer ephemeralMessageDuration() {
+    public ChatEphemeralTimer ephemeralMessageDuration() {
         return ephemeralMessageDuration;
     }
 
@@ -856,7 +853,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         return pinnedTimestampSeconds;
     }
 
-    public @NonNull ChatMute mute() {
+    public ChatMute mute() {
         return mute;
     }
 
@@ -864,7 +861,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         return Optional.ofNullable(wallpaper);
     }
 
-    public @NonNull MediaVisibility mediaVisibility() {
+    public MediaVisibility mediaVisibility() {
         return mediaVisibility;
     }
 
@@ -924,11 +921,11 @@ public final class Chat implements ProtobufMessage, JidProvider {
         return Optional.ofNullable(lidJid);
     }
 
-    public @NonNull ConcurrentHashMap<Jid, ContactStatus> presences() {
+    public ConcurrentHashMap<Jid, ContactStatus> presences() {
         return presences;
     }
 
-    public @NonNull Set<GroupPastParticipant> pastParticipants() {
+    public Set<GroupPastParticipant> pastParticipants() {
         return pastParticipants;
     }
 

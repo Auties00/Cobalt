@@ -1,12 +1,12 @@
 package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -20,7 +20,6 @@ public final class Contact implements JidProvider {
     /**
      * The non-null unique jid used to identify this contact
      */
-    @NonNull
     private final Jid jid;
 
     /**
@@ -28,20 +27,17 @@ public final class Contact implements JidProvider {
      * it should not be possible for this field to be null as it's required when registering for
      * Whatsapp. Though it looks that it can be removed later, so it's nullable.
      */
-    @Nullable
     private String chosenName;
 
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
-    @Nullable
     private String fullName;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp If a
      * name is available, theoretically, also a short name should be
      */
-    @Nullable
     private String shortName;
 
     /**
@@ -52,14 +48,12 @@ public final class Contact implements JidProvider {
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
      * send updates, use {@link Whatsapp#subscribeToPresence(JidProvider)}.
      */
-    @NonNull
     private ContactStatus lastKnownPresence;
 
     /**
      * The nullable last seconds this contact was seen available. Any contact can decide to hide this
      * information in their privacy settings.
      */
-    @Nullable
     private ZonedDateTime lastSeen;
 
     /**
@@ -67,19 +61,19 @@ public final class Contact implements JidProvider {
      */
     private boolean blocked;
 
-    public Contact(@NonNull Jid jid) {
+    public Contact(Jid jid) {
         this.jid = jid;
         this.lastKnownPresence = ContactStatus.UNAVAILABLE;
     }
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Contact(@NonNull Jid jid, @Nullable String chosenName, @Nullable String fullName, @Nullable String shortName, @NonNull ContactStatus lastKnownPresence, @Nullable ZonedDateTime lastSeen, boolean blocked) {
+    public Contact(Jid jid, String chosenName, String fullName, String shortName, ContactStatus lastKnownPresence, Long lastSeenSeconds, boolean blocked) {
         this.jid = jid;
         this.chosenName = chosenName;
         this.fullName = fullName;
         this.shortName = shortName;
         this.lastKnownPresence = lastKnownPresence;
-        this.lastSeen = lastSeen;
+        this.lastSeen = Clock.parseSeconds(lastSeenSeconds).orElse(null);
         this.blocked = blocked;
     }
 
@@ -157,6 +151,11 @@ public final class Contact implements JidProvider {
         return this;
     }
 
+    @JsonGetter("lastSeen")
+    Long lastSeenValue() {
+        return lastSeen != null ? lastSeen.toEpochSecond() : null;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hashCode(this.jid());
@@ -167,7 +166,7 @@ public final class Contact implements JidProvider {
     }
 
     @Override
-    public @NonNull Jid toJid() {
+    public Jid toJid() {
         return jid();
     }
 }

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.privacy;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 
@@ -56,7 +55,7 @@ public enum PrivacySettingType {
         return Collections.unmodifiableSet(values);
     }
 
-    public boolean isSupported(@NonNull PrivacySettingValue value) {
+    public boolean isSupported(PrivacySettingValue value) {
         return values.contains(value);
     }
 

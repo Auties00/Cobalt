@@ -8,7 +8,6 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.companion.CompanionDevice;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -28,7 +27,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      *
      * @return the same instance for chaining
      */
-    public MobileOptionsBuilder device(@NonNull CompanionDevice device){
+    public MobileOptionsBuilder device(CompanionDevice device){
         if (storeBuilder == null) {
             store.setDevice(device);
         } else {

@@ -6,7 +6,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A model class that represents a message that cancels a {@link RequestPaymentMessage}.
@@ -14,8 +13,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @ProtobufMessageName("Message.CancelPaymentRequestMessage")
 public record CancelPaymentRequestMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        @NonNull
-        ChatMessageKey key
+                ChatMessageKey key
 ) implements PaymentMessage {
     @Override
     public MessageType type() {

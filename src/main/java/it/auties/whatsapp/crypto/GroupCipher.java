@@ -6,11 +6,10 @@ import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
 import it.auties.whatsapp.util.Specification.Signal;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.NoSuchElementException;
 
-public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
+public record GroupCipher(SenderKeyName name, Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
         if(data == null){
             return new CipheredMessageResult(null, Signal.UNAVAILABLE);

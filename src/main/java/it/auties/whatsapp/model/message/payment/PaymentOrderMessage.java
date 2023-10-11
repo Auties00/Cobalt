@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -21,33 +20,27 @@ import java.util.Optional;
 @ProtobufMessageName("Message.PaymentOrderMessage")
 public record PaymentOrderMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String id,
+                String id,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         Optional<byte[]> thumbnail,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
         int itemCount,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        @NonNull
-        Status status,
+                Status status,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        @NonNull
-        PaymentOrderSurface surface,
+                PaymentOrderSurface surface,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
         Optional<String> message,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> title,
         @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-        @NonNull
-        Jid sellerId,
+                Jid sellerId,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        @NonNull
-        String token,
+                String token,
         @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
         long amount,
         @ProtobufProperty(index = 11, type = ProtobufType.STRING)
-        @NonNull
-        String currency,
+                String currency,
         @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage, PaymentMessage {

@@ -45,7 +45,6 @@ import it.auties.whatsapp.model.sync.HistorySyncNotification;
 import it.auties.whatsapp.model.sync.HistorySyncSpec;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.System.Logger;
@@ -1328,7 +1327,7 @@ class MessageHandler {
                 .ifPresent(message -> message.reactions().add(reactionMessage));
     }
 
-    protected ChatMessageInfo attributeMessage(@NonNull ChatMessageInfo info) {
+    protected ChatMessageInfo attributeMessage(ChatMessageInfo info) {
         var chat = socketHandler.store().findChatByJid(info.chatJid())
                 .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
         info.setChat(chat);

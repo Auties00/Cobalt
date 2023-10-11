@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.business;
 
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.node.Node;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.URI;
 import java.util.Collection;
@@ -14,17 +13,14 @@ import java.util.Optional;
  * This model class represents the metadata of a business profile
  */
 public record BusinessProfile(
-        @NonNull
-        Jid jid,
+                Jid jid,
         Optional<String> description,
         Optional<String> address,
         Optional<String> email,
         Optional<BusinessHours> hours,
         boolean cartEnabled,
-        @NonNull
-        List<URI> websites,
-        @NonNull
-        List<BusinessCategory> categories
+                List<URI> websites,
+                List<BusinessCategory> categories
 ) {
     /**
      * Constructs a new profile from a node
@@ -32,7 +28,7 @@ public record BusinessProfile(
      * @param node a non-null node
      * @return a non-null profile
      */
-    public static BusinessProfile of(@NonNull Node node) {
+    public static BusinessProfile of(Node node) {
         var jid = node.attributes()
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing jid from business profile"));

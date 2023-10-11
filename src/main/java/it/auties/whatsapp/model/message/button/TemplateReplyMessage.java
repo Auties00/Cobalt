@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructure
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Optional;
 
@@ -19,11 +18,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.TemplateButtonReplyMessage")
 public record TemplateReplyMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        @NonNull
-        String id,
+                String id,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        @NonNull
-        String buttonText,
+                String buttonText,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
