@@ -66,7 +66,8 @@ public final class MetadataHelper {
             case WEB, WINDOWS, MACOS -> getWebVersion();
             case ANDROID -> getAndroidData(platform.isBusiness(), useJarCache)
                     .thenApply(WhatsappApk::version);
-            case IOS -> CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_IOS_VERSION); // Fetching the latest ios version is harder than one might hope
+            case IOS ->
+                    CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_IOS_VERSION); // Fetching the latest ios version is harder than one might hope
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
@@ -257,7 +258,8 @@ public final class MetadataHelper {
         return factory.generateSecret(key);
     }
 
-    public record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, Collection<byte[]> certificates, boolean business) {
+    public record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, Collection<byte[]> certificates,
+                              boolean business) {
 
     }
 }

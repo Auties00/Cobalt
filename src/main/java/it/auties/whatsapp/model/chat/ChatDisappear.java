@@ -15,37 +15,37 @@ import java.util.Objects;
 @ProtobufMessageName("DisappearingMode")
 public record ChatDisappear(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                Initiator initiator
+        Initiator initiator
 ) implements ProtobufMessage {
+    /**
+     * The constants of this enumerated type describe the various actors that can initialize
+     * disappearing messages in a chat
+     */
+    @ProtobufMessageName("DisappearingMode.Initiator")
+    public enum Initiator implements ProtobufEnum {
         /**
-         * The constants of this enumerated type describe the various actors that can initialize
-         * disappearing messages in a chat
+         * Changed in chat
          */
-        @ProtobufMessageName("DisappearingMode.Initiator")
-        public enum Initiator implements ProtobufEnum {
-            /**
-             * Changed in chat
-             */
-            CHANGED_IN_CHAT(0),
-            /**
-             * Initiated by me
-             */
-            INITIATED_BY_ME(1),
-            /**
-             * Initiated by other
-             */
-            INITIATED_BY_OTHER(2);
+        CHANGED_IN_CHAT(0),
+        /**
+         * Initiated by me
+         */
+        INITIATED_BY_ME(1),
+        /**
+         * Initiated by other
+         */
+        INITIATED_BY_OTHER(2);
 
-            final int index;
+        final int index;
 
-            Initiator(@ProtobufEnumIndex int index) {
-                this.index = index;
-            }
-
-            public int index() {
-                return index;
-            }
+        Initiator(@ProtobufEnumIndex int index) {
+            this.index = index;
         }
+
+        public int index() {
+            return index;
+        }
+    }
 
     @Override
     public int hashCode() {

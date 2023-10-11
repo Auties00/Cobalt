@@ -20,21 +20,21 @@ import java.util.OptionalLong;
  */
 public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage<PaymentInvoiceMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        private final String note;
+    private final String note;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        private final String token;
+    private final String token;
 
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        private final PaymentAttachmentType paymentAttachmentType;
+    private final PaymentAttachmentType paymentAttachmentType;
 
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-        private final String mimeType;
+    private final String mimeType;
 
     @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
     private byte[] mediaKey;
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
-        private Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
@@ -43,13 +43,13 @@ public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage
     private byte[] mediaEncryptedSha256;
 
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        private String mediaDirectPath;
+    private String mediaDirectPath;
 
     @ProtobufProperty(index = 10, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-        private final ContextInfo contextInfo;
+    private final ContextInfo contextInfo;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public PaymentInvoiceMessage(String note, String token, PaymentAttachmentType paymentAttachmentType, String mimeType, byte[] mediaKey, Long mediaKeyTimestampSeconds, byte[] mediaSha256, byte[] mediaEncryptedSha256, String mediaDirectPath, byte[] thumbnail, ContextInfo contextInfo) {

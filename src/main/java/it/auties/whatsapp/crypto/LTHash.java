@@ -16,9 +16,9 @@ public class LTHash {
 
     private final byte[] hash;
 
-        private final Map<String, byte[]> indexValueMap;
+    private final Map<String, byte[]> indexValueMap;
 
-        private final List<byte[]> add, subtract;
+    private final List<byte[]> add, subtract;
 
     public LTHash(CompanionHashState hash) {
         this.salt = SALT.getBytes(StandardCharsets.UTF_8);

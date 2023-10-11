@@ -27,7 +27,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      *
      * @return the same instance for chaining
      */
-    public MobileOptionsBuilder device(CompanionDevice device){
+    public MobileOptionsBuilder device(CompanionDevice device) {
         if (storeBuilder == null) {
             store.setDevice(device);
         } else {
@@ -41,7 +41,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      *
      * @return the same instance for chaining
      */
-    public MobileOptionsBuilder business(boolean business){
+    public MobileOptionsBuilder business(boolean business) {
         if (storeBuilder == null) {
             store.setBusiness(business);
         } else {
@@ -157,7 +157,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public Optional<Whatsapp> registered() {
         var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
-        if(!keys.registered()){
+        if (!keys.registered()) {
             return Optional.empty();
         }
 

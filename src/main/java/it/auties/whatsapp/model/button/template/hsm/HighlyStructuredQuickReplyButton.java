@@ -11,9 +11,9 @@ import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructure
 @ProtobufMessageName("TemplateButton.QuickReplyButton")
 public record HighlyStructuredQuickReplyButton(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                HighlyStructuredMessage text,
+        HighlyStructuredMessage text,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String id
+        String id
 ) implements HighlyStructuredButton {
     public Type buttonType() {
         return Type.QUICK_REPLY;

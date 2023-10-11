@@ -7,5 +7,6 @@ import it.auties.protobuf.model.ProtobufMessage;
 import static it.auties.protobuf.model.ProtobufType.INT32;
 
 @ProtobufMessageName("SyncActionValue.KeyExpiration")
-public record KeyExpiration(@ProtobufProperty(index = 1, type = INT32) Integer expiredKeyEpoch) implements ProtobufMessage {
+public record KeyExpiration(
+        @ProtobufProperty(index = 1, type = INT32) Integer expiredKeyEpoch) implements ProtobufMessage {
 }

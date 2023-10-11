@@ -12,11 +12,11 @@ import it.auties.whatsapp.model.message.standard.ImageMessage;
 @ProtobufMessageName("Message.ProductMessage.CatalogSnapshot")
 public record ProductCatalog(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                ImageMessage catalogImage,
+        ImageMessage catalogImage,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String title,
+        String title,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-                String description
+        String description
 ) implements ProtobufMessage {
 
 }

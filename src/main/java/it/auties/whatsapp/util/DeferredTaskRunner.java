@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class DeferredTaskRunner {
     private final AtomicBoolean condition;
     private final List<Runnable> deferredTasks;
+
     public DeferredTaskRunner() {
         this.condition = new AtomicBoolean(false);
         this.deferredTasks = new ArrayList<>();
@@ -18,8 +19,8 @@ public class DeferredTaskRunner {
         deferredTasks.clear();
     }
 
-    public void schedule(Runnable runnable){
-        if(condition.get()){
+    public void schedule(Runnable runnable) {
+        if (condition.get()) {
             runnable.run();
             return;
         }

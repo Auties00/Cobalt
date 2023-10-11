@@ -202,10 +202,10 @@ public interface Listener {
     /**
      * Called when the socket receives an update regarding the presence of a contact
      *
-     * @param whatsapp   an instance to the calling api
-     * @param chat       the chat that this update regards
-     * @param jid the contact that this update regards
-     * @param status     the new status of the contact
+     * @param whatsapp an instance to the calling api
+     * @param chat     the chat that this update regards
+     * @param jid      the contact that this update regards
+     * @param status   the new status of the contact
      */
     default void onContactPresence(Whatsapp whatsapp, Chat chat, Jid jid, ContactStatus status) {
     }
@@ -213,9 +213,9 @@ public interface Listener {
     /**
      * Called when the socket receives an update regarding the presence of a contact
      *
-     * @param chat       the chat that this update regards
-     * @param jid the contact that this update regards
-     * @param status     the new status of the contact
+     * @param chat   the chat that this update regards
+     * @param jid    the contact that this update regards
+     * @param status the new status of the contact
      */
     default void onContactPresence(Chat chat, Jid jid, ContactStatus status) {
     }
@@ -262,7 +262,7 @@ public interface Listener {
      */
     default void onNewsletters(Collection<Newsletter> newsletters) {
     }
-    
+
     /**
      * Called when the socket receives the messages for a chat. This method is only called when the QR
      * is first scanned and history is being synced. From all subsequent runs, the messages will
@@ -344,7 +344,7 @@ public interface Listener {
      */
     default void onMessageDeleted(ChatMessageInfo info, boolean everyone) {
     }
-    
+
     /**
      * Called when the status of a message changes inside a chat
      *
@@ -357,11 +357,11 @@ public interface Listener {
     /**
      * Called when the status of a message changes inside a chat
      *
-     * @param info     the message whose status changed
+     * @param info the message whose status changed
      */
     default void onMessageStatus(MessageInfo info) {
     }
-    
+
 
     /**
      * Called when the socket receives all the status updated from WhatsappWeb's Socket.
@@ -499,7 +499,7 @@ public interface Listener {
     /**
      * Called when the companion's about changes
      *
-     * @param whatsapp  an instance to the calling api
+     * @param whatsapp an instance to the calling api
      * @param oldAbout the non-null old about
      * @param newAbout the non-null new about
      */
@@ -581,11 +581,11 @@ public interface Listener {
     /**
      * Called when a privacy setting is modified
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp        an instance to the calling api
      * @param oldPrivacyEntry the old entry
      * @param newPrivacyEntry the new entry
      */
-    default void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry){
+    default void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
 
     }
 
@@ -595,7 +595,7 @@ public interface Listener {
      * @param oldPrivacyEntry the old entry
      * @param newPrivacyEntry the new entry
      */
-    default void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry){
+    default void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
 
     }
 
@@ -605,16 +605,16 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param devices  the non-null devices
      */
-    default void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices){
+    default void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices) {
 
     }
 
     /**
      * Called when the list of companion devices is updated
      *
-     * @param devices  the non-null devices
+     * @param devices the non-null devices
      */
-    default void onLinkedDevices(Collection<Jid> devices){
+    default void onLinkedDevices(Collection<Jid> devices) {
 
     }
 
@@ -624,7 +624,7 @@ public interface Listener {
      *
      * @param code the registration code
      */
-    default void onRegistrationCode(long code){
+    default void onRegistrationCode(long code) {
 
     }
 
@@ -633,9 +633,9 @@ public interface Listener {
      * Only works on the mobile API
      *
      * @param whatsapp an instance to the calling api
-     * @param code the registration code
+     * @param code     the registration code
      */
-    default void onRegistrationCode(Whatsapp whatsapp, long code){
+    default void onRegistrationCode(Whatsapp whatsapp, long code) {
 
     }
 
@@ -652,7 +652,7 @@ public interface Listener {
      * Called when a phone call arrives
      *
      * @param whatsapp an instance to the calling api
-     * @param call the non-null phone call
+     * @param call     the non-null phone call
      */
     default void onCall(Whatsapp whatsapp, Call call) {
 

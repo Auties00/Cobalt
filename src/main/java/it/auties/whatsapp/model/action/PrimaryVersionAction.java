@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.sync.PatchType;
 @ProtobufMessageName("SyncActionValue.PrimaryVersionAction")
 public record PrimaryVersionAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String version
+        String version
 ) implements Action {
     /**
      * The name of this action

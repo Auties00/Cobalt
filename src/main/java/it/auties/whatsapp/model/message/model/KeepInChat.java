@@ -29,11 +29,11 @@ public record KeepInChat(
         @ProtobufProperty(index = 6, type = ProtobufType.INT64)
         long serverTimestampMilliseconds
 ) implements ProtobufMessage {
-    public Optional<ZonedDateTime> serverTimestamp(){
+    public Optional<ZonedDateTime> serverTimestamp() {
         return Clock.parseSeconds(serverTimestampSeconds);
     }
 
-    public Optional<ZonedDateTime> clientTimestamp(){
+    public Optional<ZonedDateTime> clientTimestamp() {
         return Clock.parseMilliseconds(clientTimestampInMilliseconds);
     }
 }

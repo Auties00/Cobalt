@@ -7,5 +7,6 @@ import it.auties.protobuf.model.ProtobufMessage;
 import static it.auties.protobuf.model.ProtobufType.BOOL;
 
 @ProtobufMessageName("Message.InitialSecurityNotificationSettingSync")
-public record InitialSecurityNotificationSettingSync(@ProtobufProperty(index = 1, type = BOOL) boolean securityNotificationEnabled) implements ProtobufMessage {
+public record InitialSecurityNotificationSettingSync(
+        @ProtobufProperty(index = 1, type = BOOL) boolean securityNotificationEnabled) implements ProtobufMessage {
 }

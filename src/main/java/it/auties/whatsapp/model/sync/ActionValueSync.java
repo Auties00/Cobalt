@@ -87,21 +87,27 @@ public record ActionValueSync(
             case MuteAction muteAction -> builder.muteAction(muteAction);
             case PinAction pinAction -> builder.pinAction(pinAction);
             case QuickReplyAction quickReplyAction -> builder.quickReplyAction(quickReplyAction);
-            case RecentEmojiWeightsAction recentEmojiWeightsAction -> builder.recentEmojiWeightsAction(recentEmojiWeightsAction);
+            case RecentEmojiWeightsAction recentEmojiWeightsAction ->
+                    builder.recentEmojiWeightsAction(recentEmojiWeightsAction);
             case LabelEditAction labelEditAction -> builder.labelEditAction(labelEditAction);
-            case LabelAssociationAction labelAssociationAction -> builder.labelAssociationAction(labelAssociationAction);
+            case LabelAssociationAction labelAssociationAction ->
+                    builder.labelAssociationAction(labelAssociationAction);
             case ArchiveChatAction archiveChatAction -> builder.archiveChatAction(archiveChatAction);
-            case DeleteMessageForMeAction deleteMessageForMeAction -> builder.deleteMessageForMeAction(deleteMessageForMeAction);
+            case DeleteMessageForMeAction deleteMessageForMeAction ->
+                    builder.deleteMessageForMeAction(deleteMessageForMeAction);
             case MarkChatAsReadAction markChatAsReadAction -> builder.markChatAsReadAction(markChatAsReadAction);
             case ClearChatAction clearChatAction -> builder.clearChatAction(clearChatAction);
             case DeleteChatAction deleteChatAction -> builder.deleteChatAction(deleteChatAction);
-            case AndroidUnsupportedActions androidUnsupportedActions -> builder.androidUnsupportedActions(androidUnsupportedActions);
+            case AndroidUnsupportedActions androidUnsupportedActions ->
+                    builder.androidUnsupportedActions(androidUnsupportedActions);
             case AgentAction agentAction -> builder.agentAction(agentAction);
             case ChatAssignmentAction chatAssignmentAction -> builder.chatAssignmentAction(chatAssignmentAction);
-            case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction -> builder.chatAssignmentOpenedStatusAction(chatAssignmentOpenedStatusAction);
+            case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction ->
+                    builder.chatAssignmentOpenedStatusAction(chatAssignmentOpenedStatusAction);
             case NuxAction nuxAction -> builder.nuxAction(nuxAction);
             case PrimaryVersionAction primaryVersionAction -> builder.primaryVersionAction(primaryVersionAction);
-            case RemoveRecentStickerAction removeRecentStickerAction -> builder.removeRecentStickerAction(removeRecentStickerAction);
+            case RemoveRecentStickerAction removeRecentStickerAction ->
+                    builder.removeRecentStickerAction(removeRecentStickerAction);
             case StickerAction stickerAction -> builder.stickerAction(stickerAction);
             case SubscriptionAction subscriptionAction -> builder.subscriptionAction(subscriptionAction);
             case TimeFormatAction timeFormatAction -> builder.timeFormatAction(timeFormatAction);
@@ -114,11 +120,13 @@ public record ActionValueSync(
     public static ActionValueSync of(Setting setting) {
         var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
         switch (setting) {
-            case SecurityNotificationSettings securityNotificationSettings -> builder.securityNotificationSetting(securityNotificationSettings);
+            case SecurityNotificationSettings securityNotificationSettings ->
+                    builder.securityNotificationSetting(securityNotificationSettings);
             case PushNameSettings pushNameSettings -> builder.pushNameSetting(pushNameSettings);
             case LocaleSettings localeSettings -> builder.localeSetting(localeSettings);
             case UnarchiveChatsSettings unarchiveChatsSettings -> builder.unarchiveChatsSetting(unarchiveChatsSettings);
-            default -> throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
+            default ->
+                    throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
         }
         return builder.build();
     }

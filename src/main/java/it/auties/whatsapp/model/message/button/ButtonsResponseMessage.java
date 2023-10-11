@@ -22,13 +22,13 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ButtonsResponseMessage")
 public record ButtonsResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String buttonId,
+        String buttonId,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> buttonText,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-                ResponseType responseType
+        ResponseType responseType
 ) implements ButtonReplyMessage {
     public static ButtonsResponseMessage of(ChatMessageInfo quoted, Button button) {
         return new ButtonsResponseMessageBuilder()

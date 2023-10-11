@@ -1882,6 +1882,7 @@ public enum Emoji {
     FLAG_WALES("🏴󠁧󠁢󠁷󠁬󠁳󠁿");
 
     private final String value;
+
     Emoji(String value) {
         this.value = value;
     }

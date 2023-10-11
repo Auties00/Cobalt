@@ -8,7 +8,7 @@ import java.util.Optional;
  * This exception is thrown when a phone number cannot be registered by the Whatsapp API
  */
 public class RegistrationException extends RuntimeException {
-        private final VerificationCodeResponse erroneousResponse;
+    private final VerificationCodeResponse erroneousResponse;
 
     public RegistrationException(VerificationCodeResponse erroneousResponse, String message) {
         super(message);

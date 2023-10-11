@@ -46,7 +46,7 @@ public final class SignalPreKeyMessage extends SignalProtocolMessage<SignalPreKe
 
     @Override
     public byte[] serialized() {
-        if(serialized == null) {
+        if (serialized == null) {
             this.serialized = BytesHelper.concat(serializedVersion(), SignalPreKeyMessageSpec.encode(this));
         }
 

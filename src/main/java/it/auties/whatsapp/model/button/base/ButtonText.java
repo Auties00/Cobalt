@@ -8,7 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
  */
 public record ButtonText(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String content
+        String content
 ) implements ButtonBody {
     @Override
     public Type bodyType() {

@@ -33,65 +33,65 @@ import static java.util.Objects.requireNonNullElse;
 public final class ImageMessage extends LocalMediaMessage<ImageMessage>
         implements MediaMessage<ImageMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        private String mediaUrl;
+    private String mediaUrl;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        private final String mimetype;
-    
+    private final String mimetype;
+
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        private final String caption;
-    
+    private final String caption;
+
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
 
     @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
-        private Long mediaSize;
-    
+    private Long mediaSize;
+
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-        private final Integer height;
+    private final Integer height;
 
     @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
-        private final Integer width;
-    
+    private final Integer width;
+
     @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
     private byte[] mediaKey;
-    
+
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
-    
+
     @ProtobufProperty(index = 10, type = ProtobufType.OBJECT, repeated = true)
-        private final List<InteractiveLocationAnnotation> interactiveAnnotations;
-    
+    private final List<InteractiveLocationAnnotation> interactiveAnnotations;
+
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
-        private String mediaDirectPath;
-    
+    private String mediaDirectPath;
+
     @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
-        private Long mediaKeyTimestampSeconds;
-    
+    private Long mediaKeyTimestampSeconds;
+
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-        private final ContextInfo contextInfo;
-    
+    private final ContextInfo contextInfo;
+
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] firstScanSidecar;
-    
+
     @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
-        private final Integer firstScanLength;
-    
+    private final Integer firstScanLength;
+
     @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
-        private final Integer experimentGroupId;
-    
+    private final Integer experimentGroupId;
+
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
     private final byte[] scansSidecar;
-    
+
     @ProtobufProperty(index = 22, type = ProtobufType.UINT32, repeated = true)
-        private final List<Integer> scanLengths;
+    private final List<Integer> scanLengths;
 
     @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
     private final byte[] midQualityFileSha256;
-    
+
     @ProtobufProperty(index = 24, type = ProtobufType.BYTES)
     private final byte[] midQualityFileEncSha256;
 
@@ -99,7 +99,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     private final boolean viewOnce;
 
     @ProtobufProperty(index = 26, type = ProtobufType.STRING)
-        private final String thumbnailDirectPath;
+    private final String thumbnailDirectPath;
 
     @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
     private final byte[] thumbnailSha256;
@@ -108,7 +108,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     private final byte[] thumbnailEncSha256;
 
     @ProtobufProperty(index = 29, type = ProtobufType.STRING)
-        private final String staticUrl;
+    private final String staticUrl;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ImageMessage(String mediaUrl, String mimetype, String caption, byte[] mediaSha256, Long mediaSize, Integer height, Integer width, byte[] mediaKey, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, Long mediaKeyTimestampSeconds, byte[] thumbnail, ContextInfo contextInfo, byte[] firstScanSidecar, Integer firstScanLength, Integer experimentGroupId, byte[] scansSidecar, List<Integer> scanLengths, byte[] midQualityFileSha256, byte[] midQualityFileEncSha256, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
@@ -253,7 +253,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
     public Optional<ContextInfo> contextInfo() {
         return Optional.ofNullable(contextInfo);
     }
-    
+
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.IMAGE;

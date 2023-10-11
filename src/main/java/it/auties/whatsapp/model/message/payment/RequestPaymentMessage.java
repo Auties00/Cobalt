@@ -21,7 +21,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.RequestPaymentMessage")
 public record RequestPaymentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String currency,
+        String currency,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
@@ -31,21 +31,21 @@ public record RequestPaymentMessage(
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-                PaymentMoney amount,
+        PaymentMoney amount,
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {
-        /**
-         * Returns when the transaction expires
-         *
-         * @return an optional
-         */
-        public Optional<ZonedDateTime> expiryTimestamp() {
-                return Clock.parseSeconds(expiryTimestampSeconds);
-        }
+    /**
+     * Returns when the transaction expires
+     *
+     * @return an optional
+     */
+    public Optional<ZonedDateTime> expiryTimestamp() {
+        return Clock.parseSeconds(expiryTimestampSeconds);
+    }
 
-        @Override
-        public MessageType type() {
-                return MessageType.REQUEST_PAYMENT;
-        }
+    @Override
+    public MessageType type() {
+        return MessageType.REQUEST_PAYMENT;
+    }
 }

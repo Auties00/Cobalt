@@ -254,7 +254,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
             return name;
         }
 
-        if(displayName != null) {
+        if (displayName != null) {
             return displayName;
         }
 
@@ -543,7 +543,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public boolean removeMessage(ChatMessageInfo info) {
         var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.messageInfo().id(), info.id()));
-        if(result) {
+        if (result) {
             this.update = true;
         }
 
@@ -619,7 +619,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public boolean addParticipant(Jid jid, GroupRole role) {
         var result = addParticipant(new GroupParticipant(jid, role));
-        if(result) {
+        if (result) {
             this.update = true;
         }
 
@@ -646,7 +646,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public boolean removeParticipant(Jid jid) {
         var result = participants.removeIf(entry -> Objects.equals(entry.jid(), jid));
-        if(result) {
+        if (result) {
             this.update = true;
         }
 
@@ -675,7 +675,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public boolean addPastParticipant(GroupPastParticipant participant) {
         var result = pastParticipants.add(participant);
-        if(result) {
+        if (result) {
             this.update = true;
         }
 
@@ -694,7 +694,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
             result &= this.pastParticipants.add(pastParticipant);
         }
 
-        if(result) {
+        if (result) {
             this.update = true;
         }
 
@@ -709,7 +709,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      */
     public boolean removePastParticipant(Jid jid) {
         var result = pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), jid));
-        if(result) {
+        if (result) {
             this.update = true;
         }
 

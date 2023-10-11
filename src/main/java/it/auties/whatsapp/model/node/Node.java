@@ -162,7 +162,7 @@ public record Node(String description, Attributes attributes, Object content) {
             }
 
             var results = (Collection<Node>) entries;
-            if(results.isEmpty()) {
+            if (results.isEmpty()) {
                 return null;
             }
 
@@ -369,10 +369,10 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     @Override
     public String toString() {
-        var description = this.description.isBlank() || this.description.isEmpty() ? "" : "description=%s" .formatted(this.description);
-        var attributes = this.attributes.toMap().isEmpty() ? "" : ", attributes=%s" .formatted(this.attributes.toMap());
-        var content = this.content == null ? "" : ", content=%s" .formatted(this.content instanceof byte[] bytes ? Arrays.toString(bytes) : this.content);
-        return "Node[%s%s%s]" .formatted(description, attributes, content);
+        var description = this.description.isBlank() || this.description.isEmpty() ? "" : "description=%s".formatted(this.description);
+        var attributes = this.attributes.toMap().isEmpty() ? "" : ", attributes=%s".formatted(this.attributes.toMap());
+        var content = this.content == null ? "" : ", content=%s".formatted(this.content instanceof byte[] bytes ? Arrays.toString(bytes) : this.content);
+        return "Node[%s%s%s]".formatted(description, attributes, content);
     }
 
     /**

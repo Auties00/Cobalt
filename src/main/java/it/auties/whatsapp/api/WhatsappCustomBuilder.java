@@ -48,7 +48,7 @@ public class WhatsappCustomBuilder {
         Objects.requireNonNull(keys, "Missing required field: keys");
         Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUID mismatch: %s != %s", store.uuid(), keys.uuid());
         var knownInstance = Whatsapp.getInstanceByUuid(store.uuid());
-        if(knownInstance.isPresent()){
+        if (knownInstance.isPresent()) {
             return knownInstance.get();
         }
 
@@ -57,11 +57,11 @@ public class WhatsappCustomBuilder {
     }
 
     private static WebVerificationSupport getWebVerificationMethod(Store store, Keys keys, WebVerificationSupport webVerificationSupport) {
-        if(store.clientType() != ClientType.WEB){
+        if (store.clientType() != ClientType.WEB) {
             return null;
         }
 
-        if(!keys.registered() && webVerificationSupport == null) {
+        if (!keys.registered() && webVerificationSupport == null) {
             return QrHandler.toTerminal();
         }
 

@@ -30,13 +30,13 @@ public record HydratedFourRowTemplate(
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         Optional<LocationMessage> titleLocation,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-                String body,
+        String body,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> footer,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
-                List<HydratedTemplateButton> hydratedButtons,
+        List<HydratedTemplateButton> hydratedButtons,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-                String templateId
+        String templateId
 ) implements TemplateFormatter {
     @ProtobufBuilder(className = "HydratedFourRowTemplateSimpleBuilder")
     static HydratedFourRowTemplate customBuilder(HydratedFourRowTemplateTitle title, String body, String footer, List<HydratedTemplateButton> buttons, String templateId) {
@@ -47,11 +47,13 @@ public record HydratedFourRowTemplate(
                 .footer(footer);
         switch (title) {
             case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);
-            case HydratedFourRowTemplateTextTitle hydratedFourRowTemplateTextTitle -> builder.titleText(hydratedFourRowTemplateTextTitle);
+            case HydratedFourRowTemplateTextTitle hydratedFourRowTemplateTextTitle ->
+                    builder.titleText(hydratedFourRowTemplateTextTitle);
             case ImageMessage imageMessage -> builder.titleImage(imageMessage);
             case VideoOrGifMessage videoMessage -> builder.titleVideo(videoMessage);
             case LocationMessage locationMessage -> builder.titleLocation(locationMessage);
-            case null -> {}
+            case null -> {
+            }
         }
         return builder.build();
     }

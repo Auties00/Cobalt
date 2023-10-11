@@ -21,6 +21,7 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
     private final Map<String, Long> reactions;
     private final MessageContainer message;
     private MessageStatus status;
+
     public NewsletterMessageInfo(Newsletter newsletter, String id, int serverId, Long timestampSeconds, Long views, Map<String, Long> reactions, MessageContainer message, MessageStatus status) {
         this.newsletter = newsletter;
         this.id = id;

@@ -24,6 +24,7 @@ public enum GroupSetting {
 
     private final String on;
     private final String off;
+
     GroupSetting(String on, String off) {
         this.on = on;
         this.off = off;

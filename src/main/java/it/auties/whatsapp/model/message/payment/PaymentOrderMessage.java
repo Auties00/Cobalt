@@ -20,68 +20,68 @@ import java.util.Optional;
 @ProtobufMessageName("Message.PaymentOrderMessage")
 public record PaymentOrderMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String id,
+        String id,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         Optional<byte[]> thumbnail,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
         int itemCount,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-                Status status,
+        Status status,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-                PaymentOrderSurface surface,
+        PaymentOrderSurface surface,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
         Optional<String> message,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> title,
         @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-                Jid sellerId,
+        Jid sellerId,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-                String token,
+        String token,
         @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
         long amount,
         @ProtobufProperty(index = 11, type = ProtobufType.STRING)
-                String currency,
+        String currency,
         @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage, PaymentMessage {
-        @Override
-        public MessageType type() {
-                return MessageType.PAYMENT_ORDER;
+    @Override
+    public MessageType type() {
+        return MessageType.PAYMENT_ORDER;
+    }
+
+    @ProtobufMessageName("Message.OrderMessage.OrderStatus")
+    public enum Status implements ProtobufEnum {
+        /**
+         * Inquiry
+         */
+        INQUIRY(1);
+
+        final int index;
+
+        Status(@ProtobufEnumIndex int index) {
+            this.index = index;
         }
 
-        @ProtobufMessageName("Message.OrderMessage.OrderStatus")
-        public enum Status implements ProtobufEnum {
-                /**
-                 * Inquiry
-                 */
-                INQUIRY(1);
+        public int index() {
+            return this.index;
+        }
+    }
 
-                final int index;
+    @ProtobufMessageName("Message.OrderMessage.OrderSurface")
+    public enum PaymentOrderSurface implements ProtobufEnum {
+        /**
+         * Catalog
+         */
+        CATALOG(1);
 
-                Status(@ProtobufEnumIndex int index) {
-                        this.index = index;
-                }
+        final int index;
 
-                public int index() {
-                        return this.index;
-                }
+        PaymentOrderSurface(@ProtobufEnumIndex int index) {
+            this.index = index;
         }
 
-        @ProtobufMessageName("Message.OrderMessage.OrderSurface")
-        public enum PaymentOrderSurface implements ProtobufEnum {
-            /**
-             * Catalog
-             */
-            CATALOG(1);
-
-            final int index;
-
-            PaymentOrderSurface(@ProtobufEnumIndex int index) {
-                this.index = index;
-            }
-
-            public int index() {
-                return this.index;
-            }
+        public int index() {
+            return this.index;
         }
+    }
 }

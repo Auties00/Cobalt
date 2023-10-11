@@ -146,7 +146,7 @@ public final class Medias {
 
     private static MediaFile prepareMediaFile(AttachmentType type, byte[] uploadData) {
         var fileSha256 = Sha256.calculate(uploadData);
-        if(type.keyName().isEmpty()) {
+        if (type.keyName().isEmpty()) {
             return new MediaFile(null, fileSha256, null, null, uploadData.length, null, null, null, null);
         }
 
@@ -196,7 +196,7 @@ public final class Medias {
         var encryptedMedia = Arrays.copyOf(body, body.length - 10);
         var mediaMac = Arrays.copyOfRange(body, body.length - 10, body.length);
         var keyName = provider.attachmentType().keyName();
-        if(keyName.isEmpty()) {
+        if (keyName.isEmpty()) {
             return Optional.of(encryptedMedia);
         }
 

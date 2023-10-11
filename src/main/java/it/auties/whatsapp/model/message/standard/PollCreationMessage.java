@@ -101,7 +101,7 @@ public final class PollCreationMessage implements ContextualMessage {
      */
     public Collection<PollOption> getSelectedOptions(JidProvider voter) {
         var results = selectedOptionsMap.get(voter.toJid());
-        if(results == null) {
+        if (results == null) {
             return List.of();
         }
 

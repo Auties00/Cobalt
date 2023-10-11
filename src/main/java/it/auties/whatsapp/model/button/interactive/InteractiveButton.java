@@ -13,11 +13,11 @@ import java.util.Optional;
 @ProtobufMessageName("Message.InteractiveMessage.NativeFlowMessage.NativeFlowButton")
 public record InteractiveButton(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String name,
+        String name,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> parameters
 ) implements ProtobufMessage {
-        public InteractiveButton(String name) {
-                this(name, Optional.empty());
-        }
+    public InteractiveButton(String name) {
+        this(name, Optional.empty());
+    }
 }

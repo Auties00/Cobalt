@@ -67,7 +67,7 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
     /**
      * Checks whether a non-null key exists in this map and has the provided value
      *
-     * @param key the non-null key
+     * @param key   the non-null key
      * @param value the nullable value to check against
      * @return a boolean
      */
@@ -221,7 +221,7 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
             throw new IllegalStateException("Unexpected value: " + value);
         }
     }
-    
+
 
     /**
      * Gets a non-null value as a string by key in the wrapped map. If the key doesn't exist,
@@ -341,7 +341,7 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
             throw new IllegalStateException("Unexpected value: " + value);
         }
     }
-    
+
 
     /**
      * Gets an optional value as a ContactJid by key in the wrapped map
@@ -377,7 +377,7 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
      *
      * @return a boolean
      */
-    public boolean isEmpty(){
+    public boolean isEmpty() {
         return toMap.isEmpty();
     }
 }

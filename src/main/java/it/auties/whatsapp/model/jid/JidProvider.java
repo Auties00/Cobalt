@@ -13,5 +13,5 @@ public sealed interface JidProvider permits Chat, Newsletter, Contact, Jid {
      *
      * @return a non-null jid
      */
-        Jid toJid();
+    Jid toJid();
 }

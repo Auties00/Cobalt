@@ -12,9 +12,9 @@ import it.auties.whatsapp.model.button.base.ButtonBody;
 @ProtobufMessageName("Message.ButtonsMessage.Button.NativeFlowInfo")
 public record NativeFlowInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String name,
+        String name,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String parameters
+        String parameters
 ) implements Info, ButtonBody, ProtobufMessage {
     @Override
     public Type bodyType() {

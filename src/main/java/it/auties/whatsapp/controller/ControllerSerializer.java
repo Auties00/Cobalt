@@ -49,7 +49,7 @@ public interface ControllerSerializer {
      * Serializes the keys
      *
      * @param type the non-null type of client
-     * @param id the id of the keys
+     * @param id   the id of the keys
      * @return a non-null keys
      */
     Optional<Keys> deserializeKeys(ClientType type, UUID id);
@@ -57,7 +57,7 @@ public interface ControllerSerializer {
     /**
      * Serializes the keys
      *
-     * @param type the non-null type of client
+     * @param type        the non-null type of client
      * @param phoneNumber the phone number of the keys
      * @return a non-null keys
      */
@@ -77,7 +77,7 @@ public interface ControllerSerializer {
      * Serializes the store
      *
      * @param type the non-null type of client
-     * @param id the id of the store
+     * @param id   the id of the store
      * @return a non-null store
      */
     Optional<Store> deserializeStore(ClientType type, UUID id);
@@ -85,7 +85,7 @@ public interface ControllerSerializer {
     /**
      * Serializes the store
      *
-     * @param type the non-null type of client
+     * @param type        the non-null type of client
      * @param phoneNumber the phone number of the store
      * @return a non-null store
      */

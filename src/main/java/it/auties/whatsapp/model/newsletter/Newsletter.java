@@ -60,7 +60,7 @@ public final class Newsletter implements JidProvider {
     }
 
     @Override
-        public Jid toJid() {
+    public Jid toJid() {
         return jid;
     }
 
@@ -82,7 +82,7 @@ public final class Newsletter implements JidProvider {
 
     @Override
     public boolean equals(Object obj) {
-       return obj instanceof Newsletter that && Objects.equals(this.jid(), that.jid());
+        return obj instanceof Newsletter that && Objects.equals(this.jid(), that.jid());
     }
 
     @Override

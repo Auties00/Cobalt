@@ -14,7 +14,7 @@ public interface AsyncVerificationCodeSupplier extends Supplier<CompletableFutur
      * @param supplier a non-null supplier
      * @return a non-null async supplier
      */
-    static AsyncVerificationCodeSupplier of(Supplier<String> supplier){
+    static AsyncVerificationCodeSupplier of(Supplier<String> supplier) {
         return () -> CompletableFuture.completedFuture(supplier.get());
     }
 }

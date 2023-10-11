@@ -7,7 +7,7 @@ public interface OnWhatsappPrivacySettingChanged extends Listener {
     /**
      * Called when a privacy setting is modified
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp        an instance to the calling api
      * @param oldPrivacyEntry the old entry
      * @param newPrivacyEntry the new entry
      */

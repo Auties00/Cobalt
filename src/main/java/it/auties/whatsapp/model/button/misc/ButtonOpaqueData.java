@@ -47,7 +47,7 @@ public record ButtonOpaqueData(
         @ProtobufProperty(index = 17, type = ProtobufType.STRING)
         Optional<String> pollName,
         @ProtobufProperty(index = 18, type = ProtobufType.OBJECT, repeated = true)
-                List<PollOption> pollOptions,
+        List<PollOption> pollOptions,
         @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
         int pollSelectableOptionsCount,
         @ProtobufProperty(index = 21, type = ProtobufType.BYTES)

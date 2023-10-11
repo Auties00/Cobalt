@@ -19,7 +19,7 @@ public record SendPaymentMessage(
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<MessageContainer> noteMessage,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-                ChatMessageKey requestMessageKey,
+        ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {

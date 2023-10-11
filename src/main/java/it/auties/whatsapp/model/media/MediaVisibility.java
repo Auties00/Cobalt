@@ -24,6 +24,7 @@ public enum MediaVisibility implements ProtobufEnum {
     ON(2);
 
     final int index;
+
     MediaVisibility(@ProtobufEnumIndex int index) {
         this.index = index;
     }

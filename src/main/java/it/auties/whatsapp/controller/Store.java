@@ -59,12 +59,12 @@ public final class Store extends Controller<Store> {
     /**
      * The version used by this session
      */
-        private URI proxy;
+    private URI proxy;
 
     /**
      * The version used by this session
      */
-        private FutureReference<Version> version;
+    private FutureReference<Version> version;
 
     /**
      * Whether this account is online for other users
@@ -75,13 +75,13 @@ public final class Store extends Controller<Store> {
      * The locale of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
-        private String locale;
+    private String locale;
 
     /**
      * The name of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
-        private String name;
+    private String name;
 
     /**
      * Whether the linked companion is a business account or not
@@ -91,109 +91,109 @@ public final class Store extends Controller<Store> {
     /**
      * The address of this account, if it's a business account
      */
-        private String businessAddress;
+    private String businessAddress;
 
     /**
      * The longitude of this account's location, if it's a business account
      */
-        private Double businessLongitude;
+    private Double businessLongitude;
 
     /**
      * The latitude of this account's location, if it's a business account
      */
-        private Double businessLatitude;
+    private Double businessLatitude;
 
     /**
      * The description of this account, if it's a business account
      */
-        private String businessDescription;
+    private String businessDescription;
 
     /**
      * The website of this account, if it's a business account
      */
-        private String businessWebsite;
+    private String businessWebsite;
 
     /**
      * The email of this account, if it's a business account
      */
-        private String businessEmail;
+    private String businessEmail;
 
     /**
      * The category of this account, if it's a business account
      */
-        private BusinessCategory businessCategory;
+    private BusinessCategory businessCategory;
 
     /**
      * The hash of the companion associated with this session
      */
-        private String deviceHash;
+    private String deviceHash;
 
     /**
      * A map of all the devices that the companion has associated using WhatsappWeb
      * The key here is the index of the device's key
      * The value is the device's companion jid
      */
-        private LinkedHashMap<Jid, Integer> linkedDevicesKeys;
+    private LinkedHashMap<Jid, Integer> linkedDevicesKeys;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
-        private URI profilePicture;
+    private URI profilePicture;
 
     /**
      * The status of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
      * Assumed to be non-null otherwise.
      */
-        private String about;
+    private String about;
 
     /**
      * The user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-        private Jid jid;
+    private Jid jid;
 
     /**
      * The lid user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-        private Jid lid;
+    private Jid lid;
 
     /**
      * The non-null map of properties received by whatsapp
      */
-        private final ConcurrentHashMap<String, String> properties;
+    private final ConcurrentHashMap<String, String> properties;
 
     /**
      * The non-null map of chats
      */
-        @JsonIgnore
+    @JsonIgnore
     private final ConcurrentHashMap<Jid, Chat> chats;
 
     /**
      * The non-null map of contacts
      */
-        private final ConcurrentHashMap<Jid, Contact> contacts;
+    private final ConcurrentHashMap<Jid, Contact> contacts;
 
     /**
      * The non-null list of status messages
      */
-        private final ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status;
+    private final ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status;
 
     /**
      * The non-null map of newsletters
      */
-        private final ConcurrentHashMap<Jid, Newsletter> newsletters;
+    private final ConcurrentHashMap<Jid, Newsletter> newsletters;
 
 
     /**
      * The non-null map of privacy settings
      */
-        private final ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings;
+    private final ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings;
 
     /**
      * The non-null map of calls
      */
-        private final ConcurrentHashMap<String, Call> calls;
+    private final ConcurrentHashMap<String, Call> calls;
 
     /**
      * Whether chats should be unarchived if a new message arrives
@@ -209,25 +209,25 @@ public final class Store extends Controller<Store> {
      * The non-null list of requests that were sent to Whatsapp. They might or might not be waiting
      * for a newsletters
      */
-        @JsonIgnore
+    @JsonIgnore
     private final ConcurrentHashMap<String, SocketRequest> requests;
 
     /**
      * The non-null list of replies waiting to be fulfilled
      */
-        @JsonIgnore
+    @JsonIgnore
     private final ConcurrentHashMap<String, CompletableFuture<ChatMessageInfo>> replyHandlers;
 
     /**
      * The non-null list of listeners
      */
-        @JsonIgnore
+    @JsonIgnore
     private final KeySetView<Listener, Boolean> listeners;
 
     /**
      * The request tag, used to create messages
      */
-        @JsonIgnore
+    @JsonIgnore
     private final String tag;
 
     /**
@@ -239,28 +239,28 @@ public final class Store extends Controller<Store> {
      * The media connection associated with this store
      */
     @JsonIgnore
-        private MediaConnection mediaConnection;
+    private MediaConnection mediaConnection;
 
     /**
      * The media connection latch associated with this store
      */
     @JsonIgnore
-        private final CountDownLatch mediaConnectionLatch;
+    private final CountDownLatch mediaConnectionLatch;
 
     /**
      * The request tag, used to create messages
      */
-        private ChatEphemeralTimer newChatsEphemeralTimer;
+    private ChatEphemeralTimer newChatsEphemeralTimer;
 
     /**
      * The setting to use when generating previews for text messages that contain links
      */
-        private TextPreviewSetting textPreviewSetting;
+    private TextPreviewSetting textPreviewSetting;
 
     /**
      * Describes how much chat history Whatsapp should send
      */
-        private WebHistoryLength historyLength;
+    private WebHistoryLength historyLength;
 
     /**
      * Whether listeners should be automatically scanned and registered or not
@@ -278,17 +278,17 @@ public final class Store extends Controller<Store> {
      * The release channel to use when connecting to Whatsapp
      * This should allow the use of beta features
      */
-        private ReleaseChannel releaseChannel;
+    private ReleaseChannel releaseChannel;
 
     /**
      * Metadata about the device that is being simulated for Whatsapp
      */
-        private CompanionDevice device;
+    private CompanionDevice device;
 
     /**
      * The os of the associated device, available only for the web api
      */
-        private PlatformType companionDeviceOs;
+    private PlatformType companionDeviceOs;
 
     /**
      * Whether the mac of every app state request should be checked
@@ -301,7 +301,7 @@ public final class Store extends Controller<Store> {
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias, URI proxy, FutureReference<Version> version, boolean online, String locale, String name, boolean business, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
-        if(proxy != null) {
+        if (proxy != null) {
             ProxyAuthenticator.register(proxy);
         }
 
@@ -439,7 +439,7 @@ public final class Store extends Controller<Store> {
 
         return switch (provider) {
             case Chat chat -> findMessageById(chat, id);
-            case Newsletter newsletter ->  findMessageById(newsletter, id);
+            case Newsletter newsletter -> findMessageById(newsletter, id);
             case Contact contact -> findChatByJid(contact.jid())
                     .flatMap(chat -> findMessageById(chat, id));
             case Jid contactJid -> switch (contactJid.type()) {
@@ -447,7 +447,7 @@ public final class Store extends Controller<Store> {
                         .flatMap(newsletter -> findMessageById(newsletter, id));
                 case STATUS -> {
                     var messages = status.get(contactJid);
-                    if(messages == null) {
+                    if (messages == null) {
                         yield Optional.empty();
                     }
 

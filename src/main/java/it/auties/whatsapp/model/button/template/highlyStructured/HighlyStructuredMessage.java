@@ -18,23 +18,23 @@ import java.util.Optional;
 @ProtobufMessageName("Message.HighlyStructuredMessage")
 public record HighlyStructuredMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String namespace,
+        String namespace,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String elementName,
+        String elementName,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING, repeated = true)
-                List<String> params,
+        List<String> params,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Optional<String> fallbackLg,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         Optional<String> fallbackLc,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, repeated = true)
-                List<HighlyStructuredLocalizableParameter> localizableParameters,
+        List<HighlyStructuredLocalizableParameter> localizableParameters,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> deterministicLg,
         @ProtobufProperty(index = 8, type = ProtobufType.STRING)
         Optional<String> deterministicLc,
         @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
-                TemplateMessage templateMessage
+        TemplateMessage templateMessage
 ) implements ButtonMessage, HighlyStructuredFourRowTemplateTitle {
     @Override
     public MessageType type() {

@@ -22,31 +22,31 @@ import java.util.Optional;
 public record PaymentInfo(
         @Deprecated
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                Currency currencyDeprecated,
+        Currency currencyDeprecated,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-                Jid receiverJid,
+        Jid receiverJid,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-                Status status,
+        Status status,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long transactionTimestampSeconds,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-                ChatMessageKey requestMessageKey,
+        ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
         @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
         boolean futureProofed,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-                String currency,
+        String currency,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-                TransactionStatus transactionStatus,
+        TransactionStatus transactionStatus,
         @ProtobufProperty(index = 11, type = ProtobufType.BOOL)
         boolean useNoviFormat,
         @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
-                PaymentMoney primaryAmount,
+        PaymentMoney primaryAmount,
         @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
-                PaymentMoney exchangeAmount
+        PaymentMoney exchangeAmount
 ) implements Info, ProtobufMessage {
     /**
      * Returns when the transaction happened

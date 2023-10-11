@@ -43,6 +43,7 @@ public record InteractiveLocationAnnotation(
         LOCATION(2);
 
         final int index;
+
         Action(@ProtobufEnumIndex int index) {
             this.index = index;
         }

@@ -38,7 +38,7 @@ public final class SignalDistributionMessage extends SignalProtocolMessage<Signa
 
     @Override
     public byte[] serialized() {
-        if(serialized == null) {
+        if (serialized == null) {
             this.serialized = BytesHelper.concat(serializedVersion(), SignalDistributionMessageSpec.encode(this));
         }
 

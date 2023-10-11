@@ -13,10 +13,10 @@ import java.util.Optional;
 @ProtobufMessageName("Message.InteractiveResponseMessage.Body")
 public record InteractiveResponseBody(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String content
+        String content
 ) implements ProtobufMessage {
-        public static Optional<InteractiveResponseBody> ofNullable(String content) {
-                return Optional.ofNullable(content)
-                        .map(InteractiveResponseBody::new);
-        }
+    public static Optional<InteractiveResponseBody> ofNullable(String content) {
+        return Optional.ofNullable(content)
+                .map(InteractiveResponseBody::new);
+    }
 }

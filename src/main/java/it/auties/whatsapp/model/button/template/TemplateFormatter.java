@@ -42,6 +42,7 @@ public sealed interface TemplateFormatter extends ProtobufMessage permits Highly
         INTERACTIVE(3);
 
         final int index;
+
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }

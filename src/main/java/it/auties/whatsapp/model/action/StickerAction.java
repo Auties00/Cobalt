@@ -12,25 +12,25 @@ import it.auties.whatsapp.model.sync.PatchType;
 @ProtobufMessageName("SyncActionValue.StickerAction")
 public record StickerAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String url,
+        String url,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         byte[] fileEncSha256,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
         byte[] mediaKey,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-                String mimetype,
+        String mimetype,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
         int height,
         @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
         int width,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-                String directPath,
+        String directPath,
         @ProtobufProperty(index = 8, type = ProtobufType.UINT64)
         long fileLength,
         @ProtobufProperty(index = 9, type = ProtobufType.BOOL)
         boolean favorite,
         @ProtobufProperty(index = 10, type = ProtobufType.UINT32)
-                Integer deviceIdHint
+        Integer deviceIdHint
 ) implements Action {
     /**
      * Always throws an exception as this action cannot be serialized

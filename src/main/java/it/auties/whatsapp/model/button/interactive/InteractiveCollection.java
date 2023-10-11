@@ -12,9 +12,9 @@ import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
 @ProtobufMessageName("Message.InteractiveMessage.CollectionMessage")
 public record InteractiveCollection(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                Jid business,
+        Jid business,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String id,
+        String id,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)
         int version
 ) implements InteractiveMessageContent {

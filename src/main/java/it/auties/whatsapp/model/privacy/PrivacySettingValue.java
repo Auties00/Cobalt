@@ -31,6 +31,7 @@ public enum PrivacySettingValue {
     MATCH_LAST_SEEN("match_last_seen");
 
     private final String data;
+
     PrivacySettingValue(String data) {
         this.data = data;
     }

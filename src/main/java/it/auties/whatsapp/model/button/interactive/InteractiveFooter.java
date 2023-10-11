@@ -13,11 +13,11 @@ import java.util.Optional;
 @ProtobufMessageName("Message.InteractiveMessage.Footer")
 public record InteractiveFooter(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String content
+        String content
 ) implements ProtobufMessage {
 
-        public static Optional<InteractiveFooter> ofNullable(String content) {
-                return Optional.ofNullable(content)
-                        .map(InteractiveFooter::new);
-        }
+    public static Optional<InteractiveFooter> ofNullable(String content) {
+        return Optional.ofNullable(content)
+                .map(InteractiveFooter::new);
+    }
 }

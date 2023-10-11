@@ -28,49 +28,49 @@ import static java.util.Objects.requireNonNullElse;
 @ProtobufMessageName("Message.StickerMessage")
 public final class StickerMessage extends LocalMediaMessage<StickerMessage> implements MediaMessage<StickerMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        private String mediaUrl;
-    
+    private String mediaUrl;
+
     @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
-    
+
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
-    
+
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private byte[] mediaKey;
-    
+
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-        private final String mimetype;
-    
+    private final String mimetype;
+
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-        private final Integer height;
-    
+    private final Integer height;
+
     @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
-        private final Integer width;
+    private final Integer width;
 
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-        private String mediaDirectPath;
-    
+    private String mediaDirectPath;
+
     @ProtobufProperty(index = 9, type = ProtobufType.UINT64)
-        private Long mediaSize;
-    
+    private Long mediaSize;
+
     @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
-        private Long mediaKeyTimestampSeconds;
-    
+    private Long mediaKeyTimestampSeconds;
+
     @ProtobufProperty(index = 11, type = ProtobufType.UINT32)
-        private final Integer firstFrameLength;
-    
+    private final Integer firstFrameLength;
+
     @ProtobufProperty(index = 12, type = ProtobufType.BYTES)
     private final byte[] firstFrameSidecar;
-    
+
     @ProtobufProperty(index = 13, type = ProtobufType.BOOL)
     private final boolean animated;
-    
+
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-        private final ContextInfo contextInfo;
+    private final ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.INT64)
     private final Long stickerSentTimestamp;
@@ -102,7 +102,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
     static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         return new StickerMessageBuilder()
-               
+
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
                 .animated(animated)
@@ -208,7 +208,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
         this.mediaSize = mediaSize;
         return this;
     }
-    
+
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.STICKER;

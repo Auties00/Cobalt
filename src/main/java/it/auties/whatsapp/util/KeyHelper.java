@@ -47,7 +47,7 @@ public final class KeyHelper {
             var secureRandom = SecureRandom.getInstance(SHA_PRNG);
             secureRandom.nextBytes(key);
             return 1 + (15 & key[0]);
-        }catch (NoSuchAlgorithmException exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new UnsupportedOperationException("Missing ShaPRNG implementation");
         }
     }
@@ -56,7 +56,7 @@ public final class KeyHelper {
         try {
             var secureRandom = SecureRandom.getInstance(SHA_PRNG);
             return secureRandom.nextInt(16380) + 1;
-        }catch (NoSuchAlgorithmException exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new UnsupportedOperationException("Missing ShaPRNG implementation");
         }
     }
@@ -74,21 +74,21 @@ public final class KeyHelper {
     }
 
     public static byte[] senderKey() {
-        try{
+        try {
             var key = new byte[32];
             var secureRandom = SecureRandom.getInstance(SHA_PRNG);
             secureRandom.nextBytes(key);
             return key;
-        }catch (NoSuchAlgorithmException exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new UnsupportedOperationException("Missing ShaPRNG implementation");
         }
     }
 
     public static int senderKeyId() {
-        try{
+        try {
             var secureRandom = SecureRandom.getInstance(SHA_PRNG);
             return secureRandom.nextInt(0, 2147483647);
-        }catch (NoSuchAlgorithmException exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new UnsupportedOperationException("Missing ShaPRNG implementation");
         }
     }

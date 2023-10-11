@@ -12,6 +12,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     private Whatsapp whatsapp;
+
     WebOptionsBuilder(StoreBuilder storeBuilder, KeysBuilder keysBuilder) {
         super(storeBuilder, keysBuilder);
     }
@@ -27,9 +28,9 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      * @return the same instance for chaining
      */
     public WebOptionsBuilder historyLength(WebHistoryLength historyLength) {
-        if(store != null) {
+        if (store != null) {
             store.setHistoryLength(historyLength);
-        }else {
+        } else {
             storeBuilder.historyLength(historyLength);
         }
         return this;
@@ -64,9 +65,9 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      */
     public Whatsapp unregistered(long phoneNumber, PairingCodeHandler pairingCodeHandler) {
         if (whatsapp == null) {
-            if(store != null) {
+            if (store != null) {
                 store.setPhoneNumber(PhoneNumber.of(phoneNumber));
-            }else {
+            } else {
                 storeBuilder.phoneNumber(PhoneNumber.of(phoneNumber));
             }
 
@@ -91,7 +92,7 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      */
     public Optional<Whatsapp> registered() {
         var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
-        if(!keys.registered()){
+        if (!keys.registered()) {
             return Optional.empty();
         }
 

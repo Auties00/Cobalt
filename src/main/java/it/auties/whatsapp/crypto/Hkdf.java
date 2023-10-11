@@ -79,7 +79,7 @@ public final class Hkdf {
                 outputSize -= stepSize;
             }
             return results.toByteArray();
-        }catch (GeneralSecurityException exception) {
+        } catch (GeneralSecurityException exception) {
             throw new IllegalArgumentException("Cannot expand data", exception);
         }
     }

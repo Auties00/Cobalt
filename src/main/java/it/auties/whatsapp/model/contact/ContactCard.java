@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 public record ContactCard(
         Optional<String> version,
         Optional<String> name,
-                Map<String, List<Jid>> phoneNumbers,
+        Map<String, List<Jid>> phoneNumbers,
         Optional<String> businessName
 ) {
     private static final String BUSINESS_NAME_PROPERTY = "X-WA-BIZ-NAME";
@@ -86,7 +86,7 @@ public record ContactCard(
 
     public void addPhoneNumber(String category, Jid contact) {
         var oldValue = phoneNumbers.get(category);
-        if(oldValue == null){
+        if (oldValue == null) {
             phoneNumbers.put(category, List.of(contact));
             return;
         }

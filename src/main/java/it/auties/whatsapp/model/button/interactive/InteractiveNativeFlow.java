@@ -17,7 +17,7 @@ public record InteractiveNativeFlow(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
         List<InteractiveButton> buttons,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String parameters,
+        String parameters,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)
         int version
 ) implements InteractiveMessageContent {

@@ -48,7 +48,7 @@ public class KeysBuilder {
     public Optional<Keys> deserialize() {
         var safeSerializer = Objects.requireNonNullElseGet(serializer, DefaultControllerSerializer::instance);
         var clientType = Objects.requireNonNull(this.clientType, "Client type is required");
-        if(uuid != null) {
+        if (uuid != null) {
             var keys = safeSerializer.deserializeKeys(clientType, uuid);
             if (keys.isPresent()) {
                 keys.get().setSerializer(safeSerializer);
@@ -56,17 +56,17 @@ public class KeysBuilder {
             }
         }
 
-        if(phoneNumber != null) {
+        if (phoneNumber != null) {
             var keys = safeSerializer.deserializeKeys(clientType, phoneNumber.number());
-            if(keys.isPresent()) {
+            if (keys.isPresent()) {
                 keys.get().setSerializer(safeSerializer);
                 return keys;
             }
         }
 
-        if(alias != null) {
+        if (alias != null) {
             var keys = safeSerializer.deserializeKeys(clientType, alias);
-            if(keys.isPresent()) {
+            if (keys.isPresent()) {
                 keys.get().setSerializer(safeSerializer);
                 return keys;
             }

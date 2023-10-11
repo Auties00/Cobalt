@@ -133,7 +133,7 @@ class StreamHandler {
         var recording = metadata.map(entry -> entry.attributes().getString("media"))
                 .filter(entry -> entry.equals("audio"))
                 .isPresent();
-        if(recording){
+        if (recording) {
             return ContactStatus.RECORDING;
         }
 
@@ -154,15 +154,16 @@ class StreamHandler {
         var senderJid = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Missing from"));
-        for(var messageId : getReceiptsMessageIds(node)) {
+        for (var messageId : getReceiptsMessageIds(node)) {
             var message = socketHandler.store().findMessageById(senderJid, messageId);
-            if(message.isEmpty()) {
+            if (message.isEmpty()) {
                 continue;
             }
 
             switch (message.get()) {
                 case ChatMessageInfo chatMessageInfo -> onChatReceipt(node, senderJid, chatMessageInfo);
-                case NewsletterMessageInfo newsletterMessageInfo -> onNewsletterReceipt(node, senderJid, newsletterMessageInfo);
+                case NewsletterMessageInfo newsletterMessageInfo ->
+                        onNewsletterReceipt(node, senderJid, newsletterMessageInfo);
                 default -> throw new IllegalStateException("Unexpected value: " + message.get());
             }
         }
@@ -174,7 +175,7 @@ class StreamHandler {
         var messageStatus = node.attributes()
                 .getOptionalString("type")
                 .flatMap(MessageStatus::of);
-        if(messageStatus.isEmpty()) {
+        if (messageStatus.isEmpty()) {
             return;
         }
 
@@ -208,7 +209,7 @@ class StreamHandler {
             return;
         }
         var attempts = retries.getOrDefault(message.id(), 0);
-        if(attempts > MAX_ATTEMPTS){
+        if (attempts > MAX_ATTEMPTS) {
             return;
         }
         try {
@@ -249,7 +250,8 @@ class StreamHandler {
 
     private CallStatus getCallStatus(Node node) {
         return switch (node.description()) {
-            case "terminate" -> node.attributes().hasValue("reason", "timeout") ? CallStatus.TIMED_OUT : CallStatus.REJECTED;
+            case "terminate" ->
+                    node.attributes().hasValue("reason", "timeout") ? CallStatus.TIMED_OUT : CallStatus.REJECTED;
             case "reject" -> CallStatus.REJECTED;
             case "accept" -> CallStatus.ACCEPTED;
             default -> CallStatus.RINGING;
@@ -299,11 +301,11 @@ class StreamHandler {
         var match = socketHandler.store()
                 .findMessageById(from, messageId)
                 .orElse(null);
-        if(match == null) {
+        if (match == null) {
             return;
         }
 
-        if(error != 0) {
+        if (error != 0) {
             match.setStatus(MessageStatus.ERROR);
             return;
         }
@@ -355,7 +357,7 @@ class StreamHandler {
                 case "newsletter" -> handleNewsletter(from, node);
                 case "mex" -> handleMexNamespace(node);
             }
-        }finally {
+        } finally {
             socketHandler.sendMessageAck(from, node);
         }
     }
@@ -363,26 +365,26 @@ class StreamHandler {
     private void handleNewsletter(Jid newsletterJid, Node node) {
         var newsletter = socketHandler.store()
                 .findNewsletterByJid(newsletterJid);
-        if(newsletter.isEmpty()) {
+        if (newsletter.isEmpty()) {
             return;
         }
 
         var liveUpdates = node.findNode("live_updates");
-        if(liveUpdates.isEmpty()) {
+        if (liveUpdates.isEmpty()) {
             return;
         }
 
 
         var messages = liveUpdates.get().findNode("messages");
-        if(messages.isEmpty()) {
+        if (messages.isEmpty()) {
             return;
         }
 
-        for(var messageNode : messages.get().findNodes("message")) {
+        for (var messageNode : messages.get().findNodes("message")) {
             var messageId = messageNode.attributes()
                     .getRequiredString("server_id");
             var newsletterMessage = socketHandler.store().findMessageById(newsletter.get(), messageId);
-            if(newsletterMessage.isEmpty()) {
+            if (newsletterMessage.isEmpty()) {
                 continue;
             }
 
@@ -405,7 +407,7 @@ class StreamHandler {
     private void handleMexNamespace(Node node) {
         var update = node.findNode("update")
                 .orElse(null);
-        if(update == null) {
+        if (update == null) {
             return;
         }
 
@@ -413,13 +415,14 @@ class StreamHandler {
             case "NotificationNewsletterJoin" -> handleNewsletterJoin(update);
             case "NotificationNewsletterMuteChange" -> handleNewsletterMute(update);
             case "NotificationNewsletterLeave" -> handleNewsletterLeave(update);
-            case "NotificationNewsletterStateChange", "NotificationNewsletterAdminMetadataUpdate", "NotificationNewsletterUpdate" -> {}
+            case "NotificationNewsletterStateChange", "NotificationNewsletterAdminMetadataUpdate", "NotificationNewsletterUpdate" -> {
+            }
         }
     }
 
     private void handleNewsletterJoin(Node update) {
         var joinPayload = update.contentAsString()
-                 .orElseThrow(() -> new NoSuchElementException("Missing join payload"));
+                .orElseThrow(() -> new NoSuchElementException("Missing join payload"));
         var joinJson = NewsletterResponse.ofJson(joinPayload)
                 .orElseThrow(() -> new NoSuchElementException("Malformed join payload"));
         socketHandler.store().addNewsletter(joinJson.newsletter());
@@ -489,19 +492,19 @@ class StreamHandler {
             var cipher = Cipher.getInstance("AES/CTR/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
             return cipher.doFinal(payload);
-        }catch (GeneralSecurityException exception) {
+        } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot decipher link code pairing key", exception);
         }
     }
 
     private void handleRegistrationNotification(Node node) {
         var child = node.findNode("wa_old_registration");
-        if(child.isEmpty()){
+        if (child.isEmpty()) {
             return;
         }
 
         var code = child.get().attributes().getOptionalLong("code");
-        if(code.isEmpty()){
+        if (code.isEmpty()) {
             return;
         }
 
@@ -531,12 +534,12 @@ class StreamHandler {
 
     private void handleGroupNotification(Node node) {
         var child = node.findNode();
-        if(child.isEmpty()){
+        if (child.isEmpty()) {
             return;
         }
 
         var stubType = ChatMessageInfo.StubType.of(child.get().description());
-        if(stubType.isEmpty()){
+        if (stubType.isEmpty()) {
             return;
         }
 
@@ -575,7 +578,7 @@ class StreamHandler {
                 .build();
         chat.addNewMessage(message);
         socketHandler.onNewMessage(message);
-        if(participantJid == null){
+        if (participantJid == null) {
             return;
         }
 
@@ -583,22 +586,24 @@ class StreamHandler {
     }
 
     private void handleGroupStubType(Chat chat, ChatMessageInfo.StubType stubType, Jid participantJid) {
-        switch (stubType){
+        switch (stubType) {
             case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
             case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
-            case GROUP_PARTICIPANT_PROMOTE -> chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.ADMIN));
-            case GROUP_PARTICIPANT_DEMOTE -> chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.USER));
+            case GROUP_PARTICIPANT_PROMOTE ->
+                    chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.ADMIN));
+            case GROUP_PARTICIPANT_DEMOTE ->
+                    chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.USER));
         }
     }
 
     private List<String> getStubTypeParameters(Node metadata) {
         try {
             var mapper = new ObjectMapper();
-            var attributes  = new ArrayList<String>();
+            var attributes = new ArrayList<String>();
             attributes.add(mapper.writeValueAsString(metadata.attributes().toMap()));
-            for(var child : metadata.children()){
+            for (var child : metadata.children()) {
                 var data = child.attributes();
-                if(data.isEmpty()){
+                if (data.isEmpty()) {
                     continue;
                 }
 
@@ -606,7 +611,7 @@ class StreamHandler {
             }
 
             return Collections.unmodifiableList(attributes);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot encode stub parameters", exception);
         }
     }
@@ -713,7 +718,7 @@ class StreamHandler {
     }
 
     private List<Jid> getUpdatedBlockedList(Node node, PrivacySettingEntry privacyEntry, PrivacySettingValue privacyValue) {
-        if(privacyValue != PrivacySettingValue.CONTACTS_EXCEPT){
+        if (privacyValue != PrivacySettingValue.CONTACTS_EXCEPT) {
             return List.of();
         }
 
@@ -733,7 +738,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<List<Jid>> queryPrivacyExcludedContacts(PrivacySettingType type, PrivacySettingValue value) {
-        if(value != PrivacySettingValue.CONTACTS_EXCEPT){
+        if (value != PrivacySettingValue.CONTACTS_EXCEPT) {
             return CompletableFuture.completedFuture(List.of());
         }
 
@@ -878,7 +883,7 @@ class StreamHandler {
     }
 
     private void scheduleNewsletterSubscription(Newsletter newsletter, long timeout) {
-        if(timeout <= 0) {
+        if (timeout <= 0) {
             return;
         }
 
@@ -893,7 +898,7 @@ class StreamHandler {
 
     private void onGroupsQuery(Node result) {
         var groups = result.findNode("groups");
-        if(groups.isEmpty()){
+        if (groups.isEmpty()) {
             return;
         }
 
@@ -951,7 +956,7 @@ class StreamHandler {
                         .thenApplyAsync(entries -> Node.of("category", Map.of("id", entries.get(0).id()))));
     }
 
-    private void schedulePing(){
+    private void schedulePing() {
         if (service != null && !service.isShutdown()) {
             return;
         }
@@ -992,7 +997,7 @@ class StreamHandler {
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                     socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                    if(socketHandler.store().business()){
+                    if (socketHandler.store().business()) {
                         socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
                                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                     }
@@ -1020,7 +1025,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryInitialPrivacySettings() {
-        if(socketHandler.store().business()){
+        if (socketHandler.store().business()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -1034,7 +1039,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> updateSelfPresence() {
-        if(!socketHandler.store().automaticPresenceUpdates()){
+        if (!socketHandler.store().automaticPresenceUpdates()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -1053,7 +1058,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> updateUserAbout(boolean update) {
         var jid = socketHandler.store().jid();
-        if(jid.isEmpty()) {
+        if (jid.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -1079,7 +1084,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> updateUserPicture(boolean update) {
         var jid = socketHandler.store().jid();
-        if(jid.isEmpty()) {
+        if (jid.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -1185,7 +1190,7 @@ class StreamHandler {
             return;
         }
 
-        switch (container.description()){
+        switch (container.description()) {
             case "pair-device" -> generateQrCode(node, container);
             case "pair-success" -> confirmQrCode(node, container);
         }
@@ -1206,10 +1211,10 @@ class StreamHandler {
     }
 
     private void generateQrCode(Node node, Node container) {
-        if (webVerificationSupport instanceof QrHandler qrHandler){
+        if (webVerificationSupport instanceof QrHandler qrHandler) {
             printQrCode(qrHandler, container);
             sendConfirmNode(node, null);
-        }else if(webVerificationSupport instanceof PairingCodeHandler codeHandler) {
+        } else if (webVerificationSupport instanceof PairingCodeHandler codeHandler) {
             askPairingCode(codeHandler);
         } else {
             throw new IllegalArgumentException("Cannot verify account: unknown verification method");
@@ -1230,17 +1235,17 @@ class StreamHandler {
     }
 
     private byte[] cipherLinkPublicKey(String linkCodeKey) {
-      try {
-          var salt = BytesHelper.random(32);
-          var randomIv = BytesHelper.random(16);
-          var secretKey = generatePairingKey(linkCodeKey, salt);
-          var cipher = Cipher.getInstance("AES/CTR/NoPadding");
-          cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(randomIv));
-          var ciphered = cipher.doFinal(socketHandler.keys().companionKeyPair().publicKey());
-          return BytesHelper.concat(salt, randomIv, ciphered);
-      }catch (GeneralSecurityException exception) {
-          throw new RuntimeException("Cannot cipher link code pairing key", exception);
-      }
+        try {
+            var salt = BytesHelper.random(32);
+            var randomIv = BytesHelper.random(16);
+            var secretKey = generatePairingKey(linkCodeKey, salt);
+            var cipher = Cipher.getInstance("AES/CTR/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(randomIv));
+            var ciphered = cipher.doFinal(socketHandler.keys().companionKeyPair().publicKey());
+            return BytesHelper.concat(salt, randomIv, ciphered);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot cipher link code pairing key", exception);
+        }
     }
 
     private void onAskedPairingCode(PairingCodeHandler codeHandler, String code) {
@@ -1256,14 +1261,14 @@ class StreamHandler {
     }
 
     private SecretKey generatePairingKey(String password, byte[] salt) {
-       try {
-           var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-           var spec = new PBEKeySpec(password.toCharArray(), salt, 2 << 16, 256);
-           var tmp = factory.generateSecret(spec);
-           return new SecretKeySpec(tmp.getEncoded(), "AES");
-       }catch (GeneralSecurityException exception) {
-           throw new RuntimeException("Cannot compute pairing key", exception);
-       }
+        try {
+            var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            var spec = new PBEKeySpec(password.toCharArray(), salt, 2 << 16, 256);
+            var tmp = factory.generateSecret(spec);
+            return new SecretKeySpec(tmp.getEncoded(), "AES");
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot compute pairing key", exception);
+        }
     }
 
     private void printQrCode(QrHandler qrHandler, Node container) {
@@ -1362,7 +1367,7 @@ class StreamHandler {
 
     protected void dispose() {
         retries.clear();
-        if(service != null){
+        if (service != null) {
             service.shutdownNow();
         }
 

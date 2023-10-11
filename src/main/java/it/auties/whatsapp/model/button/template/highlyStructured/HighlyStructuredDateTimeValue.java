@@ -35,6 +35,7 @@ public sealed interface HighlyStructuredDateTimeValue extends ProtobufMessage pe
 
 
         final int index;
+
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }

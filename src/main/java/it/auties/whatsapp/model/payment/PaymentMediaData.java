@@ -17,7 +17,7 @@ public record PaymentMediaData(
         @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
         byte[] mediaEncryptedSha256,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-                String mediaDirectPath
+        String mediaDirectPath
 ) implements ProtobufMessage {
 
 }

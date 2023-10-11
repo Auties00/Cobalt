@@ -24,9 +24,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.TemplateMessage")
 public record TemplateMessage(
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-                String id,
+        String id,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-                HydratedFourRowTemplate content,
+        HydratedFourRowTemplate content,
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<HighlyStructuredFourRowTemplate> highlyStructuredFourRowTemplateFormat,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
@@ -42,11 +42,14 @@ public record TemplateMessage(
                 .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(BytesHelper.random(6))))
                 .content(content)
                 .contextInfo(contextInfo);
-        switch (format){
-            case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate -> builder.highlyStructuredFourRowTemplateFormat(highlyStructuredFourRowTemplate);
-            case HydratedFourRowTemplate hydratedFourRowTemplate -> builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
+        switch (format) {
+            case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate ->
+                    builder.highlyStructuredFourRowTemplateFormat(highlyStructuredFourRowTemplate);
+            case HydratedFourRowTemplate hydratedFourRowTemplate ->
+                    builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
             case InteractiveMessage interactiveMessage -> builder.interactiveMessageFormat(interactiveMessage);
-            case null -> {}
+            case null -> {
+            }
         }
         return builder.build();
     }

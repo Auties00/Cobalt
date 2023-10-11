@@ -14,9 +14,9 @@ import java.util.List;
 @ProtobufMessageName("PastParticipants")
 public record GroupPastParticipants(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                Jid groupJid,
+        Jid groupJid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
-                List<GroupPastParticipant> pastParticipants
+        List<GroupPastParticipant> pastParticipants
 ) implements ProtobufMessage {
 
 }

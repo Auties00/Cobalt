@@ -14,9 +14,9 @@ import java.util.Optional;
 @ProtobufMessageName("NotificationMessageInfo")
 public record NotificationMessageInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                ChatMessageKey key,
+        ChatMessageKey key,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                MessageContainer message,
+        MessageContainer message,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
         long messageTimestampSeconds,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)

@@ -18,7 +18,7 @@ public final class Hmac {
             var localMac = Mac.getInstance(algorithm);
             localMac.init(new SecretKeySpec(key, algorithm));
             return localMac.doFinal(plain);
-        }catch (GeneralSecurityException exception) {
+        } catch (GeneralSecurityException exception) {
             throw new IllegalArgumentException("Cannot calculate hmac", exception);
         }
     }

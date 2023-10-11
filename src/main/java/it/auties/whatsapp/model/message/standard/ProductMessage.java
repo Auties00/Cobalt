@@ -20,11 +20,11 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ProductMessage")
 public record ProductMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                Product product,
+        Product product,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                Jid businessOwnerJid,
+        Jid businessOwnerJid,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-                ProductCatalog catalog,
+        ProductCatalog catalog,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         Optional<String> body,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)

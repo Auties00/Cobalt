@@ -17,9 +17,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ContactsArrayMessage")
 public record ContactsMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String name,
+        String name,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
-                List<ContactMessage> contacts,
+        List<ContactMessage> contacts,
         @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage {

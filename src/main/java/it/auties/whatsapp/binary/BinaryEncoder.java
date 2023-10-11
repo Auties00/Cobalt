@@ -16,7 +16,7 @@ public final class BinaryEncoder {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
-    
+
     private final ByteBuf buffer;
     private final List<String> singleByteTokens;
     private final List<String> doubleByteTokens;
@@ -25,7 +25,7 @@ public final class BinaryEncoder {
         this(BinaryTokens.SINGLE_BYTE, BinaryTokens.DOUBLE_BYTE);
     }
 
-    public BinaryEncoder(List<String> singleByteTokens, List<String> doubleByteTokens){
+    public BinaryEncoder(List<String> singleByteTokens, List<String> doubleByteTokens) {
         this.buffer = BytesHelper.newBuffer();
         this.singleByteTokens = singleByteTokens;
         this.doubleByteTokens = doubleByteTokens;

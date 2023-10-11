@@ -17,13 +17,13 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ButtonsMessage.Button")
 public record Button(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String id,
+        String id,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<ButtonText> bodyText,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Optional<NativeFlowInfo> bodyNativeFlow,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-                Type bodyType
+        Type bodyType
 ) implements ProtobufMessage {
     /**
      * Constructs a new button

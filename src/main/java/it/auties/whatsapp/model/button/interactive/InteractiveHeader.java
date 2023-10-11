@@ -18,7 +18,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.InteractiveMessage.Header")
 public record InteractiveHeader(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String title,
+        String title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> subtitle,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
@@ -40,9 +40,11 @@ public record InteractiveHeader(
         switch (attachment) {
             case DocumentMessage documentMessage -> builder.attachmentDocument(documentMessage);
             case ImageMessage imageMessage -> builder.attachmentImage(imageMessage);
-            case InteractiveHeaderThumbnail productHeaderThumbnail -> builder.attachmentThumbnail(productHeaderThumbnail);
+            case InteractiveHeaderThumbnail productHeaderThumbnail ->
+                    builder.attachmentThumbnail(productHeaderThumbnail);
             case VideoOrGifMessage videoMessage -> builder.attachmentVideo(videoMessage);
-            case null -> {}
+            case null -> {
+            }
         }
         builder.mediaAttachment(attachment != null);
         return builder.build();

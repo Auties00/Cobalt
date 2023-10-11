@@ -13,14 +13,14 @@ import java.util.Optional;
  * This model class represents the metadata of a business profile
  */
 public record BusinessProfile(
-                Jid jid,
+        Jid jid,
         Optional<String> description,
         Optional<String> address,
         Optional<String> email,
         Optional<BusinessHours> hours,
         boolean cartEnabled,
-                List<URI> websites,
-                List<BusinessCategory> categories
+        List<URI> websites,
+        List<BusinessCategory> categories
 ) {
     /**
      * Constructs a new profile from a node

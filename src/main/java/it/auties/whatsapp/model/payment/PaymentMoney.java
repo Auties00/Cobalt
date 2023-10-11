@@ -12,7 +12,7 @@ public record PaymentMoney(
         @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
         int offset,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-                String currencyCode
+        String currencyCode
 ) implements ProtobufMessage {
 
 }

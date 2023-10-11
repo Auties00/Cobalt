@@ -42,10 +42,12 @@ public record HydratedTemplateButton(
         var builder = new HydratedTemplateButtonBuilder()
                 .index(index);
         switch (button) {
-            case HydratedQuickReplyButton hydratedQuickReplyButton -> builder.quickReplyButton(hydratedQuickReplyButton);
+            case HydratedQuickReplyButton hydratedQuickReplyButton ->
+                    builder.quickReplyButton(hydratedQuickReplyButton);
             case HydratedURLButton hydratedURLButton -> builder.urlButton(hydratedURLButton);
             case HydratedCallButton hydratedCallButton -> builder.callButton(hydratedCallButton);
-            case null -> {}
+            case null -> {
+            }
         }
         return builder.build();
     }

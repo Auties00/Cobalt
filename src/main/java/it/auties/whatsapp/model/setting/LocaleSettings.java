@@ -7,7 +7,7 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("LocaleSetting")
 public record LocaleSettings(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String locale
+        String locale
 ) implements Setting {
     @Override
     public String indexName() {

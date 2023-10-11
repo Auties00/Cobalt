@@ -16,7 +16,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The id of this controller
      */
-        protected final UUID uuid;
+    protected final UUID uuid;
 
     /**
      * The phone number of the associated companion
@@ -26,18 +26,18 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The serializer instance to use
      */
-        @JsonIgnore
+    @JsonIgnore
     protected ControllerSerializer serializer;
 
     /**
      * The client type
      */
-        protected final ClientType clientType;
+    protected final ClientType clientType;
 
     /**
      * A list of alias for the controller, can be used in place of UUID1
      */
-        protected final List<String> alias;
+    protected final List<String> alias;
 
     public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias) {
         this.uuid = uuid;

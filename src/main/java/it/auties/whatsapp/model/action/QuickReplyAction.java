@@ -13,11 +13,11 @@ import java.util.List;
 @ProtobufMessageName("SyncActionValue.QuickReplyAction")
 public record QuickReplyAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String shortcut,
+        String shortcut,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String message,
+        String message,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING, repeated = true)
-                List<String> keywords,
+        List<String> keywords,
         @ProtobufProperty(index = 4, type = ProtobufType.INT32)
         int count,
         @ProtobufProperty(index = 5, type = ProtobufType.BOOL)

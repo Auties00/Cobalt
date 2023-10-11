@@ -51,6 +51,7 @@ public sealed interface HighlyStructuredFourRowTemplateTitle extends ProtobufMes
         LOCATION(5);
 
         final int index;
+
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }

@@ -7,7 +7,7 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("SyncActionValue.PushNameSetting")
 public record PushNameSettings(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String name
+        String name
 ) implements Setting {
     @Override
     public String indexName() {

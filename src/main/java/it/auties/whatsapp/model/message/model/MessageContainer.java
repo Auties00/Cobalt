@@ -139,7 +139,7 @@ public record MessageContainer(
      *
      * @return a non-null container
      */
-    public static MessageContainer empty(){
+    public static MessageContainer empty() {
         return new MessageContainerBuilder().build();
     }
 
@@ -202,7 +202,8 @@ public record MessageContainer(
             case EncryptedReactionMessage encReactionMessage ->
                     builder.encryptedReactionMessage(Optional.of(encReactionMessage));
             case CallMessage callMessage -> builder.callMessage(Optional.of(callMessage));
-            default -> {}
+            default -> {
+            }
         }
         return builder.build();
     }
@@ -424,7 +425,7 @@ public record MessageContainer(
         if (viewOnceV2ExtensionMessage.isPresent()) {
             return viewOnceV2ExtensionMessage.get().unbox();
         }
-        if(callMessage.isPresent()) {
+        if (callMessage.isPresent()) {
             return callMessage.get();
         }
         return EMPTY_MESSAGE;
@@ -478,7 +479,7 @@ public record MessageContainer(
         if (editedMessage.isPresent()) {
             return MessageType.EDITED;
         }
-        
+
         return content().type();
     }
 
@@ -542,31 +543,31 @@ public record MessageContainer(
         if (deviceSentMessage.isPresent()) {
             return deviceSentMessage.get().message();
         }
-        
+
         if (viewOnceMessage.isPresent()) {
             return viewOnceMessage.get().content();
         }
-        
+
         if (ephemeralMessage.isPresent()) {
             return ephemeralMessage.get().content();
         }
-        
+
         if (documentWithCaptionMessage.isPresent()) {
             return documentWithCaptionMessage.get().content();
         }
-        
+
         if (viewOnceV2Message.isPresent()) {
             return viewOnceV2Message.get().content();
         }
-        
+
         if (editedMessage.isPresent()) {
             return editedMessage.get().content();
         }
-        
+
         if (viewOnceV2ExtensionMessage.isPresent()) {
             return viewOnceV2ExtensionMessage.get().content();
         }
-        
+
         return this;
     }
 

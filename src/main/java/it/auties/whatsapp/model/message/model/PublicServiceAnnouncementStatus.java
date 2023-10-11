@@ -12,7 +12,7 @@ import java.util.Optional;
 @ProtobufMessageName("StatusPSA")
 public record PublicServiceAnnouncementStatus(
         @ProtobufProperty(index = 44, type = ProtobufType.STRING)
-                String campaignId,
+        String campaignId,
         @ProtobufProperty(index = 45, type = ProtobufType.UINT64)
         long campaignExpirationTimestampSeconds
 ) implements ProtobufMessage {

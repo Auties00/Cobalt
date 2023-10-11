@@ -7,5 +7,5 @@ import it.auties.protobuf.model.ProtobufType;
 
 @ProtobufMessageName("ADVSignedDeviceIdentityHMAC")
 public record SignedDeviceIdentityHMAC(@ProtobufProperty(index = 1, type = ProtobufType.BYTES) byte[] details,
-                                      @ProtobufProperty(index = 2, type = ProtobufType.BYTES) byte[] hmac) implements ProtobufMessage {
+                                       @ProtobufProperty(index = 2, type = ProtobufType.BYTES) byte[] hmac) implements ProtobufMessage {
 }

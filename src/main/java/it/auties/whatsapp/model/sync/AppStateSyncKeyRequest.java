@@ -9,5 +9,6 @@ import java.util.List;
 import static it.auties.protobuf.model.ProtobufType.OBJECT;
 
 @ProtobufMessageName("Message.AppStateSyncKeyRequest")
-public record AppStateSyncKeyRequest(@ProtobufProperty(index = 1, type = OBJECT, repeated = true) List<AppStateSyncKeyId> keyIds) implements ProtobufMessage {
+public record AppStateSyncKeyRequest(
+        @ProtobufProperty(index = 1, type = OBJECT, repeated = true) List<AppStateSyncKeyId> keyIds) implements ProtobufMessage {
 }

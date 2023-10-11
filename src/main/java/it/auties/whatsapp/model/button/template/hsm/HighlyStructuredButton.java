@@ -46,6 +46,7 @@ public sealed interface HighlyStructuredButton extends ProtobufMessage permits H
         CALL(3);
 
         final int index;
+
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }

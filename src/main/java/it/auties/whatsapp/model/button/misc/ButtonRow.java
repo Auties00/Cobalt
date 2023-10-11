@@ -14,13 +14,13 @@ import java.util.HexFormat;
 @ProtobufMessageName("Message.ListMessage.Row")
 public record ButtonRow(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String title,
+        String title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String description,
+        String description,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-                String id
+        String id
 ) implements ProtobufMessage {
-        public static ButtonRow of(String title, String description) {
-                return new ButtonRow(title, description, HexFormat.of().formatHex(BytesHelper.random(5)));
-        }
+    public static ButtonRow of(String title, String description) {
+        return new ButtonRow(title, description, HexFormat.of().formatHex(BytesHelper.random(5)));
+    }
 }

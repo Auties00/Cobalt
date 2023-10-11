@@ -14,7 +14,7 @@ import java.util.List;
 @ProtobufMessageName("SyncActionValue.RecentEmojiWeightsAction")
 public record RecentEmojiWeightsAction(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
-                List<RecentEmojiWeight> weights
+        List<RecentEmojiWeight> weights
 ) implements Action {
     /**
      * Always throws an exception as this action cannot be serialized

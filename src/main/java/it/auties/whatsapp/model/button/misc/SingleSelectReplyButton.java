@@ -11,7 +11,7 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("Message.ListResponseMessage.SingleSelectReply")
 public record SingleSelectReplyButton(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String rowId
+        String rowId
 ) implements ProtobufMessage {
 
 }

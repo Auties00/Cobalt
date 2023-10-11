@@ -16,7 +16,7 @@ import java.util.OptionalLong;
 @ProtobufMessageName("Message.PaymentInviteMessage")
 public record PaymentInviteMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                ServiceType serviceType,
+        ServiceType serviceType,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         OptionalLong expiryTimestamp
 ) implements PaymentMessage {

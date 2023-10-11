@@ -52,8 +52,8 @@ class AppStateHandler {
         this.attempts = new HashMap<>();
     }
 
-    private ExecutorService getOrCreateAppService(){
-        if(executor == null || executor.isShutdown()){
+    private ExecutorService getOrCreateAppService() {
+        if (executor == null || executor.isShutdown()) {
             executor = Executors.newSingleThreadExecutor();
         }
 
@@ -63,7 +63,7 @@ class AppStateHandler {
     protected CompletableFuture<Void> push(Jid jid, List<PatchRequest> patches) {
         return runPushTask(() -> {
             var clientType = socketHandler.store().clientType();
-            var pullOperation = switch (clientType){
+            var pullOperation = switch (clientType) {
                 case MOBILE -> CompletableFuture.completedFuture(null);
                 case WEB -> pullUninterruptedly(jid, getPatchesTypes(patches));
             };
@@ -79,14 +79,14 @@ class AppStateHandler {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private CompletableFuture<Void> runPushTask(Supplier<CompletableFuture<?>> task){
+    private CompletableFuture<Void> runPushTask(Supplier<CompletableFuture<?>> task) {
         var executor = getOrCreateAppService();
         var future = new CompletableFuture<Void>();
         executor.execute(() -> {
             try {
                 task.get().join();
                 future.complete(null);
-            }catch (Throwable throwable){
+            } catch (Throwable throwable) {
                 future.completeExceptionally(throwable);
             }
         });
@@ -208,7 +208,7 @@ class AppStateHandler {
         }
 
         var jid = socketHandler.store().jid();
-        if(jid.isEmpty()){
+        if (jid.isEmpty()) {
             return;
         }
 
@@ -218,12 +218,12 @@ class AppStateHandler {
     }
 
     protected CompletableFuture<Void> pullInitial() {
-        if(socketHandler.keys().initialAppSync()){
+        if (socketHandler.keys().initialAppSync()) {
             return CompletableFuture.completedFuture(null);
         }
 
         var jid = socketHandler.store().jid();
-        if(jid.isEmpty()){
+        if (jid.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -412,7 +412,8 @@ class AppStateHandler {
                         targetChat.ifPresent(chat -> chat.setArchived(archiveChatAction.archived()));
                 case TimeFormatAction timeFormatAction ->
                         socketHandler.store().setTwentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
-                default -> {}
+                default -> {
+                }
             }
             socketHandler.onAction(action, messageIndex);
         }
@@ -426,7 +427,8 @@ class AppStateHandler {
                         socketHandler.updateUserName(pushNameSettings.name(), socketHandler.store().name());
                 case UnarchiveChatsSettings unarchiveChatsSettings ->
                         socketHandler.store().setUnarchiveChats(unarchiveChatsSettings.unarchiveChats());
-                default -> {}
+                default -> {
+                }
             }
             socketHandler.onSetting(setting);
         }
@@ -613,7 +615,7 @@ class AppStateHandler {
 
     protected void dispose() {
         attempts.clear();
-        if(executor != null && !executor.isShutdown()) {
+        if (executor != null && !executor.isShutdown()) {
             executor.shutdownNow();
         }
     }
@@ -641,7 +643,8 @@ class AppStateHandler {
 
     }
 
-    private record PushRequest(PatchType type, CompanionHashState oldState, CompanionHashState newState, PatchSync sync) {
+    private record PushRequest(PatchType type, CompanionHashState oldState, CompanionHashState newState,
+                               PatchSync sync) {
 
     }
 

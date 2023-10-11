@@ -11,7 +11,8 @@ public record NewsletterLeaveResponse(@JsonProperty("id") Jid jid) {
         return Json.readValue(json, JsonResponse.class).data();
     }
 
-    private record JsonResponse(@JsonProperty("xwa2_notify_newsletter_on_leave") Optional<NewsletterLeaveResponse> data) {
+    private record JsonResponse(
+            @JsonProperty("xwa2_notify_newsletter_on_leave") Optional<NewsletterLeaveResponse> data) {
 
     }
 }

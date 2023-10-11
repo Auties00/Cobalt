@@ -27,37 +27,37 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * The jid of the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        private final String quotedMessageId;
+    private final String quotedMessageId;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        private final Jid quotedMessageSenderJid;
+    private final Jid quotedMessageSenderJid;
 
     /**
      * The message container that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        private final MessageContainer quotedMessage;
+    private final MessageContainer quotedMessage;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-        private final Jid quotedMessageChatJid;
+    private final Jid quotedMessageChatJid;
 
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
     @ProtobufProperty(index = 15, type = ProtobufType.STRING, repeated = true)
-        private final List<Jid> mentions;
+    private final List<Jid> mentions;
 
     /**
      * Conversation source
      */
     @ProtobufProperty(index = 18, type = ProtobufType.STRING)
-        private final String conversionSource;
+    private final String conversionSource;
 
     /**
      * Conversation data
@@ -87,13 +87,13 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * The ad that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
-        private final AdReplyInfo quotedAd;
+    private final AdReplyInfo quotedAd;
 
     /**
      * Placeholder key
      */
     @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
-        private final ChatMessageKey placeholderKey;
+    private final ChatMessageKey placeholderKey;
 
     /**
      * The expiration in seconds for this ContextualMessage. Only valid if the chat where this message
@@ -120,19 +120,19 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * External ad reply
      */
     @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
-        private final ExternalAdReplyInfo externalAdReply;
+    private final ExternalAdReplyInfo externalAdReply;
 
     /**
      * Entry point conversion source
      */
     @ProtobufProperty(index = 29, type = ProtobufType.STRING)
-        private final String entryPointConversionSource;
+    private final String entryPointConversionSource;
 
     /**
      * Entry point conversion app
      */
     @ProtobufProperty(index = 30, type = ProtobufType.STRING)
-        private final String entryPointConversionApp;
+    private final String entryPointConversionApp;
 
     /**
      * Entry point conversion delay in endTimeStamp
@@ -144,31 +144,31 @@ public final class ContextInfo implements Info, ProtobufMessage {
      * Disappearing mode
      */
     @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
-        private final ChatDisappear disappearingMode;
+    private final ChatDisappear disappearingMode;
 
     /**
      * Action link
      */
     @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
-        private final ButtonActionLink actionLink;
+    private final ButtonActionLink actionLink;
 
     /**
      * Group subject
      */
     @ProtobufProperty(index = 34, type = ProtobufType.STRING)
-        private final String groupSubject;
+    private final String groupSubject;
 
     /**
      * Parent group
      */
     @ProtobufProperty(index = 35, type = ProtobufType.STRING)
-        private final Jid parentGroup;
+    private final Jid parentGroup;
 
     /**
      * Trust banner type
      */
     @ProtobufProperty(index = 37, type = ProtobufType.STRING)
-        private final String trustBannerType;
+    private final String trustBannerType;
 
     /**
      * Trust banner action
@@ -179,12 +179,12 @@ public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * The contact that sent the message that this ContextualMessage quotes
      */
-        private Contact quotedMessageSender;
+    private Contact quotedMessageSender;
 
     /**
      * The contact that sent the message that this ContextualMessage quotes
      */
-        @JsonBackReference
+    @JsonBackReference
     private Chat quotedMessageChat;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

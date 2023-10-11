@@ -11,6 +11,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     private final AtomicReference<Node<E>> head;
     private final AtomicReference<Node<E>> tail;
     private final Set<Integer> hashes;
+
     public MessagesSet() {
         this.head = new AtomicReference<>(null);
         this.tail = new AtomicReference<>(null);
@@ -40,7 +41,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     @Override
     public boolean add(E e) {
         var hash = Objects.hashCode(e);
-        if(hashes.contains(hash)) {
+        if (hashes.contains(hash)) {
             return false;
         }
 
@@ -66,7 +67,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     @Override
     public void addFirst(E message) {
         var hash = Objects.hashCode(message);
-        if(hashes.contains(hash)) {
+        if (hashes.contains(hash)) {
             return;
         }
 
@@ -90,7 +91,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     @Override
     public boolean remove(Object o) {
         var hash = Objects.hashCode(o);
-        if(!hashes.contains(hash)) {
+        if (!hashes.contains(hash)) {
             return false;
         }
 
@@ -198,7 +199,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     }
 
     @Override
-        public Iterator<E> iterator() {
+    public Iterator<E> iterator() {
         return new Iterator<>() {
             private Node<E> nextNode = head.get();
 
@@ -220,7 +221,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
         };
     }
 
-        public Iterator<E> descendingIterator() {
+    public Iterator<E> descendingIterator() {
         return new Iterator<>() {
             private Node<E> previousNode = tail.get();
 
@@ -256,7 +257,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     @Override
     public E peek() {
         var headItem = head.get();
-        if(headItem == null) {
+        if (headItem == null) {
             return null;
         }
 
@@ -266,7 +267,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     @Override
     public E peekLast() {
         var tailItem = tail.get();
-        if(tailItem == null) {
+        if (tailItem == null) {
             return null;
         }
 
@@ -276,7 +277,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     @Override
     public E getFirst() {
         var result = pollFirst();
-        if(result == null) {
+        if (result == null) {
             throw new NoSuchElementException();
         }
 
@@ -286,7 +287,7 @@ public class MessagesSet<E> extends AbstractQueue<E> implements Deque<E> {
     @Override
     public E getLast() {
         var result = pollLast();
-        if(result == null) {
+        if (result == null) {
             throw new NoSuchElementException();
         }
 

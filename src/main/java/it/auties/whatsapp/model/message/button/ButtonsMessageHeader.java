@@ -47,6 +47,7 @@ public sealed interface ButtonsMessageHeader permits ButtonsMessageHeaderText, D
         LOCATION(6);
 
         final int index;
+
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }

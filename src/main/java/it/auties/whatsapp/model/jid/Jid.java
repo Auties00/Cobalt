@@ -15,12 +15,13 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
     /**
      * Default constructor
      */
-    public Jid(String user, JidServer server, int device, int agent){
+    public Jid(String user, JidServer server, int device, int agent) {
         this.user = user != null && user.startsWith("+") ? user.substring(1) : user;
         this.server = server;
         this.device = device;
         this.agent = agent;
     }
+
     /**
      * Constructs a new ContactId that represents a server
      *
@@ -250,7 +251,7 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
      * @return a non-null jid
      */
     @Override
-        public Jid toJid() {
+    public Jid toJid() {
         return this;
     }
 

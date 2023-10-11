@@ -19,13 +19,13 @@ public record BusinessAccountLinkInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
         long businessId,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String phoneNumber,
+        String phoneNumber,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
         long issueTimeSeconds,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-                HostStorageType hostStorage,
+        HostStorageType hostStorage,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-                AccountType accountType
+        AccountType accountType
 ) implements ProtobufMessage {
     /**
      * Returns this object's timestampSeconds
@@ -51,6 +51,7 @@ public record BusinessAccountLinkInfo(
         PAGE(1);
 
         final int index;
+
         AccountType(@ProtobufEnumIndex int index) {
             this.index = index;
         }

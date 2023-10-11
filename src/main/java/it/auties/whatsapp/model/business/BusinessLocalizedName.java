@@ -9,10 +9,10 @@ import it.auties.protobuf.model.ProtobufType;
  */
 public record BusinessLocalizedName(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String lg,
+        String lg,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String lc,
+        String lc,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-                String name
+        String name
 ) implements ProtobufMessage {
 }

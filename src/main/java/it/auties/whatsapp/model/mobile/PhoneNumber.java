@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public record PhoneNumber(CountryCode countryCode, long numberWithoutPrefix) {
     public static Optional<PhoneNumber> ofNullable(Long phoneNumber) {
-        if(phoneNumber == null){
+        if (phoneNumber == null) {
             return Optional.empty();
         }
 
@@ -40,7 +40,7 @@ public record PhoneNumber(CountryCode countryCode, long numberWithoutPrefix) {
         return countryCode.prefix();
     }
 
-    public Jid toJid(){
+    public Jid toJid() {
         return Jid.of(toString());
     }
 

@@ -42,11 +42,12 @@ public record InteractiveMessage(
                 .body(InteractiveBody.ofNullable(body))
                 .footer(InteractiveFooter.ofNullable(footer))
                 .contextInfo(contextInfo);
-        switch (content){
+        switch (content) {
             case InteractiveShop interactiveShop -> builder.contentShop(interactiveShop);
             case InteractiveCollection interactiveCollection -> builder.contentCollection(interactiveCollection);
             case InteractiveNativeFlow interactiveNativeFlow -> builder.contentNativeFlow(interactiveNativeFlow);
-            case null -> {}
+            case null -> {
+            }
         }
         return builder.build();
     }

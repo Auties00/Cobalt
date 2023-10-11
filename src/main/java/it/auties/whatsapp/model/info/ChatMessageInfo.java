@@ -122,9 +122,9 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     private long revokeTimestampSeconds;
 
     @JsonBackReference
-        private Chat chat;
+    private Chat chat;
 
-        private Contact sender;
+    private Contact sender;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ChatMessageInfo(ChatMessageKey key, MessageContainer message, long timestampSeconds, MessageStatus status, Jid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, StubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, Jid originalSender, long revokeTimestampSeconds, Chat chat, Contact sender) {
@@ -237,7 +237,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
      * @return a non-null String
      */
     public String chatName() {
-        if(chat != null) {
+        if (chat != null) {
             return chat.name();
         }
 

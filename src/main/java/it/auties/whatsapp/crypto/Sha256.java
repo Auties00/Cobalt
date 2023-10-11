@@ -17,7 +17,7 @@ public final class Sha256 {
             var digest = MessageDigest.getInstance(SHA_256);
             digest.update(data);
             return digest.digest();
-        }catch (NoSuchAlgorithmException exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new UnsupportedOperationException("Missing sha256 implementation");
         }
     }

@@ -30,7 +30,7 @@ public enum ChatEphemeralTimer {
      */
     THREE_MONTHS(Duration.ofDays(90));
 
-        private final Duration period;
+    private final Duration period;
 
     ChatEphemeralTimer(Duration period) {
         this.period = period;

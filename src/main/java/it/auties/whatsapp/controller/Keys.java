@@ -38,22 +38,22 @@ public final class Keys extends Controller<Keys> {
     /**
      * The secret key pair used for buffer messages
      */
-        private final SignalKeyPair noiseKeyPair;
+    private final SignalKeyPair noiseKeyPair;
 
     /**
      * The ephemeral key pair
      */
-        private final SignalKeyPair ephemeralKeyPair;
+    private final SignalKeyPair ephemeralKeyPair;
 
     /**
      * The signed identity key
      */
-        private final SignalKeyPair identityKeyPair;
+    private final SignalKeyPair identityKeyPair;
 
     /**
      * The companion secret key
      */
-        private SignalKeyPair companionKeyPair;
+    private SignalKeyPair companionKeyPair;
 
     /**
      * The signed pre key
@@ -69,54 +69,54 @@ public final class Keys extends Controller<Keys> {
     /**
      * The timestampSeconds of the signed key companion's device
      */
-        private Long signedKeyIndexTimestamp;
+    private Long signedKeyIndexTimestamp;
 
     /**
      * Whether these keys have generated pre keys assigned to them
      */
-        private final List<SignalPreKeyPair> preKeys;
+    private final List<SignalPreKeyPair> preKeys;
 
     /**
      * The phone id for the mobile api
      */
-        private final String phoneId;
+    private final String phoneId;
 
     /**
      * The device id for the mobile api
      */
-        private final String deviceId;
+    private final String deviceId;
 
     /**
      * The identity id for the mobile api
      */
-        private final String recoveryToken;
+    private final String recoveryToken;
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
-        private SignedDeviceIdentity companionIdentity;
+    private SignedDeviceIdentity companionIdentity;
 
     /**
      * Sender keys for signal implementation
      */
-        private final Map<SenderKeyName, SenderKeyRecord> senderKeys;
+    private final Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
      * App state keys
      */
-        private final Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys;
+    private final Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys;
 
     /**
      * Sessions map
      */
-        private final Map<SessionAddress, Session> sessions;
+    private final Map<SessionAddress, Session> sessions;
 
     /**
      * Hash state
      */
-        private final Map<Jid, Map<PatchType, CompanionHashState>> hashStates;
+    private final Map<Jid, Map<PatchType, CompanionHashState>> hashStates;
 
-        private final Map<Jid, Collection<Jid>> groupsPreKeys;
+    private final Map<Jid, Collection<Jid>> groupsPreKeys;
 
     /**
      * Whether the client was registered
@@ -136,13 +136,13 @@ public final class Keys extends Controller<Keys> {
     /**
      * Write counter for IV
      */
-        @JsonIgnore
+    @JsonIgnore
     private final AtomicLong writeCounter;
 
     /**
      * Read counter for IV
      */
-        @JsonIgnore
+    @JsonIgnore
     private final AtomicLong readCounter;
 
     /**

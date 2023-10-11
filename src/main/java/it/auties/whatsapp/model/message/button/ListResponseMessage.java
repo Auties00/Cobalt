@@ -19,15 +19,15 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ListResponseMessage")
 public record ListResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String title,
+        String title,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-                SingleSelectReplyButton reply,
+        SingleSelectReplyButton reply,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         Optional<String> description,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                Type listType
+        Type listType
 ) implements ButtonReplyMessage {
     @Override
     public MessageType type() {

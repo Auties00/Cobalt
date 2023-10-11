@@ -74,7 +74,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
 
         var directory = getHome(type);
-        if(Files.notExists(directory)) {
+        if (Files.notExists(directory)) {
             return new LinkedList<>();
         }
 
@@ -94,7 +94,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
 
         var directory = getHome(type);
-        if(Files.notExists(directory)) {
+        if (Files.notExists(directory)) {
             return new LinkedList<>();
         }
 
@@ -188,7 +188,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeChatAsync(Store store, Chat chat) {
-        if(!chat.hasUpdate()) {
+        if (!chat.hasUpdate()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -217,7 +217,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 Smile.writeValueAsBytes(tempFileOutputStream, object);
                 Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             }
-        }catch (IOException exception) {
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot write file", exception);
         }
     }
@@ -370,7 +370,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             }
             var linkedFolderPath = getSessionDirectory(controller.clientType(), phoneNumber.toString());
             Files.deleteIfExists(linkedFolderPath);
-        }catch (IOException exception) {
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot delete session", exception);
         }
     }
@@ -457,13 +457,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Path getSessionDirectory(ClientType clientType, String path) {
-       try {
-           var result = getHome(clientType).resolve(path);
-           Files.createDirectories(result.getParent());
-           return result;
-       }catch (IOException exception) {
-           throw new UncheckedIOException(exception);
-       }
+        try {
+            var result = getHome(clientType).resolve(path);
+            Files.createDirectories(result.getParent());
+            return result;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 
     private Path getSessionFile(Store store, String fileName) {

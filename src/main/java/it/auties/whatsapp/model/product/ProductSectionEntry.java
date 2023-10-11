@@ -11,7 +11,7 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("Message.ListMessage.Product")
 public record ProductSectionEntry(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String id
+        String id
 ) implements ProtobufMessage {
 
 }

@@ -32,37 +32,37 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
         implements MediaMessage<DocumentMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        private String mediaUrl;
+    private String mediaUrl;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        private final String mimetype;
+    private final String mimetype;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        private final String title;
+    private final String title;
 
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
 
     @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
-        private Long mediaSize;
+    private Long mediaSize;
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-        private final Integer pageCount;
+    private final Integer pageCount;
 
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
     private byte[] mediaKey;
 
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-        private final String fileName;
+    private final String fileName;
 
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
 
     @ProtobufProperty(index = 10, type = ProtobufType.STRING)
-        private String mediaDirectPath;
+    private String mediaDirectPath;
 
     @ProtobufProperty(index = 11, type = ProtobufType.UINT64)
-        private Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
@@ -71,7 +71,7 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
     private final boolean contactVcard;
 
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
-        private final String thumbnailDirectPath;
+    private final String thumbnailDirectPath;
 
     @ProtobufProperty(index = 14, type = ProtobufType.BYTES)
     private final byte[] thumbnailSha256;
@@ -80,16 +80,16 @@ public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
     private final byte[] thumbnailEncSha256;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-        private final ContextInfo contextInfo;
+    private final ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.UINT32)
-        private final Integer thumbnailHeight;
+    private final Integer thumbnailHeight;
 
     @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
-        private final Integer thumbnailWidth;
+    private final Integer thumbnailWidth;
 
     @ProtobufProperty(index = 20, type = ProtobufType.STRING)
-        private final String caption;
+    private final String caption;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public DocumentMessage(String mediaUrl, String mimetype, String title, byte[] mediaSha256, Long mediaSize, Integer pageCount, byte[] mediaKey, String fileName, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, byte[] thumbnail, boolean contactVcard, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, ContextInfo contextInfo, Integer thumbnailHeight, Integer thumbnailWidth, String caption) {

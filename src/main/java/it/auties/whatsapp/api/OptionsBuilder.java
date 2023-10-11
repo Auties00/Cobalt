@@ -19,12 +19,13 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     KeysBuilder keysBuilder;
     ErrorHandler errorHandler;
     Executor socketExecutor;
-    OptionsBuilder(StoreBuilder storeBuilder, KeysBuilder keysBuilder){
+
+    OptionsBuilder(StoreBuilder storeBuilder, KeysBuilder keysBuilder) {
         this.storeBuilder = storeBuilder;
         this.keysBuilder = keysBuilder;
     }
 
-    OptionsBuilder(Store store, Keys keys){
+    OptionsBuilder(Store store, Keys keys) {
         this.store = store;
         this.keys = keys;
     }
@@ -38,9 +39,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T name(String name) {
-        if(store != null) {
+        if (store != null) {
             store.setName(name);
-        }else {
+        } else {
             storeBuilder.name(name);
         }
         return (T) this;
@@ -56,9 +57,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T version(Version version) {
-        if(store != null) {
+        if (store != null) {
             store.setVersion(version);
-        }else {
+        } else {
             storeBuilder.version(version);
         }
         return (T) this;
@@ -72,9 +73,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T autodetectListeners(boolean autodetectListeners) {
-        if(store != null) {
+        if (store != null) {
             store.setAutodetectListeners(autodetectListeners);
-        }else {
+        } else {
             storeBuilder.autodetectListeners(autodetectListeners);
         }
         return (T) this;
@@ -88,9 +89,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T textPreviewSetting(TextPreviewSetting textPreviewSetting) {
-        if(store != null) {
+        if (store != null) {
             store.setTextPreviewSetting(textPreviewSetting);
-        }else {
+        } else {
             storeBuilder.textPreviewSetting(textPreviewSetting);
         }
         return (T) this;
@@ -126,9 +127,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T releaseChannel(ReleaseChannel releaseChannel) {
-        if(store != null) {
+        if (store != null) {
             store.setReleaseChannel(releaseChannel);
-        }else {
+        } else {
             storeBuilder.releaseChannel(releaseChannel);
         }
         return (T) this;
@@ -141,9 +142,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T proxy(URI proxy) {
-        if(store != null) {
+        if (store != null) {
             store.setProxy(proxy);
-        }else {
+        } else {
             storeBuilder.proxy(proxy);
         }
         return (T) this;
@@ -156,9 +157,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T automaticPresenceUpdates(boolean automaticPresenceUpdates) {
-        if(store != null) {
+        if (store != null) {
             store.setAutomaticPresenceUpdates(automaticPresenceUpdates);
-        }else {
+        } else {
             storeBuilder.automaticPresenceUpdates(automaticPresenceUpdates);
         }
         return (T) this;
@@ -172,9 +173,9 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T checkPatchMacks(boolean checkPatchMacs) {
-        if(store != null) {
+        if (store != null) {
             store.setCheckPatchMacs(checkPatchMacs);
-        }else {
+        } else {
             storeBuilder.checkPatchMacs(checkPatchMacs);
         }
         return (T) this;

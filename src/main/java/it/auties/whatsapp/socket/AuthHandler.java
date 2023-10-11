@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 class AuthHandler {
     private final SocketHandler socketHandler;
+
     AuthHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
     }
@@ -26,7 +27,7 @@ class AuthHandler {
     protected CompletableFuture<Boolean> login(SocketSession session, byte[] message) {
         try {
             var serverHello = readHandshake(message);
-            if(serverHello.isEmpty()){
+            if (serverHello.isEmpty()) {
                 return CompletableFuture.completedFuture(false);
             }
 
@@ -49,7 +50,7 @@ class AuthHandler {
                     .clientFinish(clientFinish)
                     .build();
             return sendHandshake(session, handshake, handshakeMessage);
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             return CompletableFuture.failedFuture(throwable);
         }
     }
@@ -65,7 +66,7 @@ class AuthHandler {
         try {
             var handshakeMessage = HandshakeMessageSpec.decode(message);
             return Optional.ofNullable(handshakeMessage.serverHello());
-        }catch (ProtobufDeserializationException exception){
+        } catch (ProtobufDeserializationException exception) {
             return Optional.empty();
         }
     }
@@ -108,7 +109,7 @@ class AuthHandler {
     }
 
     private String getDeviceMcc(boolean mobile) {
-        if(!mobile) {
+        if (!mobile) {
             return "000";
         }
 
@@ -121,7 +122,7 @@ class AuthHandler {
     }
 
     private String getDeviceMnc(boolean mobile) {
-        if(!mobile) {
+        if (!mobile) {
             return "000";
         }
 
@@ -149,7 +150,7 @@ class AuthHandler {
                 .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                 .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                 .userAgent(agent);
-        return switch (socketHandler.store().clientType()){
+        return switch (socketHandler.store().clientType()) {
             case MOBILE -> {
                 var phoneNumber = socketHandler.store()
                         .phoneNumber()

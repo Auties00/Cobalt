@@ -20,15 +20,15 @@ import java.util.Set;
 @ProtobufMessageName("UserReceipt")
 public final class MessageReceipt implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)
-        private Long deliveredTimestampSeconds;
+    private Long deliveredTimestampSeconds;
     @ProtobufProperty(index = 3, type = ProtobufType.INT64)
-        private Long readTimestampSeconds;
+    private Long readTimestampSeconds;
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
-        private Long playedTimestampSeconds;
+    private Long playedTimestampSeconds;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING, repeated = true)
-        private final Set<Jid> deliveredJids;
+    private final Set<Jid> deliveredJids;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING, repeated = true)
-        private final Set<Jid> readJids;
+    private final Set<Jid> readJids;
 
     public MessageReceipt() {
         this.deliveredJids = new HashSet<>();

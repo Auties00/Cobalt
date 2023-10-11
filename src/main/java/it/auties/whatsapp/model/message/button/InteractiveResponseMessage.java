@@ -14,9 +14,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.InteractiveResponseMessage")
 public record InteractiveResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                InteractiveBody body,
+        InteractiveBody body,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                NativeFlowResponseMessage nativeFlowResponseMessage,
+        NativeFlowResponseMessage nativeFlowResponseMessage,
         @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo
 ) implements ContextualMessage {

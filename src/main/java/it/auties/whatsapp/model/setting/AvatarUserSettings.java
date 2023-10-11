@@ -7,9 +7,9 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("AvatarUserSettings")
 public record AvatarUserSettings(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String facebookId,
+        String facebookId,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String password
+        String password
 ) implements Setting {
     @Override
     public String indexName() {

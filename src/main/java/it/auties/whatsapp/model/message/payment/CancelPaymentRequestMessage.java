@@ -13,7 +13,7 @@ import it.auties.whatsapp.model.message.model.PaymentMessage;
 @ProtobufMessageName("Message.CancelPaymentRequestMessage")
 public record CancelPaymentRequestMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                ChatMessageKey key
+        ChatMessageKey key
 ) implements PaymentMessage {
     @Override
     public MessageType type() {

@@ -20,7 +20,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
     private final ClientType clientType;
     private ControllerSerializer serializer;
     private CompanionDevice device;
-    ConnectionBuilder(ClientType clientType){
+
+    ConnectionBuilder(ClientType clientType) {
         this.clientType = clientType;
         this.serializer = DefaultControllerSerializer.instance();
     }
@@ -66,7 +67,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      */
     @SuppressWarnings("unchecked")
     public T newConnection(UUID uuid) {
-        if(uuid == null) {
+        if (uuid == null) {
             uuid = UUID.randomUUID();
         }
 
@@ -169,7 +170,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      */
     @SuppressWarnings({"unchecked", "OptionalIsPresent"})
     public Optional<T> newOptionalConnection(UUID uuid) {
-        if(uuid == null) {
+        if (uuid == null) {
             uuid = UUID.randomUUID();
         }
 
@@ -179,7 +180,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .device(device)
                 .serializer(serializer)
                 .deserialize();
-        if(store.isEmpty()) {
+        if (store.isEmpty()) {
             return Optional.empty();
         }
 
@@ -188,7 +189,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .clientType(clientType)
                 .serializer(serializer)
                 .deserialize();
-        if(keys.isEmpty()) {
+        if (keys.isEmpty()) {
             return Optional.empty();
         }
 
@@ -214,7 +215,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
                 .serializer(serializer)
                 .deserialize();
-        if(store.isEmpty()) {
+        if (store.isEmpty()) {
             return Optional.empty();
         }
 
@@ -224,7 +225,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
                 .serializer(serializer)
                 .deserialize();
-        if(keys.isEmpty()) {
+        if (keys.isEmpty()) {
             return Optional.empty();
         }
 
@@ -251,7 +252,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .serializer(serializer)
                 .alias(alias)
                 .deserialize();
-        if(store.isEmpty()) {
+        if (store.isEmpty()) {
             return Optional.empty();
         }
 
@@ -261,7 +262,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .serializer(serializer)
                 .alias(alias)
                 .deserialize();
-        if(keys.isEmpty()) {
+        if (keys.isEmpty()) {
             return Optional.empty();
         }
 

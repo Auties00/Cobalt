@@ -22,13 +22,13 @@ import java.util.Optional;
 @ProtobufMessageName("Message.GroupInviteMessage")
 public record GroupInviteMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                Jid group,
+        Jid group,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String code,
+        String code,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
         long expirationSeconds,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-                String groupName,
+        String groupName,
         @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
         Optional<byte[]> thumbnail,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)

@@ -13,9 +13,9 @@ import java.util.List;
 @ProtobufMessageName("Message.ListMessage.Section")
 public record ButtonSection(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String title,
+        String title,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
-                List<ButtonRow> rows
+        List<ButtonRow> rows
 ) implements ProtobufMessage {
 
 }

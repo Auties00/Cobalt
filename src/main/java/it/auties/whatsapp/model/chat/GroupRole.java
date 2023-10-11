@@ -30,6 +30,7 @@ public enum GroupRole implements ProtobufEnum {
 
     final int index;
     private final String data;
+
     GroupRole(@ProtobufEnumIndex int index, String data) {
         this.index = index;
         this.data = data;

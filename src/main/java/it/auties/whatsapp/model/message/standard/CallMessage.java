@@ -16,7 +16,7 @@ public record CallMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
         byte[] key,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String source,
+        String source,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
         byte[] data,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)

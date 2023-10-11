@@ -22,6 +22,7 @@ public sealed interface ButtonBody extends ProtobufMessage permits ButtonText, N
         NATIVE_FLOW(2);
 
         final int index;
+
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }

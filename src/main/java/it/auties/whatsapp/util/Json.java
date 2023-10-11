@@ -87,6 +87,7 @@ public final class Json {
 
     private static class OptionalDeserializer extends StdDeserializer<Optional<?>> implements ContextualDeserializer {
         private final JavaType optionalType;
+
         public OptionalDeserializer() {
             super(Optional.class);
             this.optionalType = null;
@@ -99,7 +100,7 @@ public final class Json {
 
         @Override
         public JsonDeserializer<?> createContextual(DeserializationContext context, BeanProperty property) {
-            if(property == null) {
+            if (property == null) {
                 var optionalType = context.getContextualType();
                 var valueType = optionalType.containedTypeOrUnknown(0);
                 return new OptionalDeserializer(valueType);

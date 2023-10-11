@@ -17,7 +17,7 @@ public final class MD5 {
             var digest = MessageDigest.getInstance(MD5);
             digest.update(data);
             return digest.digest();
-        }catch (NoSuchAlgorithmException exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new UnsupportedOperationException("Missing md5 implementation", exception);
         }
     }

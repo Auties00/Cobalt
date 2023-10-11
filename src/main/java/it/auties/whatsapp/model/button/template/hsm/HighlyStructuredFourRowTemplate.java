@@ -44,11 +44,13 @@ public record HighlyStructuredFourRowTemplate(
                 .footer(footer);
         switch (title) {
             case DocumentMessage documentMessage -> builder.titleDocument(documentMessage);
-            case HighlyStructuredMessage highlyStructuredMessage -> builder.titleHighlyStructured(highlyStructuredMessage);
+            case HighlyStructuredMessage highlyStructuredMessage ->
+                    builder.titleHighlyStructured(highlyStructuredMessage);
             case ImageMessage imageMessage -> builder.titleImage(imageMessage);
             case VideoOrGifMessage videoMessage -> builder.titleVideo(videoMessage);
             case LocationMessage locationMessage -> builder.titleLocation(locationMessage);
-            case null -> {}
+            case null -> {
+            }
         }
         return builder.build();
     }

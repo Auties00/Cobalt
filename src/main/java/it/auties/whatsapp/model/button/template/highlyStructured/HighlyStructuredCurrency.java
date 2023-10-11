@@ -10,7 +10,7 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMCurrency")
 public record HighlyStructuredCurrency(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String currencyCode,
+        String currencyCode,
         @ProtobufProperty(index = 2, type = ProtobufType.INT64)
         long amount1000
 ) implements HighlyStructuredLocalizableParameterValue {

@@ -167,7 +167,7 @@ public class StoreBuilder {
     public Optional<Store> deserialize() {
         var serializer = Objects.requireNonNullElseGet(this.serializer, DefaultControllerSerializer::instance);
         var clientType = Objects.requireNonNull(this.clientType, "Client type is required");
-        if(uuid != null) {
+        if (uuid != null) {
             var store = serializer.deserializeStore(clientType, uuid);
             if (store.isPresent()) {
                 store.get().setSerializer(serializer);
@@ -177,18 +177,18 @@ public class StoreBuilder {
         }
 
 
-        if(phoneNumber != null) {
+        if (phoneNumber != null) {
             var store = serializer.deserializeStore(clientType, phoneNumber.number());
-            if(store.isPresent()) {
+            if (store.isPresent()) {
                 store.get().setSerializer(serializer);
                 serializer.attributeStore(store.get());
                 return store;
             }
         }
 
-        if(alias != null) {
+        if (alias != null) {
             var store = serializer.deserializeStore(clientType, alias);
-            if(store.isPresent()) {
+            if (store.isPresent()) {
                 store.get().setSerializer(serializer);
                 serializer.attributeStore(store.get());
                 return store;
@@ -200,7 +200,7 @@ public class StoreBuilder {
 
     public Store build() {
         return deserialize().orElseGet(() -> {
-            if(device == null) {
+            if (device == null) {
                 device = Specification.Whatsapp.DEFAULT_MOBILE_DEVICE;
             }
 

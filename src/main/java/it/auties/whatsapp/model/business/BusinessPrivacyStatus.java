@@ -25,6 +25,7 @@ public enum BusinessPrivacyStatus implements ProtobufEnum {
     BSP_AND_FB(3);
 
     final int index;
+
     BusinessPrivacyStatus(@ProtobufEnumIndex int index) {
         this.index = index;
     }

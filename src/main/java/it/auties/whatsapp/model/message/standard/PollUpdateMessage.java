@@ -26,20 +26,20 @@ import java.util.Optional;
  */
 @ProtobufMessageName("Message.PollUpdateMessage")
 public final class PollUpdateMessage implements Message, EncryptedMessage {
-        private Jid voter;
+    private Jid voter;
 
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        private final ChatMessageKey pollCreationMessageKey;
+    private final ChatMessageKey pollCreationMessageKey;
 
-        private PollCreationMessage pollCreationMessage;
+    private PollCreationMessage pollCreationMessage;
 
-        private List<PollOption> votes;
+    private List<PollOption> votes;
 
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        private PollUpdateEncryptedMetadata encryptedMetadata;
+    private PollUpdateEncryptedMetadata encryptedMetadata;
 
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        private final PollUpdateMessageMetadata metadata;
+    private final PollUpdateMessageMetadata metadata;
 
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
     private final long senderTimestampMilliseconds;
@@ -114,7 +114,7 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
         return this;
     }
 
-    public Optional<PollUpdateMessageMetadata> metadata(){
+    public Optional<PollUpdateMessageMetadata> metadata() {
         return Optional.ofNullable(metadata);
     }
 

@@ -26,7 +26,7 @@ import static it.auties.whatsapp.util.Specification.Signal.*;
 
 public record SessionCipher(SessionAddress address, Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
-        if(data == null){
+        if (data == null) {
             return new CipheredMessageResult(null, Signal.UNAVAILABLE);
         }
         var currentState = loadSession().currentState()

@@ -8,7 +8,7 @@ public interface OnWhatsappRegistrationCode extends Listener {
      * Only works on the mobile API
      *
      * @param whatsapp an instance to the calling api
-     * @param code the registration code
+     * @param code     the registration code
      */
     @Override
     void onRegistrationCode(Whatsapp whatsapp, long code);

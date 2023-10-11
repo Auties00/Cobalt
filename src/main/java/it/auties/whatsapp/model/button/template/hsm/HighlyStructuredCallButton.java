@@ -11,9 +11,9 @@ import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructure
 @ProtobufMessageName("TemplateButton.CallButton")
 public record HighlyStructuredCallButton(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                HighlyStructuredMessage text,
+        HighlyStructuredMessage text,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                HighlyStructuredMessage phoneNumber
+        HighlyStructuredMessage phoneNumber
 ) implements HighlyStructuredButton {
     @Override
     public Type buttonType() {

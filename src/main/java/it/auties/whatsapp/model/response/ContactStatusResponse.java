@@ -21,14 +21,15 @@ public record ContactStatusResponse(Optional<String> status, Optional<ZonedDateT
     @SuppressWarnings("unchecked")
     public static Optional<ContactStatusResponse> ofJson(String json) {
         try {
-            var parsedJson = Json.readValue(json, new TypeReference<Map<String, Object>>(){});
+            var parsedJson = Json.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
             var data = (Map<String, ?>) parsedJson.get("data");
             var updates = (List<?>) data.get("xwa2_users_updates_since");
             var latestUpdate = (Map<String, ?>) updates.get(0);
             var updatesData = (List<?>) latestUpdate.get("updates");
             var latestUpdateData = (Map<String, ?>) updatesData.get(0);
             return Optional.of(new ContactStatusResponse(Optional.ofNullable((String) latestUpdateData.get("text")), Optional.empty()));
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             return Optional.empty();
         }
     }

@@ -19,7 +19,8 @@ public record RecommendedNewslettersResponse(@JsonProperty("result") List<Newsle
 
     }
 
-    private record JsonData(@JsonAlias({"xwa2_newsletter_update", "xwa2_newsletter_create", "xwa2_newsletter_subscribed", "xwa2_newsletters_directory_list"}) RecommendedNewslettersResponse response) {
+    private record JsonData(
+            @JsonAlias({"xwa2_newsletter_update", "xwa2_newsletter_create", "xwa2_newsletter_subscribed", "xwa2_newsletters_directory_list"}) RecommendedNewslettersResponse response) {
 
     }
 }

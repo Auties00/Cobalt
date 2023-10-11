@@ -18,9 +18,9 @@ public record ProductListInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
         List<ProductSection> productSections,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                ProductListHeaderImage headerImage,
+        ProductListHeaderImage headerImage,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-                Jid seller
+        Jid seller
 ) implements Info, ProtobufMessage {
 
 }

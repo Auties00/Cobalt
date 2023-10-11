@@ -24,7 +24,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ButtonsMessage")
 public record ButtonsMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                Optional<ButtonsMessageHeaderText> headerText,
+        Optional<ButtonsMessageHeaderText> headerText,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<DocumentMessage> headerDocument,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
@@ -40,9 +40,9 @@ public record ButtonsMessage(
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
         @ProtobufProperty(index = 9, type = ProtobufType.OBJECT, repeated = true)
-                List<Button> buttons,
+        List<Button> buttons,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-                Type headerType
+        Type headerType
 ) implements ButtonMessage, ContextualMessage {
     @ProtobufBuilder(className = "ButtonsMessageSimpleBuilder")
     static ButtonsMessage customBuilder(ButtonsMessageHeader header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
@@ -83,7 +83,7 @@ public record ButtonsMessage(
      *
      * @return an optional
      */
-    public Optional<? extends ButtonsMessageHeader> header(){
+    public Optional<? extends ButtonsMessageHeader> header() {
         if (headerText.isPresent()) {
             return headerText;
         }

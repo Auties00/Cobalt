@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 public sealed interface MessageSendRequest permits MessageSendRequest.Chat, MessageSendRequest.Newsletter {
-    record Chat(ChatMessageInfo info, List<Jid> recipients, boolean force, boolean peer, Map<String, ?> additionalAttributes) implements MessageSendRequest {
+    record Chat(ChatMessageInfo info, List<Jid> recipients, boolean force, boolean peer,
+                Map<String, ?> additionalAttributes) implements MessageSendRequest {
         public Chat(ChatMessageInfo info) {
             this(info, null, false, false, null);
         }
@@ -18,7 +19,7 @@ public sealed interface MessageSendRequest permits MessageSendRequest.Chat, Mess
         }
     }
 
-    record Newsletter(NewsletterMessageInfo info, Map<String, ?> additionalAttributes) implements MessageSendRequest{
+    record Newsletter(NewsletterMessageInfo info, Map<String, ?> additionalAttributes) implements MessageSendRequest {
         public Newsletter(NewsletterMessageInfo info) {
             this(info, null);
         }

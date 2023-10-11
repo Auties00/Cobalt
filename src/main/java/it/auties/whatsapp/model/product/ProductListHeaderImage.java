@@ -11,7 +11,7 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("Message.ListMessage.ProductListHeaderImage")
 public record ProductListHeaderImage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String id,
+        String id,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         byte[] thumbnail
 ) implements ProtobufMessage {

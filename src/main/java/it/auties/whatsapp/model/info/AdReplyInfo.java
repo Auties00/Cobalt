@@ -16,42 +16,42 @@ import java.util.Optional;
 @ProtobufMessageName("ContextInfo.AdReplyInfo")
 public record AdReplyInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String advertiserName,
+        String advertiserName,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                MediaType mediaType,
+        MediaType mediaType,
         @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
         Optional<byte[]> thumbnail,
         @ProtobufProperty(index = 17, type = ProtobufType.STRING)
         Optional<String> caption
 ) implements Info, ProtobufMessage {
 
+    /**
+     * The constants of this enumerated type describe the various types of companion that a
+     * {@link AdReplyInfo} can link to
+     */
+    @ProtobufMessageName("ContextInfo.AdReplyInfo.MediaType")
+    public enum MediaType implements ProtobufEnum {
         /**
-         * The constants of this enumerated type describe the various types of companion that a
-         * {@link AdReplyInfo} can link to
+         * Unknown type
          */
-        @ProtobufMessageName("ContextInfo.AdReplyInfo.MediaType")
-        public enum MediaType implements ProtobufEnum {
-            /**
-             * Unknown type
-             */
-            NONE(0),
-            /**
-             * Image type
-             */
-            IMAGE(1),
-            /**
-             * Video type
-             */
-            VIDEO(2);
+        NONE(0),
+        /**
+         * Image type
+         */
+        IMAGE(1),
+        /**
+         * Video type
+         */
+        VIDEO(2);
 
-            final int index;
+        final int index;
 
-            MediaType(@ProtobufEnumIndex int index) {
-                this.index = index;
-            }
-
-            public int index() {
-                return index;
-            }
+        MediaType(@ProtobufEnumIndex int index) {
+            this.index = index;
         }
+
+        public int index() {
+            return index;
+        }
+    }
 }

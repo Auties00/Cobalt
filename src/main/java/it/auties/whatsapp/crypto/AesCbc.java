@@ -21,14 +21,14 @@ public final class AesCbc {
     }
 
     public static byte[] encrypt(byte[] iv, byte[] plaintext, byte[] key) {
-      try {
-          var cipher = Cipher.getInstance(AES_CBC);
-          var keySpec = new SecretKeySpec(key, AES);
-          cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
-          return cipher.doFinal(plaintext);
-      }catch (GeneralSecurityException exception) {
-          throw new IllegalArgumentException("Cannot encrypt data", exception);
-      }
+        try {
+            var cipher = Cipher.getInstance(AES_CBC);
+            var keySpec = new SecretKeySpec(key, AES);
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
+            return cipher.doFinal(plaintext);
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot encrypt data", exception);
+        }
     }
 
     public static byte[] decrypt(byte[] encrypted, byte[] key) {
@@ -45,7 +45,7 @@ public final class AesCbc {
             var keySpec = new SecretKeySpec(key, AES);
             cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
             return cipher.doFinal(encrypted);
-        }catch (GeneralSecurityException exception) {
+        } catch (GeneralSecurityException exception) {
             throw new IllegalArgumentException("Cannot encrypt data", exception);
         }
     }

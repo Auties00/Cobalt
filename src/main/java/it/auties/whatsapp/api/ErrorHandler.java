@@ -17,14 +17,14 @@ import static java.lang.System.Logger.Level.WARNING;
 public interface ErrorHandler {
     /**
      * Handles an error that occurred inside the api
-     * 
-     * @param type the type of client experiencing the error
-     * @param location the location where the error occurred
+     *
+     * @param type      the type of client experiencing the error
+     * @param location  the location where the error occurred
      * @param throwable a stacktrace of the error, if available
      * @return a newsletters determining what should be done
      */
     Result handleError(ClientType type, Location location, Throwable throwable);
-    
+
     /**
      * Default error handler. Prints the exception on the terminal.
      *
@@ -54,7 +54,7 @@ public interface ErrorHandler {
     static ErrorHandler toFile(Path directory) {
         return defaultErrorHandler(throwable -> Exceptions.save(directory, throwable));
     }
-    
+
     /**
      * Default error handler
      *
@@ -65,11 +65,11 @@ public interface ErrorHandler {
         return (type, location, throwable) -> {
             var logger = System.getLogger("ErrorHandler");
             logger.log(ERROR, "Socket failure at %s".formatted(location));
-            if(printer != null) {
+            if (printer != null) {
                 printer.accept(throwable);
             }
 
-            if(location == CRYPTOGRAPHY && type == ClientType.MOBILE) {
+            if (location == CRYPTOGRAPHY && type == ClientType.MOBILE) {
                 logger.log(WARNING, "Reconnecting");
                 return Result.RECONNECT;
             }

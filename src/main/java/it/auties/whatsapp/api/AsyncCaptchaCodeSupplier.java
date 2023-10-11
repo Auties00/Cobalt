@@ -15,7 +15,7 @@ public interface AsyncCaptchaCodeSupplier extends Function<VerificationCodeRespo
      * @param supplier a non-null supplier
      * @return a non-null async supplier
      */
-    static AsyncCaptchaCodeSupplier of(Function<VerificationCodeResponse, String> supplier){
+    static AsyncCaptchaCodeSupplier of(Function<VerificationCodeResponse, String> supplier) {
         return (response) -> CompletableFuture.completedFuture(supplier.apply(response));
     }
 }

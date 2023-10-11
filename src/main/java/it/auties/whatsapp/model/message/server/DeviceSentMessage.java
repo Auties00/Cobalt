@@ -17,9 +17,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.DeviceSentMessage")
 public record DeviceSentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                Jid destinationJid,
+        Jid destinationJid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                MessageContainer message,
+        MessageContainer message,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Optional<String> phash
 ) implements ServerMessage {

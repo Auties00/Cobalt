@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
 
 public record GroupCipher(SenderKeyName name, Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
-        if(data == null){
+        if (data == null) {
             return new CipheredMessageResult(null, Signal.UNAVAILABLE);
         }
 

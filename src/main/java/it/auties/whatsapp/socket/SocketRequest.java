@@ -125,7 +125,8 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
                 var encoder = new BinaryEncoder();
                 yield encoder.encode(node);
             }
-            case null, default -> throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
+            case null, default ->
+                    throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
         };
     }
 
@@ -163,7 +164,8 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
      */
     public CompletableFuture<Void> sendWithNoResponse(SocketSession session, Keys keys, Store store) {
         return send(session, keys, store, false, false)
-                .thenRunAsync(() -> {});
+                .thenRunAsync(() -> {
+                });
     }
 
     /**

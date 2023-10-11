@@ -60,7 +60,7 @@ public final class RegistrationHelper {
     private static CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, int statusCode, String body, VerificationCodeError lastError, VerificationCodeMethod method) {
         try {
             System.out.println(body);
-            if(statusCode != HttpURLConnection.HTTP_OK) {
+            if (statusCode != HttpURLConnection.HTTP_OK) {
                 throw new RegistrationException(null, body);
             }
 
@@ -69,7 +69,7 @@ public final class RegistrationHelper {
                 return CompletableFuture.completedFuture(null);
             }
 
-            if(response.errorReason() == VerificationCodeError.NO_ROUTES) {
+            if (response.errorReason() == VerificationCodeError.NO_ROUTES) {
                 throw new RegistrationException(response, "VOIPs are not supported by Whatsapp");
             }
 
@@ -79,7 +79,7 @@ public final class RegistrationHelper {
             }
 
             throw new RegistrationException(response, body);
-        }catch (UncheckedIOException exception) {
+        } catch (UncheckedIOException exception) {
             throw new RegistrationException(null, body);
         }
     }
@@ -145,30 +145,30 @@ public final class RegistrationHelper {
     }
 
     private static CompletableFuture<Void> checkVerificationResponse(Store store, Keys keys, String code, HttpResponse<String> result, AsyncCaptchaCodeSupplier captchaHandler) {
-       try {
-           if(result.statusCode() != HttpURLConnection.HTTP_OK) {
-               throw new RegistrationException(null, result.body());
-           }
+        try {
+            if (result.statusCode() != HttpURLConnection.HTTP_OK) {
+                throw new RegistrationException(null, result.body());
+            }
 
-           var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-           if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
-               return sendVerificationCode(store, keys, code, captchaHandler, true);
-           }
+            var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+            if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
+                return sendVerificationCode(store, keys, code, captchaHandler, true);
+            }
 
-           if (response.errorReason() == VerificationCodeError.CAPTCHA) {
-               Objects.requireNonNull(captchaHandler, "Received captcha, but no handler was specified in the options");
-               return captchaHandler.apply(response)
-                       .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
-           }
+            if (response.errorReason() == VerificationCodeError.CAPTCHA) {
+                Objects.requireNonNull(captchaHandler, "Received captcha, but no handler was specified in the options");
+                return captchaHandler.apply(response)
+                        .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
+            }
 
-           if (response.status() == VerificationCodeStatus.SUCCESS) {
-               return CompletableFuture.completedFuture(null);
-           }
+            if (response.status() == VerificationCodeStatus.SUCCESS) {
+                return CompletableFuture.completedFuture(null);
+            }
 
-           throw new RegistrationException(response, result.body());
-       }catch (UncheckedIOException exception) {
-           throw new RegistrationException(null, result.body());
-       }
+            throw new RegistrationException(response, result.body());
+        } catch (UncheckedIOException exception) {
+            throw new RegistrationException(null, result.body());
+        }
     }
 
     private static String normalizeCodeResult(String captcha) {
@@ -176,7 +176,7 @@ public final class RegistrationHelper {
     }
 
     private static CompletableFuture<HttpResponse<String>> sendRegistrationRequest(Store store, String path, Map<String, Object> params) {
-        try(var client = createClient(store)) {
+        try (var client = createClient(store)) {
             var encodedParams = toFormParams(params);
             var keypair = SignalKeyPair.random();
             var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());

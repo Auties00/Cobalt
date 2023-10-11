@@ -42,10 +42,14 @@ public record HighlyStructuredButtonTemplate(
         var builder = new HighlyStructuredButtonTemplateBuilder()
                 .index(index);
         switch (highlyStructuredButton) {
-            case HighlyStructuredQuickReplyButton highlyStructuredQuickReplyButton -> builder.highlyStructuredQuickReplyButton(highlyStructuredQuickReplyButton);
-            case HighlyStructuredURLButton highlyStructuredURLButton -> builder.highlyStructuredUrlButton(highlyStructuredURLButton);
-            case HighlyStructuredCallButton highlyStructuredCallButton -> builder.highlyStructuredCallButton(highlyStructuredCallButton);
-            case null -> {}
+            case HighlyStructuredQuickReplyButton highlyStructuredQuickReplyButton ->
+                    builder.highlyStructuredQuickReplyButton(highlyStructuredQuickReplyButton);
+            case HighlyStructuredURLButton highlyStructuredURLButton ->
+                    builder.highlyStructuredUrlButton(highlyStructuredURLButton);
+            case HighlyStructuredCallButton highlyStructuredCallButton ->
+                    builder.highlyStructuredCallButton(highlyStructuredCallButton);
+            case null -> {
+            }
         }
         return builder.build();
     }

@@ -34,6 +34,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     final ReentrantLock outputLock;
     final Collection<ByteBuffer> inputParts;
     SocketListener listener;
+
     private SocketSession(URI proxy, Executor executor) {
         this.proxy = proxy;
         this.executor = executor;
@@ -42,12 +43,15 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     abstract CompletableFuture<Void> connect(SocketListener listener);
+
     abstract void disconnect();
+
     public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
+
     abstract boolean isOpen();
 
-    static SocketSession of(URI proxy, Executor executor, boolean webSocket){
-        if(webSocket) {
+    static SocketSession of(URI proxy, Executor executor, boolean webSocket) {
+        if (webSocket) {
             return new WebSocketSession(proxy, executor);
         }
 
@@ -92,7 +96,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         @SuppressWarnings("resource") // Not needed
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
-            if(isOpen()) {
+            if (isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -109,7 +113,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         void disconnect() {
-            if(!isOpen()) {
+            if (!isOpen()) {
                 return;
             }
 
@@ -167,7 +171,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 var result = buffer.get().readBytes(length);
                 try {
                     listener.onMessage(BytesHelper.readBuffer(result));
-                }catch (Throwable throwable) {
+                } catch (Throwable throwable) {
                     listener.onError(throwable);
                 }
 
@@ -230,7 +234,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         void disconnect() {
-            if(closed) {
+            if (closed) {
                 return;
             }
 
@@ -239,7 +243,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 this.closed = true;
                 this.socket = null;
                 listener.onClose();
-            }catch (IOException exception) {
+            } catch (IOException exception) {
                 listener.onError(exception);
             }
         }
@@ -260,11 +264,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     var stream = socket.getOutputStream();
                     stream.write(bytes);
                     stream.flush();
-                }catch (SocketException exception) {
+                } catch (SocketException exception) {
                     disconnect();
                 } catch (IOException exception) {
                     throw new RequestException(exception);
-                }finally {
+                } finally {
                     outputLock.unlock();
                 }
             }, executor);
@@ -289,7 +293,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 }
             } catch (EOFException ignored) {
 
-            } catch(Throwable throwable) {
+            } catch (Throwable throwable) {
                 listener.onError(throwable);
             } finally {
                 disconnect();

@@ -19,9 +19,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ReactionMessage")
 public record ReactionMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-                ChatMessageKey key,
+        ChatMessageKey key,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String content,
+        String content,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Optional<String> groupingKey,
         @ProtobufProperty(index = 4, type = ProtobufType.INT64)

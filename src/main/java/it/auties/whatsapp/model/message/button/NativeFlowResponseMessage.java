@@ -9,9 +9,9 @@ import it.auties.whatsapp.model.message.model.MessageType;
 @ProtobufMessageName("Message.InteractiveResponseMessage.NativeFlowResponseMessage")
 public record NativeFlowResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String name,
+        String name,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String paramsJson,
+        String paramsJson,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)
         int version
 ) implements ButtonMessage {

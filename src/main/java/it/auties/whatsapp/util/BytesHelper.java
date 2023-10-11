@@ -118,19 +118,19 @@ public final class BytesHelper {
     }
 
     public static byte[] decompress(byte[] compressed) {
-       try {
-           var decompressor = new Inflater();
-           decompressor.setInput(compressed);
-           var result = new ByteArrayOutputStream();
-           var buffer = new byte[1024];
-           while (!decompressor.finished()) {
-               var count = decompressor.inflate(buffer);
-               result.write(buffer, 0, count);
-           }
-           return result.toByteArray();
-       }catch (DataFormatException exception) {
-           throw new IllegalArgumentException("Malformed data", exception);
-       }
+        try {
+            var decompressor = new Inflater();
+            decompressor.setInput(compressed);
+            var result = new ByteArrayOutputStream();
+            var buffer = new byte[1024];
+            while (!decompressor.finished()) {
+                var count = decompressor.inflate(buffer);
+                result.write(buffer, 0, count);
+            }
+            return result.toByteArray();
+        } catch (DataFormatException exception) {
+            throw new IllegalArgumentException("Malformed data", exception);
+        }
     }
 
     public static byte[] messageToBytes(Message message) {

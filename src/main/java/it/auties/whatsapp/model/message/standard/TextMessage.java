@@ -23,7 +23,7 @@ import java.util.OptionalLong;
 @ProtobufMessageName("Message.TextMessage")
 public final class TextMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        private String text;
+    private String text;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private String matchedText;

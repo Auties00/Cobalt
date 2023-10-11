@@ -10,9 +10,9 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("HydratedTemplateButton.HydratedURLButton")
 public record HydratedURLButton(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String text,
+        String text,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String url
+        String url
 ) implements HydratedButton {
     @Override
     public Type buttonType() {

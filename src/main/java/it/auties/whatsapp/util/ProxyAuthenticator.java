@@ -16,11 +16,11 @@ public class ProxyAuthenticator extends Authenticator {
         credentials = new ConcurrentHashMap<>();
     }
 
-    public static void register(URI uri){
+    public static void register(URI uri) {
         credentials.put("%s:%s".formatted(uri.getHost(), uri.getPort()), uri);
     }
 
-    public static void unregister(URI uri){
+    public static void unregister(URI uri) {
         credentials.remove("%s:%s".formatted(uri.getHost(), uri.getPort()));
     }
 
@@ -28,7 +28,7 @@ public class ProxyAuthenticator extends Authenticator {
     protected PasswordAuthentication getPasswordAuthentication() {
         var host = "%s:%s".formatted(getRequestingHost(), getRequestingPort());
         var info = credentials.get(host);
-        if(info == null) {
+        if (info == null) {
             return super.getPasswordAuthentication();
         }
 

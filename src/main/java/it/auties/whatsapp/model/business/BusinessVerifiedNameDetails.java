@@ -19,11 +19,11 @@ public record BusinessVerifiedNameDetails(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
         long serial,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String issuer,
+        String issuer,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-                String name,
+        String name,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
-                List<BusinessLocalizedName> localizedNames,
+        List<BusinessLocalizedName> localizedNames,
         @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
         long issueTimeSeconds
 ) implements ProtobufMessage {

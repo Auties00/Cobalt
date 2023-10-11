@@ -18,9 +18,9 @@ import java.util.Optional;
 @ProtobufMessageName("Message.TemplateButtonReplyMessage")
 public record TemplateReplyMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String id,
+        String id,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String buttonText,
+        String buttonText,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)

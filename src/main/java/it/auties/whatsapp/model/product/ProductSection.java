@@ -13,7 +13,7 @@ import java.util.List;
 @ProtobufMessageName("Message.ListMessage.ProductSection")
 public record ProductSection(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String title,
+        String title,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
         List<ProductSectionEntry> products
 ) implements ProtobufMessage {

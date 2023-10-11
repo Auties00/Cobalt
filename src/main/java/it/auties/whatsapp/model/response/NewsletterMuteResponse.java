@@ -19,7 +19,8 @@ public record NewsletterMuteResponse(@JsonProperty("id") Jid jid, @JsonProperty(
         return Json.readValue(json, JsonResponse.class).data();
     }
 
-    private record JsonResponse(@JsonProperty("xwa2_notify_newsletter_on_mute_change") Optional<NewsletterMuteResponse> data) {
+    private record JsonResponse(
+            @JsonProperty("xwa2_notify_newsletter_on_mute_change") Optional<NewsletterMuteResponse> data) {
 
     }
 }

@@ -16,13 +16,13 @@ import java.util.Optional;
 @ProtobufMessageName("ContextInfo.ExternalAdReplyInfo")
 public record ExternalAdReplyInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        Optional<String>  title,
+        Optional<String> title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        Optional<String>  body,
+        Optional<String> body,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Optional<MediaType> mediaType,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-        Optional<String>  thumbnailUrl,
+        Optional<String> thumbnailUrl,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         Optional<String> mediaUrl,
         @ProtobufProperty(index = 6, type = ProtobufType.BYTES)
@@ -42,32 +42,32 @@ public record ExternalAdReplyInfo(
         @ProtobufProperty(index = 13, type = ProtobufType.STRING)
         Optional<String> ctwaClid
 ) implements Info, ProtobufMessage {
+    /**
+     * The constants of this enumerated type describe the various types of media that an ad can wrap
+     */
+    @ProtobufMessageName("ChatRowOpaqueData.DraftMessage.CtwaContextData.ContextInfoExternalAdReplyInfoMediaType")
+    public enum MediaType implements ProtobufEnum {
         /**
-         * The constants of this enumerated type describe the various types of media that an ad can wrap
+         * No media
          */
-        @ProtobufMessageName("ChatRowOpaqueData.DraftMessage.CtwaContextData.ContextInfoExternalAdReplyInfoMediaType")
-        public enum MediaType implements ProtobufEnum {
-            /**
-             * No media
-             */
-            NONE(0),
-            /**
-             * Image
-             */
-            IMAGE(1),
-            /**
-             * Video
-             */
-            VIDEO(2);
+        NONE(0),
+        /**
+         * Image
+         */
+        IMAGE(1),
+        /**
+         * Video
+         */
+        VIDEO(2);
 
-            final int index;
+        final int index;
 
-            MediaType(@ProtobufEnumIndex int index) {
-                this.index = index;
-            }
-
-            public int index() {
-                return index;
-            }
+        MediaType(@ProtobufEnumIndex int index) {
+            this.index = index;
         }
+
+        public int index() {
+            return index;
+        }
+    }
 }

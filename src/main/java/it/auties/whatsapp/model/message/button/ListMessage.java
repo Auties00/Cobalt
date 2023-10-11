@@ -21,15 +21,15 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ListMessage")
 public record ListMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String title,
+        String title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> description,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-                String button,
+        String button,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-                Type listType,
+        Type listType,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT, repeated = true)
-                List<ButtonSection> sections,
+        List<ButtonSection> sections,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
         Optional<ProductListInfo> productListInfo,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)

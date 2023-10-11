@@ -11,6 +11,7 @@ public enum CommunitySetting {
 
     private final String on;
     private final String off;
+
     CommunitySetting(String on, String off) {
         this.on = on;
         this.off = off;

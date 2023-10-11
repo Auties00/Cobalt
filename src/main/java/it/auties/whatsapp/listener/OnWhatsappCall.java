@@ -8,7 +8,7 @@ public interface OnWhatsappCall extends Listener {
      * Called when a phone call arrives
      *
      * @param whatsapp an instance to the calling api
-     * @param call the non-null phone call
+     * @param call     the non-null phone call
      */
     @Override
     void onCall(Whatsapp whatsapp, Call call);

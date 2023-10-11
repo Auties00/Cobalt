@@ -47,7 +47,7 @@ public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessa
 
     @Override
     public byte[] serialized() {
-        if(serialized == null) {
+        if (serialized == null) {
             var serialized = BytesHelper.concat(serializedVersion(), SenderKeyMessageSpec.encode(this));
             var signature = Curve25519.sign(signingKey, serialized, true);
             this.serialized = BytesHelper.concat(serialized, signature);

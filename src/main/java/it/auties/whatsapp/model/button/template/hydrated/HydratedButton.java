@@ -45,6 +45,7 @@ public sealed interface HydratedButton extends ProtobufMessage permits HydratedC
         CALL(3);
 
         final int index;
+
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }

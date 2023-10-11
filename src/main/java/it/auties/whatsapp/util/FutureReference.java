@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 public class FutureReference<T> {
-        private T value;
+    private T value;
     private CompletableFuture<T> future;
 
     @JsonCreator
@@ -18,14 +18,14 @@ public class FutureReference<T> {
 
     public FutureReference(T initialValue, Supplier<CompletableFuture<T>> defaultValue) {
         this.value = initialValue;
-        if(initialValue == null) {
+        if (initialValue == null) {
             this.future = defaultValue.get();
         }
     }
 
     @JsonValue
     public T value() {
-        if(future != null) {
+        if (future != null) {
             this.value = future.join();
             future = null;
         }
@@ -34,7 +34,7 @@ public class FutureReference<T> {
     }
 
     public void setValue(T value) {
-        if(future != null) {
+        if (future != null) {
             future.cancel(true);
             future = null;
         }

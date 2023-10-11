@@ -23,7 +23,7 @@ public record ProtocolMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<ChatMessageKey> key,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-                Type protocolType,
+        Type protocolType,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
         long ephemeralExpiration,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)

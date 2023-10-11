@@ -13,7 +13,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter")
 public record HighlyStructuredLocalizableParameter(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String defaultValue,
+        String defaultValue,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<HighlyStructuredCurrency> parameterCurrency,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
@@ -30,9 +30,11 @@ public record HighlyStructuredLocalizableParameter(
         var builder = new HighlyStructuredLocalizableParameterBuilder()
                 .defaultValue(defaultValue);
         switch (parameter) {
-            case HighlyStructuredCurrency highlyStructuredCurrency -> builder.parameterCurrency(highlyStructuredCurrency);
+            case HighlyStructuredCurrency highlyStructuredCurrency ->
+                    builder.parameterCurrency(highlyStructuredCurrency);
             case HighlyStructuredDateTime businessDateTime -> builder.parameterDateTime(businessDateTime);
-            case null -> {}
+            case null -> {
+            }
         }
         return builder.build();
     }

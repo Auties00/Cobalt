@@ -16,12 +16,12 @@ public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The id of the message
      */
-        private final String id;
+    private final String id;
 
     /**
      * The chat of the message
      */
-        private final Chat chat;
+    private final Chat chat;
 
     /**
      * The sender of the message
@@ -31,7 +31,7 @@ public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The message
      */
-        private final MessageContainer message;
+    private final MessageContainer message;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public QuotedMessageInfo(String id, Chat chat, Contact sender, MessageContainer message) {

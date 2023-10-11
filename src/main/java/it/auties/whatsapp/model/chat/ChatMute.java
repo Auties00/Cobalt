@@ -65,7 +65,7 @@ public record ChatMute(long endTimeStamp) {
      * Do not use this method, reserved for protobuf
      */
     @ProtobufConverter
-    public static ChatMute ofProtobuf(long object){
+    public static ChatMute ofProtobuf(long object) {
         return muted(object);
     }
 

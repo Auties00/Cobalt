@@ -36,6 +36,7 @@ public enum MessageStatus implements ProtobufEnum {
     PLAYED(5);
 
     final int index;
+
     MessageStatus(@ProtobufEnumIndex int index) {
         this.index = index;
     }

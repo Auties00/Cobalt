@@ -55,7 +55,7 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
 
     @Override
     public byte[] serialized() {
-        if(serialized == null) {
+        if (serialized == null) {
             var encodedMessage = BytesHelper.concat(serializedVersion(), SignalMessageSpec.encode(this));
             this.serialized = BytesHelper.concat(encodedMessage, Objects.requireNonNull(signature, "Message wasn't signed"));
         }

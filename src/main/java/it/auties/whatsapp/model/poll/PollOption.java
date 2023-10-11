@@ -12,7 +12,7 @@ import it.auties.protobuf.model.ProtobufType;
 @ProtobufMessageName("MsgOpaqueData.PollOption")
 public record PollOption(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String name
+        String name
 ) implements ProtobufMessage {
 
 }

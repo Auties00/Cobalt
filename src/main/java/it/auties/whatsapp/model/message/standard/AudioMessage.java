@@ -22,19 +22,19 @@ import java.util.OptionalLong;
 @ProtobufMessageName("Message.AudioMessage")
 public final class AudioMessage extends LocalMediaMessage<AudioMessage> implements MediaMessage<AudioMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        private String mediaUrl;
+    private String mediaUrl;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        private final String mimetype;
+    private final String mimetype;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
 
     @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
-        private Long mediaSize;
+    private Long mediaSize;
 
     @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
-        private final Integer duration;
+    private final Integer duration;
 
     @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
     private final boolean voiceMessage;
@@ -46,13 +46,13 @@ public final class AudioMessage extends LocalMediaMessage<AudioMessage> implemen
     private byte[] mediaEncryptedSha256;
 
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        private String mediaDirectPath;
+    private String mediaDirectPath;
 
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
-        private Long mediaKeyTimestampSeconds;
+    private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-        private final ContextInfo contextInfo;
+    private final ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] streamingSidecar;
@@ -61,7 +61,7 @@ public final class AudioMessage extends LocalMediaMessage<AudioMessage> implemen
     private final byte[] waveform;
 
     @ProtobufProperty(index = 20, type = ProtobufType.FIXED32)
-        private final Integer backgroundArgb;
+    private final Integer backgroundArgb;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public AudioMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, boolean voiceMessage, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, ContextInfo contextInfo, byte[] streamingSidecar, byte[] waveform, Integer backgroundArgb) {

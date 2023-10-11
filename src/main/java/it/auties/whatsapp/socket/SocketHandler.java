@@ -185,7 +185,7 @@ public class SocketHandler implements SocketListener {
             onNodeReceived(node);
             store.resolvePendingRequest(node, false);
             streamHandler.digest(node);
-        }catch (Throwable throwable) {
+        } catch (Throwable throwable) {
             handleFailure(CRYPTOGRAPHY, throwable);
         }
     }
@@ -233,7 +233,7 @@ public class SocketHandler implements SocketListener {
 
     public CompletableFuture<Void> disconnect(DisconnectReason reason) {
         var newState = SocketState.of(reason);
-        if(state == newState) {
+        if (state == newState) {
             return CompletableFuture.completedFuture(null);
         }
 

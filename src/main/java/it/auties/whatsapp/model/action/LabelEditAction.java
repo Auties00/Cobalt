@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.sync.PatchType;
 @ProtobufMessageName("SyncActionValue.LabelEditAction")
 public record LabelEditAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String name,
+        String name,
         @ProtobufProperty(index = 2, type = ProtobufType.INT32)
         int color,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)

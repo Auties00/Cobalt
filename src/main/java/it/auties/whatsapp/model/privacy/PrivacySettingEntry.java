@@ -7,8 +7,8 @@ import java.util.List;
 /**
  * A model that represents a privacy setting entry
  *
- * @param type the non-null type
- * @param value the non-null value
+ * @param type     the non-null type
+ * @param value    the non-null value
  * @param excluded the non-null list of excluded contacts if {@link PrivacySettingEntry#value} == {@link PrivacySettingValue#CONTACTS_EXCEPT}
  */
 public record PrivacySettingEntry(PrivacySettingType type, PrivacySettingValue value, List<Jid> excluded) {
@@ -26,7 +26,7 @@ public record PrivacySettingEntry(PrivacySettingType type, PrivacySettingValue v
      *
      * @return a boolean
      */
-    private boolean hasExcluded(){
+    private boolean hasExcluded() {
         return value == PrivacySettingValue.CONTACTS_EXCEPT;
     }
 }

@@ -13,9 +13,9 @@ import java.util.HexFormat;
 @ProtobufMessageName("HydratedTemplateButton.HydratedQuickReplyButton")
 public record HydratedQuickReplyButton(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-                String text,
+        String text,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-                String id
+        String id
 ) implements HydratedButton {
     /**
      * Constructs a new HydratedQuickReplyButton from a text with a random id
