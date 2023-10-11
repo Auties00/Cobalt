@@ -2,12 +2,12 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.contact.Contact;
 
-public interface OnContactPictureChange extends Listener {
+public interface OnContactPictureChanged extends Listener {
     /**
      * Called when a contact's profile picture changes
      *
      * @param contact the contact whose pic changed
      */
     @Override
-    void onContactPictureChange(Contact contact);
+    void onProfilePictureChanged(Contact contact);
 }

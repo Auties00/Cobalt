@@ -4,7 +4,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
@@ -13,7 +13,7 @@ import java.util.Objects;
 public record HistorySyncMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         @NonNull
-        MessageInfo messageInfo,
+        ChatMessageInfo messageInfo,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long messageOrderId
 ) implements ProtobufMessage {

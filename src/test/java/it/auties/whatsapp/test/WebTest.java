@@ -12,6 +12,7 @@ import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -596,7 +597,7 @@ public class WebTest implements Listener {
         if (skip) {
             return;
         }
-        var example = api.sendMessage(contact, "Hello").join();
+        var example = (ChatMessageInfo) api.sendMessage(contact, "Hello").join();
         log("Deleting for you...");
         api.delete(example, false).join();
         log("Deleted for you");
@@ -831,7 +832,7 @@ public class WebTest implements Listener {
                 .selectableOptions(List.of(pollOptionFirst, pollOptionSecond))
                 .selectableOptionsCount(2)
                 .build();
-        var pollInfo = api.sendMessage(contact, pollMessage).join();
+        var pollInfo = (ChatMessageInfo) api.sendMessage(contact, pollMessage).join();
         var firstUpdate = new PollUpdateMessageSimpleBuilder()
                 .poll(pollInfo)
                 .votes(List.of(pollOptionFirst))

@@ -21,7 +21,7 @@ public record KeepInChat(
         @ProtobufProperty(index = 2, type = ProtobufType.INT64)
         long serverTimestampSeconds,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        MessageKey key,
+        ChatMessageKey key,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Jid deviceJid,
         @ProtobufProperty(index = 5, type = ProtobufType.INT64)

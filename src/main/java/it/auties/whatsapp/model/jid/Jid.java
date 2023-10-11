@@ -117,7 +117,7 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
     }
 
     @ProtobufConverter
-    public String toValue() {
+    public String toProtobufValue() {
         return toString();
     }
 
@@ -154,7 +154,7 @@ public record Jid(String user, @NonNull JidServer server, int device, int agent)
             case BROADCAST -> Objects.equals(user(), "status") ? JidType.STATUS : JidType.BROADCAST;
             case GROUP -> JidType.GROUP;
             case GROUP_CALL -> JidType.GROUP_CALL;
-            case NEWSLETTER -> JidType.CHANNEL;
+            case NEWSLETTER -> JidType.NEWSLETTER;
             case USER -> switch (user()) {
                 case "server" -> JidType.SERVER;
                 case "0" -> JidType.ANNOUNCEMENT;

@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.payment;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -15,7 +15,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public record CancelPaymentRequestMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         @NonNull
-        MessageKey key
+        ChatMessageKey key
 ) implements PaymentMessage {
     @Override
     public MessageType type() {

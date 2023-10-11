@@ -39,7 +39,14 @@ public class Specification {
         public static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
         public static final int COMPANION_PAIRING_TIMEOUT = 10;
         public static CompanionDevice DEFAULT_MOBILE_DEVICE = CompanionDevice.android();
-        public static int DEFAULT_HISTORY_SIZE = 59206;
+        public static final int DEFAULT_HISTORY_SIZE = 59206;
+        public static final byte[][] CALL_RELAY = new byte[][]{
+                new byte[]{-105, 99, -47, -29, 13, -106},
+                new byte[]{-99, -16, -53, 62, 13, -106},
+                new byte[]{-99, -16, -25, 62, 13, -106},
+                new byte[]{-99, -16, -5, 62, 13, -106},
+                new byte[]{-71, 60, -37, 62, 13, -106}
+        };
     }
 
     public final static class Signal {

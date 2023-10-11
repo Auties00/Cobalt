@@ -11,9 +11,8 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageMetadataProvider;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -104,7 +103,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
     @Nullable
-    private final MessageKey placeholderKey;
+    private final ChatMessageKey placeholderKey;
 
     /**
      * The expiration in seconds for this ContextualMessage. Only valid if the chat where this message
@@ -209,7 +208,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
     private Chat quotedMessageChat;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public ContextInfo(@Nullable String quotedMessageId, @Nullable Jid quotedMessageSenderJid, @Nullable MessageContainer quotedMessage, @Nullable Jid quotedMessageChatJid, @NonNull List<Jid> mentions, @Nullable String conversionSource, byte @Nullable [] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, @Nullable AdReplyInfo quotedAd, @Nullable MessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte @Nullable [] ephemeralSharedSecret, @Nullable ExternalAdReplyInfo externalAdReply, @Nullable String entryPointConversionSource, @Nullable String entryPointConversionApp, int entryPointConversionDelaySeconds, @Nullable ChatDisappear disappearingMode, @Nullable ButtonActionLink actionLink, @Nullable String groupSubject, @Nullable Jid parentGroup, @Nullable String trustBannerType, int trustBannerAction) {
+    public ContextInfo(@Nullable String quotedMessageId, @Nullable Jid quotedMessageSenderJid, @Nullable MessageContainer quotedMessage, @Nullable Jid quotedMessageChatJid, @NonNull List<Jid> mentions, @Nullable String conversionSource, byte @Nullable [] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, @Nullable AdReplyInfo quotedAd, @Nullable ChatMessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte @Nullable [] ephemeralSharedSecret, @Nullable ExternalAdReplyInfo externalAdReply, @Nullable String entryPointConversionSource, @Nullable String entryPointConversionApp, int entryPointConversionDelaySeconds, @Nullable ChatDisappear disappearingMode, @Nullable ButtonActionLink actionLink, @Nullable String groupSubject, @Nullable Jid parentGroup, @Nullable String trustBannerType, int trustBannerAction) {
         this.quotedMessageId = quotedMessageId;
         this.quotedMessageSenderJid = quotedMessageSenderJid;
         this.quotedMessage = quotedMessage;
@@ -237,11 +236,11 @@ public final class ContextInfo implements Info, ProtobufMessage {
         this.trustBannerAction = trustBannerAction;
     }
 
-    public static ContextInfo of(@NonNull MessageMetadataProvider quotedMessage) {
+    public static ContextInfo of(@NonNull MessageInfo quotedMessage) {
         return new ContextInfoBuilder()
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessage(quotedMessage.message())
-                .quotedMessageChatJid(quotedMessage.chatJid())
+                .quotedMessageChatJid(quotedMessage.parentJid())
                 .quotedMessageSenderJid(quotedMessage.senderJid())
                 .mentions(new ArrayList<>())
                 .build();
@@ -357,7 +356,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
         return Optional.ofNullable(quotedAd);
     }
 
-    public Optional<MessageKey> placeholderKey() {
+    public Optional<ChatMessageKey> placeholderKey() {
         return Optional.ofNullable(placeholderKey);
     }
 

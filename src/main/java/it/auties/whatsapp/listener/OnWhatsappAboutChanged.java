@@ -2,7 +2,7 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
 
-public interface OnWhatsappUserAboutChange extends Listener {
+public interface OnWhatsappAboutChanged extends Listener {
     /**
      * Called when the companion's status changes
      *
@@ -10,5 +10,5 @@ public interface OnWhatsappUserAboutChange extends Listener {
      * @param oldAbout the non-null old about
      * @param newAbout the non-null new about
      */
-    void onUserAboutChange(Whatsapp whatsapp, String oldAbout, String newAbout);
+    void onAboutChange(Whatsapp whatsapp, String oldAbout, String newAbout);
 }

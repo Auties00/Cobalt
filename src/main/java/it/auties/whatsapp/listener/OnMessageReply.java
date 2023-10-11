@@ -1,7 +1,7 @@
 package it.auties.whatsapp.listener;
 
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.QuotedMessage;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
+import it.auties.whatsapp.model.info.QuotedMessageInfo;
 
 public interface OnMessageReply extends Listener {
     /**
@@ -11,5 +11,5 @@ public interface OnMessageReply extends Listener {
      * @param quoted the quoted message
      */
     @Override
-    void onMessageReply(MessageInfo info, QuotedMessage quoted);
+    void onMessageReply(ChatMessageInfo info, QuotedMessageInfo quoted);
 }

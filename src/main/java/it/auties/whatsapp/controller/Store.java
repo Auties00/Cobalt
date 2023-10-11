@@ -14,14 +14,16 @@ import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.MessageStatusInfo;
+import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
@@ -42,8 +44,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.net.URI;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -195,7 +200,7 @@ public final class Store extends Controller<Store> {
      * The non-null list of status messages
      */
     @NonNull
-    private final ConcurrentHashMap<Jid, CopyOnWriteArrayList<MessageInfo>> status;
+    private final ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status;
 
     /**
      * The non-null map of newsletters
@@ -239,7 +244,7 @@ public final class Store extends Controller<Store> {
      */
     @NonNull
     @JsonIgnore
-    private final ConcurrentHashMap<String, CompletableFuture<MessageInfo>> replyHandlers;
+    private final ConcurrentHashMap<String, CompletableFuture<ChatMessageInfo>> replyHandlers;
 
     /**
      * The non-null list of listeners
@@ -332,7 +337,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, CopyOnWriteArrayList<MessageInfo>> status, @NonNull ConcurrentHashMap<Jid, Newsletter> newsletters, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
+    Store(@NonNull UUID uuid, PhoneNumber phoneNumber, @NonNull ControllerSerializer serializer, @NonNull ClientType clientType, @Nullable List<String> alias, @Nullable URI proxy, @NonNull FutureReference<Version> version, boolean online, @Nullable String locale, @NonNull String name, boolean business, @Nullable String businessAddress, @Nullable Double businessLongitude, @Nullable Double businessLatitude, @Nullable String businessDescription, @Nullable String businessWebsite, @Nullable String businessEmail, @Nullable BusinessCategory businessCategory, @Nullable String deviceHash, @NonNull LinkedHashMap<Jid, Integer> linkedDevicesKeys, @Nullable URI profilePicture, @Nullable String about, @Nullable Jid jid, @Nullable Jid lid, @NonNull ConcurrentHashMap<String, String> properties, @NonNull ConcurrentHashMap<Jid, Contact> contacts, @NonNull ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, @NonNull ConcurrentHashMap<Jid, Newsletter> newsletters, @NonNull ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, @NonNull ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, @NonNull ChatEphemeralTimer newChatsEphemeralTimer, @NonNull TextPreviewSetting textPreviewSetting, @NonNull WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, @NonNull ReleaseChannel releaseChannel, @Nullable CompanionDevice device, @Nullable PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if(proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -451,28 +456,70 @@ public final class Store extends Controller<Store> {
      * @param key the key to search
      * @return a non-null optional
      */
-    public Optional<MessageInfo> findMessageByKey(MessageKey key) {
-        return key == null ? Optional.empty() : findMessageById(key.chatJid(), key.id());
+    public Optional<ChatMessageInfo> findMessageByKey(ChatMessageKey key) {
+        return Optional.ofNullable(key)
+                .map(ChatMessageKey::chatJid)
+                .flatMap(this::findChatByJid)
+                .flatMap(chat -> findMessageById(chat, key.id()));
     }
 
     /**
-     * Queries the first message whose id matches the one provided in the specified chat
+     * Queries the first message whose id matches the one provided in the specified chat or newsletter
      *
      * @param provider the chat to search in
      * @param id       the jid to search
      * @return a non-null optional
      */
-    public Optional<MessageInfo> findMessageById(JidProvider provider, String id) {
+    public Optional<? extends MessageStatusInfo<?>> findMessageById(JidProvider provider, String id) {
         if (provider == null || id == null) {
             return Optional.empty();
         }
 
-        var chat = findChatByJid(provider.toJid())
-                .orElse(null);
-        if (chat == null) {
-            return Optional.empty();
-        }
+        return switch (provider) {
+            case Chat chat -> findMessageById(chat, id);
+            case Newsletter newsletter ->  findMessageById(newsletter, id);
+            case Contact contact -> findChatByJid(contact.jid())
+                    .flatMap(chat -> findMessageById(chat, id));
+            case Jid contactJid -> switch (contactJid.type()) {
+                case NEWSLETTER -> findNewsletterByJid(contactJid)
+                        .flatMap(newsletter -> findMessageById(newsletter, id));
+                case STATUS -> {
+                    var messages = status.get(contactJid);
+                    if(messages == null) {
+                        yield Optional.empty();
+                    }
 
+                    yield Optional.ofNullable(messages.get(id));
+                }
+                default -> findChatByJid(contactJid)
+                        .flatMap(chat -> findMessageById(chat, id));
+            };
+        };
+    }
+
+    /**
+     * Queries the first message whose id matches the one provided in the specified newsletter
+     *
+     * @param newsletter newsletter chat to search in
+     * @param id         the jid to search
+     * @return a non-null optional
+     */
+    public Optional<NewsletterMessageInfo> findMessageById(Newsletter newsletter, String id) {
+        return newsletter.messages()
+                .parallelStream()
+                .filter(entry -> Objects.equals(id, entry.id()) || Objects.equals(id, String.valueOf(entry.serverId())))
+                .findFirst();
+    }
+
+
+    /**
+     * Queries the first message whose id matches the one provided in the specified chat
+     *
+     * @param chat the chat to search in
+     * @param id   the jid to search
+     * @return a non-null optional
+     */
+    public Optional<ChatMessageInfo> findMessageById(Chat chat, String id) {
         return chat.messages()
                 .parallelStream()
                 .map(HistorySyncMessage::messageInfo)
@@ -610,26 +657,14 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * Queries the first status whose id matches the one provided
-     *
-     * @param id the id of the status
-     * @return a non-null optional
-     */
-    public Optional<MessageInfo> findStatusById(String id) {
-        return id == null ? Optional.empty() : status().stream()
-                .filter(status -> Objects.equals(status.id(), id))
-                .findFirst();
-    }
-
-    /**
      * Returns all the status
      *
      * @return an immutable collection
      */
-    public Collection<MessageInfo> status() {
+    public Collection<ChatMessageInfo> status() {
         return status.values()
                 .stream()
-                .flatMap(Collection::stream)
+                .flatMap(entry -> entry.values().stream())
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -648,9 +683,9 @@ public final class Store extends Controller<Store> {
      * @param jid the sender of the status
      * @return a non-null immutable list
      */
-    public Collection<MessageInfo> findStatusBySender(JidProvider jid) {
+    public Collection<ChatMessageInfo> findStatusBySender(JidProvider jid) {
         return Optional.ofNullable(status.get(jid.toJid()))
-                .map(Collections::unmodifiableCollection)
+                .map(entry -> Collections.unmodifiableCollection(entry.values()))
                 .orElseGet(Set::of);
     }
 
@@ -709,7 +744,7 @@ public final class Store extends Controller<Store> {
      * @param response the newsletters to complete the reply with
      * @return a boolean
      */
-    public boolean resolvePendingReply(@NonNull MessageInfo response) {
+    public boolean resolvePendingReply(@NonNull ChatMessageInfo response) {
         return response.message()
                 .contentWithContext()
                 .flatMap(ContextualMessage::contextInfo)
@@ -764,10 +799,10 @@ public final class Store extends Controller<Store> {
 
     private void joinMessages(Chat chat, Chat oldChat) {
         var newChatTimestamp = chat.newestMessage()
-                .map(MessageInfo::timestampSeconds)
+                .map(ChatMessageInfo::timestampSeconds)
                 .orElse(0L);
         var oldChatTimestamp = oldChat.newestMessage()
-                .map(MessageInfo::timestampSeconds)
+                .map(ChatMessageInfo::timestampSeconds)
                 .orElse(0L);
         if (newChatTimestamp <= oldChatTimestamp) {
             chat.addMessages(oldChat.messages());
@@ -865,7 +900,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null list of messages
      */
-    public List<MessageInfo> starredMessages() {
+    public List<ChatMessageInfo> starredMessages() {
         return chats().parallelStream().map(Chat::starredMessages).flatMap(Collection::stream).toList();
     }
 
@@ -948,9 +983,9 @@ public final class Store extends Controller<Store> {
      * @param info the non-null status to add
      * @return the same instance
      */
-    public Store addStatus(@NonNull MessageInfo info) {
-        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), CopyOnWriteArrayList<MessageInfo>::new);
-        wrapper.add(info);
+    public Store addStatus(@NonNull ChatMessageInfo info) {
+        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentHashMap<String, ChatMessageInfo>::new);
+        wrapper.put(info.id(), info);
         status.put(info.senderJid(), wrapper);
         return this;
     }
@@ -977,8 +1012,8 @@ public final class Store extends Controller<Store> {
      * @param messageId the non-null message id to listen for
      * @return the non-null completable newsletters of the reply handler
      */
-    public CompletableFuture<MessageInfo> addPendingReply(@NonNull String messageId) {
-        var result = new CompletableFuture<MessageInfo>();
+    public CompletableFuture<ChatMessageInfo> addPendingReply(@NonNull String messageId) {
+        var result = new CompletableFuture<ChatMessageInfo>();
         replyHandlers.put(messageId, result);
         return result;
     }

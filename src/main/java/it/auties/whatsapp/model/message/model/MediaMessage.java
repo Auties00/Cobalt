@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MutableAttachmentProvider;
 import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
@@ -13,7 +13,7 @@ import java.util.OptionalLong;
 
 /**
  * A media message
- * Read its content using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(MessageInfo)}
+ * Read its content using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(ChatMessageInfo)}
  */
 public sealed interface MediaMessage<T extends MediaMessage<T>> extends ContextualMessage, MutableAttachmentProvider<T> permits LocalMediaMessage, PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
     /**

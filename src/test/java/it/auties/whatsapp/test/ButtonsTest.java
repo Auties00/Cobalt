@@ -18,13 +18,13 @@ import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.MessageInfoBuilder;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.button.*;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
+import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageContainerBuilder;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.node.Node;
@@ -185,13 +185,13 @@ public class ButtonsTest implements Listener {
         var jid = api.store()
                 .jid()
                 .orElseThrow();
-        var keyInfo = new MessageKeyBuilder()
-                .id(MessageKey.randomId())
+        var keyInfo = new ChatMessageKeyBuilder()
+                .id(ChatMessageKey.randomId())
                 .chatJid(contact)
                 .senderJid(jid)
                 .fromMe(true)
                 .build();
-        var messageInfo = new MessageInfoBuilder()
+        var messageInfo = new ChatMessageInfoBuilder()
                 .status(MessageStatus.PENDING)
                 .key(keyInfo)
                 .senderJid(jid)

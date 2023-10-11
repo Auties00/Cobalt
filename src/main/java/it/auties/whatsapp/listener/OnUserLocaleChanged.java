@@ -1,6 +1,6 @@
 package it.auties.whatsapp.listener;
 
-public interface OnUserLocaleChange extends Listener {
+public interface OnUserLocaleChanged extends Listener {
     /**
      * Called when the companion's locale changes
      *
@@ -8,5 +8,5 @@ public interface OnUserLocaleChange extends Listener {
      * @param newLocale the non-null new picture
      */
     @Override
-    void onUserLocaleChange(String oldLocale, String newLocale);
+    void onLocaleChanged(String oldLocale, String newLocale);
 }

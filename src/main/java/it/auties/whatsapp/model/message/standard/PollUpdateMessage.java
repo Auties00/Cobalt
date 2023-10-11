@@ -6,7 +6,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.poll.PollOption;
@@ -33,7 +33,7 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
 
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     @NonNull
-    private final MessageKey pollCreationMessageKey;
+    private final ChatMessageKey pollCreationMessageKey;
 
     @Nullable
     private PollCreationMessage pollCreationMessage;
@@ -53,7 +53,7 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
     private final long senderTimestampMilliseconds;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public PollUpdateMessage(@NonNull MessageKey pollCreationMessageKey, @NonNull PollUpdateEncryptedMetadata encryptedMetadata, @Nullable PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds) {
+    public PollUpdateMessage(@NonNull ChatMessageKey pollCreationMessageKey, @NonNull PollUpdateEncryptedMetadata encryptedMetadata, @Nullable PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds) {
         this.pollCreationMessageKey = pollCreationMessageKey;
         this.encryptedMetadata = encryptedMetadata;
         this.metadata = metadata;
@@ -63,14 +63,14 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
 
     /**
      * Constructs a new builder to create a PollCreationMessage The newsletters can be later sent using
-     * {@link Whatsapp#sendMessage(MessageInfo)}
+     * {@link Whatsapp#sendMessage(ChatMessageInfo)}
      *
      * @param poll  the non-null poll where the vote should be cast
      * @param votes the votes to cast: this list will override previous votes, so it can be empty or null if you want to revoke all votes
      * @return a non-null new message
      */
     @ProtobufBuilder(className = "PollUpdateMessageSimpleBuilder")
-    static PollUpdateMessage simpleBuilder(@NonNull MessageInfo poll, List<PollOption> votes) {
+    static PollUpdateMessage simpleBuilder(@NonNull ChatMessageInfo poll, List<PollOption> votes) {
         Validate.isTrue(poll.message()
                 .type() == MessageType.POLL_CREATION, "Expected a poll, got %s".formatted(poll.message().type()));
         var result = new PollUpdateMessageBuilder()
@@ -100,7 +100,7 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
         return this;
     }
 
-    public MessageKey pollCreationMessageKey() {
+    public ChatMessageKey pollCreationMessageKey() {
         return pollCreationMessageKey;
     }
 

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.listener;
 
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 
 public interface OnMessageDeleted extends Listener {
     /**
@@ -11,5 +11,5 @@ public interface OnMessageDeleted extends Listener {
      *                 message was permanently removed
      */
     @Override
-    void onMessageDeleted(MessageInfo info, boolean everyone);
+    void onMessageDeleted(ChatMessageInfo info, boolean everyone);
 }

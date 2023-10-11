@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.node;
 
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.Json;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -337,7 +337,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      */
     public SocketRequest toRequest(Function<Node, Boolean> filter, boolean response) {
         if (response && id() == null) {
-            attributes.put("id", MessageKey.randomId());
+            attributes.put("id", ChatMessageKey.randomId());
         }
 
         return SocketRequest.of(this, filter);

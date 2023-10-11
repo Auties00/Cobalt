@@ -257,6 +257,28 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
     }
 
     /**
+     * Gets a nullable value as an int by key in the wrapped map
+     *
+     * @param key the non-null key
+     * @return the nullable value
+     */
+    public Integer getNullableInt(@NonNull String key) {
+        var result = getOptionalInt(key);
+        return result.isPresent() ? result.getAsInt() : null;
+    }
+
+    /**
+     * Gets a nullable value as a long by key in the wrapped map
+     *
+     * @param key the non-null key
+     * @return the nullable value
+     */
+    public Long getNullableLong(@NonNull String key) {
+        var result = getOptionalLong(key);
+        return result.isPresent() ? result.getAsLong() : null;
+    }
+
+    /**
      * Gets a non-null value as a string by key in the wrapped map. Throws an exception if the key
      * doesn't exist.
      *
@@ -265,6 +287,30 @@ public record Attributes(@JsonValue @NonNull ConcurrentHashMap<String, Object> t
      */
     public String getRequiredString(@NonNull String key) {
         return requireNonNull(getString(key, null), "Missing required attribute %s".formatted(key));
+    }
+
+    /**
+     * Gets a non-null value as an int by key in the wrapped map.
+     * Throws an exception if the key doesn't exist.
+     *
+     * @param key the non-null key
+     * @return the non-null value
+     */
+    public int getRequiredInt(@NonNull String key) {
+        return getOptionalInt(key)
+                .orElseThrow(() -> new NullPointerException("Missing required attribute %s".formatted(key)));
+    }
+
+    /**
+     * Gets a non-null value as a long by key in the wrapped map.
+     * Throws an exception if the key doesn't exist.
+     *
+     * @param key the non-null key
+     * @return the non-null value
+     */
+    public long getRequiredLong(@NonNull String key) {
+        return getOptionalLong(key)
+                .orElseThrow(() -> new NullPointerException("Missing required attribute %s".formatted(key)));
     }
 
     /**

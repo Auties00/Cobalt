@@ -11,7 +11,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public record KeepInChatMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         @NonNull
-        MessageKey key,
+        ChatMessageKey key,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         @NonNull
         KeepInChatType keepType,

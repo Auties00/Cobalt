@@ -7,8 +7,8 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.crypto.Sha256;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -72,7 +72,7 @@ public final class PollCreationMessage implements ContextualMessage {
 
     /**
      * Constructs a new builder to create a PollCreationMessage The newsletters can be later sent using
-     * {@link Whatsapp#sendMessage(MessageInfo)}
+     * {@link Whatsapp#sendMessage(ChatMessageInfo)}
      *
      * @param title             the non-null title of the poll
      * @param selectableOptions the null-null non-empty options of the poll

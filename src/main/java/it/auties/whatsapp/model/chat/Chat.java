@@ -9,7 +9,7 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidType;
@@ -295,7 +295,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return a non-null collection
      */
-    public Collection<MessageInfo> unreadMessages() {
+    public Collection<ChatMessageInfo> unreadMessages() {
         if (!hasUnreadMessages()) {
             return List.of();
         }
@@ -349,7 +349,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> newestMessage() {
+    public Optional<ChatMessageInfo> newestMessage() {
         return Optional.ofNullable(historySyncMessages.peekLast())
                 .map(HistorySyncMessage::messageInfo);
     }
@@ -359,7 +359,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> oldestMessage() {
+    public Optional<ChatMessageInfo> oldestMessage() {
         return Optional.ofNullable(historySyncMessages.peekFirst())
                 .map(HistorySyncMessage::messageInfo);
     }
@@ -370,7 +370,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> newestStandardMessage() {
+    public Optional<ChatMessageInfo> newestStandardMessage() {
         return findMessageBy(this::isStandardMessage, true);
     }
 
@@ -380,11 +380,11 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> oldestStandardMessage() {
+    public Optional<ChatMessageInfo> oldestStandardMessage() {
         return findMessageBy(this::isStandardMessage, false);
     }
 
-    private boolean isStandardMessage(MessageInfo info) {
+    private boolean isStandardMessage(ChatMessageInfo info) {
         return !info.message().hasCategory(MessageCategory.SERVER) && info.stubType().isEmpty();
     }
 
@@ -394,7 +394,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> newestMessageFromMe() {
+    public Optional<ChatMessageInfo> newestMessageFromMe() {
         return findMessageBy(this::isMessageFromMe, true);
     }
 
@@ -404,11 +404,11 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> oldestMessageFromMe() {
+    public Optional<ChatMessageInfo> oldestMessageFromMe() {
         return findMessageBy(this::isMessageFromMe, false);
     }
 
-    private boolean isMessageFromMe(MessageInfo info) {
+    private boolean isMessageFromMe(ChatMessageInfo info) {
         return !info.message().hasCategory(MessageCategory.SERVER) && info.stubType().isEmpty() && info.fromMe();
     }
 
@@ -418,7 +418,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> newestServerMessage() {
+    public Optional<ChatMessageInfo> newestServerMessage() {
         return findMessageBy(this::isServerMessage, true);
     }
 
@@ -428,15 +428,15 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return an optional
      */
-    public Optional<MessageInfo> oldestServerMessage() {
+    public Optional<ChatMessageInfo> oldestServerMessage() {
         return findMessageBy(this::isServerMessage, false);
     }
 
-    private boolean isServerMessage(MessageInfo info) {
+    private boolean isServerMessage(ChatMessageInfo info) {
         return info.message().hasCategory(MessageCategory.SERVER) || info.stubType().isPresent();
     }
 
-    private Optional<MessageInfo> findMessageBy(Function<MessageInfo, Boolean> filter, boolean newest) {
+    private Optional<ChatMessageInfo> findMessageBy(Function<ChatMessageInfo, Boolean> filter, boolean newest) {
         var descendingIterator = newest ? historySyncMessages.descendingIterator() : historySyncMessages.iterator();
         while (descendingIterator.hasNext()) {
             var info = descendingIterator.next().messageInfo();
@@ -454,10 +454,10 @@ public final class Chat implements ProtobufMessage, JidProvider {
      *
      * @return a non-null list of messages
      */
-    public Collection<MessageInfo> starredMessages() {
+    public Collection<ChatMessageInfo> starredMessages() {
         return historySyncMessages.stream()
                 .map(HistorySyncMessage::messageInfo)
-                .filter(MessageInfo::starred)
+                .filter(ChatMessageInfo::starred)
                 .toList();
     }
 
@@ -514,7 +514,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param info the message to add to the chat
      * @return whether the message was added
      */
-    public boolean addNewMessage(@NonNull MessageInfo info) {
+    public boolean addNewMessage(@NonNull ChatMessageInfo info) {
         var sync = new HistorySyncMessage(info, historySyncMessages.size());
         if (historySyncMessages.contains(sync)) {
             return false;
@@ -543,7 +543,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param info the message to remove
      * @return whether the message was removed
      */
-    public boolean removeMessage(@NonNull MessageInfo info) {
+    public boolean removeMessage(@NonNull ChatMessageInfo info) {
         var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.messageInfo().id(), info.id()));
         if(result) {
             this.update = true;
@@ -559,7 +559,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * @param predicate the predicate that determines if a message should be removed
      * @return whether the message was removed
      */
-    public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
+    public boolean removeMessage(@NonNull Predicate<? super ChatMessageInfo> predicate) {
         var result = historySyncMessages.removeIf(entry -> predicate.test(entry.messageInfo()));
         refreshChatTimestamp();
         return result;
@@ -574,8 +574,8 @@ public final class Chat implements ProtobufMessage, JidProvider {
         updateChatTimestamp(message.get());
     }
 
-    private void updateChatTimestamp(MessageInfo info) {
-        var oldTimeStamp = newestMessage().map(MessageInfo::timestampSeconds).orElse(0L);
+    private void updateChatTimestamp(ChatMessageInfo info) {
+        var oldTimeStamp = newestMessage().map(ChatMessageInfo::timestampSeconds).orElse(0L);
         if (oldTimeStamp > info.timestampSeconds()) {
             return;
         }

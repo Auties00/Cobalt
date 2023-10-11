@@ -14,9 +14,9 @@ import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
@@ -1009,7 +1009,7 @@ public class RunMobileCITest implements Listener {
     }
 
     @Override
-    public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+    public void onNewMessage(Whatsapp whatsapp, ChatMessageInfo info) {
         System.out.println(info.toJson());
     }
 }

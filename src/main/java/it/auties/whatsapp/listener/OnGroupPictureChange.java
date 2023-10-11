@@ -9,5 +9,5 @@ public interface OnGroupPictureChange extends Listener {
      * @param group the group whose pic changed
      */
     @Override
-    void onGroupPictureChange(Chat group);
+    void onGroupPictureChanged(Chat group);
 }

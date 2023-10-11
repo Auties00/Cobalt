@@ -1,10 +1,10 @@
-package it.auties.whatsapp.model.message.model;
+package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.message.model.MessageContainer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
@@ -13,7 +13,7 @@ import java.util.Optional;
 /**
  * An immutable model class that represents a quoted message
  */
-public final class QuotedMessage implements MessageMetadataProvider {
+public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The id of the message
      */
@@ -38,7 +38,7 @@ public final class QuotedMessage implements MessageMetadataProvider {
     private final MessageContainer message;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public QuotedMessage(@NonNull String id, @NonNull Chat chat, Contact sender, @NonNull MessageContainer message) {
+    public QuotedMessageInfo(@NonNull String id, @NonNull Chat chat, Contact sender, @NonNull MessageContainer message) {
         this.id = id;
         this.chat = chat;
         this.sender = sender;
@@ -51,7 +51,7 @@ public final class QuotedMessage implements MessageMetadataProvider {
      * @param contextInfo the non-null context info
      * @return an optional quoted message
      */
-    public static Optional<QuotedMessage> of(@NonNull ContextInfo contextInfo) {
+    public static Optional<QuotedMessageInfo> of(@NonNull ContextInfo contextInfo) {
         if (!contextInfo.hasQuotedMessage()) {
             return Optional.empty();
         }
@@ -59,11 +59,11 @@ public final class QuotedMessage implements MessageMetadataProvider {
         var chat = contextInfo.quotedMessageChat().orElseThrow();
         var sender = contextInfo.quotedMessageSender().orElse(null);
         var message = contextInfo.quotedMessage().orElseThrow();
-        return Optional.of(new QuotedMessage(id, chat, sender, message));
+        return Optional.of(new QuotedMessageInfo(id, chat, sender, message));
     }
 
     @Override
-    public Jid chatJid() {
+    public Jid parentJid() {
         return chat.jid();
     }
 
@@ -74,7 +74,7 @@ public final class QuotedMessage implements MessageMetadataProvider {
      */
     @Override
     public Jid senderJid() {
-        return Objects.requireNonNullElseGet(sender.jid(), this::chatJid);
+        return Objects.requireNonNullElseGet(sender.jid(), this::parentJid);
     }
 
     /**
@@ -90,7 +90,6 @@ public final class QuotedMessage implements MessageMetadataProvider {
         return id;
     }
 
-    @Override
     public Optional<Chat> chat() {
         return Optional.of(chat);
     }

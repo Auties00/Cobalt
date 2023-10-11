@@ -19,7 +19,7 @@ public record WebNotificationsInfo(
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
         int notifyMessageCount,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT, repeated = true)
-        List<MessageInfo> notifyMessages
+        List<ChatMessageInfo> notifyMessages
 ) implements Info, ProtobufMessage {
     /**
      * Returns when the notification was sent

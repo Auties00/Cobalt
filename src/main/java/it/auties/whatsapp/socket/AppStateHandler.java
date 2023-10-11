@@ -10,8 +10,8 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
@@ -479,7 +479,7 @@ class AppStateHandler {
         contactAction.name().ifPresent(chat::setName);
     }
 
-    private void deleteMessage(MessageInfo message, Chat chat) {
+    private void deleteMessage(ChatMessageInfo message, Chat chat) {
         chat.removeMessage(message);
         socketHandler.onMessageDeleted(message, false);
     }

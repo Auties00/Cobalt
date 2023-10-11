@@ -9,12 +9,11 @@ import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.NewsletterMessageInfo;
+import it.auties.whatsapp.model.info.QuotedMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.message.model.MessageStatus;
-import it.auties.whatsapp.model.message.model.QuotedMessage;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -326,23 +325,6 @@ public interface Listener {
     }
 
     /**
-     * Called when a new message is received in a newsletter
-     *
-     * @param whatsapp an instance to the calling api
-     * @param info     the message that was sent
-     */
-    default void onNewMessage(Whatsapp whatsapp, NewsletterMessageInfo info) {
-    }
-
-    /**
-     * Called when a new message is received in a newsletter
-     *
-     * @param info the message that was sent
-     */
-    default void onNewMessage(NewsletterMessageInfo info) {
-    }
-
-    /**
      * Called when a message is deleted
      *
      * @param whatsapp an instance to the calling api
@@ -350,7 +332,7 @@ public interface Listener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(Whatsapp whatsapp, MessageInfo info, boolean everyone) {
+    default void onMessageDeleted(Whatsapp whatsapp, ChatMessageInfo info, boolean everyone) {
     }
 
     /**
@@ -360,64 +342,26 @@ public interface Listener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(MessageInfo info, boolean everyone) {
+    default void onMessageDeleted(ChatMessageInfo info, boolean everyone) {
     }
-
+    
     /**
-     * Called when the status of a message changes inside a conversation. This means that the status
-     * change can be considered global as the only other participant is the contact. If you need
-     * updates regarding any chat, implement
-     * {@link Listener#onAnyMessageStatus(Whatsapp, Chat, Contact, MessageInfo, MessageStatus)}
+     * Called when the status of a message changes inside a chat
      *
      * @param whatsapp an instance to the calling api
      * @param info     the message whose status changed
-     * @param status   the new status of the message
      */
-    default void onConversationMessageStatus(Whatsapp whatsapp, MessageInfo info, MessageStatus status) {
+    default void onMessageStatus(Whatsapp whatsapp, MessageInfo info) {
     }
 
     /**
-     * Called when the status of a message changes inside a conversation. This means that the status
-     * change can be considered global as the only other participant is the contact. If you need
-     * updates regarding any chat, implement
-     * {@link Listener#onAnyMessageStatus(Chat, Contact, MessageInfo, MessageStatus)}
+     * Called when the status of a message changes inside a chat
      *
-     * @param info   the message whose status changed
-     * @param status the new status of the message
-     */
-    default void onConversationMessageStatus(MessageInfo info, MessageStatus status) {
-    }
-
-    /**
-     * Called when the status of a message changes inside any type of chat. If {@code chat} is a
-     * conversation with {@code contact}, the new read status can be considered valid for the message
-     * itself(global status). Otherwise, it should be considered valid only for {@code contact}. If
-     * you only need updates regarding conversation, implement
-     * {@link Listener#onConversationMessageStatus(MessageInfo, MessageStatus)}.
-     *
-     * @param whatsapp an instance to the calling api
-     * @param chat     the chat that triggered a status change
-     * @param contact  the contact that triggered a status change
      * @param info     the message whose status changed
-     * @param status   the new status of the message
      */
-    default void onAnyMessageStatus(Whatsapp whatsapp, Chat chat, Contact contact, MessageInfo info, MessageStatus status) {
+    default void onMessageStatus(MessageInfo info) {
     }
-
-    /**
-     * Called when the status of a message changes inside any type of chat. If {@code chat} is a
-     * conversation with {@code contact}, the new read status can be considered valid for the message
-     * itself(global status). Otherwise, it should be considered valid only for {@code contact}. If
-     * you only need updates regarding conversation, implement
-     * {@link Listener#onConversationMessageStatus(MessageInfo, MessageStatus)}.
-     *
-     * @param chat    the chat that triggered a status change
-     * @param contact the contact that triggered a status change
-     * @param info    the message whose status changed
-     * @param status  the new status of the message
-     */
-    default void onAnyMessageStatus(Chat chat, Contact contact, MessageInfo info, MessageStatus status) {
-    }
+    
 
     /**
      * Called when the socket receives all the status updated from WhatsappWeb's Socket.
@@ -425,7 +369,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param status   the status
      */
-    default void onStatus(Whatsapp whatsapp, Collection<MessageInfo> status) {
+    default void onStatus(Whatsapp whatsapp, Collection<ChatMessageInfo> status) {
     }
 
     /**
@@ -433,7 +377,7 @@ public interface Listener {
      *
      * @param status the status
      */
-    default void onStatus(Collection<MessageInfo> status) {
+    default void onStatus(Collection<ChatMessageInfo> status) {
     }
 
     /**
@@ -442,7 +386,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param status   the new status message
      */
-    default void onNewStatus(Whatsapp whatsapp, MessageInfo status) {
+    default void onNewStatus(Whatsapp whatsapp, ChatMessageInfo status) {
     }
 
     /**
@@ -450,7 +394,7 @@ public interface Listener {
      *
      * @param status the new status message
      */
-    default void onNewStatus(MessageInfo status) {
+    default void onNewStatus(ChatMessageInfo status) {
     }
 
     /**
@@ -473,20 +417,20 @@ public interface Listener {
     /**
      * Called when a message answers a previous message
      *
-     * @param info   the answer message
-     * @param quoted the quoted message
+     * @param response the response
+     * @param quoted   the quoted message
      */
-    default void onMessageReply(MessageInfo info, QuotedMessage quoted) {
+    default void onMessageReply(ChatMessageInfo response, QuotedMessageInfo quoted) {
     }
 
     /**
      * Called when a message answers a previous message
      *
      * @param whatsapp an instance to the calling api
-     * @param info     the answer message
+     * @param response the response
      * @param quoted   the quoted message
      */
-    default void onMessageReply(Whatsapp whatsapp, MessageInfo info, QuotedMessage quoted) {
+    default void onMessageReply(Whatsapp whatsapp, ChatMessageInfo response, QuotedMessageInfo quoted) {
     }
 
     /**
@@ -494,7 +438,7 @@ public interface Listener {
      *
      * @param contact the contact whose pic changed
      */
-    default void onContactPictureChange(Contact contact) {
+    default void onProfilePictureChanged(Contact contact) {
     }
 
 
@@ -504,7 +448,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param contact  the contact whose pic changed
      */
-    default void onContactPictureChange(Whatsapp whatsapp, Contact contact) {
+    default void onProfilePictureChanged(Whatsapp whatsapp, Contact contact) {
     }
 
     /**
@@ -512,7 +456,7 @@ public interface Listener {
      *
      * @param group the group whose pic changed
      */
-    default void onGroupPictureChange(Chat group) {
+    default void onGroupPictureChanged(Chat group) {
     }
 
     /**
@@ -521,7 +465,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param group    the group whose pic changed
      */
-    default void onGroupPictureChange(Whatsapp whatsapp, Chat group) {
+    default void onGroupPictureChanged(Whatsapp whatsapp, Chat group) {
     }
 
     /**
@@ -530,7 +474,7 @@ public interface Listener {
      * @param oldName the non-null old name
      * @param newName the non-null new name
      */
-    default void onUserNameChange(String oldName, String newName) {
+    default void onNameChanged(String oldName, String newName) {
     }
 
     /**
@@ -540,7 +484,7 @@ public interface Listener {
      * @param oldName  the non-null old name
      * @param newName  the non-null new name
      */
-    default void onUserNameChange(Whatsapp whatsapp, String oldName, String newName) {
+    default void onNameChanged(Whatsapp whatsapp, String oldName, String newName) {
     }
 
     /**
@@ -549,7 +493,7 @@ public interface Listener {
      * @param oldAbout the non-null old about
      * @param newAbout the non-null new about
      */
-    default void onUserAboutChange(String oldAbout, String newAbout) {
+    default void onAboutChanged(String oldAbout, String newAbout) {
     }
 
     /**
@@ -559,7 +503,7 @@ public interface Listener {
      * @param oldAbout the non-null old about
      * @param newAbout the non-null new about
      */
-    default void onUserAboutChange(Whatsapp whatsapp, String oldAbout, String newAbout) {
+    default void onAboutChanged(Whatsapp whatsapp, String oldAbout, String newAbout) {
     }
 
     /**
@@ -568,7 +512,7 @@ public interface Listener {
      * @param oldPicture the non-null old picture
      * @param newPicture the non-null new picture
      */
-    default void onUserPictureChange(URI oldPicture, URI newPicture) {
+    default void onProfilePictureChanged(URI oldPicture, URI newPicture) {
     }
 
     /**
@@ -578,7 +522,7 @@ public interface Listener {
      * @param oldPicture the non-null old picture
      * @param newPicture the non-null new picture
      */
-    default void onUserPictureChange(Whatsapp whatsapp, URI oldPicture, URI newPicture) {
+    default void onProfilePictureChanged(Whatsapp whatsapp, URI oldPicture, URI newPicture) {
     }
 
     /**
@@ -587,7 +531,7 @@ public interface Listener {
      * @param oldLocale the non-null old locale
      * @param newLocale the non-null new picture
      */
-    default void onUserLocaleChange(String oldLocale, String newLocale) {
+    default void onLocaleChanged(String oldLocale, String newLocale) {
     }
 
     /**
@@ -597,7 +541,7 @@ public interface Listener {
      * @param oldLocale the non-null old locale
      * @param newLocale the non-null new picture
      */
-    default void onUserLocaleChange(Whatsapp whatsapp, String oldLocale, String newLocale) {
+    default void onLocaleChanged(Whatsapp whatsapp, String oldLocale, String newLocale) {
     }
 
     /**

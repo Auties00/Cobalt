@@ -13,16 +13,13 @@ import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.MessageIndexInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.MessageInfoBuilder;
-import it.auties.whatsapp.model.info.NewsletterMessageInfo;
+import it.auties.whatsapp.model.info.*;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
+import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
@@ -326,21 +323,22 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
 
-        var jid = store.jid().orElseThrow(() -> new IllegalStateException("The session isn't connected"));
-        var key = new MessageKeyBuilder()
-                .id(MessageKey.randomId())
+        var jid = store.jid()
+                .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
+        var key = new ChatMessageKeyBuilder()
+                .id(ChatMessageKey.randomId())
                 .chatJid(companion)
                 .fromMe(true)
                 .senderJid(jid)
                 .build();
-        var info = new MessageInfoBuilder()
+        var info = new ChatMessageInfoBuilder()
                 .status(MessageStatus.PENDING)
                 .senderJid(jid)
                 .key(key)
                 .message(MessageContainer.of(message))
                 .timestampSeconds(Clock.nowSeconds())
                 .build();
-        var request = new MessageSendRequest(info, null, false, true, null);
+        var request = new MessageSendRequest.Chat(info, null, false, true, null);
         return sendMessage(request);
     }
 
@@ -391,7 +389,7 @@ public class SocketHandler implements SocketListener {
         var query = Node.of("query", queryNode);
         var list = Node.of("list", queryBody);
         var sync = Node.of("usync",
-                Map.of("sid", MessageKey.randomId(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
+                Map.of("sid", ChatMessageKey.randomId(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
         return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
     }
@@ -489,13 +487,14 @@ public class SocketHandler implements SocketListener {
         return sendWithNoResponse(node);
     }
 
-    public CompletableFuture<OptionalLong> subscribeToNewsletterUpdates(JidProvider channel) {
+    public CompletableFuture<OptionalLong> subscribeToNewsletterReactions(JidProvider channel) {
         return sendQuery(channel.toJid(), "set", "newsletter", Node.of("live_updates"))
                 .thenApplyAsync(this::parseNewsletterSubscription);
     }
 
     private OptionalLong parseNewsletterSubscription(Node result) {
-        return result.findNode("live_updates").stream()
+        return result.findNode("live_updates")
+                .stream()
                 .map(node -> node.attributes().getOptionalLong("duration"))
                 .flatMapToLong(OptionalLong::stream)
                 .findFirst();
@@ -623,14 +622,14 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    protected CompletableFuture<Void> sendMessageAck(Node node) {
+    protected CompletableFuture<Void> sendMessageAck(Jid from, Node node) {
         var attrs = node.attributes();
         var type = attrs.getOptionalString("type")
                 .filter(entry -> !Objects.equals(entry, "message"))
                 .orElse(null);
         var attributes = Attributes.of()
                 .put("id", node.id())
-                .put("to", node.attributes().getRequiredString("from"))
+                .put("to", from)
                 .put("class", node.description())
                 .put("participant", attrs.getNullableString("participant"), Objects::nonNull)
                 .put("recipient", attrs.getNullableString("recipient"), Objects::nonNull)
@@ -653,14 +652,11 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onMessageStatus(MessageStatus status, Contact participant, MessageInfo message, Chat chat) {
+    
+    protected void onMessageStatus(MessageInfo message) {
         callListenersAsync(listener -> {
-            if (participant == null) {
-                listener.onConversationMessageStatus(whatsapp, message, status);
-                listener.onConversationMessageStatus(message, status);
-            }
-            listener.onAnyMessageStatus(whatsapp, chat, participant, message, status);
-            listener.onAnyMessageStatus(chat, participant, message, status);
+            listener.onMessageStatus(whatsapp, message);
+            listener.onMessageStatus(message);
         });
     }
 
@@ -682,14 +678,14 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onNewMessage(MessageInfo info) {
+    protected void onNewMessage(ChatMessageInfo info) {
         callListenersAsync(listener -> {
             listener.onNewMessage(whatsapp, info);
             listener.onNewMessage(info);
         });
     }
 
-    protected void onNewStatus(MessageInfo info) {
+    protected void onNewStatus(ChatMessageInfo info) {
         callListenersAsync(listener -> {
             listener.onNewStatus(whatsapp, info);
             listener.onNewStatus(info);
@@ -717,7 +713,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onMessageDeleted(MessageInfo message, boolean everyone) {
+    protected void onMessageDeleted(ChatMessageInfo message, boolean everyone) {
         callListenersAsync(listener -> {
             listener.onMessageDeleted(whatsapp, message, everyone);
             listener.onMessageDeleted(message, everyone);
@@ -813,7 +809,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onReply(MessageInfo info) {
+    protected void onReply(ChatMessageInfo info) {
         var quoted = info.quotedMessage().orElse(null);
         if (quoted == null) {
             return;
@@ -825,31 +821,31 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onGroupPictureChange(Chat fromChat) {
+    protected void onGroupPictureChanged(Chat fromChat) {
         callListenersAsync(listener -> {
-            listener.onGroupPictureChange(whatsapp, fromChat);
-            listener.onGroupPictureChange(fromChat);
+            listener.onGroupPictureChanged(whatsapp, fromChat);
+            listener.onGroupPictureChanged(fromChat);
         });
     }
 
-    protected void onContactPictureChange(Contact fromContact) {
+    protected void onContactPictureChanged(Contact fromContact) {
         callListenersAsync(listener -> {
-            listener.onContactPictureChange(whatsapp, fromContact);
-            listener.onContactPictureChange(fromContact);
+            listener.onProfilePictureChanged(whatsapp, fromContact);
+            listener.onProfilePictureChanged(fromContact);
         });
     }
 
-    protected void onUserAboutChange(String newAbout, String oldAbout) {
+    protected void onUserAboutChanged(String newAbout, String oldAbout) {
         callListenersAsync(listener -> {
-            listener.onUserAboutChange(whatsapp, oldAbout, newAbout);
-            listener.onUserAboutChange(oldAbout, newAbout);
+            listener.onAboutChanged(whatsapp, oldAbout, newAbout);
+            listener.onAboutChanged(oldAbout, newAbout);
         });
     }
 
-    public void onUserPictureChange(URI newPicture, URI oldPicture) {
+    public void onUserPictureChanged(URI newPicture, URI oldPicture) {
         callListenersAsync(listener -> {
-            listener.onUserPictureChange(whatsapp, oldPicture, newPicture);
-            listener.onUserPictureChange(oldPicture, newPicture);
+            listener.onProfilePictureChanged(whatsapp, oldPicture, newPicture);
+            listener.onProfilePictureChanged(oldPicture, newPicture);
         });
     }
 
@@ -857,7 +853,7 @@ public class SocketHandler implements SocketListener {
         if (oldName != null && !Objects.equals(newName, oldName)) {
             sendWithNoResponse(Node.of("presence", Map.of("name", oldName, "type", "unavailable")));
             sendWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")));
-            onUserNameChange(newName, oldName);
+            onUserNameChanged(newName, oldName);
         }
         var self = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
@@ -868,10 +864,10 @@ public class SocketHandler implements SocketListener {
         store().setName(newName);
     }
 
-    private void onUserNameChange(String newName, String oldName) {
+    private void onUserNameChanged(String newName, String oldName) {
         callListenersAsync(listener -> {
-            listener.onUserNameChange(whatsapp, oldName, newName);
-            listener.onUserNameChange(oldName, newName);
+            listener.onNameChanged(whatsapp, oldName, newName);
+            listener.onNameChanged(oldName, newName);
         });
     }
 
@@ -880,15 +876,15 @@ public class SocketHandler implements SocketListener {
             return;
         }
         if (oldLocale != null) {
-            onUserLocaleChange(newLocale, oldLocale);
+            onUserLocaleChanged(newLocale, oldLocale);
         }
         store().setLocale(newLocale);
     }
 
-    private void onUserLocaleChange(String newLocale, String oldLocale) {
+    private void onUserLocaleChanged(String newLocale, String oldLocale) {
         callListenersAsync(listener -> {
-            listener.onUserLocaleChange(whatsapp, oldLocale, newLocale);
-            listener.onUserLocaleChange(oldLocale, newLocale);
+            listener.onLocaleChanged(whatsapp, oldLocale, newLocale);
+            listener.onLocaleChanged(oldLocale, newLocale);
         });
     }
 

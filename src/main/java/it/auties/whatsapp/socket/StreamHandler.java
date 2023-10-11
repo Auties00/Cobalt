@@ -18,14 +18,14 @@ import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupRole;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
+import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidServer;
-import it.auties.whatsapp.model.jid.JidType;
 import it.auties.whatsapp.model.media.MediaConnection;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageKeyBuilder;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
+import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
@@ -42,10 +42,7 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchType;
-import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.crypto.Cipher;
@@ -155,40 +152,59 @@ class StreamHandler {
     }
 
     private void digestReceipt(Node node) {
-        var chat = node.attributes()
+        var senderJid = node.attributes()
                 .getJid("from")
-                .filter(jid -> jid.type() != JidType.STATUS)
-                .flatMap(socketHandler.store()::findChatByJid)
-                .orElse(null);
-        getReceiptsMessageIds(node)
-                .stream()
-                .map(messageId -> chat == null ? socketHandler.store().findStatusById(messageId) : socketHandler.store().findMessageById(chat, messageId))
-                .flatMap(Optional::stream)
-                .forEach(message -> digestReceipt(node, chat, message));
-        socketHandler.sendMessageAck(node);
+                .orElseThrow(() -> new NoSuchElementException("Missing from"));
+        for(var messageId : getReceiptsMessageIds(node)) {
+            var message = socketHandler.store().findMessageById(senderJid, messageId);
+            if(message.isEmpty()) {
+                continue;
+            }
+
+            switch (message.get()) {
+                case ChatMessageInfo chatMessageInfo -> onChatReceipt(node, senderJid, chatMessageInfo);
+                case NewsletterMessageInfo newsletterMessageInfo -> onNewsletterReceipt(node, senderJid, newsletterMessageInfo);
+                default -> throw new IllegalStateException("Unexpected value: " + message.get());
+            }
+        }
+
+        socketHandler.sendMessageAck(senderJid, node);
     }
 
-    private void digestReceipt(Node node, Chat chat, MessageInfo message) {
+    private void onNewsletterReceipt(Node node, Jid chatJid, NewsletterMessageInfo message) {
+        var messageStatus = node.attributes()
+                .getOptionalString("type")
+                .flatMap(MessageStatus::of);
+        if(messageStatus.isEmpty()) {
+            return;
+        }
+
+        message.setStatus(messageStatus.get());
+        socketHandler.onMessageStatus(message);
+    }
+
+    private void onChatReceipt(Node node, Jid chatJid, ChatMessageInfo message) {
         var type = node.attributes().getOptionalString("type");
         var status = type.flatMap(MessageStatus::of)
                 .orElse(MessageStatus.DELIVERED);
-        var participant = node.attributes()
-                .getJid("participant")
-                .flatMap(socketHandler.store()::findContactByJid)
-                .orElse(null);
-        if(chat != null && chat.unreadMessagesCount() > 0) {
-            chat.setUnreadMessagesCount(chat.unreadMessagesCount() - 1);
-        }
+        socketHandler.store().findChatByJid(chatJid).ifPresent(chat -> {
+            var newCount = chat.unreadMessagesCount() - 1;
+            chat.setUnreadMessagesCount(newCount);
+            var participant = node.attributes()
+                    .getJid("participant")
+                    .flatMap(socketHandler.store()::findContactByJid)
+                    .orElse(null);
+            updateReceipt(status, chat, participant, message);
+            socketHandler.onMessageStatus(message);
+        });
 
         message.setStatus(status);
-        updateReceipt(status, chat, participant, message);
-        socketHandler.onMessageStatus(status, participant, message, chat);
         if (Objects.equals(type.orElse(null), "retry")) {
             sendMessageRetry(message);
         }
     }
 
-    private void sendMessageRetry(MessageInfo message) {
+    private void sendMessageRetry(ChatMessageInfo message) {
         if (!message.fromMe()) {
             return;
         }
@@ -201,14 +217,14 @@ class StreamHandler {
             socketHandler.querySessionsForcefully(message.senderJid());
             message.chat().ifPresent(Chat::clearParticipantsPreKeys);
             var recipients = all ? null : List.of(message.senderJid());
-            var request = new MessageSendRequest(message, recipients, !all, false, null);
+            var request = new MessageSendRequest.Chat(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
         } finally {
             retries.put(message.id(), attempts + 1);
         }
     }
 
-    private void updateReceipt(MessageStatus status, Chat chat, Contact participant, MessageInfo message) {
+    private void updateReceipt(MessageStatus status, Chat chat, Contact participant, ChatMessageInfo message) {
         var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
         container.add(participant != null ? participant.jid() : message.senderJid());
         if (chat != null && participant != null && chat.participants().size() != container.size()) {
@@ -242,15 +258,15 @@ class StreamHandler {
     }
 
     private void digestCall(Node node) {
-        socketHandler.sendMessageAck(node);
+        var from = node.attributes()
+                .getJid("from")
+                .orElseThrow(() -> new NoSuchElementException("Missing call creator: " + node));
+        socketHandler.sendMessageAck(from, node);
         var callNode = node.children().peekFirst();
         if (callNode == null) {
             return;
         }
 
-        var from = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing call creator: " + callNode));
         var callId = callNode.attributes()
                 .getString("call-id");
         var caller = callNode.attributes()
@@ -282,14 +298,22 @@ class StreamHandler {
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
         var match = socketHandler.store()
-                .findMessageById(from, messageId);
-        if (error != 0) {
-            match.ifPresent(message -> message.setStatus(MessageStatus.ERROR));
+                .findMessageById(from, messageId)
+                .orElse(null);
+        if(match == null) {
             return;
         }
 
-        match.filter(message -> message.status().index() < MessageStatus.SERVER_ACK.index())
-                .ifPresent(message -> message.setStatus(MessageStatus.SERVER_ACK));
+        if(error != 0) {
+            match.setStatus(MessageStatus.ERROR);
+            return;
+        }
+
+        if (match.status().index() >= MessageStatus.SERVER_ACK.index()) {
+            return;
+        }
+
+        match.setStatus(MessageStatus.SERVER_ACK);
     }
 
     private void digestCallAck(Node node) {
@@ -308,14 +332,7 @@ class StreamHandler {
     }
 
     private void sendRelay(Jid callCreator, String callId, Jid to) {
-        var values = new byte[][]{
-                new byte[]{-105, 99, -47, -29, 13, -106},
-                new byte[]{-99, -16, -53, 62, 13, -106},
-                new byte[]{-99, -16, -25, 62, 13, -106},
-                new byte[]{-99, -16, -5, 62, 13, -106},
-                new byte[]{-71, 60, -37, 62, 13, -106}
-        };
-        for (var value : values) {
+        for (var value : Specification.Whatsapp.CALL_RELAY) {
             var te = Node.of("te", Map.of("latency", 33554440), value);
             var relay = Node.of("relaylatency", Map.of("call-creator", callCreator, "call-id", callId), te);
             socketHandler.send(Node.of("call", Map.of("to", to), relay));
@@ -323,22 +340,34 @@ class StreamHandler {
     }
 
     private void digestNotification(Node node) {
-        socketHandler.sendMessageAck(node);
-        var type = node.attributes().getString("type", null);
-        switch (type) {
-            case "w:gp2" -> handleGroupNotification(node);
-            case "server_sync" -> handleServerSyncNotification(node);
-            case "account_sync" -> handleAccountSyncNotification(node);
-            case "encrypt" -> handleEncryptNotification(node);
-            case "picture" -> handlePictureNotification(node);
-            case "registration" -> handleRegistrationNotification(node);
-            case "link_code_companion_reg" -> handleCompanionRegistration(node);
-            case "newsletter" -> handleNewsletter(node);
-            case "mex" -> handleMexNamespace(node);
+        var from = node.attributes()
+                .getJid("from")
+                .orElseThrow(() -> new NoSuchElementException("Missing from"));
+        try {
+            var type = node.attributes().getString("type", null);
+            switch (type) {
+                case "w:gp2" -> handleGroupNotification(node);
+                case "server_sync" -> handleServerSyncNotification(node);
+                case "account_sync" -> handleAccountSyncNotification(node);
+                case "encrypt" -> handleEncryptNotification(node);
+                case "picture" -> handlePictureNotification(node);
+                case "registration" -> handleRegistrationNotification(node);
+                case "link_code_companion_reg" -> handleCompanionRegistration(node);
+                case "newsletter" -> handleNewsletter(from, node);
+                case "mex" -> handleMexNamespace(node);
+            }
+        }finally {
+            socketHandler.sendMessageAck(from, node);
         }
     }
 
-    private void handleNewsletter(Node node) {
+    private void handleNewsletter(Jid newsletterJid, Node node) {
+        var newsletter = socketHandler.store()
+                .findNewsletterByJid(newsletterJid);
+        if(newsletter.isEmpty()) {
+            return;
+        }
+
         var liveUpdates = node.findNode("live_updates");
         if(liveUpdates.isEmpty()) {
             return;
@@ -350,9 +379,28 @@ class StreamHandler {
             return;
         }
 
-        messages.get()
-                .findNodes("message")
-                .forEach(entry -> socketHandler.decodeMessage(entry, null, false));
+        for(var messageNode : messages.get().findNodes("message")) {
+            var messageId = messageNode.attributes()
+                    .getRequiredString("server_id");
+            var newsletterMessage = socketHandler.store().findMessageById(newsletter.get(), messageId);
+            if(newsletterMessage.isEmpty()) {
+                continue;
+            }
+
+            messageNode.findNode("reactions")
+                    .map(reactions -> reactions.findNodes("reaction"))
+                    .stream()
+                    .flatMap(Collection::stream)
+                    .forEach(reaction -> onNewsletterReaction(reaction, newsletterMessage.get()));
+        }
+    }
+
+    private void onNewsletterReaction(Node reaction, NewsletterMessageInfo newsletterMessage) {
+        var reactionCode = reaction.attributes()
+                .getRequiredString("code");
+        var reactionCount = reaction.attributes()
+                .getRequiredInt("count");
+        newsletterMessage.setReaction(reactionCode, reactionCount);
     }
 
     private void handleMexNamespace(Node node) {
@@ -470,8 +518,8 @@ class StreamHandler {
                 .orElseGet(() -> socketHandler.store().addNewChat(fromJid));
         var timestamp = node.attributes().getLong("t");
         if (fromChat.isGroup()) {
-            addMessageForGroupStubType(fromChat, MessageInfo.StubType.GROUP_CHANGE_ICON, timestamp, node);
-            socketHandler.onGroupPictureChange(fromChat);
+            addMessageForGroupStubType(fromChat, ChatMessageInfo.StubType.GROUP_CHANGE_ICON, timestamp, node);
+            socketHandler.onGroupPictureChanged(fromChat);
             return;
         }
         var fromContact = socketHandler.store().findContactByJid(fromJid).orElseGet(() -> {
@@ -479,7 +527,7 @@ class StreamHandler {
             socketHandler.onNewContact(contact);
             return contact;
         });
-        socketHandler.onContactPictureChange(fromContact);
+        socketHandler.onContactPictureChanged(fromContact);
     }
 
     private void handleGroupNotification(Node node) {
@@ -488,7 +536,7 @@ class StreamHandler {
             return;
         }
 
-        var stubType = MessageInfo.StubType.of(child.get().description());
+        var stubType = ChatMessageInfo.StubType.of(child.get().description());
         if(stubType.isEmpty()){
             return;
         }
@@ -496,7 +544,7 @@ class StreamHandler {
         handleGroupStubNotification(node, stubType.get());
     }
 
-    private void handleGroupStubNotification(Node node, MessageInfo.StubType stubType) {
+    private void handleGroupStubNotification(Node node, ChatMessageInfo.StubType stubType) {
         var timestamp = node.attributes().getLong("t");
         var fromJid = node.attributes()
                 .getJid("from")
@@ -507,17 +555,17 @@ class StreamHandler {
         addMessageForGroupStubType(fromChat, stubType, timestamp, node);
     }
 
-    private void addMessageForGroupStubType(Chat chat, MessageInfo.StubType stubType, long timestamp, Node metadata) {
+    private void addMessageForGroupStubType(Chat chat, ChatMessageInfo.StubType stubType, long timestamp, Node metadata) {
         var participantJid = metadata.attributes()
                 .getJid("participant")
                 .orElse(null);
         var parameters = getStubTypeParameters(metadata);
-        var key = new MessageKeyBuilder()
-                .id(MessageKey.randomId())
+        var key = new ChatMessageKeyBuilder()
+                .id(ChatMessageKey.randomId())
                 .chatJid(chat.jid())
                 .senderJid(participantJid)
                 .build();
-        var message = new MessageInfoBuilder()
+        var message = new ChatMessageInfoBuilder()
                 .status(MessageStatus.PENDING)
                 .timestampSeconds(timestamp)
                 .key(key)
@@ -526,7 +574,6 @@ class StreamHandler {
                 .stubParameters(parameters)
                 .senderJid(participantJid)
                 .build();
-        socketHandler.store().attribute(message);
         chat.addNewMessage(message);
         socketHandler.onNewMessage(message);
         if(participantJid == null){
@@ -536,7 +583,7 @@ class StreamHandler {
         handleGroupStubType(chat, stubType, participantJid);
     }
 
-    private void handleGroupStubType(Chat chat, MessageInfo.StubType stubType, Jid participantJid) {
+    private void handleGroupStubType(Chat chat, ChatMessageInfo.StubType stubType, Jid participantJid) {
         switch (stubType){
             case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
             case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
@@ -827,7 +874,7 @@ class StreamHandler {
     }
 
     private void subscribeToNewsletterUpdatesForever(Newsletter newsletter) {
-        socketHandler.subscribeToNewsletterUpdates(newsletter)
+        socketHandler.subscribeToNewsletterReactions(newsletter)
                 .thenAcceptAsync(result -> scheduleNewsletterSubscription(newsletter, result.orElse(-1)));
     }
 
@@ -1027,7 +1074,7 @@ class StreamHandler {
             }
 
             var oldStatus = socketHandler.store().about();
-            socketHandler.onUserAboutChange(about, oldStatus.orElse(null));
+            socketHandler.onUserAboutChanged(about, oldStatus.orElse(null));
         });
     }
 
@@ -1050,7 +1097,7 @@ class StreamHandler {
             return;
         }
 
-        socketHandler.onUserPictureChange(newPicture, oldStatus);
+        socketHandler.onUserPictureChanged(newPicture, oldStatus);
     }
 
     private void markBlocked(Jid entry) {

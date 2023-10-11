@@ -2,7 +2,7 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
 
-public interface OnWhatsappUserNameChange extends Listener {
+public interface OnWhatsappNameChanged extends Listener {
     /**
      * Called when the companion's name changes
      *
@@ -11,5 +11,5 @@ public interface OnWhatsappUserNameChange extends Listener {
      * @param newName  the non-null new name
      */
     @Override
-    void onUserNameChange(Whatsapp whatsapp, String oldName, String newName);
+    void onNameChanged(Whatsapp whatsapp, String oldName, String newName);
 }

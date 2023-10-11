@@ -6,8 +6,8 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.ChatDisappear;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
 import it.auties.whatsapp.model.sync.*;
@@ -22,7 +22,7 @@ import java.util.Optional;
 @ProtobufMessageName("Message.ProtocolMessage")
 public record ProtocolMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        Optional<MessageKey> key,
+        Optional<ChatMessageKey> key,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         @NonNull
         Type protocolType,

@@ -6,8 +6,8 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
@@ -52,15 +52,15 @@ public final class ActionMessageRangeSync implements ProtobufMessage {
                 .toList();
     }
 
-    private SyncActionMessage createActionMessage(MessageInfo info) {
+    private SyncActionMessage createActionMessage(ChatMessageInfo info) {
         var timestamp = (info != null) ? info.timestampSeconds() : null;
         var key = (info != null) ? checkSenderKey(info.key()) : null;
         return new SyncActionMessage(key, timestamp);
     }
 
-    private MessageKey checkSenderKey(MessageKey key) {
+    private ChatMessageKey checkSenderKey(ChatMessageKey key) {
         return key.senderJid()
-                .map(entry -> new MessageKey(key.chatJid(), key.fromMe(), key.id(), entry.withoutDevice()))
+                .map(entry -> new ChatMessageKey(key.chatJid(), key.fromMe(), key.id(), entry.withoutDevice()))
                 .orElse(key);
     }
 

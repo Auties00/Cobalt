@@ -4,8 +4,8 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.util.Clock;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -16,7 +16,7 @@ import java.util.Optional;
 public record NotificationMessageInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         @NonNull
-        MessageKey key,
+        ChatMessageKey key,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         @NonNull
         MessageContainer message,

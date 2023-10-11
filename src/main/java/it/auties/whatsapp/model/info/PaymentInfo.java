@@ -7,7 +7,7 @@ import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.payment.PaymentMoney;
 import it.auties.whatsapp.util.Clock;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -37,7 +37,7 @@ public record PaymentInfo(
         long transactionTimestampSeconds,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
         @NonNull
-        MessageKey requestMessageKey,
+        ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
         @ProtobufProperty(index = 8, type = ProtobufType.BOOL)

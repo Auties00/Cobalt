@@ -7,7 +7,7 @@ import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupPastParticipants;
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.setting.GlobalSettings;
 
 import java.util.List;
@@ -18,7 +18,7 @@ import static it.auties.protobuf.model.ProtobufType.*;
 @ProtobufMessageName("HistorySync")
 public record HistorySync(@ProtobufProperty(index = 1, type = OBJECT, required = true) Type syncType,
                           @ProtobufProperty(index = 2, type = OBJECT, repeated = true) List<Chat> conversations,
-                          @ProtobufProperty(index = 3, type = OBJECT, repeated = true) List<MessageInfo> statusV3Messages,
+                          @ProtobufProperty(index = 3, type = OBJECT, repeated = true) List<ChatMessageInfo> statusV3Messages,
                           @ProtobufProperty(index = 5, type = UINT32) int chunkOrder,
                           @ProtobufProperty(index = 6, type = UINT32) Integer progress,
                           @ProtobufProperty(index = 7, type = OBJECT, repeated = true) List<PushName> pushNames,

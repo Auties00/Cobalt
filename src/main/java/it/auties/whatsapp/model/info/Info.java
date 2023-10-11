@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.info;
 
-public sealed interface Info permits AdReplyInfo, BusinessIdentityInfo, ContextInfo,
-        ExternalAdReplyInfo, DeviceContextInfo, MessageInfo, NativeFlowInfo,
-        NotificationMessageInfo, PaymentInfo, ProductListInfo, WebNotificationsInfo, MessageIndexInfo {
+public sealed interface Info permits AdReplyInfo, BusinessIdentityInfo, ContextInfo, DeviceContextInfo, ExternalAdReplyInfo, MessageIndexInfo, MessageInfo, MessageStatusInfo, NativeFlowInfo, NotificationMessageInfo, PaymentInfo, ProductListInfo, WebNotificationsInfo {
 
 }

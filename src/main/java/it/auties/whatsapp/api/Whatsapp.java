@@ -23,8 +23,10 @@ import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.companion.CompanionLinkResult;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.MessageInfoBuilder;
+import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
@@ -44,7 +46,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.*;
-import it.auties.whatsapp.model.request.UpdateChannelRequest.UpdatePayload;
+import it.auties.whatsapp.model.request.UpdateNewsletterRequest.UpdatePayload;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.model.response.NewsletterResponse;
@@ -372,7 +374,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends JidProvider> CompletableFuture<T> subscribeToPresence(@NonNull T jid) {
-        return socketHandler.subscribeToPresence(jid).thenApplyAsync(ignored -> jid);
+        return socketHandler.subscribeToPresence(jid)
+                .thenApplyAsync(ignored -> jid);
     }
 
     /**
@@ -381,7 +384,7 @@ public class Whatsapp {
      * @param message the non-null message
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> removeReaction(@NonNull MessageMetadataProvider message) {
+    public CompletableFuture<? extends MessageInfo> removeReaction(@NonNull MessageInfo message) {
         return sendReaction(message, (String) null);
     }
 
@@ -392,7 +395,7 @@ public class Whatsapp {
      * @param reaction the reaction to send, null if you want to remove the reaction
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, Emoji reaction) {
+    public CompletableFuture<? extends MessageInfo> sendReaction(@NonNull MessageInfo message, Emoji reaction) {
         return sendReaction(message, Objects.toString(reaction));
     }
 
@@ -402,14 +405,15 @@ public class Whatsapp {
      * @param message  the non-null message
      * @param reaction the reaction to send, null if you want to remove the reaction. If a string that
      *                 isn't an emoji supported by Whatsapp is used, it will not get displayed
-     *                 correctly. Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emoji)} if
+     *                 correctly. Use {@link Whatsapp#sendReaction(MessageInfo, Emoji)} if
      *                 you need a typed emoji enum.
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, String reaction) {
-        var key = new MessageKeyBuilder()
-                .id(MessageKey.randomId())
-                .chatJid(message.chatJid())
+    public CompletableFuture<? extends MessageInfo> sendReaction(@NonNull MessageInfo message, String reaction) {
+        // TODO: Support newsletters
+        var key = new ChatMessageKeyBuilder()
+                .id(ChatMessageKey.randomId())
+                .chatJid(message.parentJid())
                 .senderJid(message.senderJid())
                 .fromMe(Objects.equals(message.senderJid().withoutDevice(), jidOrThrowError().withoutDevice()))
                 .id(message.id())
@@ -419,7 +423,7 @@ public class Whatsapp {
                 .content(reaction)
                 .timestampSeconds(Instant.now().toEpochMilli())
                 .build();
-        return sendMessage(message.chatJid(), reactionMessage);
+        return sendMessage(message.parentJid(), reactionMessage);
     }
 
     /**
@@ -429,7 +433,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull JidProvider chat, @NonNull String message) {
+    public CompletableFuture<? extends MessageInfo> sendMessage(@NonNull JidProvider chat, @NonNull String message) {
         return sendMessage(chat, MessageContainer.of(message));
     }
 
@@ -440,43 +444,73 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull JidProvider chat, @NonNull Message message) {
+    public CompletableFuture<? extends MessageInfo> sendMessage(@NonNull JidProvider chat, @NonNull Message message) {
         return sendMessage(chat, MessageContainer.of(message));
     }
 
     /**
-     * Builds and sends a message from a chat and a message
+     * Builds and sends a message from a recipient and a message
      *
-     * @param chat    the chat where the message should be sent
+     * @param recipient    the recipient where the message should be sent
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull JidProvider chat, @NonNull MessageContainer message) {
-        var key = new MessageKeyBuilder()
-                .id(MessageKey.randomId())
-                .chatJid(chat.toJid())
+    public CompletableFuture<? extends MessageInfo> sendMessage(@NonNull JidProvider recipient, @NonNull MessageContainer message) {
+        if(recipient.toJid().server() == JidServer.NEWSLETTER) {
+            var newsletter = store().findNewsletterByJid(recipient);
+            if(newsletter.isEmpty()) {
+                return CompletableFuture.failedFuture(new IllegalArgumentException("Cannot send a message in a newsletter that you didn't join"));
+            }
+
+            var info = new NewsletterMessageInfo(
+                    newsletter.get(),
+                    ChatMessageKey.randomId(),
+                    1,
+                    Clock.nowSeconds(),
+                    null,
+                    new ConcurrentHashMap<>(),
+                    message,
+                    MessageStatus.PENDING
+            );
+            return sendMessage(info);
+        }
+
+        var key = new ChatMessageKeyBuilder()
+                .id(ChatMessageKey.randomId())
+                .chatJid(recipient.toJid())
                 .fromMe(true)
                 .senderJid(jidOrThrowError())
                 .build();
-        var info = new MessageInfoBuilder()
+        var info = new ChatMessageInfoBuilder()
                 .status(MessageStatus.PENDING)
                 .senderJid(jidOrThrowError())
                 .key(key)
                 .message(message)
                 .timestampSeconds(Clock.nowSeconds())
-                .broadcast(chat.toJid().hasServer(JidServer.BROADCAST))
+                .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                 .build();
         return sendMessage(info);
     }
 
     /**
-     * Sends a message info to a chat
+     * Sends a message to a chat
      *
-     * @param info the info to send
+     * @param info the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
-        return socketHandler.sendMessage(new MessageSendRequest(info))
+    public CompletableFuture<ChatMessageInfo> sendMessage(@NonNull ChatMessageInfo info) {
+        return socketHandler.sendMessage(new MessageSendRequest.Chat(info))
+                .thenApply(ignored -> info);
+    }
+
+    /**
+     * Sends a message to a newsletter
+     *
+     * @param info the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<NewsletterMessageInfo> sendMessage(@NonNull NewsletterMessageInfo info) {
+        return socketHandler.sendMessage(new MessageSendRequest.Newsletter(info))
                 .thenApply(ignored -> info);
     }
 
@@ -528,7 +562,7 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> markRead(@NonNull MessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> markRead(@NonNull ChatMessageInfo info) {
         var type = store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS)
                 .value() == PrivacySettingValue.EVERYONE ? "read" : "read-self";
         socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), type);
@@ -548,7 +582,7 @@ public class Whatsapp {
      * @param info the non-null message whose newsletters is pending
      * @return a non-null newsletters
      */
-    public CompletableFuture<MessageInfo> awaitReply(@NonNull MessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> awaitReply(@NonNull ChatMessageInfo info) {
         return awaitReply(info.id());
     }
 
@@ -558,7 +592,7 @@ public class Whatsapp {
      * @param id the non-null id of message whose newsletters is pending
      * @return a non-null newsletters
      */
-    public CompletableFuture<MessageInfo> awaitReply(@NonNull String id) {
+    public CompletableFuture<ChatMessageInfo> awaitReply(@NonNull String id) {
         return store().addPendingReply(id);
     }
 
@@ -633,7 +667,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Optional<String>> queryNameFromServer(@NonNull JidProvider contactJid) {
-        var query = new ContactStatusRequest(MessageKey.randomId(), List.of(new ContactStatusRequest.Variable(contactJid.toJid().user(), List.of("STATUS"))));
+        var query = new ContactStatusRequest(ChatMessageKey.randomId(), List.of(new ContactStatusRequest.Variable(contactJid.toJid().user(), List.of("STATUS"))));
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Json.writeValueAsBytes(query)))
                 .thenApplyAsync(this::parseNameResponse);
     }
@@ -943,7 +977,7 @@ public class Whatsapp {
                 .map(content -> Node.of("body", content.getBytes(StandardCharsets.UTF_8)))
                 .orElse(null);
         var attributes = Attributes.of()
-                .put("id", MessageKey.randomId(), () -> description != null)
+                .put("id", ChatMessageKey.randomId(), () -> description != null)
                 .put("delete", true, () -> description == null)
                 .put("prev", descriptionId, () -> descriptionId != null)
                 .toMap();
@@ -1290,7 +1324,7 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> markPlayed(@NonNull MessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> markPlayed(@NonNull ChatMessageInfo info) {
         if (store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS).value() != PrivacySettingValue.EVERYONE) {
             return CompletableFuture.completedFuture(info);
         }
@@ -1351,11 +1385,11 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> star(@NonNull MessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> star(@NonNull ChatMessageInfo info) {
         return star(info, true);
     }
 
-    private CompletableFuture<MessageInfo> star(MessageInfo info, boolean star) {
+    private CompletableFuture<ChatMessageInfo> star(ChatMessageInfo info, boolean star) {
         if(store().clientType() == ClientType.MOBILE){
             // TODO: Send notification to companions
             info.setStarred(star);
@@ -1370,11 +1404,11 @@ public class Whatsapp {
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
     }
 
-    private String fromMeToFlag(MessageInfo info) {
+    private String fromMeToFlag(ChatMessageInfo info) {
         return booleanToInt(info.fromMe());
     }
 
-    private String participantToFlag(MessageInfo info) {
+    private String participantToFlag(ChatMessageInfo info) {
         return info.chatJid().hasServer(JidServer.GROUP) && !info.fromMe() ? info.senderJid().toString() : "0";
     }
 
@@ -1388,7 +1422,7 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> unstar(@NonNull MessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> unstar(@NonNull ChatMessageInfo info) {
         return star(info, false);
     }
 
@@ -1436,20 +1470,20 @@ public class Whatsapp {
      *                 its companions
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> delete(@NonNull MessageInfo info, boolean everyone) {
+    public CompletableFuture<ChatMessageInfo> delete(@NonNull ChatMessageInfo info, boolean everyone) {
         if (everyone) {
             var message = new ProtocolMessageBuilder()
                     .protocolType(ProtocolMessage.Type.REVOKE)
                     .key(info.key())
                     .build();
             var sender = info.chatJid().hasServer(JidServer.GROUP) ? jidOrThrowError() : null;
-            var key = new MessageKeyBuilder()
-                    .id(MessageKey.randomId())
+            var key = new ChatMessageKeyBuilder()
+                    .id(ChatMessageKey.randomId())
                     .chatJid(info.chatJid())
                     .fromMe(true)
                     .senderJid(sender)
                     .build();
-            var revokeInfo = new MessageInfoBuilder()
+            var revokeInfo = new ChatMessageInfoBuilder()
                     .status(MessageStatus.PENDING)
                     .senderJid(sender)
                     .key(key)
@@ -1457,8 +1491,9 @@ public class Whatsapp {
                     .timestampSeconds(Clock.nowSeconds())
                     .build();
             var attrs = Map.of("edit", getEditBit(info));
-            var request = new MessageSendRequest(revokeInfo, null, false, false, attrs);
-            return socketHandler.sendMessage(request).thenApplyAsync(ignored -> info);
+            var request = new MessageSendRequest.Chat(revokeInfo, null, false, false, attrs);
+            return socketHandler.sendMessage(request)
+                    .thenApplyAsync(ignored -> info);
         }
 
         if(store().clientType() == ClientType.MOBILE){
@@ -1473,10 +1508,11 @@ public class Whatsapp {
         var entry = PatchEntry.of(syncAction, Operation.SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
+        return socketHandler.pushPatch(request)
+                .thenApplyAsync(ignored -> info);
     }
 
-    private int getEditBit(@NonNull MessageInfo info) {
+    private int getEditBit(@NonNull ChatMessageInfo info) {
         if(info.chatJid().hasServer(JidServer.NEWSLETTER)) {
             return 8;
         }
@@ -1740,7 +1776,7 @@ public class Whatsapp {
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<byte[]> downloadMedia(@NonNull MessageInfo info) {
+    public CompletableFuture<byte[]> downloadMedia(@NonNull ChatMessageInfo info) {
         if(!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
@@ -1762,7 +1798,7 @@ public class Whatsapp {
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> requireMediaReupload(@NonNull MessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> requireMediaReupload(@NonNull ChatMessageInfo info) {
         if(!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
@@ -1785,7 +1821,7 @@ public class Whatsapp {
                 .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
     }
 
-    private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
+    private ChatMessageInfo parseMediaReupload(ChatMessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
         Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s", node.attributes()
                 .getInt("code"));
         var encryptNode = node.findNode("encrypt")
@@ -2330,7 +2366,7 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Call> sendCallMessage(JidProvider provider) {
-        var callId = MessageKey.randomId();
+        var callId = ChatMessageKey.randomId();
         var audioStream = Node.of("audio", Map.of("rate", 8000, "enc", "opus"));
         var audioStreamTwo = Node.of("audio", Map.of("rate", 16000, "enc", "opus"));
         var net = Node.of("net", Map.of("medium", 3));
@@ -2454,13 +2490,13 @@ public class Whatsapp {
     }
 
     /**
-     * Subscribes to a public newsletter's event stream
+     * Subscribes to a public newsletter's event stream of reactions
      *
      * @param channel the non-null channel
      * @return the time, in minutes, during which updates will be sent
      */
-    public CompletableFuture<OptionalLong> subscribeToNewsletterUpdates(@NonNull JidProvider channel) {
-        return socketHandler.subscribeToNewsletterUpdates(channel);
+    public CompletableFuture<OptionalLong> subscribeToNewsletterReactions(@NonNull JidProvider channel) {
+        return socketHandler.subscribeToNewsletterReactions(channel);
     }
 
     /**
@@ -2500,7 +2536,7 @@ public class Whatsapp {
         var input = new CreateNewsletterRequest.NewsletterInput(name, description, picture != null ? Base64.getEncoder().encodeToString(picture) : null);
         var variable = new CreateNewsletterRequest.Variable(input);
         var request = new CreateNewsletterRequest(variable);
-        return socketHandler.sendQuery("set", "tos", Node.of("notice", Map.of("stage", 5, "id", MessageKey.randomId())))
+        return socketHandler.sendQuery("set", "tos", Node.of("notice", Map.of("stage", 5, "id", ChatMessageKey.randomId())))
                 .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6234210096708695"), Json.writeValueAsBytes(request))))
                 .thenApplyAsync(this::parseNewsletterCreation)
                 .thenComposeAsync(this::onNewsletterCreation);
@@ -2519,7 +2555,7 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(result);
         }
 
-        return subscribeToNewsletterUpdates(result.get().jid())
+        return subscribeToNewsletterReactions(result.get().jid())
                 .thenApply(ignored -> result);
     }
 
@@ -2531,26 +2567,20 @@ public class Whatsapp {
      * @return a future
      */
     public <T extends JidProvider> CompletableFuture<T> changeNewsletterDescription(@NonNull T newsletter, String description) {
-        var request = new UpdateChannelRequest(new UpdateChannelRequest.Variable(newsletter.toJid().withServer(JidServer.NEWSLETTER), new UpdatePayload(Objects.requireNonNullElse(description, ""))));
+        var safeDescription = Objects.requireNonNullElse(description, "");
+        var payload = new UpdatePayload(safeDescription);
+        var body = new UpdateNewsletterRequest.Variable(newsletter.toJid(), payload);
+        var request = new UpdateNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "future"), Json.writeValueAsBytes(request)))
                 .thenApply(ignored -> newsletter);
     }
 
-
-    public CompletableFuture<Void> deleteNewsletter(@NonNull JidProvider newsletter) {
-        //// Delete channel
-        // content=[Node[description=query, attributes={query_id=6432288716838852}, content={"variables":{"newsletter_id":"120363182769055130@newsletter"}}]]]
-        //Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=51378.56848-47, type=newsletters}, content=[Node[description=newsletters, content={"data":{"xwa2_newsletter_delete_v2":{"id":"120363182769055130@newsletter","newsletter_state":{"type":"DELETED"}}}}]]]
-        //Received Binary Message Node[description=notification, attributes={t=1695660335, from=120363182769055130@s.whatsapp.net, id=150547312, type=mex}, content=[Node[description=update, attributes={op_name=NotificationNewsletterStateChange}, content={"data":{"xwa2_notify_newsletter_on_state_change":{"id":"120363182769055130@newsletter","is_requestor":true,"state":{"type":"DELETED"}}}}]]]
+    public CompletableFuture<Void> joinNewsletter(@NonNull JidProvider newsletter) {
         return CompletableFuture.completedFuture(null);
     }
 
-    public CompletableFuture<Void> joinNewsletter(@NonNull JidProvider newsletter) {
-        //// Join
-        //Sent Binary Message: Node[description=iq, attributes={xmlns=newsletter, to=s.whatsapp.net, id=51378.56848-27, type=get}, content=[Node[description=messages, attributes={count=100, type=invite, key=0029Va5QXI9002SzWZkTGb08}]]]
-        //Sent Binary Message: Node[description=iq, attributes={xmlns=w:mex, id=51378.56848-26, to=s.whatsapp.net, type=get}, content=[Node[description=query, attributes={query_id=6563316087068696}, content={"variables":{"input":{"key":"0029Va5QXI9002SzWZkTGb08","type":"INVITE"},"fetch_viewer_metadata":false,"fetch_full_image":false,"fetch_creation_time":true}}]]]
-        //Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=51378.56848-26, type=newsletters}, content=[Node[description=newsletters, content={"data":{"xwa2_newsletter":{"id":"120363143762876559@newsletter","state":{"type":"ACTIVE"},"thread_metadata":{"creation_time":"1690027896","description":{"id":"1690027896133409","text":"\u0623\u0648\u0644 \u062a\u0644\u0641\u0632\u0629 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629 \u0641\u064a \u0627\u0644\u0645\u063a\u0631\u0628","update_time":"1690027896133409"},"handle":null,"invite":"0029Va5QXI9002SzWZkTGb08","name":{"id":"1690027896133409","text":"ChoufTV","update_time":"1690027896133409"},"preview":{"direct_path":"\/v\/t61.24694-24\/362577403_1498863267607148_1704284266667109463_n.jpg?stp=dst-jpg_s192x192&ccb=11-4&oh=01_AdSVelVs7Fhgl0TerrmgOKsZ9Dd6P0mQ2WU--S7OxP5GRQ&oe=65151B59&_nc_sid=000000&_nc_cat=103","id":"1690284725670945","type":"PREVIEW"},"settings":{"reaction_codes":{"value":"ALL"}},"subscribers_count":"521758","verification":"VERIFIED"}}}}]]]
-        //Sent Binary Message: Node[description=iq, attributes={xmlns=newsletter, to=120363143762876559@s.whatsapp.net, id=51378.56848-28, type=set}, content=[Node[description=live_updates]]]
+
+    public CompletableFuture<Void> leaveNewsletter(@NonNull JidProvider newsletter) {
         return CompletableFuture.completedFuture(null);
     }
 
@@ -2660,20 +2690,10 @@ public class Whatsapp {
     /**
      * Registers a message status listener
      *
-     * @param onConversationMessageStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addConversationMessageStatusListener(OnConversationMessageStatus onConversationMessageStatus) {
-        return addListener(onConversationMessageStatus);
-    }
-
-    /**
-     * Registers a message status listener
-     *
      * @param onAnyMessageStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addAnyMessageStatusListener(OnAnyMessageStatus onAnyMessageStatus) {
+    public Whatsapp addMessageStatusListener(OnMessageStatus onAnyMessageStatus) {
         return addListener(onAnyMessageStatus);
     }
 
@@ -2748,22 +2768,12 @@ public class Whatsapp {
     }
 
     /**
-     * Registers a new message listener
-     *
-     * @param onNewMessage the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewNewsletterMessageListener(OnNewNewsletterMessage onNewMessage) {
-        return addListener(onNewMessage);
-    }
-
-    /**
      * Registers a new status listener
      *
      * @param onNewMediaStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewStatusListener(OnNewMediaStatus onNewMediaStatus) {
+    public Whatsapp addNewStatusListener(OnNewStatus onNewMediaStatus) {
         return addListener(onNewMediaStatus);
     }
 
@@ -2803,7 +2813,7 @@ public class Whatsapp {
      * @param onMediaStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addMediaStatusListener(OnMediaStatus onMediaStatus) {
+    public Whatsapp addMediaStatusListener(OnStatus onMediaStatus) {
         return addListener(onMediaStatus);
     }
 
@@ -2880,20 +2890,10 @@ public class Whatsapp {
     /**
      * Registers a message status listener
      *
-     * @param onWhatsappConversationMessageStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addConversationMessageStatusListener(OnWhatsappConversationMessageStatus onWhatsappConversationMessageStatus) {
-        return addListener(onWhatsappConversationMessageStatus);
-    }
-
-    /**
-     * Registers a message status listener
-     *
      * @param onMessageStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addAnyMessageStatusListener(OnWhatsappAnyMessageStatus onMessageStatus) {
+    public Whatsapp addMessageStatusListener(OnWhatsappMessageStatus onMessageStatus) {
         return addListener(onMessageStatus);
     }
 
@@ -2958,22 +2958,12 @@ public class Whatsapp {
     }
 
     /**
-     * Registers a new message listener
-     *
-     * @param onNewMessage the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewNewsletterMessageListener(OnWhatsappNewNewsletterMessage onNewMessage) {
-        return addListener(onNewMessage);
-    }
-
-    /**
      * Registers a new status listener
      *
      * @param onNewStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewStatusListener(OnWhatsappNewMediaStatus onNewStatus) {
+    public Whatsapp addNewStatusListener(OnWhatsappNewStatus onNewStatus) {
         return addListener(onNewStatus);
     }
 
@@ -3053,7 +3043,7 @@ public class Whatsapp {
      * @param info           the non-null target message
      * @param onMessageReply the non-null listener
      */
-    public Whatsapp addMessageReplyListener(@NonNull MessageInfo info, @NonNull OnMessageReply onMessageReply) {
+    public Whatsapp addMessageReplyListener(@NonNull ChatMessageInfo info, @NonNull OnMessageReply onMessageReply) {
         return addMessageReplyListener(info.id(), onMessageReply);
     }
 
@@ -3073,7 +3063,7 @@ public class Whatsapp {
      * @param info           the non-null target message
      * @param onMessageReply the non-null listener
      */
-    public Whatsapp addMessageReplyListener(@NonNull MessageInfo info, @NonNull OnWhatsappMessageReply onMessageReply) {
+    public Whatsapp addMessageReplyListener(@NonNull ChatMessageInfo info, @NonNull OnWhatsappMessageReply onMessageReply) {
         return addMessageReplyListener(info.id(), onMessageReply);
     }
 
@@ -3112,10 +3102,10 @@ public class Whatsapp {
     /**
      * Registers a name change listener
      *
-     * @param onUserNameChange the non-null listener
+     * @param onUserNameChanged the non-null listener
      */
-    public Whatsapp addUserNameChangeListener(@NonNull OnUserNameChange onUserNameChange) {
-        return addListener(onUserNameChange);
+    public Whatsapp addNameChangedListener(@NonNull OnUserNameChanged onUserNameChanged) {
+        return addListener(onUserNameChanged);
     }
 
     /**
@@ -3123,17 +3113,17 @@ public class Whatsapp {
      *
      * @param onNameChange the non-null listener
      */
-    public Whatsapp addUserNameChangeListener(@NonNull OnWhatsappUserNameChange onNameChange) {
+    public Whatsapp addNameChangedListener(@NonNull OnWhatsappNameChanged onNameChange) {
         return addListener(onNameChange);
     }
 
     /**
      * Registers a status change listener
      *
-     * @param onUserAboutChange the non-null listener
+     * @param onUserAboutChanged the non-null listener
      */
-    public Whatsapp addUserStatusChangeListener(@NonNull OnUserAboutChange onUserAboutChange) {
-        return addListener(onUserAboutChange);
+    public Whatsapp addAboutChangedListener(@NonNull OnUserAboutChanged onUserAboutChanged) {
+        return addListener(onUserAboutChanged);
     }
 
     /**
@@ -3141,17 +3131,17 @@ public class Whatsapp {
      *
      * @param onUserStatusChange the non-null listener
      */
-    public Whatsapp addUserStatusChangeListener(@NonNull OnWhatsappUserAboutChange onUserStatusChange) {
+    public Whatsapp addAboutChangedListener(@NonNull OnWhatsappAboutChanged onUserStatusChange) {
         return addListener(onUserStatusChange);
     }
 
     /**
      * Registers a picture change listener
      *
-     * @param onUserPictureChange the non-null listener
+     * @param onProfilePictureChanged the non-null listener
      */
-    public Whatsapp addUserPictureChangeListener(@NonNull OnUserPictureChange onUserPictureChange) {
-        return addListener(onUserPictureChange);
+    public Whatsapp addUserPictureChangedListener(@NonNull OnProfilePictureChanged onProfilePictureChanged) {
+        return addListener(onProfilePictureChanged);
     }
 
     /**
@@ -3159,17 +3149,17 @@ public class Whatsapp {
      *
      * @param onUserPictureChange the non-null listener
      */
-    public Whatsapp addUserPictureChangeListener(@NonNull OnWhatsappUserPictureChange onUserPictureChange) {
+    public Whatsapp addUserPictureChangedListener(@NonNull OnWhatsappProfilePictureChanged onUserPictureChange) {
         return addListener(onUserPictureChange);
     }
 
     /**
      * Registers a profile picture listener
      *
-     * @param onContactPictureChange the non-null listener
+     * @param onContactPictureChanged the non-null listener
      */
-    public Whatsapp addContactPictureChangeListener(@NonNull OnContactPictureChange onContactPictureChange) {
-        return addListener(onContactPictureChange);
+    public Whatsapp addContactPictureChangedListener(@NonNull OnContactPictureChanged onContactPictureChanged) {
+        return addListener(onContactPictureChanged);
     }
 
     /**
@@ -3177,7 +3167,7 @@ public class Whatsapp {
      *
      * @param onProfilePictureChange the non-null listener
      */
-    public Whatsapp addContactPictureChangeListener(@NonNull OnWhatsappContactPictureChange onProfilePictureChange) {
+    public Whatsapp addContactPictureChangedListener(@NonNull OnWhatsappContactPictureChanged onProfilePictureChange) {
         return addListener(onProfilePictureChange);
     }
 
@@ -3186,7 +3176,7 @@ public class Whatsapp {
      *
      * @param onGroupPictureChange the non-null listener
      */
-    public Whatsapp addGroupPictureChangeListener(@NonNull OnGroupPictureChange onGroupPictureChange) {
+    public Whatsapp addGroupPictureChangedListener(@NonNull OnGroupPictureChange onGroupPictureChange) {
         return addListener(onGroupPictureChange);
     }
 
@@ -3195,7 +3185,7 @@ public class Whatsapp {
      *
      * @param onGroupPictureChange the non-null listener
      */
-    public Whatsapp addGroupPictureChangeListener(@NonNull OnWhatsappContactPictureChange onGroupPictureChange) {
+    public Whatsapp addGroupPictureChangedListener(@NonNull OnWhatsappGroupPictureChange onGroupPictureChange) {
         return addListener(onGroupPictureChange);
     }
 

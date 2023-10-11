@@ -3,8 +3,8 @@ package it.auties.whatsapp.model.message.payment;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import it.auties.whatsapp.model.payment.PaymentBackground;
@@ -21,7 +21,7 @@ public record SendPaymentMessage(
         Optional<MessageContainer> noteMessage,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         @NonNull
-        MessageKey requestMessageKey,
+        ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {

@@ -1,9 +1,9 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 
-public interface OnWhatsappNewMediaStatus extends Listener {
+public interface OnWhatsappNewStatus extends Listener {
     /**
      * Called when the socket receives a new status from WhatsappWeb's Socket
      *
@@ -11,5 +11,5 @@ public interface OnWhatsappNewMediaStatus extends Listener {
      * @param status   the new status message
      */
     @Override
-    void onNewStatus(Whatsapp whatsapp, MessageInfo status);
+    void onNewStatus(Whatsapp whatsapp, ChatMessageInfo status);
 }

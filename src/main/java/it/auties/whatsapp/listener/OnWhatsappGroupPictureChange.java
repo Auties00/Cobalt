@@ -11,5 +11,5 @@ public interface OnWhatsappGroupPictureChange extends Listener {
      * @param group    the group whose pic changed
      */
     @Override
-    void onGroupPictureChange(Whatsapp whatsapp, Chat group);
+    void onGroupPictureChanged(Whatsapp whatsapp, Chat group);
 }

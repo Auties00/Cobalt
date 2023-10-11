@@ -10,8 +10,8 @@ import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.model.button.interactive.InteractiveLocationAnnotation;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
@@ -159,7 +159,7 @@ public final class ImageMessage extends LocalMediaMessage<ImageMessage>
 
     /**
      * Constructs a new builder to create a ImageMessage. The newsletters can be later sent using
-     * {@link Whatsapp#sendMessage(MessageInfo)}
+     * {@link Whatsapp#sendMessage(ChatMessageInfo)}
      *
      * @param media       the non-null image that the new message wraps
      * @param mimeType    the mime type of the new message, by default
