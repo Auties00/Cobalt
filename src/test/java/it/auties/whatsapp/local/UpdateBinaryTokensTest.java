@@ -1,4 +1,4 @@
-package it.auties.whatsapp.update;
+package it.auties.whatsapp.local;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;

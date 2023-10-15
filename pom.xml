@@ -285,13 +285,6 @@
             <version>${classgraph.version}</version>
         </dependency>
 
-        <!-- Generate link previews for TextMessage -->
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>link-preview</artifactId>
-            <version>${linkpreview.version}</version>
-        </dependency>
-
         <!-- Parse and generate vcards for ContactMessage -->
         <dependency>
             <groupId>com.googlecode.ez-vcard</groupId>
@@ -313,21 +306,30 @@
             <version>${apk.parser.version}</version>
         </dependency>
 
-        <!-- Generate previews for DocumentMessage -->
+        <!-- Generate message previews -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>link-preview</artifactId>
+            <version>${linkpreview.version}</version>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>${pdfbox.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-scratchpad</artifactId>
             <version>${poi.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>

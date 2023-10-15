@@ -1,4 +1,4 @@
-package it.auties.whatsapp.test;
+package it.auties.whatsapp.ci;
 
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.QrHandler;

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.update;
+package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.util.MetadataHelper;
