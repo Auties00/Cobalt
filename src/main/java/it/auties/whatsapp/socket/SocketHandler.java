@@ -37,6 +37,7 @@ import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.ControllerHelper;
 
 import java.net.SocketException;
 import java.net.URI;
@@ -271,15 +272,9 @@ public class SocketHandler implements SocketListener {
                 var number = store.phoneNumber()
                         .map(PhoneNumber::number)
                         .orElse(null);
-                this.keys = Keys.builder()
-                        .uuid(uuid)
-                        .clientType(keys.clientType())
-                        .build();
-                this.store = Store.builder()
-                        .uuid(uuid)
-                        .clientType(store.clientType())
-                        .device(store.device().orElse(null))
-                        .build();
+                var result = ControllerHelper.create(uuid, number, store.alias(), store.clientType(), store.serializer());
+                this.keys = result.keys();
+                this.store = result.store();
                 store.addListeners(oldListeners);
                 yield connect();
             }

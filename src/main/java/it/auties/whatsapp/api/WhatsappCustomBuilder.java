@@ -44,8 +44,6 @@ public class WhatsappCustomBuilder {
     }
 
     public Whatsapp build() {
-        Objects.requireNonNull(store, "Missing required field: store");
-        Objects.requireNonNull(keys, "Missing required field: keys");
         Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUID mismatch: %s != %s", store.uuid(), keys.uuid());
         var knownInstance = Whatsapp.getInstanceByUuid(store.uuid());
         if (knownInstance.isPresent()) {

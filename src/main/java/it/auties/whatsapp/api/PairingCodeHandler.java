@@ -19,7 +19,6 @@ public non-sealed interface PairingCodeHandler extends Consumer<String>, WebVeri
      * Discards the pairing code
      */
     static PairingCodeHandler discarding() {
-        return (ignored) -> {
-        };
+        return ignored -> {};
     }
 }

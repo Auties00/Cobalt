@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.linkpreview.LinkPreview;
+import it.auties.linkpreview.LinkPreviewMatch;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
 import it.auties.whatsapp.api.TextPreviewSetting;
@@ -133,7 +134,7 @@ class MessageHandler {
         };
     }
 
-    // TODO: Fix this
+    // FIXME: 16/10/23 Use real group invites
     private CompletableFuture<Void> attributeGroupInviteMessage(ChatMessageInfo info, GroupInviteMessage groupInviteMessage) {
         var url = "https://chat.whatsapp.com/%s".formatted(groupInviteMessage.code());
         var preview = LinkPreview.createPreview(URI.create(url))
@@ -196,16 +197,18 @@ class MessageHandler {
         contextInfo.setEphemeralExpiration((int) period);
     }
 
-    // TODO: Async
     private CompletableFuture<Void> attributeTextMessage(TextMessage textMessage) {
         if (socketHandler.store().textPreviewSetting() == TextPreviewSetting.DISABLED) {
             return CompletableFuture.completedFuture(null);
         }
 
-        var match = LinkPreview.createPreview(textMessage.text())
-                .orElse(null);
+        return LinkPreview.createPreviewAsync(textMessage.text())
+                .thenAcceptAsync(result -> attributeTextMessage(textMessage, result.orElse(null)));
+    }
+
+    private void attributeTextMessage(TextMessage textMessage, LinkPreviewMatch match) {
         if (match == null) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         var uri = match.result().uri().toString();
@@ -232,7 +235,6 @@ class MessageHandler {
         textMessage.setDescription(match.result().siteDescription());
         textMessage.setTitle(match.result().title());
         textMessage.setPreviewType(videoUri != null ? TextMessage.PreviewType.VIDEO : TextMessage.PreviewType.NONE);
-        return CompletableFuture.completedFuture(null);
     }
 
     private LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {
@@ -354,6 +356,7 @@ class MessageHandler {
         };
     }
 
+    // TODO: Add reactions support
     private CompletableFuture<Void> encodeNewsletterMessage(MessageSendRequest.Newsletter request) {
         var message = request.info().message();
         var messageNode = getPlainMessageNode(message, request.additionalAttributes());

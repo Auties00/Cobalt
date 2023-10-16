@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
-import it.auties.whatsapp.util.MessagesSet;
+import it.auties.whatsapp.util.Messages;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -17,7 +17,7 @@ public final class Newsletter implements JidProvider {
     private final NewsletterState state;
     private final NewsletterMetadata metadata;
     private final NewsletterViewerMetadata viewerMetadata;
-    private final MessagesSet<NewsletterMessageInfo> messages;
+    private final Messages<NewsletterMessageInfo> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     Newsletter(
@@ -30,13 +30,13 @@ public final class Newsletter implements JidProvider {
             @JsonProperty("viewer_metadata")
             NewsletterViewerMetadata viewerMetadata,
             @JsonProperty("messages")
-            MessagesSet<NewsletterMessageInfo> messages
+            Messages<NewsletterMessageInfo> messages
     ) {
         this.jid = jid;
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = Objects.requireNonNullElseGet(messages, MessagesSet::new);
+        this.messages = Objects.requireNonNullElseGet(messages, Messages::new);
     }
 
     public Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata) {
@@ -44,7 +44,7 @@ public final class Newsletter implements JidProvider {
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = new MessagesSet<>();
+        this.messages = new Messages<>();
     }
 
     public void addMessage(NewsletterMessageInfo message) {

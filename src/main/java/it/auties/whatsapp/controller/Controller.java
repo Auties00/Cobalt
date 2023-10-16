@@ -37,9 +37,9 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * A list of alias for the controller, can be used in place of UUID1
      */
-    protected final List<String> alias;
+    protected final Collection<String> alias;
 
-    public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias) {
+    public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias) {
         this.uuid = uuid;
         this.phoneNumber = phoneNumber;
         this.serializer = serializer;
@@ -115,7 +115,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * @return an immutable collection
      */
     public Collection<String> alias() {
-        return Collections.unmodifiableList(alias);
+        return Collections.unmodifiableCollection(alias);
     }
 
     /**

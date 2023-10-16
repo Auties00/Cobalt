@@ -3,21 +3,14 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unregistered;
 import it.auties.whatsapp.api.MobileRegistrationBuilder.Unverified;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.KeysBuilder;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 
-import java.util.Objects;
 import java.util.Optional;
 
 @SuppressWarnings("unused")
 public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuilder> {
-    MobileOptionsBuilder(StoreBuilder store, KeysBuilder keys) {
-        super(store, keys);
-    }
-
     MobileOptionsBuilder(Store store, Keys keys) {
         super(store, keys);
     }
@@ -28,11 +21,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder device(CompanionDevice device) {
-        if (storeBuilder == null) {
-            store.setDevice(device);
-        } else {
-            storeBuilder.device(device);
-        }
+        store.setDevice(device);
         return this;
     }
 
@@ -42,11 +31,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder business(boolean business) {
-        if (storeBuilder == null) {
-            store.setBusiness(business);
-        } else {
-            storeBuilder.business(business);
-        }
+        store.setBusiness(business);
         return this;
     }
 
@@ -56,11 +41,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessAddress(String businessAddress) {
-        if (storeBuilder == null) {
-            store.setBusinessAddress(businessAddress);
-        } else {
-            storeBuilder.businessAddress(businessAddress);
-        }
+        store.setBusinessAddress(businessAddress);
         return this;
     }
 
@@ -70,11 +51,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessLongitude(Double businessLongitude) {
-        if (storeBuilder == null) {
-            store.setBusinessLongitude(businessLongitude);
-        } else {
-            storeBuilder.businessLongitude(businessLongitude);
-        }
+        store.setBusinessLongitude(businessLongitude);
         return this;
     }
 
@@ -84,11 +61,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessLatitude(Double businessLatitude) {
-        if (storeBuilder == null) {
-            store.setBusinessLatitude(businessLatitude);
-        } else {
-            storeBuilder.businessLatitude(businessLatitude);
-        }
+        store.setBusinessLatitude(businessLatitude);
         return this;
     }
 
@@ -98,11 +71,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessDescription(String businessDescription) {
-        if (storeBuilder == null) {
-            store.setBusinessDescription(businessDescription);
-        } else {
-            storeBuilder.businessDescription(businessDescription);
-        }
+        store.setBusinessDescription(businessDescription);
         return this;
     }
 
@@ -112,11 +81,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessWebsite(String businessWebsite) {
-        if (storeBuilder == null) {
-            store.setBusinessWebsite(businessWebsite);
-        } else {
-            storeBuilder.businessWebsite(businessWebsite);
-        }
+        store.setBusinessWebsite(businessWebsite);
         return this;
     }
 
@@ -126,11 +91,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessEmail(String businessEmail) {
-        if (storeBuilder == null) {
-            store.setBusinessEmail(businessEmail);
-        } else {
-            storeBuilder.businessEmail(businessEmail);
-        }
+        store.setBusinessEmail(businessEmail);
         return this;
     }
 
@@ -140,11 +101,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return the same instance for chaining
      */
     public MobileOptionsBuilder businessCategory(BusinessCategory businessCategory) {
-        if (storeBuilder == null) {
-            store.setBusinessCategory(businessCategory);
-        } else {
-            storeBuilder.businessCategory(businessCategory);
-        }
+        store.setBusinessCategory(businessCategory);
         return this;
     }
 
@@ -156,13 +113,12 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null optional of whatsapp
      */
     public Optional<Whatsapp> registered() {
-        var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
         if (!keys.registered()) {
             return Optional.empty();
         }
 
         return Optional.of(Whatsapp.customBuilder()
-                .store(Objects.requireNonNullElseGet(store, storeBuilder::build))
+                .store(store)
                 .keys(keys)
                 .errorHandler(errorHandler)
                 .socketExecutor(socketExecutor)
@@ -176,8 +132,6 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unregistered unregistered() {
-        var store = Objects.requireNonNullElseGet(this.store, storeBuilder::build);
-        var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
         return new Unregistered(store, keys, errorHandler, socketExecutor);
     }
 
@@ -188,8 +142,6 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unverified unverified() {
-        var store = Objects.requireNonNullElseGet(this.store, storeBuilder::build);
-        var keys = Objects.requireNonNullElseGet(this.keys, keysBuilder::build);
         return new Unverified(store, keys, errorHandler, socketExecutor);
     }
 }

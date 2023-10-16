@@ -148,7 +148,7 @@
         <classgraph.version>4.8.160</classgraph.version>
         <reflection.version>1.2</reflection.version>
         <lazysodium.version>5.1.4</lazysodium.version>
-        <linkpreview.version>2.1</linkpreview.version>
+        <linkpreview.version>2.2</linkpreview.version>
         <vcard.version>0.12.1</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
         <libphonenumber.version>8.13.13</libphonenumber.version>
@@ -232,7 +232,7 @@
             <version>${qr.terminal.version}</version>
         </dependency>
 
-        <!-- Cryptography -->
+        <!-- Buffer -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
@@ -243,6 +243,8 @@
             <artifactId>bcpkix-jdk15on</artifactId>
             <version>${bouncy.castle.version}</version>
         </dependency>
+
+        <!-- Cryptography -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
@@ -277,19 +279,18 @@
             <artifactId>jackson-datatype-jdk8</artifactId>
             <version>${jackson.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
 
         <!-- Scan for listeners - @RegisterListener -->
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
             <version>${classgraph.version}</version>
-        </dependency>
-
-        <!-- Parse and generate vcards for ContactMessage -->
-        <dependency>
-            <groupId>com.googlecode.ez-vcard</groupId>
-            <artifactId>ez-vcard</artifactId>
-            <version>${vcard.version}</version>
         </dependency>
 
         <!-- Parse phone numbers (Mobile API) -->
@@ -329,6 +330,12 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-scratchpad</artifactId>
             <version>${poi.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.ez-vcard</groupId>
+            <artifactId>ez-vcard</artifactId>
+            <version>${vcard.version}</version>
             <optional>true</optional>
         </dependency>
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import java.io.IOException;
@@ -27,6 +28,7 @@ public final class Smile {
         try {
             smile = new SmileMapper()
                     .registerModule(new Jdk8Module())
+                    .registerModule(new JavaTimeModule())
                     .registerModule(new ParameterNamesModule())
                     .setSerializationInclusion(NON_NULL)
                     .enable(WRITE_ENUMS_USING_INDEX)

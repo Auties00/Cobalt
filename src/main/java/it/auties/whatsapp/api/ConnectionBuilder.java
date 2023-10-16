@@ -1,12 +1,10 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.controller.DefaultControllerSerializer;
-import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.model.companion.CompanionDevice;
-import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.util.ControllerHelper;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,11 +17,10 @@ import java.util.UUID;
 public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
     private final ClientType clientType;
     private ControllerSerializer serializer;
-    private CompanionDevice device;
 
     ConnectionBuilder(ClientType clientType) {
         this.clientType = clientType;
-        this.serializer = DefaultControllerSerializer.instance();
+        this.serializer = ControllerSerializer.toSmile();
     }
 
     /**
@@ -34,17 +31,6 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      */
     public ConnectionBuilder<T> serializer(ControllerSerializer serializer) {
         this.serializer = serializer;
-        return this;
-    }
-
-    /**
-     * Sets the device to use
-     *
-     * @param device the non-null device to use
-     * @return the same instance for chaining
-     */
-    public ConnectionBuilder<T> device(CompanionDevice device) {
-        this.device = device;
         return this;
     }
 
@@ -65,25 +51,11 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @param uuid the nullable uuid to use to create the connection
      * @return a non-null options selector
      */
-    @SuppressWarnings("unchecked")
     public T newConnection(UUID uuid) {
-        if (uuid == null) {
-            uuid = UUID.randomUUID();
-        }
-
-        var store = Store.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .device(device)
-                .serializer(serializer);
-        var keys = Keys.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .serializer(serializer);
-        return (T) switch (clientType) {
-            case WEB -> new WebOptionsBuilder(store, keys);
-            case MOBILE -> new MobileOptionsBuilder(store, keys);
-        };
+        var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
+        var sessionStoreAndKeys = ControllerHelper.deserialize(sessionUuid, null, null, clientType, serializer)
+                .orElseGet(() -> ControllerHelper.create(sessionUuid, null, null, clientType, serializer));
+        return createConnection(sessionStoreAndKeys);
     }
 
     /**
@@ -94,24 +66,10 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @param phoneNumber the nullable uuid to use to create the connection
      * @return a non-null options selector
      */
-    @SuppressWarnings("unchecked")
     public T newConnection(long phoneNumber) {
-        var uuid = UUID.randomUUID();
-        var store = Store.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .device(device)
-                .phoneNumber(PhoneNumber.of(phoneNumber))
-                .serializer(serializer);
-        var keys = Keys.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .phoneNumber(PhoneNumber.of(phoneNumber))
-                .serializer(serializer);
-        return (T) switch (clientType) {
-            case WEB -> new WebOptionsBuilder(store, keys);
-            case MOBILE -> new MobileOptionsBuilder(store, keys);
-        };
+        var sessionStoreAndKeys = ControllerHelper.deserialize(null, phoneNumber, null, clientType, serializer)
+                .orElseGet(() -> ControllerHelper.create(UUID.randomUUID(), phoneNumber, null, clientType, serializer));
+        return createConnection(sessionStoreAndKeys);
     }
 
     /**
@@ -122,24 +80,10 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @param alias the nullable alias to use to create the connection
      * @return a non-null options selector
      */
-    @SuppressWarnings("unchecked")
     public T newConnection(String alias) {
-        var uuid = UUID.randomUUID();
-        var store = Store.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .device(device)
-                .serializer(serializer)
-                .alias(alias);
-        var keys = Keys.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .serializer(serializer)
-                .alias(alias);
-        return (T) switch (clientType) {
-            case WEB -> new WebOptionsBuilder(store, keys);
-            case MOBILE -> new MobileOptionsBuilder(store, keys);
-        };
+        var sessionStoreAndKeys = ControllerHelper.deserialize(null, null, alias, clientType, serializer)
+                .orElseGet(() -> ControllerHelper.create(UUID.randomUUID(), null, alias != null ? List.of(alias) : null, clientType, serializer));
+        return createConnection(sessionStoreAndKeys);
     }
 
     /**
@@ -168,35 +112,10 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      *
      * @return a non-null options selector
      */
-    @SuppressWarnings({"unchecked", "OptionalIsPresent"})
     public Optional<T> newOptionalConnection(UUID uuid) {
-        if (uuid == null) {
-            uuid = UUID.randomUUID();
-        }
-
-        var store = Store.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .device(device)
-                .serializer(serializer)
-                .deserialize();
-        if (store.isEmpty()) {
-            return Optional.empty();
-        }
-
-        var keys = Keys.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .serializer(serializer)
-                .deserialize();
-        if (keys.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return Optional.of((T) switch (clientType) {
-            case WEB -> new WebOptionsBuilder(store.get(), keys.get());
-            case MOBILE -> new MobileOptionsBuilder(store.get(), keys.get());
-        });
+        var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
+        var sessionStoreAndKeys = ControllerHelper.deserialize(sessionUuid, null, null, clientType, serializer);
+        return sessionStoreAndKeys.map(this::createConnection);
     }
 
     /**
@@ -205,34 +124,9 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      *
      * @return a non-null options selector
      */
-    @SuppressWarnings({"unchecked", "OptionalIsPresent"})
     public Optional<T> newOptionalConnection(Long phoneNumber) {
-        var uuid = UUID.randomUUID();
-        var store = Store.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .device(device)
-                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
-                .serializer(serializer)
-                .deserialize();
-        if (store.isEmpty()) {
-            return Optional.empty();
-        }
-
-        var keys = Keys.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
-                .serializer(serializer)
-                .deserialize();
-        if (keys.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return Optional.of((T) switch (clientType) {
-            case WEB -> new WebOptionsBuilder(store.get(), keys.get());
-            case MOBILE -> new MobileOptionsBuilder(store.get(), keys.get());
-        });
+        var sessionStoreAndKeys = ControllerHelper.deserialize(null, phoneNumber, null, clientType, serializer);
+        return sessionStoreAndKeys.map(this::createConnection);
     }
 
     /**
@@ -242,34 +136,9 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @param alias the nullable alias to use to create the connection
      * @return a non-null options selector
      */
-    @SuppressWarnings({"unchecked", "OptionalIsPresent"})
     public Optional<T> newOptionalConnection(String alias) {
-        var uuid = UUID.randomUUID();
-        var store = Store.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .device(device)
-                .serializer(serializer)
-                .alias(alias)
-                .deserialize();
-        if (store.isEmpty()) {
-            return Optional.empty();
-        }
-
-        var keys = Keys.builder()
-                .uuid(uuid)
-                .clientType(clientType)
-                .serializer(serializer)
-                .alias(alias)
-                .deserialize();
-        if (keys.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return Optional.of((T) switch (clientType) {
-            case WEB -> new WebOptionsBuilder(store.get(), keys.get());
-            case MOBILE -> new MobileOptionsBuilder(store.get(), keys.get());
-        });
+        var sessionStoreAndKeys = ControllerHelper.deserialize(null, null, alias, clientType, serializer);
+        return sessionStoreAndKeys.map(this::createConnection);
     }
 
     /**
@@ -288,5 +157,13 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      */
     public Optional<T> lastOptionalConnection() {
         return newOptionalConnection(serializer.listIds(clientType).peekLast());
+    }
+
+    @SuppressWarnings("unchecked")
+    private T createConnection(ControllerHelper.StoreAndKeysPair sessionStoreAndKeys) {
+        return (T) switch (clientType) {
+            case WEB -> new WebOptionsBuilder(sessionStoreAndKeys.store(), sessionStoreAndKeys.keys());
+            case MOBILE -> new MobileOptionsBuilder(sessionStoreAndKeys.store(), sessionStoreAndKeys.keys());
+        };
     }
 }

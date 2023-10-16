@@ -392,7 +392,6 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<? extends MessageInfo> sendReaction(MessageInfo message, String reaction) {
-        // TODO: Support newsletters
         var key = new ChatMessageKeyBuilder()
                 .id(ChatMessageKey.randomId())
                 .chatJid(message.parentJid())

@@ -1,28 +1,43 @@
 open module it.auties.cobalt {
-    requires transitive java.desktop;
-    requires java.net.http;
+    // Cryptography
+    requires it.auties.curve;
+    requires org.bouncycastle.provider;
+
+    // Buffer
+    requires io.netty.buffer;
+    requires io.netty.common;
+
+    // Scan listeners
+    requires io.github.classgraph;
+
+    // QR related dependencies
+    requires com.google.zxing;
+    requires com.google.zxing.javase;
+    requires it.auties.qr;
+    requires java.desktop;
+
+    // Serialization (Protobuf, JSON, Smile)
+    requires it.auties.protobuf.base;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.dataformat.smile;
     requires com.fasterxml.jackson.module.paramnames;
-    requires it.auties.protobuf.base;
-    requires com.google.zxing;
-    requires com.google.zxing.javase;
-    requires it.auties.qr;
-    requires io.github.classgraph;
-    requires org.bouncycastle.provider;
-    requires it.auties.curve;
-    requires it.auties.linkpreview;
-    requires com.googlecode.ezvcard;
-    requires libphonenumber;
-    requires org.apache.pdfbox;
-    requires org.apache.poi.ooxml;
-    requires org.apache.poi.scratchpad;
-    requires net.dongliu.apkparser;
-    requires io.netty.buffer;
-    requires io.netty.common;
-    requires java.compiler;
     requires com.fasterxml.jackson.datatype.jdk8;
+    requires com.fasterxml.jackson.datatype.jsr310;
+
+    // HTTP Client
+    requires java.net.http;
+
+    // Generate message previews
+    requires static org.apache.pdfbox;
+    requires static org.apache.poi.ooxml;
+    requires static org.apache.poi.scratchpad;
+    requires static it.auties.linkpreview;
+    requires static com.googlecode.ezvcard;
+
+    // Mobile api
+    requires libphonenumber;
+    requires net.dongliu.apkparser;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

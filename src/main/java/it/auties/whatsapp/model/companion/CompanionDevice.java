@@ -11,8 +11,7 @@ import it.auties.whatsapp.model.signal.auth.Version;
  * @param platform     the non-null os of the device
  * @param osVersion    the non-null os version of the device
  */
-public record CompanionDevice(String model, String manufacturer, PlatformType platform, PlatformType businessPlatform,
-                              Version osVersion) {
+public record CompanionDevice(String model, String manufacturer, PlatformType platform, PlatformType businessPlatform, Version osVersion) {
     private static final CompanionDevice IPHONE_7 = new CompanionDevice("iPhone 7", "Apple", PlatformType.IOS, PlatformType.SMB_IOS, Version.of("15.3.1"));
     private static final CompanionDevice SAMSUNG_GALAXY_S9 = new CompanionDevice("star2lte", "Samsung", PlatformType.ANDROID, PlatformType.SMB_ANDROID, Version.of("8.0.0"));
 

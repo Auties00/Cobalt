@@ -1,9 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.KeysBuilder;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.controller.StoreBuilder;
 import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
@@ -15,15 +13,8 @@ import java.util.concurrent.Executor;
 public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOptionsBuilder, WebOptionsBuilder {
     Store store;
     Keys keys;
-    StoreBuilder storeBuilder;
-    KeysBuilder keysBuilder;
     ErrorHandler errorHandler;
     Executor socketExecutor;
-
-    OptionsBuilder(StoreBuilder storeBuilder, KeysBuilder keysBuilder) {
-        this.storeBuilder = storeBuilder;
-        this.keysBuilder = keysBuilder;
-    }
 
     OptionsBuilder(Store store, Keys keys) {
         this.store = store;
@@ -39,11 +30,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T name(String name) {
-        if (store != null) {
-            store.setName(name);
-        } else {
-            storeBuilder.name(name);
-        }
+        store.setName(name);
         return (T) this;
     }
 
@@ -57,11 +44,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T version(Version version) {
-        if (store != null) {
-            store.setVersion(version);
-        } else {
-            storeBuilder.version(version);
-        }
+        store.setVersion(version);
         return (T) this;
     }
 
@@ -73,11 +56,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T autodetectListeners(boolean autodetectListeners) {
-        if (store != null) {
-            store.setAutodetectListeners(autodetectListeners);
-        } else {
-            storeBuilder.autodetectListeners(autodetectListeners);
-        }
+        store.setAutodetectListeners(autodetectListeners);
         return (T) this;
     }
 
@@ -89,11 +68,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T textPreviewSetting(TextPreviewSetting textPreviewSetting) {
-        if (store != null) {
-            store.setTextPreviewSetting(textPreviewSetting);
-        } else {
-            storeBuilder.textPreviewSetting(textPreviewSetting);
-        }
+        store.setTextPreviewSetting(textPreviewSetting);
         return (T) this;
     }
 
@@ -127,11 +102,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T releaseChannel(ReleaseChannel releaseChannel) {
-        if (store != null) {
-            store.setReleaseChannel(releaseChannel);
-        } else {
-            storeBuilder.releaseChannel(releaseChannel);
-        }
+        store.setReleaseChannel(releaseChannel);
         return (T) this;
     }
 
@@ -142,11 +113,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T proxy(URI proxy) {
-        if (store != null) {
-            store.setProxy(proxy);
-        } else {
-            storeBuilder.proxy(proxy);
-        }
+        store.setProxy(proxy);
         return (T) this;
     }
 
@@ -157,11 +124,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T automaticPresenceUpdates(boolean automaticPresenceUpdates) {
-        if (store != null) {
-            store.setAutomaticPresenceUpdates(automaticPresenceUpdates);
-        } else {
-            storeBuilder.automaticPresenceUpdates(automaticPresenceUpdates);
-        }
+        store.setAutomaticPresenceUpdates(automaticPresenceUpdates);
         return (T) this;
     }
 
@@ -173,11 +136,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      */
     @SuppressWarnings("unchecked")
     public T checkPatchMacks(boolean checkPatchMacs) {
-        if (store != null) {
-            store.setCheckPatchMacs(checkPatchMacs);
-        } else {
-            storeBuilder.checkPatchMacs(checkPatchMacs);
-        }
+        store.setCheckPatchMacs(checkPatchMacs);
         return (T) this;
     }
 }

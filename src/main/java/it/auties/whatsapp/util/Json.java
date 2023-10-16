@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ public final class Json {
             optionalModule.addDeserializer(Optional.class, new OptionalDeserializer());
             json = new ObjectMapper()
                     .registerModule(new Jdk8Module())
+                    .registerModule(new JavaTimeModule())
                     .registerModule(new ParameterNamesModule())
                     .registerModule(optionalModule)
                     .setSerializationInclusion(NON_DEFAULT)

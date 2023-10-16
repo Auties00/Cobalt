@@ -2,7 +2,9 @@ package it.auties.whatsapp.controller;
 
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.util.DefaultControllerSerializer;
 
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +15,27 @@ import java.util.concurrent.CompletableFuture;
  */
 @SuppressWarnings("unused")
 public interface ControllerSerializer {
+    /**
+     * Returns the default serializer
+     * This implementation uses .smile files compressed using gzip
+     *
+     * @return a serializer
+     */
+    static ControllerSerializer toSmile() {
+        return DefaultControllerSerializer.of();
+    }
+
+    /**
+     * Returns the default serializer
+     * This implementation uses .smile files compressed using gzip
+     *
+     * @param baseDirectory the directory where all the sessions should be saved
+     * @return a serializer
+     */
+    static ControllerSerializer toSmile(Path baseDirectory) {
+        return DefaultControllerSerializer.of(baseDirectory);
+    }
+
     /**
      * Returns all the known IDs
      *

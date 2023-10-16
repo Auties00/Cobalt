@@ -1211,13 +1211,13 @@ class StreamHandler {
     }
 
     private void generateQrCode(Node node, Node container) {
-        if (webVerificationSupport instanceof QrHandler qrHandler) {
-            printQrCode(qrHandler, container);
-            sendConfirmNode(node, null);
-        } else if (webVerificationSupport instanceof PairingCodeHandler codeHandler) {
-            askPairingCode(codeHandler);
-        } else {
-            throw new IllegalArgumentException("Cannot verify account: unknown verification method");
+        switch (webVerificationSupport) {
+            case QrHandler qrHandler -> {
+                printQrCode(qrHandler, container);
+                sendConfirmNode(node, null);
+            }
+            case PairingCodeHandler codeHandler -> askPairingCode(codeHandler);
+            default -> throw new IllegalArgumentException("Cannot verify account: unknown verification method");
         }
     }
 

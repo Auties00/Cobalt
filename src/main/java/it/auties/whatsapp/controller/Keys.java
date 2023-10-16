@@ -152,7 +152,7 @@ public final class Keys extends Controller<Keys> {
     private byte[] writeKey, readKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Keys(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, String deviceId, String recoveryToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, Map<SessionAddress, Session> sessions, Map<Jid, Map<PatchType, CompanionHashState>> hashStates, Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    public Keys(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, String deviceId, String recoveryToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, Map<SessionAddress, Session> sessions, Map<Jid, Map<PatchType, CompanionHashState>> hashStates, Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         this.registrationId = registrationId;
         this.noiseKeyPair = noiseKeyPair;
@@ -177,15 +177,6 @@ public final class Keys extends Controller<Keys> {
         this.initialAppSync = initialAppSync;
         this.writeCounter = new AtomicLong();
         this.readCounter = new AtomicLong();
-    }
-
-    /**
-     * Creates a builder
-     *
-     * @return a builder
-     */
-    public static KeysBuilder builder() {
-        return new KeysBuilder();
     }
 
     /**

@@ -29,6 +29,7 @@ import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
+import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
@@ -299,7 +300,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, List<String> alias, URI proxy, FutureReference<Version> version, boolean online, String locale, String name, boolean business, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, PlatformType companionDeviceOs, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, String locale, String name, boolean business, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, PlatformType companionDeviceOs, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -349,16 +350,6 @@ public final class Store extends Controller<Store> {
         this.companionDeviceOs = companionDeviceOs;
         this.checkPatchMacs = checkPatchMacs;
     }
-
-    /**
-     * Creates a builder
-     *
-     * @return a builder
-     */
-    public static StoreBuilder builder() {
-        return new StoreBuilder();
-    }
-
 
     /**
      * Queries the first contact whose jid is equal to {@code jid}
@@ -1254,6 +1245,14 @@ public final class Store extends Controller<Store> {
 
     @JsonGetter("version")
     public Version version() {
+        if(version == null) {
+            var platform = switch (clientType) {
+                case WEB -> UserAgent.PlatformType.WEB;
+                case MOBILE -> business ? device.businessPlatform() : device.platform();
+            };
+            this.version = new FutureReference<>(null, () -> MetadataHelper.getVersion(platform));
+        }
+
         return version.value();
     }
 
