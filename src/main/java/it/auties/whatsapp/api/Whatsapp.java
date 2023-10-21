@@ -587,7 +587,7 @@ public class Whatsapp {
         var range = createRange(chat, false);
         var markAction = new MarkChatAsReadAction(read, Optional.of(range));
         var syncAction = ActionValueSync.of(markAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 3, chat.toJid().toString());
+        var entry = PatchEntry.of(syncAction, Operation.SET, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request);
     }
@@ -1282,7 +1282,7 @@ public class Whatsapp {
         var endTimeStamp = mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ? mute.endTimeStamp() * 1000L : mute.endTimeStamp();
         var muteAction = new MuteAction(true, OptionalLong.of(endTimeStamp), false);
         var syncAction = ActionValueSync.of(muteAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 2, chat.toJid().toString());
+        var entry = PatchEntry.of(syncAction, Operation.SET, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request);
     }
@@ -1303,7 +1303,7 @@ public class Whatsapp {
 
         var muteAction = new MuteAction(false, null, false);
         var syncAction = ActionValueSync.of(muteAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 2, chat.toJid().toString());
+        var entry = PatchEntry.of(syncAction, Operation.SET, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request);
     }
@@ -1406,7 +1406,7 @@ public class Whatsapp {
 
         var pinAction = new PinAction(pin);
         var syncAction = ActionValueSync.of(pinAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 5, chat.toJid().toString());
+        var entry = PatchEntry.of(syncAction, Operation.SET, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_LOW, List.of(entry));
         return socketHandler.pushPatch(request);
     }
@@ -1430,7 +1430,7 @@ public class Whatsapp {
 
         var starAction = new StarAction(star);
         var syncAction = ActionValueSync.of(starAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 3, info.chatJid()
+        var entry = PatchEntry.of(syncAction, Operation.SET, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
@@ -1482,7 +1482,7 @@ public class Whatsapp {
         var range = createRange(chat, false);
         var archiveAction = new ArchiveChatAction(archive, Optional.of(range));
         var syncAction = ActionValueSync.of(archiveAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 3, chat.toJid().toString());
+        var entry = PatchEntry.of(syncAction, Operation.SET, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_LOW, List.of(entry));
         return socketHandler.pushPatch(request);
     }
@@ -1557,7 +1557,7 @@ public class Whatsapp {
                 var range = createRange(messageInfo.chatJid(), false);
                 var deleteMessageAction = new DeleteMessageForMeAction(false, messageInfo.timestampSeconds().orElse(0L));
                 var syncAction = ActionValueSync.of(deleteMessageAction);
-                var entry = PatchEntry.of(syncAction, Operation.SET, 3, messageInfo.chatJid().toString(), messageInfo.id(), fromMeToFlag(messageInfo), participantToFlag(messageInfo));
+                var entry = PatchEntry.of(syncAction, Operation.SET, messageInfo.chatJid().toString(), messageInfo.id(), fromMeToFlag(messageInfo), participantToFlag(messageInfo));
                 var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
                 yield socketHandler.pushPatch(request);
             }
@@ -1608,7 +1608,7 @@ public class Whatsapp {
         var range = createRange(chat.toJid(), false);
         var deleteChatAction = new DeleteChatAction(Optional.of(range));
         var syncAction = ActionValueSync.of(deleteChatAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 6, chat.toJid().toString(), "1");
+        var entry = PatchEntry.of(syncAction, Operation.SET, chat.toJid().toString(), "1");
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request);
     }
@@ -1633,7 +1633,7 @@ public class Whatsapp {
         var range = createRange(chat.toJid(), true);
         var clearChatAction = new ClearChatAction(Optional.of(range));
         var syncAction = ActionValueSync.of(clearChatAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 6, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
+        var entry = PatchEntry.of(syncAction, Operation.SET, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
         return socketHandler.pushPatch(request);
     }
@@ -2176,12 +2176,12 @@ public class Whatsapp {
 
     private PatchEntry createPushNameEntry() {
         var pushNameSetting = new PushNameSettings(store().name());
-        return PatchEntry.of(ActionValueSync.of(pushNameSetting), Operation.SET, 1);
+        return PatchEntry.of(ActionValueSync.of(pushNameSetting), Operation.SET);
     }
 
     private PatchEntry createLocaleEntry() {
         var localeSetting = new LocaleSettings(store().locale().orElse("en-US"));
-        return PatchEntry.of(ActionValueSync.of(localeSetting), Operation.SET, 3);
+        return PatchEntry.of(ActionValueSync.of(localeSetting), Operation.SET);
     }
 
     private PatchEntry createAndroidEntry() {
@@ -2202,12 +2202,12 @@ public class Whatsapp {
     private PatchEntry createNuxRequest() {
         var nuxAction = new NuxAction(true);
         var timeFormatSync = ActionValueSync.of(nuxAction);
-        return PatchEntry.of(timeFormatSync, Operation.SET, 7, "keep@s.whatsapp.net");
+        return PatchEntry.of(timeFormatSync, Operation.SET, "keep@s.whatsapp.net");
     }
 
     private PatchEntry createPrimaryVersionEntry(PrimaryVersionAction primaryVersion, String to) {
         var timeFormatSync = ActionValueSync.of(primaryVersion);
-        return PatchEntry.of(timeFormatSync, Operation.SET, 7, to);
+        return PatchEntry.of(timeFormatSync, Operation.SET, to);
     }
 
     private PatchEntry createTimeFormatEntry() {
@@ -2219,7 +2219,7 @@ public class Whatsapp {
     private PatchEntry createContactRequestEntry(Contact contact) {
         var action = new ContactAction(null, contact.shortName(), contact.fullName());
         var sync = ActionValueSync.of(action);
-        return PatchEntry.of(sync, Operation.SET, 2, contact.jid().toString());
+        return PatchEntry.of(sync, Operation.SET, contact.jid().toString());
     }
 
     private CompletableFuture<Void> sendRecentMessage(Jid jid) {

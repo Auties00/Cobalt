@@ -144,11 +144,15 @@ class AppStateHandler {
 
     private MutationResult createMutationSync(PatchEntry patch, MutationKeys mutationKeys, AppStateSyncKey key, KeyId syncId) {
         var index = patch.index().getBytes(StandardCharsets.UTF_8);
+        var actionVersion = patch.sync()
+                .action()
+                .orElseThrow(() -> new NoSuchElementException("Missing action"))
+                .actionVersion();
         var actionData = new ActionDataSyncBuilder()
                 .index(index)
                 .value(patch.sync())
                 .padding(new byte[0])
-                .version(patch.version())
+                .version(actionVersion)
                 .build();
         var encoded = ActionDataSyncSpec.encode(actionData);
         var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());

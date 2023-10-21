@@ -2,21 +2,16 @@ package it.auties.whatsapp.model.sync;
 
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Specification;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public record PatchRequest(PatchType type, List<PatchEntry> entries) {
-    public record PatchEntry(ActionValueSync sync, String index, int version, Operation operation) {
-        public static PatchEntry of(ActionValueSync sync, Operation operation) {
-            return of(sync, operation, Specification.Signal.CURRENT_VERSION);
-        }
-
-        public static PatchEntry of(ActionValueSync sync, Operation operation, int version, String... args) {
+    public record PatchEntry(ActionValueSync sync, String index, Operation operation) {
+        public static PatchEntry of(ActionValueSync sync, Operation operation, String... args) {
             var index = Json.writeValueAsString(createArguments(sync, args));
-            return new PatchEntry(sync, index, version, operation);
+            return new PatchEntry(sync, index, operation);
         }
 
         private static List<String> createArguments(ActionValueSync sync, String... args) {
