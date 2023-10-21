@@ -168,17 +168,6 @@ public final class BytesHelper {
         return result;
     }
 
-    public static byte[] intToVarInt(int value) {
-        var out = new ByteArrayOutputStream();
-        while ((value & 0xFFFFFF80) != 0L) {
-            out.write((byte) ((value & 0x7F) | 0x80));
-            value >>>= 7;
-        }
-        out.write((byte) (value & 0x7F));
-        return out.toByteArray();
-    }
-
-
     public static int bytesToInt(byte[] bytes, int length) {
         var result = 0;
         for (var i = 0; i < length; i++) {

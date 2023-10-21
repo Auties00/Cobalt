@@ -3,20 +3,23 @@ import it.auties.whatsapp.api.Emoji;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonText;
-import it.auties.whatsapp.model.button.interactive.*;
+import it.auties.whatsapp.model.button.interactive.InteractiveButton;
+import it.auties.whatsapp.model.button.interactive.InteractiveCollection;
+import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlow;
+import it.auties.whatsapp.model.button.interactive.InteractiveShop;
 import it.auties.whatsapp.model.button.misc.ButtonRow;
 import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
@@ -246,13 +249,13 @@ public class RunMobileCITest implements Listener {
 
     private void markAsUnread() {
         log("Marking chat as unread...");
-        var markStatus = api.markUnread(contact).join();
+        var markStatus = api.markChatUnread(contact).join();
         log("Marked chat as unread: %s", markStatus);
     }
 
     private void markAsRead() {
         log("Marking chat as read...");
-        var markStatus = api.markRead(contact).join();
+        var markStatus = api.markChatRead(contact).join();
         log("Marked chat as read: %s", markStatus);
     }
 
@@ -263,7 +266,7 @@ public class RunMobileCITest implements Listener {
             return;
         }
         log("Clearing chat...");
-        var ephemeralResponse = api.clear(contact, false).join();
+        var ephemeralResponse = api.clearChat(contact, false).join();
         log("Cleared chat: %s", ephemeralResponse);
     }
 
@@ -274,7 +277,7 @@ public class RunMobileCITest implements Listener {
             return;
         }
         log("Deleting chat...");
-        var ephemeralResponse = api.delete(contact).join();
+        var ephemeralResponse = api.deleteChat(contact).join();
         log("Deleted chat: %s", ephemeralResponse);
     }
 
@@ -373,7 +376,7 @@ public class RunMobileCITest implements Listener {
             testGroupCreation();
         }
         log("Promoting %s...", contact);
-        var changeGroupResponse = api.promote(group, contact).join();
+        var changeGroupResponse = api.promoteGroupParticipant(group, contact).join();
         log("Promoted: %s", changeGroupResponse);
     }
 
@@ -388,7 +391,7 @@ public class RunMobileCITest implements Listener {
             testGroupCreation();
         }
         log("Demoting %s...", contact);
-        var changeGroupResponse = api.demote(group, contact).join();
+        var changeGroupResponse = api.demoteGroupParticipant(group, contact).join();
         log("Demoted: %s", changeGroupResponse);
     }
 
@@ -434,7 +437,7 @@ public class RunMobileCITest implements Listener {
             testGroupCreation();
         }
         log("Muting chat...");
-        var muteResponse = api.mute(group, ChatMute.mutedForOneWeek()).join();
+        var muteResponse = api.muteChat(group, ChatMute.mutedForOneWeek()).join();
         log("Muted chat: %s", muteResponse);
     }
 
@@ -448,7 +451,7 @@ public class RunMobileCITest implements Listener {
             testGroupCreation();
         }
         log("Unmuting chat...");
-        var unmuteResponse = api.unmute(group).join();
+        var unmuteResponse = api.unmuteChat(group).join();
         log("Unmuted chat: %s", unmuteResponse);
     }
 
@@ -462,7 +465,7 @@ public class RunMobileCITest implements Listener {
             testGroupCreation();
         }
         log("Archiving chat...");
-        var archiveResponse = api.archive(group).join();
+        var archiveResponse = api.archiveChat(group).join();
         log("Archived chat: %s", archiveResponse);
     }
 
@@ -494,7 +497,7 @@ public class RunMobileCITest implements Listener {
             return;
         }
         log("Pinning chat...");
-        var pinResponse = api.pin(group).join();
+        var pinResponse = api.pinChat(group).join();
         log("Pinned chat: %s", pinResponse);
     }
 
@@ -512,7 +515,7 @@ public class RunMobileCITest implements Listener {
             return;
         }
         log("Unpinning chat...");
-        var unpinResponse = api.unpin(group).join();
+        var unpinResponse = api.unpinChat(group).join();
         log("Unpinned chat: %s", unpinResponse);
     }
 
@@ -542,10 +545,10 @@ public class RunMobileCITest implements Listener {
         }
         var example = api.sendMessage(contact, "Hello").join();
         log("Deleting for you...");
-        api.delete(example, false).join();
+        api.deleteMessage(example, false).join();
         log("Deleted for you");
         log("Deleting for everyone...");
-        api.delete(example, true).join();
+        api.deleteMessage(example, true).join();
         log("Deleted for everyone");
     }
 

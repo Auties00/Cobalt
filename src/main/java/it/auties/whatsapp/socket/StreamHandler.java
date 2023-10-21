@@ -28,7 +28,6 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -426,7 +425,9 @@ class StreamHandler {
         var joinJson = NewsletterResponse.ofJson(joinPayload)
                 .orElseThrow(() -> new NoSuchElementException("Malformed join payload"));
         socketHandler.store().addNewsletter(joinJson.newsletter());
-        socketHandler.queryNewsletterMessages(joinJson.newsletter().jid(), socketHandler.store().historyLength().isZero() ? 0 : DEFAULT_NEWSLETTER_MESSAGES);
+        if(!socketHandler.store().historyLength().isZero()) {
+            socketHandler.queryNewsletterMessages(joinJson.newsletter().jid(), DEFAULT_NEWSLETTER_MESSAGES);
+        }
     }
 
     private void handleNewsletterMute(Node update) {
@@ -864,31 +865,25 @@ class StreamHandler {
     }
 
     private void onNewsletters(SubscribedNewslettersResponse result) {
-        var futures = new CompletableFuture<?>[result.newsletters().size()];
-        for (var index = 0; index < result.newsletters().size(); index++) {
-            var newsletter = result.newsletters().get(index);
+        var noMessages = socketHandler.store().historyLength().isZero();
+        var data = result.newsletters();
+        var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
+        for (var index = 0; index < data.size(); index++) {
+            var newsletter = data.get(index);
             socketHandler.store().addNewsletter(newsletter);
-            subscribeToNewsletterUpdatesForever(newsletter);
-            futures[index] = socketHandler.queryNewsletterMessages(newsletter, socketHandler.store().historyLength().isZero() ? 0 : DEFAULT_NEWSLETTER_MESSAGES);
+            if(!noMessages) {
+                futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES);
+            }
+        }
+
+        if(noMessages) {
+            socketHandler.onNewsletters();
+            return;
         }
 
         CompletableFuture.allOf(futures)
                 .thenRun(socketHandler::onNewsletters)
                 .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
-    }
-
-    private void subscribeToNewsletterUpdatesForever(Newsletter newsletter) {
-        socketHandler.subscribeToNewsletterReactions(newsletter)
-                .thenAcceptAsync(result -> scheduleNewsletterSubscription(newsletter, result.orElse(-1)));
-    }
-
-    private void scheduleNewsletterSubscription(Newsletter newsletter, long timeout) {
-        if (timeout <= 0) {
-            return;
-        }
-
-        var executor = CompletableFuture.delayedExecutor(timeout, TimeUnit.SECONDS);
-        executor.execute(() -> subscribeToNewsletterUpdatesForever(newsletter));
     }
 
     private CompletableFuture<Void> queryGroups() {
@@ -1142,6 +1137,7 @@ class StreamHandler {
                 .thenRun(() -> socketHandler.onSocketEvent(SocketEvent.PING))
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
         socketHandler.store().serialize(true);
+        socketHandler.store().serializer().linkMetadata(socketHandler.store());
         socketHandler.keys().serialize(true);
     }
 

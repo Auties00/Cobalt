@@ -31,8 +31,8 @@ public final class ActionMessageRangeSync implements ProtobufMessage {
     }
 
     public ActionMessageRangeSync(Chat chat, boolean allMessages) {
-        chat.newestMessage().ifPresent(message -> this.lastMessageTimestamp = message.timestampSeconds());
-        chat.newestServerMessage().ifPresent(message -> this.lastSystemMessageTimestamp = message.timestampSeconds());
+        chat.newestMessage().ifPresent(message -> this.lastMessageTimestamp = message.timestampSeconds().orElse(0L));
+        chat.newestServerMessage().ifPresent(message -> this.lastSystemMessageTimestamp = message.timestampSeconds().orElse(0L));
         this.messages = createMessages(chat, allMessages);
     }
 
@@ -52,8 +52,8 @@ public final class ActionMessageRangeSync implements ProtobufMessage {
     }
 
     private SyncActionMessage createActionMessage(ChatMessageInfo info) {
-        var timestamp = (info != null) ? info.timestampSeconds() : null;
-        var key = (info != null) ? checkSenderKey(info.key()) : null;
+        var timestamp = info != null ? info.timestampSeconds().isPresent() ? info.timestampSeconds().getAsLong() : null : null;
+        var key = info != null ? checkSenderKey(info.key()) : null;
         return new SyncActionMessage(key, timestamp);
     }
 

@@ -248,8 +248,7 @@ public class Whatsapp {
         var metadata = Map.of("jid", jidOrThrowError(), "reason", "user_initiated");
         var device = Node.of("remove-companion-device", metadata);
         return socketHandler.sendQuery("set", "md", device)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -262,8 +261,7 @@ public class Whatsapp {
      * @param excluded the non-null excluded contacts if value is {@link PrivacySettingValue#CONTACTS_EXCEPT}
      * @return the same instance wrapped in a completable future
      */
-    @SafeVarargs
-    public final <T extends JidProvider> CompletableFuture<Whatsapp> changePrivacySetting(PrivacySettingType type, PrivacySettingValue value, T... excluded) {
+    public final CompletableFuture<Void> changePrivacySetting(PrivacySettingType type, PrivacySettingValue value, JidProvider... excluded) {
         Validate.isTrue(type.isSupported(value),
                 "Cannot change setting %s to %s: this toggle cannot be used because Whatsapp doesn't support it", value.name(), type.name());
         var attributes = Attributes.of()
@@ -276,8 +274,7 @@ public class Whatsapp {
                 .map(entry -> Node.of("user", Map.of("jid", entry, "action", "add")))
                 .toList();
         return socketHandler.sendQuery("set", "privacy", Node.of("privacy", Node.of("category", attributes, children)))
-                .thenRun(() -> onPrivacyFeatureChanged(type, value, excludedJids))
-                .thenApply(ignored -> this);
+                .thenRun(() -> onPrivacyFeatureChanged(type, value, excludedJids));
     }
 
     private void onPrivacyFeatureChanged(PrivacySettingType type, PrivacySettingValue value, List<Jid> excludedJids) {
@@ -293,10 +290,9 @@ public class Whatsapp {
      * @param timer the new ephemeral timer
      * @return the same instance wrapped in a completable future
      */
-    public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(ChatEphemeralTimer timer) {
+    public CompletableFuture<Void> changeNewChatsEphemeralTimer(ChatEphemeralTimer timer) {
         return socketHandler.sendQuery("set", "disappearing_mode", Node.of("disappearing_mode", Map.of("duration", timer.period().toSeconds())))
-                .thenRun(() -> store().setNewChatsEphemeralTimer(timer))
-                .thenApply(ignored -> this);
+                .thenRun(() -> store().setNewChatsEphemeralTimer(timer));
     }
 
     /**
@@ -306,9 +302,9 @@ public class Whatsapp {
      *
      * @return the same instance wrapped in a completable future
      */
-    public CompletableFuture<Whatsapp> createGdprAccountInfo() {
+    public CompletableFuture<Void> createGdprAccountInfo() {
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("gdpr", Map.of("gdpr", "request")))
-                .thenApply(ignored -> this);
+                .thenRun(() -> {});
     }
 
     /**
@@ -329,23 +325,21 @@ public class Whatsapp {
      * @param newName the non-null new name
      * @return the same instance wrapped in a completable future
      */
-    public CompletableFuture<Whatsapp> changeName(String newName) {
+    public CompletableFuture<Void> changeName(String newName) {
         var oldName = store().name();
         return socketHandler.send(Node.of("presence", Map.of("name", newName)))
-                .thenRun(() -> socketHandler.updateUserName(newName, oldName))
-                .thenApply(ignored -> this);
+                .thenRun(() -> socketHandler.updateUserName(newName, oldName));
     }
 
     /**
-     * Changes the status(i.e. user description) of this user
+     * Changes the about of this user
      *
-     * @param newStatus the non-null new status
+     * @param newAbout the non-null new status
      * @return the same instance wrapped in a completable future
      */
-    public CompletableFuture<Whatsapp> changeStatus(String newStatus) {
-        return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))
-                .thenRun(() -> store().setName(newStatus))
-                .thenApply(ignored -> this);
+    public CompletableFuture<Void> changeAbout(String newAbout) {
+        return socketHandler.sendQuery("set", "status", Node.of("status", newAbout.getBytes(StandardCharsets.UTF_8)))
+                .thenRun(() -> store().setAbout(newAbout));
     }
 
     /**
@@ -355,9 +349,8 @@ public class Whatsapp {
      * @param jid the contact whose status the api should receive updates on
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> subscribeToPresence(T jid) {
-        return socketHandler.subscribeToPresence(jid)
-                .thenApplyAsync(ignored -> jid);
+    public CompletableFuture<Void> subscribeToPresence(JidProvider jid) {
+        return socketHandler.subscribeToPresence(jid);
     }
 
     /**
@@ -443,10 +436,14 @@ public class Whatsapp {
                 return CompletableFuture.failedFuture(new IllegalArgumentException("Cannot send a message in a newsletter that you didn't join"));
             }
 
+            var oldServerId = newsletter.get()
+                    .newestMessage()
+                    .map(NewsletterMessageInfo::serverId)
+                    .orElse(0);
             var info = new NewsletterMessageInfo(
                     newsletter.get(),
                     ChatMessageKey.randomId(),
-                    1,
+                    oldServerId + 1,
                     Clock.nowSeconds(),
                     null,
                     new ConcurrentHashMap<>(),
@@ -471,6 +468,58 @@ public class Whatsapp {
                 .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                 .build();
         return sendMessage(info);
+    }
+
+    /**
+     * Builds and sends an edited message
+     *
+     * @param oldMessage the message to edit
+     * @param newMessage the new message's content
+     * @return a CompletableFuture
+     */
+    public <T extends MessageInfo> CompletableFuture<T> editMessage(T oldMessage, Message newMessage) {
+        var oldMessageType = oldMessage.message().content().type();
+        var newMessageType = newMessage.type();
+        Validate.isTrue(oldMessageType == newMessageType,
+                "Message type mismatch: %s != %s",
+                oldMessageType, newMessageType);
+        return switch (oldMessage) {
+            case NewsletterMessageInfo oldNewsletterInfo -> {
+                var info = new NewsletterMessageInfo(
+                        oldNewsletterInfo.newsletter(),
+                        oldNewsletterInfo.id(),
+                        oldNewsletterInfo.serverId(),
+                        Clock.nowSeconds(),
+                        null,
+                        new ConcurrentHashMap<>(),
+                        MessageContainer.ofEditedMessage(newMessage),
+                        MessageStatus.PENDING
+                );
+                var request = new MessageSendRequest.Newsletter(info, Map.of("edit", getEditBit(info)));
+                yield socketHandler.sendMessage(request)
+                        .thenApply(ignored -> oldMessage);
+            }
+            case ChatMessageInfo oldChatInfo -> {
+                var key = new ChatMessageKeyBuilder()
+                        .id(oldChatInfo.id())
+                        .chatJid(oldChatInfo.chatJid())
+                        .fromMe(true)
+                        .senderJid(jidOrThrowError())
+                        .build();
+                var info = new ChatMessageInfoBuilder()
+                        .status(MessageStatus.PENDING)
+                        .senderJid(jidOrThrowError())
+                        .key(key)
+                        .message(MessageContainer.ofEditedMessage(newMessage))
+                        .timestampSeconds(Clock.nowSeconds())
+                        .broadcast(oldChatInfo.chatJid().hasServer(JidServer.BROADCAST))
+                        .build();
+                var request = new MessageSendRequest.Chat(info, null, false, false, Map.of("edit", getEditBit(info)));
+                yield socketHandler.sendMessage(request)
+                        .thenApply(ignored -> oldMessage);
+            }
+            default -> throw new IllegalStateException("Unsupported edit: " + oldMessage);
+        };
     }
 
     /**
@@ -501,24 +550,9 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> markRead(T chat) {
-        return mark(chat, true).thenComposeAsync(ignored -> markAllAsRead(chat)).thenApplyAsync(ignored -> chat);
-    }
-
-    private <T extends JidProvider> CompletableFuture<T> mark(T chat, boolean read) {
-        if (store().clientType() == ClientType.MOBILE) {
-            // TODO: Send notification to companions
-            store().findChatByJid(chat.toJid())
-                    .ifPresent(entry -> entry.setMarkedAsUnread(read));
-            return CompletableFuture.completedFuture(chat);
-        }
-
-        var range = createRange(chat, false);
-        var markAction = new MarkChatAsReadAction(read, Optional.of(range));
-        var syncAction = ActionValueSync.of(markAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 3, chat.toJid().toString());
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
+    public CompletableFuture<Void> markChatRead(JidProvider chat) {
+        return mark(chat, true)
+                .thenComposeAsync(ignored -> markAllAsRead(chat));
     }
 
     private CompletableFuture<Void> markAllAsRead(JidProvider chat) {
@@ -527,9 +561,35 @@ public class Whatsapp {
                 .stream()
                 .map(Chat::unreadMessages)
                 .flatMap(Collection::stream)
-                .map(this::markRead)
+                .map(this::markMessageRead)
                 .toArray(CompletableFuture[]::new);
         return CompletableFuture.allOf(all);
+    }
+
+    /**
+     * Marks a chat as unread
+     *
+     * @param chat the target chat
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Void> markChatUnread(JidProvider chat) {
+        return mark(chat, false);
+    }
+
+    private CompletableFuture<Void> mark(JidProvider chat, boolean read) {
+        if (store().clientType() == ClientType.MOBILE) {
+            // TODO: Send notification to companions
+            store().findChatByJid(chat.toJid())
+                    .ifPresent(entry -> entry.setMarkedAsUnread(read));
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var range = createRange(chat, false);
+        var markAction = new MarkChatAsReadAction(read, Optional.of(range));
+        var syncAction = ActionValueSync.of(markAction);
+        var entry = PatchEntry.of(syncAction, Operation.SET, 3, chat.toJid().toString());
+        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+        return socketHandler.pushPatch(request);
     }
 
     private ActionMessageRangeSync createRange(JidProvider chat, boolean allMessages) {
@@ -543,7 +603,7 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<ChatMessageInfo> markRead(ChatMessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> markMessageRead(ChatMessageInfo info) {
         var type = store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS)
                 .value() == PrivacySettingValue.EVERYONE ? "read" : "read-self";
         socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), type);
@@ -563,8 +623,8 @@ public class Whatsapp {
      * @param info the non-null message whose newsletters is pending
      * @return a non-null newsletters
      */
-    public CompletableFuture<ChatMessageInfo> awaitReply(ChatMessageInfo info) {
-        return awaitReply(info.id());
+    public CompletableFuture<ChatMessageInfo> awaitMessageReply(ChatMessageInfo info) {
+        return awaitMessageReply(info.id());
     }
 
     /**
@@ -573,7 +633,7 @@ public class Whatsapp {
      * @param id the non-null id of message whose newsletters is pending
      * @return a non-null newsletters
      */
-    public CompletableFuture<ChatMessageInfo> awaitReply(String id) {
+    public CompletableFuture<ChatMessageInfo> awaitMessageReply(String id) {
         return store().addPendingReply(id);
     }
 
@@ -741,8 +801,9 @@ public class Whatsapp {
      * @param chat the target group
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> revokeGroupInvite(T chat) {
-        return socketHandler.sendQuery(chat.toJid(), "set", "w:g2", Node.of("invite")).thenApplyAsync(ignored -> chat);
+    public CompletableFuture<Void> revokeGroupInvite(JidProvider chat) {
+        return socketHandler.sendQuery(chat.toJid(), "set", "w:g2", Node.of("invite"))
+                .thenRun(() -> {});
     }
 
     /**
@@ -807,15 +868,14 @@ public class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> changePresence(T chatJid, ContactStatus presence) {
+    public CompletableFuture<Void> changePresence(JidProvider chatJid, ContactStatus presence) {
         var knownPresence = store().findChatByJid(chatJid)
                 .map(Chat::presences)
                 .map(entry -> entry.get(jidOrThrowError().withoutDevice()))
                 .orElse(null);
         if (knownPresence == COMPOSING || knownPresence == RECORDING) {
             var node = Node.of("chatstate", Map.of("to", chatJid.toJid()), Node.of("paused"));
-            return socketHandler.sendWithNoResponse(node)
-                    .thenApplyAsync(ignored -> chatJid);
+            return socketHandler.sendWithNoResponse(node);
         }
 
         if (presence == COMPOSING || presence == RECORDING) {
@@ -824,14 +884,12 @@ public class Whatsapp {
                     Map.of("to", chatJid.toJid()),
                     Node.of(COMPOSING.toString(), presence == RECORDING ? Map.of("media", "audio") : Map.of()));
             return socketHandler.sendWithNoResponse(node)
-                    .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence))
-                    .thenApplyAsync(ignored -> chatJid);
+                    .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence));
         }
 
         var node = Node.of("presence", Map.of("type", presence.toString(), "name", store().name()));
         return socketHandler.sendWithNoResponse(node)
-                .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence))
-                .thenApplyAsync(ignored -> chatJid);
+                .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence));
     }
 
     /**
@@ -841,7 +899,7 @@ public class Whatsapp {
      * @param contacts the target contacts
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<Jid>> promote(JidProvider group, JidProvider... contacts) {
+    public CompletableFuture<List<Jid>> promoteGroupParticipant(JidProvider group, JidProvider... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.PROMOTE, contacts);
     }
 
@@ -852,7 +910,7 @@ public class Whatsapp {
      * @param contacts the target contacts
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<Jid>> demote(JidProvider group, JidProvider... contacts) {
+    public CompletableFuture<List<Jid>> demoteGroupParticipant(JidProvider group, JidProvider... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.DEMOTE, contacts);
     }
 
@@ -934,9 +992,10 @@ public class Whatsapp {
      * @return a CompletableFuture
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
-    public <T extends JidProvider> CompletableFuture<T> changeGroupSubject(T group, String newName) {
+    public CompletableFuture<Void> changeGroupSubject(JidProvider group, String newName) {
         var body = Node.of("subject", newName.getBytes(StandardCharsets.UTF_8));
-        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> group);
+        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenRun(() -> {});
     }
 
     /**
@@ -946,11 +1005,11 @@ public class Whatsapp {
      * @param description the new name for the group, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> changeGroupDescription(T group, String description) {
+    public CompletableFuture<Void> changeGroupDescription(JidProvider group, String description) {
         return socketHandler.queryGroupMetadata(group.toJid())
                 .thenApplyAsync(GroupMetadata::descriptionId)
                 .thenComposeAsync(descriptionId -> changeGroupDescription(group, description, descriptionId.orElse(null)))
-                .thenApplyAsync(ignored -> group);
+                .thenRun(() -> {});
     }
 
     private CompletableFuture<Void> changeGroupDescription(JidProvider group, String description, String descriptionId) {
@@ -985,10 +1044,10 @@ public class Whatsapp {
      * @param policy  the non-null policy
      * @return a future
      */
-    public <T extends JidProvider> CompletableFuture<T> changeGroupSetting(T group, GroupSetting setting, GroupSettingPolicy policy) {
+    public CompletableFuture<Void> changeGroupSetting(JidProvider group, GroupSetting setting, GroupSettingPolicy policy) {
         var body = Node.of(policy != GroupSettingPolicy.ANYONE ? setting.on() : setting.off());
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenApplyAsync(ignored -> group);
+                .thenRun(() -> {});
     }
 
     /**
@@ -997,7 +1056,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<Jid> changeProfilePicture(byte[] image) {
+    public CompletableFuture<Void> changeProfilePicture(byte[] image) {
         return changeGroupPicture(jidOrThrowError(), image);
     }
 
@@ -1008,7 +1067,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> changeGroupPicture(T group, URI image) {
+    public CompletableFuture<Void> changeGroupPicture(JidProvider group, URI image) {
         return changeGroupPicture(group, image == null ? null : Medias.download(image)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid uri: %s".formatted(image))));
     }
@@ -1020,11 +1079,11 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> changeGroupPicture(T group, byte[] image) {
+    public CompletableFuture<Void> changeGroupPicture(JidProvider group, byte[] image) {
         var profilePic = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), profilePic);
         return socketHandler.sendQuery(group.toJid().withoutDevice(), "set", "w:profile:picture", body)
-                .thenApplyAsync(ignored -> group);
+                .thenRun(() -> {});
     }
 
     /**
@@ -1124,13 +1183,13 @@ public class Whatsapp {
      * @param group the target group
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public <T extends JidProvider> CompletableFuture<T> leaveGroup(T group) {
+    public CompletableFuture<Void> leaveGroup(JidProvider group) {
         var body = Node.of("leave", Node.of("group", Map.of("id", group.toJid())));
         return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body)
-                .thenApplyAsync(ignored -> handleLeaveGroup(group));
+                .thenAcceptAsync(ignored -> handleLeaveGroup(group));
     }
 
-    private <T extends JidProvider> T handleLeaveGroup(T group) {
+    private void handleLeaveGroup(JidProvider group) {
         var chat = group instanceof Chat entry ? entry : store()
                 .findChatByJid(group)
                 .orElse(null);
@@ -1142,8 +1201,6 @@ public class Whatsapp {
                     .build();
             chat.addPastParticipant(pastParticipant);
         }
-
-        return group;
     }
 
     /**
@@ -1203,8 +1260,8 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> mute(T chat) {
-        return mute(chat, ChatMute.muted());
+    public CompletableFuture<Void> muteChat(JidProvider chat) {
+        return muteChat(chat, ChatMute.muted());
     }
 
     /**
@@ -1214,12 +1271,12 @@ public class Whatsapp {
      * @param mute the type of mute
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> mute(T chat, ChatMute mute) {
+    public CompletableFuture<Void> muteChat(JidProvider chat, ChatMute mute) {
         if (store().clientType() == ClientType.MOBILE) {
             // TODO: Send notification to companions
             store().findChatByJid(chat)
                     .ifPresent(entry -> entry.setMute(mute));
-            return CompletableFuture.completedFuture(chat);
+            return CompletableFuture.completedFuture(null);
         }
 
         var endTimeStamp = mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ? mute.endTimeStamp() * 1000L : mute.endTimeStamp();
@@ -1227,7 +1284,7 @@ public class Whatsapp {
         var syncAction = ActionValueSync.of(muteAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 2, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
+        return socketHandler.pushPatch(request);
     }
 
     /**
@@ -1236,41 +1293,43 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> unmute(T chat) {
+    public CompletableFuture<Void> unmuteChat(JidProvider chat) {
         if (store().clientType() == ClientType.MOBILE) {
             // TODO: Send notification to companions
             store().findChatByJid(chat)
                     .ifPresent(entry -> entry.setMute(ChatMute.notMuted()));
-            return CompletableFuture.completedFuture(chat);
+            return CompletableFuture.completedFuture(null);
         }
 
         var muteAction = new MuteAction(false, null, false);
         var syncAction = ActionValueSync.of(muteAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 2, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
+        return socketHandler.pushPatch(request);
     }
 
     /**
      * Blocks a contact
      *
-     * @param chat the target chat
+     * @param contact the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> block(T chat) {
-        var body = Node.of("item", Map.of("action", "block", "jid", chat.toJid()));
-        return socketHandler.sendQuery("set", "blocklist", body).thenApplyAsync(ignored -> chat);
+    public CompletableFuture<Void> blockContact(JidProvider contact) {
+        var body = Node.of("item", Map.of("action", "block", "jid", contact.toJid()));
+        return socketHandler.sendQuery("set", "blocklist", body)
+                .thenRun(() -> {});
     }
 
     /**
      * Unblocks a contact
      *
-     * @param chat the target chat
+     * @param contact the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> unblock(T chat) {
-        var body = Node.of("item", Map.of("action", "unblock", "jid", chat.toJid()));
-        return socketHandler.sendQuery("set", "blocklist", body).thenApplyAsync(ignored -> chat);
+    public CompletableFuture<Void> unblockContact(JidProvider contact) {
+        var body = Node.of("item", Map.of("action", "unblock", "jid", contact.toJid()));
+        return socketHandler.sendQuery("set", "blocklist", body)
+                .thenRun(() -> {});
     }
 
     /**
@@ -1280,19 +1339,21 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> changeEphemeralTimer(T chat, ChatEphemeralTimer timer) {
+    public CompletableFuture<Void> changeEphemeralTimer(JidProvider chat, ChatEphemeralTimer timer) {
         return switch (chat.toJid().server()) {
             case USER, WHATSAPP -> {
                 var message = new ProtocolMessageBuilder()
                         .protocolType(ProtocolMessage.Type.EPHEMERAL_SETTING)
                         .ephemeralExpiration(timer.period().toSeconds())
                         .build();
-                yield sendMessage(chat, message).thenApplyAsync(ignored -> chat);
+                yield sendMessage(chat, message)
+                        .thenRun(() -> {});
             }
             case GROUP -> {
                 var body = timer == ChatEphemeralTimer.OFF ? Node.of("not_ephemeral") : Node.of("ephemeral", Map.of("expiration", timer.period()
                         .toSeconds()));
-                yield socketHandler.sendQuery(chat.toJid(), "set", "w:g2", body).thenApplyAsync(ignored -> chat);
+                yield socketHandler.sendQuery(chat.toJid(), "set", "w:g2", body)
+                        .thenRun(() -> {});
             }
             default ->
                     throw new IllegalArgumentException("Unexpected chat %s: ephemeral messages are only supported for conversations and groups".formatted(chat.toJid()));
@@ -1305,7 +1366,7 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<ChatMessageInfo> markPlayed(ChatMessageInfo info) {
+    public CompletableFuture<ChatMessageInfo> markMessagePlayed(ChatMessageInfo info) {
         if (store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS).value() != PrivacySettingValue.EVERYONE) {
             return CompletableFuture.completedFuture(info);
         }
@@ -1315,24 +1376,14 @@ public class Whatsapp {
     }
 
     /**
-     * Marks a chat as unread
-     *
-     * @param chat the target chat
-     * @return a CompletableFuture
-     */
-    public <T extends JidProvider> CompletableFuture<T> markUnread(T chat) {
-        return mark(chat, false);
-    }
-
-    /**
      * Pins a chat to the top. A maximum of three chats can be pinned to the top. This condition can
      * be checked using;.
      *
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> pin(T chat) {
-        return pin(chat, true);
+    public CompletableFuture<Void> pinChat(JidProvider chat) {
+        return pinChat(chat, true);
     }
 
     /**
@@ -1341,23 +1392,23 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> unpin(T chat) {
-        return pin(chat, false);
+    public CompletableFuture<Void> unpinChat(JidProvider chat) {
+        return pinChat(chat, false);
     }
 
-    private <T extends JidProvider> CompletableFuture<T> pin(T chat, boolean pin) {
+    private CompletableFuture<Void> pinChat(JidProvider chat, boolean pin) {
         if (store().clientType() == ClientType.MOBILE) {
             // TODO: Send notification to companions
             store().findChatByJid(chat)
                     .ifPresent(entry -> entry.setPinnedTimestampSeconds(pin ? (int) Clock.nowSeconds() : 0));
-            return CompletableFuture.completedFuture(chat);
+            return CompletableFuture.completedFuture(null);
         }
 
         var pinAction = new PinAction(pin);
         var syncAction = ActionValueSync.of(pinAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 5, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_LOW, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
+        return socketHandler.pushPatch(request);
     }
 
     /**
@@ -1366,11 +1417,11 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<ChatMessageInfo> star(ChatMessageInfo info) {
-        return star(info, true);
+    public CompletableFuture<ChatMessageInfo> starMessage(ChatMessageInfo info) {
+        return starMessage(info, true);
     }
 
-    private CompletableFuture<ChatMessageInfo> star(ChatMessageInfo info, boolean star) {
+    private CompletableFuture<ChatMessageInfo> starMessage(ChatMessageInfo info, boolean star) {
         if (store().clientType() == ClientType.MOBILE) {
             // TODO: Send notification to companions
             info.setStarred(star);
@@ -1385,12 +1436,15 @@ public class Whatsapp {
         return socketHandler.pushPatch(request).thenApplyAsync(ignored -> info);
     }
 
-    private String fromMeToFlag(ChatMessageInfo info) {
-        return booleanToInt(info.fromMe());
+    private String fromMeToFlag(MessageInfo info) {
+        var fromMe = Objects.equals(info.senderJid().withoutDevice(), jidOrThrowError().withoutDevice());
+        return booleanToInt(fromMe);
     }
 
-    private String participantToFlag(ChatMessageInfo info) {
-        return info.chatJid().hasServer(JidServer.GROUP) && !info.fromMe() ? info.senderJid().toString() : "0";
+    private String participantToFlag(MessageInfo info) {
+        var fromMe = Objects.equals(info.senderJid().withoutDevice(), jidOrThrowError().withoutDevice());
+        return info.parentJid().hasServer(JidServer.GROUP)
+                && !fromMe ? info.senderJid().toString() : "0";
     }
 
     private String booleanToInt(boolean keepStarredMessages) {
@@ -1403,8 +1457,8 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<ChatMessageInfo> unstar(ChatMessageInfo info) {
-        return star(info, false);
+    public CompletableFuture<ChatMessageInfo> unstarMessage(ChatMessageInfo info) {
+        return starMessage(info, false);
     }
 
     /**
@@ -1413,16 +1467,16 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> archive(T chat) {
-        return archive(chat, true);
+    public CompletableFuture<Void> archiveChat(JidProvider chat) {
+        return archiveChat(chat, true);
     }
 
-    private <T extends JidProvider> CompletableFuture<T> archive(T chat, boolean archive) {
+    private CompletableFuture<Void> archiveChat(JidProvider chat, boolean archive) {
         if (store().clientType() == ClientType.MOBILE) {
             // TODO: Send notification to companions
             store().findChatByJid(chat)
                     .ifPresent(entry -> entry.setArchived(archive));
-            return CompletableFuture.completedFuture(chat);
+            return CompletableFuture.completedFuture(null);
         }
 
         var range = createRange(chat, false);
@@ -1430,7 +1484,7 @@ public class Whatsapp {
         var syncAction = ActionValueSync.of(archiveAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 3, chat.toJid().toString());
         var request = new PatchRequest(PatchType.REGULAR_LOW, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
+        return socketHandler.pushPatch(request);
     }
 
     /**
@@ -1439,28 +1493,50 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> unarchive(T chat) {
-        return archive(chat, false);
+    public CompletableFuture<Void> unarchive(JidProvider chat) {
+        return archiveChat(chat, false);
     }
 
     /**
      * Deletes a message
      *
-     * @param info     the non-null message to delete
+     * @param messageInfo the non-null message to delete
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Void> deleteMessage(NewsletterMessageInfo messageInfo) {
+        var revokeInfo = new NewsletterMessageInfo(
+                messageInfo.newsletter(),
+                messageInfo.id(),
+                messageInfo.serverId(),
+                Clock.nowSeconds(),
+                null,
+                new ConcurrentHashMap<>(),
+                MessageContainer.empty(),
+                MessageStatus.PENDING
+        );
+        var attrs = Map.of("edit", getDeleteBit(messageInfo));
+        var request = new MessageSendRequest.Newsletter(revokeInfo, attrs);
+        return socketHandler.sendMessage(request);
+    }
+
+    /**
+     * Deletes a message
+     *
+     * @param messageInfo non-null message to delete
      * @param everyone whether the message should be deleted for everyone or only for this client and
      *                 its companions
      * @return a CompletableFuture
      */
-    public CompletableFuture<ChatMessageInfo> delete(ChatMessageInfo info, boolean everyone) {
+    public CompletableFuture<Void> deleteMessage(ChatMessageInfo messageInfo, boolean everyone) {
         if (everyone) {
             var message = new ProtocolMessageBuilder()
                     .protocolType(ProtocolMessage.Type.REVOKE)
-                    .key(info.key())
+                    .key(messageInfo.key())
                     .build();
-            var sender = info.chatJid().hasServer(JidServer.GROUP) ? jidOrThrowError() : null;
+            var sender = messageInfo.chatJid().hasServer(JidServer.GROUP) ? jidOrThrowError() : null;
             var key = new ChatMessageKeyBuilder()
                     .id(ChatMessageKey.randomId())
-                    .chatJid(info.chatJid())
+                    .chatJid(messageInfo.chatJid())
                     .fromMe(true)
                     .senderJid(sender)
                     .build();
@@ -1471,34 +1547,44 @@ public class Whatsapp {
                     .message(MessageContainer.of(message))
                     .timestampSeconds(Clock.nowSeconds())
                     .build();
-            var attrs = Map.of("edit", getEditBit(info));
+            var attrs = Map.of("edit", getDeleteBit(messageInfo));
             var request = new MessageSendRequest.Chat(revokeInfo, null, false, false, attrs);
-            return socketHandler.sendMessage(request)
-                    .thenApplyAsync(ignored -> info);
+            return socketHandler.sendMessage(request);
         }
 
-        if (store().clientType() == ClientType.MOBILE) {
-            // TODO: Send notification to companions
-            info.chat().ifPresent(chat -> chat.removeMessage(info));
-            return CompletableFuture.completedFuture(info);
-        }
-
-        var range = createRange(info.chatJid(), false);
-        var deleteMessageAction = new DeleteMessageForMeAction(false, info.timestampSeconds());
-        var syncAction = ActionValueSync.of(deleteMessageAction);
-        var entry = PatchEntry.of(syncAction, Operation.SET, 3, info.chatJid()
-                .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
-        var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        return socketHandler.pushPatch(request)
-                .thenApplyAsync(ignored -> info);
+        return switch (store().clientType()) {
+            case WEB -> {
+                var range = createRange(messageInfo.chatJid(), false);
+                var deleteMessageAction = new DeleteMessageForMeAction(false, messageInfo.timestampSeconds().orElse(0L));
+                var syncAction = ActionValueSync.of(deleteMessageAction);
+                var entry = PatchEntry.of(syncAction, Operation.SET, 3, messageInfo.chatJid().toString(), messageInfo.id(), fromMeToFlag(messageInfo), participantToFlag(messageInfo));
+                var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
+                yield socketHandler.pushPatch(request);
+            }
+            case MOBILE -> {
+                // TODO: Send notification to companions
+                messageInfo.chat().ifPresent(chat -> chat.removeMessage(messageInfo));
+                yield CompletableFuture.completedFuture(null);
+            }
+        };
     }
 
-    private int getEditBit(ChatMessageInfo info) {
-        if (info.chatJid().hasServer(JidServer.NEWSLETTER)) {
+
+    private int getEditBit(MessageInfo info) {
+        if (info.parentJid().hasServer(JidServer.NEWSLETTER)) {
+            return 3;
+        }
+
+        return 1;
+    }
+
+    private int getDeleteBit(MessageInfo info) {
+        if (info.parentJid().hasServer(JidServer.NEWSLETTER)) {
             return 8;
         }
 
-        if (info.chatJid().hasServer(JidServer.GROUP) && !info.fromMe()) {
+        var fromMe = Objects.equals(info.senderJid().withoutDevice(), jidOrThrowError().withoutDevice());
+        if (info.parentJid().hasServer(JidServer.GROUP) && !fromMe) {
             return 8;
         }
 
@@ -1512,11 +1598,11 @@ public class Whatsapp {
      * @param chat the non-null chat to delete
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> delete(T chat) {
+    public CompletableFuture<Void> deleteChat(JidProvider chat) {
         if (store().clientType() == ClientType.MOBILE) {
             // TODO: Send notification to companions
             store().removeChat(chat.toJid());
-            return CompletableFuture.completedFuture(chat);
+            return CompletableFuture.completedFuture(null);
         }
 
         var range = createRange(chat.toJid(), false);
@@ -1524,7 +1610,7 @@ public class Whatsapp {
         var syncAction = ActionValueSync.of(deleteChatAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 6, chat.toJid().toString(), "1");
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
+        return socketHandler.pushPatch(request);
     }
 
     /**
@@ -1535,12 +1621,12 @@ public class Whatsapp {
      * @param keepStarredMessages whether starred messages in this chat should be kept
      * @return a CompletableFuture
      */
-    public <T extends JidProvider> CompletableFuture<T> clear(T chat, boolean keepStarredMessages) {
+    public CompletableFuture<Void> clearChat(JidProvider chat, boolean keepStarredMessages) {
         if (store().clientType() == ClientType.MOBILE) {
             // TODO: Send notification to companions
             store().findChatByJid(chat.toJid())
                     .ifPresent(Chat::removeMessages);
-            return CompletableFuture.completedFuture(chat);
+            return CompletableFuture.completedFuture(null);
         }
 
         var known = store().findChatByJid(chat);
@@ -1549,7 +1635,7 @@ public class Whatsapp {
         var syncAction = ActionValueSync.of(clearChatAction);
         var entry = PatchEntry.of(syncAction, Operation.SET, 6, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
         var request = new PatchRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        return socketHandler.pushPatch(request).thenApplyAsync(ignored -> chat);
+        return socketHandler.pushPatch(request);
     }
 
     /**
@@ -1858,10 +1944,10 @@ public class Whatsapp {
      * @param policy    the non-null policy
      * @return a future
      */
-    public <T extends JidProvider> CompletableFuture<T> changeCommunitySetting(T community, CommunitySetting setting, GroupSettingPolicy policy) {
+    public CompletableFuture<Void> changeCommunitySetting(JidProvider community, CommunitySetting setting, GroupSettingPolicy policy) {
         var tag = policy == GroupSettingPolicy.ANYONE ? setting.on() : setting.off();
         return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", Node.of(tag))
-                .thenApplyAsync(ignored -> community);
+                .thenRun(() -> {});
     }
 
 
@@ -2461,13 +2547,14 @@ public class Whatsapp {
      * @param count         how many messages should be queried
      * @return a future
      */
-    public <T extends JidProvider> CompletableFuture<T> queryNewsletterMessages(T newsletterJid, int count) {
+    public CompletableFuture<Void> queryNewsletterMessages(JidProvider newsletterJid, int count) {
         var newsletterHandle = store().findNewsletterByJid(newsletterJid)
                 .orElseThrow(() -> new NoSuchElementException("Missing newsletter"))
                 .metadata()
-                .handle();
+                .handle()
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter's handle"));
         return socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterHandle)))
-                .thenApplyAsync(result -> newsletterJid);
+                .thenRun(() -> {});
     }
 
     /**
@@ -2482,7 +2569,6 @@ public class Whatsapp {
 
     /**
      * Creates a newsletter
-     * Web/Mobile Business API only
      *
      * @param name the non-null name of the newsletter
      * @return a future
@@ -2493,7 +2579,6 @@ public class Whatsapp {
 
     /**
      * Creates newsletter channel
-     * Web/Mobile Business API only
      *
      * @param name        the non-null name of the newsletter
      * @param description the nullable description of the newsletter
@@ -2505,7 +2590,6 @@ public class Whatsapp {
 
     /**
      * Creates a newsletter
-     * Web/Mobile Business API only
      *
      * @param name        the non-null name of the newsletter
      * @param description the nullable description of the newsletter
@@ -2513,7 +2597,6 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Optional<Newsletter>> createNewsletter(String name, String description, byte[] picture) {
-        Validate.isTrue(store().business(), "Only business users can create channels");
         var input = new CreateNewsletterRequest.NewsletterInput(name, description, picture != null ? Base64.getEncoder().encodeToString(picture) : null);
         var variable = new CreateNewsletterRequest.Variable(input);
         var request = new CreateNewsletterRequest(variable);
@@ -2547,13 +2630,13 @@ public class Whatsapp {
      * @param description the nullable new description
      * @return a future
      */
-    public <T extends JidProvider> CompletableFuture<T> changeNewsletterDescription(T newsletter, String description) {
+    public CompletableFuture<Void> changeNewsletterDescription(JidProvider newsletter, String description) {
         var safeDescription = Objects.requireNonNullElse(description, "");
         var payload = new UpdatePayload(safeDescription);
         var body = new UpdateNewsletterRequest.Variable(newsletter.toJid(), payload);
         var request = new UpdateNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "future"), Json.writeValueAsBytes(request)))
-                .thenApply(ignored -> newsletter);
+                .thenRun(() -> {});
     }
 
     public CompletableFuture<Void> joinNewsletter(JidProvider newsletter) {

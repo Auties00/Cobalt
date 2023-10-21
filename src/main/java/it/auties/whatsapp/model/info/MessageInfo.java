@@ -4,6 +4,8 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.util.Json;
 
+import java.util.OptionalLong;
+
 public sealed interface MessageInfo extends Info permits ChatMessageInfo, NewsletterMessageInfo, MessageStatusInfo, QuotedMessageInfo {
     Jid parentJid();
 
@@ -12,6 +14,8 @@ public sealed interface MessageInfo extends Info permits ChatMessageInfo, Newsle
     String id();
 
     MessageContainer message();
+
+    OptionalLong timestampSeconds();
 
     default String toJson() {
         return Json.writeValueAsString(this, true);

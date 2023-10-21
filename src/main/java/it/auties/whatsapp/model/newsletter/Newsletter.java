@@ -51,12 +51,24 @@ public final class Newsletter implements JidProvider {
         this.messages.add(message);
     }
 
+    public boolean removeMessage(NewsletterMessageInfo message) {
+        return this.messages.remove(message);
+    }
+
     public void addMessages(Collection<NewsletterMessageInfo> messages) {
         this.messages.addAll(messages);
     }
 
     public Collection<NewsletterMessageInfo> messages() {
         return Collections.unmodifiableCollection(messages);
+    }
+
+    public Optional<NewsletterMessageInfo> oldestMessage() {
+        return Optional.ofNullable(messages.peekFirst());
+    }
+
+    public Optional<NewsletterMessageInfo> newestMessage() {
+        return Optional.ofNullable(messages.peekLast());
     }
 
     @Override

@@ -22,10 +22,7 @@ import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -340,8 +337,8 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
         return this;
     }
 
-    public long timestampSeconds() {
-        return timestampSeconds;
+    public OptionalLong timestampSeconds() {
+        return Clock.parseTimestamp(timestampSeconds);
     }
 
     @Override

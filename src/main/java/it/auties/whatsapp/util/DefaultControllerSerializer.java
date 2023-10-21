@@ -64,18 +64,12 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private DefaultControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
         this.attributeStoreSerializers = new ConcurrentHashMap<>();
-        try {
-            Files.createDirectories(baseDirectory);
-            Validate.isTrue(Files.isDirectory(baseDirectory), "Expected a directory as base path: %s", baseDirectory);
-        } catch (IOException exception) {
-            throw new UncheckedIOException(exception);
-        }
     }
 
     @Override
     public LinkedList<UUID> listIds(ClientType type) {
         if (cachedUuids != null) {
-            return cachedUuids;
+            return new ImmutableLinkedList<>(cachedUuids);
         }
 
         var directory = getHome(type);
@@ -84,10 +78,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
 
         try (var walker = Files.walk(directory, 1).sorted(Comparator.comparing(this::getLastModifiedTime))) {
-            var result = walker.map(this::parsePathAsId)
+            return cachedUuids = walker.map(this::parsePathAsId)
                     .flatMap(Optional::stream)
                     .collect(Collectors.toCollection(LinkedList::new));
-            return cachedUuids = new ImmutableLinkedList<>(result);
         } catch (IOException exception) {
             return ImmutableLinkedList.empty();
         }
@@ -96,7 +89,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
     public LinkedList<PhoneNumber> listPhoneNumbers(ClientType type) {
         if (cachedPhoneNumbers != null) {
-            return cachedPhoneNumbers;
+            return new ImmutableLinkedList<>(cachedPhoneNumbers);
         }
 
         var directory = getHome(type);
@@ -105,10 +98,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
 
         try (var walker = Files.walk(directory, 1).sorted(Comparator.comparing(this::getLastModifiedTime))) {
-            var result = walker.map(this::parsePathAsPhoneNumber)
+            return cachedPhoneNumbers = walker.map(this::parsePathAsPhoneNumber)
                     .flatMap(Optional::stream)
                     .collect(Collectors.toCollection(LinkedList::new));
-            return cachedPhoneNumbers = new ImmutableLinkedList<>(result);
         } catch (IOException exception) {
             return ImmutableLinkedList.empty();
         }
@@ -306,6 +298,10 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private Optional<Store> deserializeStoreFromId(ClientType type, String id) {
         var path = getSessionFile(type, id, "store.smile");
+        if (Files.notExists(path)) {
+            return Optional.empty();
+        }
+
         try (var input = new GZIPInputStream(Files.newInputStream(path))) {
             return Optional.of(Smile.readValue(input, Store.class));
         } catch (IOException exception) {

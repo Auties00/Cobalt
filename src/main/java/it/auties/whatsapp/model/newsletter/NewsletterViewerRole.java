@@ -9,6 +9,10 @@ public enum NewsletterViewerRole {
     ADMIN,
     GUEST;
 
+    public static NewsletterViewerRole of(int index) {
+        return index >= values().length ? UNKNOWN : values()[index];
+    }
+
     public static NewsletterViewerRole of(String name) {
         return Arrays.stream(values())
                 .filter(entry -> entry.name().equalsIgnoreCase(name))

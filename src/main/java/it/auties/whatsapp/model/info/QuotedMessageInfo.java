@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.message.model.MessageContainer;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * An immutable model class that represents a quoted message
@@ -92,5 +93,10 @@ public final class QuotedMessageInfo implements MessageInfo {
 
     public MessageContainer message() {
         return message;
+    }
+
+    @Override
+    public OptionalLong timestampSeconds() {
+        return OptionalLong.empty();
     }
 }

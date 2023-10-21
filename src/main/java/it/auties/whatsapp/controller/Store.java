@@ -752,10 +752,10 @@ public final class Store extends Controller<Store> {
 
     private void joinMessages(Chat chat, Chat oldChat) {
         var newChatTimestamp = chat.newestMessage()
-                .map(ChatMessageInfo::timestampSeconds)
+                .map(message -> message.timestampSeconds().orElse(0L))
                 .orElse(0L);
         var oldChatTimestamp = oldChat.newestMessage()
-                .map(ChatMessageInfo::timestampSeconds)
+                .map(message -> message.timestampSeconds().orElse(0L))
                 .orElse(0L);
         if (newChatTimestamp <= oldChatTimestamp) {
             chat.addMessages(oldChat.messages());
@@ -1211,6 +1211,7 @@ public final class Store extends Controller<Store> {
 
     public void dispose() {
         serialize(false);
+        serializer.linkMetadata(this);
         mediaConnectionLatch.countDown();
     }
 

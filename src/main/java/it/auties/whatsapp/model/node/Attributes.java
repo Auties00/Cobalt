@@ -50,8 +50,8 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
      * @param map the non-null existing map
      * @return a new instance of Attributes
      */
-    public static Attributes of(Map<String, Object> map) {
-        return ofNullable(map);
+    public static Attributes of(Map<String, ?> map) {
+        return ofNullable(Objects.requireNonNull(map));
     }
 
     /**

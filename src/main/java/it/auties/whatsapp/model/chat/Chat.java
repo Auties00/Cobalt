@@ -573,12 +573,20 @@ public final class Chat implements ProtobufMessage, JidProvider {
     }
 
     private void updateChatTimestamp(ChatMessageInfo info) {
-        var oldTimeStamp = newestMessage().map(ChatMessageInfo::timestampSeconds).orElse(0L);
-        if (oldTimeStamp > info.timestampSeconds()) {
+        if(info.timestampSeconds().isEmpty()) {
             return;
         }
 
-        this.timestampSeconds = info.timestampSeconds();
+        var newTimestamp = info.timestampSeconds()
+                .getAsLong();
+        var oldTimeStamp = newestMessage()
+                .map(value -> value.timestampSeconds().orElse(0L))
+                .orElse(0L);
+        if (oldTimeStamp > newTimestamp) {
+            return;
+        }
+
+        this.timestampSeconds = newTimestamp;
         this.update = true;
     }
 

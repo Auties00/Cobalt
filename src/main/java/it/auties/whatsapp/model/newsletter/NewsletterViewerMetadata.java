@@ -15,8 +15,17 @@ public final class NewsletterViewerMetadata {
     }
 
     @JsonCreator
-    NewsletterViewerMetadata(Map<String, String> json) {
-        this(Objects.equals(json.get("mute"), "ON"), NewsletterViewerRole.of(json.get("role")));
+    NewsletterViewerMetadata(Map<String, ?> json) {
+        this.mute = switch (json.get("mute")) {
+            case Boolean bool -> bool;
+            case String string -> Objects.equals(string, "ON");
+            default -> false;
+        };
+        this.role = switch (json.get("role")) {
+            case String string -> NewsletterViewerRole.of(string);
+            case Integer index -> NewsletterViewerRole.of(index);
+            default -> NewsletterViewerRole.UNKNOWN;
+        };
     }
 
     public boolean mute() {

@@ -18,6 +18,7 @@ open module it.auties.cobalt {
 
     // Serialization (Protobuf, JSON, Smile)
     requires it.auties.protobuf.base;
+    requires java.compiler;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.dataformat.smile;

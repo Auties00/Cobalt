@@ -59,6 +59,7 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
         return serverId;
     }
 
+    @Override
     public OptionalLong timestampSeconds() {
         return timestampSeconds == null ? OptionalLong.empty() : OptionalLong.of(timestampSeconds);
     }

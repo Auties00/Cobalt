@@ -260,13 +260,13 @@ public class WebTest implements Listener {
 
     private void markAsUnread() {
         log("Marking chat as unread...");
-        var markStatus = api.markUnread(contact).join();
+        var markStatus = api.markChatUnread(contact).join();
         log("Marked chat as unread: %s", markStatus);
     }
 
     private void markAsRead() {
         log("Marking chat as read...");
-        var markStatus = api.markRead(contact).join();
+        var markStatus = api.markChatRead(contact).join();
         log("Marked chat as read: %s", markStatus);
     }
 
@@ -278,7 +278,7 @@ public class WebTest implements Listener {
             return;
         }
         log("Clearing chat...");
-        var ephemeralResponse = api.clear(contact, false).join();
+        var ephemeralResponse = api.clearChat(contact, false).join();
         log("Cleared chat: %s", ephemeralResponse);
     }
 
@@ -290,7 +290,7 @@ public class WebTest implements Listener {
             return;
         }
         log("Deleting chat...");
-        var ephemeralResponse = api.delete(contact).join();
+        var ephemeralResponse = api.deleteChat(contact).join();
         log("Deleted chat: %s", ephemeralResponse);
     }
 
@@ -430,7 +430,7 @@ public class WebTest implements Listener {
             testGroupCreation();
         }
         log("Promoting %s...", contact);
-        var changeGroupResponse = api.promote(group, contact).join();
+        var changeGroupResponse = api.promoteGroupParticipant(group, contact).join();
         log("Promoted: %s", changeGroupResponse);
     }
 
@@ -445,7 +445,7 @@ public class WebTest implements Listener {
             testGroupCreation();
         }
         log("Demoting %s...", contact);
-        var changeGroupResponse = api.demote(group, contact).join();
+        var changeGroupResponse = api.demoteGroupParticipant(group, contact).join();
         log("Demoted: %s", changeGroupResponse);
     }
 
@@ -491,7 +491,7 @@ public class WebTest implements Listener {
             testGroupCreation();
         }
         log("Muting chat...");
-        var muteResponse = api.mute(group, ChatMute.mutedForOneWeek()).join();
+        var muteResponse = api.muteChat(group, ChatMute.mutedForOneWeek()).join();
         log("Muted chat: %s", muteResponse);
     }
 
@@ -505,7 +505,7 @@ public class WebTest implements Listener {
             testGroupCreation();
         }
         log("Unmuting chat...");
-        var unmuteResponse = api.unmute(group).join();
+        var unmuteResponse = api.unmuteChat(group).join();
         log("Unmuted chat: %s", unmuteResponse);
     }
 
@@ -519,7 +519,7 @@ public class WebTest implements Listener {
             testGroupCreation();
         }
         log("Archiving chat...");
-        var archiveResponse = api.archive(group).join();
+        var archiveResponse = api.archiveChat(group).join();
         log("Archived chat: %s", archiveResponse);
     }
 
@@ -551,7 +551,7 @@ public class WebTest implements Listener {
             return;
         }
         log("Pinning chat...");
-        var pinResponse = api.pin(group).join();
+        var pinResponse = api.pinChat(group).join();
         log("Pinned chat: %s", pinResponse);
     }
 
@@ -569,7 +569,7 @@ public class WebTest implements Listener {
             return;
         }
         log("Unpinning chat...");
-        var unpinResponse = api.unpin(group).join();
+        var unpinResponse = api.unpinChat(group).join();
         log("Unpinned chat: %s", unpinResponse);
     }
 
@@ -599,10 +599,10 @@ public class WebTest implements Listener {
         }
         var example = (ChatMessageInfo) api.sendMessage(contact, "Hello").join();
         log("Deleting for you...");
-        api.delete(example, false).join();
+        api.deleteMessage(example, false).join();
         log("Deleted for you");
         log("Deleting for everyone...");
-        api.delete(example, true).join();
+        api.deleteMessage(example, true).join();
         log("Deleted for everyone");
     }
 

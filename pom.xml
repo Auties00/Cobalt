@@ -148,7 +148,7 @@
         <classgraph.version>4.8.160</classgraph.version>
         <reflection.version>1.2</reflection.version>
         <lazysodium.version>5.1.4</lazysodium.version>
-        <linkpreview.version>2.2</linkpreview.version>
+        <linkpreview.version>2.3</linkpreview.version>
         <vcard.version>0.12.1</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
         <libphonenumber.version>8.13.13</libphonenumber.version>

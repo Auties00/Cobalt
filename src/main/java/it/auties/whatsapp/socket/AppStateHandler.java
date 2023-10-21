@@ -10,14 +10,13 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.model.setting.EphemeralSettings;
 import it.auties.whatsapp.model.setting.LocaleSettings;
 import it.auties.whatsapp.model.setting.PushNameSettings;
+import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSettings;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
@@ -37,7 +36,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static java.lang.System.Logger.Level.WARNING;
 
 class AppStateHandler {
     private static final int TIMEOUT = 120;
@@ -386,56 +384,91 @@ class AppStateHandler {
         if (value == null) {
             return;
         }
-        var action = value.action().orElse(null);
-        if (action != null) {
-            var messageIndex = mutation.messageIndex();
-            var targetContact = messageIndex.chatJid().flatMap(socketHandler.store()::findContactByJid);
-            var targetChat = messageIndex.chatJid().flatMap(socketHandler.store()::findChatByJid);
-            var targetMessage = targetChat.flatMap(chat -> socketHandler.store()
-                    .findMessageById(chat, mutation.messageIndex().messageId().orElse(null)));
-            switch (action) {
-                case ClearChatAction clearChatAction -> clearMessages(targetChat.orElse(null), clearChatAction);
-                case ContactAction contactAction ->
-                        updateName(targetContact.orElseGet(() -> createContact(messageIndex)), targetChat.orElseGet(() -> createChat(messageIndex)), contactAction);
-                case DeleteChatAction deleteChatAction -> targetChat.ifPresent(Chat::removeMessages);
-                case DeleteMessageForMeAction deleteMessageForMeAction ->
-                        targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
-                case MarkChatAsReadAction markAction ->
-                        targetChat.ifPresent(chat -> chat.setUnreadMessagesCount(markAction.read() ? 0 : -1));
-                case MuteAction muteAction ->
-                        targetChat.ifPresent(chat -> chat.setMute(ChatMute.muted(muteAction.muteEndTimestampSeconds().orElse(0L))));
-                case PinAction pinAction ->
-                        targetChat.ifPresent(chat -> chat.setPinnedTimestampSeconds(pinAction.pinned() ? (int) mutation.value().timestamp() : 0));
-                case StarAction starAction ->
-                        targetMessage.ifPresent(message -> message.setStarred(starAction.starred()));
-                case ArchiveChatAction archiveChatAction ->
-                        targetChat.ifPresent(chat -> chat.setArchived(archiveChatAction.archived()));
-                case TimeFormatAction timeFormatAction ->
-                        socketHandler.store().setTwentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
-                default -> {
-                }
+
+        value.action().ifPresent(action -> onAction(mutation, action));
+        value.setting().ifPresent(this::onSetting);
+        mutation.value().primaryFeature().ifPresent(socketHandler::onFeatures);
+    }
+
+    private void onSetting(Setting setting) {
+        switch (setting) {
+            case LocaleSettings localeSettings -> {
+                var oldLocale = socketHandler.store().locale().orElse(null);
+                socketHandler.updateLocale(localeSettings.locale(), oldLocale);
             }
-            socketHandler.onAction(action, messageIndex);
-        }
-        var setting = value.setting().orElse(null);
-        if (setting != null) {
-            switch (setting) {
-                case EphemeralSettings ephemeralSettings -> showEphemeralMessageWarning(ephemeralSettings);
-                case LocaleSettings localeSettings ->
-                        socketHandler.updateLocale(localeSettings.locale(), socketHandler.store().locale().orElse(null));
-                case PushNameSettings pushNameSettings ->
-                        socketHandler.updateUserName(pushNameSettings.name(), socketHandler.store().name());
-                case UnarchiveChatsSettings unarchiveChatsSettings ->
-                        socketHandler.store().setUnarchiveChats(unarchiveChatsSettings.unarchiveChats());
-                default -> {
-                }
+            case PushNameSettings pushNameSettings -> {
+                var oldName = socketHandler.store().name();
+                socketHandler.updateUserName(pushNameSettings.name(), oldName);
             }
-            socketHandler.onSetting(setting);
+            case UnarchiveChatsSettings unarchiveChatsSettings -> {
+                var settingValue = unarchiveChatsSettings.unarchiveChats();
+                socketHandler.store().setUnarchiveChats(settingValue);
+            }
+            default -> {}
         }
-        var features = mutation.value().primaryFeature();
-        if (features.isPresent() && !features.get().flags().isEmpty()) {
-            socketHandler.onFeatures(features.get());
+        socketHandler.onSetting(setting);
+    }
+
+    private void onAction(ActionDataSync mutation, Action action) {
+        var messageIndex = mutation.messageIndex();
+        var targetContact = messageIndex.chatJid()
+                .flatMap(socketHandler.store()::findContactByJid);
+        var targetChat = messageIndex.chatJid()
+                .flatMap(socketHandler.store()::findChatByJid);
+        var targetNewsletter = messageIndex.chatJid()
+                .flatMap(socketHandler.store()::findNewsletterByJid);
+        var targetChatMessage = targetChat.flatMap(chat -> {
+            var messageId = mutation.messageIndex().messageId().orElse(null);
+            return socketHandler.store()
+                    .findMessageById(chat, messageId);
+        });
+        var targetNewsletterMessage = targetNewsletter.flatMap(newsletter -> {
+            var messageId = mutation.messageIndex().messageId().orElse(null);
+            return socketHandler.store()
+                    .findMessageById(newsletter, messageId);
+        });
+        switch (action) {
+            case ClearChatAction clearChatAction -> {
+                var chat = targetChat.orElse(null);
+                clearMessages(chat, clearChatAction);
+            }
+            case ContactAction contactAction -> {
+                var contact = targetContact.orElseGet(() -> createContact(messageIndex));
+                var chat = targetChat.orElseGet(() -> createChat(messageIndex));
+                updateName(contact, chat, contactAction);
+            }
+            case DeleteMessageForMeAction deleteMessageForMeAction -> {
+                targetChatMessage.ifPresent(message -> targetChat.ifPresent(chat -> chat.removeMessage(message)));
+                targetNewsletterMessage.ifPresent(message -> targetNewsletter.ifPresent(newsletter -> newsletter.removeMessage(message)));
+            }
+            case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> {
+                var read = markAction.read() ? 0 : -1;
+                chat.setUnreadMessagesCount(read);
+            });
+            case MuteAction muteAction -> targetChat.ifPresent(chat -> {
+                var timestamp = muteAction.muteEndTimestampSeconds().orElse(0L);
+                chat.setMute(ChatMute.muted(timestamp));
+            });
+            case PinAction pinAction -> targetChat.ifPresent(chat -> {
+                var timestamp = pinAction.pinned() ? (int) mutation.value().timestamp() : 0;
+                chat.setPinnedTimestampSeconds(timestamp);
+            });
+            case StarAction starAction -> targetChatMessage.ifPresent(message -> {
+                var starred = starAction.starred();
+                message.setStarred(starred);
+            });
+            case ArchiveChatAction archiveChatAction -> targetChat.ifPresent(chat -> {
+                var archived = archiveChatAction.archived();
+                chat.setArchived(archived);
+            });
+            case TimeFormatAction timeFormatAction -> {
+                var format = timeFormatAction.twentyFourHourFormatEnabled();
+                socketHandler.store().setTwentyFourHourFormat(format);
+            }
+            case DeleteChatAction deleteChatAction -> targetChat.ifPresent(Chat::removeMessages);
+            default -> {}
         }
+        socketHandler.onAction(action, messageIndex);
     }
 
     private Chat createChat(MessageIndexInfo messageIndex) {
@@ -448,11 +481,6 @@ class AppStateHandler {
         var contact = socketHandler.store().addContact(chatJid);
         socketHandler.onNewContact(contact);
         return contact;
-    }
-
-    private void showEphemeralMessageWarning(EphemeralSettings ephemeralSettings) {
-        var logger = System.getLogger("AppStateHandler");
-        logger.log(WARNING, "An ephemeral status update was received as a setting. " + "Data: %s".formatted(ephemeralSettings) + "This should not be possible." + " Open an issue on Github please");
     }
 
     private void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {
@@ -478,11 +506,6 @@ class AppStateHandler {
         contactAction.fullName().ifPresent(contact::setFullName);
         contactAction.firstName().ifPresent(contact::setShortName);
         contactAction.name().ifPresent(chat::setName);
-    }
-
-    private void deleteMessage(ChatMessageInfo message, Chat chat) {
-        chat.removeMessage(message);
-        socketHandler.onMessageDeleted(message, false);
     }
 
     private SyncRecord decodePatches(Jid jid, PatchType name, List<PatchSync> patches, CompanionHashState state) {
