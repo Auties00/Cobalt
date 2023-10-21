@@ -52,7 +52,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -70,7 +69,6 @@ class MessageHandler {
     private final Logger logger;
     private final EnumSet<Type> historySyncTypes;
     private final ReentrantLock lock;
-    private ExecutorService executor;
     private CompletableFuture<?> historySyncTask;
 
     protected MessageHandler(SocketHandler socketHandler) {
@@ -652,29 +650,29 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    public CompletableFuture<Void> decode(Node node, JidProvider chatOverride, boolean notify) {
+    // TODO: Make this async and move the lock as far as possible into the cipher chain for better performance
+    public void decode(Node node, JidProvider chatOverride, boolean notify) {
         try {
             var businessName = getBusinessName(node);
             if (node.hasNode("unavailable")) {
-                return decodeChatMessage(node, null, businessName, notify);
+                decodeChatMessage(node, null, businessName, notify);
+                return;
             }
 
             var encrypted = node.findNodes("enc");
             if (!encrypted.isEmpty()) {
-                var futures = encrypted.stream()
-                        .map(message -> decodeChatMessage(node, message, businessName, notify))
-                        .toArray(CompletableFuture[]::new);
-                return CompletableFuture.allOf(futures);
+                encrypted.forEach(message -> decodeChatMessage(node, message, businessName, notify));
+                return;
             }
 
             if (node.hasNode("plaintext")) {
-                return CompletableFuture.runAsync(() -> decodeNewsletterMessage(node, businessName, chatOverride, notify));
+                decodeNewsletterMessage(node, businessName, chatOverride, notify);
+                return;
             }
 
-            return decodeChatMessage(node, null, businessName, notify);
+            decodeChatMessage(node, null, businessName, notify);
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
-            return CompletableFuture.failedFuture(throwable);
         }
     }
 
@@ -768,7 +766,7 @@ class MessageHandler {
         }
     }
 
-    private CompletableFuture<Void> decodeChatMessage(Node infoNode, Node messageNode, String businessName, boolean notify) {
+    private void decodeChatMessage(Node infoNode, Node messageNode, String businessName, boolean notify) {
         try {
             lock.lock();
             var pushName = infoNode.attributes().getNullableString("notify");
@@ -788,7 +786,7 @@ class MessageHandler {
                     .map(Jid::withoutDevice)
                     .orElse(null);
             if (receiver == null) {
-                return CompletableFuture.completedFuture(null); // This means that the session got disconnected while processing
+                return;
             }
 
             if (from.hasServer(JidServer.WHATSAPP) || from.hasServer(JidServer.USER)) {
@@ -804,13 +802,15 @@ class MessageHandler {
             }
             var key = keyBuilder.id(id).build();
             if (Objects.equals(key.senderJid().orElse(null), socketHandler.store().jid().orElse(null))) {
-                return sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+                sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+                return;
             }
 
 
             if (messageNode == null) {
                 logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s)".formatted(id, from));
-                return sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+                sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+                return;
             }
 
             var type = messageNode.attributes().getRequiredString("type");
@@ -818,7 +818,8 @@ class MessageHandler {
             var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
             if (decodedMessage.hasError()) {
                 logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage.error().getMessage()));
-                return sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+                sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+                return;
             }
 
             var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
@@ -834,10 +835,9 @@ class MessageHandler {
             attributeChatMessage(info);
             saveMessage(info, notify);
             socketHandler.onReply(info);
-            return sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+            sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
-            return CompletableFuture.failedFuture(throwable);
         } finally {
             lock.unlock();
         }
@@ -1330,9 +1330,6 @@ class MessageHandler {
 
     protected void dispose() {
         historyCache.clear();
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdownNow();
-        }
         historySyncTask = null;
         historySyncTypes.clear();
     }
