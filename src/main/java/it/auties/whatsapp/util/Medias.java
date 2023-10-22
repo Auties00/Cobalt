@@ -42,6 +42,7 @@ import java.util.stream.IntStream;
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
+// TODO: Write a custom library to generate all thumbnails
 public final class Medias {
     private static final HttpClient CLIENT = HttpClient.newBuilder()
             .version(Version.HTTP_1_1)

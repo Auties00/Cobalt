@@ -179,10 +179,8 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        try {
-            var plainText = AesGcm.decrypt(keys.readCounter(true), message, readKey.get());
-            var decoder = new BinaryDecoder();
-            var node = decoder.decode(plainText);
+        try(var decoder = new BinaryDecoder(AesGcm.decrypt(keys.readCounter(true), message, readKey.get()))) {
+            var node = decoder.decode();
             onNodeReceived(node);
             store.resolvePendingRequest(node, false);
             streamHandler.digest(node);

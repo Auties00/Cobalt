@@ -1,8 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.exception.RequestException;
-import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
 
@@ -15,13 +13,12 @@ import java.net.Proxy.Type;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -32,14 +29,12 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     final URI proxy;
     final Executor executor;
     final ReentrantLock outputLock;
-    final Collection<ByteBuffer> inputParts;
     SocketListener listener;
 
     private SocketSession(URI proxy, Executor executor) {
         this.proxy = proxy;
         this.executor = executor;
         this.outputLock = new ReentrantLock(true);
-        this.inputParts = new ConcurrentLinkedDeque<>();
     }
 
     abstract CompletableFuture<Void> connect(SocketListener listener);
@@ -81,16 +76,14 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         };
     }
 
-
-    int decodeLength(ByteBuf buffer) {
-        return (buffer.readByte() << 16) | buffer.readUnsignedShort();
-    }
-
     public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
         private WebSocket session;
+        private final List<ByteBuffer> inputParts;
+        private int readableBytes;
 
         WebSocketSession(URI proxy, Executor executor) {
             super(proxy, executor);
+            this.inputParts = new ArrayList<>(5);
         }
 
         @SuppressWarnings("resource") // Not needed
@@ -145,6 +138,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
             inputParts.clear();
+            readableBytes = 0;
             listener.onClose();
             return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         }
@@ -156,46 +150,48 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
-            var buffer = getRequestBuffer(data, last);
-            if (buffer.isEmpty()) {
-                inputParts.add(data);
-                return WebSocket.Listener.super.onBinary(webSocket, data, last);
+            inputParts.add(data);
+            readableBytes += data.remaining();
+            if (!last) {
+                return WebSocket.Listener.super.onBinary(webSocket, data, false);
             }
 
-            while (buffer.get().readableBytes() >= 3) {
-                var length = decodeLength(buffer.get());
+            var inputPartsCounter = 0;
+            while (inputPartsCounter < inputParts.size()) {
+                var inputPart = inputParts.get(inputPartsCounter);
+                if(inputPart.remaining() < 3) {
+                    inputPartsCounter++;
+                    continue;
+                }
+
+                var length = (inputPart.get() << 16) | Short.toUnsignedInt(inputPart.getShort());
                 if (length < 0) {
                     break;
                 }
 
-                var result = buffer.get().readBytes(length);
+                readableBytes -= length;
+                var result = new byte[length];
+                var remaining = length;
+                while (remaining > 0) {
+                    var inputPartSize = inputPart.remaining();
+                    inputPart.get(result, length - remaining, Math.min(inputPartSize, length));
+                    if(inputPartSize < remaining) {
+                        inputPart = inputParts.get(++inputPartsCounter);
+                    }
+
+                    remaining -= inputPartSize;
+                }
+
                 try {
-                    listener.onMessage(BytesHelper.readBuffer(result));
+                    listener.onMessage(result);
                 } catch (Throwable throwable) {
                     listener.onError(throwable);
                 }
-
-                result.release();
             }
 
-            buffer.get().release();
-            return WebSocket.Listener.super.onBinary(webSocket, data, true);
-        }
-
-        private Optional<ByteBuf> getRequestBuffer(ByteBuffer data, boolean last) {
-            if (!last) {
-                inputParts.add(data);
-                return Optional.empty();
-            }
-
-            if (inputParts.isEmpty()) {
-                return Optional.of(BytesHelper.newBuffer(data));
-            }
-
-            inputParts.add(data);
-            var result = Optional.of(BytesHelper.newBuffer(inputParts));
+            readableBytes = 0;
             inputParts.clear();
-            return result;
+            return WebSocket.Listener.super.onBinary(webSocket, data, true);
         }
     }
 
@@ -277,11 +273,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         private void readMessages() {
             try (var input = new DataInputStream(socket.getInputStream())) {
                 while (isOpen()) {
-                    var lengthBytes = new byte[3];
-                    input.readFully(lengthBytes);
-                    var lengthBuffer = BytesHelper.newBuffer(lengthBytes);
-                    var length = decodeLength(lengthBuffer);
-                    lengthBuffer.release();
+                    var length = (input.readByte() << 16) | input.readUnsignedShort();
                     if (length < 0) {
                         break;
                     }
@@ -289,7 +281,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     var message = new byte[length];
                     input.readFully(message);
                     System.out.println(message.length);
-                    listener.onMessage(message);
+                    try {
+                        listener.onMessage(message);
+                    }catch (Throwable throwable) {
+                        listener.onError(throwable);
+                    }
                 }
             } catch (EOFException ignored) {
 

@@ -6,11 +6,13 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RequestException;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Specification;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -91,15 +93,21 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
      */
     public CompletableFuture<Node> send(SocketSession session, Keys keys, Store store, boolean prologue, boolean response) {
         var ciphered = encryptMessage(keys);
-        var buffer = BytesHelper.newBuffer();
-        buffer.writeBytes(prologue ? getPrologueData(store) : new byte[0]);
-        buffer.writeInt(ciphered.length >> 16);
-        buffer.writeShort(65535 & ciphered.length);
-        buffer.writeBytes(ciphered);
-        session.sendBinary(BytesHelper.readBuffer(buffer))
-                .thenRunAsync(() -> onSendSuccess(store, response))
-                .exceptionallyAsync(this::onSendError);
-        return future;
+        var byteArrayOutputStream = new ByteArrayOutputStream();
+        try(var dataOutputStream = new DataOutputStream(byteArrayOutputStream)) {
+            if(prologue) {
+                dataOutputStream.write(getPrologueData(store));
+            }
+            dataOutputStream.writeInt(ciphered.length >> 16);
+            dataOutputStream.writeShort(65535 & ciphered.length);
+            dataOutputStream.write(ciphered);
+            session.sendBinary(byteArrayOutputStream.toByteArray())
+                    .thenRunAsync(() -> onSendSuccess(store, response))
+                    .exceptionallyAsync(this::onSendError);
+            return future;
+        }catch (IOException exception) {
+            throw new RequestException(exception);
+        }
     }
 
     private byte[] getPrologueData(Store store) {
@@ -122,8 +130,11 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
         return switch (encodedBody) {
             case byte[] bytes -> bytes;
             case Node node -> {
-                var encoder = new BinaryEncoder();
-                yield encoder.encode(node);
+                try(var encoder = new BinaryEncoder()) {
+                    yield encoder.encode(node);
+                } catch (IOException exception) {
+                    throw new UncheckedIOException(exception);
+                }
             }
             case null, default ->
                     throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));

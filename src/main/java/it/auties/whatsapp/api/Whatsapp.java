@@ -2548,13 +2548,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Void> queryNewsletterMessages(JidProvider newsletterJid, int count) {
-        var newsletterHandle = store().findNewsletterByJid(newsletterJid)
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"))
-                .metadata()
-                .handle()
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter's handle"));
-        return socketHandler.sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterHandle)))
-                .thenRun(() -> {});
+        return socketHandler.queryNewsletterMessages(newsletterJid, count);
     }
 
     /**

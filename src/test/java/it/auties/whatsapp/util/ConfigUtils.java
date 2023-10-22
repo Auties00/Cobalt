@@ -1,4 +1,4 @@
-package it.auties.whatsapp.utils;
+package it.auties.whatsapp.util;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

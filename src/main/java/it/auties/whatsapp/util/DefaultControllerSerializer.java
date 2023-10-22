@@ -139,7 +139,8 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
         var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), KEYS_NAME);
         if (async) {
-            return CompletableFuture.runAsync(() -> writeFile(keys, KEYS_NAME, outputFile));
+            return CompletableFuture.runAsync(() -> writeFile(keys, KEYS_NAME, outputFile))
+                    .exceptionallyAsync(this::onError);
         }
 
         writeFile(keys, KEYS_NAME, outputFile);
@@ -193,7 +194,14 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
         var fileName = CHAT_PREFIX + chat.jid() + ".smile";
         var outputFile = getSessionFile(store, fileName);
-        return CompletableFuture.runAsync(() -> writeFile(chat, fileName, outputFile));
+        return CompletableFuture.runAsync(() -> writeFile(chat, fileName, outputFile))
+                .exceptionallyAsync(this::onError);
+    }
+
+    private Void onError(Throwable error) {
+        var logger = System.getLogger("Serializer");
+        logger.log(System.Logger.Level.ERROR, error);
+        return null;
     }
 
     private CompletableFuture<?>[] serializeNewslettersAsync(Store store) {
@@ -214,7 +222,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             var tempFile = Files.createTempFile(fileName, ".tmp");
             try (var tempFileOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
                 Smile.writeValueAsBytes(tempFileOutputStream, object);
-                Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot write file", exception);

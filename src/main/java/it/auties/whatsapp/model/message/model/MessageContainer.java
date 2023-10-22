@@ -18,7 +18,7 @@ import java.util.Optional;
  * A container for all types of messages known currently to WhatsappWeb.
  * <p>
  * Only one of these properties should be populated, however it's not certain as Whatsapp's Protobuf
- * doesn't use a oneof instruction as it would be logical to in said case. This may imply that in
+ * doesn't use a one of instruction as it would be logical to in said case. This may imply that in
  * some particular and rare cases more than one property can be populated.
  * <p>
  * There are several categories of messages:

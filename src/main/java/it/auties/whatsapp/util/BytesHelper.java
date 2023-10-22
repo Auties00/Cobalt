@@ -1,16 +1,15 @@
 package it.auties.whatsapp.util;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageContainerSpec;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.Buffer;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.DataFormatException;
@@ -60,42 +59,6 @@ public final class BytesHelper {
         return result;
     }
 
-    public static ByteBuf newBuffer() {
-        return Unpooled.buffer();
-    }
-
-    public static ByteBuf newBuffer(int size) {
-        return Unpooled.buffer(size);
-    }
-
-    public static ByteBuf newBuffer(byte[] data) {
-        var buffer = newBuffer(data.length);
-        buffer.writeBytes(data);
-        return buffer;
-    }
-
-    public static ByteBuf newBuffer(ByteBuffer data) {
-        var buffer = newBuffer(data.capacity());
-        buffer.writeBytes(data);
-        return buffer;
-    }
-
-    public static ByteBuf newBuffer(Collection<ByteBuffer> data) {
-        var buffer = newBuffer(data.stream().mapToInt(Buffer::capacity).sum());
-        data.forEach(buffer::writeBytes);
-        return buffer;
-    }
-
-    public static byte[] readBuffer(ByteBuf byteBuf) {
-        return readBuffer(byteBuf, byteBuf.readableBytes());
-    }
-
-    public static byte[] readBuffer(ByteBuf byteBuf, int length) {
-        var result = new byte[length];
-        byteBuf.readBytes(result);
-        return result;
-    }
-
     public static byte versionToBytes(int version) {
         return (byte) (version << 4 | CURRENT_VERSION);
     }
@@ -114,19 +77,25 @@ public final class BytesHelper {
             var count = deflater.deflate(buffer);
             result.write(buffer, 0, count);
         }
+        deflater.end();
         return result.toByteArray();
     }
 
     public static byte[] decompress(byte[] compressed) {
+        return decompress(compressed, 0, compressed.length);
+    }
+
+    public static byte[] decompress(byte[] compressed, int offset, int length) {
         try {
             var decompressor = new Inflater();
-            decompressor.setInput(compressed);
+            decompressor.setInput(compressed, offset, length);
             var result = new ByteArrayOutputStream();
             var buffer = new byte[1024];
             while (!decompressor.finished()) {
                 var count = decompressor.inflate(buffer);
                 result.write(buffer, 0, count);
             }
+            decompressor.end();
             return result.toByteArray();
         } catch (DataFormatException exception) {
             throw new IllegalArgumentException("Malformed data", exception);
@@ -154,9 +123,13 @@ public final class BytesHelper {
     }
 
     public static byte[] longToBytes(long number) {
-        var buffer = newBuffer();
-        buffer.writeLong(number);
-        return readBuffer(buffer);
+        var byteArrayOutputStream = new ByteArrayOutputStream();
+        try(var dataOutputStream = new DataOutputStream(byteArrayOutputStream)) {
+            dataOutputStream.writeLong(number);
+            return byteArrayOutputStream.toByteArray();
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 
     public static byte[] intToBytes(int input, int length) {

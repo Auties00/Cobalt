@@ -15,21 +15,16 @@ import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
-import java.io.UncheckedIOException;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.ProxySelector;
-import java.net.URI;
+import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public final class RegistrationHelper {
@@ -58,29 +53,28 @@ public final class RegistrationHelper {
     }
 
     private static CompletableFuture<Void> checkRequestResponse(Store store, Keys keys, int statusCode, String body, VerificationCodeError lastError, VerificationCodeMethod method) {
-        try {
-            System.out.println(body);
-            if (statusCode != HttpURLConnection.HTTP_OK) {
-                throw new RegistrationException(null, body);
-            }
-
-            var response = Json.readValue(body, VerificationCodeResponse.class);
-            if (response.status() == VerificationCodeStatus.SUCCESS) {
-                return CompletableFuture.completedFuture(null);
-            }
-
-            if (response.errorReason() == VerificationCodeError.NO_ROUTES) {
-                throw new RegistrationException(response, "VOIPs are not supported by Whatsapp");
-            }
-
-            var newErrorReason = response.errorReason();
-            if (newErrorReason != lastError) {
-                return requestVerificationCode(store, keys, method, newErrorReason);
-            }
-
-            throw new RegistrationException(response, body);
-        } catch (UncheckedIOException exception) {
+        if (statusCode != HttpURLConnection.HTTP_OK) {
             throw new RegistrationException(null, body);
+        }
+
+        var response = Json.readValue(body, VerificationCodeResponse.class);
+        if (response.status() == VerificationCodeStatus.SUCCESS) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        System.out.println(body);
+        System.out.println(response);
+        switch (response.errorReason()) {
+            case NO_ROUTES -> throw new RegistrationException(response, "VOIPs are not supported by Whatsapp");
+            case TOO_RECENT ->  throw new RegistrationException(response, "Please wait before trying to register this phone number again");
+            default -> {
+                var newErrorReason = response.errorReason();
+                if (newErrorReason != lastError) {
+                    return requestVerificationCode(store, keys, method, newErrorReason);
+                }
+
+                throw new RegistrationException(response, body);
+            }
         }
     }
 
@@ -97,7 +91,9 @@ public final class RegistrationHelper {
                 Map.entry("sim_mnc", "000"),
                 Map.entry("method", method.type()),
                 Map.entry("reason", ""),
-                Map.entry("hasav", 1)
+                Map.entry("hasav", 2),
+                Map.entry("prefer_sms_over_flash", true)
+
         );
     }
 
@@ -145,30 +141,26 @@ public final class RegistrationHelper {
     }
 
     private static CompletableFuture<Void> checkVerificationResponse(Store store, Keys keys, String code, HttpResponse<String> result, AsyncCaptchaCodeSupplier captchaHandler) {
-        try {
-            if (result.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new RegistrationException(null, result.body());
-            }
-
-            var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-            if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
-                return sendVerificationCode(store, keys, code, captchaHandler, true);
-            }
-
-            if (response.errorReason() == VerificationCodeError.CAPTCHA) {
-                Objects.requireNonNull(captchaHandler, "Received captcha, but no handler was specified in the options");
-                return captchaHandler.apply(response)
-                        .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
-            }
-
-            if (response.status() == VerificationCodeStatus.SUCCESS) {
-                return CompletableFuture.completedFuture(null);
-            }
-
-            throw new RegistrationException(response, result.body());
-        } catch (UncheckedIOException exception) {
+        if (result.statusCode() != HttpURLConnection.HTTP_OK) {
             throw new RegistrationException(null, result.body());
         }
+
+        var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+        if (response.errorReason() == VerificationCodeError.BAD_TOKEN || response.errorReason() == VerificationCodeError.OLD_VERSION) {
+            return sendVerificationCode(store, keys, code, captchaHandler, true);
+        }
+
+        if (response.errorReason() == VerificationCodeError.CAPTCHA) {
+            Objects.requireNonNull(captchaHandler, "Received captcha, but no handler was specified in the options");
+            return captchaHandler.apply(response)
+                    .thenComposeAsync(captcha -> sendVerificationCode(store, keys, code, captcha));
+        }
+
+        if (response.status() == VerificationCodeStatus.SUCCESS) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        throw new RegistrationException(response, result.body());
     }
 
     private static String normalizeCodeResult(String captcha) {
@@ -229,34 +221,60 @@ public final class RegistrationHelper {
     }
 
     private static Map<String, Object> getRegistrationOptions(Store store, Keys keys, String token, Entry<String, Object>[] attributes) {
+        var phoneNumber = store.phoneNumber()
+                .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
+        var gpiaToken = "CtMBARCnMGtXcq1smbOgv-7yGVv1XR" +
+                "_3r038Qkd0PDP1tDYicEbS-wt9W4yiIRZ1Nhe4yuzdU9kc3B4J-2emJmTsJNA8hJ32OoM1qBGTUzgTf6gNb" +
+                "_q4VjuQmSIY0XJ7DHSeB4GX" +
+                "_k3PegBGME8AwGMOTOM0YDl2mKeGRnD7ZcRqpuz1mjr" +
+                "_2mPxljEozMXiV1aP0uPPKLpuh1z2xZvguZ" +
+                "_y6mhxlg2mwTDHHPfSt1JkfgSkDEeRyFvxz6V1yuZN6zxgYkP0rvG0ezg8744ou8ol0ONTsRpqAUjrfvTcHPo7nz70oc" +
+                "_0gXmuZem" +
+                "_vcwQP-mATomTpoazuh1nlqQm72m-5q" +
+                "_d9iJv5pFDHr" +
+                "_CXxnIpiApPmbjWczHCfkCyWmPDCEgFALemTCA8gkklUWav24eF7nqSV0ShIJjHbenoiG1aA";
         return Attributes.of(attributes)
-                .put("cc", store.phoneNumber().orElseThrow().countryCode().prefix())
-                .put("in", store.phoneNumber().orElseThrow().numberWithoutPrefix())
-                .put("Rc", store.releaseChannel().index())
-                .put("lg", "en")
                 .put("lc", "US")
-                .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
-                .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
-                .put("e_keytype", "BQ")
-                .put("e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
-                .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
-                .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
-                .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
-                .put("fdid", keys.phoneId())
-                .put("network_ratio_type", 1)
-                .put("expid", keys.deviceId())
-                .put("simnum", 1)
-                .put("hasinrc", 1)
-                .put("pid", Math.floor(Math.random() * 1000))
-                .put("id", keys.recoveryToken())
+                .put("authkey", Base64.getEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
+                .put("e_skey_val", Base64.getEncoder().encodeToString(keys.signedKeyPair().publicKey()))
+                .put("in", phoneNumber.numberWithoutPrefix())
+                .put("gpia", "{\"token\":\"%s\",\"error_code\":0}".formatted(gpiaToken))
+                .put("lg", "us")
+                .put("push_code", "UwLlJ0G2vqE%3D")
+                .put("feo2_query_status", "error_security_exception")
+                .put("sim_type", "1")
+                .put("network_radio_type", "1")
                 .put("token", token)
+                .put("expid", keys.deviceId())
+                .put("prefer_sms_over_flash", "true")
+                .put("id", keys.recoveryToken())
+                .put("e_keytype", "BQ")
+                .put("gpia_token", gpiaToken)
+                .put("simnum", "0")
+                .put("clicked_education_link", "false")
+                .put("rc", "0")
+                .put("airplane_mode_type", "0")
+                .put("mistyped", "7")
+                .put("advertising_id", UUID.randomUUID().toString())
+                .put("cc", phoneNumber.countryCode().prefix())
+                .put("e_regid", Base64.getEncoder().encodeToString(keys.encodedRegistrationId()))
+                .put("e_skey_sig", Base64.getEncoder().encodeToString(keys.signedKeyPair().signature()))
+                .put("hasinrc", "1")
+                .put("roaming_type", "0")
+                .put("device_ram", "3,4")
+                .put("client_metrics", "{\"attempts\":1}")
+                .put("education_screen_displayed", "true")
+                .put("e_ident", Base64.getEncoder().encodeToString(keys.identityKeyPair().publicKey()))
+                .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
+                .put("e_skey_id", Base64.getEncoder().encodeToString(keys.signedKeyPair().encodedId()))
+                .put("fdid", keys.phoneId())
                 .toMap();
     }
 
     private static String toFormParams(Map<String, Object> values) {
         return values.entrySet()
                 .stream()
-                .map(entry -> "%s=%s".formatted(entry.getKey(), entry.getValue()))
+                .map(entry -> "%s=%s".formatted(entry.getKey(), URLEncoder.encode(String.valueOf(entry.getValue()), StandardCharsets.UTF_8)))
                 .collect(Collectors.joining("&"));
     }
 }

@@ -3,10 +3,6 @@ open module it.auties.cobalt {
     requires it.auties.curve;
     requires org.bouncycastle.provider;
 
-    // Buffer
-    requires io.netty.buffer;
-    requires io.netty.common;
-
     // Scan listeners
     requires io.github.classgraph;
 

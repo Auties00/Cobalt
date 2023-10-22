@@ -16,7 +16,7 @@ public class MobileRunner {
                 .device(CompanionDevice.ios())
                 .unregistered()
                 .verificationCodeSupplier(MobileRunner::onScanCode)
-                .verificationCodeMethod(VerificationCodeMethod.CALL)
+                .verificationCodeMethod(VerificationCodeMethod.WHATSAPP)
                 .register(393495089819L)
                 .join()
                 .connect()

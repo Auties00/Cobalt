@@ -47,6 +47,9 @@ public class Specification {
                 new byte[]{-99, -16, -5, 62, 13, -106},
                 new byte[]{-71, 60, -37, 62, 13, -106}
         };
+        public static final String BUSINESS_NAME_VCARD_PROPERTY = "X-WA-BIZ-NAME";
+        public static final String PHONE_NUMBER_VCARD_PROPERTY = "WAID";
+        public static final String DEFAULT_NUMBER_VCARD_TYPE = "CELL";
     }
 
     public final static class Signal {

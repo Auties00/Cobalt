@@ -1,11 +1,15 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.util.BytesHelper;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.GCMBlockCipher;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 public final class AesGcm {
     private static final int NONCE = 128;
@@ -38,10 +42,14 @@ public final class AesGcm {
     }
 
     private static byte[] toIv(long iv) {
-        var buffer = BytesHelper.newBuffer();
-        buffer.writeBytes(new byte[4]);
-        buffer.writeLong(iv);
-        return BytesHelper.readBuffer(buffer);
+        var byteArrayOutputStream = new ByteArrayOutputStream();
+        try(var dataOutputStream = new DataOutputStream(byteArrayOutputStream)) {
+            dataOutputStream.write(new byte[4]);
+            dataOutputStream.writeLong(iv);
+            return byteArrayOutputStream.toByteArray();
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 
     public static byte[] decrypt(long iv, byte[] input, byte[] key) {
