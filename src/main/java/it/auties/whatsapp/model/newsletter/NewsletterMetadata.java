@@ -5,19 +5,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 
 public record NewsletterMetadata(
-        NewsletterName name,
-        NewsletterDescription description,
+        Optional<NewsletterName> name,
+        Optional<NewsletterDescription> description,
         Optional<NewsletterPicture> picture,
         Optional<String> handle,
         Optional<NewsletterSettings> settings,
-        String invite,
+        Optional<String> invite,
         OptionalLong subscribers,
-        boolean verification,
+        Optional<Boolean> verification,
         OptionalLong creationTimestampSeconds
 ) {
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
@@ -35,14 +34,14 @@ public record NewsletterMetadata(
             Long creationTimestampSeconds
     ) {
         this(
-                name,
-                description,
+                Optional.ofNullable(name),
+                Optional.ofNullable(description),
                 Optional.ofNullable(picture),
                 Optional.ofNullable(handle),
                 Optional.ofNullable(settings),
-                invite,
+                Optional.ofNullable(invite),
                 subscribers == null ? OptionalLong.empty() : OptionalLong.of(subscribers),
-                Objects.equals(verification, "VERIFIED"),
+                verification == null ? Optional.empty() : Optional.of(verification.equals("VERIFIED")),
                 creationTimestampSeconds == null ? OptionalLong.empty() : OptionalLong.of(creationTimestampSeconds)
         );
     }

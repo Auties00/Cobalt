@@ -14,8 +14,8 @@ import java.util.Optional;
 
 public final class Newsletter implements JidProvider {
     private final Jid jid;
-    private final NewsletterState state;
-    private final NewsletterMetadata metadata;
+    private NewsletterState state;
+    private NewsletterMetadata metadata;
     private final NewsletterViewerMetadata viewerMetadata;
     private final Messages<NewsletterMessageInfo> messages;
 
@@ -82,6 +82,16 @@ public final class Newsletter implements JidProvider {
 
     public Optional<NewsletterState> state() {
         return Optional.ofNullable(state);
+    }
+
+    public Newsletter setState(NewsletterState state) {
+        this.state = state;
+        return this;
+    }
+
+    public Newsletter setMetadata(NewsletterMetadata metadata) {
+        this.metadata = metadata;
+        return this;
     }
 
     public NewsletterMetadata metadata() {

@@ -28,6 +28,7 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -414,9 +415,45 @@ class StreamHandler {
             case "NotificationNewsletterJoin" -> handleNewsletterJoin(update);
             case "NotificationNewsletterMuteChange" -> handleNewsletterMute(update);
             case "NotificationNewsletterLeave" -> handleNewsletterLeave(update);
-            case "NotificationNewsletterStateChange", "NotificationNewsletterAdminMetadataUpdate", "NotificationNewsletterUpdate" -> {
-            }
+            case "NotificationNewsletterUpdate" -> handleNewsletterMetadataUpdate(update);
+            case "NotificationNewsletterStateChange" -> handleNewsletterStateUpdate(update);
+            case "NotificationNewsletterAdminMetadataUpdate" -> {}
         }
+    }
+
+    private void handleNewsletterStateUpdate(Node update) {
+        var updatePayload = update.contentAsString()
+                .orElseThrow(() -> new NoSuchElementException("Missing state update payload"));
+        var updateJson = NewsletterStateResponse.ofJson(updatePayload)
+                .orElseThrow(() -> new NoSuchElementException("Malformed state update payload"));
+        var newsletter = socketHandler.store()
+                .findNewsletterByJid(updateJson.jid())
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+        newsletter.setState(updateJson.state());
+    }
+
+    private void handleNewsletterMetadataUpdate(Node update) {
+        var updatePayload = update.contentAsString()
+                .orElseThrow(() -> new NoSuchElementException("Missing update payload"));
+        var updateJson = NewsletterResponse.ofJson(updatePayload)
+                .orElseThrow(() -> new NoSuchElementException("Malformed update payload"));
+        var newsletter = socketHandler.store()
+                .findNewsletterByJid(updateJson.newsletter().jid())
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+        var oldMetadata = newsletter.metadata();
+        var updatedMetadata = updateJson.newsletter().metadata();
+        var mergedMetadata = new NewsletterMetadata(
+                updatedMetadata.name().or(oldMetadata::name),
+                updatedMetadata.description().or(oldMetadata::description),
+                updatedMetadata.picture().or(oldMetadata::picture),
+                updatedMetadata.handle().or(oldMetadata::handle),
+                updatedMetadata.settings().or(oldMetadata::settings),
+                updatedMetadata.invite().or(oldMetadata::invite),
+                updatedMetadata.subscribers().isPresent() ? updatedMetadata.subscribers() : oldMetadata.subscribers(),
+                updatedMetadata.verification().or(oldMetadata::verification),
+                updatedMetadata.creationTimestampSeconds().isPresent() ? updatedMetadata.creationTimestampSeconds() : oldMetadata.creationTimestampSeconds()
+        );
+        newsletter.setMetadata(mergedMetadata);
     }
 
     private void handleNewsletterJoin(Node update) {

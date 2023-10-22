@@ -179,15 +179,29 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        try(var decoder = new BinaryDecoder(AesGcm.decrypt(keys.readCounter(true), message, readKey.get()))) {
+        var decipheredMessage = decipherMessage(message, readKey.get());
+        if(decipheredMessage == null) {
+            return;
+        }
+
+        try(var decoder = new BinaryDecoder(decipheredMessage)) {
             var node = decoder.decode();
             onNodeReceived(node);
             store.resolvePendingRequest(node, false);
             streamHandler.digest(node);
         } catch (Throwable throwable) {
-            handleFailure(CRYPTOGRAPHY, throwable);
+            handleFailure(STREAM, throwable);
         }
     }
+
+    private byte[] decipherMessage(byte[] message, byte[] readKey) {
+        try {
+            return AesGcm.decrypt(keys.readCounter(true), message, readKey);
+        }  catch (Throwable throwable) {
+            return handleFailure(CRYPTOGRAPHY, throwable);
+        }
+    }
+
 
     private void onNodeReceived(Node deciphered) {
         callListenersAsync(listener -> {

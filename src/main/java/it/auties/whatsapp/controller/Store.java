@@ -26,6 +26,7 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterName;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
@@ -546,7 +547,7 @@ public final class Store extends Controller<Store> {
     private Stream<Newsletter> findNewslettersByNameStream(String name) {
         return name == null ? Stream.empty() : newsletters.values()
                 .parallelStream()
-                .filter(chat -> chat.metadata().name().text().equalsIgnoreCase(name));
+                .filter(newsletter -> name.equalsIgnoreCase(newsletter.metadata().name().map(NewsletterName::text).orElse(null)));
     }
 
     /**

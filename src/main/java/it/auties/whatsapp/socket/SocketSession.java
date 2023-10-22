@@ -174,12 +174,13 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 var remaining = length;
                 while (remaining > 0) {
                     var inputPartSize = inputPart.remaining();
-                    inputPart.get(result, length - remaining, Math.min(inputPartSize, length));
+                    var readLength = Math.min(inputPartSize, length);
+                    inputPart.get(result, length - remaining, readLength);
                     if(inputPartSize < remaining) {
                         inputPart = inputParts.get(++inputPartsCounter);
                     }
 
-                    remaining -= inputPartSize;
+                    remaining -= readLength;
                 }
 
                 try {

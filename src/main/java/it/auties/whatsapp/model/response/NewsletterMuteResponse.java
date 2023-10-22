@@ -12,15 +12,20 @@ import java.util.Optional;
 public record NewsletterMuteResponse(@JsonProperty("id") Jid jid, @JsonProperty("mute") boolean mute) {
     @JsonCreator
     NewsletterMuteResponse(Map<String, String> json) {
-        this(Jid.of(json.get("jid")), Objects.equals(json.get("mute"), "ON"));
+        this(Jid.of(json.get("id")), Objects.equals(json.get("mute"), "ON"));
     }
 
     public static Optional<NewsletterMuteResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class).data();
+        return Json.readValue(json, JsonData.class)
+                .data()
+                .map(JsonResponse::response);
     }
 
-    private record JsonResponse(
-            @JsonProperty("xwa2_notify_newsletter_on_mute_change") Optional<NewsletterMuteResponse> data) {
+    private record JsonData(Optional<JsonResponse> data) {
+
+    }
+
+    private record JsonResponse(@JsonProperty("xwa2_notify_newsletter_on_mute_change") NewsletterMuteResponse response) {
 
     }
 }
