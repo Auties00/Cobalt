@@ -64,6 +64,7 @@ public sealed interface ContactCard {
         return Stream.of(first, second).flatMap(Collection::stream).toList();
     }
 
+    @ProtobufConverter
     String toVcard();
 
     /**
@@ -107,6 +108,7 @@ public sealed interface ContactCard {
          *
          * @return a non-null String
          */
+        @Override
         @ProtobufConverter
         public String toVcard() {
             var vcard = new VCard();
