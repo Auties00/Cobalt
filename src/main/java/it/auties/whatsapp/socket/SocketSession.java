@@ -79,7 +79,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
         private WebSocket session;
         private final List<ByteBuffer> inputParts;
-        private int readableBytes;
 
         WebSocketSession(URI proxy, Executor executor) {
             super(proxy, executor);
@@ -138,7 +137,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
             inputParts.clear();
-            readableBytes = 0;
             listener.onClose();
             return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         }
@@ -148,49 +146,50 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             listener.onError(error);
         }
 
+        // Ugly but necessary to keep byte[] allocations to a minimum
         @Override
         public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
             inputParts.add(data);
-            readableBytes += data.remaining();
             if (!last) {
                 return WebSocket.Listener.super.onBinary(webSocket, data, false);
             }
 
             var inputPartsCounter = 0;
+            var length = 0;
+            var written = 0;
+            byte[] result = null;
             while (inputPartsCounter < inputParts.size()) {
                 var inputPart = inputParts.get(inputPartsCounter);
-                if(inputPart.remaining() < 3) {
-                    inputPartsCounter++;
-                    continue;
-                }
-
-                var length = (inputPart.get() << 16) | Short.toUnsignedInt(inputPart.getShort());
-                if (length < 0) {
-                    break;
-                }
-
-                readableBytes -= length;
-                var result = new byte[length];
-                var remaining = length;
-                while (remaining > 0) {
-                    var inputPartSize = inputPart.remaining();
-                    var readLength = Math.min(inputPartSize, length);
-                    inputPart.get(result, length - remaining, readLength);
-                    if(inputPartSize < remaining) {
-                        inputPart = inputParts.get(++inputPartsCounter);
+                if(length <= 0) {
+                    length = (inputPart.get() << 16) | Short.toUnsignedInt(inputPart.getShort());
+                    if (length <= 0) {
+                        break;
                     }
 
-                    remaining -= readLength;
+                    result = new byte[length];
                 }
 
-                try {
-                    listener.onMessage(result);
-                } catch (Throwable throwable) {
-                    listener.onError(throwable);
+                var inputPartSize = inputPart.remaining();
+                var readLength = Math.min(inputPartSize, length);
+                inputPart.get(result, written, readLength);
+                if(inputPart.remaining() < 3) {
+                    inputPartsCounter++;
+                }
+
+                written += readLength;
+                length -= readLength;
+                if(length <= 0) {
+                    try {
+                        listener.onMessage(result);
+                    } catch (Throwable throwable) {
+                        listener.onError(throwable);
+                    }
+
+                    written = 0;
+                    result = null;
                 }
             }
 
-            readableBytes = 0;
             inputParts.clear();
             return WebSocket.Listener.super.onBinary(webSocket, data, true);
         }
