@@ -48,7 +48,7 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationS
     /**
      * Transforms the qr code in a UTF-8 plain string and accepts a consumer for the latter
      *
-     * @param smallQrConsumer the non-null consumer
+     * @param qrConsumer the non-null consumer
      */
     static QrHandler toPlainString(Consumer<String> qrConsumer) {
         return qr -> {
