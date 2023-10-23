@@ -18,11 +18,11 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
     private final int serverId;
     private final Long timestampSeconds;
     private final Long views;
-    private final Map<String, Long> reactions;
+    private final Map<String, NewsletterReaction> reactions;
     private final MessageContainer message;
     private MessageStatus status;
 
-    public NewsletterMessageInfo(Newsletter newsletter, String id, int serverId, Long timestampSeconds, Long views, Map<String, Long> reactions, MessageContainer message, MessageStatus status) {
+    public NewsletterMessageInfo(Newsletter newsletter, String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
         this.newsletter = newsletter;
         this.id = id;
         this.serverId = serverId;
@@ -88,20 +88,43 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
     }
 
     public Collection<NewsletterReaction> reactions() {
-        return reactions.entrySet()
-                .stream()
-                .map(entry -> new NewsletterReaction(entry.getKey(), entry.getValue()))
-                .toList();
+        return Collections.unmodifiableCollection(reactions.values());
     }
 
-    public long getReactions(String value) {
-        return reactions.getOrDefault(value, 0L);
+    public Optional<NewsletterReaction> findReaction(String value) {
+        return Optional.ofNullable(reactions.get(value));
     }
 
-    public OptionalLong setReaction(String value, long count) {
-        var oldCount = reactions.put(value, count);
-        return oldCount == null ? OptionalLong.empty() : OptionalLong.of(oldCount);
+    public Optional<NewsletterReaction> addReaction(NewsletterReaction reaction) {
+        return Optional.ofNullable(reactions.put(reaction.content(), reaction));
     }
+
+    public Optional<NewsletterReaction> removeReaction(String code) {
+        return Optional.ofNullable(reactions.remove(code));
+    }
+
+    public void incrementReaction(String code, boolean fromMe) {
+        findReaction(code).ifPresentOrElse(reaction -> {
+            reaction.setCount(reaction.count() + 1);
+            reaction.setFromMe(fromMe);
+        }, () -> {
+            var reaction = new NewsletterReaction(code, 1, fromMe);
+            addReaction(reaction);
+        });
+    }
+
+    public void decrementReaction(String code) {
+        findReaction(code).ifPresent(reaction -> {
+            if(reaction.count() <= 1) {
+                removeReaction(reaction.content());
+                return;
+            }
+
+            reaction.setCount(reaction.count() - 1);
+            reaction.setFromMe(false);
+        });
+    }
+
 
     @Override
     public boolean equals(Object obj) {

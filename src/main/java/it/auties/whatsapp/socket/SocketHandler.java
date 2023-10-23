@@ -473,7 +473,7 @@ public class SocketHandler implements SocketListener {
                 .orElseThrow(() -> new NoSuchElementException("Missing block list in newsletters"))
                 .findNodes("item")
                 .stream()
-                .map(item -> item.attributes().getJid("jid"))
+                .map(item -> item.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .toList();
     }
@@ -499,7 +499,10 @@ public class SocketHandler implements SocketListener {
     public CompletableFuture<Void> queryNewsletterMessages(JidProvider newsletterJid, int count) {
         var newsletter = store.findNewsletterByJid(newsletterJid)
                 .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-        return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletter.metadata().invite())))
+        var newsletterInvite = newsletter.metadata()
+                .invite()
+                .orElseThrow(() -> new NoSuchElementException("Missing newsletter key"));
+        return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterInvite)))
                 .thenAcceptAsync(result -> onNewsletterMessages(newsletter, result));
     }
 
@@ -541,14 +544,15 @@ public class SocketHandler implements SocketListener {
                 .map(id -> Jid.of(id, JidServer.GROUP))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
-        var subjectAuthor = node.attributes().getJid("s_o");
+        var subjectAuthor = node.attributes().getOptionalJid("s_o");
         var subjectTimestampSeconds = node.attributes()
                 .getOptionalLong("s_t")
                 .orElse(0L);
         var foundationTimestampSeconds = node.attributes()
                 .getOptionalLong("creation")
                 .orElse(0L);
-        var founder = node.attributes().getJid("creator");
+        var founder = node.attributes()
+                .getOptionalJid("creator");
         var policies = new HashMap<GroupSetting, GroupSettingPolicy>();
         policies.put(SEND_MESSAGES, GroupSettingPolicy.of(node.hasNode("restrict")));
         policies.put(EDIT_GROUP_INFO, GroupSettingPolicy.of(node.hasNode("announce")));
@@ -576,9 +580,7 @@ public class SocketHandler implements SocketListener {
     }
 
     private GroupParticipant parseGroupParticipant(Node node) {
-        var id = node.attributes()
-                .getJid("jid")
-                .orElseThrow(() -> new NoSuchElementException("Missing participant in group newsletters"));
+        var id = node.attributes().getRequiredJid("jid");
         var role = GroupRole.of(node.attributes().getString("type", null));
         return new GroupParticipant(id, role);
     }

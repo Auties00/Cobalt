@@ -151,6 +151,17 @@ public record MessageContainer(
      * @return a non-null container
      */
     public static <T extends Message> MessageContainer of(T message) {
+        return ofBuilder(message).build();
+    }
+
+    /**
+     * Constructs a new MessageContainerBuilder from a message of any type
+     *
+     * @param message the message that the new container should wrap
+     * @param <T>     the type of the message
+     * @return a non-null builder
+     */
+    public static <T extends Message> MessageContainerBuilder ofBuilder(T message) {
         var builder = new MessageContainerBuilder();
         switch (message) {
             case SenderKeyDistributionMessage senderKeyDistribution ->
@@ -205,7 +216,7 @@ public record MessageContainer(
             default -> {
             }
         }
-        return builder.build();
+        return builder;
     }
 
     /**
@@ -569,6 +580,65 @@ public record MessageContainer(
         }
 
         return this;
+    }
+
+    /**
+     * Converts this message to an ephemeral message
+     *
+     * @return a non-null message container
+     */
+    public MessageContainer withDeviceInfo(DeviceContextInfo deviceInfo) {
+        if (deviceSentMessage.isPresent()) {
+            return ofBuilder(deviceSentMessage.get())
+                    .deviceInfo(deviceInfo)
+                    .build();
+        }
+
+        if (viewOnceMessage.isPresent()) {
+            return new MessageContainerBuilder()
+                    .viewOnceMessage(viewOnceMessage.get())
+                    .deviceInfo(deviceInfo)
+                    .build();
+        }
+
+        if (ephemeralMessage.isPresent()) {
+            return new MessageContainerBuilder()
+                    .ephemeralMessage(ephemeralMessage.get())
+                    .deviceInfo(deviceInfo)
+                    .build();
+        }
+
+        if (documentWithCaptionMessage.isPresent()) {
+            return new MessageContainerBuilder()
+                    .documentWithCaptionMessage(documentWithCaptionMessage.get())
+                    .deviceInfo(deviceInfo)
+                    .build();
+        }
+
+        if (viewOnceV2Message.isPresent()) {
+            return new MessageContainerBuilder()
+                    .viewOnceV2Message(viewOnceV2Message.get())
+                    .deviceInfo(deviceInfo)
+                    .build();
+        }
+
+        if (editedMessage.isPresent()) {
+            return new MessageContainerBuilder()
+                    .editedMessage(editedMessage.get())
+                    .deviceInfo(deviceInfo)
+                    .build();
+        }
+
+        if (viewOnceV2ExtensionMessage.isPresent()) {
+            return new MessageContainerBuilder()
+                    .viewOnceV2ExtensionMessage(viewOnceV2ExtensionMessage.get())
+                    .deviceInfo(deviceInfo)
+                    .build();
+        }
+
+        return ofBuilder(content())
+                .deviceInfo(deviceInfo)
+                .build();
     }
 
     /**

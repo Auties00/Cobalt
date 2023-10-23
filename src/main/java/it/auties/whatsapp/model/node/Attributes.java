@@ -180,13 +180,11 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
     }
 
     private int parseInt(Object value) {
-        if (value instanceof Number number) {
-            return number.intValue();
-        } else if (value instanceof String string) {
-            return Integer.parseInt(string);
-        } else {
-            throw new IllegalStateException("Unexpected value: " + value);
-        }
+        return switch (value) {
+            case Number number -> number.intValue();
+            case String string -> Integer.parseInt(string);
+            case null, default -> throw new IllegalStateException("Unexpected value: " + value);
+        };
     }
 
     /**
@@ -213,13 +211,11 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
     }
 
     private long parseLong(Object value) {
-        if (requireNonNull(value) instanceof Number number) {
-            return number.longValue();
-        } else if (value instanceof String string) {
-            return Long.parseLong(string);
-        } else {
-            throw new IllegalStateException("Unexpected value: " + value);
-        }
+        return switch (value) {
+            case Number number -> number.longValue();
+            case String string -> Long.parseLong(string);
+            case null, default -> throw new IllegalStateException("Unexpected value: " + value);
+        };
     }
 
 
@@ -333,13 +329,11 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
     }
 
     private boolean parseBool(Object value) {
-        if (requireNonNull(value) instanceof Boolean bool) {
-            return bool;
-        } else if (value instanceof String string) {
-            return Boolean.parseBoolean(string);
-        } else {
-            throw new IllegalStateException("Unexpected value: " + value);
-        }
+        return switch (value) {
+            case Boolean bool -> bool;
+            case String string -> Boolean.parseBoolean(string);
+            case null, default -> throw new IllegalStateException("Unexpected value: " + value);
+        };
     }
 
 
@@ -349,18 +343,29 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
      * @param key the non-null key
      * @return a non-null optional
      */
-    public Optional<Jid> getJid(String key) {
-        return get(key, Object.class).map(this::parseJid);
+    public Optional<Jid> getOptionalJid(String key) {
+        return get(key, Object.class)
+                .map(this::parseJid);
+    }
+
+    /**
+     * Gets a required value as a ContactJid by key in the wrapped map
+     *
+     * @param key the non-null key
+     * @return a non-null value
+     */
+    public Jid getRequiredJid(String key) {
+        return get(key, Object.class)
+                .map(this::parseJid)
+                .orElseThrow(() -> new NullPointerException("Missing required attribute %s".formatted(key)));
     }
 
     private Jid parseJid(Object value) {
-        if (value instanceof Jid jid) {
-            return jid;
-        } else if (value instanceof String encodedJid) {
-            return Jid.of(encodedJid);
-        } else {
-            throw new IllegalStateException("Unexpected value: " + value);
-        }
+        return switch (value) {
+            case Jid jid -> jid;
+            case String encodedJid -> Jid.of(encodedJid);
+            case null, default -> throw new IllegalStateException("Unexpected value: " + value);
+        };
     }
 
     /**

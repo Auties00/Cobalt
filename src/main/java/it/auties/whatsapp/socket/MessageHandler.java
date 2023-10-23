@@ -28,6 +28,7 @@ import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.newsletter.NewsletterReaction;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.poll.*;
@@ -172,41 +173,40 @@ class MessageHandler {
 
         try {
             return LinkPreview.createPreviewAsync(textMessage.text())
-                    .thenAcceptAsync(result -> attributeTextMessage(textMessage, result.orElse(null)));
+                    .thenComposeAsync(result -> attributeTextMessage(textMessage, result.orElse(null)));
         }catch (NoClassDefFoundError error) { // Optional dependency
             return CompletableFuture.completedFuture(null);
         }
     }
 
-    private void attributeTextMessage(TextMessage textMessage, LinkPreviewMatch match) {
+    private CompletableFuture<Void> attributeTextMessage(TextMessage textMessage, LinkPreviewMatch match) {
         if (match == null) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         var uri = match.result().uri().toString();
-        if (socketHandler.store().textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE && !match.text()
-                .equals(uri)) {
+        if (socketHandler.store().textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE
+                && !Objects.equals(match.text(), uri)) {
             textMessage.setText(textMessage.text().replace(match.text(), uri));
         }
 
-        var imageUri = match.result()
+        var imageThumbnail = match.result()
                 .images()
                 .stream()
-                .reduce(this::compareDimensions)
-                .map(LinkPreviewMedia::uri)
-                .orElse(null);
+                .reduce(this::compareDimensions);
         var videoUri = match.result()
                 .videos()
                 .stream()
-                .reduce(this::compareDimensions)
-                .map(LinkPreviewMedia::uri)
-                .orElse(null);
+                .reduce(this::compareDimensions);
         textMessage.setMatchedText(uri);
-        textMessage.setCanonicalUrl(Objects.requireNonNullElse(videoUri, match.result().uri()).toString());
-        textMessage.setThumbnail(Medias.download(imageUri).orElse(null));
+        textMessage.setCanonicalUrl(videoUri.map(LinkPreviewMedia::uri).orElse(match.result().uri()).toString());
+        textMessage.setThumbnailWidth(imageThumbnail.map(LinkPreviewMedia::width).orElse(null));
+        textMessage.setThumbnailHeight(imageThumbnail.map(LinkPreviewMedia::height).orElse(null));
         textMessage.setDescription(match.result().siteDescription());
         textMessage.setTitle(match.result().title());
-        textMessage.setPreviewType(videoUri != null ? TextMessage.PreviewType.VIDEO : TextMessage.PreviewType.NONE);
+        textMessage.setPreviewType(videoUri.isPresent() ? TextMessage.PreviewType.VIDEO : TextMessage.PreviewType.NONE);
+        return imageThumbnail.map(data -> Medias.downloadAsync(data.uri()).thenAccept(textMessage::setThumbnail))
+                .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
 
     private LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {
@@ -596,8 +596,7 @@ class MessageHandler {
 
     private List<Jid> parseDevice(Node wrapper, boolean excludeSelf) {
         var jid = wrapper.attributes()
-                .getJid("jid")
-                .orElseThrow(() -> new NoSuchElementException("Missing jid for sync device"));
+                .getRequiredJid("jid");
         return wrapper.findNode("devices")
                 .orElseThrow(() -> new NoSuchElementException("Missing devices"))
                 .findNode("device-list")
@@ -635,8 +634,7 @@ class MessageHandler {
     private void parseSession(Node node) {
         Validate.isTrue(!node.hasNode("error"), "Erroneous session node", SecurityException.class);
         var jid = node.attributes()
-                .getJid("jid")
-                .orElseThrow(() -> new NoSuchElementException("Missing jid for session"));
+                .getRequiredJid("jid");
         var registrationId = node.findNode("registration")
                 .map(id -> BytesHelper.bytesToInt(id.contentAsBytes().orElseThrow(), 4))
                 .orElseThrow(() -> new NoSuchElementException("Missing id"));
@@ -669,8 +667,16 @@ class MessageHandler {
                 return;
             }
 
-            if (node.hasNode("plaintext")) {
-                decodeNewsletterMessage(node, businessName, chatOverride, notify);
+
+            var plainText = node.findNode("plaintext");
+            if (plainText.isPresent()) {
+                decodeNewsletterMessage(node, plainText.get(), businessName, chatOverride, notify);
+                return;
+            }
+
+            var reaction = node.findNode("reaction");
+            if (reaction.isPresent()) {
+                decodeNewsletterReaction(node, reaction.get(), businessName, chatOverride, notify);
                 return;
             }
 
@@ -726,15 +732,26 @@ class MessageHandler {
         };
     }
 
-    private void decodeNewsletterMessage(Node messageNode, String businessName, JidProvider chatOverride, boolean notify) {
+    private void decodeNewsletterMessage(Node messageNode, Node plainTextNode, String businessName, JidProvider chatOverride, boolean notify) {
         try {
-            var newsletter = messageNode.attributes()
-                    .getJid("from")
-                    .flatMap(socketHandler.store()::findNewsletterByJid)
-                    .or(() -> socketHandler.store().findNewsletterByJid(chatOverride))
-                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-            var id = messageNode.attributes()
+            var newsletterJid = messageNode.attributes()
+                    .getOptionalJid("from")
+                    .or(() -> Optional.ofNullable(chatOverride).map(JidProvider::toJid))
+                    .orElseThrow(() -> new NoSuchElementException("Missing from"));
+            var messageId = messageNode.attributes()
                     .getRequiredString("id");
+            if (notify) {
+                socketHandler.sendMessageAck(newsletterJid, messageNode);
+                var receiptType = getReceiptType("newsletter", false);
+                socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
+            }
+
+            var newsletter = socketHandler.store()
+                    .findNewsletterByJid(newsletterJid);
+            if(newsletter.isEmpty()) {
+                return;
+            }
+
             var serverId = messageNode.attributes()
                     .getRequiredInt("server_id");
             var timestamp = messageNode.attributes()
@@ -746,25 +763,78 @@ class MessageHandler {
                     .stream()
                     .map(node -> node.findNodes("reaction"))
                     .flatMap(Collection::stream)
-                    .collect(Collectors.toConcurrentMap(entry -> entry.attributes().getString("code"), entry -> entry.attributes().getLong("count")));
-            var result = messageNode.findNode("plaintext")
-                    .flatMap(Node::contentAsBytes)
+                    .collect(Collectors.toConcurrentMap(
+                            entry -> entry.attributes().getRequiredString("code"),
+                            entry -> new NewsletterReaction(
+                                    entry.attributes().getRequiredString("code"),
+                                    entry.attributes().getLong("count"),
+                                    entry.attributes().getBoolean("is_sender")
+                            )
+                    ));
+            var result = plainTextNode.contentAsBytes()
                     .map(MessageContainerSpec::decode)
-                    .map(messageContainer -> new NewsletterMessageInfo(newsletter, id, serverId, timestamp, views, reactions, messageContainer, notify ? MessageStatus.DELIVERED : MessageStatus.READ));
+                    .map(messageContainer -> {
+                        var readStatus = notify ? MessageStatus.DELIVERED : MessageStatus.READ;
+                        return new NewsletterMessageInfo(newsletter.get(), messageId, serverId, timestamp, views, reactions, messageContainer, readStatus);
+                    });
             if (result.isEmpty()) {
                 return;
             }
 
-            newsletter.addMessage(result.get());
-            if (!notify) {
+            newsletter.get().addMessage(result.get());
+            if(notify) {
+                socketHandler.onNewsletterMessage(result.get());
+            }
+        } catch (Throwable throwable) {
+            socketHandler.handleFailure(MESSAGE, throwable);
+        }
+    }
+
+    private void decodeNewsletterReaction(Node messageNode, Node reactionNode, String businessName, JidProvider chatOverride, boolean notify) {
+        try {
+            var messageId = messageNode.attributes()
+                    .getRequiredString("id");
+            var newsletterJid = messageNode.attributes()
+                    .getOptionalJid("from")
+                    .or(() -> Optional.ofNullable(chatOverride).map(JidProvider::toJid))
+                    .orElseThrow(() -> new NoSuchElementException("Missing from"));
+            var isSender = messageNode.attributes()
+                    .getBoolean("is_sender");
+            if(notify) {
+                socketHandler.sendMessageAck(newsletterJid, messageNode);
+                var receiptType = getReceiptType("newsletter", false);
+                socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
+            }
+
+            var newsletter = socketHandler.store()
+                    .findNewsletterByJid(newsletterJid);
+            if(newsletter.isEmpty()) {
                 return;
             }
 
-            socketHandler.sendMessageAck(newsletter.jid(), messageNode);
-            var receiptType = getReceiptType("newsletter", false);
-            var messageId = messageNode.attributes().getRequiredString("id");
-            socketHandler.sendReceipt(newsletter.jid(), null, List.of(messageId), receiptType);
-            socketHandler.onNewsletterMessage(result.get());
+            var message = socketHandler.store()
+                    .findMessageById(newsletter.get(), messageId);
+            if(message.isEmpty()) {
+                return;
+            }
+
+            var myReaction = isSender ? message.get()
+                    .reactions()
+                    .stream()
+                    .filter(NewsletterReaction::fromMe)
+                    .findFirst()
+                    .orElse(null) : null;
+            if(myReaction != null) {
+                message.get().decrementReaction(myReaction.content());
+            }
+
+            var code = reactionNode.attributes()
+                    .getOptionalString("code");
+            if(code.isEmpty()) {
+                return;
+            }
+
+            message.get().incrementReaction(code.get(), isSender);
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
         }
@@ -777,10 +847,13 @@ class MessageHandler {
             var timestamp = infoNode.attributes().getLong("t");
             var id = infoNode.attributes().getRequiredString("id");
             var from = infoNode.attributes()
-                    .getJid("from")
-                    .orElseThrow(() -> new NoSuchElementException("Missing from"));
-            var recipient = infoNode.attributes().getJid("recipient").orElse(from);
-            var participant = infoNode.attributes().getJid("participant").orElse(null);
+                    .getRequiredJid("from");
+            var recipient = infoNode.attributes()
+                    .getOptionalJid("recipient")
+                    .orElse(from);
+            var participant = infoNode.attributes()
+                    .getOptionalJid("participant")
+                    .orElse(null);
             var messageBuilder = new ChatMessageInfoBuilder()
                     .status(MessageStatus.PENDING);
             var keyBuilder = new ChatMessageKeyBuilder()
@@ -809,7 +882,6 @@ class MessageHandler {
                 sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }
-
 
             if (messageNode == null) {
                 logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s)".formatted(id, from));

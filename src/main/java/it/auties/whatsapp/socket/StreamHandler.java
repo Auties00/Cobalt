@@ -29,6 +29,7 @@ import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
+import it.auties.whatsapp.model.newsletter.NewsletterReaction;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -119,13 +120,12 @@ class StreamHandler {
     private void digestChatState(Node node) {
         CompletableFuture.runAsync(() -> {
             var chatJid = node.attributes()
-                    .getJid("from")
-                    .orElseThrow(() -> new NoSuchElementException("Missing from in chat state update"));
+                    .getRequiredJid("from");
             var participantJid = node.attributes()
-                    .getJid("participant")
+                    .getOptionalJid("participant")
                     .orElse(chatJid);
             updateContactPresence(chatJid, getUpdateType(node), participantJid);
-        });
+        }).exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
     }
 
     private ContactStatus getUpdateType(Node node) {
@@ -152,8 +152,7 @@ class StreamHandler {
 
     private void digestReceipt(Node node) {
         var senderJid = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing from"));
+                .getRequiredJid("from");
         for (var messageId : getReceiptsMessageIds(node)) {
             var message = socketHandler.store().findMessageById(senderJid, messageId);
             if (message.isEmpty()) {
@@ -191,7 +190,7 @@ class StreamHandler {
             var newCount = chat.unreadMessagesCount() - 1;
             chat.setUnreadMessagesCount(newCount);
             var participant = node.attributes()
-                    .getJid("participant")
+                    .getOptionalJid("participant")
                     .flatMap(socketHandler.store()::findContactByJid)
                     .orElse(null);
             updateReceipt(status, chat, participant, message);
@@ -260,8 +259,7 @@ class StreamHandler {
 
     private void digestCall(Node node) {
         var from = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing call creator: " + node));
+                .getRequiredJid("from");
         socketHandler.sendMessageAck(from, node);
         var callNode = node.children().peekFirst();
         if (callNode == null) {
@@ -271,7 +269,7 @@ class StreamHandler {
         var callId = callNode.attributes()
                 .getString("call-id");
         var caller = callNode.attributes()
-                .getJid("call-creator")
+                .getOptionalJid("call-creator")
                 .orElse(from);
         var status = getCallStatus(callNode);
         var timestampSeconds = callNode.attributes()
@@ -296,8 +294,7 @@ class StreamHandler {
         var error = node.attributes().getInt("error");
         var messageId = node.id();
         var from = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
+                .getRequiredJid("from");
         var match = socketHandler.store()
                 .findMessageById(from, messageId)
                 .orElse(null);
@@ -323,11 +320,13 @@ class StreamHandler {
             return;
         }
 
-        var callCreator = relayNode.attributes().getJid("call-creator").orElseThrow();
-        var callId = relayNode.attributes().getString("call-id");
+        var callCreator = relayNode.attributes()
+                .getRequiredJid("call-creator");
+        var callId = relayNode.attributes()
+                .getString("call-id");
         relayNode.findNodes("participant")
                 .stream()
-                .map(entry -> entry.attributes().getJid("jid"))
+                .map(entry -> entry.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .forEach(to -> sendRelay(callCreator, callId, to));
     }
@@ -342,8 +341,7 @@ class StreamHandler {
 
     private void digestNotification(Node node) {
         var from = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing from"));
+                .getRequiredJid("from");
         try {
             var type = node.attributes().getString("type", null);
             switch (type) {
@@ -401,7 +399,9 @@ class StreamHandler {
                 .getRequiredString("code");
         var reactionCount = reaction.attributes()
                 .getRequiredInt("count");
-        newsletterMessage.setReaction(reactionCode, reactionCount);
+        var newReaction = new NewsletterReaction(reactionCode, reactionCount, false);
+        newsletterMessage.addReaction(newReaction)
+                .ifPresent(oldReaction -> newReaction.setFromMe(oldReaction.fromMe()));
     }
 
     private void handleMexNamespace(Node node) {
@@ -551,8 +551,7 @@ class StreamHandler {
 
     private void handlePictureNotification(Node node) {
         var fromJid = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing from in notification"));
+                .getRequiredJid("from");
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
                 .orElseGet(() -> socketHandler.store().addNewChat(fromJid));
@@ -587,8 +586,7 @@ class StreamHandler {
     private void handleGroupStubNotification(Node node, ChatMessageInfo.StubType stubType) {
         var timestamp = node.attributes().getLong("t");
         var fromJid = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
+                .getRequiredJid("from");
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
                 .orElseGet(() -> socketHandler.store().addNewChat(fromJid));
@@ -597,7 +595,7 @@ class StreamHandler {
 
     private void addMessageForGroupStubType(Chat chat, ChatMessageInfo.StubType stubType, long timestamp, Node metadata) {
         var participantJid = metadata.attributes()
-                .getJid("participant")
+                .getOptionalJid("participant")
                 .orElse(null);
         var parameters = getStubTypeParameters(metadata);
         var key = new ChatMessageKeyBuilder()
@@ -656,8 +654,7 @@ class StreamHandler {
 
     private void handleEncryptNotification(Node node) {
         var chat = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
+                .getRequiredJid("from");
         if (!chat.isServerJid(JidServer.WHATSAPP)) {
             return;
         }
@@ -692,7 +689,7 @@ class StreamHandler {
         var devices = child.findNodes("device")
                 .stream()
                 .collect(Collectors.toMap(
-                        entry -> entry.attributes().getJid("jid").orElseThrow(),
+                        entry -> entry.attributes().getRequiredJid("jid"),
                         entry -> entry.attributes().getInt("key-index"),
                         (first, second) -> second,
                         LinkedHashMap::new
@@ -719,10 +716,13 @@ class StreamHandler {
     }
 
     private void updateBlocklistEntry(Node entry) {
-        entry.attributes().getJid("jid").flatMap(socketHandler.store()::findContactByJid).ifPresent(contact -> {
-            contact.setBlocked(Objects.equals(entry.attributes().getString("action"), "block"));
-            socketHandler.onContactBlocked(contact);
-        });
+        entry.attributes()
+                .getOptionalJid("jid")
+                .flatMap(socketHandler.store()::findContactByJid)
+                .ifPresent(contact -> {
+                    contact.setBlocked(Objects.equals(entry.attributes().getString("action"), "block"));
+                    socketHandler.onContactBlocked(contact);
+                });
     }
 
     private void changeUserPrivacySetting(Node child) {
@@ -763,8 +763,7 @@ class StreamHandler {
         var newValues = new ArrayList<>(privacyEntry.excluded());
         for (var entry : node.findNodes("user")) {
             var jid = entry.attributes()
-                    .getJid("jid")
-                    .orElseThrow(() -> new NoSuchElementException("Missing jid in newsletters: %s".formatted(entry)));
+                    .getRequiredJid("jid");
             if (entry.attributes().hasValue("action", "add")) {
                 newValues.add(jid);
                 continue;
@@ -791,7 +790,7 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Missing list in newsletters: %s".formatted(result)))
                 .findNodes("user")
                 .stream()
-                .map(user -> user.attributes().getJid("jid"))
+                .map(user -> user.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .toList();
     }
@@ -848,7 +847,7 @@ class StreamHandler {
     }
 
     private void digestSuccess(Node node) {
-        node.attributes().getJid("lid")
+        node.attributes().getOptionalJid("lid")
                 .ifPresent(socketHandler.store()::setLid);
         socketHandler.sendQuery("set", "passive", Node.of("active"));
         if (!socketHandler.keys().hasPreKeys()) {
@@ -1373,7 +1372,7 @@ class StreamHandler {
         var node = container.findNode("device")
                 .orElseThrow(() -> new NoSuchElementException("Missing device"));
         var companion = node.attributes()
-                .getJid("jid")
+                .getOptionalJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store().setJid(companion);
         socketHandler.store().setPhoneNumber(PhoneNumber.of(companion.user()));

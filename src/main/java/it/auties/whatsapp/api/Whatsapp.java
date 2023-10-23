@@ -676,8 +676,7 @@ public class Whatsapp {
 
     private HasWhatsappResponse parseHasWhatsappResponse(Node node) {
         var jid = node.attributes()
-                .getJid("jid")
-                .orElseThrow(() -> new NoSuchElementException("Missing jid"));
+                .getRequiredJid("jid");
         var in = node.findNode("contact")
                 .orElseThrow(() -> new NoSuchElementException("Missing contact in HasWhatsappResponse"))
                 .attributes()
@@ -819,7 +818,7 @@ public class Whatsapp {
 
     private Optional<Chat> parseAcceptInvite(Node result) {
         return result.findNode("group")
-                .flatMap(group -> group.attributes().getJid("jid"))
+                .flatMap(group -> group.attributes().getOptionalJid("jid"))
                 .map(jid -> store().findChatByJid(jid).orElseGet(() -> store().addNewChat(jid)));
     }
 
@@ -957,7 +956,7 @@ public class Whatsapp {
                 .findNodes("participant")
                 .stream()
                 .filter(participant -> !participant.attributes().hasKey("error"))
-                .map(participant -> participant.attributes().getJid("jid"))
+                .map(participant -> participant.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .toList();
         var chat = groupJid instanceof Chat entry ? entry : store()
@@ -1226,7 +1225,7 @@ public class Whatsapp {
                 .filter(entry -> entry.attributes().hasValue("link_type", "sub_group"))
                 .map(entry -> entry.findNode("group"))
                 .flatMap(Optional::stream)
-                .map(entry -> entry.attributes().getJid("jid"))
+                .map(entry -> entry.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .collect(Collectors.toUnmodifiableSet());
         return Arrays.stream(groups)
@@ -2089,7 +2088,7 @@ public class Whatsapp {
         }
 
         var device = result.findNode("device")
-                .flatMap(entry -> entry.attributes().getJid("jid"))
+                .flatMap(entry -> entry.attributes().getOptionalJid("jid"))
                 .orElse(null);
         if (device == null) {
             return CompletableFuture.completedFuture(CompanionLinkResult.RETRY_ERROR);

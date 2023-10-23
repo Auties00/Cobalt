@@ -6,7 +6,6 @@ import it.auties.whatsapp.model.node.Node;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
@@ -30,8 +29,7 @@ public record BusinessProfile(
      */
     public static BusinessProfile of(Node node) {
         var jid = node.attributes()
-                .getJid("jid")
-                .orElseThrow(() -> new NoSuchElementException("Missing jid from business profile"));
+                .getRequiredJid("jid");
         var address = node.findNode("address")
                 .flatMap(Node::contentAsString);
         var description = node.findNode("description")
