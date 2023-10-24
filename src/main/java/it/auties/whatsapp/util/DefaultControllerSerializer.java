@@ -7,9 +7,12 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
+import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.sync.HistorySyncMessage;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -331,7 +334,8 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             var futures = walker.map(entry -> handleStoreFile(store, entry))
                     .filter(Objects::nonNull)
                     .toArray(CompletableFuture[]::new);
-            var result = CompletableFuture.allOf(futures);
+            var result = CompletableFuture.allOf(futures)
+                    .thenRun(() -> attributeStoreContextualMessages(store));
             attributeStoreSerializers.put(store.uuid(), result);
             return result;
         } catch (IOException exception) {
@@ -339,11 +343,33 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
     }
 
+    // Do this after we have all the chats, or it won't work for obvious reasons
+    private void attributeStoreContextualMessages(Store store) {
+        store.chats()
+                .stream()
+                .flatMap(chat -> chat.messages().stream())
+                .forEach(message -> attributeStoreContextualMessage(store, message));
+    }
+
+    private void attributeStoreContextualMessage(Store store, HistorySyncMessage message) {
+        message.messageInfo()
+                .message()
+                .contentWithContext()
+                .flatMap(ContextualMessage::contextInfo)
+                .ifPresent(contextInfo -> attributeStoreContextInfo(store, contextInfo));
+    }
+
+    private void attributeStoreContextInfo(Store store, ContextInfo contextInfo) {
+        contextInfo.quotedMessageChatJid()
+                .flatMap(store::findChatByJid)
+                .ifPresent(contextInfo::setQuotedMessageChat);
+    }
+
     private CompletableFuture<Void> handleStoreFile(Store store, Path entry) {
         return switch (FileType.of(entry)) {
-            case UNKNOWN -> null;
             case NEWSLETTER -> CompletableFuture.runAsync(() -> deserializeNewsletter(store, entry));
             case CHAT -> CompletableFuture.runAsync(() -> deserializeChat(store, entry));
+            case UNKNOWN -> null;
         };
     }
 
@@ -421,7 +447,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private void deserializeChat(Store store, Path chatFile) {
         try (var input = new GZIPInputStream(Files.newInputStream(chatFile))) {
-            store.addChatDirect(Smile.readValue(input, Chat.class));
+            var chat = Smile.readValue(input, Chat.class);
+            for (var message : chat.messages()) {
+                message.messageInfo().setChat(chat);
+            }
+            store.addChatDirect(chat);
         } catch (IOException exception) {
             store.addChatDirect(rescueChat(chatFile));
         }
@@ -444,7 +474,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private void deserializeNewsletter(Store store, Path newsletterFile) {
         try (var input = new GZIPInputStream(Files.newInputStream(newsletterFile))) {
-            store.addNewsletter(Smile.readValue(input, Newsletter.class));
+            var newsletter = Smile.readValue(input, Newsletter.class);
+            for (var message : newsletter.messages()) {
+                message.setNewsletter(newsletter);
+            }
+            store.addNewsletter(newsletter);
         } catch (IOException exception) {
             store.addNewsletter(rescueNewsletter(newsletterFile));
         }

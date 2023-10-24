@@ -47,6 +47,7 @@ import it.auties.whatsapp.model.sync.HistorySyncSpec;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.nio.charset.StandardCharsets;
@@ -363,6 +364,15 @@ class MessageHandler {
     private Node getPlainMessageNode(MessageContainer message) {
         if(message.content() instanceof ReactionMessage reactionMessage) {
             return Node.of("reaction", Map.of("code", reactionMessage.content()));
+        }
+
+        if(message.content() instanceof TextMessage textMessage && textMessage.thumbnail().isEmpty()) {
+            var byteArrayOutputStream = new ByteArrayOutputStream();
+            byteArrayOutputStream.write(10);
+            var encoded = textMessage.text().getBytes(StandardCharsets.UTF_8);
+            byteArrayOutputStream.writeBytes(BytesHelper.intToVarInt(encoded.length));
+            byteArrayOutputStream.writeBytes(encoded);
+            return Node.of("plaintext", byteArrayOutputStream.toByteArray());
         }
 
         var messageAttributes = Attributes.of()
@@ -1278,17 +1288,24 @@ class MessageHandler {
 
     @SafeVarargs
     private <T> List<T> toSingleList(List<T>... all) {
-        return Stream.of(all)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .toList();
+        return switch (all.length) {
+            case 0 -> List.of();
+            case 1 -> all[0];
+            default -> Stream.of(all)
+                    .filter(Objects::nonNull)
+                    .flatMap(Collection::stream)
+                    .toList();
+        };
     }
 
-    private ChatMessageKey attributeSender(ChatMessageInfo info, Jid senderJid) {
+    private void attributeSender(ChatMessageInfo info, Jid senderJid) {
+        if(senderJid.server() != JidServer.WHATSAPP && senderJid.server() != JidServer.USER) {
+            return;
+        }
+
         var contact = socketHandler.store().findContactByJid(senderJid)
                 .orElseGet(() -> socketHandler.store().addContact(new Contact(senderJid)));
         info.setSender(contact);
-        return info.key();
     }
 
     private void attributeContext(ContextInfo contextInfo) {
@@ -1308,13 +1325,30 @@ class MessageHandler {
         contextInfo.setQuotedMessageSender(contact);
     }
 
-    private void processMessage(ChatMessageInfo info) {
+    protected ChatMessageInfo attributeChatMessage(ChatMessageInfo info) {
+        var chat = socketHandler.store().findChatByJid(info.chatJid())
+                .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
+        info.setChat(chat);
+        var me = socketHandler.store().jid().orElse(null);
+        if (info.fromMe() && me != null) {
+            info.key().setSenderJid(me.withoutDevice());
+        }
+
+        attributeSender(info, info.senderJid());
+        info.message()
+                .contentWithContext()
+                .flatMap(ContextualMessage::contextInfo)
+                .ifPresent(this::attributeContext);
+        processMessageWithSecret(info);
+        return info;
+    }
+
+    private void processMessageWithSecret(ChatMessageInfo info) {
         switch (info.message().content()) {
             case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
             case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
             case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-            default -> {
-            }
+            default -> {}
         }
     }
 
@@ -1382,26 +1416,6 @@ class MessageHandler {
         info.setIgnore(true);
         socketHandler.store().findMessageByKey(reactionMessage.key())
                 .ifPresent(message -> message.reactions().add(reactionMessage));
-    }
-
-    protected ChatMessageInfo attributeChatMessage(ChatMessageInfo info) {
-        var chat = socketHandler.store().findChatByJid(info.chatJid())
-                .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
-        info.setChat(chat);
-        var me = socketHandler.store().jid().orElse(null);
-        if (info.fromMe() && me != null) {
-            info.key().setSenderJid(me.withoutDevice());
-        }
-
-        info.key()
-                .senderJid()
-                .ifPresent(senderJid -> attributeSender(info, senderJid));
-        info.message()
-                .contentWithContext()
-                .flatMap(ContextualMessage::contextInfo)
-                .ifPresent(this::attributeContext);
-        processMessage(info);
-        return info;
     }
 
     protected void dispose() {

@@ -169,4 +169,14 @@ public final class BytesHelper {
 
         return crockford.toString();
     }
+
+    public static byte[] intToVarInt(int value) {
+        var out = new ByteArrayOutputStream();
+        while ((value & 0xFFFFFF80) != 0L) {
+            out.write((byte) ((value & 0x7F) | 0x80));
+            value >>>= 7;
+        }
+        out.write((byte) (value & 0x7F));
+        return out.toByteArray();
+    }
 }

@@ -13,7 +13,7 @@ import java.util.*;
 
 public final class NewsletterMessageInfo implements MessageInfo, MessageStatusInfo<NewsletterMessageInfo> {
     @JsonBackReference
-    private final Newsletter newsletter;
+    private Newsletter newsletter;
     private final String id;
     private final int serverId;
     private final Long timestampSeconds;
@@ -31,6 +31,11 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
         this.reactions = reactions;
         this.message = message;
         this.status = status;
+    }
+
+    public NewsletterMessageInfo setNewsletter(Newsletter newsletter) {
+        this.newsletter = newsletter;
+        return this;
     }
 
     public Jid newsletterJid() {

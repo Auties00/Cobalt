@@ -117,7 +117,6 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     private final Jid originalSender;
     @ProtobufProperty(index = 52, type = ProtobufType.UINT64)
     private long revokeTimestampSeconds;
-
     @JsonBackReference
     private Chat chat;
 

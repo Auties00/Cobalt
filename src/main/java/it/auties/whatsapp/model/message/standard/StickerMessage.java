@@ -79,7 +79,7 @@ public final class StickerMessage extends LocalMediaMessage<StickerMessage> impl
     private final boolean avatar;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public StickerMessage(String mediaUrl, byte[] mediaSha256, byte[] mediaEncryptedSha256, byte[] mediaKey, String mimetype, Integer height, Integer width, String mediaDirectPath, Long mediaSize, Long mediaKeyTimestampSeconds, Integer firstFrameLength, byte[] firstFrameSidecar, boolean animated, byte[] thumbnail, ContextInfo contextInfo, long stickerSentTimestamp, boolean avatar) {
+    public StickerMessage(String mediaUrl, byte[] mediaSha256, byte[] mediaEncryptedSha256, byte[] mediaKey, String mimetype, Integer height, Integer width, String mediaDirectPath, Long mediaSize, Long mediaKeyTimestampSeconds, Integer firstFrameLength, byte[] firstFrameSidecar, boolean animated, byte[] thumbnail, ContextInfo contextInfo, Long stickerSentTimestamp, boolean avatar) {
         this.mediaUrl = mediaUrl;
         this.mediaSha256 = mediaSha256;
         this.mediaEncryptedSha256 = mediaEncryptedSha256;
