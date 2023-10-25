@@ -22,7 +22,7 @@ import it.auties.whatsapp.model.media.MediaFile;
 import it.auties.whatsapp.model.media.MutableAttachmentProvider;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
-import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
+import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
@@ -121,7 +121,7 @@ class MessageHandler {
         }
 
         return switch (messageInfo.message().content()) {
-            case LocalMediaMessage<?> mediaMessage -> attributeMediaMessage(messageInfo.parentJid(), mediaMessage);
+            case ExtendedMediaMessage<?> mediaMessage -> attributeMediaMessage(messageInfo.parentJid(), mediaMessage);
             case ButtonMessage buttonMessage -> attributeButtonMessage(messageInfo.parentJid(), buttonMessage);
             case TextMessage textMessage -> attributeTextMessage(textMessage);
             case PollCreationMessage pollCreationMessage when messageInfo instanceof ChatMessageInfo pollCreationInfo -> // I guess they will be supported some day in newsletters
@@ -214,7 +214,7 @@ class MessageHandler {
         return first.width() * first.height() > second.width() * second.height() ? first : second;
     }
 
-    private CompletableFuture<Void> attributeMediaMessage(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
+    private CompletableFuture<Void> attributeMediaMessage(Jid chatJid, ExtendedMediaMessage<?> mediaMessage) {
         var media = mediaMessage.decodedMedia()
                 .orElseThrow(() -> new IllegalArgumentException("Missing media to upload"));
         var attachmentType = getAttachmentType(chatJid, mediaMessage);
@@ -223,7 +223,7 @@ class MessageHandler {
                 .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
     }
 
-    private AttachmentType getAttachmentType(Jid chatJid, LocalMediaMessage<?> mediaMessage) {
+    private AttachmentType getAttachmentType(Jid chatJid, ExtendedMediaMessage<?> mediaMessage) {
         if (!chatJid.hasServer(JidServer.NEWSLETTER)) {
             return mediaMessage.attachmentType();
         }
@@ -240,8 +240,8 @@ class MessageHandler {
 
 
     private MutableAttachmentProvider<?> attributeMediaMessage(MutableAttachmentProvider<?> mediaMessage, MediaFile upload) {
-        if (mediaMessage instanceof LocalMediaMessage<?> localMediaMessage) {
-            localMediaMessage.setHandle(upload.handle());
+        if (mediaMessage instanceof ExtendedMediaMessage<?> extendedMediaMessage) {
+            extendedMediaMessage.setHandle(upload.handle());
         }
 
         return mediaMessage.setMediaSha256(upload.fileSha256())
@@ -307,15 +307,15 @@ class MessageHandler {
     private CompletableFuture<Void> attributeButtonMessage(Jid chatJid, ButtonMessage buttonMessage) {
         return switch (buttonMessage) {
             case ButtonsMessage buttonsMessage when buttonsMessage.header().isPresent()
-                    && buttonsMessage.header().get() instanceof LocalMediaMessage<?> mediaMessage ->
+                    && buttonsMessage.header().get() instanceof ExtendedMediaMessage<?> mediaMessage ->
                     attributeMediaMessage(chatJid, mediaMessage);
             case TemplateMessage templateMessage when templateMessage.format().isPresent() -> {
                 var templateFormatter = templateMessage.format().get();
                 yield switch (templateFormatter) {
                     case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
-                            when highlyStructuredFourRowTemplate.title().isPresent() && highlyStructuredFourRowTemplate.title().get() instanceof LocalMediaMessage<?> fourRowMedia ->
+                            when highlyStructuredFourRowTemplate.title().isPresent() && highlyStructuredFourRowTemplate.title().get() instanceof ExtendedMediaMessage<?> fourRowMedia ->
                             attributeMediaMessage(chatJid, fourRowMedia);
-                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof LocalMediaMessage<?> hydratedFourRowMedia ->
+                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof ExtendedMediaMessage<?> hydratedFourRowMedia ->
                             attributeMediaMessage(chatJid, hydratedFourRowMedia);
                     case null, default -> CompletableFuture.completedFuture(null);
                 };
@@ -323,7 +323,7 @@ class MessageHandler {
             case InteractiveMessage interactiveMessage
                     when interactiveMessage.header().isPresent()
                     && interactiveMessage.header().get().attachment().isPresent()
-                    && interactiveMessage.header().get().attachment().get() instanceof LocalMediaMessage<?> interactiveMedia ->
+                    && interactiveMessage.header().get().attachment().get() instanceof ExtendedMediaMessage<?> interactiveMedia ->
                     attributeMediaMessage(chatJid, interactiveMedia);
             default -> CompletableFuture.completedFuture(null);
         };
@@ -354,11 +354,11 @@ class MessageHandler {
 
     private String getPlainMessageHandle(MessageSendRequest.Newsletter request) {
         var message = request.info().message().content();
-        if (!(message instanceof LocalMediaMessage<?> localMediaMessage)) {
+        if (!(message instanceof ExtendedMediaMessage<?> extendedMediaMessage)) {
             return null;
         }
 
-        return localMediaMessage.handle().orElse(null);
+        return extendedMediaMessage.handle().orElse(null);
     }
 
     private Node getPlainMessageNode(MessageContainer message) {
@@ -1121,7 +1121,7 @@ class MessageHandler {
     private CompletableFuture<HistorySync> downloadHistorySyncNotification(HistorySyncNotification notification) {
         return notification.initialHistBootstrapInlinePayload()
                 .map(result -> CompletableFuture.completedFuture(HistorySyncSpec.decode(BytesHelper.decompress(result))))
-                .orElseGet(() -> Medias.download(notification)
+                .orElseGet(() -> Medias.downloadAsync(notification)
                         .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
                         .thenApplyAsync(result -> HistorySyncSpec.decode(BytesHelper.decompress(result))));
     }

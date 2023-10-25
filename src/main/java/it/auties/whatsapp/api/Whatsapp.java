@@ -33,7 +33,7 @@ import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MediaFile;
 import it.auties.whatsapp.model.message.model.*;
-import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
+import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
 import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
@@ -1835,27 +1835,68 @@ public class Whatsapp {
     }
 
     /**
-     * Downloads a media from Whatsapp's servers. If the media is available, it will be returned
-     * asynchronously. Otherwise, a retry request will be issued. If that also fails, an exception
-     * will be thrown
+     * Downloads a media from Whatsapp's servers.
+     * If the media was already downloaded, the cached version will be returned.
+     * If the download fails because the media is too old/invalid, a reupload request will be sent to Whatsapp.
+     * If the latter fails as well, an empty optional will be returned.
      *
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<byte[]> downloadMedia(ChatMessageInfo info) {
+    public CompletableFuture<Optional<byte[]>> downloadMedia(ChatMessageInfo info) {
         if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
 
-        if (!(mediaMessage instanceof LocalMediaMessage<?> uploadedMediaMessage)) {
-            throw new IllegalArgumentException("This message wasn't uploaded yet");
+        return downloadMedia(mediaMessage).thenCompose(result -> {
+            if(result.isPresent()) {
+                return CompletableFuture.completedFuture(result);
+            }
+
+            return requireMediaReupload(info)
+                    .thenCompose(ignored -> downloadMedia(mediaMessage));
+        });
+    }
+
+    /**
+     * Downloads a media from Whatsapp's servers.
+     * If the media was already downloaded, the cached version will be returned.
+     * If the download fails because the media is too old/invalid, an empty optional will be returned.
+     *
+     * @param info the non-null message info wrapping the media
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Optional<byte[]>> downloadMedia(NewsletterMessageInfo info) {
+        if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
+            throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
 
-        return uploadedMediaMessage.decodedMedia()
-                .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> requireMediaReupload(info)
-                        .thenApplyAsync(ignored -> uploadedMediaMessage.decodedMedia()
-                                .orElseThrow(() -> new RuntimeException("Media reupload failed"))));
+        return downloadMedia(mediaMessage);
+    }
+
+    /**
+     * Downloads a media from Whatsapp's servers.
+     * If the media was already downloaded, the cached version will be returned.
+     * If the download fails because the media is too old/invalid, an empty optional will be returned.
+     *
+     * @param mediaMessage the non-null media
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Optional<byte[]>> downloadMedia(MediaMessage<?> mediaMessage) {
+        if (!(mediaMessage instanceof ExtendedMediaMessage<?> extendedMediaMessage)) {
+            return Medias.downloadAsync(mediaMessage);
+        }
+
+        var decodedMedia = extendedMediaMessage.decodedMedia();
+        if(decodedMedia.isPresent()) {
+            return CompletableFuture.completedFuture(decodedMedia);
+        }
+
+
+        return Medias.downloadAsync(mediaMessage).thenApply(result -> {
+            result.ifPresent(extendedMediaMessage::setDecodedMedia);
+            return result;
+        });
     }
 
     /**
@@ -1864,7 +1905,7 @@ public class Whatsapp {
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<ChatMessageInfo> requireMediaReupload(ChatMessageInfo info) {
+    public CompletableFuture<Void> requireMediaReupload(ChatMessageInfo info) {
         if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
@@ -1884,10 +1925,10 @@ public class Whatsapp {
         var node = Node.of("receipt", Map.of("id", info.key().id(), "to", jidOrThrowError()
                 .withoutDevice(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.of("rmr", rmrAttributes));
         return socketHandler.send(node, result -> result.hasDescription("notification"))
-                .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
+                .thenAcceptAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
     }
 
-    private ChatMessageInfo parseMediaReupload(ChatMessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
+    private void parseMediaReupload(ChatMessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
         Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s", node.attributes()
                 .getInt("code"));
         var encryptNode = node.findNode("encrypt")
@@ -1904,7 +1945,6 @@ public class Whatsapp {
                 .orElseThrow(() -> new RuntimeException("Media reupload failed"));
         mediaMessage.setMediaUrl(Medias.createMediaUrl(directPath));
         mediaMessage.setMediaDirectPath(directPath);
-        return info;
     }
 
     /**

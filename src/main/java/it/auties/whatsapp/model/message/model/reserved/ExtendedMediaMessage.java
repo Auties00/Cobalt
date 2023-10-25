@@ -5,7 +5,7 @@ import it.auties.whatsapp.model.message.standard.*;
 
 import java.util.Optional;
 
-public abstract sealed class LocalMediaMessage<T extends LocalMediaMessage<T>> implements MediaMessage<T> permits AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
+public abstract sealed class ExtendedMediaMessage<T extends ExtendedMediaMessage<T>> implements MediaMessage<T> permits AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
     private byte[] decodedMedia;
     private String handle;
 

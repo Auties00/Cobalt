@@ -12,7 +12,7 @@ import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
+import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Specification;
@@ -29,7 +29,7 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 /**
  * A model class that represents a message holding a document inside
  */
-public final class DocumentMessage extends LocalMediaMessage<DocumentMessage>
+public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
         implements MediaMessage<DocumentMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;

@@ -15,7 +15,7 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
+import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding an image inside
  */
 @ProtobufMessageName("Message.ImageMessage")
-public final class ImageMessage extends LocalMediaMessage<ImageMessage>
+public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
         implements MediaMessage<ImageMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;

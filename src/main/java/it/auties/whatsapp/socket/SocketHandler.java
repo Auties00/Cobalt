@@ -849,8 +849,12 @@ public class SocketHandler implements SocketListener {
 
     public void updateUserName(String newName, String oldName) {
         if (oldName != null && !Objects.equals(newName, oldName)) {
+            var wasOnline = store().online();
             sendWithNoResponse(Node.of("presence", Map.of("name", oldName, "type", "unavailable")));
             sendWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")));
+            if(!wasOnline) {
+                sendWithNoResponse(Node.of("presence", Map.of("name", oldName, "type", "unavailable")));
+            }
             onUserNameChanged(newName, oldName);
         }
         var self = store.jid()

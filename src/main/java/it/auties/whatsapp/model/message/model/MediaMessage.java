@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.model;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MutableAttachmentProvider;
-import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
+import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 
@@ -15,7 +15,7 @@ import java.util.OptionalLong;
  * A media message
  * Read its content using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(ChatMessageInfo)}
  */
-public sealed interface MediaMessage<T extends MediaMessage<T>> extends ContextualMessage, MutableAttachmentProvider<T> permits LocalMediaMessage, PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
+public sealed interface MediaMessage<T extends MediaMessage<T>> extends ContextualMessage, MutableAttachmentProvider<T> permits ExtendedMediaMessage, PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
     /**
      * Returns the timestampSeconds, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for{@link MediaMessage#mediaKey()}
      *

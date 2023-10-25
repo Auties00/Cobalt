@@ -366,7 +366,7 @@ class AppStateHandler {
     private Optional<SnapshotSync> decodeSnapshot(Node snapshot) {
         return snapshot == null ? Optional.empty() : snapshot.contentAsBytes()
                 .map(ExternalBlobReferenceSpec::decode)
-                .map(Medias::download)
+                .map(Medias::downloadAsync)
                 .flatMap(CompletableFuture::join)
                 .map(SnapshotSyncSpec::decode);
     }
@@ -524,7 +524,7 @@ class AppStateHandler {
 
     private MutationsRecord decodePatch(Jid jid, PatchType patchType, CompanionHashState newState, PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            Medias.download(patch.externalMutations())
+            Medias.downloadAsync(patch.externalMutations())
                     .join()
                     .ifPresent(blob -> handleExternalMutation(patch, blob));
         }

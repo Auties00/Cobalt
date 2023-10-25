@@ -8,7 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
+import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding a sticker inside
  */
 @ProtobufMessageName("Message.StickerMessage")
-public final class StickerMessage extends LocalMediaMessage<StickerMessage> implements MediaMessage<StickerMessage> {
+public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> implements MediaMessage<StickerMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;
 

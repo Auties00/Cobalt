@@ -9,7 +9,7 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.LocalMediaMessage;
+import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
@@ -20,7 +20,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 @ProtobufMessageName("Message.AudioMessage")
-public final class AudioMessage extends LocalMediaMessage<AudioMessage> implements MediaMessage<AudioMessage> {
+public final class AudioMessage extends ExtendedMediaMessage<AudioMessage> implements MediaMessage<AudioMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;
 

@@ -72,22 +72,19 @@ public final class Medias {
         }
     }
 
-    public static CompletableFuture<byte[]> downloadAsync(String imageUrl) {
-        return downloadAsync(URI.create(imageUrl));
-    }
-
     public static Optional<byte[]> download(URI imageUri) {
-        return downloadAsync(imageUri)
-                .thenApplyAsync(Optional::ofNullable)
-                .exceptionally(ignored -> Optional.empty())
-                .join();
+        try {
+            return Optional.ofNullable(downloadAsync(imageUri).join());
+        }catch (Throwable throwable) {
+            return Optional.empty();
+        }
     }
 
     public static CompletableFuture<byte[]> downloadAsync(URI imageUri) {
         return downloadAsync(imageUri, true);
     }
 
-    public static CompletableFuture<byte[]> downloadAsync(URI imageUri, boolean userAgent) {
+    private static CompletableFuture<byte[]> downloadAsync(URI imageUri, boolean userAgent) {
         try {
             if (imageUri == null) {
                 return CompletableFuture.completedFuture(null);
@@ -165,7 +162,7 @@ public final class Medias {
         return Arrays.copyOf(hmac, 10);
     }
 
-    public static CompletableFuture<Optional<byte[]>> download(MutableAttachmentProvider<?> provider) {
+    public static CompletableFuture<Optional<byte[]>> downloadAsync(MutableAttachmentProvider<?> provider) {
         try {
             var url = provider.mediaUrl()
                     .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
