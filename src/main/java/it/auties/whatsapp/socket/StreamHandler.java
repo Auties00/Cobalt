@@ -1071,6 +1071,9 @@ class StreamHandler {
 
     private CompletableFuture<Void> updateSelfPresence() {
         if (!socketHandler.store().automaticPresenceUpdates()) {
+            if(!socketHandler.store().online()) {  // Just to be sure
+                socketHandler.sendWithNoResponse(Node.of("presence", Map.of("name", socketHandler.store().name(), "type", "unavailable")));
+            }
             return CompletableFuture.completedFuture(null);
         }
 
