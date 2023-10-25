@@ -15,7 +15,6 @@ public record NewsletterMetadata(
         Optional<String> handle,
         Optional<NewsletterSettings> settings,
         Optional<String> invite,
-        OptionalLong subscribers,
         Optional<Boolean> verification,
         OptionalLong creationTimestampSeconds
 ) {
@@ -27,8 +26,6 @@ public record NewsletterMetadata(
             String handle,
             NewsletterSettings settings,
             String invite,
-            @JsonProperty("subscribers_count")
-            Long subscribers,
             String verification,
             @JsonProperty("creation_time")
             Long creationTimestampSeconds
@@ -40,7 +37,6 @@ public record NewsletterMetadata(
                 Optional.ofNullable(handle),
                 Optional.ofNullable(settings),
                 Optional.ofNullable(invite),
-                subscribers == null ? OptionalLong.empty() : OptionalLong.of(subscribers),
                 verification == null ? Optional.empty() : Optional.of(verification.equals("VERIFIED")),
                 creationTimestampSeconds == null ? OptionalLong.empty() : OptionalLong.of(creationTimestampSeconds)
         );

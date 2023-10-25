@@ -39,18 +39,18 @@ import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
 import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
 import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterViewerMetadata;
+import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
+import it.auties.whatsapp.model.product.LeaveNewsletterRequest;
 import it.auties.whatsapp.model.request.*;
 import it.auties.whatsapp.model.request.UpdateNewsletterRequest.UpdatePayload;
-import it.auties.whatsapp.model.response.ContactStatusResponse;
-import it.auties.whatsapp.model.response.HasWhatsappResponse;
-import it.auties.whatsapp.model.response.NewsletterResponse;
-import it.auties.whatsapp.model.response.RecommendedNewslettersResponse;
+import it.auties.whatsapp.model.response.*;
 import it.auties.whatsapp.model.setting.LocaleSettings;
 import it.auties.whatsapp.model.setting.PushNameSettings;
 import it.auties.whatsapp.model.signal.auth.*;
@@ -2668,17 +2668,60 @@ public class Whatsapp {
         var payload = new UpdatePayload(safeDescription);
         var body = new UpdateNewsletterRequest.Variable(newsletter.toJid(), payload);
         var request = new UpdateNewsletterRequest(body);
-        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "future"), Json.writeValueAsBytes(request)))
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7150902998257522"), Json.writeValueAsBytes(request)))
                 .thenRun(() -> {});
     }
 
+    /**
+     * Joins a newsletter
+     *
+     * @param newsletter a non-null newsletter
+     * @return a future
+     */
     public CompletableFuture<Void> joinNewsletter(JidProvider newsletter) {
-        return CompletableFuture.completedFuture(null);
+        var body = new JoinNewsletterRequest.Variable(newsletter.toJid());
+        var request = new JoinNewsletterRequest(body);
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "9926858900719341"), Json.writeValueAsBytes(request)))
+                .thenRun(() -> {});
     }
 
-
+    /**
+     * Leaves a newsletter
+     *
+     * @param newsletter a non-null newsletter
+     * @return a future
+     */
     public CompletableFuture<Void> leaveNewsletter(JidProvider newsletter) {
-        return CompletableFuture.completedFuture(null);
+        var body = new LeaveNewsletterRequest.Variable(newsletter.toJid());
+        var request = new LeaveNewsletterRequest(body);
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6392786840836363"), Json.writeValueAsBytes(request)))
+                .thenRun(() -> {});
+    }
+
+    /**
+     * Queries the number of people subscribed to a newsletter
+     *
+     * @param newsletterJid the id of the newsletter
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Long> queryNewsletterSubscribers(JidProvider newsletterJid) {
+        var newsletterRole = store().findNewsletterByJid(newsletterJid)
+                .flatMap(Newsletter::viewerMetadata)
+                .map(NewsletterViewerMetadata::role)
+                .orElse(NewsletterViewerRole.GUEST);
+        var input = new NewsletterSubscribersRequest.Input(newsletterJid.toJid(), "JID", newsletterRole.name());
+        var body = new NewsletterSubscribersRequest.Variable(input);
+        var request = new NewsletterSubscribersRequest(body);
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7272540469429201"), Json.writeValueAsBytes(request)))
+                .thenApply(this::parseNewsletterSubscribers);
+    }
+
+    private long parseNewsletterSubscribers(Node response) {
+        return response.findNode("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(NewsletterSubscribersResponse::ofJson)
+                .map(NewsletterSubscribersResponse::subscribersCount)
+                .orElse(0L);
     }
 
     /**

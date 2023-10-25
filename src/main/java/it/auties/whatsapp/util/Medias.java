@@ -198,8 +198,12 @@ public final class Medias {
             return Optional.of(encryptedMedia);
         }
 
-        var mediaKey = provider.mediaKey().orElseThrow(() -> new NoSuchElementException("Missing media key"));
-        var keys = MediaKeys.of(mediaKey, keyName.get());
+        var mediaKey = provider.mediaKey();
+        if (mediaKey.isEmpty()) {
+            return Optional.of(encryptedMedia);
+        }
+
+        var keys = MediaKeys.of(mediaKey.get(), keyName.get());
         var hmac = calculateMac(encryptedMedia, keys);
         Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
         var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());

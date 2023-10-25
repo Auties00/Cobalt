@@ -166,7 +166,6 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
                 .setDecodedMedia(media);
     }
 
-
     @Override
     public Optional<String> mediaUrl() {
         return Optional.ofNullable(mediaUrl);
