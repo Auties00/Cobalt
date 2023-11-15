@@ -4,13 +4,11 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
-import it.auties.whatsapp.util.RegistrationHelper;
+import it.auties.whatsapp.registration.HttpRegistration;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.function.Function;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 /**
@@ -21,12 +19,11 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     final Store store;
     final Keys keys;
     final ErrorHandler errorHandler;
-    final Executor socketExecutor;
+    final ExecutorService socketExecutor;
     Whatsapp whatsapp;
     AsyncVerificationCodeSupplier verificationCodeSupplier;
-    AsyncCaptchaCodeSupplier verificationCaptchaSupplier;
 
-    MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
+    MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
         this.store = store;
         this.keys = keys;
         this.errorHandler = errorHandler;
@@ -57,32 +54,6 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
         return (T) this;
     }
 
-    /**
-     * Sets the handler that provides the captcha newsletters when verifying an account
-     * Happens only on business devices
-     *
-     * @param verificationCaptchaSupplier the non-null supplier
-     * @return the same instance
-     */
-    @SuppressWarnings("unchecked")
-    public T verificationCaptchaSupplier(Function<VerificationCodeResponse, String> verificationCaptchaSupplier) {
-        this.verificationCaptchaSupplier = AsyncCaptchaCodeSupplier.of(verificationCaptchaSupplier);
-        return (T) this;
-    }
-
-    /**
-     * Sets the handler that provides the captcha newsletters when verifying an account
-     * Happens only on business devices
-     *
-     * @param verificationCaptchaSupplier the non-null supplier
-     * @return the same instance
-     */
-    @SuppressWarnings("unchecked")
-    public T verificationCaptchaSupplier(AsyncCaptchaCodeSupplier verificationCaptchaSupplier) {
-        this.verificationCaptchaSupplier = verificationCaptchaSupplier;
-        return (T) this;
-    }
-
     Whatsapp buildWhatsapp() {
         return this.whatsapp = Whatsapp.customBuilder()
                 .store(store)
@@ -93,9 +64,10 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     }
 
     public final static class Unregistered extends MobileRegistrationBuilder<Unregistered> {
+        private Unverified unverified;
         private VerificationCodeMethod verificationCodeMethod;
 
-        Unregistered(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
+        Unregistered(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
             super(store, keys, errorHandler, socketExecutor);
             this.verificationCodeMethod = VerificationCodeMethod.SMS;
         }
@@ -125,16 +97,18 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
 
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
             Objects.requireNonNull(verificationCodeMethod, "Expected a valid verification method");
-            var number = PhoneNumber.of(phoneNumber);
-            keys.setPhoneNumber(number);
-            store.setPhoneNumber(number);
             if (!keys.registered()) {
-                return RegistrationHelper.registerPhoneNumber(store, keys, verificationCodeSupplier, verificationCaptchaSupplier, verificationCodeMethod)
+                var number = PhoneNumber.of(phoneNumber);
+                keys.setPhoneNumber(number);
+                store.setPhoneNumber(number);
+                var registration = new HttpRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
+                return registration.registerPhoneNumber()
                         .thenApply(ignored -> buildWhatsapp());
             }
 
             return CompletableFuture.completedFuture(buildWhatsapp());
         }
+
 
         /**
          * Asks Whatsapp for a one-time-password to start the registration process
@@ -143,20 +117,26 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
          * @return a future
          */
         public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber) {
+            if(unverified != null) {
+                return CompletableFuture.completedFuture(unverified);
+            }
+
             var number = PhoneNumber.of(phoneNumber);
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             if (!keys.registered()) {
-                return RegistrationHelper.requestVerificationCode(store, keys, verificationCodeMethod)
-                        .thenApply(ignored -> new Unverified(store, keys, errorHandler, socketExecutor));
+                var registration = new HttpRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
+                return registration.requestVerificationCode()
+                        .thenApply(ignored -> this.unverified = new Unverified(store, keys, errorHandler, socketExecutor));
             }
 
-            return CompletableFuture.completedFuture(new Unverified(store, keys, errorHandler, socketExecutor));
+            this.unverified = new Unverified(store, keys, errorHandler, socketExecutor);
+            return CompletableFuture.completedFuture(unverified);
         }
     }
 
     public final static class Unverified extends MobileRegistrationBuilder<Unverified> {
-        Unverified(Store store, Keys keys, ErrorHandler errorHandler, Executor socketExecutor) {
+        Unverified(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
             super(store, keys, errorHandler, socketExecutor);
         }
 
@@ -181,7 +161,8 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
         public CompletableFuture<Whatsapp> verify() {
             Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
-            return RegistrationHelper.sendVerificationCode(store, keys, verificationCodeSupplier, verificationCaptchaSupplier)
+            var registration = new HttpRegistration(store, keys, verificationCodeSupplier, VerificationCodeMethod.NONE);
+            return registration.sendVerificationCode()
                     .thenApply(ignored -> buildWhatsapp());
         }
     }

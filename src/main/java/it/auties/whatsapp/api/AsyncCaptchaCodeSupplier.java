@@ -1,6 +1,6 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.model.response.VerificationCodeResponse;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;

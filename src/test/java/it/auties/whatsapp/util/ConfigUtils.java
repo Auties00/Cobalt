@@ -15,7 +15,7 @@ public final class ConfigUtils {
     }
 
     private static Path loadConfigFile() throws IOException {
-        var config = Path.of("./%s".formatted(CONFIG_PATH)).toAbsolutePath();
+        var config = Path.of("./" + CONFIG_PATH).toAbsolutePath();
         if (Files.notExists(config)) {
             throw new FileNotFoundException("Before running any unit test please create a config file at %s".formatted(config));
         }

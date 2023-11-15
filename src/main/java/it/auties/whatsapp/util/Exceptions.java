@@ -45,4 +45,13 @@ public final class Exceptions {
             throw new UncheckedIOException("Cannot serialize exception", exception);
         }
     }
+
+    public static void rethrow(Throwable throwable) {
+        throw toRuntimeException(throwable);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> T toRuntimeException(Throwable t) throws T {
+        throw (T) t;
+    }
 }

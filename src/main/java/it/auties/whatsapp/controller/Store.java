@@ -24,21 +24,20 @@ import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.newsletter.NewsletterName;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
-import it.auties.whatsapp.model.signal.auth.UserAgent;
-import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.registration.TokenProvider;
 import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.FutureReference;
-import it.auties.whatsapp.util.MetadataHelper;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 
 import java.net.URI;
@@ -74,21 +73,15 @@ public final class Store extends Controller<Store> {
     private boolean online;
 
     /**
-     * The locale of the user linked to this account. This field will be null while the user hasn't
-     * logged in yet. Assumed to be non-null otherwise.
+     * The locale of the user linked to this account
      */
-    private String locale;
+    private CountryLocale locale;
 
     /**
      * The name of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
     private String name;
-
-    /**
-     * Whether the linked companion is a business account or not
-     */
-    private boolean business;
 
     /**
      * The address of this account, if it's a business account
@@ -288,11 +281,6 @@ public final class Store extends Controller<Store> {
     private CompanionDevice device;
 
     /**
-     * The os of the associated device, available only for the web api
-     */
-    private PlatformType companionDeviceOs;
-
-    /**
      * Whether the mac of every app state request should be checked
      */
     private boolean checkPatchMacs;
@@ -301,7 +289,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, String locale, String name, boolean business, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, PlatformType companionDeviceOs, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -312,7 +300,6 @@ public final class Store extends Controller<Store> {
         this.online = online;
         this.locale = locale;
         this.name = name;
-        this.business = business;
         this.businessAddress = businessAddress;
         this.businessLongitude = businessLongitude;
         this.businessLatitude = businessLatitude;
@@ -348,7 +335,6 @@ public final class Store extends Controller<Store> {
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.releaseChannel = releaseChannel;
         this.device = device;
-        this.companionDeviceOs = companionDeviceOs;
         this.checkPatchMacs = checkPatchMacs;
     }
 
@@ -1138,16 +1124,6 @@ public final class Store extends Controller<Store> {
     }
 
     /**
-     * The os of the associated device
-     * Available only for the web api
-     *
-     * @return a non-null optional
-     */
-    public Optional<PlatformType> companionDeviceOs() {
-        return Optional.ofNullable(companionDeviceOs);
-    }
-
-    /**
      * The address of this account, if it's a business account
      *
      * @return an optional
@@ -1248,11 +1224,7 @@ public final class Store extends Controller<Store> {
     @JsonGetter("version")
     public Version version() {
         if(version == null) {
-            var platform = switch (clientType) {
-                case WEB -> UserAgent.PlatformType.WEB;
-                case MOBILE -> business ? device.businessPlatform() : device.platform();
-            };
-            this.version = new FutureReference<>(null, () -> MetadataHelper.getVersion(platform));
+            this.version = new FutureReference<>(null, () -> TokenProvider.getVersion(device.platform()));
         }
 
         return version.value();
@@ -1262,16 +1234,12 @@ public final class Store extends Controller<Store> {
         return this.online;
     }
 
-    public Optional<String> locale() {
+    public Optional<CountryLocale> locale() {
         return Optional.ofNullable(this.locale);
     }
 
     public String name() {
         return name;
-    }
-
-    public boolean business() {
-        return this.business;
     }
 
     public Optional<String> deviceHash() {
@@ -1326,8 +1294,8 @@ public final class Store extends Controller<Store> {
         return this.releaseChannel;
     }
 
-    public Optional<CompanionDevice> device() {
-        return Optional.ofNullable(device);
+    public CompanionDevice device() {
+        return device;
     }
 
     public boolean checkPatchMacs() {
@@ -1339,18 +1307,13 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setLocale(String locale) {
+    public Store setLocale(CountryLocale locale) {
         this.locale = locale;
         return this;
     }
 
     public Store setName(String name) {
         this.name = name;
-        return this;
-    }
-
-    public Store setBusiness(boolean business) {
-        this.business = business;
         return this;
     }
 
@@ -1460,13 +1423,9 @@ public final class Store extends Controller<Store> {
     }
 
     public Store setDevice(CompanionDevice device) {
+        Objects.requireNonNull(device, "The device cannot be null");
         this.device = device;
-        this.version = new FutureReference<>(null, () -> MetadataHelper.getVersion(device.platform(), business));
-        return this;
-    }
-
-    public Store setCompanionDeviceOs(PlatformType companionDeviceOs) {
-        this.companionDeviceOs = companionDeviceOs;
+        this.version = new FutureReference<>(null, () -> TokenProvider.getVersion(device.platform()));
         return this;
     }
 

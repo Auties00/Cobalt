@@ -10,31 +10,20 @@ public enum GroupSetting {
     /**
      * Who can edit the metadata of a group
      */
-    EDIT_GROUP_INFO("locked", "unlocked"),
+    EDIT_GROUP_INFO,
 
     /**
      * Who can send messages in a group
      */
-    SEND_MESSAGES("announcement", "not_announcement"),
+    SEND_MESSAGES,
 
     /**
-     * Who can add new members to the community
+     * Who can add new members
      */
-    APPROVE_NEW_PARTICIPANTS("membership_approval_mode", "membership_approval_mode");
+    ADD_PARTICIPANTS,
 
-    private final String on;
-    private final String off;
-
-    GroupSetting(String on, String off) {
-        this.on = on;
-        this.off = off;
-    }
-
-    public String on() {
-        return on;
-    }
-
-    public String off() {
-        return off;
-    }
+    /**
+     * Who can accept new members
+     */
+    APPROVE_PARTICIPANTS
 }

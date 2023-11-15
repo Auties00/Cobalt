@@ -15,7 +15,7 @@ public enum JidServer {
      */
     USER("c.us"),
     /**
-     * Group
+     * Groups and communities
      */
     GROUP("g.us"),
     /**

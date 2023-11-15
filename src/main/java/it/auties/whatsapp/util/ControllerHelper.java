@@ -7,6 +7,7 @@ import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.UserAgent;
@@ -85,7 +86,6 @@ public class ControllerHelper {
                 false,
                 null,
                 Specification.Whatsapp.DEFAULT_NAME,
-                false,
                 null,
                 null,
                 null,
@@ -114,8 +114,7 @@ public class ControllerHelper {
                 true,
                 true,
                 UserAgent.ReleaseChannel.RELEASE,
-                Specification.Whatsapp.DEFAULT_MOBILE_DEVICE,
-                null,
+                clientType == ClientType.WEB ? CompanionDevice.web() : CompanionDevice.ios(false),
                 false
         );
         serializer.linkMetadata(store);

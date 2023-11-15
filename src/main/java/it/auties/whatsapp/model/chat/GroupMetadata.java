@@ -19,7 +19,7 @@ public record GroupMetadata(
         Optional<Jid> founder,
         Optional<String> description,
         Optional<String> descriptionId,
-        Map<GroupSetting, GroupSettingPolicy> policies,
+        Map<GroupSetting, ChatSettingPolicy> policies,
         List<GroupParticipant> participants,
         Optional<ZonedDateTime> ephemeralExpiration,
         boolean isCommunity,

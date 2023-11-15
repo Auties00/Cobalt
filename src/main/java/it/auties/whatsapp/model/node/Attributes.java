@@ -6,7 +6,6 @@ import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
@@ -18,7 +17,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param toMap the non-null wrapped map
  */
-public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
+public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     /**
      * Constructs a new map using the non-null provided entries
      *
@@ -39,8 +38,8 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
      */
     public static Attributes ofNullable(Map<String, ?> map) {
         var modifiableMap = Optional.ofNullable(map)
-                .map(ConcurrentHashMap<String, Object>::new)
-                .orElseGet(ConcurrentHashMap::new);
+                .map(LinkedHashMap<String, Object>::new)
+                .orElseGet(LinkedHashMap::new);
         return new Attributes(modifiableMap);
     }
 
@@ -55,7 +54,7 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Checks whether a non-null key exists in this map
+     * Checks whether a non-null key whatsappOldEligible in this map
      *
      * @param key the non-null key
      * @return a boolean
@@ -65,7 +64,7 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
     }
 
     /**
-     * Checks whether a non-null key exists in this map and has the provided value
+     * Checks whether a non-null key whatsappOldEligible in this map and has the provided value
      *
      * @param key   the non-null key
      * @param value the nullable value to check against
@@ -384,5 +383,26 @@ public record Attributes(@JsonValue ConcurrentHashMap<String, Object> toMap) {
      */
     public boolean isEmpty() {
         return toMap.isEmpty();
+    }
+
+    public Attributes putAll(Map<String, ?> map) {
+        return putAll(map.entrySet());
+    }
+
+    public Attributes putAll(Collection<? extends Entry<String, ?>> entries) {
+        for(var entry : entries) {
+            toMap.put(entry.getKey(), entry.getValue());
+        }
+
+        return this;
+    }
+
+    @SafeVarargs
+    public final Attributes putAll(Entry<String, ?>... entries) {
+        for(var entry : entries) {
+            toMap.put(entry.getKey(), entry.getValue());
+        }
+
+        return this;
     }
 }

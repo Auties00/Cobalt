@@ -22,6 +22,8 @@ import it.auties.whatsapp.util.Clock;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -84,12 +86,12 @@ public final class Keys extends Controller<Keys> {
     /**
      * The device id for the mobile api
      */
-    private final String deviceId;
+    private final byte[] deviceId;
 
     /**
-     * The identity id for the mobile api
+     * The recovery token for the mobile api
      */
-    private final String recoveryToken;
+    private final byte[] identityId;
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
@@ -152,7 +154,7 @@ public final class Keys extends Controller<Keys> {
     private byte[] writeKey, readKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Keys(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, String deviceId, String recoveryToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, Map<SessionAddress, Session> sessions, Map<Jid, Map<PatchType, CompanionHashState>> hashStates, Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    public Keys(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, byte[] deviceId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, Map<SessionAddress, Session> sessions, Map<Jid, Map<PatchType, CompanionHashState>> hashStates, Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         this.registrationId = registrationId;
         this.noiseKeyPair = noiseKeyPair;
@@ -165,7 +167,7 @@ public final class Keys extends Controller<Keys> {
         this.preKeys = preKeys;
         this.phoneId = phoneId;
         this.deviceId = deviceId;
-        this.recoveryToken = recoveryToken;
+        this.identityId = identityId;
         this.companionIdentity = companionIdentity;
         this.senderKeys = senderKeys;
         this.appStateKeys = appStateKeys;
@@ -289,10 +291,10 @@ public final class Keys extends Controller<Keys> {
     }
 
     /**
-     * Checks whether a session already exists for the given address
+     * Checks whether a session already whatsappOldEligible for the given address
      *
      * @param address the address to check
-     * @return true if a session for that address already exists
+     * @return true if a session for that address already whatsappOldEligible
      */
     public boolean hasSession(SessionAddress address) {
         return sessions.containsKey(address);
@@ -392,7 +394,7 @@ public final class Keys extends Controller<Keys> {
      * @return an integer
      */
     public int lastPreKeyId() {
-        return preKeys.isEmpty() ? 0 : preKeys.get(preKeys.size() - 1).id();
+        return preKeys.isEmpty() ? 0 : preKeys.getLast().id();
     }
 
     /**
@@ -500,12 +502,12 @@ public final class Keys extends Controller<Keys> {
         return this.phoneId;
     }
 
-    public String deviceId() {
+    public byte[] deviceId() {
         return this.deviceId;
     }
 
-    public String recoveryToken() {
-        return this.recoveryToken;
+    public byte[] identityId() {
+        return this.identityId;
     }
 
     public Map<SenderKeyName, SenderKeyRecord> senderKeys() {
@@ -599,5 +601,20 @@ public final class Keys extends Controller<Keys> {
     public Keys setReadKey(byte[] readKey) {
         this.readKey = readKey;
         return this;
+    }
+
+    /**
+     * Six part keys representation
+     *
+     * @return a string
+     */
+    @Override
+    public String toString() {
+        var cryptographicKeys = Stream.of(noiseKeyPair.publicKey(), noiseKeyPair.privateKey(), identityKeyPair.publicKey(), identityKeyPair.privateKey(), identityId())
+                .map(Base64.getEncoder()::encodeToString)
+                .collect(Collectors.joining(","));
+        return phoneNumber()
+                .map(phoneNumber -> phoneNumber + ","  + cryptographicKeys)
+                .orElse(cryptographicKeys);
     }
 }

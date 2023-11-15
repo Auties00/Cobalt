@@ -2,6 +2,7 @@ package it.auties.whatsapp.util;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 public final class Validate {
     public static void isTrue(boolean value, String message, Object... args) {
@@ -12,11 +13,20 @@ public final class Validate {
         isTrue(value, null, throwable);
     }
 
+    public static <T extends Throwable> void isTrue(boolean value, Supplier<T> throwableSupplier) throws T {
+        if (value) {
+            return;
+        }
+
+        throw throwableSupplier.get();
+    }
+
     @SuppressWarnings("unchecked")
     public static <T extends Throwable> void isTrue(boolean value, String message, Class<? extends Throwable> throwable, Object... args) throws T {
         if (value) {
             return;
         }
+
         throw (T) createThrowable(throwable, message == null ? null : message.formatted(args));
     }
 

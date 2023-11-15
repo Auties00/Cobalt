@@ -12,6 +12,7 @@ import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.setting.LocaleSettings;
@@ -397,8 +398,8 @@ class AppStateHandler {
     private void onSetting(Setting setting) {
         switch (setting) {
             case LocaleSettings localeSettings -> {
-                var oldLocale = socketHandler.store().locale().orElse(null);
-                socketHandler.updateLocale(localeSettings.locale(), oldLocale);
+                var oldLocale = socketHandler.store().locale();
+                socketHandler.updateLocale(CountryLocale.of(localeSettings.locale()), oldLocale.orElse(null));
             }
             case PushNameSettings pushNameSettings -> {
                 var oldName = socketHandler.store().name();

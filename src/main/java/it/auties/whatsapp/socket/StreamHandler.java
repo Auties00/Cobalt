@@ -56,7 +56,6 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
@@ -84,11 +83,12 @@ class StreamHandler {
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
     private ScheduledExecutorService service;
+    private CompletableFuture<Void> mediaConnectionFuture;
 
     protected StreamHandler(SocketHandler socketHandler, WebVerificationSupport webVerificationSupport) {
         this.socketHandler = socketHandler;
         this.webVerificationSupport = webVerificationSupport;
-        this.retries = new HashMap<>();
+        this.retries = new ConcurrentHashMap<>();
         this.lastLinkCodeKey = new AtomicReference<>();
     }
 
@@ -161,8 +161,7 @@ class StreamHandler {
 
             switch (message.get()) {
                 case ChatMessageInfo chatMessageInfo -> onChatReceipt(node, senderJid, chatMessageInfo);
-                case NewsletterMessageInfo newsletterMessageInfo ->
-                        onNewsletterReceipt(node, senderJid, newsletterMessageInfo);
+                case NewsletterMessageInfo newsletterMessageInfo -> onNewsletterReceipt(node, senderJid, newsletterMessageInfo);
                 default -> throw new IllegalStateException("Unexpected value: " + message.get());
             }
         }
@@ -207,10 +206,12 @@ class StreamHandler {
         if (!message.fromMe()) {
             return;
         }
+
         var attempts = retries.getOrDefault(message.id(), 0);
         if (attempts > MAX_ATTEMPTS) {
             return;
         }
+
         try {
             var all = message.senderJid().device() == 0;
             socketHandler.querySessionsForcefully(message.senderJid());
@@ -229,6 +230,7 @@ class StreamHandler {
         if (chat != null && participant != null && chat.participants().size() != container.size()) {
             return;
         }
+
         switch (status) {
             case READ -> message.receipt().readTimestampSeconds(Clock.nowSeconds());
             case PLAYED -> message.receipt().playedTimestampSeconds(Clock.nowSeconds());
@@ -449,7 +451,6 @@ class StreamHandler {
                 updatedMetadata.handle().or(oldMetadata::handle),
                 updatedMetadata.settings().or(oldMetadata::settings),
                 updatedMetadata.invite().or(oldMetadata::invite),
-                updatedMetadata.subscribers().isPresent() ? updatedMetadata.subscribers() : oldMetadata.subscribers(),
                 updatedMetadata.verification().or(oldMetadata::verification),
                 updatedMetadata.creationTimestampSeconds().isPresent() ? updatedMetadata.creationTimestampSeconds() : oldMetadata.creationTimestampSeconds()
         );
@@ -513,18 +514,20 @@ class StreamHandler {
         var identityPayload = BytesHelper.concat(companionSharedKey, identitySharedKey, random);
         var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
         socketHandler.keys().setCompanionKeyPair(new SignalKeyPair(advSecretPublicKey, socketHandler.keys().companionKeyPair().privateKey()));
-        var confirmation = Node.of("link_code_companion_reg",
+        var confirmation = Node.of(
+                "link_code_companion_reg",
                 Map.of("jid", phoneNumber, "stage", "companion_finish"),
                 Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
                 Node.of("companion_identity_public", socketHandler.keys().identityKeyPair().publicKey()),
-                Node.of("link_code_pairing_ref", ref));
+                Node.of("link_code_pairing_ref", ref)
+        );
         socketHandler.sendQuery("set", "md", confirmation);
     }
 
     private byte[] decipherLinkPublicKey(byte[] primaryEphemeralPublicKeyWrapped) {
         try {
             var salt = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 0, 32);
-            var secretKey = generatePairingKey(lastLinkCodeKey.get(), salt);
+            var secretKey = getSecretPairingKey(lastLinkCodeKey.get(), salt);
             var iv = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 32, 48);
             var payload = Arrays.copyOfRange(primaryEphemeralPublicKeyWrapped, 48, 80);
             var cipher = Cipher.getInstance("AES/CTR/NoPadding");
@@ -796,6 +799,10 @@ class StreamHandler {
     }
 
     private void handleServerSyncNotification(Node node) {
+        if(!socketHandler.keys().initialAppSync()) {
+            return;
+        }
+
         var patches = node.findNodes("collection")
                 .stream()
                 .map(entry -> entry.attributes().getRequiredString("name"))
@@ -942,7 +949,7 @@ class StreamHandler {
         var details = new BusinessVerifiedNameDetailsBuilder()
                 .name("")
                 .issuer("smb:wa")
-                .serial(Math.abs(new SecureRandom().nextLong()))
+                .serial(Math.abs(ThreadLocalRandom.current().nextLong()))
                 .build();
         var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
         var certificate = new BusinessVerifiedNameCertificateBuilder()
@@ -984,7 +991,7 @@ class StreamHandler {
                 .businessCategory()
                 .map(businessCategory -> CompletableFuture.completedFuture(Node.of("category", Map.of("id", businessCategory.id()))))
                 .orElseGet(() -> socketHandler.queryBusinessCategories()
-                        .thenApplyAsync(entries -> Node.of("category", Map.of("id", entries.get(0).id()))));
+                        .thenApplyAsync(entries -> Node.of("category", Map.of("id", entries.getFirst().id()))));
     }
 
     private void schedulePing() {
@@ -1028,7 +1035,7 @@ class StreamHandler {
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                     socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                    if (socketHandler.store().business()) {
+                    if (socketHandler.store().device().platform().isBusiness()) {
                         socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
                                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                     }
@@ -1047,7 +1054,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> checkBusinessStatus() {
-        if (!socketHandler.store().business() || socketHandler.keys().businessCertificate()) {
+        if (!socketHandler.store().device().platform().isBusiness() || socketHandler.keys().businessCertificate()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -1056,10 +1063,6 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryInitialPrivacySettings() {
-        if (socketHandler.store().business()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
         return socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
                 .thenComposeAsync(this::parsePrivacySettings);
     }
@@ -1184,12 +1187,14 @@ class StreamHandler {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return;
         }
+
         if (tries >= MAX_ATTEMPTS) {
             socketHandler.store().setMediaConnection(null);
             socketHandler.handleFailure(MEDIA_CONNECTION, error);
             scheduleMediaConnection(MEDIA_CONNECTION_DEFAULT_INTERVAL);
             return;
         }
+
         socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
                 .thenApplyAsync(node -> {
                     var mediaConnection = node.findNode("media_conn").orElse(node);
@@ -1216,7 +1221,7 @@ class StreamHandler {
 
     private void scheduleMediaConnection(int seconds) {
         var executor = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS);
-        CompletableFuture.runAsync(() -> createMediaConnection(0, null), executor);
+        this.mediaConnectionFuture = CompletableFuture.runAsync(() -> createMediaConnection(0, null), executor);
     }
 
     private void digestIq(Node node) {
@@ -1226,8 +1231,8 @@ class StreamHandler {
         }
 
         switch (container.description()) {
-            case "pair-device" -> generateQrCode(node, container);
-            case "pair-success" -> confirmQrCode(node, container);
+            case "pair-device" -> startPairing(node, container);
+            case "pair-success" -> confirmPairing(node, container);
         }
     }
 
@@ -1238,14 +1243,17 @@ class StreamHandler {
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        socketHandler.sendQuery("set", "encrypt",
+        socketHandler.sendQuery(
+                "set",
+                "encrypt",
                 Node.of("registration", socketHandler.keys().encodedRegistrationId()),
                 Node.of("type", KEY_BUNDLE_TYPE),
                 Node.of("identity", socketHandler.keys().identityKeyPair().publicKey()),
-                Node.of("list", preKeys), socketHandler.keys().signedKeyPair().toNode());
+                Node.of("list", preKeys), socketHandler.keys().signedKeyPair().toNode()
+        );
     }
 
-    private void generateQrCode(Node node, Node container) {
+    private void startPairing(Node node, Node container) {
         switch (webVerificationSupport) {
             case QrHandler qrHandler -> {
                 printQrCode(qrHandler, container);
@@ -1258,22 +1266,26 @@ class StreamHandler {
 
     private void askPairingCode(PairingCodeHandler codeHandler) {
         var code = BytesHelper.bytesToCrockford(BytesHelper.random(5));
-        var registration = Node.of("link_code_companion_reg",
+        var registration = Node.of(
+                "link_code_companion_reg",
                 Map.of("jid", getPhoneNumberAsJid(), "stage", "companion_hello", "should_show_push_notification", true),
                 Node.of("link_code_pairing_wrapped_companion_ephemeral_pub", cipherLinkPublicKey(code)),
                 Node.of("companion_server_auth_key_pub", socketHandler.keys().noiseKeyPair().publicKey()),
                 Node.of("companion_platform_id", 49),
-                Node.of("companion_platform_display", "Chrome (Linux)"),
-                Node.of("link_code_pairing_nonce", 0));
-        socketHandler.sendQuery("set", "md", registration)
-                .thenAcceptAsync(result -> onAskedPairingCode(codeHandler, code));
+                Node.of("companion_platform_display", "Chrome (Linux)".getBytes(StandardCharsets.UTF_8)),
+                Node.of("link_code_pairing_nonce", 0)
+        );
+        socketHandler.sendQuery("set", "md", registration).thenAccept(result -> {
+            lastLinkCodeKey.set(code);
+            codeHandler.accept(code);
+        });
     }
 
     private byte[] cipherLinkPublicKey(String linkCodeKey) {
         try {
             var salt = BytesHelper.random(32);
             var randomIv = BytesHelper.random(16);
-            var secretKey = generatePairingKey(linkCodeKey, salt);
+            var secretKey = getSecretPairingKey(linkCodeKey, salt);
             var cipher = Cipher.getInstance("AES/CTR/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(randomIv));
             var ciphered = cipher.doFinal(socketHandler.keys().companionKeyPair().publicKey());
@@ -1283,11 +1295,6 @@ class StreamHandler {
         }
     }
 
-    private void onAskedPairingCode(PairingCodeHandler codeHandler, String code) {
-        lastLinkCodeKey.set(code);
-        codeHandler.accept(code);
-    }
-
     private Jid getPhoneNumberAsJid() {
         return socketHandler.store()
                 .phoneNumber()
@@ -1295,10 +1302,10 @@ class StreamHandler {
                 .orElseThrow(() -> new IllegalArgumentException("Missing phone number while registering via OTP"));
     }
 
-    private SecretKey generatePairingKey(String password, byte[] salt) {
+    private SecretKey getSecretPairingKey(String pairingKey, byte[] salt) {
         try {
             var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-            var spec = new PBEKeySpec(password.toCharArray(), salt, 2 << 16, 256);
+            var spec = new PBEKeySpec(pairingKey.toCharArray(), salt, 2 << 16, 256);
             var tmp = factory.generateSecret(spec);
             return new SecretKeySpec(tmp.getEncoded(), "AES");
         } catch (GeneralSecurityException exception) {
@@ -1321,7 +1328,7 @@ class StreamHandler {
         qrHandler.accept(qr);
     }
 
-    private void confirmQrCode(Node node, Node container) {
+    private void confirmPairing(Node node, Node container) {
         saveCompanion(container);
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
@@ -1355,8 +1362,14 @@ class StreamHandler {
                 .build();
         var keyIndex = DeviceIdentitySpec.decode(result.details()).keyIndex();
         var outgoingDeviceIdentity = SignedDeviceIdentitySpec.encode(new SignedDeviceIdentity(result.details(), null, result.accountSignature(), result.deviceSignature()));
-        var devicePairNode = Node.of("pair-device-sign",
-                Node.of("device-identity", Map.of("key-index", keyIndex), outgoingDeviceIdentity));
+        var devicePairNode = Node.of(
+                "pair-device-sign",
+                Node.of(
+                        "device-identity",
+                        Map.of("key-index", keyIndex),
+                        outgoingDeviceIdentity
+                )
+        );
         socketHandler.keys().companionIdentity(result);
         sendConfirmNode(node, devicePairNode);
     }
@@ -1380,20 +1393,14 @@ class StreamHandler {
         socketHandler.store().setJid(companion);
         socketHandler.store().setPhoneNumber(PhoneNumber.of(companion.user()));
         socketHandler.markConnected();
-        var companionOs = container.findNode("platform")
-                .map(entry -> entry.attributes().getNullableString("name"))
-                .map(this::getCompanionOs)
-                .orElseThrow(() -> new NoSuchElementException("Unknown platform: " + container));
-        socketHandler.store().setCompanionDeviceOs(companionOs);
-        socketHandler.store().setBusiness(companionOs == PlatformType.SMB_ANDROID || companionOs == PlatformType.SMB_IOS);
         var me = new Contact(companion.withoutDevice(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
         socketHandler.store().addContact(me);
     }
 
     private UserAgent.PlatformType getCompanionOs(String name) {
         return switch (name.toLowerCase()) {
-            case "smba" -> UserAgent.PlatformType.SMB_ANDROID;
-            case "smbi" -> UserAgent.PlatformType.SMB_IOS;
+            case "smba" -> UserAgent.PlatformType.ANDROID_BUSINESS;
+            case "smbi" -> UserAgent.PlatformType.IOS_BUSINESS;
             case "android" -> PlatformType.ANDROID;
             case "iphone", "ipad", "ios" -> UserAgent.PlatformType.IOS;
             default -> UserAgent.PlatformType.UNKNOWN;
@@ -1401,6 +1408,10 @@ class StreamHandler {
     }
 
     protected void dispose() {
+        if(mediaConnectionFuture != null) {
+            mediaConnectionFuture.cancel(true);
+        }
+
         retries.clear();
         if (service != null) {
             service.shutdownNow();

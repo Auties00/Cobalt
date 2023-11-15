@@ -8,6 +8,8 @@ public enum VerificationCodeStatus {
 
     @JsonCreator
     public static VerificationCodeStatus of(String name) {
-        return name.equalsIgnoreCase("ok") || name.equalsIgnoreCase("sent") ? SUCCESS : ERROR;
+        return name.equalsIgnoreCase("ok")
+                || name.equalsIgnoreCase("sent")
+                || name.equalsIgnoreCase("verified") ? SUCCESS : ERROR;
     }
 }

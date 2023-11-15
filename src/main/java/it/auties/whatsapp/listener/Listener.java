@@ -14,6 +14,7 @@ import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.QuotedMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -531,7 +532,7 @@ public interface Listener {
      * @param oldLocale the non-null old locale
      * @param newLocale the non-null new picture
      */
-    default void onLocaleChanged(String oldLocale, String newLocale) {
+    default void onLocaleChanged(CountryLocale oldLocale, CountryLocale newLocale) {
     }
 
     /**
@@ -541,7 +542,7 @@ public interface Listener {
      * @param oldLocale the non-null old locale
      * @param newLocale the non-null new picture
      */
-    default void onLocaleChanged(Whatsapp whatsapp, String oldLocale, String newLocale) {
+    default void onLocaleChanged(Whatsapp whatsapp, CountryLocale oldLocale, CountryLocale newLocale) {
     }
 
     /**

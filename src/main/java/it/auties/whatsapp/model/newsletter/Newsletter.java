@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
-import it.auties.whatsapp.util.Messages;
+import it.auties.whatsapp.util.ConcurrentDoublyLinkedHashedDequeue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -17,7 +17,7 @@ public final class Newsletter implements JidProvider {
     private NewsletterState state;
     private NewsletterMetadata metadata;
     private final NewsletterViewerMetadata viewerMetadata;
-    private final Messages<NewsletterMessageInfo> messages;
+    private final ConcurrentDoublyLinkedHashedDequeue<NewsletterMessageInfo> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     Newsletter(
@@ -30,13 +30,13 @@ public final class Newsletter implements JidProvider {
             @JsonProperty("viewer_metadata")
             NewsletterViewerMetadata viewerMetadata,
             @JsonProperty("messages")
-            Messages<NewsletterMessageInfo> messages
+            ConcurrentDoublyLinkedHashedDequeue<NewsletterMessageInfo> messages
     ) {
         this.jid = jid;
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = Objects.requireNonNullElseGet(messages, Messages::new);
+        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentDoublyLinkedHashedDequeue::new);
     }
 
     public Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata) {
@@ -44,7 +44,7 @@ public final class Newsletter implements JidProvider {
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = new Messages<>();
+        this.messages = new ConcurrentDoublyLinkedHashedDequeue<>();
     }
 
     public void addMessage(NewsletterMessageInfo message) {

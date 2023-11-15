@@ -74,7 +74,7 @@ import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -134,7 +134,7 @@ public class Whatsapp {
         return SocketHandler.isConnected(alias);
     }
 
-    protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, Executor socketExecutor) {
+    protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, ExecutorService socketExecutor) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationSupport, socketExecutor);
         store.addListener((OnDisconnected) (reason) -> {
             if (reason != DisconnectReason.RECONNECTING) {
@@ -430,29 +430,19 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<? extends MessageInfo> sendMessage(JidProvider recipient, MessageContainer message) {
-        if (recipient.toJid().server() == JidServer.NEWSLETTER) {
-            var newsletter = store().findNewsletterByJid(recipient);
-            if (newsletter.isEmpty()) {
-                return CompletableFuture.failedFuture(new IllegalArgumentException("Cannot send a message in a newsletter that you didn't join"));
-            }
+        return recipient.toJid().server() == JidServer.NEWSLETTER ? sendNewsletterMessage(recipient, message) : sendChatMessage(recipient, message);
+    }
 
-            var oldServerId = newsletter.get()
-                    .newestMessage()
-                    .map(NewsletterMessageInfo::serverId)
-                    .orElse(0);
-            var info = new NewsletterMessageInfo(
-                    newsletter.get(),
-                    ChatMessageKey.randomId(),
-                    oldServerId + 1,
-                    Clock.nowSeconds(),
-                    null,
-                    new ConcurrentHashMap<>(),
-                    message,
-                    MessageStatus.PENDING
-            );
-            return sendMessage(info);
-        }
 
+    /**
+     * Builds and sends a message from a recipient and a message
+     *
+     * @param recipient the recipient where the message should be sent
+     * @param message   the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message) {
+        Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var key = new ChatMessageKeyBuilder()
                 .id(ChatMessageKey.randomId())
                 .chatJid(recipient.toJid())
@@ -467,6 +457,34 @@ public class Whatsapp {
                 .timestampSeconds(Clock.nowSeconds())
                 .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                 .build();
+        return sendMessage(info);
+    }
+
+
+    /**
+     * Builds and sends a message from a recipient and a message
+     *
+     * @param recipient the recipient where the message should be sent
+     * @param message   the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<NewsletterMessageInfo> sendNewsletterMessage(JidProvider recipient, MessageContainer message) {
+        var newsletter = store().findNewsletterByJid(recipient);
+        Validate.isTrue(newsletter.isPresent(), "Cannot send a message in a newsletter that you didn't join");
+        var oldServerId = newsletter.get()
+                .newestMessage()
+                .map(NewsletterMessageInfo::serverId)
+                .orElse(0);
+        var info = new NewsletterMessageInfo(
+                newsletter.get(),
+                ChatMessageKey.randomId(),
+                oldServerId + 1,
+                Clock.nowSeconds(),
+                null,
+                new ConcurrentHashMap<>(),
+                message,
+                MessageStatus.PENDING
+        );
         return sendMessage(info);
     }
 
@@ -750,7 +768,7 @@ public class Whatsapp {
     }
 
     /**
-     * Queries a business profile, if any exists
+     * Queries a business profile, if available
      *
      * @param contact the target contact
      * @return a CompletableFuture
@@ -1043,8 +1061,14 @@ public class Whatsapp {
      * @param policy  the non-null policy
      * @return a future
      */
-    public CompletableFuture<Void> changeGroupSetting(JidProvider group, GroupSetting setting, GroupSettingPolicy policy) {
-        var body = Node.of(policy != GroupSettingPolicy.ANYONE ? setting.on() : setting.off());
+    public CompletableFuture<Void> changeGroupSetting(JidProvider group, GroupSetting setting, ChatSettingPolicy policy) {
+        Validate.isTrue(group.toJid().hasServer(JidServer.GROUP), "This method only accepts groups");
+        var body = switch (setting) {
+            case EDIT_GROUP_INFO -> Node.of(policy == ChatSettingPolicy.ADMINS ? "locked" : "unlocked");
+            case SEND_MESSAGES -> Node.of(policy == ChatSettingPolicy.ADMINS ? "announcement" : "not_announcement");
+            case ADD_PARTICIPANTS -> Node.of("member_add_mode", policy == ChatSettingPolicy.ADMINS ? "admin_add".getBytes(StandardCharsets.UTF_8) : "all_member_add".getBytes(StandardCharsets.UTF_8));
+            case APPROVE_PARTICIPANTS -> Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", policy == ChatSettingPolicy.ADMINS ? "on" : "off")));
+        };
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
                 .thenRun(() -> {});
     }
@@ -1983,9 +2007,12 @@ public class Whatsapp {
      * @param policy    the non-null policy
      * @return a future
      */
-    public CompletableFuture<Void> changeCommunitySetting(JidProvider community, CommunitySetting setting, GroupSettingPolicy policy) {
-        var tag = policy == GroupSettingPolicy.ANYONE ? setting.on() : setting.off();
-        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", Node.of(tag))
+    public CompletableFuture<Void> changeCommunitySetting(JidProvider community, CommunitySetting setting, ChatSettingPolicy policy) {
+        Validate.isTrue(community.toJid().hasServer(JidServer.GROUP), "This method only accepts communities");
+        var body = switch (setting) {
+            case MODIFY_GROUPS -> Node.of(policy == ChatSettingPolicy.ANYONE ? "allow_non_admin_sub_group_creation" : "not_allow_non_admin_sub_group_creation");
+        };
+        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body)
                 .thenRun(() -> {});
     }
 
@@ -2219,18 +2246,12 @@ public class Whatsapp {
     }
 
     private PatchEntry createLocaleEntry() {
-        var localeSetting = new LocaleSettings(store().locale().orElse("en-US"));
+        var localeSetting = new LocaleSettings(store().locale().toString());
         return PatchEntry.of(ActionValueSync.of(localeSetting), Operation.SET);
     }
 
     private PatchEntry createAndroidEntry() {
-        var device = store().device();
-        if (device.isEmpty()) {
-            return null;
-        }
-
-        var osType = device.get().platform();
-        if (osType != UserAgent.PlatformType.ANDROID && osType != UserAgent.PlatformType.SMB_ANDROID) {
+        if (!store().device().platform().isAndroid()) {
             return null;
         }
 
@@ -2995,16 +3016,6 @@ public class Whatsapp {
      */
     public Whatsapp addChatMessagesSyncListener(OnWhatsappChatMessagesSync onChatRecentMessages) {
         return addListener(onChatRecentMessages);
-    }
-
-    /**
-     * Registers a chats listener
-     *
-     * @param onChats the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addChatsListener(OnChatMessagesSync onChats) {
-        return addListener(onChats);
     }
 
     /**

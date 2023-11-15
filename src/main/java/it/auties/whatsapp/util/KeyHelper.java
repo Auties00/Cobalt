@@ -3,8 +3,6 @@ package it.auties.whatsapp.util;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -61,12 +59,12 @@ public final class KeyHelper {
         }
     }
 
-    public static String identityId() {
-        return HexFormat.of().formatHex(BytesHelper.random(20));
+    public static byte[] identityId() {
+        return BytesHelper.random(20);
     }
 
-    public static String deviceId() {
-        return Base64.getUrlEncoder().encodeToString(BytesHelper.random(16));
+    public static byte[] deviceId() {
+        return BytesHelper.random(16);
     }
 
     public static String phoneId() {

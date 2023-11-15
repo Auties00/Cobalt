@@ -71,6 +71,22 @@ public final class Json {
         }
     }
 
+    public static <T> T readValue(byte[] value, Class<T> clazz) {
+        try {
+            return json.readValue(value, clazz);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot read json", exception);
+        }
+    }
+
+    public static <T> T readValue(byte[] value, TypeReference<T> clazz) {
+        try {
+            return json.readValue(value, clazz);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot read json", exception);
+        }
+    }
+
     public static <T> T readValue(String value, Class<T> clazz) {
         try {
             return json.readValue(value, clazz);

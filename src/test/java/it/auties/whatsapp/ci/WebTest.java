@@ -272,7 +272,6 @@ public class WebTest implements Listener {
 
     @Test
     @Order(9)
-    @Disabled
     public void testClearChat() {
         if (skip) {
             return;
@@ -284,7 +283,6 @@ public class WebTest implements Listener {
 
     @Test
     @Order(10)
-    @Disabled
     public void testDeleteChat() {
         if (skip) {
             return;
@@ -390,7 +388,6 @@ public class WebTest implements Listener {
     }
 
     @Test
-    @Disabled
     @Order(15)
     public void testRemoveGroupParticipant() {
         if (skip) {
@@ -405,7 +402,6 @@ public class WebTest implements Listener {
     }
 
     @Test
-    @Disabled
     @Order(16)
     public void testAddGroupParticipant() {
         if (skip) {
@@ -420,7 +416,6 @@ public class WebTest implements Listener {
     }
 
     @Test
-    @Disabled
     @Order(17)
     public void testPromotion() {
         if (skip) {
@@ -435,7 +430,6 @@ public class WebTest implements Listener {
     }
 
     @Test
-    @Disabled
     @Order(18)
     public void testDemotion() {
         if (skip) {
@@ -459,10 +453,10 @@ public class WebTest implements Listener {
             testGroupCreation();
         }
         for(var setting : GroupSetting.values()) {
-            for (var policy : GroupSettingPolicy.values()) {
-                log("Changing settings to %s...", policy.name());
+            for (var policy : ChatSettingPolicy.values()) {
+                log("Changing setting %s to %s...", setting.name(), policy.name());
                 api.changeGroupSetting(group, setting, policy).join();
-                log("Changed settings to %s", policy.name());
+                log("Changed setting %s to %s", setting.name(), policy.name());
             }
         }
     }
@@ -919,6 +913,7 @@ public class WebTest implements Listener {
     @Override
     public void onDisconnected(DisconnectReason reason) {
         System.out.printf("Disconnected: %s%n", reason);
+        Assertions.assertNotSame(reason, DisconnectReason.LOGGED_OUT);
     }
 
     @Override

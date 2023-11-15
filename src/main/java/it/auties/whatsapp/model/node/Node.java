@@ -235,9 +235,9 @@ public record Node(String description, Attributes attributes, Object content) {
     }
 
     /**
-     * Checks whether the child node with the given description exists
+     * Checks whether the child node with the given description whatsappOldEligible
      *
-     * @return true if a child node with the given description exists
+     * @return true if a child node with the given description whatsappOldEligible
      */
     public boolean hasNode(String description) {
         return children().stream().anyMatch(node -> Objects.equals(node.description(), description));
@@ -301,7 +301,7 @@ public record Node(String description, Attributes attributes, Object content) {
     }
 
     /**
-     * Asserts that a child node with the provided description exists
+     * Asserts that a child node with the provided description whatsappOldEligible
      */
     public void assertNode(String description, Supplier<String> error) {
         findNode(description).orElseThrow(() -> new NoSuchElementException(error.get()));

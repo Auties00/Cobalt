@@ -5,14 +5,14 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.util.Validate;
 
 import java.util.Objects;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 public class WhatsappCustomBuilder {
     private Store store;
     private Keys keys;
     private ErrorHandler errorHandler;
     private WebVerificationSupport webVerificationSupport;
-    private Executor socketExecutor;
+    private ExecutorService socketExecutor;
 
     WhatsappCustomBuilder() {
 
@@ -38,7 +38,7 @@ public class WhatsappCustomBuilder {
         return this;
     }
 
-    public WhatsappCustomBuilder socketExecutor(Executor socketExecutor) {
+    public WhatsappCustomBuilder socketExecutor(ExecutorService socketExecutor) {
         this.socketExecutor = socketExecutor;
         return this;
     }

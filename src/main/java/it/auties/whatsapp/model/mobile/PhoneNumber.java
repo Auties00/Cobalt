@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.mobile;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import it.auties.whatsapp.model.jid.Jid;
 
@@ -27,7 +26,7 @@ public record PhoneNumber(CountryCode countryCode, long numberWithoutPrefix) {
             return CountryCode.ofPrefix(String.valueOf(parsed.getCountryCode()))
                     .map(countryCode -> new PhoneNumber(countryCode, parsed.getNationalNumber()))
                     .orElseThrow(() -> new IllegalArgumentException("Cannot parse phone number %s".formatted(phoneNumber)));
-        } catch (NumberFormatException | NumberParseException exception) {
+        } catch (Throwable exception) {
             throw new IllegalArgumentException("Cannot parse phone number %s".formatted(phoneNumber), exception);
         }
     }

@@ -4,10 +4,10 @@ import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.CountryCode;
+import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.DNSSource.ResolutionMethod;
-import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Specification;
@@ -91,19 +91,18 @@ class AuthHandler {
 
     private UserAgent createUserAgent() {
         var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
-        var device = socketHandler.store().device();
         return new UserAgentBuilder()
                 .appVersion(socketHandler.store().version())
-                .platform(getUserAgentPlatform(mobile))
+                .platform(socketHandler.store().device().platform())
                 .releaseChannel(socketHandler.store().releaseChannel())
                 .mcc(getDeviceMcc(mobile))
-                .mnc(getDeviceMnc(mobile))
-                .osVersion(mobile ? device.orElseThrow().osVersion().toString() : null)
-                .manufacturer(mobile ? device.orElseThrow().manufacturer() : null)
-                .device(mobile ? device.orElseThrow().model() : null)
-                .osBuildNumber(mobile ? device.orElseThrow().osVersion().toString() : null)
-                .localeLanguageIso6391("en")
-                .localeCountryIso31661Alpha2("US")
+                .mnc("000")
+                .osVersion(mobile ? socketHandler.store().device().version() : null)
+                .manufacturer(mobile ? socketHandler.store().device().manufacturer() : null)
+                .device(mobile ? socketHandler.store().device().model() : null)
+                .osBuildNumber(mobile ? socketHandler.store().device().version() : null)
+                .localeLanguageIso6391(socketHandler.store().locale().map(CountryLocale::languageValue).orElse("en"))
+                .localeCountryIso31661Alpha2(socketHandler.store().locale().map(CountryLocale::languageCode).orElse("US"))
                 .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .build();
     }
@@ -117,31 +116,7 @@ class AuthHandler {
                 .phoneNumber()
                 .map(PhoneNumber::countryCode)
                 .map(CountryCode::mcc)
-                .map(Object::toString)
                 .orElse("000");
-    }
-
-    private String getDeviceMnc(boolean mobile) {
-        if (!mobile) {
-            return "000";
-        }
-
-        return socketHandler.store()
-                .phoneNumber()
-                .map(PhoneNumber::countryCode)
-                .map(CountryCode::mnc)
-                .orElse("000");
-    }
-
-    private PlatformType getUserAgentPlatform(boolean mobile) {
-        if (!mobile) {
-            return PlatformType.WEB;
-        }
-
-        var device = socketHandler.store()
-                .device()
-                .orElseThrow();
-        return socketHandler.store().business() ? device.businessPlatform() : device.platform();
     }
 
     private ClientPayload createUserClientPayload() {

@@ -28,7 +28,10 @@ public enum VerificationCodeError {
     WRONG_CODE("mismatch"),
     OLD_VERSION("old_version"),
     CAPTCHA("code_checkpoint"),
-    INVALID_SIGNED_KEY("invalid_skey");
+    INVALID_SIGNED_KEY("invalid_skey"),
+    FORMAT_WRONG("format_wrong"),
+    INCORRECT("incorrect"),
+    SUCCESS("");
 
     private final String data;
 

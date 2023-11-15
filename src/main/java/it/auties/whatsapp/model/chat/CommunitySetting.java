@@ -5,23 +5,7 @@ package it.auties.whatsapp.model.chat;
  */
 public enum CommunitySetting {
     /**
-     * Who can edit the metadata of a group
+     * Who can add and remove groups from a community
      */
-    ADD_GROUPS("allow_non_admin_sub_group_creation", "not_allow_non_admin_sub_group_creation");
-
-    private final String on;
-    private final String off;
-
-    CommunitySetting(String on, String off) {
-        this.on = on;
-        this.off = off;
-    }
-
-    public String on() {
-        return this.on;
-    }
-
-    public String off() {
-        return this.off;
-    }
+    MODIFY_GROUPS
 }

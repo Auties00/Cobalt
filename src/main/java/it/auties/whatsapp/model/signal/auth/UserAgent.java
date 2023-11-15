@@ -29,33 +29,12 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
         UNKNOWN(999),
         ANDROID(0),
         IOS(1),
-        WINDOWS_PHONE(2),
-        BLACKBERRY(3),
-        BLACKBERRYX(4),
-        S40(5),
-        S60(6),
-        PYTHON_CLIENT(7),
-        TIZEN(8),
-        ENTERPRISE(9),
-        SMB_ANDROID(10),
+        ANDROID_BUSINESS(10),
         KAIOS(11),
-        SMB_IOS(12),
+        IOS_BUSINESS(12),
         WINDOWS(13),
-        WEB(14),
-        PORTAL(15),
-        GREEN_ANDROID(16),
-        GREEN_IPHONE(17),
-        BLUE_ANDROID(18),
-        BLUE_IPHONE(19),
-        FBLITE_ANDROID(20),
-        MLITE_ANDROID(21),
-        IGLITE_ANDROID(22),
-        PAGE(23),
         MACOS(24),
-        OCULUS_MSG(25),
-        OCULUS_CALL(26),
-        MILAN(27),
-        CAPI(28);
+        WEB(14);
 
         PlatformType(@ProtobufEnumIndex int index) {
             this.index = index;
@@ -67,14 +46,29 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
             return this.index;
         }
 
+        public boolean isWeb() {
+            return this == WEB;
+        }
+
+        public boolean isAndroid() {
+            return this == ANDROID || this == ANDROID_BUSINESS;
+        }
+
+        public boolean isIOS() {
+            return this == IOS || this == IOS_BUSINESS;
+        }
+
         public boolean isBusiness() {
-            return this == SMB_ANDROID || this == SMB_IOS || this == ENTERPRISE;
+            return this == ANDROID_BUSINESS || this == IOS_BUSINESS;
+        }
+
+        public boolean isKaiOs() {
+            return this == KAIOS;
         }
     }
 
     @ProtobufMessageName("ClientPayload.UserAgent.ReleaseChannel")
     public enum ReleaseChannel implements ProtobufEnum {
-
         RELEASE(0),
         BETA(1),
         ALPHA(2),

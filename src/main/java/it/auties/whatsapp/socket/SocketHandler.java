@@ -22,6 +22,7 @@ import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
+import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Attributes;
@@ -52,7 +53,7 @@ import static it.auties.whatsapp.model.chat.GroupSetting.*;
 
 @SuppressWarnings("unused")
 public class SocketHandler implements SocketListener {
-    private static final Executor DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : runnable -> new Thread(runnable).start();
+    private static final ExecutorService DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : Executors.newSingleThreadExecutor();
 
     private static final Set<UUID> connectedUuids = ConcurrentHashMap.newKeySet();
     private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
@@ -72,7 +73,7 @@ public class SocketHandler implements SocketListener {
 
     private final ErrorHandler errorHandler;
 
-    private final Executor socketExecutor;
+    private final ExecutorService socketExecutor;
 
     private volatile SocketState state;
 
@@ -96,7 +97,7 @@ public class SocketHandler implements SocketListener {
         return connectedAlias.contains(id);
     }
 
-    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, Executor socketExecutor) {
+    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, ExecutorService socketExecutor) {
         this.whatsapp = whatsapp;
         this.store = store;
         this.keys = keys;
@@ -128,7 +129,8 @@ public class SocketHandler implements SocketListener {
 
     private void callListenersAsync(Consumer<Listener> consumer) {
         var service = getOrCreateListenersService();
-        store.listeners().forEach(listener -> service.execute(() -> invokeListenerSafe(consumer, listener)));
+        store.listeners()
+                .forEach(listener -> service.execute(() -> invokeListenerSafe(consumer, listener)));
     }
 
     @Override
@@ -553,10 +555,10 @@ public class SocketHandler implements SocketListener {
                 .orElse(0L);
         var founder = node.attributes()
                 .getOptionalJid("creator");
-        var policies = new HashMap<GroupSetting, GroupSettingPolicy>();
-        policies.put(SEND_MESSAGES, GroupSettingPolicy.of(node.hasNode("restrict")));
-        policies.put(EDIT_GROUP_INFO, GroupSettingPolicy.of(node.hasNode("announce")));
-        policies.put(APPROVE_NEW_PARTICIPANTS, GroupSettingPolicy.of(node.hasNode("membership_approval_mode")));
+        var policies = new HashMap<GroupSetting, ChatSettingPolicy>();
+        policies.put(SEND_MESSAGES, ChatSettingPolicy.of(node.hasNode("restrict")));
+        policies.put(EDIT_GROUP_INFO, ChatSettingPolicy.of(node.hasNode("announce")));
+        policies.put(APPROVE_PARTICIPANTS, ChatSettingPolicy.of(node.hasNode("membership_approval_mode")));
         var description = node.findNode("description")
                 .flatMap(parent -> parent.findNode("body"))
                 .flatMap(Node::contentAsString);
@@ -873,7 +875,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public void updateLocale(String newLocale, String oldLocale) {
+    public void updateLocale(CountryLocale newLocale, CountryLocale oldLocale) {
         if (!Objects.equals(newLocale, oldLocale)) {
             return;
         }
@@ -883,7 +885,7 @@ public class SocketHandler implements SocketListener {
         store().setLocale(newLocale);
     }
 
-    private void onUserLocaleChanged(String newLocale, String oldLocale) {
+    private void onUserLocaleChanged(CountryLocale newLocale, CountryLocale oldLocale) {
         callListenersAsync(listener -> {
             listener.onLocaleChanged(whatsapp, oldLocale, newLocale);
             listener.onLocaleChanged(oldLocale, newLocale);

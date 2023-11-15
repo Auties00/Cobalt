@@ -109,18 +109,13 @@ class MessageHandler {
                 })
                 .exceptionallyAsync(throwable -> {
                     request.info().setStatus(MessageStatus.ERROR);
+                    saveMessage(request.info(), false);
                     return socketHandler.handleFailure(MESSAGE, throwable);
                 });
     }
 
     private CompletableFuture<Void> prepareOutgoingChatMessage(MessageInfo messageInfo) {
-        if(messageInfo instanceof ChatMessageInfo chatMessageInfo) {
-            attributeChatMessage(chatMessageInfo);
-            fixChatMessageKey(chatMessageInfo);
-            fixEphemeralMessage(chatMessageInfo);
-        }
-
-        return switch (messageInfo.message().content()) {
+        var result = switch (messageInfo.message().content()) {
             case ExtendedMediaMessage<?> mediaMessage -> attributeMediaMessage(messageInfo.parentJid(), mediaMessage);
             case ButtonMessage buttonMessage -> attributeButtonMessage(messageInfo.parentJid(), buttonMessage);
             case TextMessage textMessage -> attributeTextMessage(textMessage);
@@ -128,8 +123,14 @@ class MessageHandler {
                     attributePollCreationMessage(pollCreationInfo, pollCreationMessage);
             case PollUpdateMessage pollUpdateMessage when messageInfo instanceof ChatMessageInfo pollUpdateInfo // I guess they will be supported some day in newsletters
                     -> attributePollUpdateMessage(pollUpdateInfo, pollUpdateMessage);
-            default -> CompletableFuture.completedFuture(null);
+            default -> CompletableFuture.<Void>completedFuture(null);
         };
+        if(messageInfo instanceof ChatMessageInfo chatMessageInfo) {
+            attributeChatMessage(chatMessageInfo);
+            fixChatMessageKey(chatMessageInfo);
+            fixEphemeralMessage(chatMessageInfo);
+        }
+        return result;
     }
 
     private void fixChatMessageKey(ChatMessageInfo chatMessageInfo) {
@@ -258,11 +259,16 @@ class MessageHandler {
                 .orElseGet(KeyHelper::senderKey);
         pollCreationMessage.setEncryptionKey(pollEncryptionKey);
         info.setMessageSecret(pollEncryptionKey);
-        info.message()
-                .deviceInfo()
-                .ifPresent(deviceContextInfo -> deviceContextInfo.setMessageSecret(pollEncryptionKey));
         var metadata = new PollAdditionalMetadata(false);
         info.setPollAdditionalMetadata(metadata);
+        info.message().deviceInfo().ifPresentOrElse(deviceInfo -> deviceInfo.setMessageSecret(pollEncryptionKey), () -> {
+            var deviceInfo = new DeviceContextInfoBuilder()
+                    .deviceListMetadataVersion(2)
+                    .messageSecret(pollEncryptionKey)
+                    .build();
+            var message = info.message().withDeviceInfo(deviceInfo);
+            info.setMessage(message);
+        });
         return CompletableFuture.completedFuture(null);
     }
 
@@ -271,7 +277,6 @@ class MessageHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        var iv = BytesHelper.random(12);
         var me = socketHandler.store().jid();
         if (me.isEmpty()) {
             return CompletableFuture.completedFuture(null);
@@ -298,6 +303,7 @@ class MessageHandler {
         var encryptionKey = originalPollMessage.encryptionKey()
                 .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
         var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
+        var iv = BytesHelper.random(12);
         var pollUpdateEncryptedPayload = AesGcm.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
         var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadata(pollUpdateEncryptedPayload, iv);
         pollUpdateMessage.setEncryptedMetadata(pollUpdateEncryptedMetadata);
@@ -482,7 +488,7 @@ class MessageHandler {
         var attributes = Attributes.ofNullable(request.additionalAttributes())
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
-                .put("t", request.info().timestampSeconds(), !request.peer())
+                .put("t", request.info().timestampSeconds().orElseGet(Clock::nowSeconds), !request.peer())
                 .put("type", "text")
                 .put("category", "peer", request::peer)
                 .put("duration", "900", request.info().message().type() == MessageType.LIVE_LOCATION)
@@ -1017,11 +1023,8 @@ class MessageHandler {
             return;
         }
 
-        var chat = info.chat().orElse(null);
-        if (chat == null) {
-            return;
-        }
-
+        var chat = info.chat()
+                .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
         var result = chat.addNewMessage(info);
         if (!result || info.timestampSeconds().orElse(0L) <= socketHandler.store().initializationTimeStamp()) {
             return;

@@ -36,7 +36,7 @@ public final class ChatMessageKey implements ProtobufMessage {
     public ChatMessageKey(Jid chatJid, boolean fromMe, String id, Jid senderJid) {
         this.chatJid = chatJid;
         this.fromMe = fromMe;
-        this.id = Objects.requireNonNull(id, ChatMessageKey::randomId);
+        this.id = Objects.requireNonNullElseGet(id, ChatMessageKey::randomId);
         this.senderJid = senderJid;
     }
 

@@ -405,7 +405,7 @@ public class RunMobileCITest implements Listener {
             testGroupCreation();
         }
         for(var setting : GroupSetting.values()) {
-            for (var policy : GroupSettingPolicy.values()) {
+            for (var policy : ChatSettingPolicy.values()) {
                 log("Changing settings to %s...", policy.name());
                 api.changeGroupSetting(group, setting, policy).join();
                 log("Changed settings to %s", policy.name());

@@ -1,10 +1,20 @@
-package it.auties.whatsapp.util;
+package it.auties.whatsapp.registration;
 
+import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.MD5;
+import it.auties.whatsapp.crypto.Sha256;
+import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
+import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
+import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
+import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
 import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.ApkSigner;
@@ -27,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.time.Instant;
@@ -36,7 +47,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-public final class MetadataHelper {
+public final class TokenProvider {
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
@@ -61,19 +72,18 @@ public final class MetadataHelper {
         return getVersion(platform, true);
     }
 
-    public static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform, boolean useJarCache) {
+    private static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform, boolean useJarCache) {
         return switch (platform) {
-            case WEB, WINDOWS, MACOS -> getWebVersion();
-            case ANDROID -> getAndroidData(platform.isBusiness(), useJarCache)
-                    .thenApply(WhatsappApk::version);
-            case IOS ->
-                    CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_IOS_VERSION); // Fetching the latest ios version is harder than one might hope
+            case WEB, WINDOWS, MACOS ->
+                    getWebVersion();
+            case ANDROID, ANDROID_BUSINESS ->
+                    getAndroidData(platform.isBusiness(), useJarCache).thenApply(WhatsappApk::version);
+            case IOS, IOS_BUSINESS ->
+                    CompletableFuture.completedFuture(platform.isBusiness() ? Whatsapp.DEFAULT_MOBILE_BUSINESS_IOS_VERSION : Whatsapp.DEFAULT_MOBILE_IOS_VERSION); // Fetching the latest ios version is harder than one might hope
+            case KAIOS ->
+                CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_KAIOS_VERSION);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
-    }
-
-    private static Version getDefaultIosVersion() {
-        return Whatsapp.DEFAULT_MOBILE_IOS_VERSION;
     }
 
     private static CompletableFuture<Version> getWebVersion() {
@@ -96,20 +106,42 @@ public final class MetadataHelper {
 
     public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, boolean useJarCache) {
         return switch (platform) {
-            case ANDROID -> getAndroidToken(String.valueOf(phoneNumber), platform.isBusiness(), useJarCache);
-            case IOS -> getIosToken(phoneNumber, platform, useJarCache);
+            case ANDROID, ANDROID_BUSINESS -> getAndroidToken(String.valueOf(phoneNumber), platform.isBusiness(), useJarCache);
+            case IOS, IOS_BUSINESS -> getIosToken(phoneNumber, platform, useJarCache);
+            case KAIOS -> getKaiOsToken(phoneNumber, platform, useJarCache);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
 
     private static CompletableFuture<String> getIosToken(long phoneNumber, UserAgent.PlatformType platform, boolean useJarCache) {
         return getVersion(platform, useJarCache)
-                .thenApply(version -> getIosToken(phoneNumber, version));
+                .thenApply(version -> getIosToken(phoneNumber, version, platform.isBusiness()));
     }
 
-    private static String getIosToken(long phoneNumber, Version version) {
-        var token = Whatsapp.MOBILE_IOS_STATIC + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
+    private static String getIosToken(long phoneNumber, Version version, boolean business) {
+        var staticToken = business ? Whatsapp.MOBILE_BUSINESS_IOS_STATIC : Whatsapp.MOBILE_IOS_STATIC;
+        var token = staticToken + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
         return HexFormat.of().formatHex(MD5.calculate(token));
+    }
+
+    private static CompletableFuture<String> getKaiOsToken(long phoneNumber, UserAgent.PlatformType platform, boolean useJarCache) {
+        return getVersion(platform, useJarCache)
+                .thenApply(version -> getKaiOsToken(phoneNumber, version));
+    }
+
+    private static String getKaiOsToken(long phoneNumber, Version version) {
+        var staticTokenPart = HexFormat.of().parseHex(Whatsapp.MOBILE_KAIOS_STATIC);
+        var pagePart = HexFormat.of().formatHex(Sha256.calculate(BytesHelper.concat(readKaiOsResource("index.html"), readKaiOsResource("backendRoot.js"))));
+        var phonePart = String.valueOf(phoneNumber).getBytes(StandardCharsets.UTF_8);
+        return HexFormat.of().formatHex(Sha256.calculate(BytesHelper.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart)));
+    }
+
+    private static byte[] readKaiOsResource(String name) {
+        try (var stream = ClassLoader.getSystemResource("token/kaios/" + name).openStream()) {
+            return stream.readAllBytes();
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 
     private static CompletableFuture<String> getAndroidToken(String phoneNumber, boolean business, boolean useJarCache) {
@@ -165,7 +197,7 @@ public final class MetadataHelper {
 
             var now = Instant.now();
             var fileTime = Files.getLastModifiedTime(localCache);
-            if (fileTime.toInstant().until(now, ChronoUnit.WEEKS) > 1) {
+            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) > 7) {
                 return Optional.empty();
             }
 
@@ -258,8 +290,35 @@ public final class MetadataHelper {
         return factory.generateSecret(key);
     }
 
-    public record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, Collection<byte[]> certificates,
-                              boolean business) {
+    public static String generateBusinessCertificate(Keys keys) {
+        var details = new BusinessVerifiedNameDetailsBuilder()
+                .name("")
+                .issuer("smb:wa")
+                .serial(Math.abs(new SecureRandom().nextLong()))
+                .build();
+        var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
+        var certificate = new BusinessVerifiedNameCertificateBuilder()
+                .encodedDetails(encodedDetails)
+                .signature(Curve25519.sign(keys.identityKeyPair().privateKey(), encodedDetails, true))
+                .build();
+        return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
+    }
 
+    public record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, Collection<byte[]> certificates, boolean business) {
+
+    }
+
+    public static String generateGpiaToken(byte[] deviceIdentifier, int desiredLength) {
+        if (deviceIdentifier == null || desiredLength <= 0) {
+            throw new IllegalArgumentException();
+        }
+
+        var bytesNeeded = (int) Math.ceil((desiredLength * 3) / 4.0);
+        var randomBytes = BytesHelper.random(bytesNeeded - deviceIdentifier.length);
+        var tokenBytes = new byte[bytesNeeded];
+        System.arraycopy(deviceIdentifier, 0, tokenBytes, 0, deviceIdentifier.length);
+        System.arraycopy(randomBytes, 0, tokenBytes, deviceIdentifier.length, randomBytes.length);
+        var token = Base64.getEncoder().encodeToString(tokenBytes);
+        return token.substring(0, desiredLength);
     }
 }

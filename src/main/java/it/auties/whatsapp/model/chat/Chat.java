@@ -17,7 +17,7 @@ import it.auties.whatsapp.model.media.MediaVisibility;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Messages;
+import it.auties.whatsapp.util.ConcurrentDoublyLinkedHashedDequeue;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -37,7 +37,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     private final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
-    private final Messages<HistorySyncMessage> historySyncMessages;
+    private final ConcurrentDoublyLinkedHashedDequeue<HistorySyncMessage> historySyncMessages;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     private final Jid newJid;
@@ -154,7 +154,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     private final Set<GroupPastParticipant> pastParticipants;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Chat(Jid jid, Messages<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
+    public Chat(Jid jid, ConcurrentDoublyLinkedHashedDequeue<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -199,7 +199,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         this.pastParticipants = pastParticipants;
     }
 
-    public Chat(Jid jid, Messages<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid) {
+    public Chat(Jid jid, ConcurrentDoublyLinkedHashedDequeue<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;

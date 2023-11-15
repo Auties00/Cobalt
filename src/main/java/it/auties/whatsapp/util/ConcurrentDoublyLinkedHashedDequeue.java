@@ -7,12 +7,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
+public class ConcurrentDoublyLinkedHashedDequeue<E> extends AbstractQueue<E> implements Deque<E> {
     private final AtomicReference<Node<E>> head;
     private final AtomicReference<Node<E>> tail;
     private final Set<Integer> hashes;
 
-    public Messages() {
+    public ConcurrentDoublyLinkedHashedDequeue() {
         this.head = new AtomicReference<>(null);
         this.tail = new AtomicReference<>(null);
         this.hashes = ConcurrentHashMap.newKeySet();
@@ -98,8 +98,7 @@ public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
         var node = head.get();
         while (node != null) {
             if (node.item.equals(o)) {
-                removeNode(node);
-                hashes.remove(hash);
+                removeNode(node, hash);
                 return true;
             }
             node = node.next;
@@ -117,8 +116,7 @@ public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
         while (node != null) {
             var hash = Objects.hashCode(node.item);
             if (hashCodes.contains(hash)) {
-                removeNode(node);
-                hashes.remove(hash);
+                removeNode(node, hash);
                 return true;
             }
             node = node.next;
@@ -139,29 +137,36 @@ public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
 
     @Override
     public E remove() {
-        var headItem = head.get();
-        if (headItem == null) {
+        var tailItem = tail.get();
+        if (tailItem == null) {
             return null;
         }
 
-        var node = head.getAndSet(headItem.next);
-        if (node == tail.get()) {
-            tail.compareAndSet(node, node.prev);
+        var node = tail.getAndSet(tailItem.prev);
+        if (node == head.get()) {
+            head.compareAndSet(node, tailItem.prev);
         }
 
         hashes.remove(Objects.hashCode(node.item));
         return node.item;
     }
 
-    private void removeNode(Node<E> node) {
+    private void removeNode(Node<E> node, int hash) {
         if (node == head.get()) {
-            head.compareAndSet(node, node.next);
+            var removed = head.getAndSet(head.get().next);
+            if (removed == tail.get()) {
+                tail.compareAndSet(removed, removed.prev);
+            }
         } else if (node == tail.get()) {
-            tail.compareAndSet(node, node.prev);
+            var removed = tail.getAndSet(tail.get().prev);
+            if (removed == head.get()) {
+                head.compareAndSet(removed, tail.get().prev);
+            }
         } else {
             node.prev.next = node.next;
             node.next.prev = node.prev;
         }
+        hashes.remove(hash);
     }
 
     @Override
@@ -276,22 +281,22 @@ public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
 
     @Override
     public E getFirst() {
-        var result = pollFirst();
-        if (result == null) {
-            throw new NoSuchElementException();
+        var headItem = head.get();
+        if (headItem == null) {
+           throw new NoSuchElementException();
         }
 
-        return result;
+        return headItem.item;
     }
 
     @Override
     public E getLast() {
-        var result = pollLast();
-        if (result == null) {
+        var tailItem = tail.get();
+        if (tailItem == null) {
             throw new NoSuchElementException();
         }
 
-        return result;
+        return tailItem.item;
     }
 
     @Override
@@ -299,7 +304,8 @@ public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
         var node = head.get();
         while (node != null) {
             if (node.item.equals(o)) {
-                removeNode(node);
+                var hash = Objects.hashCode(node.item);
+                removeNode(node, hash);
                 return true;
             }
             node = node.next;
@@ -312,7 +318,8 @@ public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
         var node = tail.get();
         while (node != null) {
             if (filter.test(node.item)) {
-                removeNode(node);
+                var hash = Objects.hashCode(node.item);
+                removeNode(node, hash);
                 return true;
             }
             node = node.prev;
@@ -326,7 +333,8 @@ public class Messages<E> extends AbstractQueue<E> implements Deque<E> {
         var node = tail.get();
         while (node != null) {
             if (node.item.equals(o)) {
-                removeNode(node);
+                var hash = Objects.hashCode(node.item);
+                removeNode(node, hash);
                 return true;
             }
             node = node.prev;

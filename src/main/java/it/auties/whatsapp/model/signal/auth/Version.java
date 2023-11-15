@@ -29,6 +29,14 @@ public record Version(
         @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
         Integer quinary
 ) implements ProtobufMessage {
+    public Version(int primary) {
+        this(primary, null, null, null, null);
+    }
+
+    public Version(int primary, int secondary, int tertiary) {
+        this(primary, secondary, tertiary, null, null);
+    }
+
     @JsonCreator
     public static Version of(String version) {
         var tokens = version.split("\\.", 5);

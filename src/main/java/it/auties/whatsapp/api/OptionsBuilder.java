@@ -7,14 +7,14 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 
 import java.net.URI;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings("unused")
 public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOptionsBuilder, WebOptionsBuilder {
     Store store;
     Keys keys;
     ErrorHandler errorHandler;
-    Executor socketExecutor;
+    ExecutorService socketExecutor;
 
     OptionsBuilder(Store store, Keys keys) {
         this.store = store;
@@ -90,7 +90,7 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
      * @return the same instance for chaining
      */
     @SuppressWarnings("unchecked")
-    public T socketExecutor(Executor socketExecutor) {
+    public T socketExecutor(ExecutorService socketExecutor) {
         this.socketExecutor = socketExecutor;
         return (T) this;
     }

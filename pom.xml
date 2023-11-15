@@ -124,6 +124,35 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>uber-jar</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>it.auties.Main</mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                                <phase>package</phase> <!-- bind to the packaging phase -->
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
     <packaging>jar</packaging>
 
@@ -139,8 +168,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>3.0.1</protoc.version>
-        <checker.framework.version>3.37.0</checker.framework.version>
+        <protoc.version>3.0.2</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
         <jna.version>5.13.0</jna.version>
         <jackson.version>2.15.2</jackson.version>
@@ -184,11 +212,6 @@
                             <groupId>com.github.auties00</groupId>
                             <artifactId>protobuf-serialization-plugin</artifactId>
                             <version>${protoc.version}</version>
-                        </annotationProcessorPath>
-                        <annotationProcessorPath>
-                            <groupId>org.checkerframework</groupId>
-                            <artifactId>checker</artifactId>
-                            <version>${checker.framework.version}</version>
                         </annotationProcessorPath>
                         <annotationProcessorPath>
                             <groupId>cc.jilt</groupId>
@@ -298,6 +321,13 @@
             <groupId>net.dongliu</groupId>
             <artifactId>apk-parser</artifactId>
             <version>${apk.parser.version}</version>
+        </dependency>
+
+        <!-- Parse PLIST files for Apple APNS -->
+        <dependency>
+            <groupId>com.googlecode.plist</groupId>
+            <artifactId>dd-plist</artifactId>
+            <version>1.27</version>
         </dependency>
 
         <!-- Generate message previews -->

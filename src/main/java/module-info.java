@@ -21,6 +21,7 @@ open module it.auties.cobalt {
     requires com.fasterxml.jackson.module.paramnames;
     requires com.fasterxml.jackson.datatype.jdk8;
     requires com.fasterxml.jackson.datatype.jsr310;
+    requires dd.plist;
 
     // HTTP Client
     requires java.net.http;
@@ -35,6 +36,7 @@ open module it.auties.cobalt {
     // Mobile api
     requires libphonenumber;
     requires net.dongliu.apkparser;
+    requires org.bouncycastle.pkix;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
@@ -76,4 +78,5 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.button.template.highlyStructured;
     exports it.auties.whatsapp.model.jid;
     exports it.auties.whatsapp.model.newsletter;
+    exports it.auties.whatsapp.registration;
 }
