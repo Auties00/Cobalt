@@ -662,10 +662,6 @@ public class SocketHandler implements SocketListener {
         var contact = store.findContactByJid(jid);
         if (contact.isPresent()) {
             contact.get().setLastKnownPresence(status);
-            if (status == contact.get().lastKnownPresence()) {
-                return;
-            }
-
             contact.get().setLastSeen(ZonedDateTime.now());
         }
 
