@@ -11,22 +11,30 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public final class ListenerScanner {
-    private static final List<Class<?>> listeners;
+    private static final List<Class<?>> cache;
 
     static {
+        cache = loadListeners();
+    }
+
+    private static List<Class<?>> loadListeners() {
         try (var scanner = createScanner()) {
-            listeners = scanner.getClassesWithAnnotation(RegisterListener.class).loadClasses();
+            return scanner.getClassesWithAnnotation(RegisterListener.class).loadClasses();
         }
     }
 
-    public static List<Listener> scan(Whatsapp whatsapp) {
-        return listeners.stream()
+    public static List<Listener> scan(Whatsapp whatsapp, boolean useCache) {
+        var listeners = useCache ? cache : loadListeners();
+        return cache.stream()
                 .map(listener -> initialize(listener, whatsapp))
                 .toList();
     }
 
     private static ScanResult createScanner() {
-        return new ClassGraph().enableClassInfo().enableAnnotationInfo().scan();
+        return new ClassGraph()
+                .enableClassInfo()
+                .enableAnnotationInfo()
+                .scan();
     }
 
     private static Listener initialize(Class<?> listener, Whatsapp whatsapp) {

@@ -1,17 +1,21 @@
 package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.controller.Controller;
-import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.api.TextPreviewSetting;
+import it.auties.whatsapp.api.WebHistoryLength;
+import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
+import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.signal.auth.UserAgent;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 
 import java.io.IOException;
@@ -67,6 +71,143 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private DefaultControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
         this.attributeStoreSerializers = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public StoreKeysPair newStoreKeysPair(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
+        var parsedPhoneNumber = PhoneNumber.ofNullable(phoneNumber);
+        var store = new Store(
+                uuid,
+                parsedPhoneNumber.orElse(null),
+                this,
+                clientType,
+                alias,
+                null,
+                null,
+                false,
+                null,
+                Specification.Whatsapp.DEFAULT_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                new LinkedHashMap<>(),
+                null,
+                null,
+                phoneNumber != null ? Jid.of(phoneNumber) : null,
+                null,
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                false,
+                false,
+                Clock.nowSeconds(),
+                ChatEphemeralTimer.OFF,
+                TextPreviewSetting.ENABLED_WITH_INFERENCE,
+                WebHistoryLength.standard(),
+                true,
+                true,
+                true,
+                UserAgent.ReleaseChannel.RELEASE,
+                clientType == ClientType.WEB ? CompanionDevice.web() : CompanionDevice.ios(false),
+                false
+        );
+        linkMetadata(store);
+        var registrationId = KeyHelper.registrationId();
+        var identityKeyPair = SignalKeyPair.random();
+        var keys = new Keys(
+                uuid,
+                parsedPhoneNumber.orElse(null),
+                this,
+                clientType,
+                alias,
+                registrationId,
+                SignalKeyPair.random(),
+                SignalKeyPair.random(),
+                identityKeyPair,
+                SignalKeyPair.random(),
+                SignalSignedKeyPair.of(registrationId, identityKeyPair),
+                null,
+                null,
+                new ArrayList<>(),
+                KeyHelper.phoneId(),
+                KeyHelper.deviceId(),
+                KeyHelper.identityId(),
+                null,
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                false,
+                false,
+                false
+        );
+        serializeKeys(keys, true);
+        return new StoreKeysPair(store, keys);
+    }
+
+    @Override
+    public Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, Long phoneNumber, String alias, ClientType clientType) {
+        if (uuid != null) {
+            var store = deserializeStore(clientType, uuid);
+            if(store.isEmpty()) {
+                return Optional.empty();
+            }
+
+            store.get().setSerializer(this);
+            attributeStore(store.get());
+            var keys = deserializeKeys(clientType, uuid);
+            if(keys.isEmpty()) {
+                return Optional.empty();
+            }
+
+            keys.get().setSerializer(this);
+            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
+        }
+
+        if (phoneNumber != null) {
+            var store = deserializeStore(clientType, phoneNumber);
+            if(store.isEmpty()) {
+                return Optional.empty();
+            }
+
+            store.get().setSerializer(this);
+            attributeStore(store.get());
+            var keys = deserializeKeys(clientType, phoneNumber);
+            if(keys.isEmpty()) {
+                return Optional.empty();
+            }
+
+            keys.get().setSerializer(this);
+            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
+        }
+
+        if (alias != null) {
+            var store = deserializeStore(clientType, alias);
+            if(store.isEmpty()) {
+                return Optional.empty();
+            }
+
+            store.get().setSerializer(this);
+            attributeStore(store.get());
+            var keys = deserializeKeys(clientType,  alias);
+            if(keys.isEmpty()) {
+                return Optional.empty();
+            }
+
+            keys.get().setSerializer(this);
+            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
+        }
+
+        return Optional.empty();
     }
 
     @Override

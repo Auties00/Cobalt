@@ -262,10 +262,15 @@ public final class Store extends Controller<Store> {
      */
     private boolean autodetectListeners;
 
+    /**
+     * Whether the listeners that were automatically scanned should be cached
+     */
+    private boolean cacheDetectedListeners;
 
     /**
      * Whether updates about the presence of the session should be sent automatically to Whatsapp
      * For example, when the bot is started, the status of the companion is changed to available if this option is enabled
+     * If this option is enabled, the companion will not receive notifications because the bot will instantly read them
      */
     private boolean automaticPresenceUpdates;
 
@@ -289,7 +294,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean cacheDetectedListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, serializer, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -332,6 +337,7 @@ public final class Store extends Controller<Store> {
         this.textPreviewSetting = textPreviewSetting;
         this.historyLength = historyLength;
         this.autodetectListeners = autodetectListeners;
+        this.cacheDetectedListeners = cacheDetectedListeners;
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.releaseChannel = releaseChannel;
         this.device = device;
@@ -1286,6 +1292,10 @@ public final class Store extends Controller<Store> {
         return this.autodetectListeners;
     }
 
+    public boolean cacheDetectedListeners() {
+        return cacheDetectedListeners;
+    }
+
     public boolean automaticPresenceUpdates() {
         return this.automaticPresenceUpdates;
     }
@@ -1410,6 +1420,10 @@ public final class Store extends Controller<Store> {
     public Store setAutodetectListeners(boolean autodetectListeners) {
         this.autodetectListeners = autodetectListeners;
         return this;
+    }
+
+    public void setCacheDetectedListeners(boolean cacheDetectedListeners) {
+        this.cacheDetectedListeners = cacheDetectedListeners;
     }
 
     public Store setAutomaticPresenceUpdates(boolean automaticPresenceUpdates) {

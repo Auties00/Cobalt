@@ -38,7 +38,6 @@ import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.ControllerHelper;
 
 import java.net.SocketException;
 import java.net.URI;
@@ -286,7 +285,8 @@ public class SocketHandler implements SocketListener {
                 var number = store.phoneNumber()
                         .map(PhoneNumber::number)
                         .orElse(null);
-                var result = ControllerHelper.create(uuid, number, store.alias(), store.clientType(), store.serializer());
+                var result = store.serializer()
+                        .newStoreKeysPair(uuid, number, store.alias(), store.clientType());
                 this.keys = result.keys();
                 this.store = result.store();
                 store.addListeners(oldListeners);
@@ -597,7 +597,7 @@ public class SocketHandler implements SocketListener {
         }
 
         var attributes = Attributes.of()
-                .put("id", messages.get(0))
+                .put("id", messages.getFirst())
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
                 .put("to", jid)
                 .put("type", type, Objects::nonNull);

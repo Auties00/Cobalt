@@ -1,7 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.util.ControllerHelper;
+import it.auties.whatsapp.controller.StoreKeysPair;
 
 import java.util.List;
 import java.util.Objects;
@@ -53,8 +53,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      */
     public T newConnection(UUID uuid) {
         var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-        var sessionStoreAndKeys = ControllerHelper.deserialize(sessionUuid, null, null, clientType, serializer)
-                .orElseGet(() -> ControllerHelper.create(sessionUuid, null, null, clientType, serializer));
+        var sessionStoreAndKeys = serializer.deserializeStoreKeysPair(sessionUuid, null, null, clientType)
+                .orElseGet(() -> serializer.newStoreKeysPair(sessionUuid, null, null, clientType));
         return createConnection(sessionStoreAndKeys);
     }
 
@@ -67,8 +67,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection(long phoneNumber) {
-        var sessionStoreAndKeys = ControllerHelper.deserialize(null, phoneNumber, null, clientType, serializer)
-                .orElseGet(() -> ControllerHelper.create(UUID.randomUUID(), phoneNumber, null, clientType, serializer));
+        var sessionStoreAndKeys = serializer.deserializeStoreKeysPair(null, phoneNumber, null, clientType)
+                .orElseGet(() -> serializer.newStoreKeysPair(UUID.randomUUID(), phoneNumber, null, clientType));
         return createConnection(sessionStoreAndKeys);
     }
 
@@ -81,8 +81,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection(String alias) {
-        var sessionStoreAndKeys = ControllerHelper.deserialize(null, null, alias, clientType, serializer)
-                .orElseGet(() -> ControllerHelper.create(UUID.randomUUID(), null, alias != null ? List.of(alias) : null, clientType, serializer));
+        var sessionStoreAndKeys = serializer.deserializeStoreKeysPair(null, null, alias, clientType)
+                .orElseGet(() -> serializer.newStoreKeysPair(UUID.randomUUID(), null, alias != null ? List.of(alias) : null, clientType));
         return createConnection(sessionStoreAndKeys);
     }
 
@@ -114,8 +114,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      */
     public Optional<T> newOptionalConnection(UUID uuid) {
         var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-        var sessionStoreAndKeys = ControllerHelper.deserialize(sessionUuid, null, null, clientType, serializer);
-        return sessionStoreAndKeys.map(this::createConnection);
+        return serializer.deserializeStoreKeysPair(sessionUuid, null, null, clientType)
+                .map(this::createConnection);
     }
 
     /**
@@ -125,8 +125,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public Optional<T> newOptionalConnection(Long phoneNumber) {
-        var sessionStoreAndKeys = ControllerHelper.deserialize(null, phoneNumber, null, clientType, serializer);
-        return sessionStoreAndKeys.map(this::createConnection);
+        return serializer.deserializeStoreKeysPair(null, phoneNumber, null, clientType)
+                .map(this::createConnection);
     }
 
     /**
@@ -137,8 +137,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public Optional<T> newOptionalConnection(String alias) {
-        var sessionStoreAndKeys = ControllerHelper.deserialize(null, null, alias, clientType, serializer);
-        return sessionStoreAndKeys.map(this::createConnection);
+        return serializer.deserializeStoreKeysPair(null, null, alias, clientType)
+                .map(this::createConnection);
     }
 
     /**
@@ -160,7 +160,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
     }
 
     @SuppressWarnings("unchecked")
-    private T createConnection(ControllerHelper.StoreAndKeysPair sessionStoreAndKeys) {
+    private T createConnection(StoreKeysPair sessionStoreAndKeys) {
         return (T) switch (clientType) {
             case WEB -> new WebOptionsBuilder(sessionStoreAndKeys.store(), sessionStoreAndKeys.keys());
             case MOBILE -> new MobileOptionsBuilder(sessionStoreAndKeys.store(), sessionStoreAndKeys.keys());

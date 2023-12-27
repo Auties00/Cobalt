@@ -5,6 +5,7 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.DefaultControllerSerializer;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +52,28 @@ public interface ControllerSerializer {
      * @return a non-null linked list
      */
     LinkedList<PhoneNumber> listPhoneNumbers(ClientType type);
+
+    /**
+     * Creates a fresh pair of store and keys
+     *
+     * @param uuid        the non-null uuid
+     * @param phoneNumber the nullable phone number
+     * @param alias       the nullable alias
+     * @param clientType  the non-null client type
+     * @return a non-null store-keys pair
+     */
+    StoreKeysPair newStoreKeysPair(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType);
+
+    /**
+     * Deserializes a store-keys pair from a list of possible identifiers
+     *
+     * @param uuid        the nullable identifying unique id
+     * @param phoneNumber the nullable identifying phone number
+     * @param alias       the nullable identifying alias
+     * @param clientType  the non-null client type
+     * @return an optional store-keys pair
+     */
+    Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, Long phoneNumber, String alias, ClientType clientType);
 
     /**
      * Serializes the keys
