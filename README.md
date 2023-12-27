@@ -8,19 +8,7 @@ This is a personal project that I mantain in my free time
 Cobalt is a library built to interact with Whatsapp.
 It can be used to work with:
 1. WhatsappWeb (MultiDevice)
-
-   This functionality is fully documented and ready.
-   No browser, application or any additional software is necessary.
-   Everything as of now has been successfully reverse engineered.
-   A companion device with the Whatsapp app installed is needed to scan the QR code the first time.
-   As the multi device api is supported, the companion doesn't need to remain online for the client to work.
-
-2. Whatsapp Mobile App
-
-   This functionality is currently in beta.
-   The documentation is expanding, but some functions may still be undocumented. 
-   There is support for both Android and IOS accounts, as well as normal and business accounts.
-   Most functions have been reversed engineered, but some may still not work. 
+2. Whatsapp Mobile App (Personal and Business)
 
 ### Donations
 
@@ -32,7 +20,13 @@ I can also work on sponsored features and/or projects!
 
 ### Java version
 
-This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/), the latest LTS.
+This library was built for [Java 21](https://openjdk.java.net/projects/jdk/21/), the latest LTS.
+
+### Breaking changes policy
+
+Until the library doesn't reach release 1.0, there will be major breaking changes between each release.
+This is needed to finalize the design of the API.
+After this milestone, breaking changes will be present only in major releases.
 
 ### Optimizing memory usage
 
@@ -54,8 +48,8 @@ In short, if you use this library without a malicious intent, you will never get
 ```xml
 <dependency>
     <groupId>com.github.auties00</groupId>
-    <artifactId>whatsappweb4j</artifactId>
-    <version>3.5.1</version>
+    <artifactId>cobalt</artifactId>
+    <version>0.0.1</version>
 </dependency>
 ```
 
@@ -63,12 +57,12 @@ In short, if you use this library without a malicious intent, you will never get
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.5.1'
+   implementation 'com.github.auties00:cobalt:0.0.1'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.5.1")
+   implementation("com.github.auties00:cobalt:0.0.1")
    ```
 
 ### Examples
@@ -171,6 +165,10 @@ You can now customize the API with these options:
   ```java
   .autodetectListeners(true)
   ```
+- cacheDetectedListeners - Whether the listeners that were automatically registered should be cached
+  ```java
+  .cacheDetectedListeners(true)
+  ```
 - textPreviewSetting - Whether a media preview should be generated for text messages containing links
   ```java
   .textPreviewSetting(TextPreviewSetting.ENABLED_WITH_INFERENCE)
@@ -183,8 +181,6 @@ You can now customize the API with these options:
   ```java
   .proxy(someProxy)
   ```
-  
-> **_IMPORTANT:_** All of these options are serialized, so you don't need to specify them again each time.
 
 There are also platform specific options:
 1. Web
@@ -230,6 +226,8 @@ There are also platform specific options:
      .businessAddress("1600 Amphitheatre Pkwy, Mountain View")
       ```
 
+> **_IMPORTANT:_** All options are serialized: there is no need to specify them again when deserializing an existing session
+
 Finally select the registration status of your session:
 - Creates a new registered session: this means that the QR code was already scanned / the OTP was already sent to Whatsapp
   ```java
@@ -252,10 +250,6 @@ Finally select the registration status of your session:
   Then provide a supplier for that verification method:
   ```java
   .verificationCodeSupplier(() -> yourAsyncOrSyncLogic())
-  ``` 
-  If you are using a business account, provide a captcha handler:
-  ```java
-  .verificationCaptchaSupplier(responseData -> yourAsyncOrSyncLogic())
   ```
   Finally, register:
   ```java
@@ -268,7 +262,6 @@ Now you can connect to your session:
   ```
 to connect to Whatsapp.
 Remember to handle the result using, for example, `join` to await the connection's result.
-If you want the current thread to wait for the connection to be closed, use `awaitDisconnection`.
 
 ### How to close a connection
 
@@ -360,20 +353,23 @@ Listeners can be used either as:
    > **_IMPORTANT:_** Only non-abstract classes that provide a no arguments constructor or
    > a single parameter constructor of type Whatsapp can be registered automatically
    
+   > **_IMPORTANT:_** In some environments @RegisterListener might not work. 
+   > Before opening an issue, try to disable `cacheDetectedListeners`.
+   
 2. Functional interface
    
    If your application is very simple or only requires this library in small operations, 
    it's preferable to add a listener using a lambda instead of using full-fledged classes.
    To declare a new functional listener, call the method add followed by the name of the listener that you want to implement without the on suffix:
    ```java
-   api.addLoggedInListener(() -> System.out.println("Hello :)"));
+   api.addDisconnectedListener(reason -> System.out.println("Goodbye: " + reason));
    ```
-   
-   Functional listeners can also access the instance of Whatsapp that registered them:
+
+   All lambda listeners can access the instance of `Whatsapp` that called them: 
    ```java
-   api.addLoggedInListener(whatsapp -> System.out.println("Someone sent a new message!"));
+   api.addDisconnectedListener((whatsapp, reason) -> System.out.println("Goodbye: " + reason));
    ```
-   
+
    This is extremely useful if you want to implement a functionality for your application in a compact manner:
    ```java
     Whatsapp.newConnection()
@@ -390,9 +386,8 @@ The multi-device implementation, instead, sends all of this information progress
 In practice, this means that this data needs to be serialized somewhere.
 The same is true for the mobile api.
 
-By default, this library serializes data regarding a session at `$HOME/.whatsapp4j/[web|mobile]/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
-The latter is serialized every time a modification occurs to the model, while the store is serialized everytime a ping is sent by the socket to the server.
-Both are serialized when the socket is closed.
+By default, this library serializes data regarding a session at `$HOME/.whatsapp4j/[web|mobile]/<session_id>`.
+The data is stored in gzipped .smile files to reduce disk usage. 
 
 If your application needs to serialize data in a different way, for example in a database create a custom implementation of ControllerSerializer.
 Then make sure to specify your implementation in the `Whatsapp` builder.
@@ -536,6 +531,9 @@ var chat = api.store()
 ``` 
 
 All types of messages supported by Whatsapp are supported by this library:
+> **_IMPORTANT:_** Buttons are not documented here because they are unstable.
+> If you are interested you can try to use them, but they are not guaranteed to work.
+> There are some examples in the tests directory.
 
 - Text
 
@@ -546,7 +544,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Complex text
 
     ```java
-    var message = TextMessage.builder() // Create a new text message
+    var message = new TextMessageBuilder() // Create a new text message
             .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text of the message
             .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url of the message
             .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
@@ -559,7 +557,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Location
 
     ```java
-    var location = LocationMessage.builder() // Create a new location message
+    var location = new LocationMessageBuilder() // Create a new location message
             .caption("Look at this!") // Set the caption of the message, that is the text below the file
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
@@ -570,7 +568,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Live location
 
     ```java
-    var location = LiveLocationMessage.builder() // Create a new live location message
+    var location = new LiveLocationMessageBuilder() // Create a new live location message
             .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
@@ -588,7 +586,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .filter(Chat::isGroup)
             .orElseThrow(() -> new NoSuchElementException("Hey, you don't exist"));
     var inviteCode = api.queryGroupInviteCode(group).join();
-    var groupInvite = GroupInviteMessage.builder() // Create a new group invite message
+    var groupInvite = new GroupInviteMessageBuilder() // Create a new group invite message
             .caption("Come join my group of fellow programmers") // Set the caption of this message
             .name(group.name()) // Set the name of the group
             .groupJid(group.jid())) // Set the jid of the group
@@ -600,11 +598,11 @@ All types of messages supported by Whatsapp are supported by this library:
 
 - Contact
     ```java
-     var vcard = ContactCard.builder() // Create a new vcard
+     var vcard = new ContactCardBuilder() // Create a new vcard
             .name("A nice friend") // Set the name of the contact
             .phoneNumber(contact) // Set the phone number of the contact
             .build(); // Create the vcard
-    var contactMessage = ContactMessage.builder()  // Create a new contact message
+    var contactMessage = new ContactMessageBuilder()  // Create a new contact message
             .name("A nice friend") // Set the display name of the contact
             .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
             .build(); // Create the message
@@ -614,139 +612,11 @@ All types of messages supported by Whatsapp are supported by this library:
 - Contact array
 
     ```java
-    var contactsMessage = ContactsArrayMessage.builder()  // Create a new contacts array message
+    var contactsMessage = new ContactsArrayMessageBuilder()  // Create a new contacts array message
             .name("A nice friend") // Set the display name of the first contact that this message contains
             .contacts(List.of(jack,lucy,jeff)) // Set a list of contact messages that this message wraps
             .build(); // Create the message
     api.sendMessage(chat, contactsMessage);
-    ```
-
-- Button
-
-  > **_IMPORTANT:_** This feature is deprecated and doesn't work properly as Whatsapp has some limitations in place: only use it if you know what you are doing
-   
-   Here is how you create a button:
-   ```java
-   var button = Button.of("A nice button!"); // Create a button
-   var anotherButton = Button.of("Another button :)"); // Create another button with different text
-   ```
-  
-   Buttons can be used in several messages:
-   
-   - Response button
-
-     - Empty header
-
-          ```java
-          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
-               .body("A nice body") // Set the body
-               .footer("A nice footer") // Set the footer
-               .buttons(List.of(button, anotherButton)) // Set the buttons
-               .build(); // Create the message
-          api.sendMessage(contact, emptyButtons);
-          ```
-
-     - Text header
-
-          ```java
-          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
-               .header(TextMessage.of("A nice header :)")) // Set the header
-               .body("A nice body") // Set the body
-               .footer("A nice footer") // Set the footer
-               .buttons(List.of(button, anotherButton)) // Set the buttons
-               .build(); // Create the message
-          api.sendMessage(contact, buttons);
-          ```
-  
-     - Document header
-
-          ```java
-          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
-               .header(documentMessage) // Set the header
-               .body("A nice body") // Set the body
-               .footer("A nice footer") // Set the footer
-               .buttons(List.of(button, anotherButton)) // Set the buttons
-               .build(); // Create the message
-          api.sendMessage(contact, buttons);
-          ```
-  
-     - Image header
-
-          ```java
-          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
-               .header(imageMessage) // Set the header
-               .body("A nice body") // Set the body
-               .footer("A nice footer") // Set the footer
-               .buttons(List.of(button, anotherButton)) // Set the buttons
-               .build(); // Create the message
-          api.sendMessage(contact, buttons);
-          ```
-  
-     - Video header
-
-          ```java
-          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
-               .header(videoMessage) // Set the header
-               .body("A nice body") // Set the body
-               .footer("A nice footer") // Set the footer
-               .buttons(List.of(button, anotherButton)) // Set the buttons
-               .build(); // Create the message
-          api.sendMessage(contact, buttons);
-          ```
-
-     - Location header
-
-          ```java
-          var buttons = ButtonsMessage.simpleBuilder() // Create a new button message builder
-               .header(locationMessage) // Set the header
-               .body("A nice body") // Set the body
-               .footer("A nice footer") // Set the footer
-               .buttons(List.of(button, anotherButton)) // Set the buttons
-               .build(); // Create the message
-          api.sendMessage(contact, buttons);
-          ```
-
-  - Native flow button
-
-    > **_IMPORTANT:_** There is no documentation for this type of button. Contributions are welcomed.
-
-  - Interactive button
-
-    > **_IMPORTANT:_** This type of message is currently not supported by mobile Whatsapp(still in beta).
-
-  - List message 
-     ```java
-     var buttons = List.of(ButtonRow.of("First option", "A nice description"),
-           ButtonRow.of("Second option", "A nice description"),
-           ButtonRow.of("Third option", "A nice description")); // Create some buttons
-     var section = ButtonSection.of("First section", buttons); // Create a section from those buttons
-     var otherButtons = List.of(ButtonRow.of("First option", "A nice description"),
-           ButtonRow.of("Second option", "A nice description"),
-           ButtonRow.of("Third option", "A nice description")); // Create some other buttons
-     var anotherSection = ButtonSection.of("First section", otherButtons); // Create another section from those buttons
-     var listMessage = ListMessage.builder() // Create a list message builder
-           .sections(List.of(section, anotherSection)) // Set the sections
-           .button("Click me") // Set the button name that opens the menu
-           .title("A nice title") // Set the title of the message
-           .description("A nice description") // Set the description of the message
-           .footer("A nice footer") // Set the footer of the message
-           .type(ListMessage.Type.SINGLE_SELECT) // Set the type of the message
-           .build(); // Create a list message
-     api.sendMessage(contact, listMessage);
-    ```
-
-  - Template button
-     ```java
-     var highlyStructuredQuickReplyButton = HydratedButtonTemplate.of(HydratedQuickReplyButton.of("Click me!")); // Create a quick reply button
-     var highlyStructuredUrlButton = HydratedButtonTemplate.of(HydratedURLButton.of("Search it", "https://google.com")); // Create an url button
-     var highlyStructuredCallButton = HydratedButtonTemplate.of(HydratedCallButton.of("Call me", "some_phone_number")); // Create a call button
-     var highlyStructuredFourRowTemplate = HydratedFourRowTemplate.simpleBuilder() // Create a new template builder
-           .title(TextMessage.of("A nice title")) // Set the title
-           .body("A nice body") // Set the body
-           .buttons(List.of(highlyStructuredQuickReplyButton, highlyStructuredUrlButton, highlyStructuredCallButton)) // Set the buttons
-           .build(); // Create the template
-     var templateMessage = TemplateMessage.of(highlyStructuredFourRowTemplate); // Create a template message
-     api.sendMessage(contact, templateMessage);
     ```
 
 - Media
@@ -775,7 +645,7 @@ All types of messages supported by Whatsapp are supported by this library:
    - Image
   
      ```java
-     var image = ImageMessage.simpleBuilder() // Create a new image message builder
+     var image = new ImageMessageSimpleBuilder() // Create a new image message builder
            .media(media) // Set the image of this message
            .caption("A nice image") // Set the caption of this message
            .build(); // Create the message
@@ -785,7 +655,7 @@ All types of messages supported by Whatsapp are supported by this library:
   - Audio or voice
 
     ```java
-     var audio = AudioMessage.simpleBuilder() // Create a new audio message builder
+     var audio = new AudioMessageSimpleBuilder() // Create a new audio message builder
            .media(urlMedia) // Set the audio of this message
            .voiceMessage(false) // Set whether this message is a voice message
            .build(); // Create the message
@@ -819,7 +689,7 @@ All types of messages supported by Whatsapp are supported by this library:
   -  Document
 
      ```java
-     var document = DocumentMessage.simpleBuilder() // Create a new document message builder
+     var document = new DocumentMessageSimpleBuilder() // Create a new document message builder
            .media(urlMedia) // Set the document of this message
            .title("A nice pdf") // Set the title of the document
            .fileName("pdf-test.pdf") // Set the name of the document
@@ -1141,5 +1011,5 @@ var future = api.disable2fa();
 
 
 Some methods may not be listed here, all contributions are welcomed to this documentation!
-Some methods may not be supported on the mobile api, please report them so I can fix them.
+Some methods may not be supported on the mobile api, please report them, so I can fix them.
 Ideally I'd like all of them to work.

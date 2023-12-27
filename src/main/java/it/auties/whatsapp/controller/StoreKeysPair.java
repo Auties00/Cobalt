@@ -6,8 +6,6 @@ import java.util.Objects;
 
 /**
  * A pair of Store and Keys with the same uuid
- * @param store
- * @param keys
  */
 public record StoreKeysPair(Store store, Keys keys) {
     public StoreKeysPair {
