@@ -1,14 +1,14 @@
 # Cobalt
 Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
 To be clear, this library is not affiliated with Whatsapp LLC in any way.
-This is a personal project that I mantain in my free time
+This is a personal project that I maintain in my free time
 
 ### What is Cobalt
 
 Cobalt is a library built to interact with Whatsapp.
-It can be used to work with:
-1. WhatsappWeb (MultiDevice)
-2. Whatsapp Mobile App (Personal and Business)
+It can be used with:
+1. Whatsapp Web (Companion)
+2. Whatsapp Mobile (Personal and Business)
 
 ### Donations
 
@@ -91,10 +91,7 @@ If you are not familiar with git, follow these short tutorials in order:
    feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
 
 If you are trying to implement a feature that is present on WhatsappWeb's WebClient, for example audio or video calls,
-consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer), a tool I
-built for this exact purpose.
-
-> **_IMPORTANT:_** Enable "Delegate build actions to Maven" while working on this project or a NoSuchElementException will be thrown
+consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer), a tool I built for this exact purpose.
 
 ### Disclaimer about async operations 
 This library heavily depends on async operations using the CompletableFuture construct.

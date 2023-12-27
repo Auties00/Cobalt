@@ -145,7 +145,7 @@ public class Whatsapp {
             return;
         }
 
-        store.addListeners(ListenerScanner.scan(this, store.autodetectListeners()));
+        store.addListeners(ListenerScanner.scan(this, store.cacheDetectedListeners()));
     }
 
     /**
