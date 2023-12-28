@@ -99,6 +99,10 @@ Remember to handle them as your application will terminate without doing anythin
 Please do not open redundant issues on GitHub because of this.
 
 ### How to create a connection
+<details>
+  <summary>Detailed Walkthrough</summary>
+
+
 To create a new connection, start by creating a builder with the api you need:
 - Web
     ```java
@@ -181,47 +185,47 @@ You can now customize the API with these options:
 
 There are also platform specific options:
 1. Web
-   - historyLength: The amount of messages to sync from the companion device
-     ```java
-     .historyLength(WebHistoryLength.THREE_MONTHS)
-     ```
-2. Mobile
-   - device: the device you want to fake (only Android supports business accounts for now, IOS supports only normal accounts):
-     ```java
-     .device(CompanionDevice.android())
-      ```
-   - business: whether you want to create a business account or a standard one
+    - historyLength: The amount of messages to sync from the companion device
       ```java
-      .business(true)
+      .historyLength(WebHistoryLength.THREE_MONTHS)
       ```
-   - businessCategory: the category of your business account
-     ```java
-     .businessCategory(new BusinessCategory(id, name))
-      ```
-   - businessEmail: the email of your business account
-     ```java
-     .businessEmail("email@domanin.com")
-      ```
-   - businessWebsite: the website of your business account
-     ```java
-     .businessWebsite("https://google.com")
-      ```
-   - businessDescription: the description of your business account
-     ```java
-     .businessDescription("A nice description")
-      ```
-   - businessLatitude: the latitude of your business account
-     ```java
-     .businessLatitude(37.386051)
-      ```
-   - businessLongitude: the longitude of your business account
-     ```java
-     .businessLongitude(-122.083855)
-      ```
-   - businessAddress: the address of your business account
-     ```java
-     .businessAddress("1600 Amphitheatre Pkwy, Mountain View")
-      ```
+2. Mobile
+    - device: the device you want to fake:
+      ```java
+      .device(CompanionDevice.android(false)) // Standard Android
+      .device(CompanionDevice.android(true)) //Business android
+      .device(CompanionDevice.ios(false)) // Standard iOS
+      .device(CompanionDevice.ios(true)) // Business iOS
+      .device(CompanionDevice.kaiOs()) // Standard KaiOS
+       ```
+    - businessCategory: the category of your business account
+      ```java
+      .businessCategory(new BusinessCategory(id, name))
+       ```
+    - businessEmail: the email of your business account
+      ```java
+      .businessEmail("email@domanin.com")
+       ```
+    - businessWebsite: the website of your business account
+      ```java
+      .businessWebsite("https://google.com")
+       ```
+    - businessDescription: the description of your business account
+      ```java
+      .businessDescription("A nice description")
+       ```
+    - businessLatitude: the latitude of your business account
+      ```java
+      .businessLatitude(37.386051)
+       ```
+    - businessLongitude: the longitude of your business account
+      ```java
+      .businessLongitude(-122.083855)
+       ```
+    - businessAddress: the address of your business account
+      ```java
+      .businessAddress("1600 Amphitheatre Pkwy, Mountain View")
+       ```
 
 > **_IMPORTANT:_** All options are serialized: there is no need to specify them again when deserializing an existing session
 
@@ -231,7 +235,7 @@ Finally select the registration status of your session:
   .registered()
   ```
 - Creates a new unregistered session: this means that the QR code wasn't scanned / the OTP wasn't sent to the companion's phone via SMS/Call/OTP
-  
+
   If you are using the Web API, you can either register via QR code:
   ```java
   .unregistered(QrHandler.toTerminal())
@@ -259,6 +263,67 @@ Now you can connect to your session:
   ```
 to connect to Whatsapp.
 Remember to handle the result using, for example, `join` to await the connection's result.
+</details>
+
+<details>
+  <summary>Web QR Pairing Example</summary>
+
+  ```java
+  Whatsapp.webBuilder() // Use the Web api
+        .lastConnection() // Deserialize the last connection, or create a new one if it doesn't exist
+        .unregistered(QrHandler.toTerminal()) // Print the QR to the terminal
+        .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
+        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
+        .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
+        .connect() // Connect to Whatsapp asynchronously
+        .join(); // Await the result
+  ```
+</details>
+
+<details>
+  <summary>Web Pairing Code Example</summary>
+
+  ```java
+  System.out.println("Enter the phone number(include the country code prefix, but no +, spaces or parenthesis):")
+  var scanner = new Scanner(System.in);
+  var phoneNumber = scanner.nextLong();
+  Whatsapp.webBuilder() // Use the Web api
+        .lastConnection() // Deserialize the last connection, or create a new one if it doesn't exist
+        .unregistered(phoneNumber, PairingCodeHandler.toTerminal()) // Print the pairing code to the terminal
+        .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
+        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
+        .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
+        .connect() // Connect to Whatsapp asynchronously
+        .join(); // Await the result
+  ```
+</details>
+
+<details>
+  <summary>Mobile Example</summary>
+
+  ```java
+  System.out.println("Enter the phone number(include the country code prefix, but no +, spaces or parenthesis):")
+  var scanner = new Scanner(System.in);
+  var phoneNumber = scanner.nextLong();
+  Whatsapp.mobileBuilder() // Use the Mobile api
+        .lastConnection() // Deserialize the last connection, or create a new one if it doesn't exist
+        .device(CompanionDevice.ios(false)) // Use a non-business iOS account
+        .unregistered() // If the connection was just created, it needs to be registered
+        .verificationCodeMethod(VerificationCodeMethod.SMS) // If the connection was just created, send an SMS OTP
+        .verificationCodeSupplier(() -> { // Called when the OTP needs to be sent to Whatsapp
+            System.out.println("Enter OTP: "); 
+            var scanner = new Scanner(System.in);
+            return scanner.nextLine();
+        })
+        .register(phoneNumber) // Register the phone number asynchronously, if necessary
+        .join() // Await the result
+        .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
+        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
+        .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
+        .connect() // Connect to Whatsapp asynchronously
+        .join(); // Await the result
+  ```
+</details>
 
 ### How to close a connection
 
@@ -662,7 +727,7 @@ All types of messages supported by Whatsapp are supported by this library:
   -  Video
 
      ```java
-     var video = VideoMessage.simpleVideoBuilder() // Create a new video message builder
+     var video = new VideoMessageSimpleBuilder() // Create a new video message builder
            .media(urlMedia) // Set the video of this message
            .caption("A nice video") // Set the caption of this message
            .width(100) // Set the width of the video
@@ -674,14 +739,14 @@ All types of messages supported by Whatsapp are supported by this library:
   -  GIF(Video)
 
      ```java
-     var gif = VideoMessage.simpleGifBuilder() // Create a new gif message builder
+     var gif = new GifMessageSimpleBuilder() // Create a new gif message builder
            .media(urlMedia) // Set the gif of this message
-           .caption("A nice video") // Set the caption of this message
+           .caption("A nice gif") // Set the caption of this message
            .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
            .build(); // Create the message
      api.sendMessage(chat,  gif);
      ```
-     > **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. This is the reason why the gif builder is under the VideoMessage class. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
+     > **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
 
   -  Document
 
@@ -770,26 +835,26 @@ Whatsapp starts sending updates regarding the presence of a contact only when:
 To force Whatsapp to send these updates use:
 
 ``` java
-api.subscribeToUserPresence(contact);
+api.subscribeToPresence(contact);
 ```
 
 Then, after the subscribeToUserPresence's future is completed, query again the presence of that contact.
 
 ### Query data about a group, or a contact
 
-##### Text status
+##### About
 
 ``` java
-var status = api.queryStatus(contact) // A completable future
+var status = api.queryAbout(contact) // A completable future
       .join() // Wait for the future to complete
-      .map(ContactStatusResponse::status) // Map the response to its status
+      .flatMap(ContactAboutResponse::about) // Map the response to its status
       .orElse(null); // If no status is available yield null
 ```
 
 ##### Profile picture or chat picture
 
 ``` java
-var status = api.queryPicture(contact) // A completable future
+var picture = api.queryPicture(contact) // A completable future
       .join() // Wait for the future to complete
       .orElse(null); // If no picture is available yield null
 ```
@@ -815,25 +880,25 @@ var starredMessages = chat.starredMessages(); // All the starred messages in a c
 ##### Mute a chat
 
 ``` java
-var future = api.mute(chat);
+var future = api.muteChat(chat);
 ```
 
 ##### Unmute a chat
 
 ``` java
-var future = api.mute(chat);
+var future = api.unmuteChat(chat);
 ```
 
 ##### Archive a chat
 
 ``` java
-var future = api.archive(chat);
+var future = api.archiveChat(chat);
 ```
 
 ##### Unarchive a chat
 
 ``` java
-var future = api.unarchive(chat);
+var future = api.unarchiveChat(chat);
 ```
 
 ##### Change ephemeral message status in a chat
@@ -845,42 +910,38 @@ var future = api.changeEphemeralTimer(chat,  ChatEphemeralTimer.ONE_WEEK);
 ##### Mark a chat as read
 
 ``` java
-var future = api.markAsRead(chat);
+var future = api.markChatRead(chat);
 ```   
 
 ##### Mark a chat as unread
 
 ``` java
-var future = api.markAsUnread(chat);
+var future = api.markChatUnread(chat);
 ```   
 
 ##### Pin a chat
 
 ``` java
-var future = api.pin(chat);
+var future = api.pinChat(chat);
 ``` 
 
 ##### Unpin a chat
 
 ``` java
-var future = api.unpin(chat);
+var future = api.unpinChat(chat);
 ```
 
 ##### Clear a chat
 
 ``` java
-var future = api.clear(chat);
+var future = api.clearChat(chat, false);
 ```
-
-> **_IMPORTANT:_** This method is experimental and may not work
 
 ##### Delete a chat
 
 ``` java
-var future = api.delete(chat);
+var future = api.deleteChat(chat);
 ```
-
-> **_IMPORTANT:_** This method is experimental and may not work
 
 ### Change the state of a participant of a group
 
@@ -922,16 +983,10 @@ var future = api.changeGroupSubject(group, newName);
 var future = api.changeGroupDescription(group, newDescription);
 ```
 
-##### Change who can send messages in a group
+##### Change a setting in a group
 
 ``` java
-var future = api.changeWhoCanSendMessages(group, GroupPolicy.ANYONE);
-```
-
-##### Change who can edit the metadata/settings in a group
-
-``` java
-var future = api.changeWhoCanEditInfo(group, GroupPolicy.ANYONE);
+var future = api.changeGroupSetting(group, GroupSetting.EDIT_GROUP_INFO, GroupPolicy.ANYONE);
 ```
 
 ##### Change or remove the picture of a group
@@ -963,10 +1018,10 @@ var future = api.queryGroupInviteCode(group);
 ##### Revoke a group's invite code
 
 ``` java
-var future = api.revokeGroupInviteCode(group);
+var future = api.revokeGroupInvite(group);
 ```
 
-##### Query a group's invite code
+##### Accept a group invite
 
 ``` java
 var future = api.acceptGroupInvite(inviteCode);
@@ -974,19 +1029,19 @@ var future = api.acceptGroupInvite(inviteCode);
 
 ### Companions (Mobile api only)
 
-### Link a companion
+##### Link a companion
 
 ``` java
 var future = api.linkCompanion(qrCode);
 ```
 
-### Unlink a companion
+##### Unlink a companion
 
 ``` java
 var future = api.unlinkCompanion(companionJid);
 ```
 
-### Unlink all companions
+##### Unlink all companions
 
 ``` java
 var future = api.unlinkCompanions();
@@ -994,18 +1049,41 @@ var future = api.unlinkCompanions();
 
 ### 2FA (Mobile api only)
 
-### Enable 2FA
+##### Enable 2FA
 
 ``` java
 var future = api.enable2fa("000000", "mail@domain.com");
 ```
 
-### Disable 2FA
+##### Disable 2FA
 
 ``` java
 var future = api.disable2fa();
 ```
 
+### Calls (Mobile api only)
+
+##### Start a call
+
+``` java
+var future = api.startCall(contact);
+```
+
+> **_IMPORTANT:_** Currently there is no audio/video support
+
+##### Stop or reject a call
+
+``` java
+var future = api.stopCall(contact);
+```
+
+### Communities
+
+> **_IMPORTANT:_** Fully supported, but not documented here. Check the Javadocs.
+
+### Newsletters
+
+> **_IMPORTANT:_** Fully supported, but not documented here. Check the Javadocs.
 
 Some methods may not be listed here, all contributions are welcomed to this documentation!
 Some methods may not be supported on the mobile api, please report them, so I can fix them.

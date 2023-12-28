@@ -29,7 +29,7 @@ import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.response.ContactStatusResponse;
+import it.auties.whatsapp.model.response.ContactAboutResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessageBuilder;
@@ -377,10 +377,11 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(JidProvider chat) {
+    public CompletableFuture<Optional<ContactAboutResponse>> queryAbout(JidProvider chat) {
         var query = Node.of("status");
         var body = Node.of("user", Map.of("jid", chat.toJid()));
-        return sendInteractiveQuery(query, body).thenApplyAsync(this::parseStatus);
+        return sendInteractiveQuery(query, body)
+                .thenApplyAsync(this::parseAbout);
     }
 
     public CompletableFuture<List<Node>> sendInteractiveQuery(Node queryNode, Node... queryBody) {
@@ -392,12 +393,12 @@ public class SocketHandler implements SocketListener {
         return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
     }
 
-    private Optional<ContactStatusResponse> parseStatus(List<Node> responses) {
+    private Optional<ContactAboutResponse> parseAbout(List<Node> responses) {
         return responses.stream()
                 .map(entry -> entry.findNode("status"))
                 .flatMap(Optional::stream)
                 .findFirst()
-                .map(ContactStatusResponse::ofNode);
+                .map(ContactAboutResponse::ofNode);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body) {

@@ -725,16 +725,16 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Optional<String>> queryNameFromServer(JidProvider contactJid) {
-        var query = new ContactStatusRequest(ChatMessageKey.randomId(), List.of(new ContactStatusRequest.Variable(contactJid.toJid().user(), List.of("STATUS"))));
-        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Json.writeValueAsBytes(query)))
+        var query = new UserChosenNameRequest(List.of(new UserChosenNameRequest.Variable(contactJid.toJid().user())));
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6556393721124826"), Json.writeValueAsBytes(query)))
                 .thenApplyAsync(this::parseNameResponse);
     }
 
     private Optional<String> parseNameResponse(Node result) {
         return result.findNode("result")
                 .flatMap(Node::contentAsString)
-                .flatMap(ContactStatusResponse::ofJson)
-                .flatMap(ContactStatusResponse::status);
+                .flatMap(UserChosenNameResponse::ofJson)
+                .flatMap(UserChosenNameResponse::name);
     }
 
     /**
@@ -743,7 +743,7 @@ public class Whatsapp {
      * @param chat the target contact
      * @return a CompletableFuture that wraps an optional contact status newsletters
      */
-    public CompletableFuture<Optional<ContactStatusResponse>> queryAbout(JidProvider chat) {
+    public CompletableFuture<Optional<ContactAboutResponse>> queryAbout(JidProvider chat) {
         return socketHandler.queryAbout(chat);
     }
 

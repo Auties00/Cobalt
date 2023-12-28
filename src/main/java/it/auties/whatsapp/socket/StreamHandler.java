@@ -1103,12 +1103,12 @@ class StreamHandler {
                 .thenAcceptAsync(result -> parseNewAbout(result.orElse(null), update));
     }
 
-    private void parseNewAbout(ContactStatusResponse result, boolean update) {
+    private void parseNewAbout(ContactAboutResponse result, boolean update) {
         if (result == null) {
             return;
         }
 
-        result.status().ifPresent(about -> {
+        result.about().ifPresent(about -> {
             socketHandler.store().setAbout(about);
             if (!update) {
                 return;
