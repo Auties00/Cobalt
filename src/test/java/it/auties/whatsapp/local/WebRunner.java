@@ -9,7 +9,7 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 public class WebRunner {
     public static void main(String[] args) {
         var whatsapp = Whatsapp.webBuilder()
-                .lastConnection()
+                .newConnection()
                 .historyLength(WebHistoryLength.zero())
                 .unregistered(393495089819L, PairingCodeHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))

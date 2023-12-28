@@ -7,12 +7,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class ConcurrentDoublyLinkedHashedDequeue<E> extends AbstractQueue<E> implements Deque<E> {
+public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implements Deque<E> {
     private final AtomicReference<Node<E>> head;
     private final AtomicReference<Node<E>> tail;
     private final Set<Integer> hashes;
 
-    public ConcurrentDoublyLinkedHashedDequeue() {
+    public ConcurrentLinkedHashedDequeue() {
         this.head = new AtomicReference<>(null);
         this.tail = new AtomicReference<>(null);
         this.hashes = ConcurrentHashMap.newKeySet();

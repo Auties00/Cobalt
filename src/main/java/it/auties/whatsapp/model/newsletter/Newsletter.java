@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
-import it.auties.whatsapp.util.ConcurrentDoublyLinkedHashedDequeue;
+import it.auties.whatsapp.util.ConcurrentLinkedHashedDequeue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -17,7 +17,7 @@ public final class Newsletter implements JidProvider {
     private NewsletterState state;
     private NewsletterMetadata metadata;
     private final NewsletterViewerMetadata viewerMetadata;
-    private final ConcurrentDoublyLinkedHashedDequeue<NewsletterMessageInfo> messages;
+    private final ConcurrentLinkedHashedDequeue<NewsletterMessageInfo> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     Newsletter(
@@ -30,13 +30,13 @@ public final class Newsletter implements JidProvider {
             @JsonProperty("viewer_metadata")
             NewsletterViewerMetadata viewerMetadata,
             @JsonProperty("messages")
-            ConcurrentDoublyLinkedHashedDequeue<NewsletterMessageInfo> messages
+            ConcurrentLinkedHashedDequeue<NewsletterMessageInfo> messages
     ) {
         this.jid = jid;
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentDoublyLinkedHashedDequeue::new);
+        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedHashedDequeue::new);
     }
 
     public Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata) {
@@ -44,7 +44,7 @@ public final class Newsletter implements JidProvider {
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = new ConcurrentDoublyLinkedHashedDequeue<>();
+        this.messages = new ConcurrentLinkedHashedDequeue<>();
     }
 
     public void addMessage(NewsletterMessageInfo message) {
