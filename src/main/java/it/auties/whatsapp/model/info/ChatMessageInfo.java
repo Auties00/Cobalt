@@ -63,11 +63,11 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     private final StubType stubType;
     @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
     private final boolean clearMedia;
-    @ProtobufProperty(index = 26, type = ProtobufType.STRING, repeated = true)
+    @ProtobufProperty(index = 26, type = ProtobufType.STRING)
     private final List<String> stubParameters;
     @ProtobufProperty(index = 27, type = ProtobufType.UINT32)
     private final int duration;
-    @ProtobufProperty(index = 28, type = ProtobufType.STRING, repeated = true)
+    @ProtobufProperty(index = 28, type = ProtobufType.STRING)
     private final List<String> labels;
     @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
     private final PaymentInfo paymentInfo;
@@ -93,7 +93,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     private final PhotoChange photoChange;
     @ProtobufProperty(index = 40, type = ProtobufType.OBJECT)
     private final MessageReceipt receipt;
-    @ProtobufProperty(index = 41, type = ProtobufType.OBJECT, repeated = true)
+    @ProtobufProperty(index = 41, type = ProtobufType.OBJECT)
     private final List<ReactionMessage> reactions;
     @ProtobufProperty(index = 42, type = ProtobufType.OBJECT)
     private final MediaData quotedStickerData;
@@ -101,7 +101,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
     private final byte[] futureProofData;
     @ProtobufProperty(index = 44, type = ProtobufType.OBJECT)
     private final PublicServiceAnnouncementStatus psaStatus;
-    @ProtobufProperty(index = 45, type = ProtobufType.OBJECT, repeated = true)
+    @ProtobufProperty(index = 45, type = ProtobufType.OBJECT)
     private final List<PollUpdate> pollUpdates;
     @ProtobufProperty(index = 46, type = ProtobufType.OBJECT)
     private PollAdditionalMetadata pollAdditionalMetadata;

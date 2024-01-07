@@ -64,7 +64,7 @@ public final class VideoOrGifMessage extends ExtendedMediaMessage<VideoOrGifMess
     @ProtobufProperty(index = 11, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
 
-    @ProtobufProperty(index = 12, type = ProtobufType.OBJECT, repeated = true)
+    @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
     private final List<InteractiveLocationAnnotation> interactiveAnnotations;
 
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)

@@ -28,7 +28,7 @@ public record ListMessage(
         String button,
         @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
         Type listType,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         List<ButtonSection> sections,
         @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
         Optional<ProductListInfo> productListInfo,

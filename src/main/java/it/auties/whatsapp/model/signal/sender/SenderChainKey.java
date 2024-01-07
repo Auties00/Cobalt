@@ -1,8 +1,16 @@
 package it.auties.whatsapp.model.signal.sender;
 
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.crypto.Hmac;
 
-public record SenderChainKey(int iteration, byte[] seed) {
+public record SenderChainKey(
+        @ProtobufProperty(index = 1, type = ProtobufType.INT32)
+        int iteration,
+        @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
+        byte[] seed
+) implements ProtobufMessage {
     private static final byte[] MESSAGE_KEY_SEED = {0x01};
     private static final byte[] CHAIN_KEY_SEED = {0x02};
 

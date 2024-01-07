@@ -2,6 +2,9 @@ package it.auties.whatsapp.model.newsletter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
@@ -12,11 +15,16 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class Newsletter implements JidProvider {
+public final class Newsletter implements JidProvider, ProtobufMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Jid jid;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
     private NewsletterState state;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
     private NewsletterMetadata metadata;
+    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
     private final NewsletterViewerMetadata viewerMetadata;
+    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
     private final ConcurrentLinkedHashedDequeue<NewsletterMessageInfo> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

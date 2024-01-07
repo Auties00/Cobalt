@@ -791,7 +791,17 @@ class MessageHandler {
                     .map(MessageContainerSpec::decode)
                     .map(messageContainer -> {
                         var readStatus = notify ? MessageStatus.DELIVERED : MessageStatus.READ;
-                        return new NewsletterMessageInfo(newsletter.get(), messageId, serverId, timestamp, views, reactions, messageContainer, readStatus);
+                        var message = new NewsletterMessageInfo(
+                                messageId,
+                                serverId,
+                                timestamp,
+                                views,
+                                reactions,
+                                messageContainer,
+                                readStatus
+                        );
+                        message.setNewsletter(newsletter.get());
+                        return message;
                     });
             if (result.isEmpty()) {
                 return;

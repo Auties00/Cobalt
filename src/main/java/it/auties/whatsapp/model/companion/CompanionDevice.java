@@ -1,5 +1,8 @@
 package it.auties.whatsapp.model.companion;
 
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
@@ -11,7 +14,16 @@ import it.auties.whatsapp.model.signal.auth.Version;
  * @param platform     the non-null os of the device
  * @param version    the non-null os version of the device
  */
-public record CompanionDevice(String model, String manufacturer, PlatformType platform, String version) {
+public record CompanionDevice(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        String model,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        String manufacturer,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        PlatformType platform,
+        @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+        String version
+) implements ProtobufMessage {
     public static CompanionDevice web() {
         return new CompanionDevice("Chrome", "Google", PlatformType.WEB,"1.0");
     }

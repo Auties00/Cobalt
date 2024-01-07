@@ -12,7 +12,7 @@ import java.util.List;
  */
 @ProtobufMessageName("Message.PollVoteMessage")
 public record PollUpdateEncryptedOptions(
-        @ProtobufProperty(index = 1, type = ProtobufType.BYTES, repeated = true)
+        @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
         List<byte[]> selectedOptions
 ) implements ProtobufMessage {
 

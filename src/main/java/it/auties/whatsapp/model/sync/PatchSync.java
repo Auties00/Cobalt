@@ -12,7 +12,7 @@ import java.util.List;
 public final class PatchSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private VersionSync version;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
     private final List<MutationSync> mutations;
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
     private final ExternalBlobReference externalMutations;

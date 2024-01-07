@@ -1,5 +1,8 @@
 package it.auties.whatsapp.model.privacy;
 
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.List;
@@ -11,7 +14,14 @@ import java.util.List;
  * @param value    the non-null value
  * @param excluded the non-null list of excluded contacts if {@link PrivacySettingEntry#value} == {@link PrivacySettingValue#CONTACTS_EXCEPT}
  */
-public record PrivacySettingEntry(PrivacySettingType type, PrivacySettingValue value, List<Jid> excluded) {
+public record PrivacySettingEntry(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        PrivacySettingType type,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        PrivacySettingValue value,
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+        List<Jid> excluded
+) implements ProtobufMessage {
     /**
      * Canonical constructor
      */

@@ -3,6 +3,9 @@ package it.auties.whatsapp.controller;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.TextPreviewSetting;
 import it.auties.whatsapp.api.WebHistoryLength;
@@ -38,6 +41,7 @@ import it.auties.whatsapp.registration.TokenProvider;
 import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.FutureReference;
+import it.auties.whatsapp.util.ProtobufUriMixin;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 
 import java.net.URI;
@@ -56,246 +60,281 @@ import java.util.stream.Stream;
  * This controller holds the user-related data regarding a WhatsappWeb session
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Store extends Controller<Store> {
+public final class Store extends Controller<Store> implements ProtobufMessage {
     /**
      * The version used by this session
      */
-    private URI proxy;
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING, mixin = ProtobufUriMixin.class)
+    URI proxy;
 
     /**
      * The version used by this session
      */
-    private FutureReference<Version> version;
+    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, overrideType = Version.class)
+    FutureReference<Version> version;
 
     /**
      * Whether this account is online for other users
      */
-    private boolean online;
+    @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
+    boolean online;
 
     /**
      * The locale of the user linked to this account
      */
-    private CountryLocale locale;
+    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    CountryLocale locale;
 
     /**
      * The name of the user linked to this account. This field will be null while the user hasn't
      * logged in yet. Assumed to be non-null otherwise.
      */
-    private String name;
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    String name;
 
     /**
      * The address of this account, if it's a business account
      */
-    private String businessAddress;
+    @ProtobufProperty(index = 10, type = ProtobufType.STRING)
+    String businessAddress;
 
     /**
      * The longitude of this account's location, if it's a business account
      */
-    private Double businessLongitude;
+    @ProtobufProperty(index = 11, type = ProtobufType.DOUBLE)
+    Double businessLongitude;
 
     /**
      * The latitude of this account's location, if it's a business account
      */
-    private Double businessLatitude;
+    @ProtobufProperty(index = 12, type = ProtobufType.DOUBLE)
+    Double businessLatitude;
 
     /**
      * The description of this account, if it's a business account
      */
-    private String businessDescription;
+    @ProtobufProperty(index = 13, type = ProtobufType.STRING)
+    String businessDescription;
 
     /**
      * The website of this account, if it's a business account
      */
-    private String businessWebsite;
+    @ProtobufProperty(index = 14, type = ProtobufType.STRING)
+    String businessWebsite;
 
     /**
      * The email of this account, if it's a business account
      */
-    private String businessEmail;
+    @ProtobufProperty(index = 15, type = ProtobufType.STRING)
+    String businessEmail;
 
     /**
      * The category of this account, if it's a business account
      */
-    private BusinessCategory businessCategory;
+    @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
+    BusinessCategory businessCategory;
 
     /**
      * The hash of the companion associated with this session
      */
-    private String deviceHash;
+    @ProtobufProperty(index = 17, type = ProtobufType.STRING)
+    String deviceHash;
 
     /**
      * A map of all the devices that the companion has associated using WhatsappWeb
      * The key here is the index of the device's key
      * The value is the device's companion jid
      */
-    private LinkedHashMap<Jid, Integer> linkedDevicesKeys;
+    @ProtobufProperty(index = 18, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.INT32)
+    LinkedHashMap<Jid, Integer> linkedDevicesKeys;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
-    private URI profilePicture;
+    @ProtobufProperty(index = 19, type = ProtobufType.STRING, mixin = ProtobufUriMixin.class)
+    URI profilePicture;
 
     /**
      * The status of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
      * Assumed to be non-null otherwise.
      */
-    private String about;
+    @ProtobufProperty(index = 20, type = ProtobufType.STRING)
+    String about;
 
     /**
      * The user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-    private Jid jid;
+    @ProtobufProperty(index = 21, type = ProtobufType.STRING)
+    Jid jid;
 
     /**
      * The lid user linked to this account. This field will be null while the user hasn't logged in yet.
      */
-    private Jid lid;
+    @ProtobufProperty(index = 22, type = ProtobufType.STRING)
+    Jid lid;
 
     /**
      * The non-null map of properties received by whatsapp
      */
-    private final ConcurrentHashMap<String, String> properties;
+    @ProtobufProperty(index = 23, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.STRING)
+    final ConcurrentHashMap<String, String> properties;
 
     /**
      * The non-null map of chats
      */
     @JsonIgnore
-    private final ConcurrentHashMap<Jid, Chat> chats;
+    final ConcurrentHashMap<Jid, Chat> chats;
 
     /**
      * The non-null map of contacts
      */
-    private final ConcurrentHashMap<Jid, Contact> contacts;
+    @ProtobufProperty(index = 24, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    final ConcurrentHashMap<Jid, Contact> contacts;
 
     /**
      * The non-null list of status messages
      */
-    private final ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status;
+    @ProtobufProperty(index = 25, type = ProtobufType.OBJECT)
+    final KeySetView<ChatMessageInfo, Boolean> status;
 
     /**
      * The non-null map of newsletters
      */
-    private final ConcurrentHashMap<Jid, Newsletter> newsletters;
-
+    @JsonIgnore
+    final ConcurrentHashMap<Jid, Newsletter> newsletters;
 
     /**
      * The non-null map of privacy settings
      */
-    private final ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings;
+    @ProtobufProperty(index = 26, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    final ConcurrentHashMap<String, PrivacySettingEntry> privacySettings;
 
     /**
      * The non-null map of calls
      */
-    private final ConcurrentHashMap<String, Call> calls;
+    @ProtobufProperty(index = 27, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    final ConcurrentHashMap<String, Call> calls;
 
     /**
      * Whether chats should be unarchived if a new message arrives
      */
-    private boolean unarchiveChats;
+    @ProtobufProperty(index = 28, type = ProtobufType.BOOL)
+    boolean unarchiveChats;
 
     /**
      * Whether the twenty-hours format is being used by the client
      */
-    private boolean twentyFourHourFormat;
+    @ProtobufProperty(index = 29, type = ProtobufType.BOOL)
+    boolean twentyFourHourFormat;
 
     /**
      * The non-null list of requests that were sent to Whatsapp. They might or might not be waiting
      * for a newsletters
      */
     @JsonIgnore
-    private final ConcurrentHashMap<String, SocketRequest> requests;
+    final ConcurrentHashMap<String, SocketRequest> requests;
 
     /**
      * The non-null list of replies waiting to be fulfilled
      */
     @JsonIgnore
-    private final ConcurrentHashMap<String, CompletableFuture<ChatMessageInfo>> replyHandlers;
+    final ConcurrentHashMap<String, CompletableFuture<ChatMessageInfo>> replyHandlers;
 
     /**
      * The non-null list of listeners
      */
     @JsonIgnore
-    private final KeySetView<Listener, Boolean> listeners;
+    final KeySetView<Listener, Boolean> listeners;
 
     /**
      * The request tag, used to create messages
      */
     @JsonIgnore
-    private final String tag;
+    final String tag;
 
     /**
      * The timestampSeconds in seconds for the initialization of this object
      */
-    private final long initializationTimeStamp;
+    @ProtobufProperty(index = 30, type = ProtobufType.UINT64)
+    final long initializationTimeStamp;
 
     /**
      * The media connection associated with this store
      */
     @JsonIgnore
-    private MediaConnection mediaConnection;
+    MediaConnection mediaConnection;
 
     /**
      * The media connection latch associated with this store
      */
     @JsonIgnore
-    private final CountDownLatch mediaConnectionLatch;
+    final CountDownLatch mediaConnectionLatch;
 
     /**
      * The request tag, used to create messages
      */
-    private ChatEphemeralTimer newChatsEphemeralTimer;
+    @ProtobufProperty(index = 31, type = ProtobufType.OBJECT)
+    ChatEphemeralTimer newChatsEphemeralTimer;
 
     /**
      * The setting to use when generating previews for text messages that contain links
      */
-    private TextPreviewSetting textPreviewSetting;
+    @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+    TextPreviewSetting textPreviewSetting;
 
     /**
      * Describes how much chat history Whatsapp should send
      */
-    private WebHistoryLength historyLength;
+    @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
+    WebHistoryLength historyLength;
 
     /**
      * Whether listeners should be automatically scanned and registered or not
      */
-    private boolean autodetectListeners;
+    @ProtobufProperty(index = 34, type = ProtobufType.BOOL)
+    boolean autodetectListeners;
 
     /**
      * Whether the listeners that were automatically scanned should be cached
      */
-    private boolean cacheDetectedListeners;
+    @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
+    boolean cacheDetectedListeners;
 
     /**
      * Whether updates about the presence of the session should be sent automatically to Whatsapp
      * For example, when the bot is started, the status of the companion is changed to available if this option is enabled
      * If this option is enabled, the companion will not receive notifications because the bot will instantly read them
      */
-    private boolean automaticPresenceUpdates;
+    @ProtobufProperty(index = 36, type = ProtobufType.BOOL)
+    boolean automaticPresenceUpdates;
 
     /**
      * The release channel to use when connecting to Whatsapp
      * This should allow the use of beta features
      */
-    private ReleaseChannel releaseChannel;
+    @ProtobufProperty(index = 37, type = ProtobufType.OBJECT)
+    ReleaseChannel releaseChannel;
 
     /**
      * Metadata about the device that is being simulated for Whatsapp
      */
-    private CompanionDevice device;
+    @ProtobufProperty(index = 38, type = ProtobufType.OBJECT)
+    CompanionDevice device;
 
     /**
      * Whether the mac of every app state request should be checked
      */
-    private boolean checkPatchMacs;
+    @ProtobufProperty(index = 39, type = ProtobufType.BOOL)
+    boolean checkPatchMacs;
 
-    /**
-     * All args constructor
-     */
+        /**
+         * All args constructor
+         */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, ConcurrentHashMap<Jid, ConcurrentHashMap<String, ChatMessageInfo>> status, ConcurrentHashMap<Jid, Newsletter> newsletters, ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean cacheDetectedListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
-        super(uuid, phoneNumber, serializer, clientType, alias);
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean cacheDetectedListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+        super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
         }
@@ -322,7 +361,7 @@ public final class Store extends Controller<Store> {
         this.chats = new ConcurrentHashMap<>();
         this.contacts = contacts;
         this.status = status;
-        this.newsletters = newsletters;
+        this.newsletters = new ConcurrentHashMap<>();
         this.privacySettings = privacySettings;
         this.calls = calls;
         this.unarchiveChats = unarchiveChats;
@@ -429,14 +468,9 @@ public final class Store extends Controller<Store> {
             case Jid contactJid -> switch (contactJid.type()) {
                 case NEWSLETTER -> findNewsletterByJid(contactJid)
                         .flatMap(newsletter -> findMessageById(newsletter, id));
-                case STATUS -> {
-                    var messages = status.get(contactJid);
-                    if (messages == null) {
-                        yield Optional.empty();
-                    }
-
-                    yield Optional.ofNullable(messages.get(id));
-                }
+                case STATUS -> status.stream()
+                        .filter(entry -> Objects.equals(entry.chatJid(), provider.toJid()) && Objects.equals(entry.id(), id))
+                        .findFirst();
                 default -> findChatByJid(contactJid)
                         .flatMap(chat -> findMessageById(chat, id));
             };
@@ -608,10 +642,7 @@ public final class Store extends Controller<Store> {
      * @return an immutable collection
      */
     public Collection<ChatMessageInfo> status() {
-        return status.values()
-                .stream()
-                .flatMap(entry -> entry.values().stream())
-                .collect(Collectors.toUnmodifiableSet());
+        return Collections.unmodifiableCollection(status);
     }
 
     /**
@@ -630,9 +661,9 @@ public final class Store extends Controller<Store> {
      * @return a non-null immutable list
      */
     public Collection<ChatMessageInfo> findStatusBySender(JidProvider jid) {
-        return Optional.ofNullable(status.get(jid.toJid()))
-                .map(entry -> Collections.unmodifiableCollection(entry.values()))
-                .orElseGet(Set::of);
+        return status.stream()
+                .filter(entry -> Objects.equals(entry.chatJid(), jid))
+                .toList();
     }
 
     /**
@@ -930,9 +961,7 @@ public final class Store extends Controller<Store> {
      * @return the same instance
      */
     public Store addStatus(ChatMessageInfo info) {
-        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentHashMap<String, ChatMessageInfo>::new);
-        wrapper.put(info.id(), info);
-        status.put(info.senderJid(), wrapper);
+        status.add(info);
         return this;
     }
 
@@ -989,7 +1018,7 @@ public final class Store extends Controller<Store> {
      * @return a non-null entry
      */
     public PrivacySettingEntry findPrivacySetting(PrivacySettingType type) {
-        return privacySettings.get(type);
+        return privacySettings.get(type.name());
     }
 
     /**
@@ -1000,7 +1029,7 @@ public final class Store extends Controller<Store> {
      * @return the old privacy setting entry
      */
     public PrivacySettingEntry addPrivacySetting(PrivacySettingType type, PrivacySettingEntry entry) {
-        return privacySettings.put(type, entry);
+        return privacySettings.put(type.name(), entry);
     }
 
     /**
@@ -1112,7 +1141,7 @@ public final class Store extends Controller<Store> {
     public Store setProxy(URI proxy) {
         if (proxy != null && proxy.getUserInfo() != null) {
             ProxyAuthenticator.register(proxy);
-        } else if (proxy == null && this.proxy != null && this.proxy.getUserInfo() != null) {
+        } else if (proxy == null && this.proxy != null) {
             ProxyAuthenticator.unregister(this.proxy);
         }
 
@@ -1310,6 +1339,10 @@ public final class Store extends Controller<Store> {
 
     public boolean checkPatchMacs() {
         return this.checkPatchMacs;
+    }
+
+    public Map<String, Call> calls() {
+        return Collections.unmodifiableMap(calls);
     }
 
     public Store setOnline(boolean online) {

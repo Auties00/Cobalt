@@ -11,7 +11,7 @@ import java.util.List;
 public record SnapshotSync(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         VersionSync version,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         List<RecordSync> records,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
         byte[] mac,

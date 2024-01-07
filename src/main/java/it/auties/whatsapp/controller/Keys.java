@@ -2,8 +2,13 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.companion.CompanionHashState;
+import it.auties.whatsapp.model.companion.CompanionPatch;
+import it.auties.whatsapp.model.companion.CompanionSyncKey;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
@@ -13,6 +18,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
+import it.auties.whatsapp.model.signal.sender.SenderPreKeys;
 import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
@@ -31,131 +37,154 @@ import static java.util.Objects.requireNonNullElseGet;
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Keys extends Controller<Keys> {
+public final class Keys extends Controller<Keys> implements ProtobufMessage {
     /**
      * The client id
      */
-    private final int registrationId;
+    @ProtobufProperty(index = 5, type = ProtobufType.INT32)
+    final int registrationId;
 
     /**
      * The secret key pair used for buffer messages
      */
-    private final SignalKeyPair noiseKeyPair;
+    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    final SignalKeyPair noiseKeyPair;
 
     /**
      * The ephemeral key pair
      */
-    private final SignalKeyPair ephemeralKeyPair;
+    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    final SignalKeyPair ephemeralKeyPair;
 
     /**
      * The signed identity key
      */
-    private final SignalKeyPair identityKeyPair;
+    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    final SignalKeyPair identityKeyPair;
 
     /**
      * The companion secret key
      */
-    private SignalKeyPair companionKeyPair;
+    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    SignalKeyPair companionKeyPair;
 
     /**
      * The signed pre key
      */
-    private final SignalSignedKeyPair signedKeyPair;
+    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    final SignalSignedKeyPair signedKeyPair;
 
     /**
      * The signed key of the companion's device
      * This value will be null until it gets synced by whatsapp
      */
-    private byte[] signedKeyIndex;
+    @ProtobufProperty(index = 11, type = ProtobufType.BYTES)
+    byte[] signedKeyIndex;
 
     /**
      * The timestampSeconds of the signed key companion's device
      */
-    private Long signedKeyIndexTimestamp;
+    @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
+    Long signedKeyIndexTimestamp;
 
     /**
      * Whether these keys have generated pre keys assigned to them
      */
-    private final List<SignalPreKeyPair> preKeys;
+    @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+    final List<SignalPreKeyPair> preKeys;
 
     /**
      * The phone id for the mobile api
      */
-    private final String phoneId;
+    @ProtobufProperty(index = 14, type = ProtobufType.STRING)
+    final String phoneId;
 
     /**
      * The device id for the mobile api
      */
-    private final byte[] deviceId;
+    @ProtobufProperty(index = 15, type = ProtobufType.BYTES)
+    final byte[] deviceId;
 
     /**
      * The recovery token for the mobile api
      */
-    private final byte[] identityId;
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    final byte[] identityId;
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
-    private SignedDeviceIdentity companionIdentity;
+    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    SignedDeviceIdentity companionIdentity;
 
     /**
      * Sender keys for signal implementation
      */
-    private final Map<SenderKeyName, SenderKeyRecord> senderKeys;
+    @ProtobufProperty(index = 18, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    final Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
      * App state keys
      */
-    private final Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys;
+    @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
+    final List<CompanionSyncKey> appStateKeys;
 
     /**
      * Sessions map
      */
-    private final Map<SessionAddress, Session> sessions;
+    @ProtobufProperty(index = 20, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    final Map<SessionAddress, Session> sessions;
 
     /**
      * Hash state
      */
-    private final Map<Jid, Map<PatchType, CompanionHashState>> hashStates;
+    @ProtobufProperty(index = 21, type = ProtobufType.OBJECT)
+    final List<CompanionPatch> hashStates;
 
-    private final Map<Jid, Collection<Jid>> groupsPreKeys;
+
+    @ProtobufProperty(index = 22, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    final Map<Jid, SenderPreKeys> groupsPreKeys;
 
     /**
      * Whether the client was registered
      */
-    private boolean registered;
+    @ProtobufProperty(index = 23, type = ProtobufType.BOOL)
+    boolean registered;
 
     /**
      * Whether the client has already sent its business certificate (mobile api only)
      */
-    private boolean businessCertificate;
+    @ProtobufProperty(index = 24, type = ProtobufType.BOOL)
+    boolean businessCertificate;
 
     /**
      * Whether the client received the initial app sync (web api only)
      */
-    private boolean initialAppSync;
+    @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
+    boolean initialAppSync;
 
     /**
      * Write counter for IV
      */
     @JsonIgnore
-    private final AtomicLong writeCounter;
+    final AtomicLong writeCounter;
 
     /**
      * Read counter for IV
      */
     @JsonIgnore
-    private final AtomicLong readCounter;
+    final AtomicLong readCounter;
 
     /**
      * Session dependent keys to write and read cyphered messages
      */
     @JsonIgnore
-    private byte[] writeKey, readKey;
+    byte[] writeKey, readKey;
+
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Keys(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, byte[] deviceId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys, Map<SessionAddress, Session> sessions, Map<Jid, Map<PatchType, CompanionHashState>> hashStates, Map<Jid, Collection<Jid>> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
-        super(uuid, phoneNumber, serializer, clientType, alias);
+    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, byte[] deviceId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+        super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = registrationId;
         this.noiseKeyPair = noiseKeyPair;
         this.ephemeralKeyPair = ephemeralKeyPair;
@@ -261,8 +290,10 @@ public final class Keys extends Controller<Keys> {
      * @return a non-null Optional app state dataSync key
      */
     public Optional<AppStateSyncKey> findAppKeyById(Jid jid, byte[] id) {
-        return Objects.requireNonNull(appStateKeys.get(jid), "Missing keys")
-                .stream()
+        return appStateKeys.stream()
+                .filter(preKey -> Objects.equals(preKey.companion(), jid))
+                .map(CompanionSyncKey::keys)
+                .flatMap(Collection::stream)
                 .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId().keyId(), id))
                 .findFirst();
     }
@@ -275,8 +306,10 @@ public final class Keys extends Controller<Keys> {
      * @return a non-null hash state
      */
     public Optional<CompanionHashState> findHashStateByName(Jid device, PatchType patchType) {
-        return Optional.ofNullable(hashStates.get(device))
-                .map(entry -> entry.get(patchType));
+        return hashStates.stream()
+                .filter(hashState -> Objects.equals(hashState.companion(), device) && hashState.state().type() == patchType)
+                .findFirst()
+                .map(CompanionPatch::state);
     }
 
     /**
@@ -320,9 +353,8 @@ public final class Keys extends Controller<Keys> {
      * @return this
      */
     public Keys putState(Jid device, CompanionHashState state) {
-        var oldData = Objects.requireNonNullElseGet(hashStates.get(device), HashMap<PatchType, CompanionHashState>::new);
-        oldData.put(state.name(), state);
-        hashStates.put(device, oldData);
+        var hashState = new CompanionPatch(device, state);
+        hashStates.add(hashState);
         return this;
     }
 
@@ -334,7 +366,13 @@ public final class Keys extends Controller<Keys> {
      * @return this
      */
     public Keys addAppKeys(Jid jid, Collection<AppStateSyncKey> keys) {
-        appStateKeys.put(jid, new LinkedList<>(keys));
+        appStateKeys.stream()
+                .filter(preKey -> Objects.equals(preKey.companion(), jid))
+                .findFirst()
+                .ifPresentOrElse(key -> key.keys().addAll(keys), () -> {
+                    var syncKey = new CompanionSyncKey(jid, new LinkedList<>(keys));
+                    appStateKeys.add(syncKey);
+                });
         return this;
     }
 
@@ -344,8 +382,7 @@ public final class Keys extends Controller<Keys> {
      * @return a non-null app key
      */
     public AppStateSyncKey getLatestAppKey(Jid jid) {
-        var keys = Objects.requireNonNull(appStateKeys.get(jid), "Missing keys");
-        return keys.getLast();
+        return getAppKeys(jid).getLast();
     }
 
     /**
@@ -354,7 +391,11 @@ public final class Keys extends Controller<Keys> {
      * @return a non-null app key
      */
     public LinkedList<AppStateSyncKey> getAppKeys(Jid jid) {
-        return Objects.requireNonNullElseGet(appStateKeys.get(jid), LinkedList::new);
+        return appStateKeys.stream()
+                .filter(preKey -> Objects.equals(preKey.companion(), jid))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Missing keys"))
+                .keys();
     }
 
     /**
@@ -431,23 +472,24 @@ public final class Keys extends Controller<Keys> {
     public void addRecipientWithPreKeys(Jid group, Jid recipient) {
         var preKeys = groupsPreKeys.get(group);
         if (preKeys != null) {
-            preKeys.add(recipient);
+            preKeys.addPreKey(recipient);
             return;
         }
 
-        var newPreKeys = new ArrayList<Jid>();
-        newPreKeys.add(recipient);
+        var newPreKeys = new SenderPreKeys();
+        newPreKeys.addPreKey(recipient);
         groupsPreKeys.put(group, newPreKeys);
     }
 
     public void addRecipientsWithPreKeys(Jid group, Collection<Jid> recipients) {
         var preKeys = groupsPreKeys.get(group);
         if (preKeys != null) {
-            preKeys.addAll(recipients);
+            preKeys.addPreKeys(recipients);
             return;
         }
 
-        var newPreKeys = new ArrayList<>(recipients);
+        var newPreKeys = new SenderPreKeys();
+        newPreKeys.addPreKeys(recipients);
         groupsPreKeys.put(group, newPreKeys);
     }
 
@@ -514,19 +556,19 @@ public final class Keys extends Controller<Keys> {
         return this.senderKeys;
     }
 
-    public Map<Jid, LinkedList<AppStateSyncKey>> appStateKeys() {
-        return this.appStateKeys;
+    public List<CompanionSyncKey> appStateKeys() {
+        return appStateKeys;
     }
 
     public Map<SessionAddress, Session> sessions() {
         return this.sessions;
     }
 
-    public Map<Jid, Map<PatchType, CompanionHashState>> hashStates() {
-        return this.hashStates;
+    public List<CompanionPatch> hashStates() {
+        return hashStates;
     }
 
-    public Map<Jid, Collection<Jid>> groupsPreKeys() {
+    public Map<Jid, SenderPreKeys> groupsPreKeys() {
         return this.groupsPreKeys;
     }
 

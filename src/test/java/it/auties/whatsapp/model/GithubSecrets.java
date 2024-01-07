@@ -4,15 +4,15 @@ import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.utils.LibraryLoader;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.controller.KeysSpec;
+import it.auties.whatsapp.controller.StoreSpec;
 import it.auties.whatsapp.util.ConfigUtils;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Smile;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.Security;
 import java.util.Base64;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import static java.net.URI.create;
@@ -145,18 +146,22 @@ public final class GithubSecrets {
     }
 
     private static byte[] getStoreAsJson() {
-        try {
-            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().registered().orElseThrow().store());
-        } catch (IOException exception) {
-            throw new UncheckedIOException(exception);
-        }
+        var store = Whatsapp.webBuilder()
+                .lastOptionalConnection()
+                .orElseThrow(() -> new NoSuchElementException("No connection available"))
+                .registered()
+                .orElseThrow(() -> new NoSuchElementException("No registered connection available"))
+                .store();
+        return StoreSpec.encode(store);
     }
 
     private static byte[] getCredentialsAsJson() {
-        try {
-            return Smile.writeValueAsBytes(Whatsapp.webBuilder().lastConnection().registered().orElseThrow().keys());
-        } catch (IOException exception) {
-            throw new UncheckedIOException(exception);
-        }
+        var keys = Whatsapp.webBuilder()
+                .lastOptionalConnection()
+                .orElseThrow(() -> new NoSuchElementException("No connection available"))
+                .registered()
+                .orElseThrow(() -> new NoSuchElementException("No registered connection available"))
+                .keys();
+        return KeysSpec.encode(keys);
     }
 }

@@ -11,5 +11,5 @@ import java.util.List;
 public record KeyIndexList(@ProtobufProperty(index = 1, type = ProtobufType.UINT32) int rawId,
                            @ProtobufProperty(index = 2, type = ProtobufType.UINT64) long timestamp,
                            @ProtobufProperty(index = 3, type = ProtobufType.UINT32) int currentIndex,
-                           @ProtobufProperty(index = 4, type = ProtobufType.UINT32, repeated = true) List<Integer> validIndexes) implements ProtobufMessage {
+                           @ProtobufProperty(index = 4, type = ProtobufType.UINT32) List<Integer> validIndexes) implements ProtobufMessage {
 }

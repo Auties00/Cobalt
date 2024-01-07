@@ -16,7 +16,7 @@ public record QuickReplyAction(
         String shortcut,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String message,
-        @ProtobufProperty(index = 3, type = ProtobufType.STRING, repeated = true)
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         List<String> keywords,
         @ProtobufProperty(index = 4, type = ProtobufType.INT32)
         int count,

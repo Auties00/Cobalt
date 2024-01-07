@@ -33,7 +33,7 @@ public final class PollCreationMessage implements ContextualMessage {
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String title;
 
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT, repeated = true)
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
     private final List<PollOption> selectableOptions;
 
     @ProtobufProperty(index = 4, type = ProtobufType.UINT32)

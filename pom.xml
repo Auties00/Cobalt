@@ -245,6 +245,11 @@
     <dependencies>
         <!-- Generate and print QR code (Web API) -->
         <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>protobuf-serialization-plugin</artifactId>
+            <version>${protoc.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>${zxing.version}</version>
@@ -279,10 +284,10 @@
             <version>${protoc.version}</version>
         </dependency>
 
-        <!-- Smile serialization (used to persist sessions) -->
+        <!-- Json serialization (used by Whatsapp) -->
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-smile</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         <dependency>

@@ -20,7 +20,7 @@ public final class ActionMessageRangeSync implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)
     private Long lastSystemMessageTimestamp;
 
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT, repeated = true)
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
     private final List<SyncActionMessage> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

@@ -1,12 +1,17 @@
 package it.auties.whatsapp.model.newsletter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Map;
 import java.util.Objects;
 
-public final class NewsletterViewerMetadata {
+public final class NewsletterViewerMetadata implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
     private boolean mute;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
     private NewsletterViewerRole role;
 
     public NewsletterViewerMetadata(boolean mute, NewsletterViewerRole role) {

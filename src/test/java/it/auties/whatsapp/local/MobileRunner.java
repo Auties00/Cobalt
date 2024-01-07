@@ -4,6 +4,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 
+import java.net.URI;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +16,8 @@ public class MobileRunner {
         var phoneNumber = scanner.nextLong();
         var whatsapp = Whatsapp.mobileBuilder()
                 .newConnection()
-                .device(CompanionDevice.ios(true))
+                .proxy(URI.create("http://wy961882248_1:999999@gate8.rola.vip:1066/"))
+                .device(CompanionDevice.ios(false))
                 .unregistered()
                 .verificationCodeSupplier(MobileRunner::onScanCode)
                 .verificationCodeMethod(VerificationCodeMethod.SMS)

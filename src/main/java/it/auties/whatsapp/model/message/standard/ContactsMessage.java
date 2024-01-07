@@ -18,7 +18,7 @@ import java.util.Optional;
 public record ContactsMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String name,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         List<ContactMessage> contacts,
         @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo

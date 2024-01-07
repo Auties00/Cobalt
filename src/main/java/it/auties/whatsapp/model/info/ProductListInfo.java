@@ -15,7 +15,7 @@ import java.util.List;
  */
 @ProtobufMessageName("Message.ListMessage.ProductListInfo")
 public record ProductListInfo(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         List<ProductSection> productSections,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         ProductListHeaderImage headerImage,

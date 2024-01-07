@@ -21,13 +21,13 @@ public record HighlyStructuredMessage(
         String namespace,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String elementName,
-        @ProtobufProperty(index = 3, type = ProtobufType.STRING, repeated = true)
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         List<String> params,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Optional<String> fallbackLg,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         Optional<String> fallbackLc,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
         List<HighlyStructuredLocalizableParameter> localizableParameters,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> deterministicLg,

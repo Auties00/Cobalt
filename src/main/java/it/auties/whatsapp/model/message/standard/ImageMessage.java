@@ -59,7 +59,7 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
 
-    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT, repeated = true)
+    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
     private final List<InteractiveLocationAnnotation> interactiveAnnotations;
 
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
@@ -86,7 +86,7 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
     private final byte[] scansSidecar;
 
-    @ProtobufProperty(index = 22, type = ProtobufType.UINT32, repeated = true)
+    @ProtobufProperty(index = 22, type = ProtobufType.UINT32)
     private final List<Integer> scanLengths;
 
     @ProtobufProperty(index = 23, type = ProtobufType.BYTES)

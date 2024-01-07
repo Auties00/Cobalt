@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.mobile;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import it.auties.protobuf.annotation.ProtobufConverter;
 import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.Optional;
@@ -19,6 +20,7 @@ public record PhoneNumber(CountryCode countryCode, long numberWithoutPrefix) {
         return of(Long.parseLong(phoneNumber));
     }
 
+    @ProtobufConverter
     @JsonCreator
     public static PhoneNumber of(long phoneNumber) {
         try {
@@ -31,6 +33,7 @@ public record PhoneNumber(CountryCode countryCode, long numberWithoutPrefix) {
         }
     }
 
+    @ProtobufConverter
     public long number() {
         return Long.parseLong(countryCode.prefix() + numberWithoutPrefix);
     }

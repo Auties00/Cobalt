@@ -1,6 +1,9 @@
 package it.auties.whatsapp.model.companion;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -12,29 +15,33 @@ import java.util.Objects;
 
 import static it.auties.whatsapp.model.node.Node.of;
 
-public final class CompanionHashState {
-    private PatchType name;
+public final class CompanionHashState implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    private PatchType type;
 
+    @ProtobufProperty(index = 2, type = ProtobufType.INT64)
     private long version;
 
+    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
     private byte[] hash;
 
+    @ProtobufProperty(index = 4, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.BYTES)
     private Map<String, byte[]> indexValueMap;
 
-    public CompanionHashState(PatchType name) {
-        this(name, 0);
+    public CompanionHashState(PatchType type) {
+        this(type, 0);
     }
 
-    public CompanionHashState(PatchType name, long version) {
-        this.name = name;
+    public CompanionHashState(PatchType type, long version) {
+        this.type = type;
         this.version = version;
         this.hash = new byte[128];
         this.indexValueMap = new HashMap<>();
     }
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public CompanionHashState(PatchType name, long version, byte[] hash, Map<String, byte[]> indexValueMap) {
-        this.name = name;
+    public CompanionHashState(PatchType type, long version, byte[] hash, Map<String, byte[]> indexValueMap) {
+        this.type = type;
         this.version = version;
         this.hash = hash;
         this.indexValueMap = indexValueMap;
@@ -42,7 +49,7 @@ public final class CompanionHashState {
 
     public Node toNode() {
         var attributes = Attributes.of()
-                .put("name", name)
+                .put("name", type)
                 .put("version", version)
                 .put("return_snapshot", version == 0)
                 .toMap();
@@ -50,7 +57,7 @@ public final class CompanionHashState {
     }
 
     public CompanionHashState copy() {
-        return new CompanionHashState(name, version, Arrays.copyOf(hash, hash.length), new HashMap<>(indexValueMap));
+        return new CompanionHashState(type, version, Arrays.copyOf(hash, hash.length), new HashMap<>(indexValueMap));
     }
 
     private boolean checkIndexEquality(CompanionHashState that) {
@@ -67,8 +74,8 @@ public final class CompanionHashState {
         return thatValue != null && Arrays.equals(thatValue, thisValue);
     }
 
-    public PatchType name() {
-        return this.name;
+    public PatchType type() {
+        return this.type;
     }
 
     public long version() {
@@ -83,22 +90,22 @@ public final class CompanionHashState {
         return this.indexValueMap;
     }
 
-    public CompanionHashState name(PatchType name) {
-        this.name = name;
+    public CompanionHashState setType(PatchType name) {
+        this.type = name;
         return this;
     }
 
-    public CompanionHashState version(long version) {
+    public CompanionHashState setVersion(long version) {
         this.version = version;
         return this;
     }
 
-    public CompanionHashState hash(byte[] hash) {
+    public CompanionHashState setHash(byte[] hash) {
         this.hash = hash;
         return this;
     }
 
-    public CompanionHashState indexValueMap(Map<String, byte[]> indexValueMap) {
+    public CompanionHashState setIndexValueMap(Map<String, byte[]> indexValueMap) {
         this.indexValueMap = indexValueMap;
         return this;
     }
@@ -108,13 +115,13 @@ public final class CompanionHashState {
     public boolean equals(Object o) {
         return o instanceof CompanionHashState that
                 && this.version == that.version()
-                && this.name == that.name()
+                && this.type == that.type()
                 && Arrays.equals(this.hash, that.hash()) && checkIndexEquality(that);
     }
 
     @Override
     public int hashCode() {
-        var result = Objects.hash(name, version, indexValueMap);
+        var result = Objects.hash(type, version, indexValueMap);
         result = 31 * result + Arrays.hashCode(hash);
         return result;
     }

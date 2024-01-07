@@ -22,7 +22,7 @@ public record BusinessVerifiedNameDetails(
         String issuer,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         String name,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
         List<BusinessLocalizedName> localizedNames,
         @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
         long issueTimeSeconds

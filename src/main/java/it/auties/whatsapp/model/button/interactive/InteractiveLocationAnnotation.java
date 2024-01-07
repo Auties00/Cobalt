@@ -14,7 +14,7 @@ import java.util.List;
  */
 @ProtobufMessageName("InteractiveAnnotation")
 public record InteractiveLocationAnnotation(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         List<InteractivePoint> polygonVertices,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         InterativeLocation location

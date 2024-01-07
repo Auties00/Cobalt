@@ -476,7 +476,6 @@ public class Whatsapp {
                 .map(NewsletterMessageInfo::serverId)
                 .orElse(0);
         var info = new NewsletterMessageInfo(
-                newsletter.get(),
                 ChatMessageKey.randomId(),
                 oldServerId + 1,
                 Clock.nowSeconds(),
@@ -485,6 +484,7 @@ public class Whatsapp {
                 message,
                 MessageStatus.PENDING
         );
+        info.setNewsletter(newsletter.get());
         return sendMessage(info);
     }
 
@@ -504,7 +504,6 @@ public class Whatsapp {
         return switch (oldMessage) {
             case NewsletterMessageInfo oldNewsletterInfo -> {
                 var info = new NewsletterMessageInfo(
-                        oldNewsletterInfo.newsletter(),
                         oldNewsletterInfo.id(),
                         oldNewsletterInfo.serverId(),
                         Clock.nowSeconds(),
@@ -513,6 +512,7 @@ public class Whatsapp {
                         MessageContainer.ofEditedMessage(newMessage),
                         MessageStatus.PENDING
                 );
+                info.setNewsletter(oldNewsletterInfo.newsletter());
                 var request = new MessageSendRequest.Newsletter(info, Map.of("edit", getEditBit(info)));
                 yield socketHandler.sendMessage(request)
                         .thenApply(ignored -> oldMessage);
@@ -1528,7 +1528,6 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> deleteMessage(NewsletterMessageInfo messageInfo) {
         var revokeInfo = new NewsletterMessageInfo(
-                messageInfo.newsletter(),
                 messageInfo.id(),
                 messageInfo.serverId(),
                 Clock.nowSeconds(),
@@ -1537,6 +1536,7 @@ public class Whatsapp {
                 MessageContainer.empty(),
                 MessageStatus.PENDING
         );
+        revokeInfo.setNewsletter(messageInfo.newsletter());
         var attrs = Map.of("edit", getDeleteBit(messageInfo));
         var request = new MessageSendRequest.Newsletter(revokeInfo, attrs);
         return socketHandler.sendMessage(request);
@@ -2509,7 +2509,7 @@ public class Whatsapp {
     }
 
     private Call onCallSent(JidProvider provider, String callId, Node result) {
-        var call = new Call(provider.toJid(), jidOrThrowError(), callId, ZonedDateTime.now(), false, CallStatus.RINGING, false);
+        var call = new Call(provider.toJid(), jidOrThrowError(), callId, Clock.nowSeconds(), false, CallStatus.RINGING, false);
         store().addCall(call);
         socketHandler.onCall(call);
         return call;

@@ -1,10 +1,17 @@
 package it.auties.whatsapp.model.newsletter;
 
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
+
 import java.util.Objects;
 
-public final class NewsletterReaction {
+public final class NewsletterReaction implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String content;
+    @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
     private long count;
+    @ProtobufProperty(index = 3, type = ProtobufType.BOOL)
     private boolean fromMe;
 
     public NewsletterReaction(String content, long count, boolean fromMe) {

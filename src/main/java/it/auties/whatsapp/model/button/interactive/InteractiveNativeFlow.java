@@ -14,7 +14,7 @@ import java.util.List;
  */
 @ProtobufMessageName("Message.InteractiveMessage.NativeFlowMessage")
 public record InteractiveNativeFlow(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         List<InteractiveButton> buttons,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String parameters,

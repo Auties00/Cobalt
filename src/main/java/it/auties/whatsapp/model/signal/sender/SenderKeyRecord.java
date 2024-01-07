@@ -1,43 +1,49 @@
 package it.auties.whatsapp.model.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
 import java.util.*;
 
-public final class SenderKeyRecord {
-    private final LinkedHashMap<Integer, List<SenderKeyState>> states;
+public final class SenderKeyRecord implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    private final List<SenderKeyState> states;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SenderKeyRecord(LinkedHashMap<Integer, List<SenderKeyState>> states) {
+    public SenderKeyRecord(List<SenderKeyState> states) {
         this.states = states;
     }
 
     public SenderKeyRecord() {
-        this.states = new LinkedHashMap<>();
+        this.states = new ArrayList<>();
     }
 
-    public SenderKeyState findState() {
-        return states.values()
-                .stream()
-                .flatMap(Collection::stream)
+    public SenderKeyState firstState() {
+        return states.stream()
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Cannot get head state for empty record"));
     }
 
-    public List<SenderKeyState> findStateById(int keyId) {
-        return Objects.requireNonNull(states.get(keyId), "Cannot find state with id %s".formatted(keyId));
+    public List<SenderKeyState> findStatesById(int keyId) {
+        return states.stream()
+                .filter(entry -> entry.id() == keyId)
+                .toList();
     }
 
-    public void addState(int id, int iteration, byte[] seed, byte[] signatureKey) {
-        addState(id, iteration, seed, SignalKeyPair.of(signatureKey));
+    public void addState(int id, byte[] signatureKey, int iteration, byte[] seed) {
+        addState(id, SignalKeyPair.of(signatureKey), iteration, seed);
     }
 
-    public void addState(int id, int iteration, byte[] seed, SignalKeyPair signingKey) {
-        var state = new SenderKeyState(id, iteration, seed, signingKey);
-        var oldList = states.getOrDefault(id, new ArrayList<>());
-        oldList.add(state);
-        states.put(id, oldList);
+    public void addState(int id, SignalKeyPair signingKey, int iteration, byte[] seed) {
+        var state = new SenderKeyState(id, signingKey, iteration, seed);
+        states.add(state);
+    }
+
+    public List<SenderKeyState> states() {
+        return Collections.unmodifiableList(states);
     }
 
     public boolean isEmpty() {

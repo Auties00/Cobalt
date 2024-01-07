@@ -33,7 +33,7 @@ public record HydratedFourRowTemplate(
         String body,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> footer,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
         List<HydratedTemplateButton> hydratedButtons,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
         String templateId

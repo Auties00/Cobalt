@@ -276,10 +276,10 @@ class StreamHandler {
         var status = getCallStatus(callNode);
         var timestampSeconds = callNode.attributes()
                 .getOptionalLong("t")
-                .orElse(0L);
+                .orElseGet(Clock::nowSeconds);
         var isOffline = callNode.attributes().hasKey("offline");
         var hasVideo = callNode.hasNode("video");
-        var call = new Call(from, caller, callId, Clock.parseSeconds(timestampSeconds).orElseGet(ZonedDateTime::now), hasVideo, status, isOffline);
+        var call = new Call(from, caller, callId, timestampSeconds, hasVideo, status, isOffline);
         socketHandler.store().addCall(call);
         socketHandler.onCall(call);
     }

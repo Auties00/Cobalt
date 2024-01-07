@@ -50,7 +50,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
-    @ProtobufProperty(index = 15, type = ProtobufType.STRING, repeated = true)
+    @ProtobufProperty(index = 15, type = ProtobufType.STRING)
     private final List<Jid> mentions;
 
     /**

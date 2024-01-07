@@ -10,7 +10,7 @@ import java.util.List;
 
 @ProtobufMessageName("Message.StickerSyncRMRMessage")
 public record StickerSyncRMRMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING, repeated = true)
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         List<String> hash,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String rmrSource,

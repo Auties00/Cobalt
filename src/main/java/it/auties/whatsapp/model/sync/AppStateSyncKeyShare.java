@@ -10,5 +10,5 @@ import static it.auties.protobuf.model.ProtobufType.OBJECT;
 
 @ProtobufMessageName("Message.AppStateSyncKeyShare")
 public record AppStateSyncKeyShare(
-        @ProtobufProperty(index = 1, type = OBJECT, repeated = true) List<AppStateSyncKey> keys) implements ProtobufMessage {
+        @ProtobufProperty(index = 1, type = OBJECT) List<AppStateSyncKey> keys) implements ProtobufMessage {
 }

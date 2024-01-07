@@ -317,7 +317,7 @@ public final class Medias {
                 if (ffprobe.streams() == null || ffprobe.streams().isEmpty()) {
                     return MediaDimensions.defaultDimensions();
                 }
-                return ffprobe.streams().get(0);
+                return ffprobe.streams().getFirst();
             } finally {
                 Files.deleteIfExists(input);
             }
@@ -421,7 +421,7 @@ public final class Medias {
             var thumb = new BufferedImage(Specification.Whatsapp.THUMBNAIL_WIDTH, Specification.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
             var graphics2D = thumb.createGraphics();
             graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            ppt.getSlides().get(0).draw(graphics2D);
+            ppt.getSlides().getFirst().draw(graphics2D);
             ImageIO.write(thumb, "jpg", outputStream);
             return Optional.of(outputStream.toByteArray());
         } catch (Throwable throwable) {
@@ -429,7 +429,7 @@ public final class Medias {
         }
     }
 
-    public static enum Format {
+    public enum Format {
         UNKNOWN,
         PNG,
         JPG,

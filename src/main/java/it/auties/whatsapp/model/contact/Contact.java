@@ -1,7 +1,9 @@
 package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.jid.Jid;
@@ -11,15 +13,17 @@ import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * A model class that represents a Contact. This class is only a model, this means that changing its
  * values will have no real effect on WhatsappWeb's servers.
  */
-public final class Contact implements JidProvider {
+public final class Contact implements JidProvider, ProtobufMessage {
     /**
      * The non-null unique jid used to identify this contact
      */
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Jid jid;
 
     /**
@@ -27,17 +31,20 @@ public final class Contact implements JidProvider {
      * it should not be possible for this field to be null as it's required when registering for
      * Whatsapp. Though it looks that it can be removed later, so it's nullable.
      */
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private String chosenName;
 
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     private String fullName;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp If a
      * name is available, theoretically, also a short name should be
      */
+    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     private String shortName;
 
     /**
@@ -48,17 +55,20 @@ public final class Contact implements JidProvider {
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
      * send updates, use {@link Whatsapp#subscribeToPresence(JidProvider)}.
      */
+    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
     private ContactStatus lastKnownPresence;
 
     /**
      * The nullable last seconds this contact was seen available. Any contact can decide to hide this
      * information in their privacy settings.
      */
-    private ZonedDateTime lastSeen;
+    @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
+    private Long lastSeenSeconds;
 
     /**
      * Whether this contact is blocked
      */
+    @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
     private boolean blocked;
 
     public Contact(Jid jid) {
@@ -73,7 +83,7 @@ public final class Contact implements JidProvider {
         this.fullName = fullName;
         this.shortName = shortName;
         this.lastKnownPresence = lastKnownPresence;
-        this.lastSeen = Clock.parseSeconds(lastSeenSeconds).orElse(null);
+        this.lastSeenSeconds = lastSeenSeconds;
         this.blocked = blocked;
     }
 
@@ -97,8 +107,12 @@ public final class Contact implements JidProvider {
         return jid().user();
     }
 
+    public OptionalLong lastSeenSeconds() {
+        return Clock.parseTimestamp(lastSeenSeconds);
+    }
+
     public Optional<ZonedDateTime> lastSeen() {
-        return Optional.ofNullable(lastSeen);
+        return Clock.parseSeconds(lastSeenSeconds);
     }
 
     public Optional<String> chosenName() {
@@ -142,18 +156,13 @@ public final class Contact implements JidProvider {
     }
 
     public Contact setLastSeen(ZonedDateTime lastSeen) {
-        this.lastSeen = lastSeen;
+        this.lastSeenSeconds = lastSeen.toEpochSecond();
         return this;
     }
 
     public Contact setBlocked(boolean blocked) {
         this.blocked = blocked;
         return this;
-    }
-
-    @JsonGetter("lastSeen")
-    Long lastSeenValue() {
-        return lastSeen != null ? lastSeen.toEpochSecond() : null;
     }
 
     @Override

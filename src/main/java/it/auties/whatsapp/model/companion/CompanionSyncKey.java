@@ -1,22 +1,18 @@
-package it.auties.whatsapp.model.chat;
+package it.auties.whatsapp.model.companion;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.sync.AppStateSyncKey;
 
-import java.util.List;
+import java.util.LinkedList;
 
-/**
- * Class representing a list of past participants in a chat group
- */
-@ProtobufMessageName("PastParticipants")
-public record GroupPastParticipants(
+public record CompanionSyncKey(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        Jid groupJid,
+        Jid companion,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        List<GroupPastParticipant> pastParticipants
+        LinkedList<AppStateSyncKey> keys
 ) implements ProtobufMessage {
 
 }

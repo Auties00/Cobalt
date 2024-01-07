@@ -123,9 +123,9 @@ class AppStateHandler {
         var newStateGenerator = new LTHash(newState);
         mutations.forEach(mutation -> newStateGenerator.mix(mutation.indexMac(), mutation.valueMac(), mutation.operation()));
         var result = newStateGenerator.finish();
-        newState.hash(result.hash());
-        newState.indexValueMap(result.indexValueMap());
-        newState.version(newState.version() + 1);
+        newState.setHash(result.hash());
+        newState.setIndexValueMap(result.indexValueMap());
+        newState.setVersion(newState.version() + 1);
         var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(), request.type(), mutationKeys.snapshotMacKey());
         var concatValueMac = mutations.stream()
                 .map(MutationResult::valueMac)
@@ -281,7 +281,7 @@ class AppStateHandler {
     private List<Node> getPullNodes(Jid jid, Set<PatchType> patchTypes, Map<PatchType, CompanionHashState> tempStates) {
         return patchTypes.stream()
                 .map(name -> createStateWithVersion(jid, name))
-                .peek(state -> tempStates.put(state.name(), state))
+                .peek(state -> tempStates.put(state.type(), state))
                 .map(CompanionHashState::toNode)
                 .toList();
     }
@@ -530,12 +530,12 @@ class AppStateHandler {
                     .ifPresent(blob -> handleExternalMutation(patch, blob));
         }
 
-        newState.version(patch.encodedVersion());
+        newState.setVersion(patch.encodedVersion());
         var syncMac = calculatePatchMac(jid, patch, patchType);
         Validate.isTrue(!socketHandler.store().checkPatchMacs() || syncMac.isEmpty() || Arrays.equals(syncMac.get(), patch.patchMac()), "sync_mac", HmacValidationException.class);
         var mutations = decodeMutations(jid, patch.mutations(), newState);
-        newState.hash(mutations.result().hash());
-        newState.indexValueMap(mutations.result().indexValueMap());
+        newState.setHash(mutations.result().hash());
+        newState.setIndexValueMap(mutations.result().indexValueMap());
         var snapshotMac = calculateSnapshotMac(jid, patchType, newState, patch);
         Validate.isTrue(!socketHandler.store().checkPatchMacs() || snapshotMac.isEmpty() || Arrays.equals(snapshotMac.get(), patch.snapshotMac()), "patch_mac", HmacValidationException.class);
         return mutations;
@@ -571,8 +571,8 @@ class AppStateHandler {
         }
         var newState = new CompanionHashState(name, snapshot.version().version());
         var mutations = decodeMutations(jid, snapshot.records(), newState);
-        newState.hash(mutations.result().hash());
-        newState.indexValueMap(mutations.result().indexValueMap());
+        newState.setHash(mutations.result().hash());
+        newState.setIndexValueMap(mutations.result().indexValueMap());
         Validate.isTrue(!socketHandler.store().checkPatchMacs() || Arrays.equals(snapshot.mac(), generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.get()
                 .snapshotMacKey())), "decode_snapshot", HmacValidationException.class);
         return Optional.of(new SyncRecord(newState, mutations.records()));

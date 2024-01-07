@@ -1,35 +1,47 @@
 package it.auties.whatsapp.model.signal.session;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
-import java.util.Arrays;
-import java.util.HexFormat;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class SessionState {
+public final class SessionState implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.INT32)
     private final int version;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.INT32)
 
     private final int registrationId;
 
+    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
     private final byte[] baseKey;
 
+    @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private final byte[] remoteIdentityKey;
 
+    @ProtobufProperty(index = 5, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
     private final ConcurrentHashMap<String, SessionChain> chains;
 
+    @ProtobufProperty(index = 6, type = ProtobufType.BYTES)
     private byte[] rootKey;
 
+    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
     private SessionPreKey pendingPreKey;
 
+    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
     private SignalKeyPair ephemeralKeyPair;
 
+    @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
     private byte[] lastRemoteEphemeralKey;
 
+    @ProtobufProperty(index = 10, type = ProtobufType.INT32)
     private int previousCounter;
 
+    @ProtobufProperty(index = 11, type = ProtobufType.BOOL)
     private boolean closed;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
@@ -149,5 +161,9 @@ public final class SessionState {
     public SessionState closed(boolean closed) {
         this.closed = closed;
         return this;
+    }
+
+    public Map<String, SessionChain> chains() {
+        return Collections.unmodifiableMap(chains);
     }
 }

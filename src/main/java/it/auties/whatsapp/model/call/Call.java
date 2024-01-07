@@ -1,9 +1,25 @@
 package it.auties.whatsapp.model.call;
 
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.time.ZonedDateTime;
+public record Call(
+        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+        Jid chat,
+        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+        Jid caller,
+        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+        String id,
+        @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
+        long timestampSeconds,
+        @ProtobufProperty(index = 5, type = ProtobufType.BOOL)
+        boolean video,
+        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        CallStatus status,
+        @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
+        boolean offline
+) implements ProtobufMessage {
 
-public record Call(Jid chat, Jid caller, String id, ZonedDateTime time,
-                   boolean video, CallStatus status, boolean offline) {
 }

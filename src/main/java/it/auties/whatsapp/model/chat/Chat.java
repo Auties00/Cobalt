@@ -34,124 +34,130 @@ import java.util.function.Predicate;
 @ProtobufMessageName("Conversation")
 public final class Chat implements ProtobufMessage, JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final Jid jid;
+    final Jid jid;
 
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT, repeated = true)
-    private final ConcurrentLinkedHashedDequeue<HistorySyncMessage> historySyncMessages;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    final ConcurrentLinkedHashedDequeue<HistorySyncMessage> historySyncMessages;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    private final Jid newJid;
+    final Jid newJid;
 
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private final Jid oldJid;
+    final Jid oldJid;
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-    private int unreadMessagesCount;
+    int unreadMessagesCount;
 
     @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
-    private boolean readOnly;
+    boolean readOnly;
 
     @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
-    private boolean endOfHistoryTransfer;
+    boolean endOfHistoryTransfer;
 
     @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
-    private ChatEphemeralTimer ephemeralMessageDuration;
+    ChatEphemeralTimer ephemeralMessageDuration;
 
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
-    private long ephemeralMessagesToggleTimeSeconds;
+    long ephemeralMessagesToggleTimeSeconds;
 
     @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
-    private EndOfHistoryTransferType endOfHistoryTransferType;
+    EndOfHistoryTransferType endOfHistoryTransferType;
 
     @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
-    private long timestampSeconds;
+    long timestampSeconds;
 
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
-    private String name;
+    String name;
 
     @ProtobufProperty(index = 15, type = ProtobufType.BOOL)
-    private boolean notSpam;
+    boolean notSpam;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BOOL)
-    private boolean archived;
+    boolean archived;
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private ChatDisappear disappearInitiator;
+    ChatDisappear disappearInitiator;
 
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
-    private boolean markedAsUnread;
+    boolean markedAsUnread;
 
-    @ProtobufProperty(index = 20, type = ProtobufType.OBJECT, repeated = true)
-    private final List<GroupParticipant> participants;
+    @ProtobufProperty(index = 20, type = ProtobufType.OBJECT)
+    final List<GroupParticipant> participants;
 
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
-    private byte[] token;
+    byte[] token;
 
     @ProtobufProperty(index = 22, type = ProtobufType.UINT64)
-    private long tokenTimestampSeconds;
+    long tokenTimestampSeconds;
 
     @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
-    private byte[] identityKey;
-
+    byte[] identityKey;
+    
     @ProtobufProperty(index = 24, type = ProtobufType.UINT32)
-    private int pinnedTimestampSeconds;
+    int pinnedTimestampSeconds;
 
     @ProtobufProperty(index = 25, type = ProtobufType.UINT64)
-    private ChatMute mute;
+    ChatMute mute;
 
     @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
-    private ChatWallpaper wallpaper;
+    ChatWallpaper wallpaper;
 
     @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
-    private MediaVisibility mediaVisibility;
+    MediaVisibility mediaVisibility;
 
     @ProtobufProperty(index = 28, type = ProtobufType.UINT64)
-    private long tokenSenderTimestampSeconds;
+    long tokenSenderTimestampSeconds;
 
     @ProtobufProperty(index = 29, type = ProtobufType.BOOL)
-    private boolean suspended;
+    boolean suspended;
 
     @ProtobufProperty(index = 30, type = ProtobufType.BOOL)
-    private boolean terminated;
+    boolean terminated;
 
     @ProtobufProperty(index = 31, type = ProtobufType.UINT64)
-    private long foundationTimestampSeconds;
+    long foundationTimestampSeconds;
 
     @ProtobufProperty(index = 32, type = ProtobufType.STRING)
-    private Jid founder;
+    Jid founder;
     @ProtobufProperty(index = 33, type = ProtobufType.STRING)
-    private String description;
+    String description;
 
     @ProtobufProperty(index = 34, type = ProtobufType.BOOL)
-    private boolean support;
+    boolean support;
 
     @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
-    private boolean parentGroup;
+    boolean parentGroup;
 
     @ProtobufProperty(index = 36, type = ProtobufType.BOOL)
-    private boolean defaultSubGroup;
+    boolean defaultSubGroup;
 
     @ProtobufProperty(index = 37, type = ProtobufType.STRING)
-    private final Jid parentGroupJid;
+    final Jid parentGroupJid;
 
     @ProtobufProperty(index = 38, type = ProtobufType.STRING)
-    private String displayName;
+    String displayName;
 
     @ProtobufProperty(index = 39, type = ProtobufType.STRING)
-    private Jid phoneJid;
+    Jid phoneJid;
+    
     @ProtobufProperty(index = 40, type = ProtobufType.BOOL)
-    private boolean shareOwnPhoneNumber;
+    boolean shareOwnPhoneNumber;
+    
     @ProtobufProperty(index = 41, type = ProtobufType.BOOL)
-    private boolean pnhDuplicateLidThread;
+    boolean pnhDuplicateLidThread;
+    
     @ProtobufProperty(index = 42, type = ProtobufType.STRING)
-    private Jid lidJid;
+    Jid lidJid;
+    
+    @ProtobufProperty(index = 999, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    final ConcurrentHashMap<Jid, ContactStatus> presences;
+    
+    @ProtobufProperty(index = 1000, type = ProtobufType.STRING)
+    final Set<Jid> participantsPreKeys;
+    
+    @ProtobufProperty(index = 1001, type = ProtobufType.OBJECT)
+    final Set<GroupPastParticipant> pastParticipants;
 
     private boolean update;
-
-    private final ConcurrentHashMap<Jid, ContactStatus> presences;
-
-    private final Set<Jid> participantsPreKeys;
-
-    private final Set<GroupPastParticipant> pastParticipants;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Chat(Jid jid, ConcurrentLinkedHashedDequeue<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
@@ -198,52 +204,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         this.participantsPreKeys = participantsPreKeys;
         this.pastParticipants = pastParticipants;
     }
-
-    public Chat(Jid jid, ConcurrentLinkedHashedDequeue<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid) {
-        this.jid = jid;
-        this.historySyncMessages = historySyncMessages;
-        this.newJid = newJid;
-        this.oldJid = oldJid;
-        this.unreadMessagesCount = unreadMessagesCount;
-        this.readOnly = readOnly;
-        this.endOfHistoryTransfer = endOfHistoryTransfer;
-        this.ephemeralMessageDuration = ephemeralMessageDuration;
-        this.ephemeralMessagesToggleTimeSeconds = ephemeralMessagesToggleTimeSeconds;
-        this.endOfHistoryTransferType = endOfHistoryTransferType;
-        this.timestampSeconds = timestampSeconds;
-        this.name = name;
-        this.notSpam = notSpam;
-        this.archived = archived;
-        this.disappearInitiator = disappearInitiator;
-        this.markedAsUnread = markedAsUnread;
-        this.participants = participants;
-        this.token = token;
-        this.tokenTimestampSeconds = tokenTimestampSeconds;
-        this.identityKey = identityKey;
-        this.pinnedTimestampSeconds = pinnedTimestampSeconds;
-        this.mute = Objects.requireNonNullElseGet(mute, ChatMute::notMuted);
-        this.wallpaper = wallpaper;
-        this.mediaVisibility = Objects.requireNonNullElse(mediaVisibility, MediaVisibility.ON);
-        this.tokenSenderTimestampSeconds = tokenSenderTimestampSeconds;
-        this.suspended = suspended;
-        this.terminated = terminated;
-        this.foundationTimestampSeconds = foundationTimestampSeconds;
-        this.founder = founder;
-        this.description = description;
-        this.support = support;
-        this.parentGroup = parentGroup;
-        this.defaultSubGroup = defaultSubGroup;
-        this.parentGroupJid = parentGroupJid;
-        this.displayName = displayName;
-        this.phoneJid = phoneJid;
-        this.shareOwnPhoneNumber = shareOwnPhoneNumber;
-        this.pnhDuplicateLidThread = pnhDuplicateLidThread;
-        this.lidJid = lidJid;
-        this.presences = new ConcurrentHashMap<>();
-        this.participantsPreKeys = ConcurrentHashMap.newKeySet();
-        this.pastParticipants = ConcurrentHashMap.newKeySet();
-    }
-
+    
     /**
      * Returns the name of this chat
      *
@@ -894,7 +855,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     }
 
     public Optional<String> description() {
-        return description.describeConstable();
+        return Optional.ofNullable(description);
     }
 
     public boolean support() {
@@ -914,7 +875,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     }
 
     public Optional<String> displayName() {
-        return displayName.describeConstable();
+        return Optional.ofNullable(displayName);
     }
 
     public Optional<Jid> phoneJid() {

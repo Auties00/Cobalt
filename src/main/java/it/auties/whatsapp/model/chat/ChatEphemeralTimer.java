@@ -1,6 +1,8 @@
 package it.auties.whatsapp.model.chat;
 
 import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -9,31 +11,37 @@ import java.util.Arrays;
  * Enum representing the ChatEphemeralTimer period. Each constant is associated with a specific
  * duration period.
  */
-public enum ChatEphemeralTimer {
+public enum ChatEphemeralTimer implements ProtobufEnum {
     /**
      * ChatEphemeralTimer with duration of 0 days.
      */
-    OFF(Duration.ofDays(0)),
+    OFF(0, Duration.ofDays(0)),
 
     /**
      * ChatEphemeralTimer with duration of 1 day.
      */
-    ONE_DAY(Duration.ofDays(1)),
+    ONE_DAY(1, Duration.ofDays(1)),
 
     /**
      * ChatEphemeralTimer with duration of 7 days.
      */
-    ONE_WEEK(Duration.ofDays(7)),
+    ONE_WEEK(2, Duration.ofDays(7)),
 
     /**
      * ChatEphemeralTimer with duration of 90 days.
      */
-    THREE_MONTHS(Duration.ofDays(90));
+    THREE_MONTHS(3, Duration.ofDays(90));
 
     private final Duration period;
+    final int index;
 
-    ChatEphemeralTimer(Duration period) {
+    ChatEphemeralTimer(@ProtobufEnumIndex int index, Duration period) {
+        this.index = index;
         this.period = period;
+    }
+
+    public int index() {
+        return index;
     }
 
     public Duration period() {

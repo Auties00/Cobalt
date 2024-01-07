@@ -4,8 +4,8 @@ import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.controller.KeysSpec;
+import it.auties.whatsapp.controller.StoreSpec;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.model.button.base.Button;
@@ -29,7 +29,6 @@ import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.ConfigUtils;
-import it.auties.whatsapp.util.Smile;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
@@ -46,6 +45,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 // A mirror of RunCITest for buttons
@@ -91,18 +91,18 @@ public class ButtonsTest implements Listener {
         }
         log("Detected github actions environment");
         api = Whatsapp.customBuilder()
-                .store(loadGithubParameter(GithubActions.STORE_NAME, Store.class))
-                .keys(loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class))
+                .store(loadGithubParameter(GithubActions.STORE_NAME, StoreSpec::decode))
+                .keys(loadGithubParameter(GithubActions.CREDENTIALS_NAME, KeysSpec::decode))
                 .build()
                 .addListener(this);
     }
 
-    private <T> T loadGithubParameter(String parameter, Class<T> type) {
+    private <T> T loadGithubParameter(String parameter, Function<byte[], T> reader) {
         try {
             var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
             var path = Path.of("ci/%s.gpg".formatted(parameter));
             var decrypted = ByteArrayHandler.decrypt(Files.readAllBytes(path), passphrase.toCharArray());
-            return Smile.readValue(decrypted, type);
+            return reader.apply(decrypted);
         }catch (Throwable throwable) {
             throw new RuntimeException("Cannot read github parameter " + parameter, throwable);
         }

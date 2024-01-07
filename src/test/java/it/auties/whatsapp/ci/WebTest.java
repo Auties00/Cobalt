@@ -4,8 +4,8 @@ import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Emoji;
 import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.controller.KeysSpec;
+import it.auties.whatsapp.controller.StoreSpec;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.model.chat.*;
@@ -24,7 +24,6 @@ import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.ConfigUtils;
 import it.auties.whatsapp.util.MediaUtils;
-import it.auties.whatsapp.util.Smile;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
@@ -43,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 // IMPORTANT !!!!
@@ -93,19 +93,19 @@ public class WebTest implements Listener {
         }
         log("Detected github actions environment");
         api = Whatsapp.customBuilder()
-                .store(loadGithubParameter(GithubActions.STORE_NAME, Store.class))
-                .keys(loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class))
+                .store(loadGithubParameter(GithubActions.STORE_NAME, StoreSpec::decode))
+                .keys(loadGithubParameter(GithubActions.CREDENTIALS_NAME, KeysSpec::decode))
                 .webVerificationSupport(QrHandler.toTerminal())
                 .build();
         api.addListener(this);
     }
 
-    private <T> T loadGithubParameter(String parameter, Class<T> type) {
+    private <T> T loadGithubParameter(String parameter, Function<byte[], T> reader) {
         try {
             var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
             var path = Path.of("ci/%s.gpg".formatted(parameter));
             var decrypted = ByteArrayHandler.decrypt(Files.readAllBytes(path), passphrase.toCharArray());
-            return Smile.readValue(decrypted, type);
+            return reader.apply(decrypted);
         }catch (IOException exception) {
             throw new UncheckedIOException(exception);
         } catch (PGPException | NoSuchProviderException exception) {

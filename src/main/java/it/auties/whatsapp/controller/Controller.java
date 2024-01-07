@@ -1,9 +1,13 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.ProtobufUuidMixin;
 
 import java.util.*;
 
@@ -12,15 +16,17 @@ import java.util.*;
  * way to store IDs and serialize said class.
  */
 @SuppressWarnings("unused")
-public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
+public abstract sealed class Controller<T extends Controller<T>> implements ProtobufMessage permits Store, Keys {
     /**
      * The id of this controller
      */
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING, mixin = ProtobufUuidMixin.class)
     protected final UUID uuid;
 
     /**
      * The phone number of the associated companion
      */
+    @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
     private PhoneNumber phoneNumber;
 
     /**
@@ -32,11 +38,13 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The client type
      */
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
     protected final ClientType clientType;
 
     /**
      * A list of alias for the controller, can be used in place of UUID1
      */
+    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     protected final Collection<String> alias;
 
     public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias) {
@@ -60,7 +68,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     public abstract void dispose();
 
     public UUID uuid() {
-        return this.uuid;
+        return uuid;
     }
 
     public ClientType clientType() {

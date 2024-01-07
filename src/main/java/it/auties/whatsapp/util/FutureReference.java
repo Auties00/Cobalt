@@ -2,6 +2,7 @@ package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import it.auties.protobuf.annotation.ProtobufConverter;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -16,6 +17,11 @@ public class FutureReference<T> {
         this.value = Objects.requireNonNull(initialValue, "Missing value");
     }
 
+    @ProtobufConverter
+    public static <T> FutureReference<T> of(T initialValue) {
+        return new FutureReference<>(initialValue);
+    }
+
     public FutureReference(T initialValue, Supplier<CompletableFuture<T>> defaultValue) {
         this.value = initialValue;
         if (initialValue == null) {
@@ -23,6 +29,7 @@ public class FutureReference<T> {
         }
     }
 
+    @ProtobufConverter
     @JsonValue
     public T value() {
         if (future != null) {

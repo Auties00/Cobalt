@@ -34,7 +34,7 @@ public record HighlyStructuredFourRowTemplate(
         HighlyStructuredMessage content,
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
         Optional<HighlyStructuredMessage> footer,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
         List<HighlyStructuredButtonTemplate> buttons
 ) implements TemplateFormatter {
     @ProtobufBuilder(className = "HighlyStructuredFourRowTemplateSimpleBuilder")

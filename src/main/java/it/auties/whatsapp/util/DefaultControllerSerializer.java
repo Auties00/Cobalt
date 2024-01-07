@@ -7,12 +7,14 @@ import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.chat.ChatSpec;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterSpec;
 import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
@@ -40,8 +42,8 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";
-    private static final String STORE_NAME = "store.smile";
-    private static final String KEYS_NAME = "keys.smile";
+    private static final String STORE_NAME = "store.proto";
+    private static final String KEYS_NAME = "keys.proto";
 
     private static final Map<Path, DefaultControllerSerializer> serializers = new ConcurrentHashMap<>();
     private final Path baseDirectory;
@@ -79,7 +81,6 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         var store = new Store(
                 uuid,
                 parsedPhoneNumber.orElse(null),
-                this,
                 clientType,
                 alias,
                 null,
@@ -102,8 +103,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 null,
                 new ConcurrentHashMap<>(),
                 new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
+                ConcurrentHashMap.newKeySet(),
                 new ConcurrentHashMap<>(),
                 new ConcurrentHashMap<>(),
                 false,
@@ -119,13 +119,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 clientType == ClientType.WEB ? CompanionDevice.web() : CompanionDevice.ios(false),
                 false
         );
+        store.setSerializer(this);
         linkMetadata(store);
         var registrationId = KeyHelper.registrationId();
         var identityKeyPair = SignalKeyPair.random();
         var keys = new Keys(
                 uuid,
                 parsedPhoneNumber.orElse(null),
-                this,
                 clientType,
                 alias,
                 registrationId,
@@ -142,14 +142,15 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 KeyHelper.identityId(),
                 null,
                 new ConcurrentHashMap<>(),
+                new ArrayList<>(),
                 new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
+                new ArrayList<>(),
                 new ConcurrentHashMap<>(),
                 false,
                 false,
                 false
         );
+        keys.setSerializer(this);
         serializeKeys(keys, true);
         return new StoreKeysPair(store, keys);
     }
@@ -283,11 +284,11 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
         var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), KEYS_NAME);
         if (async) {
-            return CompletableFuture.runAsync(() -> writeFile(keys, KEYS_NAME, outputFile))
+            return CompletableFuture.runAsync(() -> writeFile(KeysSpec.encode(keys), KEYS_NAME, outputFile))
                     .exceptionallyAsync(this::onError);
         }
 
-        writeFile(keys, KEYS_NAME, outputFile);
+        writeFile(KeysSpec.encode(keys), KEYS_NAME, outputFile);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -314,7 +315,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
                 .toArray(CompletableFuture[]::new);
         var result = CompletableFuture.allOf(dependableFutures).thenRunAsync(() -> {
             var storePath = getSessionFile(store, STORE_NAME);
-            writeFile(store, STORE_NAME, storePath);
+            writeFile(StoreSpec.encode(store), STORE_NAME, storePath);
         });
         if (async) {
             return result;
@@ -336,9 +337,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             return CompletableFuture.completedFuture(null);
         }
 
-        var fileName = CHAT_PREFIX + chat.jid() + ".smile";
+        var fileName = CHAT_PREFIX + chat.jid() + ".proto";
         var outputFile = getSessionFile(store, fileName);
-        return CompletableFuture.runAsync(() -> writeFile(chat, fileName, outputFile))
+        return CompletableFuture.runAsync(() -> writeFile(ChatSpec.encode(chat), fileName, outputFile))
                 .exceptionallyAsync(this::onError);
     }
 
@@ -356,16 +357,16 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeNewsletterAsync(Store store, Newsletter newsletter) {
-        var fileName = NEWSLETTER_PREFIX + newsletter.jid() + ".smile";
+        var fileName = NEWSLETTER_PREFIX + newsletter.jid() + ".proto";
         var outputFile = getSessionFile(store, fileName);
-        return CompletableFuture.runAsync(() -> writeFile(newsletter, fileName, outputFile));
+        return CompletableFuture.runAsync(() -> writeFile(NewsletterSpec.encode(newsletter), fileName, outputFile));
     }
 
-    private void writeFile(Object object, String fileName, Path outputFile) {
+    private void writeFile(byte[] object, String fileName, Path outputFile) {
         try {
             var tempFile = Files.createTempFile(fileName, ".tmp");
             try (var tempFileOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
-                Smile.writeValueAsBytes(tempFileOutputStream, object);
+                tempFileOutputStream.write(object);
                 Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException exception) {
@@ -407,9 +408,9 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Optional<Keys> deserializeKeysFromId(ClientType type, String id) {
-        var path = getSessionFile(type, id, "keys.smile");
+        var path = getSessionFile(type, id, "keys.proto");
         try (var input = new GZIPInputStream(Files.newInputStream(path))) {
-            return Optional.of(Smile.readValue(input, Keys.class));
+            return Optional.of(KeysSpec.decode(input.readAllBytes()));
         } catch (IOException exception) {
             return Optional.empty();
         }
@@ -449,13 +450,13 @@ public class DefaultControllerSerializer implements ControllerSerializer {
     }
 
     private Optional<Store> deserializeStoreFromId(ClientType type, String id) {
-        var path = getSessionFile(type, id, "store.smile");
+        var path = getSessionFile(type, id, "store.proto");
         if (Files.notExists(path)) {
             return Optional.empty();
         }
 
         try (var input = new GZIPInputStream(Files.newInputStream(path))) {
-            return Optional.of(Smile.readValue(input, Store.class));
+            return Optional.of(StoreSpec.decode(input.readAllBytes()));
         } catch (IOException exception) {
             return Optional.empty();
         }
@@ -508,8 +509,10 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private CompletableFuture<Void> handleStoreFile(Store store, Path entry) {
         return switch (FileType.of(entry)) {
-            case NEWSLETTER -> CompletableFuture.runAsync(() -> deserializeNewsletter(store, entry));
-            case CHAT -> CompletableFuture.runAsync(() -> deserializeChat(store, entry));
+            case NEWSLETTER -> CompletableFuture.runAsync(() -> deserializeNewsletter(store, entry))
+                    .exceptionallyAsync(this::onError);
+            case CHAT -> CompletableFuture.runAsync(() -> deserializeChat(store, entry))
+                    .exceptionallyAsync(this::onError);
             case UNKNOWN -> null;
         };
     }
@@ -588,7 +591,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private void deserializeChat(Store store, Path chatFile) {
         try (var input = new GZIPInputStream(Files.newInputStream(chatFile))) {
-            var chat = Smile.readValue(input, Chat.class);
+            var chat = ChatSpec.decode(input.readAllBytes());
             for (var message : chat.messages()) {
                 message.messageInfo().setChat(chat);
             }
@@ -606,7 +609,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
         var chatName = entry.getFileName().toString()
                 .replaceFirst(CHAT_PREFIX, "")
-                .replace(".smile", "")
+                .replace(".proto", "")
                 .replaceAll("~~", ":");
         return new ChatBuilder()
                 .jid(Jid.of(chatName))
@@ -615,7 +618,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     private void deserializeNewsletter(Store store, Path newsletterFile) {
         try (var input = new GZIPInputStream(Files.newInputStream(newsletterFile))) {
-            var newsletter = Smile.readValue(input, Newsletter.class);
+            var newsletter = NewsletterSpec.decode(input.readAllBytes());
             for (var message : newsletter.messages()) {
                 message.setNewsletter(newsletter);
             }
@@ -633,7 +636,7 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
         var newsletterName = entry.getFileName().toString()
                 .replaceFirst(CHAT_PREFIX, "")
-                .replace(".smile", "")
+                .replace(".proto", "")
                 .replaceAll("~~", ":");
         return new Newsletter(Jid.of(newsletterName), null, null, null);
     }

@@ -1,15 +1,28 @@
 package it.auties.whatsapp.model.sync;
 
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.model.ProtobufEnum;
+
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 
-public enum PatchType {
-    CRITICAL_BLOCK,
-    CRITICAL_UNBLOCK_LOW,
-    REGULAR_HIGH,
-    REGULAR_LOW,
-    REGULAR;
+public enum PatchType implements ProtobufEnum {
+    CRITICAL_BLOCK(0),
+    CRITICAL_UNBLOCK_LOW(1),
+    REGULAR_HIGH(2),
+    REGULAR_LOW(3),
+    REGULAR(4);
+
+    final int index;
+
+    PatchType(@ProtobufEnumIndex int index) {
+        this.index = index;
+    }
+
+    public int index() {
+        return index;
+    }
 
     public static PatchType of(String name) {
         return Arrays.stream(values())

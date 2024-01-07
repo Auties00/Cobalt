@@ -39,7 +39,7 @@ public record ButtonsMessage(
         Optional<String> footer,
         @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
         Optional<ContextInfo> contextInfo,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT, repeated = true)
+        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
         List<Button> buttons,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
         Type headerType

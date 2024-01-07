@@ -15,7 +15,7 @@ public record GroupCipher(SenderKeyName name, Keys keys) {
             return new CipheredMessageResult(null, Signal.UNAVAILABLE);
         }
 
-        var currentState = keys.findSenderKeyByName(name).findState();
+        var currentState = keys.findSenderKeyByName(name).firstState();
         var messageKey = currentState.chainKey().toMessageKey();
         var ciphertext = AesCbc.encrypt(messageKey.iv(), data, messageKey.cipherKey());
         var senderKeyMessage = new SenderKeyMessage(currentState.id(), messageKey.iteration(), ciphertext, currentState.signingKey().privateKey());
@@ -27,7 +27,7 @@ public record GroupCipher(SenderKeyName name, Keys keys) {
     public byte[] decrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
-        var senderKeyStates = record.findStateById(senderKeyMessage.id());
+        var senderKeyStates = record.findStatesById(senderKeyMessage.id());
         for (var senderKeyState : senderKeyStates) {
             try {
                 var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());

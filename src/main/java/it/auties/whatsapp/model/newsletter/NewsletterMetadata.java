@@ -2,6 +2,9 @@ package it.auties.whatsapp.model.newsletter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
@@ -9,15 +12,23 @@ import java.util.Optional;
 import java.util.OptionalLong;
 
 public record NewsletterMetadata(
+        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<NewsletterName> name,
+        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<NewsletterDescription> description,
+        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Optional<NewsletterPicture> picture,
+        @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Optional<String> handle,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         Optional<NewsletterSettings> settings,
+        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
         Optional<String> invite,
+        @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
         Optional<Boolean> verification,
+        @ProtobufProperty(index = 8, type = ProtobufType.UINT64)
         OptionalLong creationTimestampSeconds
-) {
+) implements ProtobufMessage {
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     NewsletterMetadata(
             NewsletterName name,

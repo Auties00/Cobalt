@@ -20,7 +20,7 @@ public record ClientPayload(@ProtobufProperty(index = 1, type = UINT64) Long use
                             @ProtobufProperty(index = 10, type = BOOL) Boolean shortConnect,
                             @ProtobufProperty(index = 12, type = OBJECT) ClientPayloadConnectType connectType,
                             @ProtobufProperty(index = 13, type = OBJECT) ClientPayloadConnectReason connectReason,
-                            @ProtobufProperty(index = 14, type = INT32, repeated = true) List<Integer> shards,
+                            @ProtobufProperty(index = 14, type = INT32) List<Integer> shards,
                             @ProtobufProperty(index = 15, type = OBJECT) DNSSource dnsSource,
                             @ProtobufProperty(index = 16, type = UINT32) Integer connectAttemptCount,
                             @ProtobufProperty(index = 18, type = UINT32) Integer device,

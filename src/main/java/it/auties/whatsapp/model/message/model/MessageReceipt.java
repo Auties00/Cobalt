@@ -25,9 +25,9 @@ public final class MessageReceipt implements ProtobufMessage {
     private Long readTimestampSeconds;
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
     private Long playedTimestampSeconds;
-    @ProtobufProperty(index = 5, type = ProtobufType.STRING, repeated = true)
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     private final Set<Jid> deliveredJids;
-    @ProtobufProperty(index = 6, type = ProtobufType.STRING, repeated = true)
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final Set<Jid> readJids;
 
     public MessageReceipt() {

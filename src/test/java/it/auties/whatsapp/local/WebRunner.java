@@ -1,6 +1,6 @@
 package it.auties.whatsapp.local;
 
-import it.auties.whatsapp.api.PairingCodeHandler;
+import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -9,9 +9,9 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 public class WebRunner {
     public static void main(String[] args) {
         var whatsapp = Whatsapp.webBuilder()
-                .newConnection()
+                .lastConnection()
                 .historyLength(WebHistoryLength.zero())
-                .unregistered(393495089819L, PairingCodeHandler.toTerminal())
+                .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewChatMessageListener((api, message) -> System.out.println(message.toJson()))
