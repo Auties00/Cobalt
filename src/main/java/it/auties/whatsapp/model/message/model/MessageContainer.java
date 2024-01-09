@@ -583,7 +583,7 @@ public record MessageContainer(
     }
 
     /**
-     * Converts this message to an ephemeral message
+     * Returns a copy of this container with a different device info
      *
      * @return a non-null message container
      */

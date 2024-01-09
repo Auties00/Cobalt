@@ -15,7 +15,7 @@ import java.util.OptionalLong;
  * A media message
  * Read its content using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(ChatMessageInfo)}
  */
-public sealed interface MediaMessage<T extends MediaMessage<T>> extends ContextualMessage, MutableAttachmentProvider<T> permits ExtendedMediaMessage, PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
+public sealed interface MediaMessage<T extends MediaMessage<T>> extends ContextualMessage<T>, MutableAttachmentProvider<T> permits ExtendedMediaMessage, PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
     /**
      * Returns the timestampSeconds, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for{@link MediaMessage#mediaKey()}
      *

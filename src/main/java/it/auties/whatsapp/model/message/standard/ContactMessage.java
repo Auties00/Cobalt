@@ -15,14 +15,20 @@ import java.util.Optional;
  * A model class that represents a message holding a contact inside
  */
 @ProtobufMessageName("Message.ContactMessage")
-public record ContactMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        String name,
-        @ProtobufProperty(index = 16, type = ProtobufType.STRING)
-        ContactCard vcard,
-        @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-        Optional<ContextInfo> contextInfo
-) implements ContextualMessage {
+public final class ContactMessage implements ContextualMessage<ContactMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    private final String name;
+    @ProtobufProperty(index = 16, type = ProtobufType.STRING)
+    private final ContactCard vcard;
+    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    private ContextInfo contextInfo;
+
+    public ContactMessage(String name, ContactCard vcard, ContextInfo contextInfo) {
+        this.name = name;
+        this.vcard = vcard;
+        this.contextInfo = contextInfo;
+    }
+
     @Override
     public MessageType type() {
         return MessageType.CONTACT;
@@ -32,4 +38,32 @@ public record ContactMessage(
     public MessageCategory category() {
         return MessageCategory.STANDARD;
     }
+
+    public String name() {
+        return name;
+    }
+
+    public ContactCard vcard() {
+        return vcard;
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public ContactMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "ContactMessage[" +
+                "name=" + name + ", " +
+                "vcard=" + vcard + ", " +
+                "contextInfo=" + contextInfo + ']';
+    }
+
 }

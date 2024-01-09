@@ -72,7 +72,7 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private final ContextInfo contextInfo;
+    private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] firstScanSidecar;
@@ -348,5 +348,11 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
 
     public Optional<String> staticUrl() {
         return Optional.ofNullable(staticUrl);
+    }
+
+    @Override
+    public ImageMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
     }
 }

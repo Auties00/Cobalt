@@ -13,6 +13,7 @@ import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Optional;
 
 
@@ -20,24 +21,35 @@ import java.util.Optional;
  * A model class that represents a message holding a whatsapp group invite inside
  */
 @ProtobufMessageName("Message.GroupInviteMessage")
-public record GroupInviteMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        Jid group,
-        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        String code,
-        @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
-        long expirationSeconds,
-        @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-        String groupName,
-        @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
-        Optional<byte[]> thumbnail,
-        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-        Optional<String> caption,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
-        Optional<ContextInfo> contextInfo,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
-        Type groupType
-) implements ContextualMessage {
+public final class GroupInviteMessage implements ContextualMessage<GroupInviteMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    private final Jid group;
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    private final String code;
+    @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
+    private final long expirationSeconds;
+    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+    private final String groupName;
+    @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
+    private final byte[] thumbnail;
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    private final String caption;
+    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    private ContextInfo contextInfo;
+    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    private final Type groupType;
+    
+    public GroupInviteMessage(Jid group, String code, long expirationSeconds, String groupName, byte[] thumbnail, String caption, ContextInfo contextInfo, Type groupType) {
+        this.group = group;
+        this.code = code;
+        this.expirationSeconds = expirationSeconds;
+        this.groupName = groupName;
+        this.thumbnail = thumbnail;
+        this.caption = caption;
+        this.contextInfo = contextInfo;
+        this.groupType = groupType;
+    }
+
     @Override
     public MessageType type() {
         return MessageType.GROUP_INVITE;
@@ -51,6 +63,59 @@ public record GroupInviteMessage(
     public Optional<ZonedDateTime> expiration() {
         return Clock.parseSeconds(expirationSeconds);
     }
+
+    public Jid group() {
+        return group;
+    }
+
+    public String code() {
+        return code;
+    }
+
+    public long expirationSeconds() {
+        return expirationSeconds;
+    }
+
+    public String groupName() {
+        return groupName;
+    }
+
+    public Optional<byte[]> thumbnail() {
+        return Optional.ofNullable(thumbnail);
+    }
+
+    public Optional<String> caption() {
+        return Optional.ofNullable(caption);
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public GroupInviteMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
+    }
+
+    public Type groupType() {
+        return groupType;
+    }
+
+    @Override
+    public String toString() {
+        return "GroupInviteMessage[" +
+                "group=" + group + ", " +
+                "code=" + code + ", " +
+                "expirationSeconds=" + expirationSeconds + ", " +
+                "groupName=" + groupName + ", " +
+                "thumbnail=" + Arrays.toString(thumbnail) + ", " +
+                "caption=" + caption + ", " +
+                "contextInfo=" + contextInfo + ", " +
+                "groupType=" + groupType + ']';
+    }
+
 
     @ProtobufMessageName("Message.GroupInviteMessage.GroupType")
     public enum Type implements ProtobufEnum {

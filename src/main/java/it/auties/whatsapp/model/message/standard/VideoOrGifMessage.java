@@ -77,7 +77,7 @@ public final class VideoOrGifMessage extends ExtendedMediaMessage<VideoOrGifMess
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private final ContextInfo contextInfo;
+    private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] streamingSidecar;
@@ -338,6 +338,12 @@ public final class VideoOrGifMessage extends ExtendedMediaMessage<VideoOrGifMess
 
     public Optional<String> staticUrl() {
         return Optional.ofNullable(staticUrl);
+    }
+
+    @Override
+    public VideoOrGifMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
     }
 
     /**

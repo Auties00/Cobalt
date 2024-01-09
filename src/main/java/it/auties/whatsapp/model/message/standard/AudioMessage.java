@@ -52,7 +52,7 @@ public final class AudioMessage extends ExtendedMediaMessage<AudioMessage> imple
     private Long mediaKeyTimestampSeconds;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private final ContextInfo contextInfo;
+    private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] streamingSidecar;
@@ -213,6 +213,12 @@ public final class AudioMessage extends ExtendedMediaMessage<AudioMessage> imple
     @Override
     public Optional<ContextInfo> contextInfo() {
         return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public AudioMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
     }
 
     @Override

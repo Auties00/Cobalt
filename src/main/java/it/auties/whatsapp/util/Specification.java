@@ -43,7 +43,7 @@ public class Specification {
         public static final int THUMBNAIL_WIDTH = 480;
         public static final int THUMBNAIL_HEIGHT = 339;
         public static final URI MOBILE_DOWNLOAD_URL = URI.create("https://www.whatsapp.com/android/current/WhatsApp.apk");
-        public static final URI MOBILE_BUSINESS_DOWNLOAD_URL = URI.create("https://d.apkpure.com/b/APK/com.whatsapp.w4b?version=latest");
+        public static final URI MOBILE_BUSINESS_DOWNLOAD_URL = URI.create("https://d.cdnpure.com/b/APK/com.whatsapp.w4b?version=latest");
         public static final byte[] MOBILE_ANDROID_SALT = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
         public static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
         public static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";

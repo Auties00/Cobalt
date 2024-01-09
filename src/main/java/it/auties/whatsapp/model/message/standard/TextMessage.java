@@ -21,7 +21,7 @@ import java.util.OptionalLong;
  * A model class that represents a message holding text inside
  */
 @ProtobufMessageName("Message.TextMessage")
-public final class TextMessage implements ContextualMessage {
+public final class TextMessage implements ContextualMessage<TextMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String text;
 

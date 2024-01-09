@@ -19,29 +19,92 @@ import java.util.Optional;
  * A model class that represents a message that contains a list of buttons or a list of products
  */
 @ProtobufMessageName("Message.ListMessage")
-public record ListMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        String title,
-        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        Optional<String> description,
-        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        String button,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        Type listType,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        List<ButtonSection> sections,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-        Optional<ProductListInfo> productListInfo,
-        @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-        Optional<String> footer,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
-        Optional<ContextInfo> contextInfo
-) implements ContextualMessage, ButtonMessage {
+public final class ListMessage implements ContextualMessage<ListMessage>, ButtonMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    private final String title;
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    private final String description;
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+    private final String button;
+    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    private final Type listType;
+    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    private final List<ButtonSection> sections;
+    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    private final ProductListInfo productListInfo;
+    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+    private final String footer;
+    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    private ContextInfo contextInfo;
+
+    public ListMessage(String title, String description, String button, Type listType, List<ButtonSection> sections, ProductListInfo productListInfo, String footer, ContextInfo contextInfo) {
+        this.title = title;
+        this.description = description;
+        this.button = button;
+        this.listType = listType;
+        this.sections = sections;
+        this.productListInfo = productListInfo;
+        this.footer = footer;
+        this.contextInfo = contextInfo;
+    }
 
     @Override
     public MessageType type() {
         return MessageType.LIST;
     }
+
+    public String title() {
+        return title;
+    }
+
+    public Optional<String> description() {
+        return Optional.ofNullable(description);
+    }
+
+    public String button() {
+        return button;
+    }
+
+    public Type listType() {
+        return listType;
+    }
+
+    public List<ButtonSection> sections() {
+        return sections;
+    }
+
+    public Optional<ProductListInfo> productListInfo() {
+        return Optional.ofNullable(productListInfo);
+    }
+
+    public Optional<String> footer() {
+        return Optional.ofNullable(footer);
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public ListMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "ListMessage[" +
+                "title=" + title + ", " +
+                "description=" + description + ", " +
+                "button=" + button + ", " +
+                "listType=" + listType + ", " +
+                "sections=" + sections + ", " +
+                "productListInfo=" + productListInfo + ", " +
+                "footer=" + footer + ", " +
+                "contextInfo=" + contextInfo + ']';
+    }
+
 
     /**
      * The constants of this enumerated type describe the various types of {@link ListMessage}

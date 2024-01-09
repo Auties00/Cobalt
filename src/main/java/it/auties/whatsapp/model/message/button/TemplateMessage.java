@@ -22,20 +22,29 @@ import java.util.Optional;
  * buttons to choose from.
  */
 @ProtobufMessageName("Message.TemplateMessage")
-public record TemplateMessage(
-        @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        String id,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        HydratedFourRowTemplate content,
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        Optional<HighlyStructuredFourRowTemplate> highlyStructuredFourRowTemplateFormat,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        Optional<HydratedFourRowTemplate> hydratedFourRowTemplateFormat,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        Optional<InteractiveMessage> interactiveMessageFormat,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        Optional<ContextInfo> contextInfo
-) implements ContextualMessage, ButtonMessage {
+public final class TemplateMessage implements ContextualMessage<TemplateMessage>, ButtonMessage {
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    private final String id;
+    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    private final HydratedFourRowTemplate content;
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    private final HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    private final HydratedFourRowTemplate hydratedFourRowTemplateFormat;
+    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    private final InteractiveMessage interactiveMessageFormat;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    private ContextInfo contextInfo;
+
+    public TemplateMessage(String id, HydratedFourRowTemplate content, HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat, HydratedFourRowTemplate hydratedFourRowTemplateFormat, InteractiveMessage interactiveMessageFormat, ContextInfo contextInfo) {
+        this.id = id;
+        this.content = content;
+        this.highlyStructuredFourRowTemplateFormat = highlyStructuredFourRowTemplateFormat;
+        this.hydratedFourRowTemplateFormat = hydratedFourRowTemplateFormat;
+        this.interactiveMessageFormat = interactiveMessageFormat;
+        this.contextInfo = contextInfo;
+    }
+
     @ProtobufBuilder(className = "TemplateMessageSimpleBuilder")
     static TemplateMessage customBuilder(String id, HydratedFourRowTemplate content, TemplateFormatter format, ContextInfo contextInfo) {
         var builder = new TemplateMessageBuilder()
@@ -70,19 +79,61 @@ public record TemplateMessage(
      * @return an optional
      */
     public Optional<? extends TemplateFormatter> format() {
-        if (highlyStructuredFourRowTemplateFormat.isPresent()) {
-            return highlyStructuredFourRowTemplateFormat;
+        if (highlyStructuredFourRowTemplateFormat != null) {
+            return Optional.of(highlyStructuredFourRowTemplateFormat);
         }
 
-        if (hydratedFourRowTemplateFormat.isPresent()) {
-            return hydratedFourRowTemplateFormat;
+        if (hydratedFourRowTemplateFormat != null) {
+            return Optional.of(hydratedFourRowTemplateFormat);
         }
 
-        return interactiveMessageFormat;
+        return Optional.ofNullable(interactiveMessageFormat);
     }
 
     @Override
     public MessageType type() {
         return MessageType.TEMPLATE;
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public HydratedFourRowTemplate content() {
+        return content;
+    }
+
+    public Optional<HighlyStructuredFourRowTemplate> highlyStructuredFourRowTemplateFormat() {
+        return Optional.ofNullable(highlyStructuredFourRowTemplateFormat);
+    }
+
+    public Optional<HydratedFourRowTemplate> hydratedFourRowTemplateFormat() {
+        return Optional.ofNullable(hydratedFourRowTemplateFormat);
+    }
+
+    public Optional<InteractiveMessage> interactiveMessageFormat() {
+        return Optional.ofNullable(interactiveMessageFormat);
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public TemplateMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "TemplateMessage[" +
+                "id=" + id + ", " +
+                "content=" + content + ", " +
+                "highlyStructuredFourRowTemplateFormat=" + highlyStructuredFourRowTemplateFormat + ", " +
+                "hydratedFourRowTemplateFormat=" + hydratedFourRowTemplateFormat + ", " +
+                "interactiveMessageFormat=" + interactiveMessageFormat + ", " +
+                "contextInfo=" + contextInfo + ']';
     }
 }

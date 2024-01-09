@@ -49,7 +49,7 @@ public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private final ContextInfo contextInfo;
+    private ContextInfo contextInfo;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public PaymentInvoiceMessage(String note, String token, PaymentAttachmentType paymentAttachmentType, String mimeType, byte[] mediaKey, Long mediaKeyTimestampSeconds, byte[] mediaSha256, byte[] mediaEncryptedSha256, String mediaDirectPath, byte[] thumbnail, ContextInfo contextInfo) {
@@ -190,6 +190,12 @@ public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage
     @Override
     public MessageCategory category() {
         return MessageCategory.PAYMENT;
+    }
+
+    @Override
+    public PaymentInvoiceMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
     }
 
     /**

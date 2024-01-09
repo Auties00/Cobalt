@@ -22,28 +22,42 @@ import java.util.Optional;
  * A model class that represents a message that contains buttons inside
  */
 @ProtobufMessageName("Message.ButtonsMessage")
-public record ButtonsMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        Optional<ButtonsMessageHeaderText> headerText,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        Optional<DocumentMessage> headerDocument,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        Optional<ImageMessage> headerImage,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        Optional<VideoOrGifMessage> headerVideo,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        Optional<LocationMessage> headerLocation,
-        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-        Optional<String> body,
-        @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-        Optional<String> footer,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
-        Optional<ContextInfo> contextInfo,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
-        List<Button> buttons,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-        Type headerType
-) implements ButtonMessage, ContextualMessage {
+public final class ButtonsMessage implements ButtonMessage, ContextualMessage<ButtonsMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    private final ButtonsMessageHeaderText headerText;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    private final DocumentMessage headerDocument;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    private final ImageMessage headerImage;
+    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    private final VideoOrGifMessage headerVideo;
+    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    private final LocationMessage headerLocation;
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    private final String body;
+    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+    private final String footer;
+    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    private ContextInfo contextInfo;
+    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    private final List<Button> buttons;
+    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    private final Type headerType;
+
+
+    public ButtonsMessage(ButtonsMessageHeaderText headerText, DocumentMessage headerDocument, ImageMessage headerImage, VideoOrGifMessage headerVideo, LocationMessage headerLocation, String body, String footer, ContextInfo contextInfo, List<Button> buttons, Type headerType) {
+        this.headerText = headerText;
+        this.headerDocument = headerDocument;
+        this.headerImage = headerImage;
+        this.headerVideo = headerVideo;
+        this.headerLocation = headerLocation;
+        this.body = body;
+        this.footer = footer;
+        this.contextInfo = contextInfo;
+        this.buttons = buttons;
+        this.headerType = headerType;
+    }
+
     @ProtobufBuilder(className = "ButtonsMessageSimpleBuilder")
     static ButtonsMessage customBuilder(ButtonsMessageHeader header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
         var builder = new ButtonsMessageBuilder()
@@ -84,22 +98,84 @@ public record ButtonsMessage(
      * @return an optional
      */
     public Optional<? extends ButtonsMessageHeader> header() {
-        if (headerText.isPresent()) {
-            return headerText;
+        if (headerText != null) {
+            return Optional.of(headerText);
         }
 
-        if (headerDocument.isPresent()) {
-            return headerDocument;
+        if (headerDocument  != null) {
+            return Optional.of(headerDocument);
         }
 
-        if (headerImage.isPresent()) {
-            return headerImage;
+        if (headerImage != null) {
+            return Optional.of(headerImage);
         }
 
-        if (headerVideo.isPresent()) {
-            return headerVideo;
+        if (headerVideo != null) {
+            return Optional.of(headerVideo);
         }
 
-        return headerLocation;
+        return Optional.ofNullable(headerLocation);
+    }
+    
+    public Optional<ButtonsMessageHeaderText> headerText() {
+        return Optional.ofNullable(headerText);
+    }
+    
+    public Optional<DocumentMessage> headerDocument() {
+        return Optional.ofNullable(headerDocument);
+    }
+    
+    public Optional<ImageMessage> headerImage() {
+        return Optional.ofNullable(headerImage);
+    }
+    
+    public Optional<VideoOrGifMessage> headerVideo() {
+        return Optional.ofNullable(headerVideo);
+    }
+    
+    public Optional<LocationMessage> headerLocation() {
+        return Optional.ofNullable(headerLocation);
+    }
+    
+    public Optional<String> body() {
+        return Optional.ofNullable(body);
+    }
+    
+    public Optional<String> footer() {
+        return Optional.ofNullable(footer);
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    public List<Button> buttons() {
+        return buttons;
+    }
+
+    public Type headerType() {
+        return headerType;
+    }
+
+    @Override
+    public ButtonsMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
+    }
+    
+    @Override
+    public String toString() {
+        return "ButtonsMessage[" +
+                "headerText=" + headerText + ", " +
+                "headerDocument=" + headerDocument + ", " +
+                "headerImage=" + headerImage + ", " +
+                "headerVideo=" + headerVideo + ", " +
+                "headerLocation=" + headerLocation + ", " +
+                "body=" + body + ", " +
+                "footer=" + footer + ", " +
+                "contextInfo=" + contextInfo + ", " +
+                "buttons=" + buttons + ", " +
+                "headerType=" + headerType + ']';
     }
 }

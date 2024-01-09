@@ -80,7 +80,7 @@ public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
     private final byte[] thumbnailEncSha256;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private final ContextInfo contextInfo;
+    private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.UINT32)
     private final Integer thumbnailHeight;
@@ -303,5 +303,11 @@ public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
 
     public OptionalInt thumbnailWidth() {
         return thumbnailWidth == null ? OptionalInt.empty() : OptionalInt.of(thumbnailWidth);
+    }
+
+    @Override
+    public DocumentMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
     }
 }

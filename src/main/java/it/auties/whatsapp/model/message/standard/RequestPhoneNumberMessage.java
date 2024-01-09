@@ -15,10 +15,14 @@ import java.util.Optional;
  * Still needs to be implemented by Whatsapp
  */
 @ProtobufMessageName("Message.RequestPhoneNumberMessage")
-public record RequestPhoneNumberMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        Optional<ContextInfo> contextInfo
-) implements ContextualMessage {
+public final class RequestPhoneNumberMessage implements ContextualMessage<RequestPhoneNumberMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    private ContextInfo contextInfo;
+
+    public RequestPhoneNumberMessage(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+    }
+
     @Override
     public MessageType type() {
         return MessageType.REQUEST_PHONE_NUMBER;
@@ -28,4 +32,22 @@ public record RequestPhoneNumberMessage(
     public MessageCategory category() {
         return MessageCategory.STANDARD;
     }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public RequestPhoneNumberMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "RequestPhoneNumberMessage[" +
+                "contextInfo=" + contextInfo + ']';
+    }
+
 }

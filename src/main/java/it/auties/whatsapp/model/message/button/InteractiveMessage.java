@@ -19,22 +19,32 @@ import java.util.Optional;
  * how this could be used, contributions are welcomed.
  */
 @ProtobufMessageName("Message.InteractiveMessage")
-public record InteractiveMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
-        Optional<InteractiveHeader> header,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        Optional<InteractiveBody> body,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        Optional<InteractiveFooter> footer,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        Optional<InteractiveShop> contentShop,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        Optional<InteractiveCollection> contentCollection,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-        Optional<InteractiveNativeFlow> contentNativeFlow,
-        @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
-        Optional<ContextInfo> contextInfo
-) implements ContextualMessage, ButtonMessage, TemplateFormatter {
+public final class InteractiveMessage implements ContextualMessage<InteractiveMessage>, ButtonMessage, TemplateFormatter {
+    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    private final InteractiveHeader header;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    private final InteractiveBody body;
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    private final InteractiveFooter footer;
+    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    private final InteractiveShop contentShop;
+    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    private final InteractiveCollection contentCollection;
+    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    private final InteractiveNativeFlow contentNativeFlow;
+    @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
+    private ContextInfo contextInfo;
+
+    public InteractiveMessage(InteractiveHeader header, InteractiveBody body, InteractiveFooter footer, InteractiveShop contentShop, InteractiveCollection contentCollection, InteractiveNativeFlow contentNativeFlow, ContextInfo contextInfo) {
+        this.header = header;
+        this.body = body;
+        this.footer = footer;
+        this.contentShop = contentShop;
+        this.contentCollection = contentCollection;
+        this.contentNativeFlow = contentNativeFlow;
+        this.contextInfo = contextInfo;
+    }
+
     @ProtobufBuilder(className = "InteractiveMessageSimpleBuilder")
     static InteractiveMessage simpleBuilder(InteractiveHeader header, String body, String footer, InteractiveMessageContent content, ContextInfo contextInfo) {
         var builder = new InteractiveMessageBuilder()
@@ -46,8 +56,7 @@ public record InteractiveMessage(
             case InteractiveShop interactiveShop -> builder.contentShop(interactiveShop);
             case InteractiveCollection interactiveCollection -> builder.contentCollection(interactiveCollection);
             case InteractiveNativeFlow interactiveNativeFlow -> builder.contentNativeFlow(interactiveNativeFlow);
-            case null -> {
-            }
+            case null -> {}
         }
         return builder.build();
     }
@@ -69,20 +78,20 @@ public record InteractiveMessage(
      * @return a non-null content type
      */
     public Optional<? extends InteractiveMessageContent> content() {
-        if (contentShop.isPresent()) {
-            return contentShop;
+        if (contentShop != null) {
+            return Optional.of(contentShop);
         }
 
-        if (contentCollection.isPresent()) {
-            return contentCollection;
+        if (contentCollection != null) {
+            return Optional.of(contentCollection);
         }
 
-        return contentNativeFlow;
+        return Optional.ofNullable(contentNativeFlow);
     }
 
     @Override
     public Type templateType() {
-        return TemplateFormatter.Type.INTERACTIVE;
+        return Type.INTERACTIVE;
     }
 
     @Override
@@ -94,4 +103,52 @@ public record InteractiveMessage(
     public MessageCategory category() {
         return MessageCategory.STANDARD;
     }
+
+    public Optional<InteractiveHeader> header() {
+        return Optional.ofNullable(header);
+    }
+
+    public Optional<InteractiveBody> body() {
+        return Optional.ofNullable(body);
+    }
+
+    public Optional<InteractiveFooter> footer() {
+        return Optional.ofNullable(footer);
+    }
+
+    public Optional<InteractiveShop> contentShop() {
+        return Optional.ofNullable(contentShop);
+    }
+
+    public Optional<InteractiveCollection> contentCollection() {
+        return Optional.ofNullable(contentCollection);
+    }
+
+    public Optional<InteractiveNativeFlow> contentNativeFlow() {
+        return Optional.ofNullable(contentNativeFlow);
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public InteractiveMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "InteractiveMessage[" +
+                "header=" + header + ", " +
+                "body=" + body + ", " +
+                "footer=" + footer + ", " +
+                "contentShop=" + contentShop + ", " +
+                "contentCollection=" + contentCollection + ", " +
+                "contentNativeFlow=" + contentNativeFlow + ", " +
+                "contextInfo=" + contextInfo + ']';
+    }
+
 }

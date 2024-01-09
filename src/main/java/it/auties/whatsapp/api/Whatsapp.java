@@ -23,10 +23,7 @@ import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.companion.CompanionLinkResult;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.ChatMessageInfo;
-import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.info.NewsletterMessageInfo;
+import it.auties.whatsapp.model.info.*;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
@@ -38,6 +35,7 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
 import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
 import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.newsletter.NewsletterViewerMetadata;
 import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
@@ -418,6 +416,108 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
+    public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider chat, String message) {
+        return sendChatMessage(chat, MessageContainer.of(message));
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<NewsletterMessageInfo> sendsNewsletterMessage(JidProvider chat, String message) {
+        return sendNewsletterMessage(chat, MessageContainer.of(message));
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the message to quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<? extends MessageInfo> sendMessage(JidProvider chat, String message, MessageInfo quotedMessage) {
+        return sendMessage(chat, TextMessage.of(message), quotedMessage);
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the message to quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<? extends MessageInfo> sendChatMessage(JidProvider chat, String message, MessageInfo quotedMessage) {
+        return sendChatMessage(chat, TextMessage.of(message), quotedMessage);
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the message to quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<? extends MessageInfo> sendNewsletterMessage(JidProvider chat, String message, MessageInfo quotedMessage) {
+        return sendNewsletterMessage(chat, TextMessage.of(message), quotedMessage);
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @param quotedMessage the message to quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<? extends MessageInfo> sendMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo quotedMessage) {
+        var contextInfo = ContextInfo.of(quotedMessage);
+        message.setContextInfo(contextInfo);
+        return sendMessage(chat, MessageContainer.of(message));
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @param quotedMessage the message to quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo quotedMessage) {
+        var contextInfo = ContextInfo.of(quotedMessage);
+        message.setContextInfo(contextInfo);
+        return sendChatMessage(chat, MessageContainer.of(message));
+    }
+
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @param quotedMessage the message to quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<NewsletterMessageInfo> sendNewsletterMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo quotedMessage) {
+        var contextInfo = ContextInfo.of(quotedMessage);
+        message.setContextInfo(contextInfo);
+        return sendNewsletterMessage(chat, MessageContainer.of(message));
+    }
+
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @return a CompletableFuture
+     */
     public CompletableFuture<? extends MessageInfo> sendMessage(JidProvider chat, Message message) {
         return sendMessage(chat, MessageContainer.of(message));
     }
@@ -432,7 +532,6 @@ public class Whatsapp {
     public CompletableFuture<? extends MessageInfo> sendMessage(JidProvider recipient, MessageContainer message) {
         return recipient.toJid().server() == JidServer.NEWSLETTER ? sendNewsletterMessage(recipient, message) : sendChatMessage(recipient, message);
     }
-
 
     /**
      * Builds and sends a message from a recipient and a message

@@ -70,7 +70,7 @@ public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> i
     private final byte[] thumbnail;
 
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private final ContextInfo contextInfo;
+    private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.INT64)
     private final Long stickerSentTimestamp;
@@ -237,5 +237,11 @@ public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> i
 
     public OptionalLong stickerSentTimestamp() {
         return Clock.parseTimestamp(stickerSentTimestamp);
+    }
+
+    @Override
+    public StickerMessage setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+        return this;
     }
 }
