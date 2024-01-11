@@ -41,10 +41,10 @@ public final class PollCreationMessage implements ContextualMessage<PollCreation
     private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 999, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
-    private final Map<String, PollOption> selectableOptionsMap;
+    final Map<String, PollOption> selectableOptionsMap;
 
     @ProtobufProperty(index = 1000, type = ProtobufType.OBJECT)
-    private final List<SelectedPollOption> selectedOptions;
+    final List<SelectedPollOption> selectedOptions;
 
     public PollCreationMessage(byte[] encryptionKey, String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, List<SelectedPollOption> selectedOptions) {
         this.encryptionKey = encryptionKey;

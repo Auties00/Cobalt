@@ -23,6 +23,10 @@ public final class ContactMessage implements ContextualMessage<ContactMessage> {
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
     private ContextInfo contextInfo;
 
+    public static ContactMessage of(String name, ContactCard vcard) {
+        return new ContactMessage(name, vcard, null);
+    }
+
     public ContactMessage(String name, ContactCard vcard, ContextInfo contextInfo) {
         this.name = name;
         this.vcard = vcard;

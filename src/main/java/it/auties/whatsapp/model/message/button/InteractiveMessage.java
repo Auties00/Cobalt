@@ -49,8 +49,8 @@ public final class InteractiveMessage implements ContextualMessage<InteractiveMe
     static InteractiveMessage simpleBuilder(InteractiveHeader header, String body, String footer, InteractiveMessageContent content, ContextInfo contextInfo) {
         var builder = new InteractiveMessageBuilder()
                 .header(header)
-                .body(InteractiveBody.ofNullable(body))
-                .footer(InteractiveFooter.ofNullable(footer))
+                .body(InteractiveBody.ofNullable(body).orElse(null))
+                .footer(InteractiveFooter.ofNullable(footer).orElse(null))
                 .contextInfo(contextInfo);
         switch (content) {
             case InteractiveShop interactiveShop -> builder.contentShop(interactiveShop);

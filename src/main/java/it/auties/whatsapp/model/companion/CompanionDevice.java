@@ -30,10 +30,10 @@ public record CompanionDevice(
 
     public static CompanionDevice ios(boolean business) {
         return new CompanionDevice(
-                "iPhone_X",
+                "iPhone_15_Pro_Max",
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
-                "16.5.1"
+                "17.1.1"
         );
     }
 

@@ -726,7 +726,7 @@ public class WebTest implements Listener {
                         ADR:123 Main Street; Springfield; IL; 12345; USA
                         END:VCARD
                         """);
-        var contactMessage = new ContactMessage("John Doe", vcard, Optional.empty());
+        var contactMessage = new ContactMessage("John Doe", vcard, null);
         var response = api.sendMessage(contact, contactMessage).join();
         log("Sent contact: %s", response);
     }

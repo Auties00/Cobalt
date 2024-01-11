@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
+import it.auties.whatsapp.model.response.IosVersionResponse;
 import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
@@ -53,9 +54,10 @@ public final class TokenProvider {
     }
 
     private static volatile Version webVersion;
-    private static volatile Version iosVersion;
-    private static volatile WhatsappApk cachedApk;
-    private static volatile WhatsappApk cachedBusinessApk;
+    private static volatile Version personalIosVersion;
+    private static volatile Version businessIosVersion;
+    private static volatile WhatsappApk personalApk;
+    private static volatile WhatsappApk businessApk;
 
     private static Path androidCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/android");
 
@@ -72,33 +74,72 @@ public final class TokenProvider {
         return getVersion(platform, true);
     }
 
-    private static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform, boolean useJarCache) {
+    private static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform, boolean useCache) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(platform.isBusiness(), useJarCache).thenApply(WhatsappApk::version);
-            case IOS, IOS_BUSINESS ->
-                    CompletableFuture.completedFuture(platform.isBusiness() ? Whatsapp.DEFAULT_MOBILE_BUSINESS_IOS_VERSION : Whatsapp.DEFAULT_MOBILE_IOS_VERSION); // Fetching the latest ios version is harder than one might hope
+                    getAndroidData(platform.isBusiness(), useCache).thenApply(WhatsappApk::version);
+            case IOS ->
+                    getIosVersion(false);
+            case IOS_BUSINESS ->
+                    getIosVersion(true);
             case KAIOS ->
                 CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_KAIOS_VERSION);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
 
-    private static CompletableFuture<Version> getWebVersion() {
-        try (var client = HttpClient.newHttpClient()) {
-            if (webVersion != null) {
-                return CompletableFuture.completedFuture(webVersion);
-            }
+    private static CompletableFuture<Version> getIosVersion(boolean business) {
+        if (business && businessIosVersion != null) {
+            return CompletableFuture.completedFuture(businessIosVersion);
+        }
 
+        if (!business && personalIosVersion != null) {
+            return CompletableFuture.completedFuture(personalIosVersion);
+        }
+
+        try (var client = HttpClient.newHttpClient()) {
+            var request = HttpRequest.newBuilder()
+                    .GET()
+                    .header("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0")
+                    .uri(URI.create(business ? Whatsapp.MOBILE_BUSINESS_IOS_URL : Whatsapp.MOBILE_IOS_URL))
+                    .build();
+            return client.sendAsync(request, ofString())
+                    .thenApplyAsync(response -> {
+                        var result = Json.readValue(response.body(), IosVersionResponse.class)
+                                .version()
+                                .orElseThrow();
+                        if(business) {
+                            businessIosVersion = result;
+                        }else {
+                            personalIosVersion = result;
+                        }
+                        System.out.println("Result: " + result);
+
+                        return result;
+                    });
+        } catch (Throwable throwable) {
+            throw new RuntimeException("Cannot fetch latest web version", throwable);
+        }
+    }
+
+    private static CompletableFuture<Version> getWebVersion() {
+        if (webVersion != null) {
+            return CompletableFuture.completedFuture(webVersion);
+        }
+
+
+        try (var client = HttpClient.newHttpClient()) {
             var request = HttpRequest.newBuilder()
                     .GET()
                     .uri(URI.create(Whatsapp.WEB_UPDATE_URL))
                     .build();
             return client.sendAsync(request, ofString())
-                    .thenApplyAsync(response -> Json.readValue(response.body(), WebVersionResponse.class))
-                    .thenApplyAsync(version -> webVersion = Version.of(version.currentVersion()));
+                    .thenApplyAsync(response -> {
+                        var webVersionResponse = Json.readValue(response.body(), WebVersionResponse.class);
+                        return webVersion = Version.of(webVersionResponse.currentVersion());
+                    });
         } catch (Throwable throwable) {
             throw new RuntimeException("Cannot fetch latest web version", throwable);
         }
@@ -165,12 +206,12 @@ public final class TokenProvider {
     }
 
     private static CompletableFuture<WhatsappApk> getAndroidData(boolean business, boolean useJarCache) {
-        if (!business && cachedApk != null) {
-            return CompletableFuture.completedFuture(cachedApk);
+        if (!business && personalApk != null) {
+            return CompletableFuture.completedFuture(personalApk);
         }
 
-        if (business && cachedBusinessApk != null) {
-            return CompletableFuture.completedFuture(cachedBusinessApk);
+        if (business && businessApk != null) {
+            return CompletableFuture.completedFuture(businessApk);
         }
 
         return getCachedApk(business, useJarCache)
@@ -179,7 +220,7 @@ public final class TokenProvider {
     }
 
     public static CompletableFuture<WhatsappApk> downloadWhatsappApk(boolean business) {
-        return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_DOWNLOAD_URL : Whatsapp.MOBILE_DOWNLOAD_URL)
+        return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_ANDROID_URL : Whatsapp.MOBILE_ANDROID_URL)
                 .thenApplyAsync(result -> getAndroidData(result, business));
     }
 
@@ -227,12 +268,12 @@ public final class TokenProvider {
             if (business) {
                 var result = new WhatsappApk(version, md5Hash, secretKey.getEncoded(), certificates, true);
                 cacheWhatsappData(result);
-                return cachedBusinessApk = result;
+                return businessApk = result;
             }
 
             var result = new WhatsappApk(version, md5Hash, secretKey.getEncoded(), certificates, false);
             cacheWhatsappData(result);
-            return cachedApk = result;
+            return personalApk = result;
         } catch (IOException | GeneralSecurityException exception) {
             throw new RuntimeException("Cannot extract certificates from APK", exception);
         }

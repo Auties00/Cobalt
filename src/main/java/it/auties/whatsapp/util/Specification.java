@@ -18,10 +18,11 @@ public class Specification {
         public static final String SOCKET_ENDPOINT = "g.whatsapp.net";
         public static final int SOCKET_PORT = 443;
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
+        public static final String MOBILE_IOS_ = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
+        public static final String MOBILE_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp";
+        public static final String MOBILE_BUSINESS_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         public static final String MOBILE_KAIOS_REGISTRATION_ENDPOINT = "https://v-k.whatsapp.net/v2";
-        public static final Version DEFAULT_MOBILE_IOS_VERSION = Version.of("2.23.25.71");
-        public static final Version DEFAULT_MOBILE_BUSINESS_IOS_VERSION = Version.of("2.23.24.73");
         public static final Version DEFAULT_MOBILE_KAIOS_VERSION = Version.of("2.2329.8");
         public static final String APNS_WHATSAPP_BUSINESS_NAME = "net.whatsapp.WhatsAppSMB";
         public static final String APNS_WHATSAPP_NAME = "net.whatsapp.WhatsApp";
@@ -42,8 +43,8 @@ public class Specification {
         public static final int MAX_COMPANIONS = 5;
         public static final int THUMBNAIL_WIDTH = 480;
         public static final int THUMBNAIL_HEIGHT = 339;
-        public static final URI MOBILE_DOWNLOAD_URL = URI.create("https://www.whatsapp.com/android/current/WhatsApp.apk");
-        public static final URI MOBILE_BUSINESS_DOWNLOAD_URL = URI.create("https://d.cdnpure.com/b/APK/com.whatsapp.w4b?version=latest");
+        public static final URI MOBILE_ANDROID_URL = URI.create("https://www.whatsapp.com/android/current/WhatsApp.apk");
+        public static final URI MOBILE_BUSINESS_ANDROID_URL = URI.create("https://d.cdnpure.com/b/APK/com.whatsapp.w4b?version=latest");
         public static final byte[] MOBILE_ANDROID_SALT = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
         public static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
         public static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";

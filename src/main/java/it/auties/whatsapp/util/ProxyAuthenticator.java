@@ -56,6 +56,7 @@ public class ProxyAuthenticator extends Authenticator {
         }
 
         var userInfo = info.getUserInfo().split(":", 2);
+        Validate.isTrue(userInfo.length == 2, "Invalid proxy credentials");
         return new PasswordAuthentication(userInfo[0], userInfo[1].toCharArray());
     }
 }

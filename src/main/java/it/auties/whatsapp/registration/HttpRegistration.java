@@ -37,6 +37,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public final class HttpRegistration {
+    static {
+        Authenticator.setDefault(new ProxyAuthenticator());
+    }
+
     private static final int TIMEOUT_SECONDS = 10;
 
     private final HttpClient httpClient;
@@ -53,7 +57,7 @@ public final class HttpRegistration {
         this.method = method;
         this.httpClient = createClient();
         var platform = store.device().platform();
-        this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient(store.proxy().orElse(null)) : null;
+        this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
     }
 
     public CompletableFuture<Void> registerPhoneNumber() {
@@ -309,7 +313,6 @@ public final class HttpRegistration {
         };
     }
 
-
     private CompletionStage<Void> onCodeRequestSent(ExistsResponse existsResponse, VerificationCodeError lastError, HttpResponse<String> result) {
         if (result.statusCode() != HttpURLConnection.HTTP_OK) {
             throw new RegistrationException(null, result.body());
@@ -348,20 +351,6 @@ public final class HttpRegistration {
 
                     throw new RegistrationException(response, result.body());
                 });
-    }
-
-    private String padCountryCodeValue(String inputString) {
-        if (inputString.length() >= 3) {
-            return inputString;
-        }
-
-        var stringBuilder = new StringBuilder();
-        while (stringBuilder.length() < 3 - inputString.length()) {
-            stringBuilder.append('0');
-        }
-
-        stringBuilder.append(inputString);
-        return stringBuilder.toString();
     }
 
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {

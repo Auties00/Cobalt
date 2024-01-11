@@ -40,7 +40,7 @@ public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsR
     public static ButtonsResponseMessage of(ChatMessageInfo quoted, Button button) {
         return new ButtonsResponseMessageBuilder()
                 .buttonId(button.id())
-                .buttonText(button.bodyText().map(ButtonText::content))
+                .buttonText(button.bodyText().map(ButtonText::content).orElse(null))
                 .contextInfo(ContextInfo.of(quoted))
                 .responseType(button.bodyType() == ButtonBody.Type.TEXT ? ResponseType.SELECTED_DISPLAY_TEXT : ResponseType.UNKNOWN)
                 .build();
