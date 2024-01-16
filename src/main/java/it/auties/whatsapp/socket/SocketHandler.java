@@ -710,7 +710,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onMessageDeleted(ChatMessageInfo message, boolean everyone) {
+    protected void onMessageDeleted(MessageInfo message, boolean everyone) {
         callListenersAsync(listener -> {
             listener.onMessageDeleted(whatsapp, message, everyone);
             listener.onMessageDeleted(message, everyone);

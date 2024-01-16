@@ -442,9 +442,15 @@ class AppStateHandler {
                 var chat = targetChat.orElseGet(() -> createChat(messageIndex));
                 updateName(contact, chat, contactAction);
             }
-            case DeleteMessageForMeAction deleteMessageForMeAction -> {
-                targetChatMessage.ifPresent(message -> targetChat.ifPresent(chat -> chat.removeMessage(message)));
-                targetNewsletterMessage.ifPresent(message -> targetNewsletter.ifPresent(newsletter -> newsletter.removeMessage(message)));
+            case DeleteMessageForMeAction ignored -> {
+                targetChatMessage.ifPresent(message -> {
+                    targetChat.ifPresent(chat -> chat.removeMessage(message));
+                    socketHandler.onMessageDeleted(message, false);
+                });
+                targetNewsletterMessage.ifPresent(message -> {
+                    targetNewsletter.ifPresent(newsletter -> newsletter.removeMessage(message));
+                    socketHandler.onMessageDeleted(message, false);
+                });
             }
             case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> {
                 var read = markAction.read() ? 0 : -1;

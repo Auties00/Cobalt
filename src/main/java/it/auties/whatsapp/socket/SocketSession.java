@@ -45,8 +45,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
     public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
 
-    abstract boolean isOpen();
-
     static SocketSession of(URI proxy, ExecutorService executor, boolean webSocket) {
         if (webSocket) {
             return new WebSocketSession(proxy, executor);
@@ -102,8 +100,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     });
         }
 
-        @Override
-        boolean isOpen() {
+        private boolean isOpen() {
             return session != null && !session.isInputClosed() && !session.isOutputClosed();
         }
 
@@ -233,8 +230,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
         }
 
-        @Override
-        public boolean isOpen() {
+        private boolean isOpen() {
             return socket != null && socket.isOpen();
         }
 

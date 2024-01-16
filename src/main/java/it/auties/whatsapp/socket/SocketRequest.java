@@ -21,20 +21,9 @@ import java.util.function.Function;
 import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * An abstract model class that represents a request made from the client to the server.
- */
-@SuppressWarnings("UnusedReturnValue")
 public record SocketRequest(String id, Object body, CompletableFuture<Node> future,
                             Function<Node, Boolean> filter, Throwable caller) {
-    /**
-     * The timeout in seconds before a Request wrapping a Node fails
-     */
     private static final int TIMEOUT = 60;
-
-    /**
-     * The delayed executor used to cancel futures
-     */
     private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
 
     private SocketRequest(String id, Function<Node, Boolean> filter, Object body) {
@@ -58,39 +47,22 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
         future.completeExceptionally(caller);
     }
 
-    /**
-     * Constructs a new request with the provided body expecting a newsletters
-     */
     public static SocketRequest of(Node body, Function<Node, Boolean> filter) {
         return new SocketRequest(body.id(), filter, body);
     }
 
-    /**
-     * Constructs a new request with the provided body expecting a newsletters
-     */
     public static SocketRequest of(byte[] body) {
         return new SocketRequest(null, null, body);
     }
 
-    /**
-     * Sends a request to the WebSocket linked to {@code session}.
-     *
-     * @param session the WhatsappWeb's WebSocket session
-     * @param store   the store
-     */
     public CompletableFuture<Node> sendWithPrologue(SocketSession session, Keys keys, Store store) {
         return send(session, keys, store, true, false);
     }
 
-    /**
-     * Sends a request to the WebSocket linked to {@code session}.
-     *
-     * @param store    the store
-     * @param session  the WhatsappWeb's WebSocket session
-     * @param prologue whether the prologue should be prepended to the request
-     * @param response whether the request expects a newsletters
-     * @return this request
-     */
+    public CompletableFuture<Node> send(SocketSession session, Keys keys, Store store) {
+        return send(session, keys, store, false, true);
+    }
+
     public CompletableFuture<Node> send(SocketSession session, Keys keys, Store store, boolean prologue, boolean response) {
         var ciphered = encryptMessage(keys);
         var byteArrayOutputStream = new ByteArrayOutputStream();
@@ -109,6 +81,12 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
             throw new RequestException(exception);
         }
     }
+
+    public CompletableFuture<Void> sendWithNoResponse(SocketSession session, Keys keys, Store store) {
+        return send(session, keys, store, false, false)
+                .thenRun(() -> {});
+    }
+
 
     private byte[] getPrologueData(Store store) {
         return switch (store.clientType()) {
@@ -155,35 +133,6 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
         return null;
     }
 
-    /**
-     * Sends a request to the WebSocket linked to {@code session}.
-     *
-     * @param store   the store
-     * @param session the WhatsappWeb's WebSocket session
-     * @return this request
-     */
-    public CompletableFuture<Node> send(SocketSession session, Keys keys, Store store) {
-        return send(session, keys, store, false, true);
-    }
-
-    /**
-     * Sends a request to the WebSocket linked to {@code session}.
-     *
-     * @param store   the store
-     * @param session the WhatsappWeb's WebSocket session
-     * @return this request
-     */
-    public CompletableFuture<Void> sendWithNoResponse(SocketSession session, Keys keys, Store store) {
-        return send(session, keys, store, false, false)
-                .thenRunAsync(() -> {
-                });
-    }
-
-    /**
-     * Completes this request using {@code newsletters}
-     *
-     * @param response the newsletters used to complete {@link SocketRequest#future}
-     */
     public boolean complete(Node response, boolean exceptionally) {
         if (response == null) {
             future.complete(null);

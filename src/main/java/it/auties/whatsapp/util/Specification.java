@@ -13,25 +13,15 @@ public class Specification {
         public static final String DEFAULT_NAME = "Cobalt";
         public static final byte[] NOISE_PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
         public static final String WEB_ORIGIN = "https://web.whatsapp.com";
-        public static final String WEB_HOST = "web.whatsapp.com";
         public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
         public static final String SOCKET_ENDPOINT = "g.whatsapp.net";
         public static final int SOCKET_PORT = 443;
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
-        public static final String MOBILE_IOS_ = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp";
         public static final String MOBILE_BUSINESS_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         public static final String MOBILE_KAIOS_REGISTRATION_ENDPOINT = "https://v-k.whatsapp.net/v2";
         public static final Version DEFAULT_MOBILE_KAIOS_VERSION = Version.of("2.2329.8");
-        public static final String APNS_WHATSAPP_BUSINESS_NAME = "net.whatsapp.WhatsAppSMB";
-        public static final String APNS_WHATSAPP_NAME = "net.whatsapp.WhatsApp";
-        public static final String[] DEFAULT_APNS_FILTERS = new String[]{
-                "net.whatsapp.WhatsApp",
-                "net.whatsapp.WhatsApp.voip",
-                "net.whatsapp.WhatsAppSMB",
-                "net.whatsapp.WhatsAppSMB.voip"
-        };
         private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
         private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = BytesHelper.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);

@@ -239,13 +239,12 @@ class MessageHandler {
         };
     }
 
-
-    private MutableAttachmentProvider<?> attributeMediaMessage(MutableAttachmentProvider<?> mediaMessage, MediaFile upload) {
+    private void attributeMediaMessage(MutableAttachmentProvider<?> mediaMessage, MediaFile upload) {
         if (mediaMessage instanceof ExtendedMediaMessage<?> extendedMediaMessage) {
             extendedMediaMessage.setHandle(upload.handle());
         }
 
-        return mediaMessage.setMediaSha256(upload.fileSha256())
+        mediaMessage.setMediaSha256(upload.fileSha256())
                 .setMediaEncryptedSha256(upload.fileEncSha256())
                 .setMediaKey(upload.mediaKey())
                 .setMediaUrl(upload.url())
@@ -686,13 +685,13 @@ class MessageHandler {
 
             var plainText = node.findNode("plaintext");
             if (plainText.isPresent()) {
-                decodeNewsletterMessage(node, plainText.get(), businessName, chatOverride, notify);
+                decodeNewsletterMessage(node, plainText.get(), chatOverride, notify);
                 return;
             }
 
             var reaction = node.findNode("reaction");
             if (reaction.isPresent()) {
-                decodeNewsletterReaction(node, reaction.get(), businessName, chatOverride, notify);
+                decodeNewsletterReaction(node, reaction.get(), chatOverride, notify);
                 return;
             }
 
@@ -728,27 +727,27 @@ class MessageHandler {
     private String getMediaType(MessageContainer container) {
         var content = container.content();
         return switch (content) {
-            case ImageMessage imageMessage -> "image";
+            case ImageMessage ignored -> "image";
             case VideoOrGifMessage videoMessage -> videoMessage.gifPlayback() ? "gif" : "video";
             case AudioMessage audioMessage -> audioMessage.voiceMessage() ? "ptt" : "audio";
-            case ContactMessage contactMessage -> "vcard";
-            case DocumentMessage documentMessage -> "document";
-            case ContactsMessage contactsMessage -> "contact_array";
-            case LiveLocationMessage liveLocationMessage -> "livelocation";
-            case StickerMessage stickerMessage -> "sticker";
-            case ListMessage listMessage -> "list";
-            case ListResponseMessage listResponseMessage -> "list_response";
-            case ButtonsResponseMessage buttonsResponseMessage -> "buttons_response";
-            case PaymentOrderMessage paymentOrderMessage -> "order";
-            case ProductMessage productMessage -> "product";
-            case NativeFlowResponseMessage nativeFlowResponseMessage -> "native_flow_response";
+            case ContactMessage ignored -> "vcard";
+            case DocumentMessage ignored -> "document";
+            case ContactsMessage ignored -> "contact_array";
+            case LiveLocationMessage ignored -> "livelocation";
+            case StickerMessage ignored -> "sticker";
+            case ListMessage ignored -> "list";
+            case ListResponseMessage ignored -> "list_response";
+            case ButtonsResponseMessage ignored -> "buttons_response";
+            case PaymentOrderMessage ignored -> "order";
+            case ProductMessage ignored -> "product";
+            case NativeFlowResponseMessage ignored -> "native_flow_response";
             case ButtonsMessage buttonsMessage ->
                     buttonsMessage.headerType().hasMedia() ? buttonsMessage.headerType().name().toLowerCase() : null;
             case null, default -> null;
         };
     }
 
-    private void decodeNewsletterMessage(Node messageNode, Node plainTextNode, String businessName, JidProvider chatOverride, boolean notify) {
+    private void decodeNewsletterMessage(Node messageNode, Node plainTextNode, JidProvider chatOverride, boolean notify) {
         try {
             var newsletterJid = messageNode.attributes()
                     .getOptionalJid("from")
@@ -816,7 +815,7 @@ class MessageHandler {
         }
     }
 
-    private void decodeNewsletterReaction(Node messageNode, Node reactionNode, String businessName, JidProvider chatOverride, boolean notify) {
+    private void decodeNewsletterReaction(Node messageNode, Node reactionNode, JidProvider chatOverride, boolean notify) {
         try {
             var messageId = messageNode.attributes()
                     .getRequiredString("id");
@@ -945,11 +944,11 @@ class MessageHandler {
         }
     }
 
-    private CompletableFuture<Void> sendEncMessageReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {
+    private void sendEncMessageReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {
         var participant = fromMe && senderJid == null ? chatJid : senderJid;
         var category = infoNode.attributes().getString("category");
         var receiptType = getReceiptType(category, fromMe);
-        return socketHandler.sendMessageAck(chatJid, infoNode)
+        socketHandler.sendMessageAck(chatJid, infoNode)
                 .thenComposeAsync(ignored -> socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType));
     }
 
@@ -1106,7 +1105,7 @@ class MessageHandler {
         }
 
         downloadHistorySync(protocolMessage)
-                .thenAcceptAsync(history -> onHistoryNotification(info, history))
+                .thenAcceptAsync(this::onHistoryNotification)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(HISTORY_SYNC, throwable))
                 .thenRunAsync(() -> socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync"));
     }
@@ -1139,7 +1138,7 @@ class MessageHandler {
                         .thenApplyAsync(result -> HistorySyncSpec.decode(BytesHelper.decompress(result))));
     }
 
-    private void onHistoryNotification(ChatMessageInfo info, HistorySync history) {
+    private void onHistoryNotification(HistorySync history) {
         handleHistorySync(history);
         if (history.progress() == null) {
             return;
@@ -1169,7 +1168,6 @@ class MessageHandler {
     }
 
     private void handleInitialStatus(HistorySync history) {
-        var store = socketHandler.store();
         for (var messageInfo : history.statusV3Messages()) {
             socketHandler.store().addStatus(messageInfo);
         }
@@ -1271,7 +1269,6 @@ class MessageHandler {
 
 
     private void handleConversations(HistorySync history) {
-        var store = socketHandler.store();
         for (var chat : history.conversations()) {
             for (var message : chat.messages()) {
                 attributeChatMessage(message.messageInfo());
@@ -1338,7 +1335,7 @@ class MessageHandler {
         contextInfo.setQuotedMessageSender(contact);
     }
 
-    protected ChatMessageInfo attributeChatMessage(ChatMessageInfo info) {
+    protected void attributeChatMessage(ChatMessageInfo info) {
         var chat = socketHandler.store().findChatByJid(info.chatJid())
                 .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
         info.setChat(chat);
@@ -1353,7 +1350,6 @@ class MessageHandler {
                 .flatMap(ContextualMessage::contextInfo)
                 .ifPresent(this::attributeContext);
         processMessageWithSecret(info);
-        return info;
     }
 
     private void processMessageWithSecret(ChatMessageInfo info) {

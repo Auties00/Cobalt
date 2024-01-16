@@ -25,7 +25,7 @@ public final class ListenerScanner {
 
     public static List<Listener> scan(Whatsapp whatsapp, boolean useCache) {
         var listeners = useCache ? cache : loadListeners();
-        return cache.stream()
+        return listeners.stream()
                 .map(listener -> initialize(listener, whatsapp))
                 .toList();
     }

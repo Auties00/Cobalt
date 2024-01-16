@@ -333,7 +333,7 @@ public interface Listener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(Whatsapp whatsapp, ChatMessageInfo info, boolean everyone) {
+    default void onMessageDeleted(Whatsapp whatsapp, MessageInfo info, boolean everyone) {
     }
 
     /**
@@ -343,7 +343,7 @@ public interface Listener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(ChatMessageInfo info, boolean everyone) {
+    default void onMessageDeleted(MessageInfo info, boolean everyone) {
     }
 
     /**

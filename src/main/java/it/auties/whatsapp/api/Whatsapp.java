@@ -92,11 +92,11 @@ public class Whatsapp {
     // This is to make sure that the instances remain in memory only as long as it's needed
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
 
-    protected static Optional<Whatsapp> getInstanceByUuid(UUID uuid) {
+    static Optional<Whatsapp> getInstanceByUuid(UUID uuid) {
         return Optional.ofNullable(instances.get(uuid));
     }
 
-    protected static void removeInstanceByUuid(UUID uuid) {
+    static void removeInstanceByUuid(UUID uuid) {
         instances.remove(uuid);
     }
 

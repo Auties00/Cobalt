@@ -556,8 +556,8 @@ public class DefaultControllerSerializer implements ControllerSerializer {
         }
     }
 
-    private Path delete(Path path) throws IOException {
-        return Files.walkFileTree(path, new SimpleFileVisitor<>() {
+    private void delete(Path path) throws IOException {
+        Files.walkFileTree(path, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Files.delete(file);
