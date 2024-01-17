@@ -13,9 +13,10 @@ It can be used with:
 
 ### Donations
 
-If you like my work, you can become a sponsor here on GitHub or tip me on [Paypal](https://www.paypal.me/AutiesDevelopment).
-
-If you prefer crypto, this is my eth address: 0xA7842cDb100fb91718961153149C86e4F4030a76
+If you like my work, you can become a sponsor here on GitHub or tip me through:
+- [Paypal](https://www.paypal.me/AutiesDevelopment).
+- ERC20 address: 0xA7842cDb100fb91718961153149C86e4F4030a76
+- TRC20 address: THiutwmP7GFEz28tLB3k5ivoyTnxrteKoH
 
 I can also work on sponsored features and/or projects!
 
