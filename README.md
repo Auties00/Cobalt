@@ -67,13 +67,6 @@ In short, if you use this library without a malicious intent, you will never get
    implementation("com.github.auties00:cobalt:0.0.2")
    ```
 
-### Examples
-
-If you need some examples to get started, check
-the [examples' directory](https://github.com/Auties00/Whatsapp4j/tree/master/examples) in this project.
-There are several easy and documented projects and more will come.
-Any contribution is welcomed!
-
 ### Javadocs & Documentation
 
 Javadocs for Whatsapp4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
