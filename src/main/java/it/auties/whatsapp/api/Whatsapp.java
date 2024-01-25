@@ -175,7 +175,6 @@ public class Whatsapp {
         return new WhatsappCustomBuilder();
     }
 
-
     /**
      * Connects to Whatsapp
      *

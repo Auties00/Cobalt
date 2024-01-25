@@ -63,7 +63,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         @SuppressWarnings("resource") // Not needed
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
-            if (isOpen()) {
+            if (session != null) {
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -75,12 +75,15 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     .build()
                     .newWebSocketBuilder()
                     .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
-                    .thenRun(() -> listener.onOpen(this));
+                    .thenAccept(webSocket -> {
+                        this.session = webSocket;
+                        listener.onOpen(this);
+                    });
         }
 
         @Override
         void disconnect() {
-            if (!isOpen()) {
+            if (session == null) {
                 return;
             }
 
@@ -89,6 +92,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
+            if (session == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+
             outputLock.lock();
             return session.sendBinary(ByteBuffer.wrap(bytes), true)
                     .thenRun(outputLock::unlock)
@@ -98,22 +105,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     });
         }
 
-        private boolean isOpen() {
-            return session != null
-                    && !session.isInputClosed()
-                    && !session.isOutputClosed();
-        }
-
-        @Override
-        public void onOpen(WebSocket webSocket) {
-            this.session = webSocket;
-            WebSocket.Listener.super.onOpen(webSocket);
-        }
-
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
             message = null;
             listener.onClose();
+            session = null;
             return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         }
 

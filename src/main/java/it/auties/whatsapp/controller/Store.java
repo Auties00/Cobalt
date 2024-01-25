@@ -39,10 +39,7 @@ import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.registration.TokenProvider;
 import it.auties.whatsapp.socket.SocketRequest;
-import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.FutureReference;
-import it.auties.whatsapp.util.ProtobufUriMixin;
-import it.auties.whatsapp.util.ProxyAuthenticator;
+import it.auties.whatsapp.util.*;
 
 import java.net.URI;
 import java.time.Duration;
@@ -333,7 +330,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
          * All args constructor
          */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean cacheDetectedListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, Boolean autodetectListeners, Boolean cacheDetectedListeners, Boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -343,7 +340,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.version = version;
         this.online = online;
         this.locale = locale;
-        this.name = name;
+        this.name = Objects.requireNonNullElse(name, Specification.Whatsapp.DEFAULT_NAME);
         this.businessAddress = businessAddress;
         this.businessLongitude = businessLongitude;
         this.businessLatitude = businessLatitude;
@@ -352,35 +349,46 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.businessEmail = businessEmail;
         this.businessCategory = businessCategory;
         this.deviceHash = deviceHash;
-        this.linkedDevicesKeys = linkedDevicesKeys;
+        this.linkedDevicesKeys = Objects.requireNonNullElseGet(linkedDevicesKeys, LinkedHashMap::new);
         this.profilePicture = profilePicture;
         this.about = about;
         this.jid = jid;
         this.lid = lid;
-        this.properties = properties;
+        this.properties = Objects.requireNonNullElseGet(properties, ConcurrentHashMap::new);
         this.chats = new ConcurrentHashMap<>();
-        this.contacts = contacts;
-        this.status = status;
+        this.contacts = Objects.requireNonNullElseGet(contacts, ConcurrentHashMap::new);
+        this.status = Objects.requireNonNullElseGet(status, ConcurrentHashMap::newKeySet);
         this.newsletters = new ConcurrentHashMap<>();
-        this.privacySettings = privacySettings;
-        this.calls = calls;
+        this.privacySettings = Objects.requireNonNullElseGet(privacySettings, ConcurrentHashMap::new);
+        this.calls = Objects.requireNonNullElseGet(calls, ConcurrentHashMap::new);
         this.unarchiveChats = unarchiveChats;
         this.twentyFourHourFormat = twentyFourHourFormat;
         this.requests = new ConcurrentHashMap<>();
         this.replyHandlers = new ConcurrentHashMap<>();
         this.listeners = ConcurrentHashMap.newKeySet();
         this.tag = HexFormat.of().formatHex(BytesHelper.random(1));
-        this.initializationTimeStamp = initializationTimeStamp;
+        this.initializationTimeStamp = Objects.requireNonNullElseGet(initializationTimeStamp, Clock::nowSeconds);
         this.mediaConnectionLatch = new CountDownLatch(1);
-        this.newChatsEphemeralTimer = newChatsEphemeralTimer;
-        this.textPreviewSetting = textPreviewSetting;
-        this.historyLength = historyLength;
-        this.autodetectListeners = autodetectListeners;
-        this.cacheDetectedListeners = cacheDetectedListeners;
-        this.automaticPresenceUpdates = automaticPresenceUpdates;
-        this.releaseChannel = releaseChannel;
+        this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
+        this.textPreviewSetting = Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE);
+        this.historyLength = Objects.requireNonNullElseGet(historyLength, WebHistoryLength::standard);
+        this.autodetectListeners = Objects.requireNonNullElse(autodetectListeners, true);
+        this.cacheDetectedListeners = Objects.requireNonNullElse(cacheDetectedListeners, true);
+        this.automaticPresenceUpdates = Objects.requireNonNullElse(automaticPresenceUpdates, true);
+        this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
         this.device = device;
         this.checkPatchMacs = checkPatchMacs;
+    }
+
+    public static Store newStore(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
+        return new StoreBuilder()
+                .uuid(uuid)
+                .phoneNumber(phoneNumber != null ? PhoneNumber.of(phoneNumber) : null)
+                .clientType(clientType)
+                .alias(alias)
+                .name(Specification.Whatsapp.DEFAULT_NAME)
+                .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
+                .build();
     }
 
     /**

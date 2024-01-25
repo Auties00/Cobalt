@@ -18,22 +18,22 @@ import java.util.concurrent.CompletableFuture;
 public interface ControllerSerializer {
     /**
      * Returns the default serializer
-     * This implementation uses .smile files compressed using gzip
+     * This implementation uses .proto files compressed using gzip
      *
      * @return a serializer
      */
-    static ControllerSerializer toSmile() {
+    static ControllerSerializer toProtobuf() {
         return DefaultControllerSerializer.of();
     }
 
     /**
      * Returns the default serializer
-     * This implementation uses .smile files compressed using gzip
+     * This implementation uses .proto files compressed using gzip
      *
      * @param baseDirectory the directory where all the sessions should be saved
      * @return a serializer
      */
-    static ControllerSerializer toSmile(Path baseDirectory) {
+    static ControllerSerializer toProtobuf(Path baseDirectory) {
         return DefaultControllerSerializer.of(baseDirectory);
     }
 

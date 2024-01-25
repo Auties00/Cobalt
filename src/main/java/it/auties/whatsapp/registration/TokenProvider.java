@@ -80,10 +80,8 @@ public final class TokenProvider {
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
                     getAndroidData(platform.isBusiness(), useCache).thenApply(WhatsappApk::version);
-            case IOS ->
-                    getIosVersion(false);
-            case IOS_BUSINESS ->
-                    getIosVersion(true);
+            case IOS, IOS_BUSINESS ->
+                    CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_IOS_VERSION);
             case KAIOS ->
                 CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_KAIOS_VERSION);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);

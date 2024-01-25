@@ -1,23 +1,16 @@
 package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.TextPreviewSetting;
-import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
-import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatSpec;
-import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.newsletter.NewsletterSpec;
-import it.auties.whatsapp.model.signal.auth.UserAgent;
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 
 import java.io.IOException;
@@ -77,79 +70,10 @@ public class DefaultControllerSerializer implements ControllerSerializer {
 
     @Override
     public StoreKeysPair newStoreKeysPair(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
-        var parsedPhoneNumber = PhoneNumber.ofNullable(phoneNumber);
-        var store = new Store(
-                uuid,
-                parsedPhoneNumber.orElse(null),
-                clientType,
-                alias,
-                null,
-                null,
-                false,
-                null,
-                Specification.Whatsapp.DEFAULT_NAME,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                new LinkedHashMap<>(),
-                null,
-                null,
-                phoneNumber != null ? Jid.of(phoneNumber) : null,
-                null,
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                ConcurrentHashMap.newKeySet(),
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                false,
-                false,
-                Clock.nowSeconds(),
-                ChatEphemeralTimer.OFF,
-                TextPreviewSetting.ENABLED_WITH_INFERENCE,
-                WebHistoryLength.standard(),
-                true,
-                true,
-                true,
-                UserAgent.ReleaseChannel.RELEASE,
-                clientType == ClientType.WEB ? CompanionDevice.web() : CompanionDevice.ios(false),
-                false
-        );
+        var store = Store.newStore(uuid, phoneNumber, alias, clientType);
         store.setSerializer(this);
         linkMetadata(store);
-        var registrationId = KeyHelper.registrationId();
-        var identityKeyPair = SignalKeyPair.random();
-        var keys = new Keys(
-                uuid,
-                parsedPhoneNumber.orElse(null),
-                clientType,
-                alias,
-                registrationId,
-                SignalKeyPair.random(),
-                SignalKeyPair.random(),
-                identityKeyPair,
-                SignalKeyPair.random(),
-                SignalSignedKeyPair.of(registrationId, identityKeyPair),
-                null,
-                null,
-                new ArrayList<>(),
-                KeyHelper.phoneId(),
-                KeyHelper.deviceId(),
-                KeyHelper.identityId(),
-                null,
-                new ConcurrentHashMap<>(),
-                new ArrayList<>(),
-                new ConcurrentHashMap<>(),
-                new ArrayList<>(),
-                new ConcurrentHashMap<>(),
-                false,
-                false,
-                false
-        );
+        var keys = Keys.random(uuid);
         keys.setSerializer(this);
         serializeKeys(keys, true);
         return new StoreKeysPair(store, keys);

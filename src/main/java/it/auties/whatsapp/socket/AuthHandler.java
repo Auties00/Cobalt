@@ -103,7 +103,7 @@ class AuthHandler {
                 .osBuildNumber(mobile ? socketHandler.store().device().version() : null)
                 .localeLanguageIso6391(socketHandler.store().locale().map(CountryLocale::languageValue).orElse("en"))
                 .localeCountryIso31661Alpha2(socketHandler.store().locale().map(CountryLocale::languageCode).orElse("US"))
-                .phoneId(mobile ? socketHandler.keys().phoneId() : null)
+                .phoneId(mobile ? socketHandler.keys().fdid() : null)
                 .build();
     }
 

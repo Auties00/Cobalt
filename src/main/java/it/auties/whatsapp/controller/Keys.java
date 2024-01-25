@@ -25,8 +25,10 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.KeyHelper;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -97,7 +99,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * The phone id for the mobile api
      */
     @ProtobufProperty(index = 14, type = ProtobufType.STRING)
-    final String phoneId;
+    final String fdid;
 
     /**
      * The device id for the mobile api
@@ -181,33 +183,42 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     @JsonIgnore
     byte[] writeKey, readKey;
 
-
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, int registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String phoneId, byte[] deviceId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
-        this.registrationId = registrationId;
-        this.noiseKeyPair = noiseKeyPair;
-        this.ephemeralKeyPair = ephemeralKeyPair;
-        this.identityKeyPair = identityKeyPair;
-        this.companionKeyPair = companionKeyPair;
-        this.signedKeyPair = signedKeyPair;
+        this.registrationId = Objects.requireNonNullElseGet(registrationId, KeyHelper::registrationId);
+        this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
+        this.ephemeralKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalKeyPair::random);
+        this.identityKeyPair = Objects.requireNonNull(identityKeyPair, "Missing identity keypair");
+        this.companionKeyPair = Objects.requireNonNullElseGet(companionKeyPair, SignalKeyPair::random);
+        this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(registrationId, identityKeyPair));
         this.signedKeyIndex = signedKeyIndex;
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
-        this.preKeys = preKeys;
-        this.phoneId = phoneId;
-        this.deviceId = deviceId;
-        this.identityId = identityId;
+        this.preKeys = Objects.requireNonNullElseGet(preKeys, ArrayList::new);
+        this.fdid = Objects.requireNonNullElseGet(fdid, KeyHelper::phoneId);
+        this.deviceId = Objects.requireNonNullElseGet(deviceId, KeyHelper::deviceId);
+        this.identityId = Objects.requireNonNull(identityId, "Missing identity id");
         this.companionIdentity = companionIdentity;
-        this.senderKeys = senderKeys;
-        this.appStateKeys = appStateKeys;
-        this.sessions = sessions;
-        this.hashStates = hashStates;
-        this.groupsPreKeys = groupsPreKeys;
+        this.senderKeys = Objects.requireNonNullElseGet(senderKeys, ConcurrentHashMap::new);
+        this.appStateKeys = Objects.requireNonNullElseGet(appStateKeys, ArrayList::new);
+        this.sessions = Objects.requireNonNullElseGet(sessions, ConcurrentHashMap::new);
+        this.hashStates = Objects.requireNonNullElseGet(hashStates, ArrayList::new);
+        this.groupsPreKeys = Objects.requireNonNullElseGet(groupsPreKeys, ConcurrentHashMap::new);
         this.registered = registered;
         this.businessCertificate = businessCertificate;
         this.initialAppSync = initialAppSync;
         this.writeCounter = new AtomicLong();
         this.readCounter = new AtomicLong();
+    }
+
+    public static Keys random(UUID uuid) {
+        return new KeysBuilder()
+                .uuid(uuid)
+                .registrationId(KeyHelper.registrationId())
+                .noiseKeyPair(SignalKeyPair.random())
+                .identityKeyPair(SignalKeyPair.random())
+                .identityId(KeyHelper.identityId())
+                .build();
     }
 
     /**
@@ -540,8 +551,8 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         return this.companionKeyPair;
     }
 
-    public String phoneId() {
-        return this.phoneId;
+    public String fdid() {
+        return this.fdid;
     }
 
     public byte[] deviceId() {

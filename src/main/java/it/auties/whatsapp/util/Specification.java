@@ -22,6 +22,7 @@ public class Specification {
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         public static final String MOBILE_KAIOS_REGISTRATION_ENDPOINT = "https://v-k.whatsapp.net/v2";
         public static final Version DEFAULT_MOBILE_KAIOS_VERSION = Version.of("2.2329.8");
+        public static final Version DEFAULT_MOBILE_IOS_VERSION = Version.of("2.24.1.80");
         private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
         private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = BytesHelper.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
