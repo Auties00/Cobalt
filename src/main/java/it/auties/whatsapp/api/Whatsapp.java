@@ -3513,7 +3513,7 @@ public class Whatsapp {
      * @param onWhatsappRegistrationCode the listener to register
      * @return the same instance
      */
-    public Whatsapp addLinkedDevicesListener(OnWhatsappRegistrationCode onWhatsappRegistrationCode) {
+    public Whatsapp addRegistrationCodeListener(OnWhatsappRegistrationCode onWhatsappRegistrationCode) {
         return addListener(onWhatsappRegistrationCode);
     }
 
@@ -3523,7 +3523,7 @@ public class Whatsapp {
      * @param onCall the listener to register
      * @return the same instance
      */
-    public Whatsapp addRegistrationCodeListener(OnCall onCall) {
+    public Whatsapp addCallListener(OnCall onCall) {
         return addListener(onCall);
     }
 
@@ -3533,7 +3533,7 @@ public class Whatsapp {
      * @param onWhatsappCall the listener to register
      * @return the same instance
      */
-    public Whatsapp addLinkedDevicesListener(OnWhatsappCall onWhatsappCall) {
+    public Whatsapp addCallListener(OnWhatsappCall onWhatsappCall) {
         return addListener(onWhatsappCall);
     }
 
