@@ -54,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -67,6 +68,7 @@ class MessageHandler {
 
     private final SocketHandler socketHandler;
     private final Map<Jid, List<GroupPastParticipant>> pastParticipantsQueue;
+    private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
     private final Set<Jid> historyCache;
     private final Logger logger;
     private final EnumSet<Type> historySyncTypes;
@@ -76,6 +78,7 @@ class MessageHandler {
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.pastParticipantsQueue = new ConcurrentHashMap<>();
+        this.devicesCache = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.logger = System.getLogger("MessageHandler");
         this.historySyncTypes = EnumSet.noneOf(Type.class);
@@ -238,6 +241,7 @@ class MessageHandler {
             case NONE -> throw new IllegalArgumentException("Unexpected empty message");
         };
     }
+
 
     private void attributeMediaMessage(MutableAttachmentProvider<?> mediaMessage, MediaFile upload) {
         if (mediaMessage instanceof ExtendedMediaMessage<?> extendedMediaMessage) {
@@ -402,7 +406,7 @@ class MessageHandler {
         var groupMessage = groupCipher.encrypt(encodedMessage);
         var messageNode = createMessageNode(request, groupMessage);
         if (request.hasRecipientOverride()) {
-            return getDevices(request.recipients(), false)
+            return queryDevices(request.recipients(), false)
                     .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
                     .thenComposeAsync(socketHandler::send);
@@ -439,25 +443,25 @@ class MessageHandler {
             return socketHandler.send(encodedMessageNode);
         }
 
-        var knownDevices = getRecipients(request, sender);
         var deviceMessage = new DeviceSentMessage(request.info().chatJid(), request.info().message(), Optional.empty());
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-        return getDevices(knownDevices, true)
+        var recipients = getRecipients(request);
+        return queryDevices(recipients, true)
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request, sessions, null))
                 .thenComposeAsync(socketHandler::send);
     }
 
-    private List<Jid> getRecipients(MessageSendRequest.Chat request, Jid sender) {
-        if (request.peer()) {
-            return List.of(request.info().chatJid());
-        }
-
+    private List<Jid> getRecipients(MessageSendRequest.Chat request) {
         if (request.hasRecipientOverride()) {
             return request.recipients();
         }
 
-        return List.of(sender.withoutDevice(), request.info().chatJid());
+        if(request.peer()) {
+            return List.of(request.info().chatJid());
+        }
+
+        return List.of(socketHandler.store().jid().orElseThrow().withoutDevice(), request.info().chatJid());
     }
 
     private boolean isConversation(ChatMessageInfo info) {
@@ -468,7 +472,7 @@ class MessageHandler {
     private Node createEncodedMessageNode(MessageSendRequest.Chat request, List<Node> preKeys, Node descriptor) {
         var body = new ArrayList<Node>();
         if (!preKeys.isEmpty()) {
-            if (request.peer()) {
+            if (request.peer() || request.info().chatJid().hasServer(JidServer.WHATSAPP)) {
                 body.addAll(preKeys);
             } else {
                 body.add(Node.of("participants", preKeys));
@@ -487,9 +491,9 @@ class MessageHandler {
         var attributes = Attributes.ofNullable(request.additionalAttributes())
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
-                .put("t", request.info().timestampSeconds().orElseGet(Clock::nowSeconds), !request.peer())
                 .put("type", "text")
-                .put("category", "peer", request::peer)
+                .put("verified_name", socketHandler.store().verifiedName().orElse(""), socketHandler.store().verifiedName().isPresent())
+                .put("category", "peer", request.peer())
                 .put("duration", "900", request.info().message().type() == MessageType.LIVE_LOCATION)
                 .put("device_fanout", false, request.info().message().type() == MessageType.BUTTONS)
                 .put("push_priority", "high", isAppStateKeyShare(request))
@@ -569,7 +573,7 @@ class MessageHandler {
         var cipher = new SessionCipher(contact.toSignalAddress(), socketHandler.keys());
         var encrypted = cipher.encrypt(message);
         var messageNode = createMessageNode(request, encrypted);
-        return peer ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
+        return peer || request.info().chatJid().hasServer(JidServer.WHATSAPP) ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
     }
 
     private CompletableFuture<List<Jid>> getGroupDevices(GroupMetadata metadata) {
@@ -577,24 +581,30 @@ class MessageHandler {
                 .stream()
                 .map(GroupParticipant::jid)
                 .toList();
-        return getDevices(jids, false);
+        return queryDevices(jids, false);
     }
 
-    protected CompletableFuture<List<Jid>> getDevices(List<Jid> contacts, boolean excludeSelf) {
-        return queryDevices(contacts, excludeSelf)
-                .thenApplyAsync(missingDevices -> excludeSelf ? toSingleList(contacts, missingDevices) : missingDevices);
-    }
-
-    private CompletableFuture<List<Jid>> queryDevices(List<Jid> contacts, boolean excludeSelf) {
+    protected CompletableFuture<List<Jid>> queryDevices(List<Jid> contacts, boolean excludeSelf) {
+        var cachedDevices = contacts.stream()
+                .map(devicesCache::get)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .filter(entry -> !excludeSelf || !isMe(entry))
+                .toList();
         var contactNodes = contacts.stream()
+                .filter(entry -> !devicesCache.containsKey(entry) && (!excludeSelf || !isMe(entry)))
                 .map(contact -> Node.of("user", Map.of("jid", contact)))
                 .toList();
+        if(contactNodes.isEmpty()) {
+            return CompletableFuture.completedFuture(cachedDevices);
+        }
+
         var body = Node.of("usync",
-                Map.of("sid", ChatMessageKey.randomId(), "mode", "query", "last", "true", "index", "0", "context", "message"),
+                Map.of("context", "message", "index", "0", "last", "true", "mode", "query", "sid", ChatMessageKey.randomId()),
                 Node.of("query", Node.of("devices", Map.of("version", "2"))),
                 Node.of("list", contactNodes));
         return socketHandler.sendQuery("get", "usync", body)
-                .thenApplyAsync(result -> parseDevices(result, excludeSelf));
+                .thenApplyAsync(result -> toSingleList(cachedDevices, parseDevices(result, excludeSelf)));
     }
 
     private List<Jid> parseDevices(Node node, boolean excludeSelf) {
@@ -610,8 +620,7 @@ class MessageHandler {
     }
 
     private List<Jid> parseDevice(Node wrapper, boolean excludeSelf) {
-        var jid = wrapper.attributes()
-                .getRequiredJid("jid");
+        var jid = wrapper.attributes().getRequiredJid("jid");
         return wrapper.findNode("devices")
                 .orElseThrow(() -> new NoSuchElementException("Missing devices"))
                 .findNode("device-list")
@@ -620,23 +629,47 @@ class MessageHandler {
                 .stream()
                 .map(child -> parseDeviceId(child, jid, excludeSelf))
                 .flatMap(Optional::stream)
-                .map(id -> Jid.ofDevice(jid.user(), id))
                 .toList();
     }
 
-    private Optional<Integer> parseDeviceId(Node child, Jid jid, boolean excludeSelf) {
-        var self = socketHandler.store()
-                .jid()
-                .orElse(null);
-        if (self == null) {
+    private Optional<Jid> parseDeviceId(Node child, Jid jid, boolean excludeSelf) {
+        var deviceId = child.attributes().getInt("id");
+        if(!child.description().equals("device")) {
             return Optional.empty();
         }
 
-        var deviceId = child.attributes().getInt("id");
-        return child.description().equals("device")
-                && (!excludeSelf || deviceId != 0)
-                && (!jid.user().equals(self.user()) || self.device() != deviceId)
-                && (deviceId == 0 || child.attributes().hasKey("key-index")) ? Optional.of(deviceId) : Optional.empty();
+        if(deviceId != 0 && !child.attributes().hasKey("key-index")) {
+            return Optional.empty();
+        }
+
+        var result = Jid.ofDevice(jid.user(), deviceId);
+        cacheDevice(result);
+        if(excludeSelf && isMe(result)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(Jid.ofDevice(jid.user(), deviceId));
+    }
+
+    private boolean isMe(Jid jid) {
+        var self = socketHandler.store().jid().orElse(null);
+        if (self == null) {
+            return false;
+        }
+
+        return jid.user().equals(self.user()) && Objects.equals(self.device(), jid.device());
+    }
+
+    private void cacheDevice(Jid jid) {
+        var cachedDevices = devicesCache.get(jid.withoutDevice());
+        if(cachedDevices != null) {
+            cachedDevices.add(jid);
+            return;
+        }
+
+        var devices = new CopyOnWriteArrayList<Jid>();
+        devices.add(jid);
+        devicesCache.put(jid.withoutDevice(), devices);
     }
 
     protected void parseSessions(Node node) {

@@ -22,7 +22,8 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
                         @ProtobufProperty(index = 10, type = OBJECT) ReleaseChannel releaseChannel,
                         @ProtobufProperty(index = 11, type = STRING) String localeLanguageIso6391,
                         @ProtobufProperty(index = 12, type = STRING) String localeCountryIso31661Alpha2,
-                        @ProtobufProperty(index = 13, type = STRING) String deviceBoard) implements ProtobufMessage {
+                        @ProtobufProperty(index = 13, type = STRING) String deviceBoard,
+                        @ProtobufProperty(index = 15, type = OBJECT) DeviceType deviceType) implements ProtobufMessage {
 
     @ProtobufMessageName("ClientPayload.UserAgent.Platform")
     public enum PlatformType implements ProtobufEnum {
@@ -65,6 +66,22 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
         public boolean isKaiOs() {
             return this == KAIOS;
         }
+
+        public PlatformType toPersonal() {
+            return switch (this) {
+                case ANDROID_BUSINESS -> ANDROID;
+                case IOS_BUSINESS -> IOS;
+                default -> this;
+            };
+        }
+
+        public PlatformType toBusiness() {
+            return switch (this) {
+                case ANDROID -> ANDROID_BUSINESS;
+                case IOS -> IOS_BUSINESS;
+                default -> this;
+            };
+        }
     }
 
     @ProtobufMessageName("ClientPayload.UserAgent.ReleaseChannel")
@@ -75,6 +92,25 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
         DEBUG(3);
 
         ReleaseChannel(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+
+        final int index;
+
+        public int index() {
+            return this.index;
+        }
+    }
+
+    @ProtobufMessageName("ClientPayload.UserAgent.DeviceType")
+    public enum DeviceType implements ProtobufEnum {
+        PHONE(0),
+        TABLET(1),
+        DESKTOP(2),
+        WEARABLE(3),
+        VR(4);
+
+        DeviceType(@ProtobufEnumIndex int index) {
             this.index = index;
         }
 

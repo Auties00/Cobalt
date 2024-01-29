@@ -37,7 +37,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
-import it.auties.whatsapp.registration.TokenProvider;
+import it.auties.whatsapp.registration.MobileMetadata;
 import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.*;
 
@@ -88,6 +88,13 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      */
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
     String name;
+
+    /**
+     * The name of the user linked to this account. This field will be null while the user hasn't
+     * logged in yet. Assumed to be non-null otherwise.
+     */
+    @ProtobufProperty(index = 40, type = ProtobufType.STRING)
+    String verifiedName;
 
     /**
      * The address of this account, if it's a business account
@@ -330,7 +337,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
          * All args constructor
          */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, Boolean autodetectListeners, Boolean cacheDetectedListeners, Boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, Boolean autodetectListeners, Boolean cacheDetectedListeners, Boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -341,6 +348,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.online = online;
         this.locale = locale;
         this.name = Objects.requireNonNullElse(name, Specification.Whatsapp.DEFAULT_NAME);
+        this.verifiedName = verifiedName;
         this.businessAddress = businessAddress;
         this.businessLongitude = businessLongitude;
         this.businessLatitude = businessLatitude;
@@ -1267,7 +1275,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     @JsonGetter("version")
     public Version version() {
         if(version == null) {
-            this.version = new FutureReference<>(null, () -> TokenProvider.getVersion(device.platform()));
+            this.version = new FutureReference<>(null, () -> MobileMetadata.getVersion(device.platform()));
         }
 
         return version.value();
@@ -1480,7 +1488,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     public Store setDevice(CompanionDevice device) {
         Objects.requireNonNull(device, "The device cannot be null");
         this.device = device;
-        this.version = new FutureReference<>(null, () -> TokenProvider.getVersion(device.platform()));
+        this.version = new FutureReference<>(null, () -> MobileMetadata.getVersion(device.platform()));
         return this;
     }
 
@@ -1491,6 +1499,15 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
 
     public Store setVersion(Version version) {
         this.version.setValue(version);
+        return this;
+    }
+
+    public Optional<String> verifiedName() {
+        return Optional.ofNullable(verifiedName);
+    }
+
+    public Store setVerifiedName(String verifiedName) {
+        this.verifiedName = verifiedName;
         return this;
     }
 }

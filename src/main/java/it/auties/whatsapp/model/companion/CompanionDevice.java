@@ -6,13 +6,16 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
+import java.util.Optional;
+
 /**
  * A model for a mobile companion
  *
  * @param model        the non-null model of the device
  * @param manufacturer the non-null manufacturer of the device
  * @param platform     the non-null os of the device
- * @param version    the non-null os version of the device
+ * @param appVersion   the version of the app, or empty
+ * @param osVersion    the non-null os version of the device
  */
 public record CompanionDevice(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
@@ -21,55 +24,101 @@ public record CompanionDevice(
         String manufacturer,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         PlatformType platform,
-        @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-        String version
+        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        Optional<Version> appVersion,
+        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        Version osVersion
 ) implements ProtobufMessage {
     public static CompanionDevice web() {
-        return new CompanionDevice("Chrome", "Google", PlatformType.WEB,"1.0");
+        return web(null);
+    }
+
+    public static CompanionDevice web(Version appVersion) {
+        return new CompanionDevice(
+                "Chrome",
+                "Google",
+                PlatformType.WEB,
+                Optional.ofNullable(appVersion),
+                Version.of("1.0")
+        );
     }
 
     public static CompanionDevice ios(boolean business) {
+        return ios(null, business);
+    }
+
+    public static CompanionDevice ios(Version appVersion, boolean business) {
         return new CompanionDevice(
                 "iPhone_15_Pro_Max",
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
-                "17.1.1"
+                Optional.ofNullable(appVersion),
+                Version.of("17.2.1")
         );
     }
 
     public static CompanionDevice android(boolean business) {
+        return android(null, business);
+    }
+
+
+    public static CompanionDevice android(Version appVersion, boolean business) {
         return new CompanionDevice(
                 "P60",
                 "HUAWEI",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
-                "10.11.0"
+                Optional.ofNullable(appVersion),
+                Version.of("10.11.0")
         );
     }
 
     public static CompanionDevice kaiOs() {
+        return kaiOs(null);
+    }
+
+    public static CompanionDevice kaiOs(Version appVersion) {
         return new CompanionDevice(
                 "8110",
                 "Nokia",
                 PlatformType.KAIOS,
-               "2.5.4"
+                Optional.ofNullable(appVersion),
+                Version.of("2.5.4")
         );
     }
 
     public String toUserAgent(Version appVersion) {
-        return "WhatsApp/%s %s/%s Device/%s".formatted(
+        var result = "WhatsApp/%s %s/%s Device/%s".formatted(
                 appVersion,
                 platformName(),
                 deviceVersion(),
                 deviceName()
         );
+        System.out.println(result);
+        return result;
+    }
+
+    public CompanionDevice toPersonal() {
+        return new CompanionDevice(
+                model,
+                manufacturer,
+                platform.toPersonal(),
+                appVersion,
+                osVersion
+        );
+    }
+
+    public CompanionDevice toBusiness() {
+        return new CompanionDevice(
+                model,
+                manufacturer,
+                platform.toBusiness(),
+                appVersion,
+                osVersion
+        );
     }
 
     private String deviceVersion() {
-        if(platform.isKaiOs()) {
-            return "%s+20190925153113".formatted(version);
-        }
-
-        return version;
+        return platform.isKaiOs() ? "%s+20190925153113".formatted(osVersion) : osVersion.toString();
     }
 
     private String deviceName() {

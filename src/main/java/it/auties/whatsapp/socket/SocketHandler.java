@@ -41,6 +41,7 @@ import it.auties.whatsapp.util.Clock;
 
 import java.net.SocketException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -380,17 +381,24 @@ public class SocketHandler implements SocketListener {
     public CompletableFuture<Optional<ContactAboutResponse>> queryAbout(JidProvider chat) {
         var query = Node.of("status");
         var body = Node.of("user", Map.of("jid", chat.toJid()));
-        return sendInteractiveQuery(query, body)
+        return sendInteractiveQuery(List.of(query), List.of(body), List.of())
                 .thenApplyAsync(this::parseAbout);
     }
 
-    public CompletableFuture<List<Node>> sendInteractiveQuery(Node queryNode, Node... queryBody) {
-        var query = Node.of("query", queryNode);
-        var list = Node.of("list", queryBody);
-        var sync = Node.of("usync",
+
+    public CompletableFuture<List<Node>> sendInteractiveQuery(Collection<Node> queries, Collection<Node> listData, Collection<Node> sideListData) {
+        var query = Node.of("query", queries);
+        var list = Node.of("list", listData);
+        var sideList = Node.of("side_list", sideListData);
+        var sync = Node.of(
+                "usync",
                 Map.of("sid", ChatMessageKey.randomId(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
-                query, list);
-        return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
+                query,
+                list,
+                sideList
+        );
+        return sendQuery("get", "usync", sync)
+                .thenApplyAsync(this::parseQueryResult);
     }
 
     private Optional<ContactAboutResponse> parseAbout(List<Node> responses) {
@@ -961,8 +969,9 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> querySessions(Jid jid) {
-        return messageHandler.getDevices(List.of(jid), true)
-                .thenCompose(values -> messageHandler.querySessions(values, false));
+        return messageHandler.querySessions(List.of(jid), true)
+                .thenComposeAsync(values -> messageHandler.queryDevices(List.of(jid), false))
+                .thenRun(() -> {});
     }
 
     public void parseSessions(Node result) {
@@ -1003,5 +1012,10 @@ public class SocketHandler implements SocketListener {
     protected SocketHandler setState(SocketState state) {
         this.state = state;
         return this;
+    }
+
+    public CompletableFuture<Void> changeAbout(String newAbout) {
+        return sendQuery("set", "status", Node.of("status", newAbout.getBytes(StandardCharsets.UTF_8)))
+                .thenRun(() -> store().setAbout(newAbout));
     }
 }

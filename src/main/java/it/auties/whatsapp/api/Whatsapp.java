@@ -70,10 +70,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -335,8 +332,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Void> changeAbout(String newAbout) {
-        return socketHandler.sendQuery("set", "status", Node.of("status", newAbout.getBytes(StandardCharsets.UTF_8)))
-                .thenRun(() -> store().setAbout(newAbout));
+        return socketHandler.changeAbout(newAbout);
     }
 
     /**
@@ -541,21 +537,92 @@ public class Whatsapp {
      */
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message) {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
-        var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
-                .chatJid(recipient.toJid())
-                .fromMe(true)
-                .senderJid(jidOrThrowError())
-                .build();
-        var info = new ChatMessageInfoBuilder()
-                .status(MessageStatus.PENDING)
-                .senderJid(jidOrThrowError())
-                .key(key)
-                .message(message)
-                .timestampSeconds(Clock.nowSeconds())
-                .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
-                .build();
-        return sendMessage(info);
+        var timestamp = Clock.nowSeconds();
+        return prepareChatForMessage(recipient, timestamp)
+                .thenComposeAsync(chatResult -> changePresence(recipient.toJid(), COMPOSING))
+                .thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
+                .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
+                .thenComposeAsync(deltaResult -> {
+                    var deviceInfo = new DeviceContextInfoBuilder()
+                            .deviceListMetadataVersion(2)
+                            .build();
+                    var key = new ChatMessageKeyBuilder()
+                            .id(ChatMessageKey.randomId())
+                            .chatJid(recipient.toJid())
+                            .fromMe(true)
+                            .senderJid(jidOrThrowError())
+                            .build();
+                    var info = new ChatMessageInfoBuilder()
+                            .status(MessageStatus.PENDING)
+                            .senderJid(jidOrThrowError())
+                            .key(key)
+                            .message(message.withDeviceInfo(deviceInfo))
+                            .timestampSeconds(timestamp)
+                            .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
+                            .build();
+                    return sendMessage(info);
+                });
+    }
+
+    private CompletableFuture<Void> sendDeltaChatRequest(JidProvider recipient) {
+        var sync = Node.of(
+                "usync",
+                Map.of(
+                        "context", "interactive",
+                        "index", "0",
+                        "last", "true",
+                        "mode", "delta",
+                        "sid", ChatMessageKey.randomId()
+                ),
+                Node.of(
+                        "query",
+                        Node.of("business", Node.of("verified_name"), Node.of("profile", Map.of("v", 372))),
+                        Node.of("contact"),
+                        Node.of("disappearing_mode"),
+                        Node.of("sidelist"),
+                        Node.of("status")
+                ),
+                Node.of("list"),
+                Node.of(
+                        "side_list",
+                        Node.of("user", Map.of("jid", recipient.toJid()))
+                )
+        );
+        return socketHandler.sendQuery("get", "usync", sync)
+                .thenAcceptAsync(result -> {});
+    }
+
+    private CompletableFuture<Void> addTrustedContact(JidProvider recipient, long timestamp) {
+        var tokenPayload = Node.of("token", Map.of("jid", recipient.toJid(), "t", timestamp, "type", "trusted_contact"));
+        return socketHandler.sendQuery("set", "privacy", Node.of("tokens", tokenPayload))
+                .thenRun(() -> {});
+    }
+
+    private CompletableFuture<Void> prepareChatForMessage(JidProvider recipient, long timestamp) {
+        if(store().findContactByJid(recipient.toJid()).isPresent()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var businessNode = Node.of("business",
+                Node.of("verified_name"),
+                Node.of("profile", Map.of("v", 372)));
+        var contactNode = Node.of("contact");
+        var lidNode = Node.of("lid");
+        var jid = store().jid().orElseThrow();
+        var userNode = Node.of("user", Node.of("contact", recipient.toJid().toPhoneNumber().getBytes(StandardCharsets.UTF_8)));
+        return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of())
+                .thenCompose(result -> {
+                    var lid = result.getFirst()
+                            .findNode("lid")
+                            .flatMap(lidValue -> lidValue.attributes().getOptionalJid("val"))
+                            .orElseThrow(() -> new NoSuchElementException("Missing lid"));
+                    var secondQuery = List.of(Node.of("disappearing_mode"), Node.of("lid"));
+                    var secondList = List.of(Node.of("user", Map.of("jid", jid), Node.of("lid", Map.of("jid", lid))));
+                    return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of());
+                })
+                .thenCompose(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
+                .thenCompose(thirdResult -> subscribeToPresence(recipient.toJid()))
+                .thenCompose(fourthResult -> socketHandler.querySessions(recipient.toJid()));
     }
 
 
@@ -775,8 +842,8 @@ public class Whatsapp {
                 .toList();
         var contactNodes = jids.stream()
                 .map(jid -> Node.of("user", Node.of("contact", jid.toPhoneNumber())))
-                .toArray(Node[]::new);
-        return socketHandler.sendInteractiveQuery(Node.of("contact"), contactNodes)
+                .toList();
+        return socketHandler.sendInteractiveQuery(List.of(Node.of("contact")), contactNodes, List.of())
                 .thenApplyAsync(result -> parseHasWhatsappResponse(jids, result));
     }
 
@@ -2077,6 +2144,10 @@ public class Whatsapp {
      */
     public CompletableFuture<Node> sendNode(Node node) {
         return socketHandler.send(node);
+    }
+
+    public SocketHandler socketHandler() {
+        return socketHandler;
     }
 
     /**

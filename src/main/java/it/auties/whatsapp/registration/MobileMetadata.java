@@ -8,9 +8,7 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
-import it.auties.whatsapp.model.response.IosVersionResponse;
 import it.auties.whatsapp.model.response.WebVersionResponse;
-import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.BytesHelper;
@@ -48,7 +46,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-public final class TokenProvider {
+public final class MobileMetadata {
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
@@ -70,18 +68,16 @@ public final class TokenProvider {
         }
     }
 
-    public static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform) {
-        return getVersion(platform, true);
-    }
-
-    private static CompletableFuture<Version> getVersion(UserAgent.PlatformType platform, boolean useCache) {
+    public static CompletableFuture<Version> getVersion(PlatformType platform) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(platform.isBusiness(), useCache).thenApply(WhatsappApk::version);
-            case IOS, IOS_BUSINESS ->
-                    CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_IOS_VERSION);
+                    getAndroidData(platform.isBusiness(), true).thenApply(WhatsappApk::version);
+            case IOS ->
+                    getIosVersion(false);
+            case IOS_BUSINESS ->
+                    getIosVersion(true);
             case KAIOS ->
                 CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_KAIOS_VERSION);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
@@ -89,6 +85,8 @@ public final class TokenProvider {
     }
 
     private static CompletableFuture<Version> getIosVersion(boolean business) {
+        return CompletableFuture.completedFuture(Version.of("2.24.1.80"));
+       /*
         if (business && businessIosVersion != null) {
             return CompletableFuture.completedFuture(businessIosVersion);
         }
@@ -108,18 +106,18 @@ public final class TokenProvider {
                         var result = Json.readValue(response.body(), IosVersionResponse.class)
                                 .version()
                                 .orElseThrow();
+                        System.out.println("Version:" + result);
                         if(business) {
                             businessIosVersion = result;
                         }else {
                             personalIosVersion = result;
                         }
-                        System.out.println("Result: " + result);
-
                         return result;
                     });
         } catch (Throwable throwable) {
             throw new RuntimeException("Cannot fetch latest web version", throwable);
         }
+        */
     }
 
     private static CompletableFuture<Version> getWebVersion() {
@@ -143,36 +141,26 @@ public final class TokenProvider {
         }
     }
 
-    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, boolean useJarCache) {
+    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, Version appVersion, boolean useJarCache) {
         return switch (platform) {
             case ANDROID, ANDROID_BUSINESS -> getAndroidToken(String.valueOf(phoneNumber), platform.isBusiness(), useJarCache);
-            case IOS, IOS_BUSINESS -> getIosToken(phoneNumber, platform, useJarCache);
-            case KAIOS -> getKaiOsToken(phoneNumber, platform, useJarCache);
+            case IOS, IOS_BUSINESS -> getIosToken(phoneNumber, appVersion, platform.isBusiness());
+            case KAIOS ->  getKaiOsToken(phoneNumber);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
 
-    private static CompletableFuture<String> getIosToken(long phoneNumber, UserAgent.PlatformType platform, boolean useJarCache) {
-        return getVersion(platform, useJarCache)
-                .thenApply(version -> getIosToken(phoneNumber, version, platform.isBusiness()));
-    }
-
-    private static String getIosToken(long phoneNumber, Version version, boolean business) {
+    private static CompletableFuture<String> getIosToken(long phoneNumber, Version version, boolean business) {
         var staticToken = business ? Whatsapp.MOBILE_BUSINESS_IOS_STATIC : Whatsapp.MOBILE_IOS_STATIC;
         var token = staticToken + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
-        return HexFormat.of().formatHex(MD5.calculate(token));
+        return CompletableFuture.completedFuture(HexFormat.of().formatHex(MD5.calculate(token)));
     }
 
-    private static CompletableFuture<String> getKaiOsToken(long phoneNumber, UserAgent.PlatformType platform, boolean useJarCache) {
-        return getVersion(platform, useJarCache)
-                .thenApply(version -> getKaiOsToken(phoneNumber, version));
-    }
-
-    private static String getKaiOsToken(long phoneNumber, Version version) {
+    private static CompletableFuture<String> getKaiOsToken(long phoneNumber) {
         var staticTokenPart = HexFormat.of().parseHex(Whatsapp.MOBILE_KAIOS_STATIC);
         var pagePart = HexFormat.of().formatHex(Sha256.calculate(BytesHelper.concat(readKaiOsResource("index.html"), readKaiOsResource("backendRoot.js"))));
         var phonePart = String.valueOf(phoneNumber).getBytes(StandardCharsets.UTF_8);
-        return HexFormat.of().formatHex(Sha256.calculate(BytesHelper.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart)));
+        return CompletableFuture.completedFuture(HexFormat.of().formatHex(Sha256.calculate(BytesHelper.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart))));
     }
 
     private static byte[] readKaiOsResource(String name) {

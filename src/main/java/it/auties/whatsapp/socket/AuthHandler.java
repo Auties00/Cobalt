@@ -3,7 +3,6 @@ package it.auties.whatsapp.socket;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.model.mobile.CountryCode;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.*;
@@ -15,6 +14,7 @@ import it.auties.whatsapp.util.Specification;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 class AuthHandler {
@@ -92,59 +92,53 @@ class AuthHandler {
     private UserAgent createUserAgent() {
         var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
         return new UserAgentBuilder()
-                .appVersion(socketHandler.store().version())
                 .platform(socketHandler.store().device().platform())
-                .releaseChannel(socketHandler.store().releaseChannel())
-                .mcc(getDeviceMcc(mobile))
+                .appVersion(socketHandler.store().version())
+                .mcc("000")
                 .mnc("000")
-                .osVersion(mobile ? socketHandler.store().device().version() : null)
+                .osVersion(mobile ? socketHandler.store().device().osVersion().toString() : null)
                 .manufacturer(mobile ? socketHandler.store().device().manufacturer() : null)
-                .device(mobile ? socketHandler.store().device().model() : null)
-                .osBuildNumber(mobile ? socketHandler.store().device().version() : null)
+                .device(mobile ? socketHandler.store().device().model().replaceAll("_", " ") : null)
+                .osBuildNumber(mobile ? socketHandler.store().device().osVersion().toString() : null)
+                .phoneId(mobile ? socketHandler.keys().fdid() : null)
+                .releaseChannel(socketHandler.store().releaseChannel())
                 .localeLanguageIso6391(socketHandler.store().locale().map(CountryLocale::languageValue).orElse("en"))
                 .localeCountryIso31661Alpha2(socketHandler.store().locale().map(CountryLocale::languageCode).orElse("US"))
-                .phoneId(mobile ? socketHandler.keys().fdid() : null)
+                .deviceType(UserAgent.DeviceType.PHONE)
                 .build();
-    }
-
-    private String getDeviceMcc(boolean mobile) {
-        if (!mobile) {
-            return "000";
-        }
-
-        return socketHandler.store()
-                .phoneNumber()
-                .map(PhoneNumber::countryCode)
-                .map(CountryCode::mcc)
-                .orElse("000");
     }
 
     private ClientPayload createUserClientPayload() {
         var agent = createUserAgent();
-        var builder = new ClientPayloadBuilder()
-                .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
-                .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
-                .userAgent(agent);
         return switch (socketHandler.store().clientType()) {
             case MOBILE -> {
                 var phoneNumber = socketHandler.store()
                         .phoneNumber()
                         .map(PhoneNumber::number)
                         .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
-                yield builder.sessionId(socketHandler.keys().registrationId())
-                        .shortConnect(true)
-                        .connectAttemptCount(0)
-                        .device(0)
-                        .dnsSource(getDnsSource())
-                        .passive(false)
-                        .pushName(socketHandler.store().name())
+                yield new ClientPayloadBuilder()
                         .username(phoneNumber)
+                        .passive(true)
+                        .userAgent(agent)
+                        .pushName(socketHandler.store().name())
+                        .sessionId(ThreadLocalRandom.current().nextInt(100_000_000, 1_000_000_000))
+                        .shortConnect(true)
+                        .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                        .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                        .dnsSource(getDnsSource())
+                        .connectAttemptCount(ThreadLocalRandom.current().nextInt(5, 20))
+                        .device(0)
+                        .oc(false)
                         .build();
             }
             case WEB -> {
                 var jid = socketHandler.store().jid();
                 if (jid.isPresent()) {
-                    yield builder.webInfo(createWebInfo())
+                    yield new ClientPayloadBuilder()
+                            .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                            .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                            .userAgent(agent)
+                            .webInfo(createWebInfo())
                             .username(Long.parseLong(jid.get().user()))
                             .passive(true)
                             .pull(true)
@@ -152,7 +146,11 @@ class AuthHandler {
                             .build();
                 }
 
-                yield builder.webInfo(createWebInfo())
+                yield new ClientPayloadBuilder()
+                        .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                        .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                        .userAgent(agent)
+                        .webInfo(createWebInfo())
                         .regData(createRegisterData())
                         .passive(false)
                         .pull(false)

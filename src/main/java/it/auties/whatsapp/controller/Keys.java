@@ -195,7 +195,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         this.signedKeyIndex = signedKeyIndex;
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
         this.preKeys = Objects.requireNonNullElseGet(preKeys, ArrayList::new);
-        this.fdid = Objects.requireNonNullElseGet(fdid, KeyHelper::phoneId);
+        this.fdid = Objects.requireNonNullElseGet(fdid, KeyHelper::fdid);
         this.deviceId = Objects.requireNonNullElseGet(deviceId, KeyHelper::deviceId);
         this.identityId = Objects.requireNonNull(identityId, "Missing identity id");
         this.companionIdentity = companionIdentity;

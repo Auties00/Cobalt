@@ -71,7 +71,8 @@ import static it.auties.whatsapp.util.Specification.Whatsapp.DEVICE_WEB_SIGNATUR
 
 class StreamHandler {
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
-    private static final int PRE_KEYS_UPLOAD_CHUNK = 30;
+    private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
+    private static final int MOBILE_PRE_KEYS_UPLOAD_CHUNK = 811;
     private static final int PING_INTERVAL = 30;
     private static final int MEDIA_CONNECTION_DEFAULT_INTERVAL = 60;
     private static final int MAX_ATTEMPTS = 5;
@@ -861,12 +862,21 @@ class StreamHandler {
         }
 
         createMediaConnection(0, null);
-        var loggedInFuture = queryInitialInfo()
+        var loggedInFuture = queryRequiredInfo()
+                .thenComposeAsync(ignored -> CompletableFuture.allOf(
+                        updateSelfPresence(),
+                        queryInitial2fa(),
+                        queryInitialAboutPrivacy(),
+                        queryInitialPrivacySettings(),
+                        queryInitialDisappearingMode(),
+                        queryInitialBlockList(),
+                        updateUserAbout(false),
+                        updateUserPicture(false)
+                ))
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        var registered = socketHandler.keys().registered();
-        if (!registered) {
-            CompletableFuture.allOf(queryGroups(), queryNewsletters())
+        if (!socketHandler.keys().initialAppSync()) {
+            configureWhatsappAccount()
                     .exceptionally(throwable -> socketHandler.handleFailure(LOGIN, throwable))
                     .thenRun(this::onRegistration);
             return;
@@ -878,6 +888,109 @@ class StreamHandler {
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, attributionFuture)
                 .thenRunAsync(this::onAttribution);
+    }
+
+    private CompletableFuture<Void> configureWhatsappAccount() {
+        return CompletableFuture.allOf(
+                acceptTermsOfService(),
+                setPushEndpoint(),
+                setDefaultStatus(),
+                resetMultiDevice(),
+                setupGoogleCrypto(),
+                sendWhatsappMetrics(),
+                setupRescueToken(),
+                queryGroups(),
+                getInviteSender(),
+                queryNewsletters()
+        );
+    }
+
+    private CompletableFuture<Void> getInviteSender() {
+        return socketHandler.sendQuery("get", "w:growth", Node.of("invite", Node.of("get_sender")))
+                .thenRun(() -> {});
+    }
+
+    private CompletableFuture<Void> setDefaultStatus() {
+        return socketHandler.changeAbout("Hey there! I am using WhatsApp.");
+    }
+
+    private CompletableFuture<Void> sendWhatsappMetrics() {
+        var wamBinary = "57414d0501010001200b800d086950686f6e652058800f0631362e372e34801109322e32342e322e373110152017502fc8a2b265206928830138790604387b060288eb0a03636c6e186b1818a71c88911e063230483234308879240431372e3018fb2e18ed3318ab3888fb3c09353537393735393734290c147602705fefb1a86cd941";
+        var wamData = new String(HexFormat.of().parseHex(wamBinary))
+                .replace("iPhone X", socketHandler.store().device().model().replaceAll("_", " "))
+                .replace("2.24.2.71", socketHandler.store().version().toString())
+                .replace("557975974", String.valueOf(socketHandler.store().phoneNumber().orElseThrow().numberWithoutPrefix()))
+                .getBytes();
+        var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
+        return socketHandler.sendQuery("set", "w:stats", addNode)
+                .thenRun(() -> {});
+    }
+
+    private CompletableFuture<Void> setPushEndpoint() {
+        if(socketHandler.store().clientType() != ClientType.MOBILE) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var configAttributes = Attributes.of()
+                .put("background_location", 1)
+                .put("call", "Opening.m4r")
+                .put("default", "note.m4r")
+                .put("groups", "node.m4r")
+                .put("id", HexFormat.of().formatHex(BytesHelper.random(32)))
+                .put("lc", "US")
+                .put("lg", "en")
+                .put("nse_call", 0)
+                .put("nse_read", 0)
+                .put("nse_ver", 2)
+                .put("pkey", Base64.getUrlEncoder().encodeToString(SignalKeyPair.random().publicKey()))
+                .put("platform", "apple")
+                .put("preview", 1)
+                .put("reg_push", 1)
+                .put("version", 2)
+                .put("voip", "35e178c41d2bd90b8db50c7a2684a38bf802e760cd1f2d7ff803d663412a9320")
+                .put("voip_payload_type", 2)
+                .toMap();
+        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes))
+                .thenAccept(result -> socketHandler.keys().setInitialAppSync(true));
+    }
+
+    private CompletableFuture<Void> resetMultiDevice() {
+        if(socketHandler.store().clientType() != ClientType.MOBILE) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
+                .thenComposeAsync(ignored -> socketHandler.sendQuery("set", "w:sync:app:state", Node.of("delete_all_data")))
+                .thenRun(() -> {});
+    }
+
+    private CompletableFuture<Void> setupRescueToken() {
+        return socketHandler.sendQuery("set", "w:auth:token", Node.of("token", HexFormat.of().parseHex("20292dbd11e06094feb1908737ca76e6")))
+                .thenRun(() -> {});
+    }
+
+    private CompletableFuture<Void> setupGoogleCrypto() {
+        var firstCrypto = Node.of("crypto", Map.of("action", "create"), Node.of("google", HexFormat.of().parseHex("7d7ce52cde18aa4854bf522bc72899074e06b60b1bf51864de82e8576b759d12")));
+        var secondCrypto = Node.of("crypto", Map.of("action", "create"), Node.of("google", HexFormat.of().parseHex("2f39184f8feb97d57493a69bf5558507472c6bfb633b1c2d369f3409210401c6")));
+        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", firstCrypto)
+                .thenCompose(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", secondCrypto))
+                .thenRun(() -> {});
+    }
+
+    private CompletableFuture<Void> acceptTermsOfService() {
+        if(socketHandler.store().clientType() != ClientType.MOBILE) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+
+        var firstNotice = Node.of("notice", Map.of("id", "20230902"));
+        var secondNotice = Node.of("notice", Map.of("id", "20230901"));
+        var thirdNotice = Node.of("notice", Map.of("id", "20231027"));
+        return socketHandler.sendQuery("get", "tos", Node.of("request", firstNotice, secondNotice, thirdNotice))
+                .thenCompose(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("accept")))
+                .thenCompose(ignored -> socketHandler.sendQuery("set", "tos", Node.of("trackable", Map.of("id", "20601216", "result", 1))))
+                .thenCompose(ignored -> socketHandler.sendQuery("set", "tos", Node.of("trackable", Map.of("id", "20900727", "result", 1))))
+                .thenRun(() -> {});
     }
 
     private void onRegistration() {
@@ -944,7 +1057,7 @@ class StreamHandler {
                 .forEach(socketHandler::handleGroupMetadata);
     }
 
-    private CompletableFuture<Node> setBusinessCertificate() {
+    private CompletableFuture<Void> setBusinessCertificate() {
         var details = new BusinessVerifiedNameDetailsBuilder()
                 .name("")
                 .issuer("smb:wa")
@@ -955,7 +1068,12 @@ class StreamHandler {
                 .encodedDetails(encodedDetails)
                 .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails, true))
                 .build();
-        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate)));
+        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate))).thenAccept(result -> {
+            var verifiedName = result.findNode("verified_name")
+                    .map(node -> node.attributes().getString("id"))
+                    .orElse("");
+            socketHandler.store().setVerifiedName(verifiedName);
+        });
     }
 
     private CompletableFuture<Node> setBusinessProfile() {
@@ -1003,19 +1121,14 @@ class StreamHandler {
     }
 
     private void onInitialInfo() {
+        socketHandler.keys().setRegistered(true);
         schedulePing();
         socketHandler.onLoggedIn();
-        if (!socketHandler.keys().registered()) {
-            socketHandler.keys().setRegistered(socketHandler.keys().registered() || socketHandler.store().clientType() == ClientType.WEB);
+        if (!socketHandler.keys().initialAppSync()) {
             return;
         }
 
         socketHandler.onContacts();
-    }
-
-    private CompletableFuture<Void> queryInitialInfo() {
-        return queryRequiredInfo()
-                .thenComposeAsync(ignored -> CompletableFuture.allOf(updateSelfPresence(), queryInitialBlockList(), queryInitialPrivacySettings(), updateUserAbout(false), updateUserPicture(false)));
     }
 
     private CompletableFuture<Void> queryRequiredInfo() {
@@ -1028,11 +1141,12 @@ class StreamHandler {
     private CompletableFuture<Void> queryRequiredMobileInfo() {
         return socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")))
                 .thenAcceptAsync(this::parseProps)
+                .thenComposeAsync(ignored -> queryAbProps())
                 .thenComposeAsync(ignored -> checkBusinessStatus())
                 .thenRunAsync(() -> {
-                    socketHandler.sendQuery("get", "urn:xmpp:whatsapp:push", Node.of("config", Map.of("version", 1)))
+                    socketHandler.sendQuery("get", "w:b", Node.of("lists"))
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                    socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("timestamp", 0, "type", "account_sync")))
+                    socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("type", "groups")))
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
                     if (socketHandler.store().device().platform().isBusiness()) {
                         socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
@@ -1045,11 +1159,13 @@ class StreamHandler {
     private CompletableFuture<Void> queryRequiredWebInfo() {
         return socketHandler.sendQuery("get", "w", Node.of("props"))
                 .thenAcceptAsync(this::parseProps)
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", "1"))))
-                .thenAcceptAsync(result -> {
-                    // TODO: Handle AB props
-                })
+                .thenComposeAsync(ignored -> queryAbProps())
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+    }
+
+    private CompletableFuture<Void> queryAbProps() {
+        return socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", "1")))
+                .thenAcceptAsync(result -> { /* TODO: Handle AB props */ });
     }
 
     private CompletableFuture<Void> checkBusinessStatus() {
@@ -1061,9 +1177,24 @@ class StreamHandler {
                 .thenRunAsync(() -> socketHandler.keys().setBusinessCertificate(true));
     }
 
+    private CompletableFuture<Void> queryInitial2fa() {
+        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("2fa"))
+                .thenAcceptAsync(result -> { /* TODO: Handle 2FA */ });
+    }
+
+    private CompletableFuture<Void> queryInitialAboutPrivacy() {
+        return socketHandler.sendQuery("get", "status", Node.of("privacy"))
+                .thenAcceptAsync(result -> { /* TODO: Handle about privacy */ });
+    }
+
     private CompletableFuture<Void> queryInitialPrivacySettings() {
         return socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
                 .thenComposeAsync(this::parsePrivacySettings);
+    }
+
+    private CompletableFuture<Void> queryInitialDisappearingMode() {
+        return socketHandler.sendQuery("get", "disappearing_mode")
+                .thenAcceptAsync(result -> { /* TODO: Handle disappearing mode */ });
     }
 
     private CompletableFuture<Void> queryInitialBlockList() {
@@ -1237,7 +1368,8 @@ class StreamHandler {
 
     private void sendPreKeys() {
         var startId = socketHandler.keys().lastPreKeyId() + 1;
-        var preKeys = IntStream.range(startId, startId + PRE_KEYS_UPLOAD_CHUNK)
+        var toUpload = socketHandler.store().clientType() == ClientType.MOBILE ? MOBILE_PRE_KEYS_UPLOAD_CHUNK : WEB_PRE_KEYS_UPLOAD_CHUNK;
+        var preKeys = IntStream.range(startId, startId + toUpload)
                 .mapToObj(SignalPreKeyPair::random)
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
