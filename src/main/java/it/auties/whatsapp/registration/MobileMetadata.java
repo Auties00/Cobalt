@@ -125,7 +125,6 @@ public final class MobileMetadata {
             return CompletableFuture.completedFuture(webVersion);
         }
 
-
         try (var client = HttpClient.newHttpClient()) {
             var request = HttpRequest.newBuilder()
                     .GET()

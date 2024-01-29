@@ -3,10 +3,8 @@ package it.auties.whatsapp.registration.apns;
 import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListParser;
 import it.auties.whatsapp.crypto.Sha1;
-import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.ProxyAuthenticator;
-import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.Specification;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -36,8 +34,7 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-public class ApnsClient implements AutoCloseable {
-
+public class ApnsClient {
     static {
         Security.addProvider(new BouncyCastleProvider());
         Authenticator.setDefault(new ProxyAuthenticator());
@@ -48,7 +45,10 @@ public class ApnsClient implements AutoCloseable {
     private static final byte[] FAIRPLAY_CERT_CHAIN = Base64.getDecoder().decode("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");
     private static final int PORT = 5223;
 
+    private final URI proxy;
     private final Set<Listener> listeners;
+    private final List<ApnsPacket> unhandledPackets;
+    private final CompletableFuture<Void> loginFuture;
     private SSLSocket socket;
     private byte[] certificate;
     private PrivateKey privateKey;
@@ -56,41 +56,58 @@ public class ApnsClient implements AutoCloseable {
     private ExecutorService readerService;
     private ScheduledExecutorService keepAliveExecutor;
 
-    public ApnsClient() {
+    public ApnsClient(URI proxy) {
+        this.proxy = proxy;
         this.listeners = ConcurrentHashMap.newKeySet();
+        this.unhandledPackets = new CopyOnWriteArrayList<>();
+        this.loginFuture = login();
     }
 
-    public CompletableFuture<Void> login() {
+    private CompletableFuture<Void> login() {
         return generatePushCert()
                 .thenComposeAsync(ignored -> getAPNSBag())
-                .thenComposeAsync(this::authenticate);
+                .thenComposeAsync(this::authenticate)
+                .thenRunAsync(() -> {
+                    var hashes = Arrays.stream(Specification.Whatsapp.DEFAULT_APNS_FILTERS)
+                            .map(Sha1::calculate)
+                            .toArray(byte[][]::new);
+                    send(ApnsPayloadTag.FILTER, Map.of(
+                            1, authToken,
+                            2, hashes
+                    ));
+                });
     }
 
     private CompletableFuture<Void> generatePushCert() {
-        var keyPair = generateRSAKeyPair();
-        var csr = generateCSR(keyPair);
-        var activationInfo = getActivationInfo(csr);
-        var activationSignature = getActivationSignature(activationInfo);
-        var activationBody = getActivationBody(activationInfo, activationSignature);
-        try(var client = HttpClient.newHttpClient()) {
-            var encodedInfo = URLEncoder.encode(activationBody, StandardCharsets.UTF_8);
-            var request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://albert.apple.com/WebObjects/ALUnbrick.woa/wa/deviceActivation"))
-                    .POST(HttpRequest.BodyPublishers.ofString("device=Windows&activation-info=" + encodedInfo))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .build();
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenAccept(response -> {
-                var protocol = PROTOCOL_PATTERN.matcher(response.body())
-                        .results()
-                        .findFirst()
-                        .orElseThrow(() -> new NoSuchElementException("Missing result"))
-                        .group(1)
-                        .getBytes(StandardCharsets.UTF_8);
-                var deviceInfo = DeviceActivationInfo.ofPlist(protocol);
-                this.privateKey = keyPair.getPrivate();
-                this.certificate = deviceInfo.activationRecord().deviceCertificate();
-            });
-        }
+        return getActivationBody().thenComposeAsync(activationBody -> {
+            try(var client = HttpClient.newHttpClient()) {
+                var encodedInfo = URLEncoder.encode(activationBody, StandardCharsets.UTF_8);
+                var request = HttpRequest.newBuilder()
+                        .uri(URI.create("https://albert.apple.com/WebObjects/ALUnbrick.woa/wa/deviceActivation"))
+                        .POST(HttpRequest.BodyPublishers.ofString("device=Windows&activation-info=" + encodedInfo))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .build();
+                return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenAccept(response -> {
+                    var protocol = PROTOCOL_PATTERN.matcher(response.body())
+                            .results()
+                            .findFirst()
+                            .orElseThrow(() -> new NoSuchElementException("Missing result"))
+                            .group(1)
+                            .getBytes(StandardCharsets.UTF_8);
+                    var deviceInfo = DeviceActivationInfo.ofPlist(protocol);
+                    this.certificate = deviceInfo.activationRecord().deviceCertificate();
+                });
+            }
+        });
+    }
+
+    private CompletableFuture<String> getActivationBody() {
+        return CompletableFuture.supplyAsync(() -> {
+            var csr = generateCSR();
+            var activationInfo = getActivationInfo(csr);
+            var activationSignature = getActivationSignature(activationInfo);
+            return getActivationBody(activationInfo, activationSignature);
+        });
     }
 
     private String getActivationBody(byte[] activationInfo, byte[] activationSignature) {
@@ -115,11 +132,13 @@ public class ApnsClient implements AutoCloseable {
         }
     }
 
-    private KeyPair generateRSAKeyPair() {
+    private PublicKey initRSAKeyPair() {
         try {
             var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
-            return keyPairGenerator.generateKeyPair();
+            var keyPair = keyPairGenerator.generateKeyPair();
+            this.privateKey = keyPair.getPrivate();
+            return keyPair.getPublic();
         }catch (NoSuchAlgorithmException exception) {
             throw new RuntimeException("Missing algorithm: RSA", exception);
         }
@@ -154,10 +173,13 @@ public class ApnsClient implements AutoCloseable {
                 0xd, nonce,
                 0xe, signature
         ));
-        return waitForPacket(packet -> packet.tag() == ApnsPayloadTag.READY).thenAccept(packet -> {
+        return waitForPacketDirect(packet -> packet.tag() == ApnsPayloadTag.READY).thenAccept(packet -> {
             var statusBuffer = ByteBuffer.wrap(packet.fields().get(0x1));
             var statusCode = Byte.toUnsignedInt(statusBuffer.get());
-            Validate.isTrue(statusCode == 0, "Connection failed: %s", statusCode);
+            if(statusCode != 0) {
+                throw new IllegalStateException("Connection failed: " + statusCode);
+            }
+
             this.authToken = packet.fields().get(0x3);
             send(ApnsPayloadTag.STATE, Map.of(
                     1, new byte[]{1},
@@ -179,48 +201,53 @@ public class ApnsClient implements AutoCloseable {
     }
 
     private void createSocketConnection(ApnsBag bag) {
-      try {
-          var sslContext = SSLContext.getInstance("TLSv1.3");
-          sslContext.init(null, new TrustManager[]{
-                  new X509TrustManager() {
-                      @Override
-                      public X509Certificate[] getAcceptedIssuers() {
-                          return null;
-                      }
+        try {
+            var sslContext = SSLContext.getInstance("TLSv1.3");
+            sslContext.init(null, new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return null;
+                        }
 
-                      @Override
-                      public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        @Override
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
 
-                      }
+                        }
 
-                      @Override
-                      public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        @Override
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
 
-                      }
-                  }
-          }, null);
-          var sslParameters = sslContext.getDefaultSSLParameters();
-          sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
-          var sslSocketFactory = sslContext.getSocketFactory();
-          var underlyingSocket = new Socket();
-          var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
-          underlyingSocket.connect(new InetSocketAddress(endpoint, PORT));
-          this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);
-          socket.setSSLParameters(sslParameters);
-          socket.startHandshake();
-      }catch (IOException exception) {
-          throw new UncheckedIOException(exception);
-      } catch (GeneralSecurityException exception) {
-          throw new RuntimeException(exception);
-      }
+                        }
+                    }
+            }, null);
+            var sslParameters = sslContext.getDefaultSSLParameters();
+            sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
+            var sslSocketFactory = sslContext.getSocketFactory();
+            var underlyingSocket = new Socket(ProxyAuthenticator.getProxy(proxy));
+            var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
+            underlyingSocket.connect(new InetSocketAddress(endpoint, PORT));
+            this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);
+            socket.setSSLParameters(sslParameters);
+            socket.startHandshake();
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException(exception);
+        }
     }
 
     private byte[] createNonceSignature(byte[] nonce) {
         try {
-            var signature = Signature.getInstance("SHA1withRSA");
-            signature.initSign(privateKey);
-            signature.update(nonce);
-            return BytesHelper.concat(new byte[]{0x01, 0x01}, signature.sign());
+            var signer = Signature.getInstance("SHA1withRSA");
+            signer.initSign(privateKey);
+            signer.update(nonce);
+            var signature = signer.sign();
+            var result = new byte[signature.length + 2];
+            result[0] = 0x01;
+            result[1] = 0x01;
+            System.arraycopy(signature, 0, result, 2, signature.length);
+            return result;
         }catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot generate signature for nonce", exception);
         }
@@ -229,37 +256,55 @@ public class ApnsClient implements AutoCloseable {
     private byte[] createNonce() {
         var nonceBuffer = ByteBuffer.allocate(17);
         nonceBuffer.putLong(1, System.currentTimeMillis());
-        nonceBuffer.put(9, BytesHelper.random(8));
+        var bytes = new byte[8];
+        ThreadLocalRandom.current().nextBytes(bytes);
+        nonceBuffer.put(9, bytes);
         return nonceBuffer.array();
     }
 
     public CompletableFuture<ApnsPacket> waitForPacket(Function<ApnsPacket, Boolean> listener) {
+        return loginFuture.thenComposeAsync(ignored -> waitForPacketDirect(listener));
+    }
+
+    private CompletableFuture<ApnsPacket> waitForPacketDirect(Function<ApnsPacket, Boolean> listener) {
         var listenerWithFuture = new Listener(listener);
-        listeners.add(listenerWithFuture);
+        var result = unhandledPackets.removeIf(entry -> {
+            var entryResult = listener.apply(entry);
+            if(!entryResult) {
+                return false;
+            }
+
+            listenerWithFuture.future().complete(entry);
+            return true;
+        });
+        if(!result) {
+            listeners.add(listenerWithFuture);
+        }
+
         return listenerWithFuture.future();
     }
 
-    public CompletableFuture<String> getAppToken(String topic) {
-        Validate.isTrue(authToken != null, "Missing connect() call");
-        var topicHash = Sha1.calculate(topic);
-        send(ApnsPayloadTag.GET_TOKEN, Map.of(
-                1, authToken,
-                2, topicHash,
-                3, new byte[]{0x00, 0x00}
-        ));
-        return waitForPacket(packet -> packet.tag() == ApnsPayloadTag.TOKEN_RESPONSE && Arrays.equals(packet.fields().get(0x3), topicHash))
-                .thenApply(packet -> HexFormat.of().formatHex(packet.fields().get(0x2)));
+    public CompletableFuture<String> getAppToken(boolean business) {
+        return loginFuture.thenComposeAsync(ignored -> {
+            var topicHash = sha1(business ? Specification.Whatsapp.APNS_WHATSAPP_BUSINESS_NAME : Specification.Whatsapp.APNS_WHATSAPP_NAME);
+            send(ApnsPayloadTag.GET_TOKEN, Map.of(
+                    1, authToken,
+                    2, topicHash,
+                    3, new byte[]{0x00, 0x00}
+            ));
+            return waitForPacketDirect(packet -> packet.tag() == ApnsPayloadTag.TOKEN_RESPONSE && Arrays.equals(packet.fields().get(0x3), topicHash))
+                    .thenApply(packet -> HexFormat.of().formatHex(packet.fields().get(0x2)));
+        });
     }
 
-    public void setFilter(String... topics) {
-        Validate.isTrue(authToken != null, "Missing connect() call");
-        var hashes = Arrays.stream(topics)
-                .map(Sha1::calculate)
-                .toArray(byte[][]::new);
-        send(ApnsPayloadTag.FILTER, Map.of(
-                1, authToken,
-                2, hashes
-        ));
+    private static byte[] sha1(String data) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-1");
+            digest.update(data.getBytes(StandardCharsets.UTF_8));
+            return digest.digest();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new UnsupportedOperationException("Missing sha1 implementation");
+        }
     }
 
     private void send(ApnsPayloadTag payloadType, Map<Integer, ?> fields) {
@@ -314,9 +359,7 @@ public class ApnsClient implements AutoCloseable {
         try(var dataInputStream = new DataInputStream(socket.getInputStream())) {
             while (socket.isConnected()) {
                 var id = dataInputStream.readUnsignedByte();
-                System.out.println("Read id: " + id);
                 var length = dataInputStream.readInt();
-                System.out.println("Read message with length: " + length);
                 if (length <= 0) {
                     continue;
                 }
@@ -325,21 +368,20 @@ public class ApnsClient implements AutoCloseable {
                 dataInputStream.readFully(payload);
                 var fields = new HashMap<Integer, byte[]>();
                 try(var payloadDataInputStream = new DataInputStream(new ByteArrayInputStream(payload))) {
-                   while (true) {
-                       var fieldId = payloadDataInputStream.read();
-                       if(fieldId < 0) {
-                           break;
-                       }
+                    while (true) {
+                        var fieldId = payloadDataInputStream.read();
+                        if(fieldId < 0) {
+                            break;
+                        }
 
-                       var fieldLength = payloadDataInputStream.readUnsignedShort();
-                       var value = new byte[fieldLength];
-                       payloadDataInputStream.readFully(value);
-                       fields.put(fieldId, value);
-                   }
+                        var fieldLength = payloadDataInputStream.readUnsignedShort();
+                        var value = new byte[fieldLength];
+                        payloadDataInputStream.readFully(value);
+                        fields.put(fieldId, value);
+                    }
                 }
 
                 var packetType = ApnsPayloadTag.of(id);
-                System.out.println(packetType);
                 if(packetType == ApnsPayloadTag.NOTIFICATION) {
                     send(ApnsPayloadTag.ACK, Map.of(
                             1, authToken,
@@ -349,7 +391,7 @@ public class ApnsClient implements AutoCloseable {
                 }
 
                 var packet = new ApnsPacket(packetType, fields);
-                listeners.removeIf(listener -> {
+                var result = listeners.removeIf(listener -> {
                     var remove = listener.filter().apply(packet);
                     if(remove) {
                         listener.future().complete(packet);
@@ -357,6 +399,9 @@ public class ApnsClient implements AutoCloseable {
 
                     return remove;
                 });
+                if(!result) {
+                    unhandledPackets.add(packet);
+                }
             }
         }catch (IOException exception) {
             if(socket.isClosed()) {
@@ -366,27 +411,38 @@ public class ApnsClient implements AutoCloseable {
             throw new UncheckedIOException(exception);
         }
     }
+    public void close() {
+        try {
+            if(loginFuture != null && !loginFuture.isDone()) {
+                loginFuture.cancel(true);
+            }
 
-    @Override
-    public void close() throws IOException {
-        if(socket != null) {
-            socket.close();
-        }
+            if(keepAliveExecutor != null) {
+                keepAliveExecutor.close();
+            }
 
-        if(keepAliveExecutor != null) {
-            keepAliveExecutor.close();
-        }
+            if(socket != null) {
+                socket.close();
+            }
 
-        if(readerService != null) {
-            readerService.close();
+            if(readerService != null) {
+                readerService.close();
+            }
+        }catch (IOException ignored) {
+            // Ignored
         }
     }
 
     private CompletableFuture<ApnsBag> getAPNSBag() {
-        return Medias.downloadAsync(URI.create("http://init-p01st.push.apple.com/bag"))
-                .thenApply(ApnsBag::ofPlist);
+        try(var client = HttpClient.newHttpClient()) {
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://init-p01st.push.apple.com/bag"))
+                    .GET()
+                    .build();
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+                    .thenApply(response -> ApnsBag.ofPlist(response.body()));
+        }
     }
-
     private record ApnsBag(
             int hostCount,
             String hostname
@@ -407,8 +463,9 @@ public class ApnsClient implements AutoCloseable {
         }
     }
 
-    private byte[] generateCSR(KeyPair keys) {
+    private byte[] generateCSR() {
         try {
+            var publicKey = initRSAKeyPair();
             var subject = new X500NameBuilder(BCStyle.INSTANCE)
                     .addRDN(BCStyle.C, "US")
                     .addRDN(BCStyle.ST, "CA")
@@ -419,8 +476,8 @@ public class ApnsClient implements AutoCloseable {
                     .build();
             var signer = new JcaContentSignerBuilder("SHA256withRSA")
                     .setProvider(BouncyCastleProvider.PROVIDER_NAME)
-                    .build(keys.getPrivate());
-            var certificateRequest = new JcaPKCS10CertificationRequestBuilder(subject, keys.getPublic())
+                    .build(privateKey);
+            var certificateRequest = new JcaPKCS10CertificationRequestBuilder(subject, publicKey)
                     .build(signer);
             var stringWriter = new StringWriter();
             try (var pemWriter = new PemWriter(stringWriter)) {

@@ -15,14 +15,12 @@ import it.auties.whatsapp.model.response.AbPropsResponse;
 import it.auties.whatsapp.model.response.VerificationCodeResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.registration.apns.ApnsClient;
-import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.apns.ApnsPacket;
+import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import javax.net.ssl.SSLContext;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -52,7 +50,7 @@ public final class HttpRegistration {
         this.method = method;
         this.httpClient = createClient();
         var platform = store.device().platform();
-        this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
+        this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient(store.proxy().orElse(null)) : null;
     }
 
     public CompletableFuture<Void> registerPhoneNumber() {
@@ -80,11 +78,13 @@ public final class HttpRegistration {
         var future = switch (store.device().platform()) {
             case IOS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()))
-                    .thenComposeAsync(ignored -> exists())
+                    .thenComposeAsync(ignored -> getIOSPushToken())
+                    .thenComposeAsync(pushToken -> exists(pushToken, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")))
+                    .thenComposeAsync(ignored -> getIOSPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
-            case ANDROID -> exists()
-                    .thenComposeAsync(response -> requestVerificationCode(response, null));
+            case ANDROID -> exists(null, null)
+                    .thenComposeAsync(response -> requestVerificationCode(null, null));
             case KAIOS -> requestVerificationCode(null, null);
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
@@ -127,27 +127,15 @@ public final class HttpRegistration {
                 });
     }
 
-    private CompletableFuture<ExistsResponse> exists() {
-        var future = getIOSPushToken();
-        return future != null ? future.thenCompose(pushToken -> exists(pushToken, null)) : exists(null, null);
-    }
-
     private CompletableFuture<String> getIOSPushToken() {
         if (apnsClient == null) {
-            return null;
+            return CompletableFuture.completedFuture(null);
         }
 
-        return apnsClient.login()
-                .thenRun(() -> apnsClient.setFilter(Whatsapp.DEFAULT_APNS_FILTERS))
-                .thenCompose(ignored -> apnsClient.getAppToken(getApnsAppName()));
+        return apnsClient.getAppToken(store.device().platform().isBusiness());
     }
 
-    private String getApnsAppName() {
-        return store.device().platform().isBusiness() ? Specification.Whatsapp.APNS_WHATSAPP_BUSINESS_NAME
-                : Specification.Whatsapp.APNS_WHATSAPP_NAME;
-    }
-
-    private CompletableFuture<ExistsResponse> exists(String pushToken, VerificationCodeError lastError) {
+    private CompletableFuture<VerificationCodeResponse> exists(String pushToken, VerificationCodeError lastError) {
         var ios = store.device().platform().isIOS();
         var options = getRegistrationOptions(
                 store,
@@ -158,7 +146,6 @@ public final class HttpRegistration {
                 pushToken == null ? null : Map.entry("push_token", convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8))),
                 ios ? Map.entry("recovery_token_error", "-25300") : null
         );
-        var future = getIOSPushCode();
         return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
             if (result.statusCode() != HttpURLConnection.HTTP_OK) {
                 throw new RegistrationException(null, result.body());
@@ -173,22 +160,13 @@ public final class HttpRegistration {
                 throw new RegistrationException(response, result.body());
             }
 
-            if (future == null) {
-                return CompletableFuture.completedFuture(new ExistsResponse(null, response));
-
-            }
-
-            return future.thenApply(pushCode -> new ExistsResponse(pushCode, response));
+            return CompletableFuture.completedFuture(response);
         });
-    }
-
-    private record ExistsResponse(String pushCode, VerificationCodeResponse data) {
-
     }
 
     private CompletableFuture<String> getIOSPushCode() {
         if (apnsClient == null) {
-            return null;
+            return CompletableFuture.completedFuture(null);
         }
 
         return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
@@ -226,21 +204,20 @@ public final class HttpRegistration {
         });
     }
 
-    private CompletableFuture<Void> requestVerificationCode(ExistsResponse existsResponse, VerificationCodeError lastError) {
-        var platform = store.device().platform();
+    private CompletableFuture<Void> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
         var options = getRegistrationOptions(
                 store,
                 keys,
                 true,
                 lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN,
-                getRequestVerificationCodeParameters(existsResponse)
+                getRequestVerificationCodeParameters(pushCode)
         );
         return options.thenCompose(attrs -> sendRequest("/code", attrs))
-                .thenCompose(result -> onCodeRequestSent(existsResponse, lastError, result))
+                .thenCompose(result -> onCodeRequestSent(pushCode, lastError, result))
                 .thenRun(() -> saveRegistrationStatus(store, keys, false));
     }
 
-    private Entry<String, Object>[] getRequestVerificationCodeParameters(ExistsResponse existsResponse) {
+    private Entry<String, Object>[] getRequestVerificationCodeParameters(String pushCode) {
         var countryCode = store.phoneNumber()
                 .orElseThrow()
                 .countryCode();
@@ -282,7 +259,7 @@ public final class HttpRegistration {
                     Map.entry("sim_mcc", "000"),
                     Map.entry("sim_mnc", "000"),
                     Map.entry("reason", ""),
-                    Map.entry("push_code", convertBufferToUrlHex(existsResponse.pushCode().getBytes(StandardCharsets.UTF_8))),
+                    Map.entry("push_code", pushCode),
                     Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(2, 5))
             };
             case KAIOS -> new Entry[]{
@@ -294,7 +271,7 @@ public final class HttpRegistration {
         };
     }
 
-    private CompletionStage<Void> onCodeRequestSent(ExistsResponse existsResponse, VerificationCodeError lastError, HttpResponse<String> result) {
+    private CompletionStage<Void> onCodeRequestSent(String pushCode, VerificationCodeError lastError, HttpResponse<String> result) {
         if (result.statusCode() != HttpURLConnection.HTTP_OK) {
             throw new RegistrationException(null, result.body());
         }
@@ -310,7 +287,7 @@ public final class HttpRegistration {
             default -> {
                 var newErrorReason = response.errorReason();
                 Validate.isTrue(newErrorReason != lastError, () -> new RegistrationException(response, result.body()));
-                yield requestVerificationCode(existsResponse, newErrorReason);
+                yield requestVerificationCode(pushCode, newErrorReason);
             }
         };
     }
@@ -466,13 +443,9 @@ public final class HttpRegistration {
     }
 
     private void dispose() {
-        try {
-            httpClient.close();
-            if(apnsClient != null) {
-                apnsClient.close();
-            }
-        }catch (IOException exception) {
-            throw new UncheckedIOException(exception);
+        httpClient.close();
+        if(apnsClient != null) {
+            apnsClient.close();
         }
     }
 }
