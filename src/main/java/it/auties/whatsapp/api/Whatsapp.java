@@ -129,8 +129,8 @@ public class Whatsapp {
         return SocketHandler.isConnected(alias);
     }
 
-    protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, ExecutorService socketExecutor) {
-        this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationSupport, socketExecutor);
+    protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler, ExecutorService socketExecutor) {
+        this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler, socketExecutor);
         store.addListener((OnDisconnected) (reason) -> {
             if (reason != DisconnectReason.RECONNECTING) {
                 removeInstanceByUuid(store.uuid());
@@ -2154,10 +2154,6 @@ public class Whatsapp {
         return socketHandler.send(node);
     }
 
-    public SocketHandler socketHandler() {
-        return socketHandler;
-    }
-
     /**
      * Creates a new community
      *
@@ -2373,7 +2369,7 @@ public class Whatsapp {
     private CompletableFuture<Void> syncCompanionState(Jid companion) {
         var criticalUnblockLowRequest = createCriticalUnblockLowRequest();
         var criticalBlockRequest = createCriticalBlockRequest();
-        return socketHandler.pushPatches(companion, List.of(criticalUnblockLowRequest, criticalBlockRequest)).thenComposeAsync(ignored -> {
+        return socketHandler.pushPatches(companion, List.of(criticalBlockRequest, criticalUnblockLowRequest)).thenComposeAsync(ignored -> {
             var regularLowRequests = createRegularLowRequests();
             var regularRequests = createRegularRequests();
             return socketHandler.pushPatches(companion, List.of(regularLowRequests, regularRequests));
@@ -2398,6 +2394,7 @@ public class Whatsapp {
         return new PatchRequest(PatchType.REGULAR_LOW, entries);
     }
 
+    // FIXME: Settings can't be serialized
     private PatchRequest createCriticalBlockRequest() {
         var localeEntry = createLocaleEntry();
         var pushNameEntry = createPushNameEntry();

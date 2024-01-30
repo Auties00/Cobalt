@@ -7,7 +7,7 @@ import java.util.function.Consumer;
  */
 @FunctionalInterface
 @SuppressWarnings("unused")
-public non-sealed interface PairingCodeHandler extends Consumer<String>, WebVerificationSupport {
+public non-sealed interface PairingCodeHandler extends Consumer<String>, WebVerificationHandler {
     /**
      * Prints the pairing code to the terminal
      */

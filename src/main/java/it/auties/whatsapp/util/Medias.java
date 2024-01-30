@@ -113,7 +113,8 @@ public final class Medias {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
         var uploadData = type.inflatable() ? BytesHelper.compress(file) : file;
         var mediaFile = prepareMediaFile(type, uploadData);
-        var path = type.path().orElseThrow(() -> new UnsupportedOperationException(type + " cannot be uploaded"));
+        var path = type.path()
+                .orElseThrow(() -> new UnsupportedOperationException(type + " cannot be uploaded"));
         var token = Base64.getUrlEncoder()
                 .withoutPadding()
                 .encodeToString(Objects.requireNonNullElse(mediaFile.fileEncSha256(), mediaFile.fileSha256()));

@@ -139,7 +139,7 @@ public final class BinaryDecoder implements AutoCloseable {
         var agent = dataInputStream.readUnsignedByte();
         var device = dataInputStream.readUnsignedByte();
         var user = readString();
-        return Jid.ofDevice(user, device, agent);
+        return new Jid(user, JidServer.WHATSAPP, device == 0 ? null : device, agent == 0 ? null : agent);
     }
 
     private int readSize(int token) throws IOException {

@@ -5,16 +5,11 @@ import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
 
 import java.io.IOException;
-import java.net.Authenticator;
-import java.net.InetSocketAddress;
-import java.net.ProxySelector;
-import java.net.URI;
+import java.io.UncheckedIOException;
+import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousChannelGroup;
-import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
@@ -164,14 +159,12 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             Authenticator.setDefault(new ProxyAuthenticator());
         }
 
-        private AsynchronousSocketChannel socket;
-        private boolean closed;
+        private Socket socket;
 
         RawSocketSession(URI proxy, ExecutorService executor) {
             super(proxy, executor);
         }
 
-        // TODO: Use proxy
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
             this.listener = listener;
@@ -179,140 +172,85 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return CompletableFuture.completedFuture(null);
             }
 
-            var future = new CompletableFuture<Void>();
-            try {
-                this.socket = AsynchronousSocketChannel.open(AsynchronousChannelGroup.withThreadPool(executor));
-                socket.connect(new InetSocketAddress(SOCKET_ENDPOINT, SOCKET_PORT), null, new ConnectionHandler(future));
-            } catch (IOException exception) {
-                future.completeExceptionally(exception);
-            }
-
-            return future;
+            return CompletableFuture.runAsync(() -> {
+                try {
+                    this.socket = new Socket(ProxyAuthenticator.getProxy(proxy));
+                    socket.connect(new InetSocketAddress(SOCKET_ENDPOINT, SOCKET_PORT));
+                    listener.onOpen(RawSocketSession.this);
+                    executor.execute(this::readNextMessage);
+                } catch (IOException exception) {
+                    throw new UncheckedIOException(exception);
+                }
+            });
         }
 
         private void readNextMessage() {
-            if(!isOpen()) {
-                disconnect();
-                return;
-            }
+            while (isOpen()) {
+                try {
+                    var lengthBytes = readBytes(MESSAGE_LENGTH);
+                    var length = (lengthBytes[0] << 16) | ((lengthBytes[1] & 0xFF) << 8) | (lengthBytes[2] & 0xFF);
+                    if (length < 0) {
+                        return;
+                    }
 
-            var buffer = ByteBuffer.allocate(MESSAGE_LENGTH);
-            socket.read(buffer, null, new MessageLengthHandler(buffer));
+                    var data = readBytes(length);
+                    listener.onMessage(data);
+                } catch (Throwable throwable) {
+                    listener.onError(throwable);
+                }
+            }
+        }
+
+        private byte[] readBytes(int size) {
+            try {
+                var data = new byte[size];
+                var read = 0;
+                while (read != data.length) {
+                    var chunk = socket.getInputStream().read(data, read, data.length - read);
+                    read += chunk;
+                }
+
+                return data;
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
+            }
         }
 
         @Override
         void disconnect() {
-            if (closed) {
+            if (socket == null) {
                 return;
             }
 
             try {
-                this.closed = true;
-                this.socket = null;
                 listener.onClose();
                 socket.close();
-            } catch (Throwable ignored) {
-                // Normal
+                this.socket = null;
+            } catch (IOException ignored) {
+
             }
         }
 
         private boolean isOpen() {
-            return socket != null && socket.isOpen();
+            return socket != null && socket.isConnected();
         }
 
         @Override
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
-            try {
-                outputLock.lock();
-                if (socket == null) {
-                    return CompletableFuture.completedFuture(null);
-                }
-
-                socket.write(ByteBuffer.wrap(bytes));
+            if (socket == null) {
                 return CompletableFuture.completedFuture(null);
-            } catch (Throwable throwable) {
-                return CompletableFuture.failedFuture(throwable);
-            } finally {
-                outputLock.unlock();
-            }
-        }
-
-        private class ConnectionHandler implements CompletionHandler<Void, Void> {
-            private final CompletableFuture<Void> future;
-            private ConnectionHandler(CompletableFuture<Void> future) {
-                this.future = future;
             }
 
-            @Override
-            public void completed(Void result, Void attachment) {
-                listener.onOpen(RawSocketSession.this);
-                executor.execute(RawSocketSession.this::readNextMessage);
-                future.complete(null);
-            }
-
-            @Override
-            public void failed(Throwable throwable, Void attachment) {
-                future.completeExceptionally(throwable);
-            }
-        }
-
-        private class MessageLengthHandler implements CompletionHandler<Integer, Void> {
-            private final ByteBuffer lengthBuffer;
-            private MessageLengthHandler(ByteBuffer lengthBuffer) {
-                this.lengthBuffer = lengthBuffer;
-            }
-
-            @Override
-            public void completed(Integer bytesRead, Void attachment) {
-                if(lengthBuffer.remaining() != 0) {
-                    socket.read(lengthBuffer, null, this);
-                    return;
-                }
-
-                lengthBuffer.flip();
-                var length = (lengthBuffer.get() << 16) | Short.toUnsignedInt(lengthBuffer.getShort());
-                lengthBuffer.clear();
-                if (length < 0) {
-                    return;
-                }
-
-                var messageBuffer = ByteBuffer.allocate(length);
-                socket.read(messageBuffer, null, new MessageValueHandler(messageBuffer));
-            }
-
-            @Override
-            public void failed(Throwable throwable, Void attachment) {
-                listener.onError(throwable);
-            }
-        }
-
-        private class MessageValueHandler implements CompletionHandler<Integer, Void> {
-            private final ByteBuffer messageBuffer;
-            private MessageValueHandler(ByteBuffer messageBuffer) {
-                this.messageBuffer = messageBuffer;
-            }
-
-            @Override
-            public void completed(Integer bytesRead, Void attachment) {
-                if(messageBuffer.remaining() != 0) {
-                    socket.read(messageBuffer, null, this);
-                    return;
-                }
-
+            return CompletableFuture.runAsync(() -> {
                 try {
-                    listener.onMessage(messageBuffer.array());
-                    readNextMessage();
-                } catch (Throwable throwable) {
-                    listener.onError(throwable);
-                }finally {
-                    messageBuffer.clear();
+                    outputLock.lock();
+                    socket.getOutputStream().write(bytes);
+                } catch (IOException exception) {
+                    throw new UncheckedIOException(exception);
+                } finally {
+                    outputLock.unlock();
                 }
-            }
-
-            @Override
-            public void failed(Throwable throwable, Void attachment) {
-                listener.onError(throwable);
-            }
+            });
         }
     }
 }

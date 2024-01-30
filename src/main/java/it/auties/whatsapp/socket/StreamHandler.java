@@ -79,15 +79,15 @@ class StreamHandler {
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
 
     private final SocketHandler socketHandler;
-    private final WebVerificationSupport webVerificationSupport;
+    private final WebVerificationHandler webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
     private ScheduledExecutorService service;
     private CompletableFuture<Void> mediaConnectionFuture;
 
-    protected StreamHandler(SocketHandler socketHandler, WebVerificationSupport webVerificationSupport) {
+    protected StreamHandler(SocketHandler socketHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = socketHandler;
-        this.webVerificationSupport = webVerificationSupport;
+        this.webVerificationHandler = webVerificationHandler;
         this.retries = new ConcurrentHashMap<>();
         this.lastLinkCodeKey = new AtomicReference<>();
     }
@@ -1385,7 +1385,7 @@ class StreamHandler {
     }
 
     private void startPairing(Node node, Node container) {
-        switch (webVerificationSupport) {
+        switch (webVerificationHandler) {
             case QrHandler qrHandler -> {
                 printQrCode(qrHandler, container);
                 sendConfirmNode(node, null);

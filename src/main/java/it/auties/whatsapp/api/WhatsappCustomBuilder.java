@@ -11,7 +11,7 @@ public class WhatsappCustomBuilder {
     private Store store;
     private Keys keys;
     private ErrorHandler errorHandler;
-    private WebVerificationSupport webVerificationSupport;
+    private WebVerificationHandler webVerificationHandler;
     private ExecutorService socketExecutor;
 
     WhatsappCustomBuilder() {
@@ -33,8 +33,8 @@ public class WhatsappCustomBuilder {
         return this;
     }
 
-    public WhatsappCustomBuilder webVerificationSupport(WebVerificationSupport webVerificationSupport) {
-        this.webVerificationSupport = webVerificationSupport;
+    public WhatsappCustomBuilder webVerificationSupport(WebVerificationHandler webVerificationHandler) {
+        this.webVerificationHandler = webVerificationHandler;
         return this;
     }
 
@@ -50,19 +50,19 @@ public class WhatsappCustomBuilder {
             return knownInstance.get();
         }
 
-        var checkedSupport = getWebVerificationMethod(store, keys, webVerificationSupport);
+        var checkedSupport = getWebVerificationMethod(store, keys, webVerificationHandler);
         return new Whatsapp(store, keys, errorHandler, checkedSupport, socketExecutor);
     }
 
-    private static WebVerificationSupport getWebVerificationMethod(Store store, Keys keys, WebVerificationSupport webVerificationSupport) {
+    private static WebVerificationHandler getWebVerificationMethod(Store store, Keys keys, WebVerificationHandler webVerificationHandler) {
         if (store.clientType() != ClientType.WEB) {
             return null;
         }
 
-        if (!keys.registered() && webVerificationSupport == null) {
+        if (!keys.registered() && webVerificationHandler == null) {
             return QrHandler.toTerminal();
         }
 
-        return webVerificationSupport;
+        return webVerificationHandler;
     }
 }

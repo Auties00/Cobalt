@@ -97,13 +97,13 @@ public class SocketHandler implements SocketListener {
         return connectedAlias.contains(id);
     }
 
-    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationSupport webVerificationSupport, ExecutorService socketExecutor) {
+    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler, ExecutorService socketExecutor) {
         this.whatsapp = whatsapp;
         this.store = store;
         this.keys = keys;
         this.state = SocketState.WAITING;
         this.authHandler = new AuthHandler(this);
-        this.streamHandler = new StreamHandler(this, webVerificationSupport);
+        this.streamHandler = new StreamHandler(this, webVerificationHandler);
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());

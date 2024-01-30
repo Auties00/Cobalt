@@ -130,16 +130,9 @@ class MessageHandler {
         };
         if(messageInfo instanceof ChatMessageInfo chatMessageInfo) {
             attributeChatMessage(chatMessageInfo);
-            fixChatMessageKey(chatMessageInfo);
             fixEphemeralMessage(chatMessageInfo);
         }
         return result;
-    }
-
-    private void fixChatMessageKey(ChatMessageInfo chatMessageInfo) {
-        var key = chatMessageInfo.key();
-        key.setChatJid(chatMessageInfo.chatJid().withoutDevice());
-        key.setSenderJid(chatMessageInfo.senderJid().withoutDevice());
     }
 
     private void fixEphemeralMessage(ChatMessageInfo info) {
@@ -492,7 +485,7 @@ class MessageHandler {
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
                 .put("type", "text")
-                .put("verified_name", socketHandler.store().verifiedName().orElse(""), socketHandler.store().verifiedName().isPresent())
+                .put("verified_name", socketHandler.store().verifiedName().orElse(""), socketHandler.store().verifiedName().isPresent() && !request.peer())
                 .put("category", "peer", request.peer())
                 .put("duration", "900", request.info().message().type() == MessageType.LIVE_LOCATION)
                 .put("device_fanout", false, request.info().message().type() == MessageType.BUTTONS)

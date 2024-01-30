@@ -99,18 +99,6 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
      * Constructs a new ContactId for a device
      *
      * @param jid    the nullable jid of the user
-     * @param agent  the agent jid
-     * @param device the device jid
-     * @return a non-null contact jid
-     */
-    public static Jid ofDevice(String jid, int device, int agent) {
-        return new Jid(withoutServer(jid), JidServer.WHATSAPP, device, agent);
-    }
-
-    /**
-     * Constructs a new ContactId for a device
-     *
-     * @param jid    the nullable jid of the user
      * @param device the device jid
      * @return a non-null contact jid
      */

@@ -32,7 +32,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     @ProtobufProperty(index = 8, type = STRING)
     private final String originalMessageId;
     @ProtobufProperty(index = 9, type = UINT32)
-    private final int progress;
+    private final Integer progress;
     @ProtobufProperty(index = 10, type = INT64)
     private final long oldestMsgInChunkTimestampSec;
     @ProtobufProperty(index = 11, type = BYTES)
@@ -41,7 +41,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     private final String peerDataRequestSessionId;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public HistorySyncNotification(byte[] mediaSha256, Long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId, int progress, long oldestMsgInChunkTimestampSec, byte[] initialHistBootstrapInlinePayload, String peerDataRequestSessionId) {
+    public HistorySyncNotification(byte[] mediaSha256, Long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId, Integer progress, long oldestMsgInChunkTimestampSec, byte[] initialHistBootstrapInlinePayload, String peerDataRequestSessionId) {
         this.mediaSha256 = mediaSha256;
         this.mediaSize = mediaSize;
         this.mediaKey = mediaKey;
@@ -135,7 +135,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         return syncType;
     }
 
-    public int chunkOrder() {
+    public Integer chunkOrder() {
         return chunkOrder;
     }
 
@@ -144,7 +144,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
 
-    public int progress() {
+    public Integer progress() {
         return progress;
     }
 
