@@ -5,7 +5,10 @@ import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;

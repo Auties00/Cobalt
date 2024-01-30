@@ -538,30 +538,34 @@ public class Whatsapp {
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message) {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
-        return prepareChatForMessage(recipient, timestamp)
-                .thenComposeAsync(chatResult -> changePresence(recipient.toJid(), COMPOSING))
-                .thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
-                .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
-                .thenComposeAsync(deltaResult -> {
-                    var deviceInfo = new DeviceContextInfoBuilder()
-                            .deviceListMetadataVersion(2)
-                            .build();
-                    var key = new ChatMessageKeyBuilder()
-                            .id(ChatMessageKey.randomId())
-                            .chatJid(recipient.toJid())
-                            .fromMe(true)
-                            .senderJid(jidOrThrowError())
-                            .build();
-                    var info = new ChatMessageInfoBuilder()
-                            .status(MessageStatus.PENDING)
-                            .senderJid(jidOrThrowError())
-                            .key(key)
-                            .message(message.withDeviceInfo(deviceInfo))
-                            .timestampSeconds(timestamp)
-                            .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
-                            .build();
-                    return sendMessage(info);
-                });
+        return prepareChatForMessage(recipient, timestamp).thenComposeAsync(chatResult -> {
+            var deviceInfo = new DeviceContextInfoBuilder()
+                    .deviceListMetadataVersion(2)
+                    .build();
+            var key = new ChatMessageKeyBuilder()
+                    .id(ChatMessageKey.randomId())
+                    .chatJid(recipient.toJid())
+                    .fromMe(true)
+                    .senderJid(jidOrThrowError())
+                    .build();
+            var info = new ChatMessageInfoBuilder()
+                    .status(MessageStatus.PENDING)
+                    .senderJid(jidOrThrowError())
+                    .key(key)
+                    .message(message.withDeviceInfo(deviceInfo))
+                    .timestampSeconds(timestamp)
+                    .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
+                    .build();
+            if(!chatResult) {
+                info.setStatus(MessageStatus.ERROR);
+                return CompletableFuture.completedFuture(info);
+            }
+
+            return changePresence(recipient.toJid(), COMPOSING)
+                    .thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
+                    .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
+                    .thenComposeAsync(deltaResult -> sendMessage(info));
+        });
     }
 
     private CompletableFuture<Void> sendDeltaChatRequest(JidProvider recipient) {
@@ -598,7 +602,7 @@ public class Whatsapp {
                 .thenRun(() -> {});
     }
 
-    private CompletableFuture<Void> prepareChatForMessage(JidProvider recipient, long timestamp) {
+    private CompletableFuture<Boolean> prepareChatForMessage(JidProvider recipient, long timestamp) {
         if(store().findContactByJid(recipient.toJid()).isPresent()) {
             return CompletableFuture.completedFuture(null);
         }
@@ -610,19 +614,23 @@ public class Whatsapp {
         var lidNode = Node.of("lid");
         var jid = store().jid().orElseThrow();
         var userNode = Node.of("user", Node.of("contact", recipient.toJid().toPhoneNumber().getBytes(StandardCharsets.UTF_8)));
-        return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of())
-                .thenCompose(result -> {
-                    var lid = result.getFirst()
-                            .findNode("lid")
-                            .flatMap(lidValue -> lidValue.attributes().getOptionalJid("val"))
-                            .orElseThrow(() -> new NoSuchElementException("Missing lid"));
-                    var secondQuery = List.of(Node.of("disappearing_mode"), Node.of("lid"));
-                    var secondList = List.of(Node.of("user", Map.of("jid", jid), Node.of("lid", Map.of("jid", lid))));
-                    return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of());
-                })
-                .thenCompose(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
-                .thenCompose(thirdResult -> subscribeToPresence(recipient.toJid()))
-                .thenCompose(fourthResult -> socketHandler.querySessions(recipient.toJid()));
+        return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of()).thenCompose(result -> {
+            var lid = result.getFirst()
+                    .findNode("lid")
+                    .flatMap(lidValue -> lidValue.attributes().getOptionalJid("val"))
+                    .orElse(null);
+            if(lid == null) {
+                return CompletableFuture.completedFuture(false);
+            }
+
+            var secondQuery = List.of(Node.of("disappearing_mode"), Node.of("lid"));
+            var secondList = List.of(Node.of("user", Map.of("jid", jid), Node.of("lid", Map.of("jid", lid))));
+            return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of())
+                    .thenCompose(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
+                    .thenCompose(thirdResult -> subscribeToPresence(recipient.toJid()))
+                    .thenCompose(fourthResult -> socketHandler.querySessions(recipient.toJid()))
+                    .thenApply(ignored -> true);
+        });
     }
 
 

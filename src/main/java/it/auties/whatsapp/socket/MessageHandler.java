@@ -472,7 +472,7 @@ class MessageHandler {
     private Node createEncodedMessageNode(MessageSendRequest.Chat request, List<Node> preKeys, Node descriptor) {
         var body = new ArrayList<Node>();
         if (!preKeys.isEmpty()) {
-            if (request.peer() || request.info().chatJid().hasServer(JidServer.WHATSAPP)) {
+            if (request.peer()) {
                 body.addAll(preKeys);
             } else {
                 body.add(Node.of("participants", preKeys));
@@ -573,7 +573,7 @@ class MessageHandler {
         var cipher = new SessionCipher(contact.toSignalAddress(), socketHandler.keys());
         var encrypted = cipher.encrypt(message);
         var messageNode = createMessageNode(request, encrypted);
-        return peer || request.info().chatJid().hasServer(JidServer.WHATSAPP) ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
+        return peer ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
     }
 
     private CompletableFuture<List<Jid>> getGroupDevices(GroupMetadata metadata) {
@@ -673,6 +673,10 @@ class MessageHandler {
     }
 
     protected void parseSessions(Node node) {
+        if(node == null) {
+            return;
+        }
+
         node.findNode("list")
                 .orElseThrow(() -> new IllegalArgumentException("Cannot parse sessions: " + node))
                 .findNodes("user")

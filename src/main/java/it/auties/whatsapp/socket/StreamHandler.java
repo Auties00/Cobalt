@@ -1139,10 +1139,10 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryRequiredMobileInfo() {
-        return socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")))
+        return checkBusinessStatus()
+                .thenCompose(ignored -> socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", ""))))
                 .thenAcceptAsync(this::parseProps)
                 .thenComposeAsync(ignored -> queryAbProps())
-                .thenComposeAsync(ignored -> checkBusinessStatus())
                 .thenRunAsync(() -> {
                     socketHandler.sendQuery("get", "w:b", Node.of("lists"))
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));

@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
+import it.auties.whatsapp.model.response.IosVersionResponse;
 import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
@@ -79,14 +80,12 @@ public final class MobileMetadata {
             case IOS_BUSINESS ->
                     getIosVersion(true);
             case KAIOS ->
-                CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_KAIOS_VERSION);
+                    CompletableFuture.completedFuture(Whatsapp.DEFAULT_MOBILE_KAIOS_VERSION);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
 
     private static CompletableFuture<Version> getIosVersion(boolean business) {
-        return CompletableFuture.completedFuture(Version.of("2.24.1.80"));
-       /*
         if (business && businessIosVersion != null) {
             return CompletableFuture.completedFuture(businessIosVersion);
         }
@@ -98,7 +97,7 @@ public final class MobileMetadata {
         try (var client = HttpClient.newHttpClient()) {
             var request = HttpRequest.newBuilder()
                     .GET()
-                    .header("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0")
+                    .header("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1")
                     .uri(URI.create(business ? Whatsapp.MOBILE_BUSINESS_IOS_URL : Whatsapp.MOBILE_IOS_URL))
                     .build();
             return client.sendAsync(request, ofString())
@@ -117,7 +116,7 @@ public final class MobileMetadata {
         } catch (Throwable throwable) {
             throw new RuntimeException("Cannot fetch latest web version", throwable);
         }
-        */
+
     }
 
     private static CompletableFuture<Version> getWebVersion() {

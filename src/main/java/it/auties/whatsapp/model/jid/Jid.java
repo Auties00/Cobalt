@@ -87,11 +87,11 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
         return jid;
     }
 
-    private static int tryParseAgent(String string) {
+    private static Integer tryParseAgent(String string) {
         try {
             return Integer.parseUnsignedInt(string);
         } catch (NumberFormatException exception) {
-            return 0;
+            return null;
         }
     }
 
