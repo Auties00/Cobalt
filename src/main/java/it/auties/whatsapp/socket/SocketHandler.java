@@ -414,7 +414,7 @@ public class SocketHandler implements SocketListener {
     }
 
     private List<Node> parseQueryResult(Node result) {
-        return result.findNodes("usync")
+        return result == null ? List.of() : result.findNodes("usync")
                 .stream()
                 .map(node -> node.findNode("list"))
                 .flatMap(Optional::stream)
@@ -613,10 +613,8 @@ public class SocketHandler implements SocketListener {
         if (Objects.equals(type, "sender") && jid.hasServer(JidServer.WHATSAPP)) {
             attributes.put("recipient", jid);
             attributes.put("to", participant);
-        } else {
-            attributes.put("to", jid);
-            attributes.put("participant", participant, Objects::nonNull);
         }
+
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
         return sendWithNoResponse(receipt);
     }
@@ -942,7 +940,7 @@ public class SocketHandler implements SocketListener {
         messageHandler.dispose();
         appStateHandler.dispose();
         if (listenersService != null) {
-            listenersService.shutdownNow();
+            listenersService.shutdown();
         }
     }
 

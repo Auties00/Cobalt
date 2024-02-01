@@ -15,6 +15,7 @@ import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.ApkSigner;
@@ -33,6 +34,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -329,21 +331,29 @@ public final class MobileMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, Collection<byte[]> certificates, boolean business) {
+    public record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, List<byte[]> certificates, boolean business) {
 
     }
 
-    public static String generateGpiaToken(byte[] deviceIdentifier, int desiredLength) {
-        if (deviceIdentifier == null || desiredLength <= 0) {
-            throw new IllegalArgumentException();
-        }
+    public static CompletableFuture<String> generateGpiaToken(UUID advertisingId, byte[] deviceIdentifier, boolean business) {
+        return getAndroidData(business, true).thenApplyAsync(androidData -> {
+            var uuidBytes = uuidToBytes(advertisingId);
+            var combinedBytes = BytesHelper.concat(deviceIdentifier, androidData.certificates().getFirst(), androidData.secretKey(), uuidBytes);
+            var randomBytes = BytesHelper.random(Math.max(0, Specification.Whatsapp.GPIA_TOKEN_LENGTH - combinedBytes.length));
+            combinedBytes = BytesHelper.concat(combinedBytes, randomBytes);
+            var hashedBytes = Sha256.calculate(combinedBytes);
+            var truncatedBytes = new byte[Specification.Whatsapp.GPIA_TOKEN_LENGTH];
+            System.arraycopy(hashedBytes, 0, truncatedBytes, 0, Math.min(hashedBytes.length, Specification.Whatsapp.GPIA_TOKEN_LENGTH));
+            var thirdHeaderRandom = BytesHelper.random(Specification.Whatsapp.GPIA_TOKEN_LENGTH - hashedBytes.length);
+            System.arraycopy(thirdHeaderRandom, 0, truncatedBytes, hashedBytes.length, thirdHeaderRandom.length);
+            return Base64.getUrlEncoder().encodeToString(truncatedBytes);
+        });
+    }
 
-        var bytesNeeded = (int) Math.ceil((desiredLength * 3) / 4.0);
-        var randomBytes = BytesHelper.random(bytesNeeded - deviceIdentifier.length);
-        var tokenBytes = new byte[bytesNeeded];
-        System.arraycopy(deviceIdentifier, 0, tokenBytes, 0, deviceIdentifier.length);
-        System.arraycopy(randomBytes, 0, tokenBytes, deviceIdentifier.length, randomBytes.length);
-        var token = Base64.getEncoder().encodeToString(tokenBytes);
-        return token.substring(0, desiredLength);
+    private static byte[] uuidToBytes(UUID uuid) {
+        var bb = ByteBuffer.wrap(new byte[16]);
+        bb.putLong(uuid.getMostSignificantBits());
+        bb.putLong(uuid.getLeastSignificantBits());
+        return bb.array();
     }
 }

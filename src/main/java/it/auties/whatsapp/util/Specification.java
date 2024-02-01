@@ -31,6 +31,7 @@ public class Specification {
                 "net.whatsapp.WhatsAppSMB",
                 "net.whatsapp.WhatsAppSMB.voip"
         };
+        public static final int GPIA_TOKEN_LENGTH = 430;
         private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
         private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = BytesHelper.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);

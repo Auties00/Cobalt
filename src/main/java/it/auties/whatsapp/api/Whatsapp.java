@@ -557,18 +557,17 @@ public class Whatsapp {
                     .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                     .build();
             if(!chatResult) {
-                info.setStatus(MessageStatus.ERROR);
-                return CompletableFuture.completedFuture(info);
+                return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
 
             return changePresence(recipient.toJid(), COMPOSING)
                     .thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
                     .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
-                    .thenComposeAsync(deltaResult -> sendMessage(info));
+                    .thenComposeAsync(deltaResult -> deltaResult ? sendMessage(info) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
         });
     }
 
-    private CompletableFuture<Void> sendDeltaChatRequest(JidProvider recipient) {
+    private CompletableFuture<Boolean> sendDeltaChatRequest(JidProvider recipient) {
         var sync = Node.of(
                 "usync",
                 Map.of(
@@ -593,7 +592,15 @@ public class Whatsapp {
                 )
         );
         return socketHandler.sendQuery("get", "usync", sync)
-                .thenAcceptAsync(result -> {});
+                .thenApply(result -> !isNotOnWhatsapp(result));
+    }
+
+    private boolean isNotOnWhatsapp(Node result) {
+        return result.findNode("usync")
+                .flatMap(entry -> entry.findNode("result"))
+                .flatMap(entry -> entry.findNode("sidelist"))
+                .map(entry -> entry.attributes().hasValue("type", "out"))
+                .orElse(false);
     }
 
     private CompletableFuture<Void> addTrustedContact(JidProvider recipient, long timestamp) {
@@ -607,24 +614,17 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(null);
         }
 
-        var businessNode = Node.of("business",
-                Node.of("verified_name"),
-                Node.of("profile", Map.of("v", 372)));
+        var businessNode = Node.of("business", Node.of("verified_name"), Node.of("profile", Map.of("v", 372)));
         var contactNode = Node.of("contact");
         var lidNode = Node.of("lid");
-        var jid = store().jid().orElseThrow();
         var userNode = Node.of("user", Node.of("contact", recipient.toJid().toPhoneNumber().getBytes(StandardCharsets.UTF_8)));
         return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of()).thenCompose(result -> {
-            var lid = result.getFirst()
-                    .findNode("lid")
-                    .flatMap(lidValue -> lidValue.attributes().getOptionalJid("val"))
-                    .orElse(null);
-            if(lid == null) {
+            if(result.stream().anyMatch(entry -> entry.hasDescription("out"))) {
                 return CompletableFuture.completedFuture(false);
             }
 
-            var secondQuery = List.of(Node.of("disappearing_mode"), Node.of("lid"));
-            var secondList = List.of(Node.of("user", Map.of("jid", jid), Node.of("lid", Map.of("jid", lid))));
+            var secondQuery = List.of(Node.of("disappearing_mode"));
+            var secondList = List.of(Node.of("user", Map.of("jid", recipient.toJid())));
             return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of())
                     .thenCompose(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
                     .thenCompose(thirdResult -> subscribeToPresence(recipient.toJid()))

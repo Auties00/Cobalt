@@ -188,17 +188,27 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             while (isOpen()) {
                 try {
                     var lengthBytes = readBytes(MESSAGE_LENGTH);
+                    if (lengthBytes == null) {
+                        continue;
+                    }
+
                     var length = (lengthBytes[0] << 16) | ((lengthBytes[1] & 0xFF) << 8) | (lengthBytes[2] & 0xFF);
                     if (length < 0) {
-                        return;
+                        continue;
                     }
 
                     var data = readBytes(length);
+                    if (data == null) {
+                        continue;
+                    }
+
                     listener.onMessage(data);
                 } catch (Throwable throwable) {
                     listener.onError(throwable);
                 }
             }
+
+            disconnect();
         }
 
         private byte[] readBytes(int size) {
@@ -211,8 +221,8 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 }
 
                 return data;
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
+            } catch (Throwable exception) {
+                return null;
             }
         }
 
@@ -232,7 +242,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
 
         private boolean isOpen() {
-            return socket != null && socket.isConnected();
+            return socket != null && !socket.isClosed();
         }
 
         @Override

@@ -7,6 +7,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
+import it.auties.whatsapp.model.mobile.CountryCode;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
@@ -205,69 +206,76 @@ public final class HttpRegistration {
     }
 
     private CompletableFuture<Void> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
-        var options = getRegistrationOptions(
-                store,
-                keys,
-                true,
-                lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN,
-                getRequestVerificationCodeParameters(pushCode)
-        );
-        return options.thenCompose(attrs -> sendRequest("/code", attrs))
+        return getRequestVerificationCodeParameters(pushCode)
+                .thenCompose(params -> getRegistrationOptions(store, keys, true, lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN, params))
+                .thenCompose(attrs -> sendRequest("/code", attrs))
                 .thenCompose(result -> onCodeRequestSent(pushCode, lastError, result))
                 .thenRun(() -> saveRegistrationStatus(store, keys, false));
     }
 
-    private Entry<String, Object>[] getRequestVerificationCodeParameters(String pushCode) {
+    private CompletableFuture<Entry<String, Object>[]> getRequestVerificationCodeParameters(String pushCode) {
         var countryCode = store.phoneNumber()
                 .orElseThrow()
                 .countryCode();
-        return switch(store.device().platform()) {
-            case UNKNOWN -> new Entry[]{};
-            case ANDROID, ANDROID_BUSINESS -> {
-                var gpiaToken = MobileMetadata.generateGpiaToken(keys.deviceId(), 430);
-                yield new Entry[]{
-                        Map.entry("method", method.data()),
-                        Map.entry("sim_mcc", countryCode.mcc()),
-                        Map.entry("sim_mnc", "001"),
-                        Map.entry("reason", ""),
-                        Map.entry("mcc", countryCode.mcc()),
-                        Map.entry("mnc", "001"),
-                        Map.entry("feo2_query_status", "error_security_exception"),
-                        Map.entry("sim_type", 1),
-                        Map.entry("network_radio_type", 1),
-                        Map.entry("prefer_sms_over_flash", true),
-                        Map.entry("simnum", 0),
-                        Map.entry("sim_state", 3),
-                        Map.entry("clicked_education_link", false),
-                        Map.entry("airplane_mode_type", 0),
-                        Map.entry("mistyped", 7),
-                        Map.entry("advertising_id", UUID.randomUUID().toString()),
-                        Map.entry("hasinrc", 1),
-                        Map.entry("roaming_type", 0),
-                        Map.entry("device_ram", 4),
-                        Map.entry("client_metrics", URLEncoder.encode("{\"attempts\":1}", StandardCharsets.UTF_8)),
-                        Map.entry("education_screen_displayed", true),
-                        Map.entry("read_phone_permission_granted", 1),
-                        Map.entry("pid", ProcessHandle.current().pid()),
-                        Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6)),
-                        Map.entry("gpia_token", gpiaToken),
-                        Map.entry("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
-                };
-            }
-            case IOS, IOS_BUSINESS -> new Entry[]{
-                    Map.entry("method", method.data()),
-                    Map.entry("sim_mcc", "000"),
-                    Map.entry("sim_mnc", "000"),
-                    Map.entry("reason", ""),
-                    Map.entry("push_code", pushCode),
-                    Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(2, 5))
-            };
-            case KAIOS -> new Entry[]{
-                    Map.entry("mcc", countryCode.mcc()),
-                    Map.entry("mnc", "000"),
-                    Map.entry("method", method.data()),
-            };
+        return switch (store.device().platform()) {
+            case ANDROID, ANDROID_BUSINESS -> MobileMetadata.generateGpiaToken(keys.advertisingId(), keys.deviceId(), store.device().platform().isBusiness())
+                    .thenApply(gpiaToken -> getAndroidRequestParameters(gpiaToken, countryCode));
+            case IOS, IOS_BUSINESS -> CompletableFuture.completedFuture(getIosRequestParameters(pushCode));
+            case KAIOS -> CompletableFuture.completedFuture(getKaiOsRequestParameters(countryCode));
             default -> throw new IllegalStateException("Unsupported mobile os");
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
+        return new Entry[]{
+                Map.entry("mcc", countryCode.mcc()),
+                Map.entry("mnc", "000"),
+                Map.entry("method", method.data()),
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private Entry<String, Object>[] getIosRequestParameters(String pushCode) {
+        return new Entry[]{
+                Map.entry("method", method.data()),
+                Map.entry("sim_mcc", "000"),
+                Map.entry("sim_mnc", "000"),
+                Map.entry("reason", ""),
+                Map.entry("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8))),
+                Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(2, 5))
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private Entry<String, Object>[] getAndroidRequestParameters(String gpiaToken, CountryCode countryCode) {
+        return new Entry[]{
+                Map.entry("method", method.data()),
+                Map.entry("sim_mcc", countryCode.mcc()),
+                Map.entry("sim_mnc", "001"),
+                Map.entry("reason", ""),
+                Map.entry("mcc", countryCode.mcc()),
+                Map.entry("mnc", "001"),
+                Map.entry("feo2_query_status", "error_security_exception"),
+                Map.entry("sim_type", 1),
+                Map.entry("network_radio_type", 1),
+                Map.entry("prefer_sms_over_flash", true),
+                Map.entry("simnum", 0),
+                Map.entry("sim_state", 3),
+                Map.entry("clicked_education_link", false),
+                Map.entry("airplane_mode_type", 0),
+                Map.entry("mistyped", 7),
+                Map.entry("advertising_id", keys.advertisingId()),
+                Map.entry("hasinrc", 1),
+                Map.entry("roaming_type", 0),
+                Map.entry("device_ram", 4),
+                Map.entry("client_metrics", URLEncoder.encode("{\"attempts\":1}", StandardCharsets.UTF_8)),
+                Map.entry("education_screen_displayed", true),
+                Map.entry("read_phone_permission_granted", 1),
+                Map.entry("pid", ProcessHandle.current().pid()),
+                Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6)),
+                Map.entry("gpia_token", gpiaToken),
+                Map.entry("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
         };
     }
 
