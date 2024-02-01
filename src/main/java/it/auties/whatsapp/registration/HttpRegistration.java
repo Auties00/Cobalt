@@ -78,10 +78,10 @@ public final class HttpRegistration {
         store.setDevice(originalDevice.toPersonal());
         var future = switch (store.device().platform()) {
             case IOS -> onboard("1", 2155550000L, null)
-                    .thenComposeAsync(response -> onboard(null, null, response.abHash()))
+                    .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getIOSPushToken())
                     .thenComposeAsync(pushToken -> exists(pushToken, null))
-                    .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")))
+                    .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getIOSPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
             case ANDROID -> exists(null, null)
@@ -373,9 +373,7 @@ public final class HttpRegistration {
 
     private HttpClient createClient() {
         try {
-            var tlsVersion = "TLSv1.2";
-            System.out.print("Tls version: " + tlsVersion);
-            var sslContext = SSLContext.getInstance(tlsVersion);
+            var sslContext = SSLContext.getInstance("TLSv1.3");
             sslContext.init(null, null, null);
             var sslParameters = sslContext.getDefaultSSLParameters();
             var supportedCiphers = Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())

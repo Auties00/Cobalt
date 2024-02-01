@@ -224,7 +224,7 @@ public class ApnsClient {
             var sslParameters = sslContext.getDefaultSSLParameters();
             sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
             var sslSocketFactory = sslContext.getSocketFactory();
-            var underlyingSocket = new Socket(ProxyAuthenticator.getProxy(proxy));
+            var underlyingSocket = new Socket();
             var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
             underlyingSocket.connect(new InetSocketAddress(endpoint, PORT));
             this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);

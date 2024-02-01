@@ -7,6 +7,7 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * A model for a mobile companion
@@ -49,7 +50,7 @@ public record CompanionDevice(
 
     public static CompanionDevice ios(Version appVersion, boolean business) {
         return new CompanionDevice(
-                "iPhone_15_Pro_Max",
+                "iPhone_%s_Pro_Max".formatted(ThreadLocalRandom.current().nextInt(13, 16)),
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 Optional.ofNullable(appVersion),

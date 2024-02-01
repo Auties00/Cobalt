@@ -3,7 +3,6 @@ package it.auties.whatsapp.example;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 
-import java.net.URI;
 import java.util.Scanner;
 
 public class RegisterExample {
@@ -12,7 +11,6 @@ public class RegisterExample {
         var phoneNumber = new Scanner(System.in).nextLong();
         var result = Whatsapp.mobileBuilder()
                 .newConnection()
-                .proxy(URI.create("http://wy961882248_7:999999@gate8.rola.vip:1066/"))
                 .device(CompanionDevice.ios(false))
                 .unregistered()
                 .verificationCodeSupplier(() -> {
