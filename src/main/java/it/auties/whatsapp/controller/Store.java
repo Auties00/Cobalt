@@ -392,6 +392,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         return new StoreBuilder()
                 .uuid(uuid)
                 .phoneNumber(phoneNumber != null ? PhoneNumber.of(phoneNumber) : null)
+                .device(CompanionDevice.ios(false))
                 .clientType(clientType)
                 .alias(alias)
                 .name(Specification.Whatsapp.DEFAULT_NAME)

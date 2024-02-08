@@ -11,9 +11,13 @@ public class ProxyAuthenticator extends Authenticator {
     private final static Map<String, URI> credentials;
 
     static {
+        allowAll();
+        credentials = new ConcurrentHashMap<>();
+    }
+
+    public static void allowAll() {
         System.setProperty("jdk.http.auth.proxying.disabledSchemes", "");
         System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
-        credentials = new ConcurrentHashMap<>();
     }
 
     public static void register(URI uri) {

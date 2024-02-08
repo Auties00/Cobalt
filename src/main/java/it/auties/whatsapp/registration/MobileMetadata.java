@@ -107,7 +107,6 @@ public final class MobileMetadata {
                         var result = Json.readValue(response.body(), IosVersionResponse.class)
                                 .version()
                                 .orElseThrow();
-                        System.out.println("Version:" + result);
                         if(business) {
                             businessIosVersion = result;
                         }else {

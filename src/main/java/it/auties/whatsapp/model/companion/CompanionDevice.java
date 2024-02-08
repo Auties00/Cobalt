@@ -6,6 +6,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -30,6 +31,26 @@ public record CompanionDevice(
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         Version osVersion
 ) implements ProtobufMessage {
+    private static final List<String> IPHONES = List.of(
+            "iPhone_11",
+            "iPhone_11_Pro",
+            "iPhone_11_Pro_Max",
+            "iPhone_12",
+            "iPhone_12_Pro",
+            "iPhone_12_Pro_Max",
+            "iPhone_13",
+            "iPhone_13_Pro",
+            "iPhone_13_Pro_Max",
+            "iPhone_14",
+            "iPhone_14_Plus",
+            "iPhone_14_Pro",
+            "iPhone_14_Pro_Max",
+            "iPhone_15",
+            "iPhone_15_Plus",
+            "iPhone_15_Pro",
+            "iPhone_15_Pro_Max"
+    );
+
     public static CompanionDevice web() {
         return web(null);
     }
@@ -50,7 +71,7 @@ public record CompanionDevice(
 
     public static CompanionDevice ios(Version appVersion, boolean business) {
         return new CompanionDevice(
-                "iPhone_%s_Pro_Max".formatted(ThreadLocalRandom.current().nextInt(13, 16)),
+                IPHONES.get(ThreadLocalRandom.current().nextInt(IPHONES.size())),
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 Optional.ofNullable(appVersion),
@@ -88,14 +109,12 @@ public record CompanionDevice(
     }
 
     public String toUserAgent(Version appVersion) {
-        var result = "WhatsApp/%s %s/%s Device/%s".formatted(
+        return "WhatsApp/%s %s/%s Device/%s".formatted(
                 appVersion,
                 platformName(),
                 deviceVersion(),
                 deviceName()
         );
-        System.out.println(result);
-        return result;
     }
 
     public CompanionDevice toPersonal() {

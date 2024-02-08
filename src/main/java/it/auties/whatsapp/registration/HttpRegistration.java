@@ -110,20 +110,17 @@ public final class HttpRegistration {
                 .put("rc", store.releaseChannel().index())
                 .put("ab_hash", abHash, abHash != null)
                 .toMap();
-        System.out.println(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes));
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes)))
                 .GET()
                 .header("User-Agent", store.device().toUserAgent(store.version()))
                 .header("Content-Type","application/x-www-form-urlencoded")
                 .build();
-        return httpClient.sendAsync(request, BodyHandlers.ofString())
-                .thenApply(response -> {
+        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(response -> {
                     if (response.statusCode() != HttpURLConnection.HTTP_OK) {
                         throw new RegistrationException(null, response.body());
                     }
 
-                    System.out.println(response.body());
                     return Json.readValue(response.body(), AbPropsResponse.class);
                 });
     }
@@ -199,10 +196,8 @@ public final class HttpRegistration {
                 false,
                 attributes
         );
-        return options.thenCompose(attrs -> sendRequest("/client_log", attrs)).thenApply(result -> {
-            System.out.println(result.body());
-            return data;
-        });
+        return options.thenCompose(attrs -> sendRequest("/client_log", attrs))
+                .thenApply(result -> data);
     }
 
     private CompletableFuture<Void> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
@@ -249,13 +244,22 @@ public final class HttpRegistration {
 
     @SuppressWarnings("unchecked")
     private Entry<String, Object>[] getAndroidRequestParameters(String gpiaToken, CountryCode countryCode) {
+        // advertising_id=08f07498-3538-07af-0a17-de605008a0ac&authkey=oKRW0SeACNR34Z11F2Ta4FjS%2BqxxDjth4isTyKUT2Fw%3D&backup_token=Hf%D7%1Bn1%B7%A4Mo%E6%F2lU~%81e%EF%D6%EA&cc=60&client_metrics=%7B%22attempts%22%3A1%7D&code=619640&device_r
+        //am=3.47&e_ident=v4Mhqpyc0pjUSIr5nGyYokOQ5YX3hmCfUWFK9dpsYig%3D&e_keytype=BQ&e_regid=DkMtCw&e_skey_id=AAAA&e_skey_sig=jAbjBtmTtgatB0pTsOjCpPeIJ1YtbI87Gi3UAg04s1N2C6FVZVx0Cn4r_4OuWtR4AqJmfX6Tekl_CH_gJT5SDg&e_skey_val=wxngrgjmyCJ6o5
+        //XxF-elcj7ik1K6FDf2z1JVWlNr1Rc&entered=1&expid=tJvRbzwW-fUDhVjC1LP6zw&fdid=47b60d6b-26f5-8531-b036-68e5a3b93502&gpia=%7B%22token%22%3A%22CtcBARCnMGsQvXShsjMKfeEaT9QxHTIdiKXSO1Ub_e5dG7XIZPg4ILDe5ixRrn4aHSV6Vu-2n5hgBOIsonfqom8i-2h76
+        //O6BNmPRd0fxOrkeKtYoVH6PDCMQ6iT9LEPEWetHlYLhfkU_JWGCZtVmLAl7MY3I9rWxED8IOl1JwYWkUR5gw7tnPwkP8M6MSs6DNzttmKYYUt7_1OBFYfKhKRpqzBwtJ-fO4R6auZRjNAVuDD-OrAJETcO4wRK5p3WdA8A8kxEWSvIM9UZRQS-2fsfxhEYY5hFcCyoaagHqwkoK2-SlqRBEjagtTnQlwVePYZ
+        //XK4J3vaNiAlISep8Z34xIxjoVevHFrqsnZyiYBkmCtAPn5e2g8jQFDeiN99CruNv8x8qweKJdDXuztRMBAytFnwaSapaH6hsflfZP5Nxhcb_Rboo0%22%2C%22error_code%22%3A0%7D&gpia_token=CtcBARCnMGsQvXShsjMKfeEaT9QxHTIdiKXSO1Ub_e5dG7XIZPg4ILDe5ixRrn4aHSV6Vu-2n5h
+        //gBOIsonfqom8i-2h76O6BNmPRd0fxOrkeKtYoVH6PDCMQ6iT9LEPEWetHlYLhfkU_JWGCZtVmLAl7MY3I9rWxED8IOl1JwYWkUR5gw7tnPwkP8M6MSs6DNzttmKYYUt7_1OBFYfKhKRpqzBwtJ-fO4R6auZRjNAVuDD-OrAJETcO4wRK5p3WdA8A8kxEWSvIM9UZRQS-2fsfxhEYY5hFcCyoaagHqwkoK2-Sl
+        //qRBEjagtTnQlwVePYZXK4J3vaNiAlISep8Z34xIxjoVevHFrqsnZyiYBkmCtAPn5e2g8jQFDeiN99CruNv8x8qweKJdDXuztRMBAytFnwaSapaH6hsflfZP5Nxhcb_Rboo0&hasinrc=1&id=%9C%1B%DC%FE%07S%26%7Ds%B0d%8Dy%90%CA%DA%15%23%5C%AD&in=1128715023&lc=PE&lg=es&mcc=4
+        //60&mistyped=7&mnc=000&network_operator_name=CHINA+MOBILE&network_radio_type=1&pid=4719&rc=1&reason=&sim_mcc=515&sim_mnc=515&sim_operator_name=GLOBE&simnum=0&vname=IjN-yKrmVJ9L_GJC3up_c3bzaqYYWw3BnwV6Ib5W_7cWz4PyPxmSIg8vruHm4MpjmW
+        //pAydSlsdJJ7efxtFyoCAs
         return new Entry[]{
                 Map.entry("method", method.data()),
                 Map.entry("sim_mcc", countryCode.mcc()),
-                Map.entry("sim_mnc", "001"),
+                Map.entry("sim_mnc", countryCode.mcc()),
                 Map.entry("reason", ""),
                 Map.entry("mcc", countryCode.mcc()),
-                Map.entry("mnc", "001"),
+                Map.entry("mnc", "000"),
                 Map.entry("feo2_query_status", "error_security_exception"),
                 Map.entry("sim_type", 1),
                 Map.entry("network_radio_type", 1),
@@ -336,10 +340,7 @@ public final class HttpRegistration {
 
     private CompletableFuture<HttpResponse<String>> sendRequest(String path, Map<String, Object> params) {
         var request = createRequest(path, params);
-        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(result -> {
-            System.out.println(path + ": " + result.body());
-            return result;
-        });
+        return httpClient.sendAsync(request, BodyHandlers.ofString());
     }
 
     private HttpRequest createRequest(String path, Map<String, Object> params) {
@@ -380,17 +381,13 @@ public final class HttpRegistration {
                     .filter(entry -> ThreadLocalRandom.current().nextBoolean())
                     .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result); return result; }))
                     .toArray(String[]::new);
-            System.out.println("Ciphers: " + Arrays.toString(supportedCiphers));
             sslParameters.setCipherSuites(supportedCiphers);
             var supportedNamedGroups = Arrays.stream(sslContext.getDefaultSSLParameters().getNamedGroups())
                     .filter(entry -> ThreadLocalRandom.current().nextBoolean())
                     .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result); return result; }))
                     .toArray(String[]::new);
-            System.out.println(Arrays.toString(sslContext.getDefaultSSLParameters().getProtocols()));
-            System.out.println("Named groups: " + Arrays.toString(supportedNamedGroups));
             sslParameters.setNamedGroups(supportedNamedGroups);
             var version = HttpClient.Version.HTTP_1_1;
-            System.out.println("Version: " + version);
             var clientBuilder = HttpClient.newBuilder()
                     .sslContext(sslContext)
                     .sslParameters(sslParameters)
@@ -415,7 +412,7 @@ public final class HttpRegistration {
             var requiredAttributes = Arrays.stream(attributes)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (first, second) -> first, LinkedHashMap::new));
-            var result = Attributes.of()
+            return Attributes.of()
                     .put("cc", phoneNumber.countryCode().prefix())
                     .put("in", phoneNumber.numberWithoutPrefix())
                     .put("rc", store.releaseChannel().index(), !store.device().platform().isKaiOs())
@@ -436,8 +433,6 @@ public final class HttpRegistration {
                     .put("token", token, useToken)
                     .putAll(requiredAttributes)
                     .toMap();
-            System.out.println(Json.writeValueAsString(result, true));
-            return result;
         });
     }
 
