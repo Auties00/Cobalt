@@ -55,7 +55,7 @@ public final class HttpRegistration {
         this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient(store.proxy().orElse(null)) : null;
     }
 
-    public CompletableFuture<Void> registerPhoneNumber() {
+    public CompletableFuture<VerificationCodeResponse> registerPhoneNumber() {
         return requestVerificationCode(false)
                 .thenCompose(ignored -> sendVerificationCode())
                 .whenComplete((result, exception) -> {
@@ -66,13 +66,13 @@ public final class HttpRegistration {
                 });
     }
 
-    public CompletableFuture<Void> requestVerificationCode() {
+    public CompletableFuture<VerificationCodeResponse> requestVerificationCode() {
         return requestVerificationCode(true);
     }
 
-    private CompletableFuture<Void> requestVerificationCode(boolean closeResources) {
+    private CompletableFuture<VerificationCodeResponse> requestVerificationCode(boolean closeResources) {
         if (method == VerificationCodeMethod.NONE) {
-            return CompletableFuture.completedFuture(null);
+            throw new IllegalStateException("Verification code method is set to none");
         }
 
         var originalDevice = store.device();
@@ -204,12 +204,15 @@ public final class HttpRegistration {
                 .thenApply(result -> data);
     }
 
-    private CompletableFuture<Void> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
+    private CompletableFuture<VerificationCodeResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
         return getRequestVerificationCodeParameters(pushCode)
                 .thenCompose(params -> getRegistrationOptions(store, keys, true, lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN, params))
                 .thenCompose(attrs -> sendRequest("/code", attrs))
                 .thenCompose(result -> onCodeRequestSent(pushCode, lastError, result))
-                .thenRun(() -> saveRegistrationStatus(store, keys, false));
+                .thenCompose((result) -> {
+                    saveRegistrationStatus(store, keys, false);
+                    return CompletableFuture.completedFuture(result);
+                });
     }
 
     private CompletableFuture<Entry<String, Object>[]> getRequestVerificationCodeParameters(String pushCode) {
@@ -288,14 +291,14 @@ public final class HttpRegistration {
         };
     }
 
-    private CompletionStage<Void> onCodeRequestSent(String pushCode, VerificationCodeError lastError, HttpResponse<String> result) {
+    private CompletionStage<VerificationCodeResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, HttpResponse<String> result) {
         if (result.statusCode() != HttpURLConnection.HTTP_OK) {
             throw new RegistrationException(null, result.body());
         }
 
         var response = Json.readValue(result.body(), VerificationCodeResponse.class);
         if (response.status() == VerificationCodeStatus.SUCCESS) {
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(response);
         }
 
         return switch (response.errorReason()) {
@@ -310,7 +313,7 @@ public final class HttpRegistration {
         };
     }
 
-    public CompletableFuture<Void> sendVerificationCode() {
+    public CompletableFuture<VerificationCodeResponse> sendVerificationCode() {
         return codeHandler.get()
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, false, Map.entry("code", normalizeCodeResult(code))))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
@@ -322,7 +325,7 @@ public final class HttpRegistration {
                     var response = Json.readValue(result.body(), VerificationCodeResponse.class);
                     if (response.status() == VerificationCodeStatus.SUCCESS) {
                         saveRegistrationStatus(store, keys, true);
-                        return CompletableFuture.completedFuture(null);
+                        return CompletableFuture.completedFuture(response);
                     }
 
                     throw new RegistrationException(response, result.body());

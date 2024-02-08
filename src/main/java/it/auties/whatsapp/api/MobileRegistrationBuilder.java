@@ -4,6 +4,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
+import it.auties.whatsapp.model.response.VerificationCodeResponse;
 import it.auties.whatsapp.registration.HttpRegistration;
 
 import java.util.Objects;
@@ -22,6 +23,8 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     final ExecutorService socketExecutor;
     Whatsapp whatsapp;
     AsyncVerificationCodeSupplier verificationCodeSupplier;
+    VerificationCodeResponse response;
+
 
     MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
         this.store = store;
@@ -54,13 +57,15 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
         return (T) this;
     }
 
+
     Whatsapp buildWhatsapp() {
         return this.whatsapp = Whatsapp.customBuilder()
                 .store(store)
                 .keys(keys)
                 .errorHandler(errorHandler)
                 .socketExecutor(socketExecutor)
-                .build();
+                .build()
+                .setResponse(response);
     }
 
     public final static class Unregistered extends MobileRegistrationBuilder<Unregistered> {
@@ -117,7 +122,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
          * @return a future
          */
         public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber) {
-            if(unverified != null) {
+            if (unverified != null) {
                 return CompletableFuture.completedFuture(unverified);
             }
 
@@ -127,17 +132,20 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
             if (!keys.registered()) {
                 var registration = new HttpRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
                 return registration.requestVerificationCode()
-                        .thenApply(ignored -> this.unverified = new Unverified(store, keys, errorHandler, socketExecutor));
+                        .thenApply(ignored -> this.unverified = new Unverified(store, keys, errorHandler, socketExecutor, ignored));
             }
 
-            this.unverified = new Unverified(store, keys, errorHandler, socketExecutor);
+            this.unverified = new Unverified(store, keys, errorHandler, socketExecutor, null);
             return CompletableFuture.completedFuture(unverified);
         }
     }
 
     public final static class Unverified extends MobileRegistrationBuilder<Unverified> {
-        Unverified(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
+        public VerificationCodeResponse response;
+
+        Unverified(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor, VerificationCodeResponse response) {
             super(store, keys, errorHandler, socketExecutor);
+            this.response = response;
         }
 
         /**

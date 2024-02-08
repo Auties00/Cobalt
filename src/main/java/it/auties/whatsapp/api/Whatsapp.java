@@ -98,6 +98,7 @@ public class Whatsapp {
     }
 
     private final SocketHandler socketHandler;
+    private VerificationCodeResponse response;
 
     /**
      * Checks if a connection exists
@@ -242,7 +243,8 @@ public class Whatsapp {
         var metadata = Map.of("jid", jidOrThrowError(), "reason", "user_initiated");
         var device = Node.of("remove-companion-device", metadata);
         return socketHandler.sendQuery("set", "md", device)
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -298,7 +300,8 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> createGdprAccountInfo() {
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("gdpr", Map.of("gdpr", "request")))
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -465,8 +468,8 @@ public class Whatsapp {
     /**
      * Builds and sends a message from a chat and a message
      *
-     * @param chat    the chat where the message should be sent
-     * @param message the message to send
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
@@ -479,8 +482,8 @@ public class Whatsapp {
     /**
      * Builds and sends a message from a chat and a message
      *
-     * @param chat    the chat where the message should be sent
-     * @param message the message to send
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
@@ -494,8 +497,8 @@ public class Whatsapp {
     /**
      * Builds and sends a message from a chat and a message
      *
-     * @param chat    the chat where the message should be sent
-     * @param message the message to send
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
@@ -556,7 +559,7 @@ public class Whatsapp {
                     .timestampSeconds(timestamp)
                     .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                     .build();
-            if(!chatResult) {
+            if (!chatResult) {
                 return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
 
@@ -606,11 +609,12 @@ public class Whatsapp {
     private CompletableFuture<Void> addTrustedContact(JidProvider recipient, long timestamp) {
         var tokenPayload = Node.of("token", Map.of("jid", recipient.toJid(), "t", timestamp, "type", "trusted_contact"));
         return socketHandler.sendQuery("set", "privacy", Node.of("tokens", tokenPayload))
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     private CompletableFuture<Boolean> prepareChatForMessage(JidProvider recipient, long timestamp) {
-        if(store().findContactByJid(recipient.toJid()).isPresent()) {
+        if (store().findContactByJid(recipient.toJid()).isPresent()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -619,7 +623,7 @@ public class Whatsapp {
         var lidNode = Node.of("lid");
         var userNode = Node.of("user", Node.of("contact", recipient.toJid().toPhoneNumber().getBytes(StandardCharsets.UTF_8)));
         return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of()).thenCompose(result -> {
-            if(result.stream().anyMatch(entry -> entry.hasDescription("out"))) {
+            if (result.stream().anyMatch(entry -> entry.hasDescription("out"))) {
                 return CompletableFuture.completedFuture(false);
             }
 
@@ -993,7 +997,8 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> revokeGroupInvite(JidProvider chat) {
         return socketHandler.sendQuery(chat.toJid(), "set", "w:g2", Node.of("invite"))
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -1185,7 +1190,8 @@ public class Whatsapp {
     public CompletableFuture<Void> changeGroupSubject(JidProvider group, String newName) {
         var body = Node.of("subject", newName.getBytes(StandardCharsets.UTF_8));
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -1199,7 +1205,8 @@ public class Whatsapp {
         return socketHandler.queryGroupMetadata(group.toJid())
                 .thenApplyAsync(GroupMetadata::descriptionId)
                 .thenComposeAsync(descriptionId -> changeGroupDescription(group, description, descriptionId.orElse(null)))
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     private CompletableFuture<Void> changeGroupDescription(JidProvider group, String description, String descriptionId) {
@@ -1239,11 +1246,14 @@ public class Whatsapp {
         var body = switch (setting) {
             case EDIT_GROUP_INFO -> Node.of(policy == ChatSettingPolicy.ADMINS ? "locked" : "unlocked");
             case SEND_MESSAGES -> Node.of(policy == ChatSettingPolicy.ADMINS ? "announcement" : "not_announcement");
-            case ADD_PARTICIPANTS -> Node.of("member_add_mode", policy == ChatSettingPolicy.ADMINS ? "admin_add".getBytes(StandardCharsets.UTF_8) : "all_member_add".getBytes(StandardCharsets.UTF_8));
-            case APPROVE_PARTICIPANTS -> Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", policy == ChatSettingPolicy.ADMINS ? "on" : "off")));
+            case ADD_PARTICIPANTS ->
+                    Node.of("member_add_mode", policy == ChatSettingPolicy.ADMINS ? "admin_add".getBytes(StandardCharsets.UTF_8) : "all_member_add".getBytes(StandardCharsets.UTF_8));
+            case APPROVE_PARTICIPANTS ->
+                    Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", policy == ChatSettingPolicy.ADMINS ? "on" : "off")));
         };
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -1279,7 +1289,8 @@ public class Whatsapp {
         var profilePic = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), profilePic);
         return socketHandler.sendQuery(group.toJid().withoutDevice(), "set", "w:profile:picture", body)
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -1513,7 +1524,8 @@ public class Whatsapp {
     public CompletableFuture<Void> blockContact(JidProvider contact) {
         var body = Node.of("item", Map.of("action", "block", "jid", contact.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body)
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -1525,7 +1537,8 @@ public class Whatsapp {
     public CompletableFuture<Void> unblockContact(JidProvider contact) {
         var body = Node.of("item", Map.of("action", "unblock", "jid", contact.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body)
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -1543,13 +1556,15 @@ public class Whatsapp {
                         .ephemeralExpiration(timer.period().toSeconds())
                         .build();
                 yield sendMessage(chat, message)
-                        .thenRun(() -> {});
+                        .thenRun(() -> {
+                        });
             }
             case GROUP -> {
                 var body = timer == ChatEphemeralTimer.OFF ? Node.of("not_ephemeral") : Node.of("ephemeral", Map.of("expiration", timer.period()
                         .toSeconds()));
                 yield socketHandler.sendQuery(chat.toJid(), "set", "w:g2", body)
-                        .thenRun(() -> {});
+                        .thenRun(() -> {
+                        });
             }
             default ->
                     throw new IllegalArgumentException("Unexpected chat %s: ephemeral messages are only supported for conversations and groups".formatted(chat.toJid()));
@@ -1719,8 +1734,8 @@ public class Whatsapp {
      * Deletes a message
      *
      * @param messageInfo non-null message to delete
-     * @param everyone whether the message should be deleted for everyone or only for this client and
-     *                 its companions
+     * @param everyone    whether the message should be deleted for everyone or only for this client and
+     *                    its companions
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> deleteMessage(ChatMessageInfo messageInfo, boolean everyone) {
@@ -2046,7 +2061,7 @@ public class Whatsapp {
         }
 
         return downloadMedia(mediaMessage).thenCompose(result -> {
-            if(result.isPresent()) {
+            if (result.isPresent()) {
                 return CompletableFuture.completedFuture(result);
             }
 
@@ -2085,7 +2100,7 @@ public class Whatsapp {
         }
 
         var decodedMedia = extendedMediaMessage.decodedMedia();
-        if(decodedMedia.isPresent()) {
+        if (decodedMedia.isPresent()) {
             return CompletableFuture.completedFuture(decodedMedia);
         }
 
@@ -2183,10 +2198,12 @@ public class Whatsapp {
     public CompletableFuture<Void> changeCommunitySetting(JidProvider community, CommunitySetting setting, ChatSettingPolicy policy) {
         Validate.isTrue(community.toJid().hasServer(JidServer.GROUP), "This method only accepts communities");
         var body = switch (setting) {
-            case MODIFY_GROUPS -> Node.of(policy == ChatSettingPolicy.ANYONE ? "allow_non_admin_sub_group_creation" : "not_allow_non_admin_sub_group_creation");
+            case MODIFY_GROUPS ->
+                    Node.of(policy == ChatSettingPolicy.ANYONE ? "allow_non_admin_sub_group_creation" : "not_allow_non_admin_sub_group_creation");
         };
         return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body)
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
 
@@ -2864,7 +2881,8 @@ public class Whatsapp {
         var body = new UpdateNewsletterRequest.Variable(newsletter.toJid(), payload);
         var request = new UpdateNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7150902998257522"), Json.writeValueAsBytes(request)))
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -2877,7 +2895,8 @@ public class Whatsapp {
         var body = new JoinNewsletterRequest.Variable(newsletter.toJid());
         var request = new JoinNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "9926858900719341"), Json.writeValueAsBytes(request)))
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -2890,7 +2909,8 @@ public class Whatsapp {
         var body = new LeaveNewsletterRequest.Variable(newsletter.toJid());
         var request = new LeaveNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6392786840836363"), Json.writeValueAsBytes(request)))
-                .thenRun(() -> {});
+                .thenRun(() -> {
+                });
     }
 
     /**
@@ -3616,5 +3636,14 @@ public class Whatsapp {
     private Jid jidOrThrowError() {
         return store().jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
+    }
+
+    public Whatsapp setResponse(VerificationCodeResponse response) {
+        this.response = response;
+        return this;
+    }
+
+    public VerificationCodeResponse getResponse() {
+        return response;
     }
 }
