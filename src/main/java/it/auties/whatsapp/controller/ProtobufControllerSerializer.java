@@ -1,7 +1,6 @@
-package it.auties.whatsapp.util;
+package it.auties.whatsapp.controller;
 
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.chat.ChatSpec;
@@ -31,24 +30,24 @@ import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public class DefaultControllerSerializer implements ControllerSerializer {
+class ProtobufControllerSerializer implements ControllerSerializer {
     private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";
     private static final String STORE_NAME = "store.proto";
     private static final String KEYS_NAME = "keys.proto";
 
-    private static final Map<Path, DefaultControllerSerializer> serializers = new ConcurrentHashMap<>();
+    private static final Map<Path, ProtobufControllerSerializer> serializers = new ConcurrentHashMap<>();
     private final Path baseDirectory;
     private final ConcurrentMap<UUID, CompletableFuture<Void>> attributeStoreSerializers;
     private LinkedList<UUID> cachedUuids;
     private LinkedList<PhoneNumber> cachedPhoneNumbers;
 
     static {
-        serializers.put(DEFAULT_SERIALIZER_PATH, new DefaultControllerSerializer(DEFAULT_SERIALIZER_PATH));
+        serializers.put(DEFAULT_SERIALIZER_PATH, new ProtobufControllerSerializer(DEFAULT_SERIALIZER_PATH));
     }
 
-    public static ControllerSerializer of() {
+    public static ControllerSerializer ofDefaultPath() {
         return Objects.requireNonNull(serializers.get(DEFAULT_SERIALIZER_PATH));
     }
 
@@ -58,81 +57,14 @@ public class DefaultControllerSerializer implements ControllerSerializer {
             return known;
         }
 
-        var result = new DefaultControllerSerializer(baseDirectory);
+        var result = new ProtobufControllerSerializer(baseDirectory);
         serializers.put(baseDirectory, result);
         return result;
     }
 
-    private DefaultControllerSerializer(Path baseDirectory) {
+    private ProtobufControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
         this.attributeStoreSerializers = new ConcurrentHashMap<>();
-    }
-
-    @Override
-    public StoreKeysPair newStoreKeysPair(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
-        var store = Store.newStore(uuid, phoneNumber, alias, clientType);
-        store.setSerializer(this);
-        linkMetadata(store);
-        var keys = Keys.random(uuid);
-        keys.setSerializer(this);
-        serializeKeys(keys, true);
-        return new StoreKeysPair(store, keys);
-    }
-
-    @Override
-    public Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, Long phoneNumber, String alias, ClientType clientType) {
-        if (uuid != null) {
-            var store = deserializeStore(clientType, uuid);
-            if(store.isEmpty()) {
-                return Optional.empty();
-            }
-
-            store.get().setSerializer(this);
-            attributeStore(store.get());
-            var keys = deserializeKeys(clientType, uuid);
-            if(keys.isEmpty()) {
-                return Optional.empty();
-            }
-
-            keys.get().setSerializer(this);
-            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
-        }
-
-        if (phoneNumber != null) {
-            var store = deserializeStore(clientType, phoneNumber);
-            if(store.isEmpty()) {
-                return Optional.empty();
-            }
-
-            store.get().setSerializer(this);
-            attributeStore(store.get());
-            var keys = deserializeKeys(clientType, phoneNumber);
-            if(keys.isEmpty()) {
-                return Optional.empty();
-            }
-
-            keys.get().setSerializer(this);
-            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
-        }
-
-        if (alias != null) {
-            var store = deserializeStore(clientType, alias);
-            if(store.isEmpty()) {
-                return Optional.empty();
-            }
-
-            store.get().setSerializer(this);
-            attributeStore(store.get());
-            var keys = deserializeKeys(clientType,  alias);
-            if(keys.isEmpty()) {
-                return Optional.empty();
-            }
-
-            keys.get().setSerializer(this);
-            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
-        }
-
-        return Optional.empty();
     }
 
     @Override
