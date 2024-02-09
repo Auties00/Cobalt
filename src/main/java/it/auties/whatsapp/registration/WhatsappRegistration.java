@@ -20,7 +20,6 @@ import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
-import org.apache.poi.ss.formula.functions.Log;
 
 import javax.net.ssl.SSLContext;
 import java.net.*;
@@ -37,7 +36,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public final class HttpRegistration {
+public final class WhatsappRegistration {
     private final HttpClient httpClient;
     private final Store store;
     private final Keys keys;
@@ -45,7 +44,7 @@ public final class HttpRegistration {
     private final VerificationCodeMethod method;
     private final ApnsClient apnsClient;
 
-    public HttpRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
+    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
         this.store = store;
         this.keys = keys;
         this.codeHandler = codeHandler;
@@ -60,19 +59,19 @@ public final class HttpRegistration {
                 .thenCompose(ignored -> sendVerificationCode())
                 .whenComplete((result, exception) -> {
                     dispose();
-                    if (exception != null) {
+                    if(exception != null) {
                         Exceptions.rethrow(exception);
                     }
                 });
     }
 
-    public CompletableFuture<VerificationCodeResponse> requestVerificationCode() {
+    public CompletableFuture<Void> requestVerificationCode() {
         return requestVerificationCode(true);
     }
 
-    private CompletableFuture<VerificationCodeResponse> requestVerificationCode(boolean closeResources) {
-        if (method == VerificationCodeMethod.NONE) {
-            throw new IllegalStateException("Verification code method is set to none");
+    private CompletableFuture<Void> requestVerificationCode(boolean closeResources) {
+        if(method == VerificationCodeMethod.NONE) {
+            return CompletableFuture.completedFuture(null);
         }
 
         var originalDevice = store.device();
@@ -92,7 +91,7 @@ public final class HttpRegistration {
         };
         return future.whenComplete((result, exception) -> {
             store.setDevice(originalDevice);
-            if (closeResources) {
+            if(closeResources) {
                 dispose();
             }
 
@@ -100,6 +99,25 @@ public final class HttpRegistration {
                 Exceptions.rethrow(exception);
             }
         });
+    }
+
+    
+    public CompletableFuture<Boolean> exists() {
+        var future = switch (store.device().platform()) {
+            case IOS -> getIOSPushToken()
+                    .thenComposeAsync(pushToken -> exists(pushToken, null))
+                    .thenApplyAsync(VerificationCodeResponse::whatsappOldEligible);
+            case ANDROID -> exists(null, null)
+                    .thenApplyAsync(VerificationCodeResponse::whatsappOldEligible);
+            default -> throw new IllegalStateException("Unsupported mobile os");
+        };
+        future.whenComplete((result, exception) -> {
+            dispose();
+            if(exception != null) {
+                Exceptions.rethrow(exception);
+            }
+        });
+        return future;
     }
 
     private CompletableFuture<AbPropsResponse> onboard(String cc, Long in, String abHash) {
@@ -118,12 +136,12 @@ public final class HttpRegistration {
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .build();
         return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(response -> {
-            if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new RegistrationException(null, response.body());
-            }
+                    if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+                        throw new RegistrationException(null, response.body());
+                    }
 
-            return Json.readValue(response.body(), AbPropsResponse.class);
-        });
+                    return Json.readValue(response.body(), AbPropsResponse.class);
+                });
     }
 
     private CompletableFuture<String> getIOSPushToken() {
@@ -151,8 +169,8 @@ public final class HttpRegistration {
             }
 
             var response = Json.readValue(result.body(), VerificationCodeResponse.class);
-            if (response.errorReason() != VerificationCodeError.INCORRECT) {
-                if (lastError == null) {
+            if(response.errorReason() != VerificationCodeError.INCORRECT) {
+                if(lastError == null) {
                     return exists(pushToken, response.errorReason());
                 }
 
@@ -171,15 +189,12 @@ public final class HttpRegistration {
         return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
                 .thenApply(this::readIOSPushCode)
                 .orTimeout(10, TimeUnit.SECONDS)
-                .exceptionally(ignored -> {
-                    throw new RegistrationException(null, "Apns timeout");
-                });
+                .exceptionally(ignored -> { throw new RegistrationException(null, "Apns timeout"); });
     }
 
     private String readIOSPushCode(ApnsPacket packet) {
         var payload = packet.fields().get(0x3);
-        var json = Json.readValue(payload, new TypeReference<Map<String, Object>>() {
-        });
+        var json = Json.readValue(payload, new TypeReference<Map<String, Object>>() {});
         return (String) json.get("regcode");
     }
 
@@ -209,9 +224,9 @@ public final class HttpRegistration {
                 .thenCompose(params -> getRegistrationOptions(store, keys, true, lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN, params))
                 .thenCompose(attrs -> sendRequest("/code", attrs))
                 .thenCompose(result -> onCodeRequestSent(pushCode, lastError, result))
-                .thenCompose((result) -> {
+                .thenApply(result -> {
                     saveRegistrationStatus(store, keys, false);
-                    return CompletableFuture.completedFuture(result);
+                    return result;
                 });
     }
 
@@ -220,9 +235,8 @@ public final class HttpRegistration {
                 .orElseThrow()
                 .countryCode();
         return switch (store.device().platform()) {
-            case ANDROID, ANDROID_BUSINESS ->
-                    MobileMetadata.generateGpiaToken(keys.advertisingId(), keys.deviceId(), store.device().platform().isBusiness())
-                            .thenApply(gpiaToken -> getAndroidRequestParameters(gpiaToken, countryCode));
+            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.generateGpiaToken(keys.advertisingId(), keys.deviceId(), store.device().platform().isBusiness())
+                    .thenApply(gpiaToken -> getAndroidRequestParameters(gpiaToken, countryCode));
             case IOS, IOS_BUSINESS -> CompletableFuture.completedFuture(getIosRequestParameters(pushCode));
             case KAIOS -> CompletableFuture.completedFuture(getKaiOsRequestParameters(countryCode));
             default -> throw new IllegalStateException("Unsupported mobile os");
@@ -252,15 +266,6 @@ public final class HttpRegistration {
 
     @SuppressWarnings("unchecked")
     private Entry<String, Object>[] getAndroidRequestParameters(String gpiaToken, CountryCode countryCode) {
-        // advertising_id=08f07498-3538-07af-0a17-de605008a0ac&authkey=oKRW0SeACNR34Z11F2Ta4FjS%2BqxxDjth4isTyKUT2Fw%3D&backup_token=Hf%D7%1Bn1%B7%A4Mo%E6%F2lU~%81e%EF%D6%EA&cc=60&client_metrics=%7B%22attempts%22%3A1%7D&code=619640&device_r
-        //am=3.47&e_ident=v4Mhqpyc0pjUSIr5nGyYokOQ5YX3hmCfUWFK9dpsYig%3D&e_keytype=BQ&e_regid=DkMtCw&e_skey_id=AAAA&e_skey_sig=jAbjBtmTtgatB0pTsOjCpPeIJ1YtbI87Gi3UAg04s1N2C6FVZVx0Cn4r_4OuWtR4AqJmfX6Tekl_CH_gJT5SDg&e_skey_val=wxngrgjmyCJ6o5
-        //XxF-elcj7ik1K6FDf2z1JVWlNr1Rc&entered=1&expid=tJvRbzwW-fUDhVjC1LP6zw&fdid=47b60d6b-26f5-8531-b036-68e5a3b93502&gpia=%7B%22token%22%3A%22CtcBARCnMGsQvXShsjMKfeEaT9QxHTIdiKXSO1Ub_e5dG7XIZPg4ILDe5ixRrn4aHSV6Vu-2n5hgBOIsonfqom8i-2h76
-        //O6BNmPRd0fxOrkeKtYoVH6PDCMQ6iT9LEPEWetHlYLhfkU_JWGCZtVmLAl7MY3I9rWxED8IOl1JwYWkUR5gw7tnPwkP8M6MSs6DNzttmKYYUt7_1OBFYfKhKRpqzBwtJ-fO4R6auZRjNAVuDD-OrAJETcO4wRK5p3WdA8A8kxEWSvIM9UZRQS-2fsfxhEYY5hFcCyoaagHqwkoK2-SlqRBEjagtTnQlwVePYZ
-        //XK4J3vaNiAlISep8Z34xIxjoVevHFrqsnZyiYBkmCtAPn5e2g8jQFDeiN99CruNv8x8qweKJdDXuztRMBAytFnwaSapaH6hsflfZP5Nxhcb_Rboo0%22%2C%22error_code%22%3A0%7D&gpia_token=CtcBARCnMGsQvXShsjMKfeEaT9QxHTIdiKXSO1Ub_e5dG7XIZPg4ILDe5ixRrn4aHSV6Vu-2n5h
-        //gBOIsonfqom8i-2h76O6BNmPRd0fxOrkeKtYoVH6PDCMQ6iT9LEPEWetHlYLhfkU_JWGCZtVmLAl7MY3I9rWxED8IOl1JwYWkUR5gw7tnPwkP8M6MSs6DNzttmKYYUt7_1OBFYfKhKRpqzBwtJ-fO4R6auZRjNAVuDD-OrAJETcO4wRK5p3WdA8A8kxEWSvIM9UZRQS-2fsfxhEYY5hFcCyoaagHqwkoK2-Sl
-        //qRBEjagtTnQlwVePYZXK4J3vaNiAlISep8Z34xIxjoVevHFrqsnZyiYBkmCtAPn5e2g8jQFDeiN99CruNv8x8qweKJdDXuztRMBAytFnwaSapaH6hsflfZP5Nxhcb_Rboo0&hasinrc=1&id=%9C%1B%DC%FE%07S%26%7Ds%B0d%8Dy%90%CA%DA%15%23%5C%AD&in=1128715023&lc=PE&lg=es&mcc=4
-        //60&mistyped=7&mnc=000&network_operator_name=CHINA+MOBILE&network_radio_type=1&pid=4719&rc=1&reason=&sim_mcc=515&sim_mnc=515&sim_operator_name=GLOBE&simnum=0&vname=IjN-yKrmVJ9L_GJC3up_c3bzaqYYWw3BnwV6Ib5W_7cWz4PyPxmSIg8vruHm4MpjmW
-        //pAydSlsdJJ7efxtFyoCAs
         return new Entry[]{
                 Map.entry("method", method.data()),
                 Map.entry("sim_mcc", countryCode.mcc()),
@@ -302,8 +307,7 @@ public final class HttpRegistration {
         }
 
         return switch (response.errorReason()) {
-            case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS ->
-                    throw new RegistrationException(response, "Please wait before trying to register this phone number again");
+            case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS -> throw new RegistrationException(response, "Please wait before trying to register this phone number again");
             case NO_ROUTES, BLOCKED -> throw new RegistrationException(response, result.body());
             default -> {
                 var newErrorReason = response.errorReason();
@@ -349,18 +353,13 @@ public final class HttpRegistration {
 
     private CompletableFuture<HttpResponse<String>> sendRequest(String path, Map<String, Object> params) {
         var request = createRequest(path, params);
-        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(response -> {
-            var body = response.body();
-            System.out.println("Requested %s with %s and received %s".formatted(request.uri().getPath(), params, body));
-
-            return response;
-        });
+        return httpClient.sendAsync(request, BodyHandlers.ofString());
     }
 
     private HttpRequest createRequest(String path, Map<String, Object> params) {
         var encodedParams = toFormParams(params);
         var userAgent = store.device().toUserAgent(store.version());
-        if (store.device().platform().isKaiOs()) {
+        if(store.device().platform().isKaiOs()) {
             return HttpRequest.newBuilder()
                     .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams)))
                     .GET()
@@ -376,7 +375,7 @@ public final class HttpRegistration {
                 .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
                 .GET()
                 .header("User-Agent", userAgent);
-        if (store.device().platform().isAndroid()) {
+        if(store.device().platform().isAndroid()) {
             request.header("Accept", "text/json");
             request.header("WaMsysRequest", "1");
             request.header("request_token", UUID.randomUUID().toString());
@@ -393,18 +392,12 @@ public final class HttpRegistration {
             var sslParameters = sslContext.getDefaultSSLParameters();
             var supportedCiphers = Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())
                     .filter(entry -> ThreadLocalRandom.current().nextBoolean())
-                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> {
-                        Collections.shuffle(result);
-                        return result;
-                    }))
+                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result); return result; }))
                     .toArray(String[]::new);
             sslParameters.setCipherSuites(supportedCiphers);
             var supportedNamedGroups = Arrays.stream(sslContext.getDefaultSSLParameters().getNamedGroups())
                     .filter(entry -> ThreadLocalRandom.current().nextBoolean())
-                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> {
-                        Collections.shuffle(result);
-                        return result;
-                    }))
+                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result); return result; }))
                     .toArray(String[]::new);
             sslParameters.setNamedGroups(supportedNamedGroups);
             var version = HttpClient.Version.HTTP_1_1;
@@ -417,7 +410,7 @@ public final class HttpRegistration {
                 clientBuilder.authenticator(new ProxyAuthenticator());
             });
             return clientBuilder.build();
-        } catch (Throwable exception) {
+        }catch (Throwable exception) {
             throw new RuntimeException(exception);
         }
     }
@@ -426,9 +419,9 @@ public final class HttpRegistration {
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, boolean isRetry, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : MobileMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), !isRetry);
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), !isRetry);
         return tokenFuture.thenApplyAsync(token -> {
-            var certificate = store.device().platform().isBusiness() ? MobileMetadata.generateBusinessCertificate(keys) : null;
+            var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (first, second) -> first, LinkedHashMap::new));
@@ -465,7 +458,7 @@ public final class HttpRegistration {
 
     private void dispose() {
         httpClient.close();
-        if (apnsClient != null) {
+        if(apnsClient != null) {
             apnsClient.close();
         }
     }

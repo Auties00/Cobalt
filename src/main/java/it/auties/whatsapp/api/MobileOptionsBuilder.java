@@ -6,8 +6,10 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.companion.CompanionDevice;
+import it.auties.whatsapp.registration.WhatsappRegistration;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings("unused")
 public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuilder> {
@@ -133,5 +135,16 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public Unregistered unregistered() {
         return new Unregistered(store, keys, errorHandler, socketExecutor);
+    }
+
+    /**
+     * Checks if a number is already registered on Whatsapp
+     *
+     * @param phoneNumber a phone number(include the prefix)
+     * @return a future
+     */
+    public CompletableFuture<Boolean> exists(long phoneNumber) {
+        var service = new WhatsappRegistration(store, keys, null, null);
+        return service.exists();
     }
 }

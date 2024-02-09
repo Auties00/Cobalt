@@ -37,7 +37,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
-import it.auties.whatsapp.registration.MobileMetadata;
+import it.auties.whatsapp.registration.WhatsappMetadata;
 import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.*;
 
@@ -1276,7 +1276,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     @JsonGetter("version")
     public Version version() {
         if(version == null) {
-            this.version = new FutureReference<>(null, () -> MobileMetadata.getVersion(device.platform()));
+            this.version = new FutureReference<>(null, () -> WhatsappMetadata.getVersion(device.platform()));
         }
 
         return version.value();
@@ -1489,7 +1489,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     public Store setDevice(CompanionDevice device) {
         Objects.requireNonNull(device, "The device cannot be null");
         this.device = device;
-        this.version = new FutureReference<>(null, () -> MobileMetadata.getVersion(device.platform()));
+        this.version = new FutureReference<>(null, () -> WhatsappMetadata.getVersion(device.platform()));
         return this;
     }
 

@@ -2,10 +2,10 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.response.VerificationCodeResponse;
-import it.auties.whatsapp.registration.HttpRegistration;
+import it.auties.whatsapp.registration.WhatsappRegistration;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -23,8 +23,6 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
     final ExecutorService socketExecutor;
     Whatsapp whatsapp;
     AsyncVerificationCodeSupplier verificationCodeSupplier;
-    VerificationCodeResponse response;
-
 
     MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
         this.store = store;
@@ -57,6 +55,11 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
         return (T) this;
     }
 
+    @SuppressWarnings("unchecked")
+    public T device(CompanionDevice device) {
+        store.setDevice(device);
+        return (T) this;
+    }
 
     Whatsapp buildWhatsapp() {
         return this.whatsapp = Whatsapp.customBuilder()
@@ -64,8 +67,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
                 .keys(keys)
                 .errorHandler(errorHandler)
                 .socketExecutor(socketExecutor)
-                .build()
-                .setResponse(response);
+                .build();
     }
 
     public final static class Unregistered extends MobileRegistrationBuilder<Unregistered> {
@@ -106,7 +108,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
                 var number = PhoneNumber.of(phoneNumber);
                 keys.setPhoneNumber(number);
                 store.setPhoneNumber(number);
-                var registration = new HttpRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
+                var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
                 return registration.registerPhoneNumber()
                         .thenApply(ignored -> buildWhatsapp());
             }
@@ -122,7 +124,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
          * @return a future
          */
         public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber) {
-            if (unverified != null) {
+            if(unverified != null) {
                 return CompletableFuture.completedFuture(unverified);
             }
 
@@ -130,22 +132,20 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             if (!keys.registered()) {
-                var registration = new HttpRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
+                var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
                 return registration.requestVerificationCode()
-                        .thenApply(ignored -> this.unverified = new Unverified(store, keys, errorHandler, socketExecutor, ignored));
+                        .thenApply(ignored -> this.unverified = new Unverified(store, keys, errorHandler, socketExecutor, verificationCodeSupplier));
             }
 
-            this.unverified = new Unverified(store, keys, errorHandler, socketExecutor, null);
+            this.unverified = new Unverified(store, keys, errorHandler, socketExecutor, verificationCodeSupplier);
             return CompletableFuture.completedFuture(unverified);
         }
     }
 
     public final static class Unverified extends MobileRegistrationBuilder<Unverified> {
-        public VerificationCodeResponse response;
-
-        Unverified(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor, VerificationCodeResponse response) {
+        Unverified(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor, AsyncVerificationCodeSupplier verificationCodeSupplier) {
             super(store, keys, errorHandler, socketExecutor);
-            this.response = response;
+            this.verificationCodeSupplier = verificationCodeSupplier;
         }
 
         /**
@@ -169,7 +169,7 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
         public CompletableFuture<Whatsapp> verify() {
             Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
-            var registration = new HttpRegistration(store, keys, verificationCodeSupplier, VerificationCodeMethod.NONE);
+            var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, VerificationCodeMethod.NONE);
             return registration.sendVerificationCode()
                     .thenApply(ignored -> buildWhatsapp());
         }

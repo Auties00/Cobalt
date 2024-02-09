@@ -49,7 +49,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-public final class MobileMetadata {
+public final class WhatsappMetadata {
     static {
         Security.addProvider(new BouncyCastleProvider());
     }

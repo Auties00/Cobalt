@@ -1,7 +1,7 @@
 package it.auties.whatsapp.local;
 
 import it.auties.whatsapp.model.GithubActions;
-import it.auties.whatsapp.registration.MobileMetadata;
+import it.auties.whatsapp.registration.WhatsappMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -17,8 +17,8 @@ public class UpdateMobileTokensTest {
         }
         System.out.println("Updating token...");
         var home = getHomeDirectory();
-        MobileMetadata.setAndroidCache(home.resolve("src/main/resources/token/android"));
-        CompletableFuture.allOf(MobileMetadata.downloadWhatsappApk(true), MobileMetadata.downloadWhatsappApk(false)).join();
+        WhatsappMetadata.setAndroidCache(home.resolve("src/main/resources/token/android"));
+        CompletableFuture.allOf(WhatsappMetadata.downloadWhatsappApk(true), WhatsappMetadata.downloadWhatsappApk(false)).join();
         System.out.println("Updated token!");
     }
 
