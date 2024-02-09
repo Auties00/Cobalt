@@ -3,7 +3,9 @@ package it.auties.whatsapp.controller;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 class DiscardingControllerSerializer implements ControllerSerializer {
     private static final DiscardingControllerSerializer SINGLETON = new DiscardingControllerSerializer();

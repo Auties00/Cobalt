@@ -13,7 +13,7 @@ import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.response.AbPropsResponse;
-import it.auties.whatsapp.model.response.VerificationCodeResponse;
+import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.registration.apns.ApnsClient;
 import it.auties.whatsapp.registration.apns.ApnsPacket;
@@ -54,7 +54,7 @@ public final class WhatsappRegistration {
         this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient(store.proxy().orElse(null)) : null;
     }
 
-    public CompletableFuture<VerificationCodeResponse> registerPhoneNumber() {
+    public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
         return requestVerificationCode(false)
                 .thenCompose(ignored -> sendVerificationCode())
                 .whenComplete((result, exception) -> {
@@ -65,11 +65,11 @@ public final class WhatsappRegistration {
                 });
     }
 
-    public CompletableFuture<VerificationCodeResponse> requestVerificationCode() {
+    public CompletableFuture<RegistrationResponse> requestVerificationCode() {
         return requestVerificationCode(true);
     }
 
-    private CompletableFuture<VerificationCodeResponse> requestVerificationCode(boolean closeResources) {
+    private CompletableFuture<RegistrationResponse> requestVerificationCode(boolean closeResources) {
         if(method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }
@@ -106,9 +106,9 @@ public final class WhatsappRegistration {
         var future = switch (store.device().platform()) {
             case IOS -> getIOSPushToken()
                     .thenComposeAsync(pushToken -> exists(pushToken, null))
-                    .thenApplyAsync(VerificationCodeResponse::whatsappOldEligible);
+                    .thenApplyAsync(RegistrationResponse::whatsappOldEligible);
             case ANDROID -> exists(null, null)
-                    .thenApplyAsync(VerificationCodeResponse::whatsappOldEligible);
+                    .thenApplyAsync(RegistrationResponse::whatsappOldEligible);
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
         future.whenComplete((result, exception) -> {
@@ -152,7 +152,7 @@ public final class WhatsappRegistration {
         return apnsClient.getAppToken(store.device().platform().isBusiness());
     }
 
-    private CompletableFuture<VerificationCodeResponse> exists(String pushToken, VerificationCodeError lastError) {
+    private CompletableFuture<RegistrationResponse> exists(String pushToken, VerificationCodeError lastError) {
         var ios = store.device().platform().isIOS();
         var options = getRegistrationOptions(
                 store,
@@ -168,7 +168,7 @@ public final class WhatsappRegistration {
                 throw new RegistrationException(null, result.body());
             }
 
-            var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+            var response = Json.readValue(result.body(), RegistrationResponse.class);
             if(response.errorReason() != VerificationCodeError.INCORRECT) {
                 if(lastError == null) {
                     return exists(pushToken, response.errorReason());
@@ -219,7 +219,7 @@ public final class WhatsappRegistration {
                 .thenApply(result -> data);
     }
 
-    private CompletableFuture<VerificationCodeResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
+    private CompletableFuture<RegistrationResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
         return getRequestVerificationCodeParameters(pushCode)
                 .thenCompose(params -> getRegistrationOptions(store, keys, true, lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN, params))
                 .thenCompose(attrs -> sendRequest("/code", attrs))
@@ -296,12 +296,12 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletionStage<VerificationCodeResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, HttpResponse<String> result) {
+    private CompletionStage<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, HttpResponse<String> result) {
         if (result.statusCode() != HttpURLConnection.HTTP_OK) {
             throw new RegistrationException(null, result.body());
         }
 
-        var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+        var response = Json.readValue(result.body(), RegistrationResponse.class);
         if (response.status() == VerificationCodeStatus.SUCCESS) {
             return CompletableFuture.completedFuture(response);
         }
@@ -317,7 +317,7 @@ public final class WhatsappRegistration {
         };
     }
 
-    public CompletableFuture<VerificationCodeResponse> sendVerificationCode() {
+    public CompletableFuture<RegistrationResponse> sendVerificationCode() {
         return codeHandler.get()
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, false, Map.entry("code", normalizeCodeResult(code))))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
@@ -326,7 +326,7 @@ public final class WhatsappRegistration {
                         throw new RegistrationException(null, result.body());
                     }
 
-                    var response = Json.readValue(result.body(), VerificationCodeResponse.class);
+                    var response = Json.readValue(result.body(), RegistrationResponse.class);
                     if (response.status() == VerificationCodeStatus.SUCCESS) {
                         saveRegistrationStatus(store, keys, true);
                         return CompletableFuture.completedFuture(response);

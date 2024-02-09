@@ -98,7 +98,7 @@ public class Whatsapp {
     }
 
     private final SocketHandler socketHandler;
-    private VerificationCodeResponse response;
+    private RegistrationResponse response;
 
     /**
      * Checks if a connection exists
@@ -3638,12 +3638,12 @@ public class Whatsapp {
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
     }
 
-    public Whatsapp setResponse(VerificationCodeResponse response) {
+    public Whatsapp setResponse(RegistrationResponse response) {
         this.response = response;
         return this;
     }
 
-    public VerificationCodeResponse getResponse() {
+    public RegistrationResponse getResponse() {
         return response;
     }
 }

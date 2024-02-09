@@ -27,24 +27,24 @@ import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
  * @param audioCaptcha    the audio captcha to solve, only available for business accounts
  * @param whatsappOldEligible          if requested, whether the phone number was already registered on Whatsapp
  */
-public record VerificationCodeResponse(@JsonProperty("login") PhoneNumber number,
-                                       @JsonProperty("lid") long lid,
-                                       @JsonProperty("status") VerificationCodeStatus status,
-                                       @JsonProperty("reason") VerificationCodeError errorReason,
-                                       @JsonProperty("method") VerificationCodeMethod method,
-                                       @JsonProperty("length") int codeLength,
-                                       @JsonProperty("notify_after") int notifyAfter,
-                                       @JsonProperty("retry_after") long retryAfter,
-                                       @JsonProperty("voice_length") long voiceLength,
-                                       @JsonProperty(value = "voice_wait", defaultValue = "-1") long callWait,
-                                       @JsonProperty(value = "sms_wait", defaultValue = "-1") long smsWait,
-                                       @JsonProperty(value = "flash_type", defaultValue = "0") boolean flashType,
-                                       @JsonProperty(value = "wa_old_wait", defaultValue = "-1") long whatsappWait,
-                                       @JsonProperty("security_code_set") boolean securityCodeSet,
-                                       @JsonProperty("image_blob") String imageCaptcha,
-                                       @JsonProperty("audio_blob") String audioCaptcha,
-                                       @JsonProperty("wa_old_eligible") boolean whatsappOldEligible,
-                                       @JsonProperty(value = "autoconf_type", defaultValue = "0") boolean autoConfigure
+public record RegistrationResponse(@JsonProperty("login") PhoneNumber number,
+                                   @JsonProperty("lid") long lid,
+                                   @JsonProperty("status") VerificationCodeStatus status,
+                                   @JsonProperty("reason") VerificationCodeError errorReason,
+                                   @JsonProperty("method") VerificationCodeMethod method,
+                                   @JsonProperty("length") int codeLength,
+                                   @JsonProperty("notify_after") int notifyAfter,
+                                   @JsonProperty("retry_after") long retryAfter,
+                                   @JsonProperty("voice_length") long voiceLength,
+                                   @JsonProperty(value = "voice_wait", defaultValue = "-1") long callWait,
+                                   @JsonProperty(value = "sms_wait", defaultValue = "-1") long smsWait,
+                                   @JsonProperty(value = "flash_type", defaultValue = "0") boolean flashType,
+                                   @JsonProperty(value = "wa_old_wait", defaultValue = "-1") long whatsappWait,
+                                   @JsonProperty("security_code_set") boolean securityCodeSet,
+                                   @JsonProperty("image_blob") String imageCaptcha,
+                                   @JsonProperty("audio_blob") String audioCaptcha,
+                                   @JsonProperty("wa_old_eligible") boolean whatsappOldEligible,
+                                   @JsonProperty(value = "autoconf_type", defaultValue = "0") boolean autoConfigure
 ) {
 
 }
