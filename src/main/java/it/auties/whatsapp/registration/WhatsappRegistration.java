@@ -65,11 +65,11 @@ public final class WhatsappRegistration {
                 });
     }
 
-    public CompletableFuture<Void> requestVerificationCode() {
+    public CompletableFuture<VerificationCodeResponse> requestVerificationCode() {
         return requestVerificationCode(true);
     }
 
-    private CompletableFuture<Void> requestVerificationCode(boolean closeResources) {
+    private CompletableFuture<VerificationCodeResponse> requestVerificationCode(boolean closeResources) {
         if(method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }
