@@ -87,7 +87,6 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
                 .thenRun(() -> {});
     }
 
-
     private byte[] getPrologueData(Store store) {
         return switch (store.clientType()) {
             case WEB -> Specification.Whatsapp.WEB_PROLOGUE;
