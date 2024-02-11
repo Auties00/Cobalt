@@ -45,7 +45,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * The client id
      */
     @ProtobufProperty(index = 5, type = ProtobufType.INT32)
-    final int registrationId;
+    final Integer registrationId;
 
     /**
      * The secret key pair used for buffer messages
@@ -195,7 +195,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         this.ephemeralKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalKeyPair::random);
         this.identityKeyPair = Objects.requireNonNull(identityKeyPair, "Missing identity keypair");
         this.companionKeyPair = Objects.requireNonNullElseGet(companionKeyPair, SignalKeyPair::random);
-        this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(registrationId, identityKeyPair));
+        this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(this.registrationId, identityKeyPair));
         this.signedKeyIndex = signedKeyIndex;
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
         this.preKeys = Objects.requireNonNullElseGet(preKeys, ArrayList::new);

@@ -178,7 +178,7 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public CompletableFuture<Whatsapp> connect() {
+    public synchronized CompletableFuture<Whatsapp> connect() {
         return socketHandler.connect()
                 .thenRunAsync(() -> instances.put(store().uuid(), this))
                 .thenApply(ignored -> this);
@@ -571,6 +571,10 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Boolean> sendDeltaChatRequest(JidProvider recipient) {
+        if(!recipient.toJid().hasServer(JidServer.WHATSAPP)) {
+            return CompletableFuture.completedFuture(true);
+        }
+
         var sync = Node.of(
                 "usync",
                 Map.of(
@@ -607,15 +611,22 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Void> addTrustedContact(JidProvider recipient, long timestamp) {
+        if(!recipient.toJid().hasServer(JidServer.WHATSAPP)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         var tokenPayload = Node.of("token", Map.of("jid", recipient.toJid(), "t", timestamp, "type", "trusted_contact"));
         return socketHandler.sendQuery("set", "privacy", Node.of("tokens", tokenPayload))
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     private CompletableFuture<Boolean> prepareChatForMessage(JidProvider recipient, long timestamp) {
+        if(!recipient.toJid().hasServer(JidServer.WHATSAPP)) {
+            return CompletableFuture.completedFuture(true);
+        }
+
         if (store().findContactByJid(recipient.toJid()).isPresent()) {
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(true);
         }
 
         var businessNode = Node.of("business", Node.of("verified_name"), Node.of("profile", Map.of("v", 372)));
