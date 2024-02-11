@@ -324,7 +324,7 @@ public final class WhatsappRegistration {
 
     public CompletableFuture<RegistrationResponse> sendVerificationCode() {
         return codeHandler.get()
-                .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, false, Map.entry("code", normalizeCodeResult(code))))
+                .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, false, Map.entry("code", normalizeCodeResult(code)), Map.entry("entered", "1")))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
                 .thenComposeAsync(result -> {
                     if (result.statusCode() != HttpURLConnection.HTTP_OK) {
