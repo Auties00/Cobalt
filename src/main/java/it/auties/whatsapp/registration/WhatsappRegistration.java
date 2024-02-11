@@ -40,7 +40,7 @@ public final class WhatsappRegistration {
     static {
         ProxyAuthenticator.allowAll();
     }
-    
+
     private final HttpClient httpClient;
     private final Store store;
     private final Keys keys;
@@ -327,7 +327,20 @@ public final class WhatsappRegistration {
     }
 
     public CompletableFuture<RegistrationResponse> sendVerificationCode() {
-        return codeHandler.get()
+
+        var future = CompletableFuture.completedFuture(null);
+        if (store.device().platform().isBusiness()) {
+            future = clientLog(null, Map.entry("event_name", "smb_client_onboarding_journey"),
+                    Map.entry("is_logged_in_on_consumer_app", "0"),
+                    Map.entry("sequence_number", "14"),
+                    Map.entry("app_install_source", "unknown|unknown"),
+                    Map.entry("smb_onboarding_step", "20"),
+                    Map.entry("has_consumer_app", "1")
+            );
+        }
+
+        return future
+                .thenComposeAsync((ignored) -> codeHandler.get())
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, false, Map.entry("code", normalizeCodeResult(code)), Map.entry("entered", "1")))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
                 .thenComposeAsync(result -> {
