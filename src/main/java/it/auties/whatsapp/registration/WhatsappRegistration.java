@@ -75,7 +75,7 @@ public final class WhatsappRegistration {
         }
 
         var originalDevice = store.device();
-        store.setDevice(originalDevice.toPersonal());
+//        store.setDevice(originalDevice.toPersonal());
         var future = switch (store.device().platform()) {
             case IOS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
