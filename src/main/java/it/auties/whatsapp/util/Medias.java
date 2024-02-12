@@ -80,32 +80,36 @@ public final class Medias {
         }
     }
 
-    public static CompletableFuture<byte[]> downloadAsync(URI imageUri) {
-        return downloadAsync(imageUri, true);
+    @SafeVarargs
+    public static CompletableFuture<byte[]> downloadAsync(URI uri, Map.Entry<String, String>... headers) {
+        return downloadAsync(uri, USER_AGENT, headers);
     }
 
-    private static CompletableFuture<byte[]> downloadAsync(URI imageUri, boolean userAgent) {
+    @SafeVarargs
+    public static CompletableFuture<byte[]> downloadAsync(URI uri, String userAgent, Map.Entry<String, String>... headers) {
         try {
-            if (imageUri == null) {
+            if (uri == null) {
                 return CompletableFuture.completedFuture(null);
             }
 
             var request = HttpRequest.newBuilder()
-                    .uri(imageUri)
-                    .GET();
-            if (userAgent) {
-                request.header("User-Agent", USER_AGENT);
+                    .GET()
+                    .uri(uri);
+            if (userAgent != null) {
+                request.header("User-Agent", userAgent);
+            }
+            for(var header : headers) {
+                request.header(header.getKey(), header.getValue());
             }
             return CLIENT.sendAsync(request.build(), BodyHandlers.ofByteArray()).thenCompose(response -> {
                 if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                    return userAgent ? downloadAsync(imageUri, false)
-                            : CompletableFuture.failedFuture(new IllegalArgumentException("Erroneous status code: " + response.statusCode()));
+                    return CompletableFuture.failedFuture(new IllegalArgumentException("Erroneous status code: " + response.statusCode()));
                 }
 
                 return CompletableFuture.completedFuture(response.body());
             });
         } catch (Throwable exception) {
-            return userAgent ? downloadAsync(imageUri, false) : CompletableFuture.failedFuture(exception);
+            return CompletableFuture.failedFuture(exception);
         }
     }
 

@@ -118,6 +118,10 @@ public record CompanionDevice(
     }
 
     public CompanionDevice toPersonal() {
+        if(!platform.isBusiness()) {
+            return this;
+        }
+
         return new CompanionDevice(
                 model,
                 manufacturer,
@@ -128,6 +132,10 @@ public record CompanionDevice(
     }
 
     public CompanionDevice toBusiness() {
+        if(platform.isBusiness()) {
+            return this;
+        }
+
         return new CompanionDevice(
                 model,
                 manufacturer,

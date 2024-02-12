@@ -1487,6 +1487,10 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     }
 
     public Store setDevice(CompanionDevice device) {
+        if(Objects.equals(device(), device)) {
+            return this;
+        }
+
         Objects.requireNonNull(device, "The device cannot be null");
         this.device = device;
         this.version = new FutureReference<>(null, () -> WhatsappMetadata.getVersion(device.platform()));

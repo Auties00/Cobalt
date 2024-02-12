@@ -12,6 +12,7 @@ public class RegisterExample {
         var result = Whatsapp.mobileBuilder()
                 .newConnection()
                 .device(CompanionDevice.ios(false))
+                // PROXY!
                 .unregistered()
                 .verificationCodeSupplier(() -> {
                     System.out.println("Enter OTP: ");
@@ -19,6 +20,6 @@ public class RegisterExample {
                 })
                 .register(phoneNumber)
                 .join();
-        System.out.println(result.keys().toString());
+        System.out.println(result.whatsapp().keys().toString());
     }
 }

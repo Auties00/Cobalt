@@ -1,7 +1,6 @@
 package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.binary.BinaryTokens;
-import it.auties.whatsapp.model.signal.auth.Version;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -18,11 +17,13 @@ public class Specification {
         public static final int SOCKET_PORT = 443;
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp";
+        public static final String MOBILE_IOS_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1";
         public static final String MOBILE_BUSINESS_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         public static final String MOBILE_OFFLINE_AB = "%7B%22%65%78%70%6F%73%75%72%65%22%3A%5B%22%68%69%64%65%5F%6C%69%6E%6B%5F%64%65%76%69%63%65%5F%62%75%74%74%6F%6E%5F%72%65%6C%65%61%73%65%5F%72%6F%6C%6C%6F%75%74%5F%75%6E%69%76%65%72%73%65%7C%68%69%64%65%5F%6C%69%6E%6B%5F%64%65%76%69%63%65%5F%62%75%74%74%6F%6E%5F%72%65%6C%65%61%73%65%5F%72%6F%6C%6C%6F%75%74%5F%65%78%70%65%72%69%6D%65%6E%74%7C%63%6F%6E%74%72%6F%6C%22%5D%2C%22%6D%65%74%72%69%63%73%22%3A%7B%22%65%78%70%69%64%5F%63%22%3A%74%72%75%65%2C%22%66%64%69%64%5F%63%22%3A%74%72%75%65%2C%22%72%63%5F%63%22%3A%74%72%75%65%2C%22%65%78%70%69%64%5F%6D%64%22%3A%31%37%30%35%38%37%37%36%32%32%2C%22%65%78%70%69%64%5F%63%64%22%3A%31%37%30%35%38%37%37%36%32%32%7D%7D";
         public static final String MOBILE_KAIOS_REGISTRATION_ENDPOINT = "https://v-k.whatsapp.net/v2";
-        public static final Version DEFAULT_MOBILE_KAIOS_VERSION = Version.of("2.2329.8");
+        public static final String MOBILE_KAIOS_URL = "https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA";
+        public static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
         public static final String APNS_WHATSAPP_BUSINESS_NAME = "net.whatsapp.WhatsAppSMB";
         public static final String APNS_WHATSAPP_NAME = "net.whatsapp.WhatsApp";
         public static final String[] DEFAULT_APNS_FILTERS = new String[]{

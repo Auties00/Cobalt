@@ -162,7 +162,6 @@ store.setDevice(originalDevice.toPersonal());
                 store,
                 keys,
                 false,
-                lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN,
                 ios ? Map.entry("offline_ab", Specification.Whatsapp.MOBILE_OFFLINE_AB) : null,
                 pushToken == null ? null : Map.entry("push_token", convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8))),
                 ios ? Map.entry("recovery_token_error", "-25300") : null
@@ -219,7 +218,6 @@ store.setDevice(originalDevice.toPersonal());
                 store,
                 keys,
                 false,
-                false,
                 attributes
         );
         return options.thenCompose(attrs -> sendRequest("/client_log", attrs))
@@ -228,7 +226,7 @@ store.setDevice(originalDevice.toPersonal());
 
     private CompletableFuture<RegistrationResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
         return getRequestVerificationCodeParameters(pushCode)
-                .thenCompose(params -> getRegistrationOptions(store, keys, true, lastError == VerificationCodeError.OLD_VERSION || lastError == VerificationCodeError.BAD_TOKEN, params))
+                .thenCompose(params -> getRegistrationOptions(store, keys, true, params))
                 .thenCompose(attrs -> sendRequest("/code", attrs))
                 .thenCompose(result -> onCodeRequestSent(pushCode, lastError, result))
                 .thenApply(result -> {
@@ -341,7 +339,7 @@ store.setDevice(originalDevice.toPersonal());
 
         return future
                 .thenComposeAsync((ignored) -> codeHandler.get())
-                .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, false, Map.entry("code", normalizeCodeResult(code)), Map.entry("entered", "1")))
+                .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, Map.entry("code", normalizeCodeResult(code)), Map.entry("entered", "1")))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
                 .thenComposeAsync(result -> {
                     if (result.statusCode() != HttpURLConnection.HTTP_OK) {
@@ -452,10 +450,10 @@ store.setDevice(originalDevice.toPersonal());
     }
 
     @SafeVarargs
-    private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, boolean isRetry, Entry<String, Object>... attributes) {
+    private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), !isRetry);
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version());
         return tokenFuture.thenApplyAsync(token -> {
             var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)
