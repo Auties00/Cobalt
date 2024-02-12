@@ -61,7 +61,7 @@ public final class KeyHelper {
     }
 
     public static byte[] identityId() {
-        return BytesHelper.random(20);
+        return BytesHelper.random(16);
     }
 
     public static byte[] deviceId() {
