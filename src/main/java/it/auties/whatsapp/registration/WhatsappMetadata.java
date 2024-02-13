@@ -200,7 +200,7 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<WhatsappApk> downloadAndroidData(boolean business) {
-        return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_ANDROID_URL : Whatsapp.MOBILE_ANDROID_URL).thenApplyAsync(apk -> {
+        return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_ANDROID_URL : Whatsapp.MOBILE_ANDROID_URL, (String) null).thenApplyAsync(apk -> {
             try (var apkFile = new ByteArrayApkFile(apk)) {
                 var version = Version.of(apkFile.getApkMeta().getVersionName());
                 var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
@@ -392,7 +392,7 @@ public final class WhatsappMetadata {
             System.arraycopy(hashedBytes, 0, truncatedBytes, 0, Math.min(hashedBytes.length, Specification.Whatsapp.GPIA_TOKEN_LENGTH));
             var thirdHeaderRandom = BytesHelper.random(Specification.Whatsapp.GPIA_TOKEN_LENGTH - hashedBytes.length);
             System.arraycopy(thirdHeaderRandom, 0, truncatedBytes, hashedBytes.length, thirdHeaderRandom.length);
-            return Base64.getUrlEncoder().encodeToString(truncatedBytes);
+            return Base64.getEncoder().encodeToString(truncatedBytes);
         });
     }
 

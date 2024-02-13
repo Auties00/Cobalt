@@ -72,14 +72,6 @@ public final class Medias {
         }
     }
 
-    public static Optional<byte[]> download(URI imageUri) {
-        try {
-            return Optional.ofNullable(downloadAsync(imageUri).join());
-        }catch (Throwable throwable) {
-            return Optional.empty();
-        }
-    }
-
     @SafeVarargs
     public static CompletableFuture<byte[]> downloadAsync(URI uri, Map.Entry<String, String>... headers) {
         return downloadAsync(uri, USER_AGENT, headers);
