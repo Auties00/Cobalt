@@ -1285,8 +1285,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> changeGroupPicture(JidProvider group, URI image) {
-        return changeGroupPicture(group, image == null ? null : Medias.download(image)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid uri: %s".formatted(image))));
+        var imageFuture = image == null ? CompletableFuture.completedFuture((byte[]) null) : Medias.downloadAsync(image);
+        return imageFuture.thenComposeAsync(imageResult -> changeGroupPicture(group, imageResult));
     }
 
     /**
