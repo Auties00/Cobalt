@@ -97,6 +97,11 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection(SixPartsKeys sixParts) {
+        var serialized = serializer.deserializeStoreKeysPair(null, sixParts.phoneNumber().number(), null, ClientType.MOBILE);
+        if(serialized.isPresent()) {
+            return createConnection(serialized.get());
+        }
+
         var uuid = UUID.randomUUID();
         var keys = new KeysBuilder()
                 .uuid(uuid)
