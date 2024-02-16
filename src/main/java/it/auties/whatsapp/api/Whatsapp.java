@@ -633,8 +633,17 @@ public class Whatsapp {
         var contactNode = Node.of("contact");
         var lidNode = Node.of("lid");
         var userNode = Node.of("user", Node.of("contact", recipient.toJid().toPhoneNumber().getBytes(StandardCharsets.UTF_8)));
-        return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of()).thenCompose(result -> {
-            if (result.stream().anyMatch(entry -> entry.hasDescription("out"))) {
+        return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of()).thenCompose(results -> {
+            var out = results.stream().anyMatch(entry -> entry.hasDescription("out"));
+            if (out) {
+                return CompletableFuture.completedFuture(false);
+            }
+
+            var contactOut = results.stream()
+                    .map(entry -> entry.findNode("contact"))
+                    .flatMap(Optional::stream)
+                    .anyMatch(entry -> entry.attributes().hasValue("type", "out"));
+            if (contactOut) {
                 return CompletableFuture.completedFuture(false);
             }
 
