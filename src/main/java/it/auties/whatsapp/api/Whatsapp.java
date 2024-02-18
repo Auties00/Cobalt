@@ -242,8 +242,7 @@ public class Whatsapp {
         var metadata = Map.of("jid", jidOrThrowError(), "reason", "user_initiated");
         var device = Node.of("remove-companion-device", metadata);
         return socketHandler.sendQuery("set", "md", device)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -299,8 +298,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> createGdprAccountInfo() {
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("gdpr", Map.of("gdpr", "request")))
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -736,6 +734,36 @@ public class Whatsapp {
         };
     }
 
+    public CompletableFuture<ChatMessageInfo> sendStatus(String message) {
+        return sendStatus(MessageContainer.of(message));
+    }
+
+    public CompletableFuture<ChatMessageInfo> sendStatus(Message message) {
+        return sendStatus(MessageContainer.of(message));
+    }
+
+    public CompletableFuture<ChatMessageInfo> sendStatus(MessageContainer message) {
+        var timestamp = Clock.nowSeconds();
+        var deviceInfo = new DeviceContextInfoBuilder()
+                .deviceListMetadataVersion(2)
+                .build();
+        var key = new ChatMessageKeyBuilder()
+                .id(ChatMessageKey.randomId())
+                .chatJid(Jid.of("status@broadcast"))
+                .fromMe(true)
+                .senderJid(jidOrThrowError())
+                .build();
+        var info = new ChatMessageInfoBuilder()
+                .status(MessageStatus.PENDING)
+                .senderJid(jidOrThrowError())
+                .key(key)
+                .message(message.withDeviceInfo(deviceInfo))
+                .timestampSeconds(timestamp)
+                .broadcast(false)
+                .build();
+        return sendMessage(info);
+    }
+
     /**
      * Sends a message to a chat
      *
@@ -1016,8 +1044,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> revokeGroupInvite(JidProvider chat) {
         return socketHandler.sendQuery(chat.toJid(), "set", "w:g2", Node.of("invite"))
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -1209,8 +1236,7 @@ public class Whatsapp {
     public CompletableFuture<Void> changeGroupSubject(JidProvider group, String newName) {
         var body = Node.of("subject", newName.getBytes(StandardCharsets.UTF_8));
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -1224,8 +1250,7 @@ public class Whatsapp {
         return socketHandler.queryGroupMetadata(group.toJid())
                 .thenApplyAsync(GroupMetadata::descriptionId)
                 .thenComposeAsync(descriptionId -> changeGroupDescription(group, description, descriptionId.orElse(null)))
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     private CompletableFuture<Void> changeGroupDescription(JidProvider group, String description, String descriptionId) {
@@ -1271,8 +1296,7 @@ public class Whatsapp {
                     Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", policy == ChatSettingPolicy.ADMINS ? "on" : "off")));
         };
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -1308,8 +1332,7 @@ public class Whatsapp {
         var profilePic = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), profilePic);
         return socketHandler.sendQuery(group.toJid().withoutDevice(), "set", "w:profile:picture", body)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -1543,8 +1566,7 @@ public class Whatsapp {
     public CompletableFuture<Void> blockContact(JidProvider contact) {
         var body = Node.of("item", Map.of("action", "block", "jid", contact.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -1556,8 +1578,7 @@ public class Whatsapp {
     public CompletableFuture<Void> unblockContact(JidProvider contact) {
         var body = Node.of("item", Map.of("action", "unblock", "jid", contact.toJid()));
         return socketHandler.sendQuery("set", "blocklist", body)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -2221,8 +2242,7 @@ public class Whatsapp {
                     Node.of(policy == ChatSettingPolicy.ANYONE ? "allow_non_admin_sub_group_creation" : "not_allow_non_admin_sub_group_creation");
         };
         return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body)
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
 
@@ -2899,8 +2919,7 @@ public class Whatsapp {
         var body = new UpdateNewsletterRequest.Variable(newsletter.toJid(), payload);
         var request = new UpdateNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7150902998257522"), Json.writeValueAsBytes(request)))
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -2913,8 +2932,7 @@ public class Whatsapp {
         var body = new JoinNewsletterRequest.Variable(newsletter.toJid());
         var request = new JoinNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "9926858900719341"), Json.writeValueAsBytes(request)))
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**
@@ -2927,8 +2945,7 @@ public class Whatsapp {
         var body = new LeaveNewsletterRequest.Variable(newsletter.toJid());
         var request = new LeaveNewsletterRequest(body);
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6392786840836363"), Json.writeValueAsBytes(request)))
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     /**

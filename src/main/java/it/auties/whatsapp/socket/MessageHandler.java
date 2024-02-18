@@ -319,7 +319,7 @@ class MessageHandler {
                             attributeMediaMessage(chatJid, fourRowMedia);
                     case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof ExtendedMediaMessage<?> hydratedFourRowMedia ->
                             attributeMediaMessage(chatJid, hydratedFourRowMedia);
-                    case null, default -> CompletableFuture.completedFuture(null);
+                    default -> CompletableFuture.completedFuture(null);
                 };
             }
             case InteractiveMessage interactiveMessage
@@ -401,6 +401,18 @@ class MessageHandler {
         if (request.hasRecipientOverride()) {
             return queryDevices(request.recipients(), false)
                     .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
+                    .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
+                    .thenComposeAsync(socketHandler::send);
+        }
+
+        if(request.info().chatJid().type() == JidType.STATUS) {
+            var recipients = socketHandler.store()
+                    .contacts()
+                    .stream()
+                    .map(Contact::jid)
+                    .toList();
+            return queryDevices(recipients, request.force())
+                    .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, true))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
                     .thenComposeAsync(socketHandler::send);
         }
@@ -543,7 +555,7 @@ class MessageHandler {
                 });
     }
 
-    protected CompletableFuture<Void> querySessions(List<Jid> contacts, boolean force) {
+    protected CompletableFuture<Void> querySessions(Collection<Jid> contacts, boolean force) {
         var missingSessions = contacts.stream()
                 .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
                 .map(contact -> Node.of("user", Map.of("jid", contact)))
@@ -577,7 +589,7 @@ class MessageHandler {
         return queryDevices(jids, false);
     }
 
-    protected CompletableFuture<List<Jid>> queryDevices(List<Jid> contacts, boolean excludeSelf) {
+    protected CompletableFuture<List<Jid>> queryDevices(Collection<Jid> contacts, boolean excludeSelf) {
         var cachedDevices = contacts.stream()
                 .map(devicesCache::get)
                 .filter(Objects::nonNull)
