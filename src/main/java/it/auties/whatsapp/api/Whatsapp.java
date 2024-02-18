@@ -64,7 +64,6 @@ import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -2699,7 +2698,8 @@ public class Whatsapp {
      */
     public CompletableFuture<Call> startCall(JidProvider contact) {
         Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
-        return socketHandler.querySessions(contact.toJid())
+        return addTrustedContact(contact.toJid(), Clock.nowSeconds())
+                .thenComposeAsync(ignored -> socketHandler.querySessions(contact.toJid()))
                 .thenComposeAsync(ignored -> sendCallMessage(contact));
     }
 
@@ -2710,11 +2710,11 @@ public class Whatsapp {
         var net = Node.of("net", Map.of("medium", 3));
         var encopt = Node.of("encopt", Map.of("keygen", 2));
         var enc = createCallNode(provider);
-        var capability = Node.of("capability", Map.of("ver", 1), URLDecoder.decode("%01%04%f7%09%c4:", StandardCharsets.UTF_8));
-        var callCreator = "%s.%s:%s@s.whatsapp.net".formatted(jidOrThrowError().user(), jidOrThrowError().device(), jidOrThrowError().device());
+        var capability = Node.of("capability", Map.of("ver", 1), HexFormat.of().parseHex("0104ff09c4fa"));
+        var callCreator = "%s:0@s.whatsapp.net".formatted(jidOrThrowError().user());
         var offer = Node.of("offer",
-                Map.of("call-creator", callCreator, "call-id", callId, "device_class", 2016),
-                audioStream, audioStreamTwo, net, enc, capability, encopt);
+                Map.of("call-creator", callCreator, "call-id", callId),
+                audioStream, audioStreamTwo, net, capability, encopt, enc);
         return socketHandler.send(Node.of("call", Map.of("to", provider.toJid()), offer))
                 .thenApply(result -> onCallSent(provider, callId, result));
     }
@@ -2731,12 +2731,10 @@ public class Whatsapp {
                 .key(SignalKeyPair.random().publicKey())
                 .build();
         var message = MessageContainer.of(call);
-        socketHandler.querySessions(provider.toJid());
         var cipher = new SessionCipher(provider.toJid().toSignalAddress(), keys());
         var encodedMessage = BytesHelper.messageToBytes(message);
         var cipheredMessage = cipher.encrypt(encodedMessage);
-        return Node.of("enc",
-                Map.of("v", 2, "type", cipheredMessage.type(), "count", 0), cipheredMessage.message());
+        return Node.of("enc", Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
     }
 
 
