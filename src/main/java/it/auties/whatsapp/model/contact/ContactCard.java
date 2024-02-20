@@ -20,7 +20,7 @@ import static it.auties.whatsapp.util.Specification.Whatsapp.*;
  */
 public sealed interface ContactCard {
     @ProtobufConverter
-    static ContactCard ofProtobuf(String vcard) {
+    static ContactCard ofNullable(String vcard) {
         return vcard == null ? null : of(vcard);
     }
 
@@ -34,7 +34,7 @@ public sealed interface ContactCard {
     static ContactCard of(String vcard) {
         try {
             var parsed = Ezvcard.parse(vcard).first();
-            var version = Optional.ofNullable(parsed.getVersion().getVersion());
+            var version = Objects.requireNonNullElse(parsed.getVersion().getVersion(), VCardVersion.V3_0.getVersion());
             var name = Optional.ofNullable(parsed.getFormattedName().getValue());
             var phoneNumbers = parsed.getTelephoneNumbers()
                     .stream()
@@ -46,6 +46,34 @@ public sealed interface ContactCard {
         } catch (Throwable ignored) {
             return new Raw(vcard);
         }
+    }
+
+    /**
+     * Creates a new vcard
+     *
+     * @param name the nullable name of the contact
+     * @param phoneNumber the non-null phone number of the contact
+     * @return a vcard
+     */
+    static ContactCard of(String name, Jid phoneNumber) {
+        return of(name, phoneNumber, null);
+    }
+
+    /**
+     * Creates a new vcard
+     *
+     * @param name the nullable name of the contact
+     * @param phoneNumber the non-null phone number of the contact
+     * @param businessName the nullable business name of the contact
+     * @return a vcard
+     */
+    static ContactCard of(String name, Jid phoneNumber, String businessName) {
+        return new Parsed(
+                VCardVersion.V3_0.getVersion(),
+                Optional.ofNullable(name),
+                new HashMap<>(Map.of(DEFAULT_NUMBER_VCARD_TYPE, List.of(Objects.requireNonNull(phoneNumber)))),
+                Optional.ofNullable(businessName)
+        );
     }
 
     private static boolean isValidPhoneNumber(Telephone entry) {
@@ -71,12 +99,12 @@ public sealed interface ContactCard {
      * A parsed representation of the vcard
      */
     record Parsed(
-            Optional<String> version,
+            String version,
             Optional<String> name,
             Map<String, List<Jid>> phoneNumbers,
             Optional<String> businessName
     ) implements ContactCard {
-        public List<Jid> getPhoneNumber(Jid contact) {
+        public List<Jid> defaultPhoneNumbers() {
             return Objects.requireNonNullElseGet(phoneNumbers.get(DEFAULT_NUMBER_VCARD_TYPE), List::of);
         }
 
@@ -112,7 +140,7 @@ public sealed interface ContactCard {
         @ProtobufConverter
         public String toVcard() {
             var vcard = new VCard();
-            vcard.setVersion(version().map(VCardVersion::valueOfByStr).orElse(VCardVersion.V3_0));
+            vcard.setVersion(VCardVersion.valueOfByStr(version()));
             vcard.setFormattedName(name.orElse(null));
             phoneNumbers().forEach((type, contacts) -> contacts.forEach(contact -> addPhoneNumber(vcard, type, contact)));
             businessName.ifPresent(value -> vcard.addExtendedProperty(BUSINESS_NAME_VCARD_PROPERTY, value));
