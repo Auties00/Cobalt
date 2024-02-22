@@ -16,7 +16,8 @@ public class SendMessageExample {
         var recipient = scanner.nextLong();
         Whatsapp.mobileBuilder()
                 .newConnection(SixPartsKeys.of(sixParts))
-                .device(CompanionDevice.ios(false))
+                // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
+                .device(CompanionDevice.ios(false)) // Make sure to select the correct account type(business or personal) or you'll get error 401
                 .registered()
                 .orElseThrow()
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
@@ -26,7 +27,7 @@ public class SendMessageExample {
                     api.sendMessage(Jid.of(recipient), "Hello World").join();
                     System.out.println("Sent message!");
                 })
-                .connect()
+                .connect() // If you get error 403 o 503 the account is banned
                 .join();
     }
 }

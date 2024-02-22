@@ -14,7 +14,7 @@ public class RegisterExample {
         Whatsapp.mobileBuilder()
                 .newConnection()
                 .device(CompanionDevice.ios(true))
-                // PROXY!
+                // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
                 .unregistered()
                 .verificationCodeSupplier(() -> {
                     System.out.println("Enter OTP: ");
