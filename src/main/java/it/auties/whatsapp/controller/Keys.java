@@ -216,9 +216,12 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         this.readCounter = new AtomicLong();
     }
 
-    public static Keys random(UUID uuid) {
+    public static Keys newKeys(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
         return new KeysBuilder()
                 .uuid(uuid)
+                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
+                .alias(alias)
+                .clientType(clientType)
                 .registrationId(KeyHelper.registrationId())
                 .noiseKeyPair(SignalKeyPair.random())
                 .identityKeyPair(SignalKeyPair.random())

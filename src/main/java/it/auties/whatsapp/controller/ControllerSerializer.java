@@ -75,7 +75,7 @@ public interface ControllerSerializer {
         var store = Store.newStore(uuid, phoneNumber, alias, clientType);
         store.setSerializer(this);
         linkMetadata(store);
-        var keys = Keys.random(uuid);
+        var keys = Keys.newKeys(uuid, phoneNumber, alias, clientType);
         keys.setSerializer(this);
         serializeKeys(keys, true);
         return new StoreKeysPair(store, keys);
