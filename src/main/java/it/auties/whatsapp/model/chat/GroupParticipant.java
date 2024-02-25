@@ -39,6 +39,14 @@ public final class GroupParticipant implements ProtobufMessage {
     }
 
     @Override
+    public String toString() {
+        return "GroupParticipant{" +
+                "jid=" + jid +
+                ", role=" + role +
+                '}';
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(jid, role.index());
     }

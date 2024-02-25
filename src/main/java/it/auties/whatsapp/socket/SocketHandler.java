@@ -586,14 +586,19 @@ public class SocketHandler implements SocketListener {
         var participants = node.findNodes("participant")
                 .stream()
                 .map(this::parseGroupParticipant)
+                .flatMap(Optional::stream)
                 .toList();
         return new GroupMetadata(groupId, subject, subjectAuthor, Clock.parseSeconds(subjectTimestampSeconds), Clock.parseSeconds(foundationTimestampSeconds), founder, description, descriptionId, Collections.unmodifiableMap(policies), participants, ephemeral, community, openCommunity);
     }
 
-    private GroupParticipant parseGroupParticipant(Node node) {
+    private Optional<GroupParticipant> parseGroupParticipant(Node node) {
+        if(node.attributes().hasKey("error")) {
+            return Optional.empty();
+        }
+
         var id = node.attributes().getRequiredJid("jid");
         var role = GroupRole.of(node.attributes().getString("type", null));
-        return new GroupParticipant(id, role);
+        return Optional.of(new GroupParticipant(id, role));
     }
 
     public CompletableFuture<Node> sendQuery(Jid to, String method, String category, Node... body) {

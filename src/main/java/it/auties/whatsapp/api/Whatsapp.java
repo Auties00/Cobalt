@@ -1381,22 +1381,26 @@ public class Whatsapp {
      */
     public CompletableFuture<Optional<GroupMetadata>> createGroup(String subject, ChatEphemeralTimer timer, JidProvider parentCommunity, JidProvider... contacts) {
         Validate.isTrue(!subject.isBlank(), "The subject of a group cannot be blank");
-        var minimumMembersCount = parentCommunity == null ? 1 : 0;
-        Validate.isTrue(contacts.length >= minimumMembersCount, "Expected at least %s members for this group", minimumMembersCount);
-        var children = new ArrayList<Node>();
-        if (parentCommunity != null) {
-            children.add(Node.of("linked_parent", Map.of("jid", parentCommunity.toJid())));
-        }
-        if (timer != ChatEphemeralTimer.OFF) {
-            children.add(Node.of("ephemeral", Map.of("expiration", timer.periodSeconds())));
-        }
-        Arrays.stream(contacts)
-                .map(contact -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
-                .forEach(children::add);
-        var key = HexFormat.of().formatHex(BytesHelper.random(12));
-        var body = Node.of("create", Map.of("subject", subject, "key", key), children);
-        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body)
-                .thenApplyAsync(this::parseGroupResponse);
+        Validate.isTrue( parentCommunity != null || contacts.length >= 1, "Expected at least 1 member for this group");
+        var trustFutures = Arrays.stream(contacts)
+                .map(contact -> addTrustedContact(contact, Clock.nowSeconds()))
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(trustFutures).thenComposeAsync(result -> {
+            var children = new ArrayList<Node>();
+            if (parentCommunity != null) {
+                children.add(Node.of("linked_parent", Map.of("jid", parentCommunity.toJid())));
+            }
+            if (timer != ChatEphemeralTimer.OFF) {
+                children.add(Node.of("ephemeral", Map.of("expiration", timer.periodSeconds())));
+            }
+            Arrays.stream(contacts)
+                    .map(contact -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
+                    .forEach(children::add);
+            var key = HexFormat.of().formatHex(BytesHelper.random(12));
+            var body = Node.of("create", Map.of("subject", subject, "key", key), children);
+            return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body)
+                    .thenApplyAsync(this::parseGroupResponse);
+        });
     }
 
     private Optional<GroupMetadata> parseGroupResponse(Node response) {
