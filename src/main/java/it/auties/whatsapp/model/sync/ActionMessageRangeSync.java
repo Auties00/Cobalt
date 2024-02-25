@@ -59,7 +59,7 @@ public final class ActionMessageRangeSync implements ProtobufMessage {
 
     private ChatMessageKey checkSenderKey(ChatMessageKey key) {
         return key.senderJid()
-                .map(entry -> new ChatMessageKey(key.chatJid(), key.fromMe(), key.id(), entry.withoutDevice()))
+                .map(entry -> new ChatMessageKey(key.chatJid(), key.fromMe(), key.id(), entry.toSimpleJid()))
                 .orElse(key);
     }
 

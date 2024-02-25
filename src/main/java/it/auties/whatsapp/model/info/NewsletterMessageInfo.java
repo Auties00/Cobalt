@@ -141,6 +141,19 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
         });
     }
 
+    @Override
+    public String toString() {
+        return "NewsletterMessageInfo{" +
+                "newsletter=" + newsletter +
+                ", id='" + id + '\'' +
+                ", serverId=" + serverId +
+                ", timestampSeconds=" + timestampSeconds +
+                ", views=" + views +
+                ", reactions=" + reactions +
+                ", message=" + message +
+                ", status=" + status +
+                '}';
+    }
 
     @Override
     public boolean equals(Object obj) {

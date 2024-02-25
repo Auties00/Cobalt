@@ -278,15 +278,15 @@ class MessageHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(), me.get().withoutDevice());
+        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(), me.get().toSimpleJid());
         var encryptedOptions = pollUpdateMessage.votes().stream().map(entry -> Sha256.calculate(entry.name())).toList();
         var pollUpdateEncryptedOptions = PollUpdateEncryptedOptionsSpec.encode(new PollUpdateEncryptedOptions(encryptedOptions));
         var originalPollInfo = socketHandler.store()
                 .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
         var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
-        var originalPollSender = originalPollInfo.senderJid().withoutDevice().toString().getBytes(StandardCharsets.UTF_8);
-        var modificationSenderJid = info.senderJid().withoutDevice();
+        var originalPollSender = originalPollInfo.senderJid().toSimpleJid().toString().getBytes(StandardCharsets.UTF_8);
+        var modificationSenderJid = info.senderJid().toSimpleJid();
         pollUpdateMessage.setVoter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
@@ -411,7 +411,7 @@ class MessageHandler {
                     .stream()
                     .map(Contact::jid)
                     .toList();
-            return queryDevices(recipients, request.force())
+            return queryDevices(recipients, false)
                     .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, true))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
                     .thenComposeAsync(socketHandler::send);
@@ -451,22 +451,22 @@ class MessageHandler {
         var deviceMessage = new DeviceSentMessage(request.info().chatJid(), request.info().message(), Optional.empty());
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
         var recipients = getRecipients(request);
-        return queryDevices(recipients, true)
+        return queryDevices(recipients, !isMe(request.info().chatJid()))
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request, sessions, null))
                 .thenComposeAsync(socketHandler::send);
     }
 
-    private List<Jid> getRecipients(MessageSendRequest.Chat request) {
+    private Set<Jid> getRecipients(MessageSendRequest.Chat request) {
         if (request.hasRecipientOverride()) {
             return request.recipients();
         }
 
         if(request.peer()) {
-            return List.of(request.info().chatJid());
+            return Set.of(request.info().chatJid());
         }
 
-        return List.of(socketHandler.store().jid().orElseThrow().withoutDevice(), request.info().chatJid());
+        return new HashSet<>(List.of(socketHandler.store().jid().orElseThrow().toSimpleJid(), request.info().chatJid()));
     }
 
     private boolean isConversation(ChatMessageInfo info) {
@@ -666,7 +666,7 @@ class MessageHandler {
     }
 
     private void cacheDevice(Jid jid) {
-        var cachedDevices = devicesCache.get(jid.withoutDevice());
+        var cachedDevices = devicesCache.get(jid.toSimpleJid());
         if(cachedDevices != null) {
             cachedDevices.add(jid);
             return;
@@ -674,7 +674,7 @@ class MessageHandler {
 
         var devices = new CopyOnWriteArrayList<Jid>();
         devices.add(jid);
-        devicesCache.put(jid.withoutDevice(), devices);
+        devicesCache.put(jid.toSimpleJid(), devices);
     }
 
     protected void parseSessions(Node node) {
@@ -927,7 +927,7 @@ class MessageHandler {
                     .id(ChatMessageKey.randomId());
             var receiver = socketHandler.store()
                     .jid()
-                    .map(Jid::withoutDevice)
+                    .map(Jid::toSimpleJid)
                     .orElse(null);
             if (receiver == null) {
                 return;
@@ -936,12 +936,12 @@ class MessageHandler {
             if (from.hasServer(JidServer.WHATSAPP) || from.hasServer(JidServer.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                keyBuilder.fromMe(Objects.equals(from.withoutDevice(), receiver));
+                keyBuilder.fromMe(Objects.equals(from.toSimpleJid(), receiver));
                 messageBuilder.senderJid(from);
             } else {
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.withoutDevice(), receiver));
+                keyBuilder.fromMe(Objects.equals(participant.toSimpleJid(), receiver));
                 messageBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
             }
             var key = keyBuilder.id(id).build();
@@ -1047,7 +1047,7 @@ class MessageHandler {
     private void attributeMessageReceipt(ChatMessageInfo info) {
         var self = socketHandler.store()
                 .jid()
-                .map(Jid::withoutDevice)
+                .map(Jid::toSimpleJid)
                 .orElse(null);
         if (!info.fromMe() || (self != null && !info.chatJid().equals(self))) {
             return;
@@ -1383,7 +1383,7 @@ class MessageHandler {
         info.setChat(chat);
         var me = socketHandler.store().jid().orElse(null);
         if (info.fromMe() && me != null) {
-            info.key().setSenderJid(me.withoutDevice());
+            info.key().setSenderJid(me.toSimpleJid());
         }
 
         attributeSender(info, info.senderJid());
@@ -1428,10 +1428,10 @@ class MessageHandler {
         pollUpdateMessage.setPollCreationMessage(originalPollMessage);
         var originalPollSender = originalPollInfo.get()
                 .senderJid()
-                .withoutDevice()
+                .toSimpleJid()
                 .toString()
                 .getBytes(StandardCharsets.UTF_8);
-        var modificationSenderJid = info.senderJid().withoutDevice();
+        var modificationSenderJid = info.senderJid().toSimpleJid();
         pollUpdateMessage.setVoter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);

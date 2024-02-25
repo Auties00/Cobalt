@@ -26,6 +26,13 @@ public final class NewsletterState implements ProtobufMessage {
     }
 
     @Override
+    public String toString() {
+        return "NewsletterState{" +
+                "type='" + type + '\'' +
+                '}';
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(type);
     }

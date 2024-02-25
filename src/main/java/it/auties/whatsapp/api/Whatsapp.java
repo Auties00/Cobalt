@@ -34,11 +34,10 @@ import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
 import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
+import it.auties.whatsapp.model.message.standard.NewsletterAdminInviteMessageBuilder;
 import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
 import it.auties.whatsapp.model.message.standard.TextMessage;
-import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.model.newsletter.NewsletterViewerMetadata;
-import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
+import it.auties.whatsapp.model.newsletter.*;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.GdprAccountReport;
@@ -382,7 +381,7 @@ public class Whatsapp {
                 .id(ChatMessageKey.randomId())
                 .chatJid(message.parentJid())
                 .senderJid(message.senderJid())
-                .fromMe(Objects.equals(message.senderJid().withoutDevice(), jidOrThrowError().withoutDevice()))
+                .fromMe(Objects.equals(message.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid()))
                 .id(message.id())
                 .build();
         var reactionMessage = new ReactionMessageBuilder()
@@ -536,6 +535,10 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message) {
+        return sendChatMessage(recipient, message, true);
+    }
+
+    public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message, boolean compose) {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
         return prepareChatForMessage(recipient, timestamp).thenComposeAsync(chatResult -> {
@@ -560,8 +563,8 @@ public class Whatsapp {
                 return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
 
-            return changePresence(recipient.toJid(), COMPOSING)
-                    .thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
+            var composingFuture = compose ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
+            return composingFuture.thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
                     .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
                     .thenComposeAsync(deltaResult -> deltaResult ? sendMessage(info) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
         });
@@ -626,11 +629,7 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(true);
         }
 
-        var businessNode = Node.of("business", Node.of("verified_name"), Node.of("profile", Map.of("v", 372)));
-        var contactNode = Node.of("contact");
-        var lidNode = Node.of("lid");
-        var userNode = Node.of("user", Node.of("contact", recipient.toJid().toPhoneNumber().getBytes(StandardCharsets.UTF_8)));
-        return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of()).thenCompose(results -> {
+        return getContactData(recipient).thenCompose(results -> {
             var out = results.stream().anyMatch(entry -> entry.hasDescription("out"));
             if (out) {
                 return CompletableFuture.completedFuture(false);
@@ -652,6 +651,14 @@ public class Whatsapp {
                     .thenCompose(fourthResult -> socketHandler.querySessions(recipient.toJid()))
                     .thenApply(ignored -> true);
         });
+    }
+
+    private CompletableFuture<List<Node>> getContactData(JidProvider recipient) {
+        var businessNode = Node.of("business", Node.of("verified_name"), Node.of("profile", Map.of("v", 372)));
+        var contactNode = Node.of("contact");
+        var lidNode = Node.of("lid");
+        var userNode = Node.of("user", Node.of("contact", recipient.toJid().toPhoneNumber().getBytes(StandardCharsets.UTF_8)));
+        return socketHandler.sendInteractiveQuery(List.of(businessNode, contactNode, lidNode), List.of(userNode), List.of());
     }
 
 
@@ -1088,7 +1095,7 @@ public class Whatsapp {
             store().setOnline(presence == ContactStatus.AVAILABLE);
         }
 
-        var self = store().findContactByJid(jidOrThrowError().withoutDevice());
+        var self = store().findContactByJid(jidOrThrowError().toSimpleJid());
         if (self.isEmpty()) {
             return;
         }
@@ -1112,7 +1119,7 @@ public class Whatsapp {
     public CompletableFuture<Void> changePresence(JidProvider chatJid, ContactStatus presence) {
         var knownPresence = store().findChatByJid(chatJid)
                 .map(Chat::presences)
-                .map(entry -> entry.get(jidOrThrowError().withoutDevice()))
+                .map(entry -> entry.get(jidOrThrowError().toSimpleJid()))
                 .orElse(null);
         if (knownPresence == COMPOSING || knownPresence == RECORDING) {
             var node = Node.of("chatstate", Map.of("to", chatJid.toJid()), Node.of("paused"));
@@ -1188,7 +1195,7 @@ public class Whatsapp {
     }
 
     private Jid checkGroupParticipantJid(Jid jid, String errorMessage) {
-        Validate.isTrue(!Objects.equals(jid.withoutDevice(), jidOrThrowError().withoutDevice()), errorMessage);
+        Validate.isTrue(!Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid()), errorMessage);
         return jid;
     }
 
@@ -1331,7 +1338,7 @@ public class Whatsapp {
     public CompletableFuture<Void> changeGroupPicture(JidProvider group, byte[] image) {
         var profilePic = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), profilePic);
-        return socketHandler.sendQuery(group.toJid().withoutDevice(), "set", "w:profile:picture", body)
+        return socketHandler.sendQuery(group.toJid().toSimpleJid(), "set", "w:profile:picture", body)
                 .thenRun(() -> {});
     }
 
@@ -1448,7 +1455,7 @@ public class Whatsapp {
                 .orElse(null);
         if (chat != null) {
             var pastParticipant = new GroupPastParticipantBuilder()
-                    .jid(jidOrThrowError().withoutDevice())
+                    .jid(jidOrThrowError().toSimpleJid())
                     .reason(GroupPastParticipant.Reason.REMOVED)
                     .timestampSeconds(Clock.nowSeconds())
                     .build();
@@ -1692,12 +1699,12 @@ public class Whatsapp {
     }
 
     private String fromMeToFlag(MessageInfo info) {
-        var fromMe = Objects.equals(info.senderJid().withoutDevice(), jidOrThrowError().withoutDevice());
+        var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
         return booleanToInt(fromMe);
     }
 
     private String participantToFlag(MessageInfo info) {
-        var fromMe = Objects.equals(info.senderJid().withoutDevice(), jidOrThrowError().withoutDevice());
+        var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
         return info.parentJid().hasServer(JidServer.GROUP)
                 && !fromMe ? info.senderJid().toString() : "0";
     }
@@ -1838,7 +1845,7 @@ public class Whatsapp {
             return 8;
         }
 
-        var fromMe = Objects.equals(info.senderJid().withoutDevice(), jidOrThrowError().withoutDevice());
+        var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
         if (info.parentJid().hasServer(JidServer.GROUP) && !fromMe) {
             return 8;
         }
@@ -2001,7 +2008,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(int productsLimit) {
-        return queryBusinessCatalog(jidOrThrowError().withoutDevice(), productsLimit);
+        return queryBusinessCatalog(jidOrThrowError().toSimpleJid(), productsLimit);
     }
 
     /**
@@ -2053,7 +2060,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<?> queryBusinessCollections(int collectionsLimit) {
-        return queryBusinessCollections(jidOrThrowError().withoutDevice(), collectionsLimit);
+        return queryBusinessCollections(jidOrThrowError().toSimpleJid(), collectionsLimit);
     }
 
     /**
@@ -2179,7 +2186,7 @@ public class Whatsapp {
                 .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
                 .toMap();
         var node = Node.of("receipt", Map.of("id", info.key().id(), "to", jidOrThrowError()
-                .withoutDevice(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.of("rmr", rmrAttributes));
+                .toSimpleJid(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.of("rmr", rmrAttributes));
         return socketHandler.send(node, result -> result.hasDescription("notification"))
                 .thenAcceptAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
     }
@@ -2887,8 +2894,7 @@ public class Whatsapp {
         var input = new CreateNewsletterRequest.NewsletterInput(name, description, picture != null ? Base64.getEncoder().encodeToString(picture) : null);
         var variable = new CreateNewsletterRequest.Variable(input);
         var request = new CreateNewsletterRequest(variable);
-        return socketHandler.sendQuery("set", "tos", Node.of("notice", Map.of("stage", 5, "id", ChatMessageKey.randomId())))
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6234210096708695"), Json.writeValueAsBytes(request))))
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6996806640408138"), Json.writeValueAsBytes(request)))
                 .thenApplyAsync(this::parseNewsletterCreation)
                 .thenComposeAsync(this::onNewsletterCreation);
     }
@@ -2976,6 +2982,69 @@ public class Whatsapp {
                 .flatMap(NewsletterSubscribersResponse::ofJson)
                 .map(NewsletterSubscribersResponse::subscribersCount)
                 .orElse(0L);
+    }
+
+    /**
+     * Sends an invitation to each jid provided to become an admin in the newsletter
+     *
+     * @param newsletterJid the id of the newsletter
+     * @param admins        the new admins
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Void> inviteNewsletterAdmins(JidProvider newsletterJid, JidProvider... admins) {
+        return inviteNewsletterAdmins(newsletterJid, null, admins);
+    }
+
+    /**
+     * Sends an invitation to each jid provided to become an admin in the newsletter
+     *
+     * @param newsletterJid the id of the newsletter
+     * @param inviteCaption the nullable caption of the invitation
+     * @param admins        the new admins
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Void> inviteNewsletterAdmins(JidProvider newsletterJid, String inviteCaption, JidProvider... admins) {
+        var messageFutures = Arrays.stream(admins)
+                .map(admin -> createNewsletterAdminInvite(newsletterJid, inviteCaption, admin))
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(messageFutures);
+    }
+
+    private CompletableFuture<ChatMessageInfo> createNewsletterAdminInvite(JidProvider newsletterJid, String inviteCaption, JidProvider admin) {
+        return getContactData(admin).thenCompose(results -> {
+            var recipient = results.getFirst()
+                    .findNode("lid")
+                    .flatMap(result -> result.attributes().getOptionalJid("val"))
+                    .map(jid -> jid.withServer(JidServer.LID).toSimpleJid())
+                    .orElse(admin.toJid());
+            var request = new CreateAdminInviteNewsletterRequest(new CreateAdminInviteNewsletterRequest.Variable(newsletterJid.toJid(), recipient));
+            return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6826078034173770"), Json.writeValueAsBytes(request)))
+                    .thenApplyAsync(this::parseNewsletterAdminInviteExpiration)
+                    .thenComposeAsync(expirationTimestamp -> sendNewsletterInviteMessage(newsletterJid, inviteCaption, expirationTimestamp, admin));
+        });
+    }
+
+    private long parseNewsletterAdminInviteExpiration(Node result) {
+        var payload = result.findNode("result")
+                .flatMap(Node::contentAsString);
+        return payload.flatMap(CreateAdminInviteNewsletterResponse::ofJson)
+                .map(CreateAdminInviteNewsletterResponse::mute)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot create invite: " + payload.orElse("unknown")));
+    }
+
+    private CompletableFuture<ChatMessageInfo> sendNewsletterInviteMessage(JidProvider newsletterJid, String inviteCaption, long expirationTimestamp, JidProvider admin) {
+        var newsletterName = store().findNewsletterByJid(newsletterJid.toJid())
+                .map(Newsletter::metadata)
+                .flatMap(NewsletterMetadata::name)
+                .map(NewsletterName::text)
+                .orElse(null);
+        var message = new NewsletterAdminInviteMessageBuilder()
+                .newsletterJid(newsletterJid.toJid())
+                .newsletterName(newsletterName)
+                .inviteExpirationTimestampSeconds(expirationTimestamp)
+                .caption(Objects.requireNonNullElse(inviteCaption, "Accept this invitation to be an admin for my WhatsApp channel"))
+                .build();
+        return sendChatMessage(admin, MessageContainer.of(message), false);
     }
 
     /**

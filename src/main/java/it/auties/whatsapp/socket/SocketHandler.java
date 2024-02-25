@@ -869,7 +869,7 @@ public class SocketHandler implements SocketListener {
         }
         var self = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
-                .withoutDevice();
+                .toSimpleJid();
         store().findContactByJid(self)
                 .orElseGet(() -> store().addContact(self))
                 .setChosenName(newName);

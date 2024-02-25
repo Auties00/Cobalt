@@ -184,5 +184,9 @@ public enum MessageType {
     /**
      * Text edit
      */
-    EDITED
+    EDITED,
+    /**
+     * Newsletter admin invite
+     */
+    NEWSLETTER_ADMIN_INVITE
 }

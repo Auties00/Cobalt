@@ -165,7 +165,7 @@ public class WebTest implements Listener {
     private boolean getOnlineStatus() {
         return api.store()
                 .jid()
-                .map(Jid::withoutDevice)
+                .map(Jid::toSimpleJid)
                 .flatMap(api.store()::findContactByJid)
                 .map(entry -> entry.lastKnownPresence() == ContactStatus.AVAILABLE)
                 .orElse(false);

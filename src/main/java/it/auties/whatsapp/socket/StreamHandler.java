@@ -216,7 +216,7 @@ class StreamHandler {
             var all = message.senderJid().device() == 0;
             socketHandler.querySessionsForcefully(message.senderJid());
             message.chat().ifPresent(Chat::clearParticipantsPreKeys);
-            var recipients = all ? null : List.of(message.senderJid());
+            var recipients = all ? null : Set.of(message.senderJid());
             var request = new MessageSendRequest.Chat(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
         } finally {
@@ -700,7 +700,7 @@ class StreamHandler {
         var companionJid = socketHandler.store()
                 .jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
-                .withoutDevice();
+                .toSimpleJid();
         var companionDevice = devices.remove(companionJid);
         devices.put(companionJid, companionDevice);
         socketHandler.store().setLinkedDevicesKeys(devices);
@@ -1229,7 +1229,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return socketHandler.queryAbout(jid.get().withoutDevice())
+        return socketHandler.queryAbout(jid.get().toSimpleJid())
                 .thenAcceptAsync(result -> parseNewAbout(result.orElse(null), update));
     }
 
@@ -1255,7 +1255,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return socketHandler.queryPicture(jid.get().withoutDevice())
+        return socketHandler.queryPicture(jid.get().toSimpleJid())
                 .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
     }
 
@@ -1524,7 +1524,7 @@ class StreamHandler {
         socketHandler.store().setJid(companion);
         socketHandler.store().setPhoneNumber(PhoneNumber.of(companion.user()));
         socketHandler.markConnected();
-        var me = new Contact(companion.withoutDevice(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
+        var me = new Contact(companion.toSimpleJid(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
         socketHandler.store().addContact(me);
     }
 

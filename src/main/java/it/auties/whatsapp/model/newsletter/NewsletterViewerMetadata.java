@@ -52,6 +52,14 @@ public final class NewsletterViewerMetadata implements ProtobufMessage {
     }
 
     @Override
+    public String toString() {
+        return "NewsletterViewerMetadata{" +
+                "mute=" + mute +
+                ", role=" + role +
+                '}';
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(mute, role);
     }

@@ -126,6 +126,8 @@ public record MessageContainer(
         Optional<FutureMessageContainer> editedMessage,
         @ProtobufProperty(index = 59, type = ProtobufType.OBJECT)
         Optional<FutureMessageContainer> viewOnceV2ExtensionMessage,
+        @ProtobufProperty(index = 78, type = ProtobufType.OBJECT)
+        Optional<NewsletterAdminInviteMessage> newsletterAdminInviteMessage,
         @ProtobufProperty(index = 35, type = ProtobufType.OBJECT)
         Optional<DeviceContextInfo> deviceInfo
 ) implements ProtobufMessage {
@@ -213,8 +215,8 @@ public record MessageContainer(
             case EncryptedReactionMessage encReactionMessage ->
                     builder.encryptedReactionMessage(Optional.of(encReactionMessage));
             case CallMessage callMessage -> builder.callMessage(Optional.of(callMessage));
-            default -> {
-            }
+            case NewsletterAdminInviteMessage newsletterAdminInviteMessage -> builder.newsletterAdminInviteMessage(newsletterAdminInviteMessage);
+            default -> {}
         }
         return builder;
     }
@@ -438,6 +440,9 @@ public record MessageContainer(
         }
         if (callMessage.isPresent()) {
             return callMessage.get();
+        }
+        if(newsletterAdminInviteMessage.isPresent()) {
+            return newsletterAdminInviteMessage.get();
         }
         return EMPTY_MESSAGE;
     }

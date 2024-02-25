@@ -116,6 +116,17 @@ public final class Newsletter implements JidProvider, ProtobufMessage {
     }
 
     @Override
+    public String toString() {
+        return "Newsletter{" +
+                "jid=" + jid +
+                ", state=" + state +
+                ", metadata=" + metadata +
+                ", viewerMetadata=" + viewerMetadata +
+                ", messages=" + messages +
+                '}';
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(jid);
     }

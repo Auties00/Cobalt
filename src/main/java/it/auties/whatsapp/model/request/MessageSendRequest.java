@@ -4,11 +4,11 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public sealed interface MessageSendRequest permits MessageSendRequest.Chat, MessageSendRequest.Newsletter {
-    record Chat(ChatMessageInfo info, List<Jid> recipients, boolean force, boolean peer,
+    record Chat(ChatMessageInfo info, Set<Jid> recipients, boolean force, boolean peer,
                 Map<String, ?> additionalAttributes) implements MessageSendRequest {
         public Chat(ChatMessageInfo info) {
             this(info, null, false, false, null);

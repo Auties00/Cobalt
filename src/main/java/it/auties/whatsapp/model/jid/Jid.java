@@ -194,7 +194,7 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
      *
      * @return a non-null jid
      */
-    public Jid withoutDevice() {
+    public Jid toSimpleJid() {
         return of(user(), server());
     }
 
