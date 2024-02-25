@@ -52,7 +52,7 @@ In short, if you use this library without a malicious intent, you will never get
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>cobalt</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
 </dependency>
 ```
 
@@ -60,12 +60,12 @@ In short, if you use this library without a malicious intent, you will never get
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:cobalt:0.0.2'
+   implementation 'com.github.auties00:cobalt:0.0.3'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:cobalt:0.0.2")
+   implementation("com.github.auties00:cobalt:0.0.3")
    ```
 
 ### Javadocs & Documentation
@@ -252,6 +252,10 @@ Finally select the registration status of your session:
   ```java
   .register(yourPhoneNumberWithCountryCode)
   ```
+  And get the resulting Whatsapp instance:
+  ```java
+  .whatsapp()
+  ```
 
 Now you can connect to your session:
   ```java
@@ -313,6 +317,7 @@ Remember to handle the result using, for example, `join` to await the connection
         })
         .register(phoneNumber) // Register the phone number asynchronously, if necessary
         .join() // Await the result
+        .whatsapp() // Get the resulting whatsapp instance
         .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
         .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives

@@ -48,7 +48,7 @@ public final class WhatsappRegistration {
         this.httpClient = createClient();
     }
 
-    public CompletableFuture<Void> registerPhoneNumber() {
+    public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
         return requestVerificationCode(false)
                 .thenCompose(ignored -> sendVerificationCode())
                 .whenComplete((result, exception) -> {
@@ -59,11 +59,11 @@ public final class WhatsappRegistration {
                 });
     }
 
-    public CompletableFuture<Void> requestVerificationCode() {
+    public CompletableFuture<RegistrationResponse> requestVerificationCode() {
         return requestVerificationCode(true);
     }
 
-    private CompletableFuture<Void> requestVerificationCode(boolean closeResources) {
+    private CompletableFuture<RegistrationResponse> requestVerificationCode(boolean closeResources) {
         if(method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }
@@ -170,16 +170,19 @@ public final class WhatsappRegistration {
         });
     }
 
-    private CompletableFuture<Void> requestVerificationCode(RegistrationResponse existsResponse, VerificationCodeError lastError) {
+    private CompletableFuture<RegistrationResponse> requestVerificationCode(RegistrationResponse existsResponse, VerificationCodeError lastError) {
         var options = getRegistrationOptions(
                 store,
                 keys,
                 true,
                 getRequestVerificationCodeParameters(existsResponse)
         );
-        return options.thenCompose(attrs -> sendRequest("/code", attrs))
-                .thenCompose(result -> onCodeRequestSent(existsResponse, lastError, result))
-                .thenRun(() -> saveRegistrationStatus(store, keys, false));
+        return options.thenComposeAsync(attrs -> sendRequest("/code", attrs))
+                .thenComposeAsync(result -> onCodeRequestSent(existsResponse, lastError, result))
+                .thenApplyAsync(response -> {
+                    saveRegistrationStatus(store, keys, false);
+                    return response;
+                });
     }
 
     private Entry<String, Object>[] getRequestVerificationCodeParameters(RegistrationResponse existsResponse) {
@@ -235,14 +238,14 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletionStage<Void> onCodeRequestSent(RegistrationResponse existsResponse, VerificationCodeError lastError, HttpResponse<String> result) {
+    private CompletionStage<RegistrationResponse> onCodeRequestSent(RegistrationResponse existsResponse, VerificationCodeError lastError, HttpResponse<String> result) {
         if (result.statusCode() != HttpURLConnection.HTTP_OK) {
             throw new RegistrationException(null, result.body());
         }
 
         var response = Json.readValue(result.body(), RegistrationResponse.class);
         if (response.status() == VerificationCodeStatus.SUCCESS) {
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(response);
         }
 
         return switch (response.errorReason()) {
@@ -256,7 +259,7 @@ public final class WhatsappRegistration {
         };
     }
 
-    public CompletableFuture<Void> sendVerificationCode() {
+    public CompletableFuture<RegistrationResponse> sendVerificationCode() {
         return codeHandler.get()
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, Map.entry("code", normalizeCodeResult(code))))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
@@ -268,7 +271,7 @@ public final class WhatsappRegistration {
                     var response = Json.readValue(result.body(), RegistrationResponse.class);
                     if (response.status() == VerificationCodeStatus.SUCCESS) {
                         saveRegistrationStatus(store, keys, true);
-                        return CompletableFuture.completedFuture(null);
+                        return CompletableFuture.completedFuture(response);
                     }
 
                     throw new RegistrationException(response, result.body());
