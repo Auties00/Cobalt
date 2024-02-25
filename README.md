@@ -1,4 +1,4 @@
-# Cobalt | Private Repo
+# Cobalt
 
 Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
 The repository's history was cleared to comply with this request, but keep in mind that the project has been actively developed for over two years.
