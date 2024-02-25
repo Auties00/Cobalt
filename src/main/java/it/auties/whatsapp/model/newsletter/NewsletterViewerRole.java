@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.newsletter;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.model.ProtobufEnum;
 
@@ -30,5 +31,11 @@ public enum NewsletterViewerRole implements ProtobufEnum {
                 .filter(entry -> entry.name().equalsIgnoreCase(name))
                 .findFirst()
                 .orElse(UNKNOWN);
+    }
+
+    @JsonValue
+    @Override
+    public String toString() {
+        return name();
     }
 }

@@ -3083,16 +3083,50 @@ public class Whatsapp {
     public CompletableFuture<Boolean> acceptNewsletterAdminInvite(JidProvider newsletterJid) {
         var request = new AcceptAdminInviteNewsletterRequest(new AcceptAdminInviteNewsletterRequest.Variable(newsletterJid.toJid()));
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7292354640794756"), Json.writeValueAsBytes(request)))
-                .thenApplyAsync(this::hasRevokedNewsletterAdminInvite);
+                .thenApplyAsync(this::hasAcceptedNewsletterAdminInvite)
+                .thenComposeAsync(result -> {
+                    if(result.isEmpty()) {
+                        return CompletableFuture.completedFuture(false);
+                    }
+
+                    return queryNewsletter(result.get(), NewsletterViewerRole.ADMIN).thenApplyAsync(newsletter -> {
+                        if(newsletter.isEmpty()) {
+                            return false;
+                        }
+
+                        store().addNewsletter(newsletter.get());
+                        return true;
+                    });
+                });
     }
 
-    private boolean hasAcceptedNewsletterAdminInvite(Node result) {
+    private Optional<Jid> hasAcceptedNewsletterAdminInvite(Node result) {
         return result.findNode("result")
                 .flatMap(Node::contentAsString)
                 .flatMap(RevokeAdminInviteNewsletterResponse::ofJson)
-                .isPresent();
+                .map(RevokeAdminInviteNewsletterResponse::jid);
     }
 
+    /**
+     * Queries a newsletter
+     *
+     * @param newsletterJid the non-null jid of the newsletter
+     * @param role          the non-null role of the user executing the query
+     * @return a future
+     */
+    public CompletableFuture<Optional<Newsletter>> queryNewsletter(Jid newsletterJid, NewsletterViewerRole role) {
+        var key = new QueryNewsletterRequest.Input(newsletterJid, "JID", role);
+        var request = new QueryNewsletterRequest(new QueryNewsletterRequest.Variable(key, true, true, true));
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6620195908089573"), Json.writeValueAsBytes(request)))
+                .thenApplyAsync(this::parseNewsletterQuery);
+    }
+
+    private Optional<Newsletter> parseNewsletterQuery(Node response) {
+        return response.findNode("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(NewsletterResponse::ofJson)
+                .map(NewsletterResponse::newsletter);
+    }
 
     /**
      * Registers a listener

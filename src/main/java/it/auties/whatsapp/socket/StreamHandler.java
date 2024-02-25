@@ -419,7 +419,6 @@ class StreamHandler {
             case "NotificationNewsletterLeave" -> handleNewsletterLeave(update);
             case "NotificationNewsletterUpdate" -> handleNewsletterMetadataUpdate(update);
             case "NotificationNewsletterStateChange" -> handleNewsletterStateUpdate(update);
-            case "NotificationNewsletterAdminMetadataUpdate" -> {}
         }
     }
 

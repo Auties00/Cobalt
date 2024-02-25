@@ -9,7 +9,7 @@ public record NewsletterPicture(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String id,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        String text,
+        String type,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         @JsonProperty("direct_path") String directPath
 ) implements ProtobufMessage {
