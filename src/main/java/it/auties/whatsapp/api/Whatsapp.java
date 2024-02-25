@@ -3048,6 +3048,53 @@ public class Whatsapp {
     }
 
     /**
+     * Revokes an invitation to become an admin in a newsletter
+     *
+     * @param newsletterJid the id of the newsletter
+     * @param admin         the non-null user that received the invite previously
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Boolean> revokeNewsletterAdminInvite(JidProvider newsletterJid, JidProvider admin) {
+        return getContactData(admin).thenCompose(results -> {
+            var recipient = results.getFirst()
+                    .findNode("lid")
+                    .flatMap(result -> result.attributes().getOptionalJid("val"))
+                    .map(jid -> jid.withServer(JidServer.LID).toSimpleJid())
+                    .orElse(admin.toJid());
+            var request = new RevokeAdminInviteNewsletterRequest(new RevokeAdminInviteNewsletterRequest.Variable(newsletterJid.toJid(), recipient));
+            return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6111171595650958"), Json.writeValueAsBytes(request)))
+                    .thenApplyAsync(this::hasRevokedNewsletterAdminInvite);
+        });
+    }
+
+    private boolean hasRevokedNewsletterAdminInvite(Node result) {
+        return result.findNode("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(RevokeAdminInviteNewsletterResponse::ofJson)
+                .isPresent();
+    }
+
+    /**
+     * Accepts an invitation to become an admin in a newsletter
+     *
+     * @param newsletterJid the id of the newsletter
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Boolean> acceptNewsletterAdminInvite(JidProvider newsletterJid) {
+        var request = new AcceptAdminInviteNewsletterRequest(new AcceptAdminInviteNewsletterRequest.Variable(newsletterJid.toJid()));
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7292354640794756"), Json.writeValueAsBytes(request)))
+                .thenApplyAsync(this::hasRevokedNewsletterAdminInvite);
+    }
+
+    private boolean hasAcceptedNewsletterAdminInvite(Node result) {
+        return result.findNode("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(RevokeAdminInviteNewsletterResponse::ofJson)
+                .isPresent();
+    }
+
+
+    /**
      * Registers a listener
      *
      * @param listener the listener to register
