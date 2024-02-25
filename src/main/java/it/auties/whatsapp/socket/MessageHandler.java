@@ -626,12 +626,16 @@ class MessageHandler {
 
     private List<Jid> parseDevice(Node wrapper, boolean excludeSelf) {
         var jid = wrapper.attributes().getRequiredJid("jid");
-        return wrapper.findNode("devices")
+        var devices = wrapper.findNode("devices")
                 .orElseThrow(() -> new NoSuchElementException("Missing devices"))
                 .findNode("device-list")
                 .orElseThrow(() -> new NoSuchElementException("Missing device list"))
-                .children()
-                .stream()
+                .children();
+        if(devices.isEmpty()) {
+            return excludeSelf && isMe(jid) ? List.of() : List.of(jid);
+        }
+
+        return devices.stream()
                 .map(child -> parseDeviceId(child, jid, excludeSelf))
                 .flatMap(Optional::stream)
                 .toList();

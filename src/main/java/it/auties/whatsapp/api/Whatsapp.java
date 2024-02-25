@@ -3103,8 +3103,8 @@ public class Whatsapp {
     private Optional<Jid> hasAcceptedNewsletterAdminInvite(Node result) {
         return result.findNode("result")
                 .flatMap(Node::contentAsString)
-                .flatMap(RevokeAdminInviteNewsletterResponse::ofJson)
-                .map(RevokeAdminInviteNewsletterResponse::jid);
+                .flatMap(AcceptAdminInviteNewsletterResponse::ofJson)
+                .map(AcceptAdminInviteNewsletterResponse::jid);
     }
 
     /**
