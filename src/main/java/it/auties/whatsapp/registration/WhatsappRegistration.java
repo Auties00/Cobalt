@@ -22,7 +22,6 @@ import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import javax.net.ssl.SSLContext;
-import java.io.IOException;
 import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -75,11 +74,6 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<RegistrationResponse> requestVerificationCode(boolean closeResources) {
-        try {
-            System.out.println(httpClient.send(HttpRequest.newBuilder(URI.create("http://api.ipify.org/")).build(), BodyHandlers.ofString()).body());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
         if (method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }

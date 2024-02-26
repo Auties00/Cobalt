@@ -94,8 +94,7 @@ public final class WhatsappMetadata {
         return Medias.downloadAsync(URI.create(business ? Whatsapp.MOBILE_BUSINESS_IOS_URL : Whatsapp.MOBILE_IOS_URL), Whatsapp.MOBILE_IOS_USER_AGENT).thenApplyAsync(response -> {
             var result = Json.readValue(response, IosVersionResponse.class)
                     .version()
-                    .filter(version -> !version.toString().equals("2.24.4.3") && !version.toString().equals("2.24.4.4")) // TEMPORARY FIX
-                    .orElse(Whatsapp.MOBILE_DEFAULT_IOS_VERSION);
+                    .orElseThrow();
             if(business) {
                 businessIosVersion = result;
             }else {
