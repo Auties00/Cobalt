@@ -28,6 +28,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -47,6 +48,7 @@ public final class WhatsappRegistration {
     private final AsyncVerificationCodeSupplier codeHandler;
     private final VerificationCodeMethod method;
     private final ApnsClient apnsClient;
+    private final CountryCode countryCode;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
         this.store = store;
@@ -56,6 +58,7 @@ public final class WhatsappRegistration {
         this.httpClient = createClient();
         var platform = store.device().platform();
         this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient(store.proxy().orElse(null)) : null;
+        this.countryCode = CountryCode.values()[ThreadLocalRandom.current().nextInt(CountryCode.values().length)];
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
@@ -416,7 +419,7 @@ public final class WhatsappRegistration {
     private HttpClient createClient() {
         try {
             var sslContext = SSLContext.getInstance("TLSv1." + (ThreadLocalRandom.current().nextBoolean() ? 2 : 3));
-            sslContext.init(null, null, null);
+            sslContext.init(null, null, new SecureRandom());
             var sslParameters = sslContext.getDefaultSSLParameters();
             var supportedCiphers = Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())
                     .filter(entry -> ThreadLocalRandom.current().nextBoolean())
@@ -463,8 +466,8 @@ public final class WhatsappRegistration {
                     .put("cc", phoneNumber.countryCode().prefix())
                     .put("in", phoneNumber.numberWithoutPrefix())
                     .put("rc", store.releaseChannel().index(), !store.device().platform().isKaiOs())
-                    .put("lg", phoneNumber.countryCode().lg())
-                    .put("lc", phoneNumber.countryCode().lc())
+                    .put("lg", countryCode.lg())
+                    .put("lc", countryCode.lc())
                     .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
                     .put("vname", certificate, certificate != null)
                     .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
