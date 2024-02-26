@@ -860,25 +860,16 @@ class StreamHandler {
             sendPreKeys();
         }
 
-        createMediaConnection(0, null);
         var loggedInFuture = queryRequiredInfo()
-                .thenComposeAsync(ignored -> CompletableFuture.allOf(
-                        updateSelfPresence(),
-                        queryInitial2fa(),
-                        queryInitialAboutPrivacy(),
-                        queryInitialPrivacySettings(),
-                        queryInitialDisappearingMode(),
-                        queryInitialBlockList(),
-                        updateUserAbout(false),
-                        updateUserPicture(false)
-                ))
-                .thenRunAsync(this::onInitialInfo)
+                .thenComposeAsync(ignored -> initSession())
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
         if (!socketHandler.keys().initialAppSync()) {
             configureWhatsappAccount()
                     .exceptionally(throwable -> socketHandler.handleFailure(LOGIN, throwable))
-                    .thenRun(this::onRegistration);
+                    .thenRunAsync(() -> { onRegistration(); onInitialInfo(); });
             return;
+        }else {
+            loggedInFuture.thenRunAsync(this::onInitialInfo);
         }
 
         var attributionFuture = socketHandler.store()
@@ -887,6 +878,20 @@ class StreamHandler {
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, attributionFuture)
                 .thenRunAsync(this::onAttribution);
+    }
+
+    private CompletableFuture<Void> initSession() {
+        return CompletableFuture.allOf(
+                createMediaConnection(0, null),
+                updateSelfPresence(),
+                queryInitial2fa(),
+                queryInitialAboutPrivacy(),
+                queryInitialPrivacySettings(),
+                queryInitialDisappearingMode(),
+                queryInitialBlockList(),
+                updateUserAbout(false),
+                updateUserPicture(false)
+        );
     }
 
     private CompletableFuture<Void> configureWhatsappAccount() {
@@ -1312,19 +1317,19 @@ class StreamHandler {
         socketHandler.keys().serialize(true);
     }
 
-    private void createMediaConnection(int tries, Throwable error) {
+    private CompletableFuture<Void> createMediaConnection(int tries, Throwable error) {
         if (socketHandler.state() != SocketState.CONNECTED) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         if (tries >= MAX_ATTEMPTS) {
             socketHandler.store().setMediaConnection(null);
             socketHandler.handleFailure(MEDIA_CONNECTION, error);
             scheduleMediaConnection(MEDIA_CONNECTION_DEFAULT_INTERVAL);
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
-        socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
+        return socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
                 .thenApplyAsync(node -> {
                     var mediaConnection = node.findNode("media_conn").orElse(node);
                     var auth = mediaConnection.attributes().getString("auth");
@@ -1342,10 +1347,7 @@ class StreamHandler {
                     socketHandler.store().setMediaConnection(result);
                     scheduleMediaConnection(result.ttl());
                 })
-                .exceptionallyAsync(throwable -> {
-                    createMediaConnection(tries + 1, throwable);
-                    return null;
-                });
+                .exceptionallyCompose(throwable -> createMediaConnection(tries + 1, throwable));
     }
 
     private void scheduleMediaConnection(int seconds) {
