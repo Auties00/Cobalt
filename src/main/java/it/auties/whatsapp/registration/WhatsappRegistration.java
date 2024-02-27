@@ -88,7 +88,7 @@ public final class WhatsappRegistration {
             case IOS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(pushToken -> exists(originalDevice, null))
-                    .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS))
+                    .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getIOSPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
             case ANDROID -> exists(null, null)
@@ -138,7 +138,7 @@ public final class WhatsappRegistration {
         System.out.println("Sending request to /reg_onboard_abprop with parameters " + attributes);
         return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(response -> {
             if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new RegistrationException(null, response.body());
+                throw new RegistrationException(null, "Invalid status code: " + response.statusCode());
             }
 
             System.out.println("Received respose /reg_onboard_abprop " + response.body());
