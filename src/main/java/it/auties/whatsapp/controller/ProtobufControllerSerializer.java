@@ -223,8 +223,8 @@ class ProtobufControllerSerializer implements ControllerSerializer {
             var tempFile = Files.createTempFile(fileName, ".tmp");
             try (var tempFileOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
                 tempFileOutputStream.write(object);
-                Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
             }
+            Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot write file", exception);
         }

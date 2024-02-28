@@ -85,13 +85,13 @@ public final class WhatsappRegistration {
         var originalDevice = store.device();
         store.setDevice(originalDevice.toPersonal());
         var future = switch (store.device().platform()) {
-            case IOS -> onboard("1", 2155550000L, null)
+            case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(pushToken -> exists(originalDevice, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getIOSPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
-            case ANDROID -> exists(null, null)
+            case ANDROID, ANDROID_BUSINESS -> exists(null, null)
                     .thenComposeAsync(response -> requestVerificationCode(null, null));
             case KAIOS -> requestVerificationCode(null, null);
             default -> throw new IllegalStateException("Unsupported mobile os");
