@@ -25,8 +25,6 @@ import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
@@ -44,14 +42,11 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 // TODO: Write a custom library to generate all thumbnails
 public final class Medias {
-    private static final HttpClient CLIENT = HttpClient.newBuilder()
-            .version(Version.HTTP_1_1)
-            .followRedirects(Redirect.ALWAYS)
-            .build();
     private static final int PROFILE_PIC_SIZE = 640;
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
-    private static final String USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
+
+    private static volatile HttpClient httpClient;
 
     public static byte[] getProfilePic(byte[] file) {
         try {
@@ -74,7 +69,7 @@ public final class Medias {
 
     @SafeVarargs
     public static CompletableFuture<byte[]> downloadAsync(URI uri, Map.Entry<String, String>... headers) {
-        return downloadAsync(uri, USER_AGENT, headers);
+        return downloadAsync(uri, Whatsapp.MOBILE_ANDROID_USER_AGENT, headers);
     }
 
     @SafeVarargs
@@ -93,7 +88,7 @@ public final class Medias {
             for(var header : headers) {
                 request.header(header.getKey(), header.getValue());
             }
-            return CLIENT.sendAsync(request.build(), BodyHandlers.ofByteArray()).thenCompose(response -> {
+            return getOrCreateClient().sendAsync(request.build(), BodyHandlers.ofByteArray()).thenCompose(response -> {
                 if (response.statusCode() != HttpURLConnection.HTTP_OK) {
                     return CompletableFuture.failedFuture(new IllegalArgumentException("Erroneous status code: " + response.statusCode()));
                 }
@@ -103,6 +98,17 @@ public final class Medias {
         } catch (Throwable exception) {
             return CompletableFuture.failedFuture(exception);
         }
+    }
+    
+    private static synchronized HttpClient getOrCreateClient() {
+        if(httpClient != null) {
+            return httpClient;
+        }
+
+        return httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build();
     }
 
     public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
@@ -122,7 +128,7 @@ public final class Medias {
                 .header("Accept", "application/json")
                 .header("Origin", Whatsapp.WEB_ORIGIN)
                 .build();
-        return CLIENT.sendAsync(request, ofString()).thenApplyAsync(response -> {
+        return getOrCreateClient().sendAsync(request, ofString()).thenApplyAsync(response -> {
             Validate.isTrue(response.statusCode() == 200, "Invalid status code: %s", response.statusCode());
             var upload = Json.readValue(response.body(), MediaUpload.class);
             return new MediaFile(
@@ -168,7 +174,7 @@ public final class Medias {
                     .uri(URI.create(url))
                     .GET()
                     .build();
-            return CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+            return getOrCreateClient().sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
                     .thenApplyAsync(response -> handleResponse(provider, response));
         } catch (Throwable error) {
             return CompletableFuture.failedFuture(new RuntimeException("Cannot download media", error));

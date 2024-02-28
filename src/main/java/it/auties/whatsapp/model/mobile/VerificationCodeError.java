@@ -31,6 +31,8 @@ public enum VerificationCodeError {
     INVALID_SIGNED_KEY("invalid_skey"),
     FORMAT_WRONG("format_wrong"),
     INCORRECT("incorrect"),
+    DEVICE_CONFIRM_OR_SECOND_CODE("device_confirm_or_second_code"),
+    SECURITY_CODE("security_code"),
     SUCCESS("");
 
     private final String data;

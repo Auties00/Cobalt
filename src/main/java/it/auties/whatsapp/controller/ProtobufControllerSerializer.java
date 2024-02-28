@@ -569,7 +569,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
 
         @Override
         public void clear() {
-            delegate.clear();
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -629,12 +629,12 @@ class ProtobufControllerSerializer implements ControllerSerializer {
 
         @Override
         public E pollFirst() {
-            return delegate.pollFirst();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public E pollLast() {
-            return delegate.pollLast();
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -644,7 +644,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
 
         @Override
         public E pop() {
-            return delegate.pop();
+            throw new UnsupportedOperationException();
         }
 
         @Override

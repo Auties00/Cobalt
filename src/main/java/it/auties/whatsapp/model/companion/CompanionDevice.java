@@ -86,11 +86,11 @@ public record CompanionDevice(
 
     public static CompanionDevice android(Version appVersion, boolean business) {
         return new CompanionDevice(
-                "P60",
-                "HUAWEI",
+                "MI_6",
+                "Xiaomi",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
                 Optional.ofNullable(appVersion),
-                Version.of("10.11.0")
+                Version.of("9")
         );
     }
 
@@ -151,7 +151,7 @@ public record CompanionDevice(
 
     private String deviceName() {
         return switch (platform()) {
-            case ANDROID, ANDROID_BUSINESS -> manufacturer + " " + model;
+            case ANDROID, ANDROID_BUSINESS -> manufacturer + "-" + model;
             case IOS, IOS_BUSINESS -> model;
             case KAIOS -> manufacturer + "+" + model;
             default -> throw new IllegalStateException("Unsupported mobile os");
