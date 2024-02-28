@@ -145,7 +145,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         private void notifyMessage() {
             try {
-                listener.onMessage(message);
+                listener.onMessage(message, message.length);
             } catch (Throwable throwable) {
                 listener.onError(throwable);
             }finally {
@@ -185,24 +185,23 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
 
         private void readNextMessage() {
+            var lengthBytes = new byte[MESSAGE_LENGTH];
+            int length;
+            byte[] messageBytes = null;
             while (isOpen()) {
                 try {
-                    var lengthBytes = readBytes(MESSAGE_LENGTH);
-                    if (lengthBytes == null) {
-                        continue;
-                    }
-
-                    var length = (lengthBytes[0] << 16) | ((lengthBytes[1] & 0xFF) << 8) | (lengthBytes[2] & 0xFF);
+                    readBytes(lengthBytes, MESSAGE_LENGTH);
+                    length = (lengthBytes[0] << 16) | ((lengthBytes[1] & 0xFF) << 8) | (lengthBytes[2] & 0xFF);
                     if (length < 0) {
                         continue;
                     }
 
-                    var data = readBytes(length);
-                    if (data == null) {
-                        continue;
+                    if(messageBytes == null || length > messageBytes.length) {
+                        messageBytes = new byte[length];
                     }
 
-                    listener.onMessage(data);
+                    readBytes(messageBytes, length);
+                    listener.onMessage(messageBytes, length);
                 } catch (Throwable throwable) {
                     listener.onError(throwable);
                 }
@@ -211,18 +210,15 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             disconnect();
         }
 
-        private byte[] readBytes(int size) {
+        private void readBytes(byte[] data, int length) {
             try {
-                var data = new byte[size];
                 var read = 0;
-                while (read != data.length) {
-                    var chunk = socket.getInputStream().read(data, read, data.length - read);
+                while (read != length) {
+                    var chunk = socket.getInputStream().read(data, read, length - read);
                     read += chunk;
                 }
-
-                return data;
-            } catch (Throwable exception) {
-                return null;
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
             }
         }
 

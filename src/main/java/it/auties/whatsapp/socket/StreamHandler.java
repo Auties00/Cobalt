@@ -105,6 +105,13 @@ class StreamHandler {
             case "message" -> socketHandler.decodeMessage(node, null, true);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
+            case "xmlstreamend" -> digestStreamEnd();
+        }
+    }
+
+    private void digestStreamEnd() {
+        if(socketHandler.state() == SocketState.CONNECTED) {
+            socketHandler.disconnect(DisconnectReason.RECONNECTING);
         }
     }
 
@@ -826,6 +833,11 @@ class StreamHandler {
     }
 
     private void digestError(Node node) {
+        if(node.hasNode("conflict")) {
+            socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            return;
+        }
+
         if (node.hasNode("bad-mac")) {
             socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
             return;

@@ -11,6 +11,7 @@ import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Specification;
 
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -24,9 +25,9 @@ class AuthHandler {
         this.socketHandler = socketHandler;
     }
 
-    protected CompletableFuture<Boolean> login(SocketSession session, byte[] message) {
+    protected CompletableFuture<Boolean> login(SocketSession session, byte[] message, int messageLength) {
         try {
-            var serverHello = readHandshake(message);
+            var serverHello = readHandshake(message, messageLength);
             if (serverHello.isEmpty()) {
                 return CompletableFuture.completedFuture(false);
             }
@@ -62,9 +63,10 @@ class AuthHandler {
         };
     }
 
-    private Optional<ServerHello> readHandshake(byte[] message) {
+    // TODO: Optimize with no copy
+    private Optional<ServerHello> readHandshake(byte[] message, int messageLength) {
         try {
-            var handshakeMessage = HandshakeMessageSpec.decode(message);
+            var handshakeMessage = HandshakeMessageSpec.decode(Arrays.copyOf(message, messageLength));
             return Optional.ofNullable(handshakeMessage.serverHello());
         } catch (ProtobufDeserializationException exception) {
             return Optional.empty();

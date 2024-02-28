@@ -23,17 +23,17 @@ public final class AesGcm {
     }
 
     public static byte[] encrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(toIv(iv), input, key, additionalData, true);
+        return cipher(toIv(iv), input, input.length, key, additionalData, true);
     }
 
-    private static byte[] cipher(byte[] iv, byte[] input, byte[] key, byte[] additionalData, boolean encrypt) {
+    private static byte[] cipher(byte[] iv, byte[] input, int inputLength, byte[] key, byte[] additionalData, boolean encrypt) {
         try {
             var cipher = new GCMBlockCipher(new AESEngine());
             var parameters = new AEADParameters(new KeyParameter(key), NONCE, iv, additionalData);
             cipher.init(encrypt, parameters);
             var outputLength = cipher.getOutputSize(input.length);
             var output = new byte[outputLength];
-            var outputOffset = cipher.processBytes(input, 0, input.length, output, 0);
+            var outputOffset = cipher.processBytes(input, 0, inputLength, output, 0);
             cipher.doFinal(output, outputOffset);
             return output;
         } catch (InvalidCipherTextException exception) {
@@ -53,22 +53,26 @@ public final class AesGcm {
     }
 
     public static byte[] decrypt(long iv, byte[] input, byte[] key) {
-        return decrypt(iv, input, key, null);
+        return decrypt(iv, input, input.length, key);
+    }
+
+    public static byte[] decrypt(long iv, byte[] input, int inputLength, byte[] key) {
+        return cipher(toIv(iv), input, inputLength, key, null, false);
     }
 
     public static byte[] decrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(toIv(iv), input, key, additionalData, false);
+        return cipher(toIv(iv), input, input.length, key, additionalData, false);
     }
 
     public static byte[] encrypt(byte[] iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(iv, input, key, additionalData, true);
+        return cipher(iv, input, input.length, key, additionalData, true);
     }
 
     public static byte[] encrypt(byte[] iv, byte[] input, byte[] key) {
-        return cipher(iv, input, key, null, true);
+        return cipher(iv, input, input.length, key, null, true);
     }
 
     public static byte[] decrypt(byte[] iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(iv, input, key, additionalData, false);
+        return cipher(iv, input, input.length, key, additionalData, false);
     }
 }

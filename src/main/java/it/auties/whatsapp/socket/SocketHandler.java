@@ -53,8 +53,6 @@ import static it.auties.whatsapp.model.chat.GroupSetting.*;
 
 @SuppressWarnings("unused")
 public class SocketHandler implements SocketListener {
-    private static final ExecutorService DEFAULT_EXECUTOR = ForkJoinPool.getCommonPoolParallelism() > 1 ? ForkJoinPool.commonPool() : Executors.newSingleThreadExecutor();
-
     private static final Set<UUID> connectedUuids = ConcurrentHashMap.newKeySet();
     private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
     private static final Set<String> connectedAlias = ConcurrentHashMap.newKeySet();
@@ -107,7 +105,7 @@ public class SocketHandler implements SocketListener {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
-        this.socketExecutor = Objects.requireNonNullElse(socketExecutor, DEFAULT_EXECUTOR);
+        this.socketExecutor = Objects.requireNonNullElse(socketExecutor, ForkJoinPool.commonPool());
     }
 
     private void onShutdown(boolean reconnect) {
@@ -168,9 +166,9 @@ public class SocketHandler implements SocketListener {
     }
 
     @Override
-    public void onMessage(byte[] message) {
+    public void onMessage(byte[] message, int length) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
-            authHandler.login(session, message)
+            authHandler.login(session, message, length)
                     .thenApplyAsync(result -> result ? setState(SocketState.CONNECTED) : null)
                     .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
             return;
@@ -181,7 +179,7 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        var decipheredMessage = decipherMessage(message, readKey.get());
+        var decipheredMessage = decipherMessage(message, length, readKey.get());
         if(decipheredMessage == null) {
             return;
         }
@@ -196,9 +194,9 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-    private byte[] decipherMessage(byte[] message, byte[] readKey) {
+    private byte[] decipherMessage(byte[] message, int messageLength, byte[] readKey) {
         try {
-            return AesGcm.decrypt(keys.readCounter(true), message, readKey);
+            return AesGcm.decrypt(keys.readCounter(true), message, messageLength, readKey);
         }  catch (Throwable throwable) {
             return handleFailure(CRYPTOGRAPHY, throwable);
         }
