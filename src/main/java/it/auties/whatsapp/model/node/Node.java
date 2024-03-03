@@ -1,12 +1,9 @@
 package it.auties.whatsapp.model.node;
 
-import it.auties.whatsapp.model.message.model.ChatMessageKey;
-import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.Json;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -326,20 +323,6 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     public boolean hasContent() {
         return Objects.nonNull(content);
-    }
-
-    /**
-     * Constructs a new request from this node
-     *
-     * @return a non null request
-     * @throws NullPointerException if no valid jid can be found
-     */
-    public SocketRequest toRequest(Function<Node, Boolean> filter, boolean response) {
-        if (response && id() == null) {
-            attributes.put("id", ChatMessageKey.randomId());
-        }
-
-        return SocketRequest.of(this, filter);
     }
 
     /**

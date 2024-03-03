@@ -146,6 +146,15 @@ public final class WhatsappRegistration {
         });
     }
 
+    @SuppressWarnings("unused")
+    private CompletableFuture<String> ping() {
+        var ipRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://ip.oxylabs.io/location"))
+                .build();
+        return httpClient.sendAsync(ipRequest, BodyHandlers.ofString())
+                .thenApply(HttpResponse::body);
+    }
+
     private CompletableFuture<String> getIOSPushToken() {
         if (apnsClient == null) {
             return CompletableFuture.completedFuture(null);
@@ -453,6 +462,7 @@ public final class WhatsappRegistration {
             var clientBuilder = HttpClient.newBuilder()
                     .sslContext(sslContext)
                     .sslParameters(sslParameters)
+                    .followRedirects(HttpClient.Redirect.ALWAYS)
                     .version(version);
             store.proxy().ifPresent(proxy -> {
                 clientBuilder.proxy(ProxySelector.of(new InetSocketAddress(proxy.getHost(), proxy.getPort())));

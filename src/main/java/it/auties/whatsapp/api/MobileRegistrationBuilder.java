@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.registration.WhatsappRegistration;
 
+import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +55,11 @@ public sealed class MobileRegistrationBuilder {
 
         public Unregistered device(CompanionDevice device) {
             store.setDevice(device);
+            return this;
+        }
+
+        public Unregistered proxy(URI proxy) {
+            store.setProxy(proxy);
             return this;
         }
 
@@ -146,6 +152,11 @@ public sealed class MobileRegistrationBuilder {
 
         public Unverified device(CompanionDevice device) {
             store.setDevice(device);
+            return this;
+        }
+
+        public Unverified proxy(URI proxy) {
+            store.setProxy(proxy);
             return this;
         }
 

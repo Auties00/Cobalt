@@ -541,7 +541,7 @@ public class Whatsapp {
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message, boolean compose) {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
-        return prepareChatForMessage(recipient, timestamp).thenComposeAsync(chatResult -> {
+        return prepareChat(recipient, timestamp).thenComposeAsync(chatResult -> {
             var deviceInfo = new DeviceContextInfoBuilder()
                     .deviceListMetadataVersion(2)
                     .build();
@@ -620,7 +620,7 @@ public class Whatsapp {
                 .thenRun(() -> {});
     }
 
-    private CompletableFuture<Boolean> prepareChatForMessage(JidProvider recipient, long timestamp) {
+    private CompletableFuture<Boolean> prepareChat(JidProvider recipient, long timestamp) {
         if(!recipient.toJid().hasServer(JidServer.WHATSAPP)) {
             return CompletableFuture.completedFuture(true);
         }
@@ -1387,10 +1387,11 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<GroupMetadata>> createGroup(String subject, ChatEphemeralTimer timer, JidProvider parentCommunity, JidProvider... contacts) {
+        var timestamp = Clock.nowSeconds();
         Validate.isTrue(!subject.isBlank(), "The subject of a group cannot be blank");
         Validate.isTrue( parentCommunity != null || contacts.length >= 1, "Expected at least 1 member for this group");
         var trustFutures = Arrays.stream(contacts)
-                .map(contact -> addTrustedContact(contact, Clock.nowSeconds()))
+                .map(contact -> prepareGroupParticipant(contact, timestamp))
                 .toArray(CompletableFuture[]::new);
         return CompletableFuture.allOf(trustFutures).thenComposeAsync(result -> {
             var children = new ArrayList<Node>();
@@ -1400,14 +1401,33 @@ public class Whatsapp {
             if (timer != ChatEphemeralTimer.OFF) {
                 children.add(Node.of("ephemeral", Map.of("expiration", timer.periodSeconds())));
             }
+            children.add(Node.of("member_add_mode", "all_member_add".getBytes(StandardCharsets.UTF_8)));
+            children.add(Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", "off"))));
             Arrays.stream(contacts)
                     .map(contact -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
                     .forEach(children::add);
-            var key = HexFormat.of().formatHex(BytesHelper.random(12));
-            var body = Node.of("create", Map.of("subject", subject, "key", key), children);
-            return socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body)
-                    .thenApplyAsync(this::parseGroupResponse);
+
+            var body = Node.of("create", Map.of("subject", subject, "key", timestamp), children);
+            var future = socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body);
+            sendGroupWam(timestamp);
+            return future.thenApplyAsync(this::parseGroupResponse);
         });
+    }
+
+    private CompletableFuture<Boolean> prepareGroupParticipant(JidProvider contact, long timestamp) {
+        return prepareChat(contact, timestamp)
+                .thenComposeAsync(chatResult -> addTrustedContact(contact, Clock.nowSeconds()))
+                .thenComposeAsync(trustResult -> sendDeltaChatRequest(contact));
+    }
+
+    private void sendGroupWam(long timestamp) {
+        var wamBinary = "57414d0501020001200b800d086950686f6e652058800f0631362e372e34801109322e32342e342e373810152017502f0dd9e065206928830138790604387b060288eb0a0361746e887911904246342c316a332c55772c79492c39442c31552c45722c31432c41472c324a2c49662c35552c4f582c31462c352c41792c38772c4c442c414a2c35362c642c346f2c466d2c37512c36392c32442c332c31762c33772c337a2c31332c7a2c512c722c33752c32652c522c6f2c36662c502c692c572c372c562c4b2c382c31532c4c2c31362c31702c742c6d2c32382c5088a5134632343835312c32343336362c32313031382c32333939332c32333633302c31373832352c31373833302c32353530382c32353530302c363633372c32323634392c3233363237186b1828a71c88911e063230483234308879240431372e3018ed3318ab3888fb3c0935363936333037343129b4072601";
+        var wamData = new String(HexFormat.of().parseHex(wamBinary))
+                .replace("iPhone X", socketHandler.store().device().model().replaceAll("_", " "))
+                .replace("2.24.4.78", socketHandler.store().version().toString())
+                .getBytes();
+        var addNode = Node.of("add", Map.of("t", timestamp), wamData);
+        socketHandler.sendQuery("set", "w:stats", addNode);
     }
 
     private Optional<GroupMetadata> parseGroupResponse(Node response) {

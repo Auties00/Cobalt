@@ -96,6 +96,7 @@ public final class WhatsappMetadata {
                     .version()
                     .filter(version -> !version.toString().equals("2.24.4.3") && !version.toString().equals("2.24.4.4")) // TEMPORARY FIX
                     .orElse(Whatsapp.MOBILE_DEFAULT_IOS_VERSION);
+            System.out.println("Using version " + result);
             if(business) {
                 businessIosVersion = result;
             }else {

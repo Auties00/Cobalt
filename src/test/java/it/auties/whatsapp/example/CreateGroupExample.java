@@ -6,14 +6,16 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
 
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-public class SendMessageExample {
+public class CreateGroupExample {
     public static void main(String[] args) {
         System.out.println("Enter the six parts segment: ");
         var scanner = new Scanner(System.in);
         var sixParts = scanner.nextLine().trim();
-        System.out.println("Enter the phone number of the recipient: ");
-        var recipient = scanner.nextLong();
+        System.out.println("Enter the phone number of the member to add: ");
+        var toAdd = scanner.nextLong();
         Whatsapp.mobileBuilder()
                 .newConnection(SixPartsKeys.of(sixParts))
                 // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
@@ -23,9 +25,11 @@ public class SendMessageExample {
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addLoggedInListener(api -> {
-                    System.out.println("Sending message...");
-                    api.sendMessage(Jid.of(recipient), "Hello World").join();
-                    System.out.println("Sent message!");
+                    CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS).execute(() -> {
+                        System.out.println("Creating group...");
+                        var result = api.createGroup("Test", Jid.of(toAdd)).join();
+                        System.out.println("Created group: " + result);
+                    });
                 })
                 .connect() // If you get error 403 o 503 the account is banned
                 .join();

@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.mobile;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import it.auties.protobuf.annotation.ProtobufConverter;
 import it.auties.whatsapp.model.jid.Jid;
@@ -47,6 +48,7 @@ public record PhoneNumber(CountryCode countryCode, long numberWithoutPrefix) {
     }
 
     @Override
+    @JsonValue
     public String toString() {
         return String.valueOf(number());
     }

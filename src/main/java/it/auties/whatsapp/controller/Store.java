@@ -262,7 +262,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      * The timestampSeconds in seconds for the initialization of this object
      */
     @ProtobufProperty(index = 30, type = ProtobufType.UINT64)
-    final long initializationTimeStamp;
+    final Long initializationTimeStamp;
 
     /**
      * The media connection associated with this store
@@ -391,6 +391,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     public static Store newStore(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
         return new StoreBuilder()
                 .uuid(uuid)
+                .initializationTimeStamp(Clock.nowSeconds())
                 .phoneNumber(phoneNumber != null ? PhoneNumber.of(phoneNumber) : null)
                 .device(CompanionDevice.ios(false))
                 .clientType(clientType)

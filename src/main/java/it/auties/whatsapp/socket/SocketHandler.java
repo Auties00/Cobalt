@@ -45,6 +45,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -72,6 +73,7 @@ public class SocketHandler implements SocketListener {
     private final ErrorHandler errorHandler;
 
     private final ExecutorService socketExecutor;
+    private final AtomicLong requestsCounter;
 
     private volatile SocketState state;
 
@@ -106,6 +108,7 @@ public class SocketHandler implements SocketListener {
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
         this.socketExecutor = Objects.requireNonNullElse(socketExecutor, ForkJoinPool.commonPool());
+        this.requestsCounter = new AtomicLong();
     }
 
     private void onShutdown(boolean reconnect) {
@@ -363,10 +366,18 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
 
-        return node.toRequest(null, false)
+        return createRequest(node, null, false)
                 .sendWithNoResponse(session, keys, store)
                 .exceptionallyAsync(throwable -> handleFailure(STREAM, throwable))
                 .thenRunAsync(() -> onNodeSent(node));
+    }
+
+    private SocketRequest createRequest(Node node, Function<Node, Boolean> filter, boolean response) {
+        if (response && node.id() == null) {
+            node.attributes().put("id", store.initializationTimeStamp() + "-" + requestsCounter.incrementAndGet());
+        }
+
+        return SocketRequest.of(node, filter);
     }
 
     private void onNodeSent(Node node) {
@@ -444,7 +455,7 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(node);
         }
 
-        var request = node.toRequest(filter, true);
+        var request = createRequest(node, filter, true);
         var result = request.send(session, keys, store);
         onNodeSent(node);
         return result;

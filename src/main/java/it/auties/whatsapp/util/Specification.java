@@ -28,7 +28,7 @@ public class Specification {
         public static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
         public static final String APNS_WHATSAPP_BUSINESS_NAME = "net.whatsapp.WhatsAppSMB";
         public static final String APNS_WHATSAPP_NAME = "net.whatsapp.WhatsApp";
-        public static final Version MOBILE_DEFAULT_IOS_VERSION = Version.of("2.24.3.76");
+        public static final Version MOBILE_DEFAULT_IOS_VERSION = Version.of("2.24.4.78");
         public static final String[] DEFAULT_APNS_FILTERS = new String[]{
                 "net.whatsapp.WhatsApp",
                 "net.whatsapp.WhatsApp.voip",
