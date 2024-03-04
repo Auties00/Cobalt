@@ -52,7 +52,7 @@ In short, if you use this library without a malicious intent, you will never get
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>cobalt</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
 </dependency>
 ```
 
@@ -60,12 +60,12 @@ In short, if you use this library without a malicious intent, you will never get
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:cobalt:0.0.2'
+   implementation 'com.github.auties00:cobalt:0.0.3'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:cobalt:0.0.2")
+   implementation("com.github.auties00:cobalt:0.0.3")
    ```
 
 ### Javadocs & Documentation
@@ -161,10 +161,6 @@ You can now customize the API with these options:
 - autodetectListeners - Whether listeners annotated with `@RegisterListener` should automatically be registered
   ```java
   .autodetectListeners(true)
-  ```
-- cacheDetectedListeners - Whether the listeners that were automatically registered should be cached
-  ```java
-  .cacheDetectedListeners(true)
   ```
 - textPreviewSetting - Whether a media preview should be generated for text messages containing links
   ```java
@@ -407,13 +403,34 @@ Listeners can be used either as:
     }
    }
    ```
+   
+   > **_IMPORTANT:_** @RegisterListener will only work if you register the annotation processor provided by Cobalt
+   > - Maven
+   > 
+   > 
+   >      <plugin>
+   >          <groupId>org.apache.maven.plugins</groupId>
+   >          <artifactId>maven-compiler-plugin</artifactId>
+   >          <configuration>
+   >              <annotationProcessorPaths>
+   >                  <annotationProcessorPath>
+   >                      <groupId>com.github.auties00</groupId>
+   >                      <artifactId>cobalt</artifactId>
+   >                      <version>0.0.3</version>
+   >                  <annotationProcessorPath>
+   >              <annotationProcessorPaths>
+   >          <configuration>
+   >     <plugin>
+   > - Gradle (Groovy DSL)
+   >
+   >
+   >      annotationProcessor 'com.github.auties00:cobalt:0.0.3'
+   > 
+   > - Gradle (Kotlin DSL)
+   >
+   >
+   >      annotationProcessor("com.github.auties00:cobalt:0.0.3")
 
-   > **_IMPORTANT:_** Only non-abstract classes that provide a no arguments constructor or
-   > a single parameter constructor of type Whatsapp can be registered automatically
-   
-   > **_IMPORTANT:_** In some environments @RegisterListener might not work. 
-   > Before opening an issue, try to disable `cacheDetectedListeners`.
-   
 2. Functional interface
    
    If your application is very simple or only requires this library in small operations, 
