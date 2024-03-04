@@ -1,7 +1,6 @@
 open module it.auties.cobalt {
     // Cryptography
     requires it.auties.curve;
-    requires org.bouncycastle.provider;
 
     // Scan listeners
     requires io.github.classgraph;
@@ -36,6 +35,7 @@ open module it.auties.cobalt {
     requires libphonenumber;
     requires net.dongliu.apkparser;
     requires org.bouncycastle.pkix;
+    requires org.bouncycastle.provider;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

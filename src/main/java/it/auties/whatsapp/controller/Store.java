@@ -337,7 +337,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
          * All args constructor
          */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, Boolean autodetectListeners, Boolean cacheDetectedListeners, Boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean cacheDetectedListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -380,9 +380,9 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
         this.textPreviewSetting = Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE);
         this.historyLength = Objects.requireNonNullElseGet(historyLength, WebHistoryLength::standard);
-        this.autodetectListeners = Objects.requireNonNullElse(autodetectListeners, true);
-        this.cacheDetectedListeners = Objects.requireNonNullElse(cacheDetectedListeners, true);
-        this.automaticPresenceUpdates = Objects.requireNonNullElse(automaticPresenceUpdates, true);
+        this.autodetectListeners = autodetectListeners;
+        this.cacheDetectedListeners = cacheDetectedListeners;
+        this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
         this.device = device;
         this.checkPatchMacs = checkPatchMacs;
@@ -398,6 +398,8 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
                 .alias(alias)
                 .name(Specification.Whatsapp.DEFAULT_NAME)
                 .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
+                .cacheDetectedListeners(true)
+                .automaticPresenceUpdates(true)
                 .build();
     }
 

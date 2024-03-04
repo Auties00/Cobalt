@@ -57,8 +57,7 @@ public final class WhatsappRegistration {
         this.codeHandler = codeHandler;
         this.method = method;
         this.httpClient = createClient();
-        var platform = store.device().platform();
-        this.apnsClient = platform.isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient(store.proxy().orElse(null)) : null;
+        this.apnsClient = store.device().platform().isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
         this.countryCode = CountryCode.values()[ThreadLocalRandom.current().nextInt(CountryCode.values().length)];
     }
 

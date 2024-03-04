@@ -1,23 +1,26 @@
 package it.auties.whatsapp.example;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
 
 import java.util.Scanner;
 
+// 17863658969,I6g91JLj3JLp6AXgJl2jT6o4BgQYgiOkcqqzy2DruXk=,MM0IGcoL3sZ7tWzWlkVQvGxPqk1m8EpbfszxzpYWU3s=,xloLYhmkuIKfqu64w1+0j7rkH3mxBWPojQ/0JqqYD34=,qHhKxoh/p9yg9axKNp8Wnre32gkm6Qha0e7J7f4PfFg=,i4A5Aq9vZjxJlHeDRLO32A==
 public class LoginExample {
     public static void main(String[] args) {
         System.out.println("Enter the six parts segment: ");
         var scanner = new Scanner(System.in);
         var sixParts = scanner.nextLine().trim();
-        System.out.println("Select if the account is business or personal:\n(1) Business (2) Personal: ");
+        System.out.println("Select if the account is business or personal:\n(1) Business (2) Personal");
         var business = switch (scanner.nextInt()) {
             case 1 -> true;
             case 2 -> false;
             default -> throw new IllegalStateException("Unexpected value: " + scanner.nextInt());
         };
         Whatsapp.mobileBuilder()
+                .serializer(ControllerSerializer.discarding())
                 .newConnection(SixPartsKeys.of(sixParts))
                 // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
                 .device(CompanionDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401

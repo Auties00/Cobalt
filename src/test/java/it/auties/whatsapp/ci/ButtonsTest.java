@@ -58,10 +58,6 @@ public class ButtonsTest implements Listener {
     private static Jid contact;
     private static boolean skip;
 
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     @BeforeAll
     public void init() throws IOException, InterruptedException {
         createLatch();

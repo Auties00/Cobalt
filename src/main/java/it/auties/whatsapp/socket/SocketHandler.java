@@ -169,9 +169,9 @@ public class SocketHandler implements SocketListener {
     }
 
     @Override
-    public void onMessage(byte[] message, int length) {
+    public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
-            authHandler.login(session, message, length)
+            authHandler.login(session, message)
                     .thenApplyAsync(result -> result ? setState(SocketState.CONNECTED) : null)
                     .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
             return;
@@ -182,7 +182,7 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        var decipheredMessage = decipherMessage(message, length, readKey.get());
+        var decipheredMessage = decipherMessage(message, readKey.get());
         if(decipheredMessage == null) {
             return;
         }
@@ -197,9 +197,9 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-    private byte[] decipherMessage(byte[] message, int messageLength, byte[] readKey) {
+    private byte[] decipherMessage(byte[] message, byte[] readKey) {
         try {
-            return AesGcm.decrypt(keys.readCounter(true), message, messageLength, readKey);
+            return AesGcm.decrypt(keys.readCounter(true), message, readKey);
         }  catch (Throwable throwable) {
             return handleFailure(CRYPTOGRAPHY, throwable);
         }

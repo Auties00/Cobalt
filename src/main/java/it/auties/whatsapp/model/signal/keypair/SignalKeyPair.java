@@ -1,15 +1,12 @@
 package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.curve25519.Curve25519;
-import it.auties.curve25519.XecUtils;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.KeyHelper;
 
-import java.security.interfaces.XECPrivateKey;
-import java.security.interfaces.XECPublicKey;
 import java.util.Arrays;
 
 public record SignalKeyPair(
@@ -29,8 +26,8 @@ public record SignalKeyPair(
 
     public static SignalKeyPair random() {
         var keyPair = Curve25519.randomKeyPair();
-        var publicKey = XecUtils.toBytes((XECPublicKey) keyPair.getPublic());
-        var privateKey = XecUtils.toBytes((XECPrivateKey) keyPair.getPrivate());
+        var publicKey = Curve25519.readKey(keyPair.getPublic());
+        var privateKey = Curve25519.readKey(keyPair.getPrivate());
         return new SignalKeyPair(publicKey, privateKey);
     }
 

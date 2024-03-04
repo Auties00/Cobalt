@@ -18,7 +18,6 @@ import it.auties.whatsapp.util.Specification.Whatsapp;
 import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.ApkSigner;
 import net.dongliu.apk.parser.bean.CertificateMeta;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -38,7 +37,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -52,7 +50,6 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 public final class WhatsappMetadata {
     static {
-        Security.addProvider(new BouncyCastleProvider());
         ProxyAuthenticator.allowAll();
     }
 

@@ -7,12 +7,14 @@
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/Cobalt</url>
+
     <developers>
         <developer>
             <name>Alessandro Autiero</name>
             <email>alautiero@gmail.com</email>
         </developer>
     </developers>
+
     <licenses>
         <license>
             <name>MIT License</name>
@@ -20,6 +22,7 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
     <scm>
         <url>https://github.com/Auties00/Cobalt/tree/master</url>
         <connection>scm:git:https://github.com/Auties00/Cobalt.git</connection>
@@ -109,7 +112,7 @@
                         </executions>
                     </plugin>
 
-                    <!-- Deploy the newsletters-->
+                    <!-- Deploy the artifact -->
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -149,6 +152,7 @@
             </build>
         </profile>
     </profiles>
+
     <packaging>jar</packaging>
 
     <properties>
@@ -168,7 +172,7 @@
         <junit.version>5.10.0-M1</junit.version>
         <jna.version>5.13.0</jna.version>
         <jackson.version>2.15.2</jackson.version>
-        <curve25519.version>1.1</curve25519.version>
+        <curve25519.version>1.2</curve25519.version>
         <classgraph.version>4.8.160</classgraph.version>
         <reflection.version>1.2</reflection.version>
         <lazysodium.version>5.1.4</lazysodium.version>
@@ -252,11 +256,6 @@
         </dependency>
 
         <!-- Cryptography -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>

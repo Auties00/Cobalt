@@ -66,10 +66,6 @@ public class RunMobileCITest implements Listener {
     private static Jid group;
     private static boolean skip;
 
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     @BeforeAll
     public void init() throws IOException, InterruptedException {
         createApi();
