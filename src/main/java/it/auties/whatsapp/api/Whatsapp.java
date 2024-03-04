@@ -15,6 +15,7 @@ import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.listener.*;
+import it.auties.whatsapp.listener.processor.RegisterListenerProcessor;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -130,16 +131,32 @@ public class Whatsapp {
 
     protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler, ExecutorService socketExecutor) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler, socketExecutor);
+        addDisconnectionHandler(store);
+        registerListenersAutomatically(store);
+    }
+
+    private static void addDisconnectionHandler(Store store) {
         store.addListener((OnDisconnected) (reason) -> {
             if (reason != DisconnectReason.RECONNECTING) {
                 removeInstanceByUuid(store.uuid());
             }
         });
-        if (store.autodetectListeners()) {
+    }
+
+    private void registerListenersAutomatically(Store store) {
+        if (!store.autodetectListeners()) {
             return;
         }
 
-        store.addListeners(ListenerScanner.scan(this, store.cacheDetectedListeners()));
+        try {
+            var clazz = Class.forName(RegisterListenerProcessor.qualifiedClassName());
+            var method = clazz.getMethod(RegisterListenerProcessor.methodName(), Whatsapp.class);
+            method.invoke(null, this);
+        }catch (ClassNotFoundException exception) {
+            // Ignored, this can happen if the compilation environment didn't register the processor
+        }catch (ReflectiveOperationException exception) {
+            throw new RuntimeException("Cannot register listeners automatically", exception);
+        }
     }
 
     /**

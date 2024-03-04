@@ -8,7 +8,6 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
-import it.auties.whatsapp.model.response.IosVersionResponse;
 import it.auties.whatsapp.model.response.KaiOsCatalogResponse;
 import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
@@ -80,27 +79,7 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<Version> getIosVersion(boolean business) {
-        if (business && businessIosVersion != null) {
-            return CompletableFuture.completedFuture(businessIosVersion);
-        }
-
-        if (!business && personalIosVersion != null) {
-            return CompletableFuture.completedFuture(personalIosVersion);
-        }
-
-        return Medias.downloadAsync(URI.create(business ? Whatsapp.MOBILE_BUSINESS_IOS_URL : Whatsapp.MOBILE_IOS_URL), Whatsapp.MOBILE_IOS_USER_AGENT).thenApplyAsync(response -> {
-            var result = Json.readValue(response, IosVersionResponse.class)
-                    .version()
-                    .filter(version -> !version.toString().equals("2.24.4.3") && !version.toString().equals("2.24.4.4")) // TEMPORARY FIX
-                    .orElse(Whatsapp.MOBILE_DEFAULT_IOS_VERSION);
-            System.out.println("Using version " + result);
-            if(business) {
-                businessIosVersion = result;
-            }else {
-                personalIosVersion = result;
-            }
-            return result;
-        });
+        return CompletableFuture.completedFuture(Whatsapp.MOBILE_DEFAULT_IOS_VERSION);
     }
 
     private static CompletableFuture<Version> getWebVersion() {

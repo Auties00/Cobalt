@@ -233,16 +233,16 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         void disconnect() {
-            if (socket == null) {
-                return;
-            }
-
             try {
+                if (socket == null) {
+                    return;
+                }
+
                 listener.onClose();
                 socket.close();
                 this.socket = null;
-            } catch (IOException ignored) {
-
+            } catch (Throwable ignored) {
+                // No need to handle this
             }
         }
 

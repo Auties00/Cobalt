@@ -3,7 +3,7 @@ open module it.auties.cobalt {
     requires it.auties.curve;
 
     // Scan listeners
-    requires io.github.classgraph;
+    requires jdk.compiler;
 
     // QR related dependencies
     requires com.google.zxing;
@@ -78,4 +78,5 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.jid;
     exports it.auties.whatsapp.model.newsletter;
     exports it.auties.whatsapp.registration;
+    exports it.auties.whatsapp.listener.processor;
 }

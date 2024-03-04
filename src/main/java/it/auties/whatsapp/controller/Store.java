@@ -301,12 +301,6 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     boolean autodetectListeners;
 
     /**
-     * Whether the listeners that were automatically scanned should be cached
-     */
-    @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
-    boolean cacheDetectedListeners;
-
-    /**
      * Whether updates about the presence of the session should be sent automatically to Whatsapp
      * For example, when the bot is started, the status of the companion is changed to available if this option is enabled
      * If this option is enabled, the companion will not receive notifications because the bot will instantly read them
@@ -337,7 +331,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
          * All args constructor
          */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean cacheDetectedListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.register(proxy);
@@ -381,7 +375,6 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.textPreviewSetting = Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE);
         this.historyLength = Objects.requireNonNullElseGet(historyLength, WebHistoryLength::standard);
         this.autodetectListeners = autodetectListeners;
-        this.cacheDetectedListeners = cacheDetectedListeners;
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
         this.device = device;
@@ -398,7 +391,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
                 .alias(alias)
                 .name(Specification.Whatsapp.DEFAULT_NAME)
                 .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
-                .cacheDetectedListeners(true)
+                .autodetectListeners(true)
                 .automaticPresenceUpdates(true)
                 .build();
     }
@@ -1341,10 +1334,6 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         return this.autodetectListeners;
     }
 
-    public boolean cacheDetectedListeners() {
-        return cacheDetectedListeners;
-    }
-
     public boolean automaticPresenceUpdates() {
         return this.automaticPresenceUpdates;
     }
@@ -1473,10 +1462,6 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     public Store setAutodetectListeners(boolean autodetectListeners) {
         this.autodetectListeners = autodetectListeners;
         return this;
-    }
-
-    public void setCacheDetectedListeners(boolean cacheDetectedListeners) {
-        this.cacheDetectedListeners = cacheDetectedListeners;
     }
 
     public Store setAutomaticPresenceUpdates(boolean automaticPresenceUpdates) {
