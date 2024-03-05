@@ -219,6 +219,7 @@ public class SocketHandler implements SocketListener {
             disconnect(DisconnectReason.RECONNECTING);
             return;
         }
+
         onDisconnected(state.toReason());
         onShutdown(state == SocketState.RECONNECTING);
     }
@@ -263,6 +264,7 @@ public class SocketHandler implements SocketListener {
                 yield CompletableFuture.completedFuture(null);
             }
             case RECONNECTING -> {
+                store.resolveAllPendingRequests();
                 if (session != null) {
                     session.disconnect();
                 }

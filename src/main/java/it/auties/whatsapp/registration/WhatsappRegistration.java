@@ -39,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public final class WhatsappRegistration {
+    private static final int MAX_REGISTRATION_RETRIES = 3;
+
     static {
         ProxyAuthenticator.allowAll();
     }
@@ -106,7 +108,6 @@ public final class WhatsappRegistration {
             }
         });
     }
-
 
     public CompletableFuture<Boolean> exists() {
         return exists(null, null)
@@ -347,19 +348,11 @@ public final class WhatsappRegistration {
     }
 
     public CompletableFuture<RegistrationResponse> sendVerificationCode() {
+        return sendVerificationCode(0);
+    }
 
-        var future = CompletableFuture.completedFuture(null);
-        if (store.device().platform().isBusiness()) {
-            future = clientLog(null, Map.entry("event_name", "smb_client_onboarding_journey"),
-                    Map.entry("is_logged_in_on_consumer_app", "0"),
-                    Map.entry("sequence_number", "14"),
-                    Map.entry("app_install_source", "unknown|unknown"),
-                    Map.entry("smb_onboarding_step", "20"),
-                    Map.entry("has_consumer_app", "1")
-            );
-        }
-
-        return future
+    private CompletableFuture<RegistrationResponse> sendVerificationCode(int retryIndex) {
+        return logIosRegistration()
                 .thenComposeAsync((ignored) -> codeHandler.get())
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, Map.entry("code", normalizeCodeResult(code)), Map.entry("entered", "1")))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
@@ -374,8 +367,36 @@ public final class WhatsappRegistration {
                         return CompletableFuture.completedFuture(response);
                     }
 
+                    var retryTimes = retryIndex + 1;
+                    if(response.errorReason() == VerificationCodeError.TEMPORARILY_UNAVAILABLE && retryTimes < MAX_REGISTRATION_RETRIES) {
+                        randomRegistrationSleep();
+                        return sendVerificationCode(retryTimes);
+                    }
+
                     throw new RegistrationException(response, result.body());
                 });
+    }
+
+    private void randomRegistrationSleep() {
+        try {
+            Thread.sleep(ThreadLocalRandom.current().nextInt(3, 6) * 1000L);
+        }catch (InterruptedException exception) {
+            throw new RuntimeException("Cannot sleep", exception);
+        }
+    }
+
+    private CompletableFuture<Object> logIosRegistration() {
+        if (!store.device().platform().isBusiness()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return clientLog(null, Map.entry("event_name", "smb_client_onboarding_journey"),
+                Map.entry("is_logged_in_on_consumer_app", "0"),
+                Map.entry("sequence_number", "14"),
+                Map.entry("app_install_source", "unknown|unknown"),
+                Map.entry("smb_onboarding_step", "20"),
+                Map.entry("has_consumer_app", "1")
+        );
     }
 
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
@@ -396,10 +417,9 @@ public final class WhatsappRegistration {
     private CompletableFuture<HttpResponse<String>> sendRequest(String path, Map<String, Object> params) {
         System.out.println("Sending request to " + path + " with parameters " + params);
         var request = createRequest(path, params);
-        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenCompose(response -> {
+        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(response -> {
             System.out.println("Received response " + path + " " + response.body());
-
-            return CompletableFuture.completedFuture(response);
+            return response;
         }).exceptionallyCompose(exception -> {
             System.out.println("Failed to send request " + path + " error: " + exception);
             return CompletableFuture.failedFuture(exception);
