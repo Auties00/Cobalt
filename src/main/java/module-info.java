@@ -25,11 +25,11 @@ open module it.auties.cobalt {
     requires java.net.http;
 
     // Generate message previews
-    requires static org.apache.pdfbox;
-    requires static org.apache.poi.ooxml;
-    requires static org.apache.poi.scratchpad;
-    requires static it.auties.linkpreview;
-    requires static com.googlecode.ezvcard;
+    requires it.auties.linkpreview;
+    requires com.aspose.words;
+    requires com.github.kokorin.jaffree;
+    requires org.slf4j;
+    requires ezvcard;
 
     // Mobile api
     requires libphonenumber;

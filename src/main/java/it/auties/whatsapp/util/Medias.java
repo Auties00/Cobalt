@@ -1,17 +1,19 @@
 package it.auties.whatsapp.util;
 
+import com.aspose.words.Document;
+import com.aspose.words.ImageSaveOptions;
+import com.aspose.words.SaveFormat;
+import com.github.kokorin.jaffree.StreamType;
+import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
+import com.github.kokorin.jaffree.ffmpeg.PipeInput;
+import com.github.kokorin.jaffree.ffmpeg.PipeOutput;
+import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.poi.hslf.usermodel.HSLFSlideShow;
-import org.apache.poi.hwpf.HWPFDocument;
-import org.apache.poi.xslf.usermodel.XMLSlideShow;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -19,7 +21,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
@@ -32,7 +33,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
@@ -40,8 +40,8 @@ import java.util.stream.IntStream;
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-// TODO: Write a custom library to generate all thumbnails
 public final class Medias {
+    private static final int WAVEFORM_SAMPLES = 64;
     private static final int PROFILE_PIC_SIZE = 640;
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
@@ -246,58 +246,25 @@ public final class Medias {
         }
     }
 
-    public static OptionalInt getPagesCount(byte[] file, String fileType) {
-        try (var inputStream = new ByteArrayInputStream(file)) {
-            return switch (fileType) {
-                case "docx" -> {
-                    var docx = new XWPFDocument(inputStream);
-                    var pages = docx.getProperties().getExtendedProperties().getUnderlyingProperties().getPages();
-                    docx.close();
-                    yield OptionalInt.of(pages);
-                }
-                case "doc" -> {
-                    var wordDoc = new HWPFDocument(inputStream);
-                    var pages = wordDoc.getSummaryInformation().getPageCount();
-                    wordDoc.close();
-                    yield OptionalInt.of(pages);
-                }
-                case "ppt" -> {
-                    var document = new HSLFSlideShow(inputStream);
-                    var slides = document.getSlides().size();
-                    document.close();
-                    yield OptionalInt.of(slides);
-                }
-                case "pptx" -> {
-                    var show = new XMLSlideShow(inputStream);
-                    var slides = show.getSlides().size();
-                    show.close();
-                    yield OptionalInt.of(slides);
-                }
-                default -> OptionalInt.empty();
-            };
-        } catch (Throwable throwable) {
+    public static OptionalInt getPagesCount(byte[] file) {
+        try {
+            var document = new Document(new ByteArrayInputStream(file));
+            return OptionalInt.of(document.getPageCount());
+        } catch (Throwable ignored) {
             return OptionalInt.empty();
         }
     }
 
     public static int getDuration(byte[] file) {
-        var input = createTempFile(file);
         try {
-            var process = Runtime.getRuntime()
-                    .exec(new String[]{"ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", input.toString()});
-            if (process.waitFor() != 0) {
-                return 0;
-            }
-            var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return (int) Float.parseFloat(result);
-        } catch (Throwable throwable) {
+            var result = FFprobe.atPath()
+                    .setShowEntries("format=duration")
+                    .setSelectStreams(StreamType.VIDEO)
+                    .setInput(new ByteArrayInputStream(file))
+                    .execute();
+            return Math.round(result.getFormat().getDuration());
+        }catch (Throwable throwable) {
             return 0;
-        } finally {
-            try {
-                Files.deleteIfExists(input);
-            } catch (IOException ignored) {
-
-            }
         }
     }
 
@@ -308,54 +275,35 @@ public final class Medias {
                 return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
             }
 
-            var input = createTempFile(file);
-            try {
-                var process = Runtime.getRuntime()
-                        .exec(new String[]{"ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height", "-of", "json", input.toString()});
-                if (process.waitFor() != 0) {
-                    return MediaDimensions.defaultDimensions();
-                }
-                var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                var ffprobe = Json.readValue(result, FfprobeResult.class);
-                if (ffprobe.streams() == null || ffprobe.streams().isEmpty()) {
-                    return MediaDimensions.defaultDimensions();
-                }
-                return ffprobe.streams().getFirst();
-            } finally {
-                Files.deleteIfExists(input);
-            }
+
+            var result = FFprobe.atPath()
+                    .setShowEntries("stream=width,height")
+                    .setSelectStreams(StreamType.VIDEO)
+                    .setInput(new ByteArrayInputStream(file))
+                    .execute();
+            return result.getStreams()
+                    .stream()
+                    .filter(entry -> entry.getCodecType() == StreamType.VIDEO)
+                    .findFirst()
+                    .map(stream -> new MediaDimensions(stream.getWidth(), stream.getHeight()))
+                    .orElseGet(MediaDimensions::defaultDimensions);
         } catch (Exception throwable) {
             return MediaDimensions.defaultDimensions();
         }
     }
 
-    private static Path createTempFile(byte[] data) {
-        try {
-            var file = Files.createTempFile(UUID.randomUUID().toString(), "");
-            if (data != null) {
-                Files.write(file, data);
-            }
-            return file;
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot create temp file", exception);
+    public static Optional<byte[]> getDocumentThumbnail(byte[] file) {
+        try(var stream = new ByteArrayOutputStream()) {
+            var document = new Document(new ByteArrayInputStream(file));
+            var options = new ImageSaveOptions(SaveFormat.JPEG);
+            document.save(stream, options);
+            return Optional.of(stream.toByteArray());
+        }catch (Throwable ignored) {
+            return Optional.empty();
         }
     }
 
-    public static Optional<byte[]> getThumbnail(byte[] file, String fileType) {
-        return getThumbnail(file, Format.ofDocument(fileType));
-    }
-
-    public static Optional<byte[]> getThumbnail(byte[] file, Format format) {
-        return switch (format) {
-            case UNKNOWN -> Optional.empty();
-            case JPG, PNG -> getImageThumbnail(file, format);
-            case PDF -> getPdfThumbnail(file);
-            case PPTX -> getPresentationThumbnail(file);
-            case VIDEO -> getVideoThumbnail(file);
-        };
-    }
-
-    private static Optional<byte[]> getImageThumbnail(byte[] file, Format format) {
+    public static Optional<byte[]> getImageThumbnail(byte[] file, boolean jpg) {
         try {
             var image = ImageIO.read(new ByteArrayInputStream(file));
             if (image == null) {
@@ -371,94 +319,35 @@ public final class Medias {
             graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             var outputStream = new ByteArrayOutputStream();
-            ImageIO.write(resizedImage, format.name().toLowerCase(), outputStream);
+            ImageIO.write(resizedImage, jpg ? "jpg" : "png", outputStream);
             return Optional.of(outputStream.toByteArray());
         } catch (IOException exception) {
             return Optional.empty();
         }
     }
 
-    private static Optional<byte[]> getVideoThumbnail(byte[] file) {
-        var input = createTempFile(file);
-        var output = createTempFile(null);
-        try {
-            var process = Runtime.getRuntime()
-                    .exec(new String[]{"ffmpeg", "-ss", "00:00:00", "-i", input.toString(), "-y", "-vf", "scale=%s:-1".formatted(THUMBNAIL_SIZE), "-vframes", "1", "-f", "image2", output.toString()});
-            if (process.waitFor() != 0) {
-                return Optional.empty();
-            }
-            return Optional.of(Files.readAllBytes(output));
-        } catch (Throwable throwable) {
-            return Optional.empty();
-        } finally {
-            try {
-                Files.delete(input);
-                Files.delete(output);
-            } catch (IOException ignored) {
-
-            }
-        }
-    }
-
-    private static Optional<byte[]> getPdfThumbnail(byte[] file) {
-        try (var document = PDDocument.load(file); var outputStream = new ByteArrayOutputStream()) {
-            var renderer = new PDFRenderer(document);
-            var image = renderer.renderImage(0);
-            var thumb = new BufferedImage(Specification.Whatsapp.THUMBNAIL_WIDTH, Specification.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
-            var graphics2D = thumb.createGraphics();
-            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            graphics2D.drawImage(image, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
-            graphics2D.dispose();
-            ImageIO.write(thumb, "jpg", outputStream);
+    public static Optional<byte[]> getVideoThumbnail(byte[] file) {
+        try(var outputStream = new ByteArrayOutputStream()) {
+            FFmpeg.atPath()
+                    .addInput(PipeInput.pumpFrom(new ByteArrayInputStream(file)))
+                    .setFilter(StreamType.VIDEO, "scale=%s:-1".formatted(THUMBNAIL_SIZE))
+                    .addOutput(PipeOutput.pumpTo(outputStream)
+                            .setFrameCount(StreamType.VIDEO, 1L)
+                            .setFormat("image2")
+                            .disableStream(StreamType.AUDIO)
+                            .disableStream(StreamType.SUBTITLE))
+                    .execute();
             return Optional.of(outputStream.toByteArray());
-        } catch (Throwable throwable) {
+        }catch (IOException exception) {
             return Optional.empty();
         }
-    }
-
-    private static Optional<byte[]> getPresentationThumbnail(byte[] file) {
-        try (var ppt = new XMLSlideShow(new ByteArrayInputStream(file)); var outputStream = new ByteArrayOutputStream()) {
-            if (ppt.getSlides().isEmpty()) {
-                return Optional.empty();
-            }
-            var thumb = new BufferedImage(Specification.Whatsapp.THUMBNAIL_WIDTH, Specification.Whatsapp.THUMBNAIL_HEIGHT, BufferedImage.TYPE_INT_RGB);
-            var graphics2D = thumb.createGraphics();
-            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            ppt.getSlides().getFirst().draw(graphics2D);
-            ImageIO.write(thumb, "jpg", outputStream);
-            return Optional.of(outputStream.toByteArray());
-        } catch (Throwable throwable) {
-            return Optional.empty();
-        }
-    }
-
-    public enum Format {
-        UNKNOWN,
-        PNG,
-        JPG,
-        VIDEO,
-        PDF,
-        PPTX;
-
-        static Format ofDocument(String fileType) {
-            return fileType == null ? UNKNOWN : switch (fileType.toLowerCase()) {
-                case "pdf" -> PDF;
-                case "pptx", "ppt" -> PPTX;
-                default -> UNKNOWN;
-            };
-        }
-    }
-
-    private record FfprobeResult(List<MediaDimensions> streams) {
-
     }
 
     public static Optional<byte[]> getAudioWaveForm(byte[] audioData) {
         try {
             var rawData = toFloatArray(audioData);
-            var samples = 64;
-            var blockSize = rawData.length / samples;
-            var filteredData = IntStream.range(0, samples)
+            var blockSize = rawData.length / WAVEFORM_SAMPLES;
+            var filteredData = IntStream.range(0, WAVEFORM_SAMPLES)
                     .map(i -> blockSize * i)
                     .map(blockStart -> IntStream.range(0, blockSize)
                             .map(j -> (int) Math.abs(rawData[blockStart + j]))
@@ -470,8 +359,9 @@ public final class Medias {
                     .map(data -> (byte) Math.abs(100 * data * multiplier))
                     .toList();
             var waveform = new byte[normalizedData.size()];
-            IntStream.range(0, normalizedData.size())
-                    .forEach(i -> waveform[i] = normalizedData.get(i));
+            for (var i = 0; i < normalizedData.size(); i++) {
+                waveform[i] = normalizedData.get(i);
+            }
             return Optional.of(waveform);
         } catch (Throwable throwable) {
             return Optional.empty();

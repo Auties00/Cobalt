@@ -175,7 +175,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             return CompletableFuture.runAsync(() -> {
                 try {
                     this.socket = new Socket(ProxyAuthenticator.getProxy(proxy));
-                    socket.connect(new InetSocketAddress(SOCKET_ENDPOINT, SOCKET_PORT));
+                    socket.connect(proxy != null ? InetSocketAddress.createUnresolved(SOCKET_ENDPOINT, SOCKET_PORT) : new InetSocketAddress(SOCKET_ENDPOINT, SOCKET_PORT));
                     listener.onOpen(RawSocketSession.this);
                     executor.execute(this::readNextMessage);
                 } catch (IOException exception) {

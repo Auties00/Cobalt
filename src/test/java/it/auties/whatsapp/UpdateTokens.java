@@ -1,10 +1,9 @@
-package it.auties.whatsapp.local;
+package it.auties.whatsapp;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.auties.whatsapp.model.GithubActions;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-public class UpdateBinaryTokensTest {
+public class UpdateTokens {
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
     private static final String SOURCE_NAME = "BinaryTokens.java";
     private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/app.([^\"]*).js\">";
@@ -33,7 +32,6 @@ public class UpdateBinaryTokensTest {
     private static final String DICTIONARY_ASSIGNMENT_REGEX = "\\.DICTIONARY_[0-9]_TOKEN=([a-z]);";
     private static final String DICTIONARY_DECLARATION_REGEX = "const %s=\\[\"(.*?)\"]";
     private static final String PROPS_REGEX = "\\.ABPropConfigs=\\{(.*?)]}},";
-    private static final String PARSE_PROPS_REGEX = "([a-zA-Z0-9_]+):\\[([^]]*)]";
 
     private static HttpRequest createRequest(String url) {
         return HttpRequest.newBuilder()
@@ -50,10 +48,6 @@ public class UpdateBinaryTokensTest {
 
     @Test
     public void createClass() throws IOException, InterruptedException {
-        if (GithubActions.isActionsEnvironment()) {
-            System.out.println("Skipping tokens collector: detected non local environment");
-            return;
-        }
         System.out.println("Creating tokens class...");
         var javascriptSource = getJavascriptSource();
         var singleByteToken = getSingleByteTokens(javascriptSource);

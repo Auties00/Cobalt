@@ -40,6 +40,19 @@
         </repository>
     </distributionManagement>
 
+    <repositories>
+        <repository>
+            <id>AsposeJavaAPI</id>
+            <name>Aspose Java API</name>
+            <url>https://releases.aspose.com/java/repo/</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <name>Jitpack</name>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <profiles>
         <profile>
             <id>sign</id>
@@ -164,38 +177,26 @@
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
-        <bouncy.castle.version>1.70</bouncy.castle.version>
-        <faker.version>1.0.2</faker.version>
+        <bouncy.castle.version>1.77</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
         <protoc.version>3.0.4</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
-        <jna.version>5.13.0</jna.version>
         <jackson.version>2.15.2</jackson.version>
         <curve25519.version>1.2</curve25519.version>
-        <reflection.version>1.2</reflection.version>
         <lazysodium.version>5.1.4</lazysodium.version>
         <linkpreview.version>2.3</linkpreview.version>
-        <vcard.version>0.12.1</vcard.version>
+        <vcard.version>62bf6d1566</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
         <libphonenumber.version>8.13.13</libphonenumber.version>
-        <pdfbox.version>2.0.27</pdfbox.version>
-        <poi.version>5.2.3</poi.version>
-        <netty.buffer.version>4.1.93.Final</netty.buffer.version>
-        <sl4j.version>2.0.7</sl4j.version>
-        <log4j.version>2.20.0</log4j.version>
         <maven.versions.version>2.15.0</maven.versions.version>
         <apk.parser.version>2.6.10</apk.parser.version>
+        <plist.version>1.27</plist.version>
+        <aspose.words.version>22.11</aspose.words.version>
+        <ffmpeg.version>2023.09.10</ffmpeg.version>
     </properties>
 
     <build>
         <plugins>
-            <!-- Dependencies version updater -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>versions-maven-plugin</artifactId>
-                <version>${maven.versions.version}</version>
-            </plugin>
-
             <!-- Compile the project-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -269,12 +270,7 @@
             <version>${qr.terminal.version}</version>
         </dependency>
 
-        <!-- Cryptography -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-        </dependency>
+        <!-- Cryptography (used by Whatsapp) -->
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>curve25519</artifactId>
@@ -324,11 +320,18 @@
             <version>${apk.parser.version}</version>
         </dependency>
 
-        <!-- Parse PLIST files for Apple APNS -->
+        <!-- Parse PLIST files for Apple APNS (Mobile API) -->
         <dependency>
             <groupId>com.googlecode.plist</groupId>
             <artifactId>dd-plist</artifactId>
-            <version>1.27</version>
+            <version>${plist.version}</version>
+        </dependency>
+
+        <!-- Apple APNS Cryptography (Mobile API) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${bouncy.castle.version}</version>
         </dependency>
 
         <!-- Generate message previews -->
@@ -336,33 +339,30 @@
             <groupId>com.github.auties00</groupId>
             <artifactId>link-preview</artifactId>
             <version>${linkpreview.version}</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>${pdfbox.version}</version>
-            <optional>true</optional>
+            <groupId>com.aspose</groupId>
+            <artifactId>aspose-words</artifactId>
+            <version>${aspose.words.version}</version>
+            <classifier>jdk17</classifier>
         </dependency>
         <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>${poi.version}</version>
-            <optional>true</optional>
+            <groupId>com.github.kokorin.jaffree</groupId>
+            <artifactId>jaffree</artifactId>
+            <version>${ffmpeg.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-scratchpad</artifactId>
-            <version>${poi.version}</version>
-            <optional>true</optional>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.32</version>
         </dependency>
         <dependency>
-            <groupId>com.googlecode.ez-vcard</groupId>
+            <groupId>com.github.Auties00</groupId>
             <artifactId>ez-vcard</artifactId>
             <version>${vcard.version}</version>
-            <optional>true</optional>
         </dependency>
 
+        <!-- Testing framework -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -373,36 +373,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.goterl</groupId>
-            <artifactId>lazysodium-java</artifactId>
-            <version>${lazysodium.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>${jna.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcmail-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpg-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.javafaker</groupId>
-            <artifactId>javafaker</artifactId>
-            <version>${faker.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

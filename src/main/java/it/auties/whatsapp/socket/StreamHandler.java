@@ -879,7 +879,6 @@ class StreamHandler {
             configureWhatsappAccount()
                     .exceptionally(throwable -> socketHandler.handleFailure(LOGIN, throwable))
                     .thenRunAsync(() -> { onRegistration(); onInitialInfo(); });
-            return;
         }else {
             loggedInFuture.thenRunAsync(this::onInitialInfo);
         }

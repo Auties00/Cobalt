@@ -48,25 +48,55 @@ In short, if you use this library without a malicious intent, you will never get
 
 #### Maven
 
-```xml
-<dependency>
-    <groupId>com.github.auties00</groupId>
-    <artifactId>cobalt</artifactId>
-    <version>0.0.3</version>
-</dependency>
-```
+ - Dependency
+    ```xml
+    <dependency>
+        <groupId>com.github.auties00</groupId>
+        <artifactId>cobalt</artifactId>
+        <version>0.0.3</version>
+    </dependency>
+    ```
+   
+ - Annotation processor (required for @RegisterListener)
+    ```xml
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+            <annotationProcessorPaths>
+                <annotationProcessorPath>
+                    <groupId>com.github.auties00</groupId>
+                    <artifactId>cobalt</artifactId>
+                    <version>0.0.3</version>
+                <annotationProcessorPath>
+            <annotationProcessorPaths>
+        <configuration>
+    <plugin>
+    ```
 
 #### Gradle
 
-1. Groovy DSL
-   ```groovy
-   implementation 'com.github.auties00:cobalt:0.0.3'
-   ```
+- Groovy DSL
+    - Dependency
+    ```groovy
+    implementation 'com.github.auties00:cobalt:0.0.3'
+    ```
+  
+    - Annotation processor (required for @RegisterListener)
+    ```groovy
+    annotationProcessor 'com.github.auties00:cobalt:0.0.3'
+    ```
 
-2. Kotlin DSL
-   ```kotlin
-   implementation("com.github.auties00:cobalt:0.0.3")
-   ```
+- Kotlin DSL
+    - Dependency
+    ```groovy
+    implementation("com.github.auties00:cobalt:0.0.3")
+    ```
+  
+    - Annotation processor (required for @RegisterListener)
+    ```groovy
+    annotationProcessor("com.github.auties00:cobalt:0.0.3")
+    ```
 
 ### Javadocs & Documentation
 
@@ -87,7 +117,7 @@ If you are not familiar with git, follow these short tutorials in order:
    feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
 
 If you are trying to implement a feature that is present on WhatsappWeb's WebClient, for example audio or video calls,
-consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer), a tool I built for this exact purpose.
+consider using [CobaltAnalyzer](https://github.com/Auties00/CobaltAnalyzer), a tool I built for this exact purpose.
 
 ### Disclaimer about async operations 
 This library heavily depends on async operations using the CompletableFuture construct.
@@ -405,31 +435,6 @@ Listeners can be used either as:
    ```
    
    > **_IMPORTANT:_** @RegisterListener will only work if you register the annotation processor provided by Cobalt
-   > - Maven
-   > 
-   > 
-   >      <plugin>
-   >          <groupId>org.apache.maven.plugins</groupId>
-   >          <artifactId>maven-compiler-plugin</artifactId>
-   >          <configuration>
-   >              <annotationProcessorPaths>
-   >                  <annotationProcessorPath>
-   >                      <groupId>com.github.auties00</groupId>
-   >                      <artifactId>cobalt</artifactId>
-   >                      <version>0.0.3</version>
-   >                  <annotationProcessorPath>
-   >              <annotationProcessorPaths>
-   >          <configuration>
-   >     <plugin>
-   > - Gradle (Groovy DSL)
-   >
-   >
-   >      annotationProcessor 'com.github.auties00:cobalt:0.0.3'
-   > 
-   > - Gradle (Kotlin DSL)
-   >
-   >
-   >      annotationProcessor("com.github.auties00:cobalt:0.0.3")
 
 2. Functional interface
    

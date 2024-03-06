@@ -123,9 +123,9 @@ public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
         return new DocumentMessageBuilder()
                 .mimetype(getMimeType(media, fileName, mimeType))
                 .fileName(fileName)
-                .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media, extension).orElse(1))
+                .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media).orElse(1))
                 .title(title)
-                .thumbnail(thumbnail != null ? null : Medias.getThumbnail(media, extension).orElse(null))
+                .thumbnail(thumbnail != null ? null : Medias.getDocumentThumbnail(media).orElse(null))
                 .thumbnailWidth(Specification.Whatsapp.THUMBNAIL_WIDTH)
                 .thumbnailHeight(Specification.Whatsapp.THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
@@ -137,7 +137,7 @@ public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
         return Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(fileName))
                 .or(() -> Medias.getMimeType(media))
-                .orElse(DOCUMENT.defaultMimeType());
+                .orElse(DOCUMENT.mimeType());
     }
 
     public OptionalInt pageCount() {

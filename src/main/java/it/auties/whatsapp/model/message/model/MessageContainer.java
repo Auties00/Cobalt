@@ -484,6 +484,10 @@ public record MessageContainer(
      * @return a non-null type
      */
     public MessageType type() {
+        if(textWithNoContextMessage.isPresent()) {
+            return MessageType.TEXT;
+        }
+
         if (ephemeralMessage.isPresent()) {
             return MessageType.EPHEMERAL;
         }

@@ -1,14 +1,13 @@
-package it.auties.whatsapp.local;
+package it.auties.whatsapp.example;
 
 import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 
-// Just used for testing locally
-public class WebRunner {
+public class WebLoginExample {
     public static void main(String[] args) {
-        var whatsapp = Whatsapp.webBuilder()
+        Whatsapp.webBuilder()
                 .lastConnection()
                 .historyLength(WebHistoryLength.zero())
                 .unregistered(QrHandler.toTerminal())

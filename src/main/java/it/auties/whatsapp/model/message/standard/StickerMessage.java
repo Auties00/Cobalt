@@ -19,7 +19,6 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import static it.auties.whatsapp.model.message.model.MediaMessageType.STICKER;
-import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
 
 /**
@@ -102,9 +101,8 @@ public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> i
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
     static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         return new StickerMessageBuilder()
-
-                .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
+                .mimetype(requireNonNullElse(mimeType, STICKER.mimeType()))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, false).orElse(null))
                 .animated(animated)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build()

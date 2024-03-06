@@ -23,7 +23,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import static it.auties.whatsapp.model.message.model.MediaMessageType.IMAGE;
-import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static java.util.Objects.requireNonNullElse;
 
 /**
@@ -146,7 +145,7 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
      *
      * @param media       the non-null image that the new message wraps
      * @param mimeType    the mime type of the new message, by default
-     *                    {@link MediaMessageType#defaultMimeType()}
+     *                    {@link MediaMessageType#mimeType()}
      * @param caption     the caption of the new message
      * @param thumbnail   the thumbnail of the document that the new message wraps
      * @param contextInfo the context info that the new message wraps
@@ -156,11 +155,11 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
     static ImageMessage simpleBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         return new ImageMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
+                .mimetype(requireNonNullElse(mimeType, IMAGE.mimeType()))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, JPG).orElse(null))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, true).orElse(null))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build()
                 .setDecodedMedia(media);

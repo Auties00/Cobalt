@@ -169,12 +169,8 @@ class MessageHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        try {
-            return LinkPreview.createPreviewAsync(textMessage.text())
-                    .thenComposeAsync(result -> attributeTextMessage(textMessage, result.orElse(null)));
-        }catch (NoClassDefFoundError error) { // Optional dependency
-            return CompletableFuture.completedFuture(null);
-        }
+        return LinkPreview.createPreviewAsync(textMessage.text())
+                .thenComposeAsync(result -> attributeTextMessage(textMessage, result.orElse(null)));
     }
 
     private CompletableFuture<Void> attributeTextMessage(TextMessage textMessage, LinkPreviewMatch match) {

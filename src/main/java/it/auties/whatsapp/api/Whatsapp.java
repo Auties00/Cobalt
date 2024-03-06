@@ -406,7 +406,7 @@ public class Whatsapp {
                 .content(reaction)
                 .timestampSeconds(Instant.now().toEpochMilli())
                 .build();
-        return sendMessage(message.parentJid(), reactionMessage);
+        return sendChatMessage(message.parentJid(), MessageContainer.of(reactionMessage), false);
     }
 
     /**
@@ -552,7 +552,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message) {
-        return sendChatMessage(recipient, message, true);
+        return sendChatMessage(recipient, message, message.content().type() == MessageType.TEXT);
     }
 
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message, boolean compose) {

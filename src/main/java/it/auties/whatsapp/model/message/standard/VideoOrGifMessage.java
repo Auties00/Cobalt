@@ -132,8 +132,8 @@ public final class VideoOrGifMessage extends ExtendedMediaMessage<VideoOrGifMess
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
         return new VideoOrGifMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
+                .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media).orElse(null))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
@@ -149,8 +149,8 @@ public final class VideoOrGifMessage extends ExtendedMediaMessage<VideoOrGifMess
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
         return new VideoOrGifMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
+                .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media).orElse(null))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())

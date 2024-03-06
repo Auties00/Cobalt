@@ -96,7 +96,7 @@ public final class AudioMessage extends ExtendedMediaMessage<AudioMessage> imple
     private static String getMimeType(byte[] media, String mimeType) {
         return Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(media))
-                .orElseGet(MediaMessageType.AUDIO::defaultMimeType);
+                .orElseGet(MediaMessageType.AUDIO::mimeType);
     }
 
     public Optional<String> mimetype() {

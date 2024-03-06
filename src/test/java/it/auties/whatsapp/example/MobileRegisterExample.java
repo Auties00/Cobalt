@@ -7,13 +7,20 @@ import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class RegisterExample {
+public class MobileRegisterExample {
     public static void main(String[] args) {
         System.out.println("Enter the phone number: ");
-        var phoneNumber = new Scanner(System.in).nextLong();
+        Scanner scanner = new Scanner(System.in);
+        var phoneNumber = scanner.nextLong();
+        System.out.println("Select if the account is business or personal:\n(1) Business (2) Personal");
+        var business = switch (scanner.nextInt()) {
+            case 1 -> true;
+            case 2 -> false;
+            default -> throw new IllegalStateException("Unexpected value: " + scanner.nextInt());
+        };
         Whatsapp.mobileBuilder()
                 .newConnection()
-                .device(CompanionDevice.ios(true))
+                .device(CompanionDevice.ios(business))
                 // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
                 .unregistered()
                 .verificationCodeSupplier(() -> {
