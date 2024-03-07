@@ -22,14 +22,9 @@ import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
-import javax.net.ssl.SSLContext;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -58,7 +53,7 @@ public final class WhatsappRegistration {
         this.keys = keys;
         this.codeHandler = codeHandler;
         this.method = method;
-        this.httpClient = createClient();
+        this.httpClient = new HttpClient();
         this.apnsClient = store.device().platform().isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
         this.countryCode = CountryCode.values()[ThreadLocalRandom.current().nextInt(CountryCode.values().length)];
     }
@@ -132,30 +127,13 @@ public final class WhatsappRegistration {
                 .put("rc", store.releaseChannel().index())
                 .put("ab_hash", abHash, abHash != null)
                 .toMap();
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes)))
-                .GET()
-                .header("User-Agent", store.device().toUserAgent(store.version()))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .build();
-        System.out.println("Sending request to /reg_onboard_abprop with parameters " + attributes);
-        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(response -> {
-            if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new RegistrationException(null, "Invalid status code: " + response.statusCode());
-            }
-
-            System.out.println("Received respose /reg_onboard_abprop " + response.body());
-            return Json.readValue(response.body(), AbPropsResponse.class);
-        });
-    }
-
-    @SuppressWarnings("unused")
-    private CompletableFuture<String> ping() {
-        var ipRequest = HttpRequest.newBuilder()
-                .uri(URI.create("https://ip.oxylabs.io/location"))
-                .build();
-        return httpClient.sendAsync(ipRequest, BodyHandlers.ofString())
-                .thenApply(HttpResponse::body);
+        var uri = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes));
+        var headers = Map.of(
+                "User-Agent", store.device().toUserAgent(store.version()),
+                "Content-Type", "application/x-www-form-urlencoded"
+        );
+        return httpClient.get(uri, ProxyAuthenticator.getProxy(store.proxy().orElse(null)), headers)
+                .thenApply(response -> Json.readValue(response, AbPropsResponse.class));
     }
 
     private CompletableFuture<String> getIOSPushToken() {
@@ -178,17 +156,13 @@ public final class WhatsappRegistration {
                     ios ? Map.entry("recovery_token_error", "-25300") : null
             );
             return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
-                if (result.statusCode() != HttpURLConnection.HTTP_OK) {
-                    throw new RegistrationException(null, result.body());
-                }
-
-                var response = Json.readValue(result.body(), RegistrationResponse.class);
+                var response = Json.readValue(result, RegistrationResponse.class);
                 if (response.errorReason() == VerificationCodeError.INCORRECT) {
                     return CompletableFuture.completedFuture(response);
                 }
 
                 if (lastError != null) {
-                    throw new RegistrationException(response, result.body());
+                    throw new RegistrationException(response, new String(result));
                 }
 
                 var useOriginalDevice = originalDevice != null && response.errorReason() == VerificationCodeError.FORMAT_WRONG;
@@ -328,12 +302,8 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletionStage<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, HttpResponse<String> result) {
-        if (result.statusCode() != HttpURLConnection.HTTP_OK) {
-            throw new RegistrationException(null, result.body());
-        }
-
-        var response = Json.readValue(result.body(), RegistrationResponse.class);
+    private CompletionStage<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, byte[] result) {
+        var response = Json.readValue(result, RegistrationResponse.class);
         if (response.status() == VerificationCodeStatus.SUCCESS) {
             return CompletableFuture.completedFuture(response);
         }
@@ -341,10 +311,10 @@ public final class WhatsappRegistration {
         return switch (response.errorReason()) {
             case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS ->
                     throw new RegistrationException(response, "Please wait before trying to register this phone number again");
-            case NO_ROUTES, BLOCKED -> throw new RegistrationException(response, result.body());
+            case NO_ROUTES, BLOCKED -> throw new RegistrationException(response, new String(result));
             default -> {
                 var newErrorReason = response.errorReason();
-                Validate.isTrue(newErrorReason != lastError, () -> new RegistrationException(response, result.body()));
+                Validate.isTrue(newErrorReason != lastError, () -> new RegistrationException(response, new String(result)));
                 yield requestVerificationCode(pushCode, newErrorReason);
             }
         };
@@ -360,11 +330,7 @@ public final class WhatsappRegistration {
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, Map.entry("code", normalizeCodeResult(code)), Map.entry("entered", "1")))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
                 .thenComposeAsync(result -> {
-                    if (result.statusCode() != HttpURLConnection.HTTP_OK) {
-                        throw new RegistrationException(null, result.body());
-                    }
-
-                    var response = Json.readValue(result.body(), RegistrationResponse.class);
+                    var response = Json.readValue(result, RegistrationResponse.class);
                     if (response.status() == VerificationCodeStatus.SUCCESS) {
                         saveRegistrationStatus(store, keys, true);
                         return CompletableFuture.completedFuture(response);
@@ -376,7 +342,7 @@ public final class WhatsappRegistration {
                         return sendVerificationCode(retryTimes);
                     }
 
-                    throw new RegistrationException(response, result.body());
+                    throw new RegistrationException(response, new String(result));
                 });
     }
 
@@ -417,83 +383,29 @@ public final class WhatsappRegistration {
         return captcha.replaceAll("-", "").trim();
     }
 
-    private CompletableFuture<HttpResponse<String>> sendRequest(String path, Map<String, Object> params) {
-        System.out.println("Sending request to " + path + " with parameters " + params);
-        var request = createRequest(path, params);
-        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(response -> {
-            System.out.println("Received response " + path + " " + response.body());
-            return response;
-        }).exceptionallyCompose(exception -> {
-            System.out.println("Failed to send request " + path + " error: " + exception);
-            return CompletableFuture.failedFuture(exception);
-        });
-    }
-
-    private HttpRequest createRequest(String path, Map<String, Object> params) {
+    private CompletableFuture<byte[]> sendRequest(String path, Map<String, Object> params) {
+        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var encodedParams = toFormParams(params);
         var userAgent = store.device().toUserAgent(store.version());
         if (store.device().platform().isKaiOs()) {
-            return HttpRequest.newBuilder()
-                    .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams)))
-                    .GET()
-                    .header("User-Agent", userAgent)
-                    .build();
+            var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
+            return httpClient.get(uri, proxy, Map.of("User-Agent", userAgent));
         }
 
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
         var cipheredParameters = Base64.getUrlEncoder().encodeToString(BytesHelper.concat(keypair.publicKey(), buffer));
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
-                .GET()
-                .header("User-Agent", userAgent);
-        System.out.println("Using user agent " + userAgent);
-        if (store.device().platform().isAndroid()) {
-            request.header("Accept", "text/json");
-            request.header("WaMsysRequest", "1");
-            request.header("request_token", UUID.randomUUID().toString());
-            request.header("Content-Type", "application/x-www-form-urlencoded");
-        }
-
-        return request.build();
-    }
-
-    private HttpClient createClient() {
-        try {
-            var sslContext = SSLContext.getInstance("TLSv1." + (ThreadLocalRandom.current().nextBoolean() ? 2 : 3));
-            sslContext.init(null, null, new SecureRandom());
-            var sslParameters = sslContext.getDefaultSSLParameters();
-            var supportedCiphers = Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())
-                    .filter(entry -> ThreadLocalRandom.current().nextBoolean())
-                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> {
-                        Collections.shuffle(result);
-                        return result;
-                    }))
-                    .toArray(String[]::new);
-            sslParameters.setCipherSuites(supportedCiphers);
-            var supportedNamedGroups = Arrays.stream(sslContext.getDefaultSSLParameters().getNamedGroups())
-                    .filter(entry -> ThreadLocalRandom.current().nextBoolean())
-                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> {
-                        Collections.shuffle(result);
-                        return result;
-                    }))
-                    .toArray(String[]::new);
-            sslParameters.setNamedGroups(supportedNamedGroups);
-            var version = ThreadLocalRandom.current().nextBoolean() ? HttpClient.Version.HTTP_1_1 : HttpClient.Version.HTTP_2;
-            var clientBuilder = HttpClient.newBuilder()
-                    .sslContext(sslContext)
-                    .sslParameters(sslParameters)
-                    .followRedirects(HttpClient.Redirect.ALWAYS)
-                    .version(version);
-            store.proxy().ifPresent(proxy -> {
-                clientBuilder.proxy(ProxySelector.of(new InetSocketAddress(proxy.getHost(), proxy.getPort())));
-                clientBuilder.authenticator(new ProxyAuthenticator());
-            });
-            return clientBuilder.build();
-        } catch (Throwable exception) {
-            throw new RuntimeException(exception);
-        }
+        var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
+        var isAndroid = store.device().platform().isAndroid();
+        var headers = Attributes.of()
+                .put("User-Agent", userAgent)
+                .put("Accept", "text/json", isAndroid)
+                .put("WaMsysRequest", "1", isAndroid)
+                .put("request_token", UUID.randomUUID().toString(), isAndroid)
+                .put("Content-Type", "application/x-www-form-urlencoded", isAndroid)
+                .toMap();
+        return httpClient.get(uri, proxy, headers);
     }
 
     @SafeVarargs
@@ -538,7 +450,6 @@ public final class WhatsappRegistration {
     }
 
     private void dispose() {
-        httpClient.close();
         if (apnsClient != null) {
             apnsClient.close();
         }
