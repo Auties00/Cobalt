@@ -110,9 +110,12 @@ public final class WhatsappRegistration {
     }
 
     public CompletableFuture<Boolean> exists() {
+        var originalDevice = store.device();
+        store.setDevice(originalDevice.toBusiness());
         return exists(null, null)
-                .thenApplyAsync(RegistrationResponse::whatsappOldEligible)
+                .thenApplyAsync(registrationResponse -> registrationResponse.whatsappOldEligible() || registrationResponse.possibleMigration())
                 .whenCompleteAsync((result, exception) -> {
+                    store.setDevice(originalDevice);
                     dispose();
                     if (exception != null) {
                         Exceptions.rethrow(exception);

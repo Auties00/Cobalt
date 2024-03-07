@@ -44,6 +44,7 @@ public record RegistrationResponse(@JsonProperty("login") PhoneNumber number,
                                    @JsonProperty("image_blob") String imageCaptcha,
                                    @JsonProperty("audio_blob") String audioCaptcha,
                                    @JsonProperty("wa_old_eligible") boolean whatsappOldEligible,
+                                   @JsonProperty("possible_migration") boolean possibleMigration,
                                    @JsonProperty(value = "autoconf_type", defaultValue = "0") boolean autoConfigure
 ) {
 
