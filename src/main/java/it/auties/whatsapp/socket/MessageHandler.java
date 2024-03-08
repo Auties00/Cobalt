@@ -1287,7 +1287,7 @@ class MessageHandler {
 
     private void scheduleHistorySyncTimeout() {
         var executor = CompletableFuture.delayedExecutor(HISTORY_SYNC_TIMEOUT, TimeUnit.SECONDS);
-        if (historySyncTask != null) {
+        if (historySyncTask != null && !historySyncTask.isDone()) {
             historySyncTask.cancel(true);
         }
 

@@ -32,11 +32,14 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         this.outputLock = new ReentrantLock(true);
     }
 
-    abstract CompletableFuture<Void> connect(SocketListener listener);
+    CompletableFuture<Void> connect(SocketListener listener) {
+        this.listener = listener;
+        return CompletableFuture.completedFuture(null);
+    }
 
     abstract void disconnect();
 
-    public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
+    public abstract CompletableFuture<?> sendBinary(byte[] bytes);
 
     static SocketSession of(URI proxy, ExecutorService executor, boolean webSocket) {
         if (webSocket) {
@@ -62,7 +65,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return CompletableFuture.completedFuture(null);
             }
 
-            this.listener = listener;
+            super.connect(listener);
             return HttpClient.newBuilder()
                     .executor(executor)
                     .proxy(ProxySelector.of((InetSocketAddress) ProxyAuthenticator.getProxy(proxy).address()))
@@ -70,7 +73,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     .build()
                     .newWebSocketBuilder()
                     .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
-                    .thenAccept(webSocket -> {
+                    .thenAcceptAsync(webSocket -> {
                         this.session = webSocket;
                         listener.onOpen(this);
                     });
@@ -86,18 +89,18 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
 
         @Override
-        public CompletableFuture<Void> sendBinary(byte[] bytes) {
+        public CompletableFuture<?> sendBinary(byte[] bytes) {
             if (session == null) {
                 return CompletableFuture.completedFuture(null);
             }
 
             outputLock.lock();
-            return session.sendBinary(ByteBuffer.wrap(bytes), true)
-                    .thenRun(outputLock::unlock)
-                    .exceptionally(exception -> {
-                        outputLock.unlock();
-                        throw new RequestException(exception);
-                    });
+            return session.sendBinary(ByteBuffer.wrap(bytes), true).whenCompleteAsync((result, error) -> {
+                outputLock.unlock();
+                if(error != null) {
+                    throw new RequestException(error);
+                }
+            });
         }
 
         @Override
@@ -167,21 +170,24 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
-            this.listener = listener;
             if (isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
 
-            return CompletableFuture.runAsync(() -> {
-                try {
-                    this.socket = new Socket(ProxyAuthenticator.getProxy(proxy));
-                    socket.connect(proxy != null ? InetSocketAddress.createUnresolved(SOCKET_ENDPOINT, SOCKET_PORT) : new InetSocketAddress(SOCKET_ENDPOINT, SOCKET_PORT));
-                    listener.onOpen(RawSocketSession.this);
-                    executor.execute(this::readNextMessage);
-                } catch (IOException exception) {
-                    throw new UncheckedIOException(exception);
-                }
-            });
+            super.connect(listener);
+            return CompletableFuture.runAsync(() -> createConnection(listener));
+        }
+
+        private void createConnection(SocketListener listener) {
+            try {
+                this.socket = new Socket(ProxyAuthenticator.getProxy(proxy));
+                socket.setKeepAlive(true);
+                socket.connect(proxy != null ? InetSocketAddress.createUnresolved(SOCKET_ENDPOINT, SOCKET_PORT) : new InetSocketAddress(SOCKET_ENDPOINT, SOCKET_PORT));
+                listener.onOpen(RawSocketSession.this);
+                executor.execute(this::readNextMessage);
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
+            }
         }
 
         private void readNextMessage() {

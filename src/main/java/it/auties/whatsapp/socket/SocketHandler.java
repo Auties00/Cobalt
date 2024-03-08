@@ -77,6 +77,8 @@ public class SocketHandler implements SocketListener {
 
     private volatile SocketState state;
 
+    private volatile CompletableFuture<Void> loginFuture;
+
     private Keys keys;
 
     private Store store;
@@ -129,9 +131,8 @@ public class SocketHandler implements SocketListener {
     }
 
     private void callListenersAsync(Consumer<Listener> consumer) {
-        var service = getOrCreateListenersService();
         store.listeners()
-                .forEach(listener -> service.execute(() -> invokeListenerSafe(consumer, listener)));
+                .forEach(listener -> Thread.startVirtualThread(() -> invokeListenerSafe(consumer, listener)));
     }
 
     @Override
@@ -146,7 +147,7 @@ public class SocketHandler implements SocketListener {
             Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
 
-        markConnected();
+        addToKnownConnections();
         this.state = SocketState.WAITING;
         onSocketEvent(SocketEvent.OPEN);
         var clientHello = new ClientHelloBuilder()
@@ -160,7 +161,7 @@ public class SocketHandler implements SocketListener {
                 .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
     }
 
-    protected void markConnected() {
+    protected void addToKnownConnections() {
         connectedUuids.add(store.uuid());
         store.phoneNumber()
                 .map(PhoneNumber::number)
@@ -172,7 +173,7 @@ public class SocketHandler implements SocketListener {
     public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
             authHandler.login(session, message)
-                    .thenApplyAsync(result -> result ? setState(SocketState.CONNECTED) : null)
+                    .thenAcceptAsync(this::onConnectionCreated)
                     .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
             return;
         }
@@ -195,6 +196,14 @@ public class SocketHandler implements SocketListener {
         } catch (Throwable throwable) {
             handleFailure(STREAM, throwable);
         }
+    }
+
+    private void onConnectionCreated(Boolean result) {
+        if (result == null || !result) {
+            return;
+        }
+
+        setState(SocketState.CONNECTED);
     }
 
     private byte[] decipherMessage(byte[] message, byte[] readKey) {
@@ -242,6 +251,10 @@ public class SocketHandler implements SocketListener {
     public CompletableFuture<Void> connect() {
         if (state == SocketState.CONNECTED) {
             return CompletableFuture.completedFuture(null);
+        }
+
+        if(loginFuture == null || loginFuture.isDone()) {
+            this.loginFuture = new CompletableFuture<>();
         }
 
         this.session = SocketSession.of(store.proxy().orElse(null), socketExecutor, store.clientType() == ClientType.WEB);
@@ -755,6 +768,7 @@ public class SocketHandler implements SocketListener {
             if (shutdownHook != null) {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             }
+            confirmConnection();
         }
         callListenersSync(listener -> {
             listener.onDisconnected(whatsapp, loggedOut);
@@ -770,12 +784,9 @@ public class SocketHandler implements SocketListener {
     }
 
     public void callListenersSync(Consumer<Listener> consumer) {
-        var service = getOrCreateListenersService();
-        var futures = store.listeners()
-                .stream()
-                .map(listener -> CompletableFuture.runAsync(() -> invokeListenerSafe(consumer, listener), service))
-                .toArray(CompletableFuture[]::new);
-        CompletableFuture.allOf(futures).join();
+        for(var listener : store.listeners()) {
+            invokeListenerSafe(consumer, listener);
+        }
     }
 
     private void invokeListenerSafe(Consumer<Listener> consumer, Listener listener) {
@@ -960,14 +971,6 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-    private ExecutorService getOrCreateListenersService() {
-        if (listenersService == null || listenersService.isShutdown()) {
-            listenersService = Executors.newCachedThreadPool();
-        }
-
-        return listenersService;
-    }
-
     protected <T> T handleFailure(Location location, Throwable throwable) {
         if (state() == SocketState.RESTORE || state() == SocketState.LOGGED_OUT) {
             return null;
@@ -1007,10 +1010,6 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    public Whatsapp whatsapp() {
-        return this.whatsapp;
-    }
-
     public SocketState state() {
         return this.state;
     }
@@ -1023,13 +1022,20 @@ public class SocketHandler implements SocketListener {
         return this.store;
     }
 
-    protected SocketHandler setState(SocketState state) {
+    protected void setState(SocketState state) {
         this.state = state;
-        return this;
     }
 
     public CompletableFuture<Void> changeAbout(String newAbout) {
         return sendQuery("set", "status", Node.of("status", newAbout.getBytes(StandardCharsets.UTF_8)))
                 .thenRun(() -> store().setAbout(newAbout));
+    }
+
+    void confirmConnection() {
+        if (loginFuture == null || loginFuture.isDone()) {
+            return;
+        }
+
+        loginFuture.complete(null);
     }
 }

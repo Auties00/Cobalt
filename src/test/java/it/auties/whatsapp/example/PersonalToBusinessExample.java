@@ -21,7 +21,7 @@ public class PersonalToBusinessExample {
                 .orElseThrow()
                 .addRegistrationCodeListener(otp -> codeFuture.complete(String.valueOf(otp)))
                 .connect()
-                .thenRunAsync(() -> {
+                .thenApplyAsync(api -> {
                     // Register the account and use codeFuture as an otp provider
                     Whatsapp.mobileBuilder()
                             .newConnection()
@@ -31,6 +31,9 @@ public class PersonalToBusinessExample {
                             .verificationCodeSupplier(() -> codeFuture)
                             .register(sixPartsKeys.phoneNumber().number())
                             .join();
-                });
+                    return api;
+                })
+                .join()
+                .awaitDisconnection();
     }
 }

@@ -32,8 +32,10 @@ public class MobileMessageExample {
                     System.out.println("Sending message...");
                     api.sendMessage(Jid.of(recipient), "Hello World").join();
                     System.out.println("Sent message!");
+                    api.disconnect().join();
                 })
                 .connect() // If you get error 403 o 503 the account is banned
-                .join();
+                .join()
+                .awaitDisconnection();
     }
 }

@@ -21,18 +21,11 @@ import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSettings;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
-import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Specification;
-import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.*;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,33 +36,26 @@ class AppStateHandler {
     private static final int PULL_ATTEMPTS = 3;
 
     private final SocketHandler socketHandler;
-    private final Map<PatchType, Integer> attempts;
-    private ExecutorService executor;
+    private final ConcurrentMap<PatchType, Integer> attempts;
+    private final Semaphore pullSemaphore;
+    private final Semaphore pushSemaphore;
 
     protected AppStateHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
-        this.attempts = new HashMap<>();
-    }
-
-    private ExecutorService getOrCreateAppService() {
-        if (executor == null || executor.isShutdown()) {
-            executor = Executors.newSingleThreadExecutor();
-        }
-
-        return executor;
+        this.attempts = new ConcurrentHashMap<>();
+        this.pullSemaphore = new Semaphore(1, true);
+        this.pushSemaphore = new Semaphore(1, true);
     }
 
     protected CompletableFuture<Void> push(Jid jid, List<PatchRequest> patches) {
-        return runPushTask(() -> {
-            var clientType = socketHandler.store().clientType();
-            var pullOperation = switch (clientType) {
-                case MOBILE -> CompletableFuture.completedFuture(null);
-                case WEB -> pullUninterruptedly(jid, getPatchesTypes(patches));
-            };
-            return pullOperation.thenComposeAsync(ignored -> sendPush(jid, patches, clientType != ClientType.MOBILE))
-                    .orTimeout(TIMEOUT, TimeUnit.SECONDS)
-                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable));
-        });
+        var clientType = socketHandler.store().clientType();
+        var pullOperation = switch (clientType) {
+            case MOBILE -> CompletableFuture.completedFuture(null);
+            case WEB -> pull(jid, getPatchesTypes(patches));
+        };
+        return pullOperation.thenComposeAsync(ignored -> sendPush(jid, patches, clientType != ClientType.MOBILE))
+                .orTimeout(TIMEOUT, TimeUnit.SECONDS)
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable));
     }
 
     private Set<PatchType> getPatchesTypes(List<PatchRequest> patches) {
@@ -78,34 +64,31 @@ class AppStateHandler {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private CompletableFuture<Void> runPushTask(Supplier<CompletableFuture<?>> task) {
-        var executor = getOrCreateAppService();
-        var future = new CompletableFuture<Void>();
-        executor.execute(() -> {
-            try {
-                task.get().join();
-                future.complete(null);
-            } catch (Throwable throwable) {
-                future.completeExceptionally(throwable);
-            }
-        });
-        return future;
-    }
-
     private CompletableFuture<Void> sendPush(Jid jid, List<PatchRequest> patches, boolean readPatches) {
-        var requests = patches.stream()
-                .map(entry -> createPushRequest(jid, entry))
-                .toList();
-        var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
-        var body = requests.stream()
-                .map(request -> createPushRequestNode(request, mobile))
-                .toList();
-        var syncAttributes = Attributes.of()
-                .put("data_namespace", 3, mobile)
-                .toMap();
-        var sync = Node.of("sync", syncAttributes, body);
-        return socketHandler.sendQuery("set", "w:sync:app:state", sync)
-                .thenRunAsync(() -> onPush(jid, requests, readPatches));
+        try {
+            pushSemaphore.acquire();
+            var requests = patches.stream()
+                    .map(entry -> createPushRequest(jid, entry))
+                    .toList();
+            var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
+            var body = requests.stream()
+                    .map(request -> createPushRequestNode(request, mobile))
+                    .toList();
+            var syncAttributes = Attributes.of()
+                    .put("data_namespace", 3, mobile)
+                    .toMap();
+            var sync = Node.of("sync", syncAttributes, body);
+            return socketHandler.sendQuery("set", "w:sync:app:state", sync)
+                    .whenCompleteAsync((result, error) -> {
+                        pushSemaphore.release();
+                        if(error != null) {
+                            Exceptions.rethrow(error);
+                        }
+                    })
+                    .thenRunAsync(() -> onPush(jid, requests, readPatches));
+        }catch (Throwable throwable) {
+            return CompletableFuture.failedFuture(throwable);
+        }
     }
 
     private PushRequest createPushRequest(Jid jid, PatchRequest request) {
@@ -215,9 +198,9 @@ class AppStateHandler {
             return;
         }
 
-        getOrCreateAppService().execute(() -> pullUninterruptedly(jid.get(), Set.of(patchTypes))
+        pull(jid.get(), Set.of(patchTypes))
                 .thenAcceptAsync(success -> onPull(false, success))
-                .exceptionallyAsync(exception -> onPullError(false, exception)));
+                .exceptionallyAsync(exception -> onPullError(false, exception));
     }
 
     protected CompletableFuture<Void> pullInitial() {
@@ -230,7 +213,7 @@ class AppStateHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return pullUninterruptedly(jid.get(), Set.of(PatchType.values()))
+        return pull(jid.get(), Set.of(PatchType.values()))
                 .thenAcceptAsync(success -> onPull(true, success))
                 .exceptionallyAsync(exception -> onPullError(true, exception));
     }
@@ -264,18 +247,30 @@ class AppStateHandler {
         return socketHandler.handleFailure(PULL_APP_STATE, exception);
     }
 
-    private CompletableFuture<Boolean> pullUninterruptedly(Jid jid, Set<PatchType> patchTypes) {
-        var tempStates = new HashMap<PatchType, CompanionHashState>();
-        var nodes = getPullNodes(jid, patchTypes, tempStates);
-        return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync", nodes))
-                .thenApplyAsync(this::parseSyncRequest)
-                .thenApplyAsync(records -> decodeSyncs(jid, tempStates, records))
-                .thenComposeAsync(remaining -> handlePullResult(jid, remaining))
-                .orTimeout(TIMEOUT, TimeUnit.SECONDS);
+    private CompletableFuture<Boolean> pull(Jid jid, Set<PatchType> patchTypes) {
+        try {
+            pullSemaphore.acquire();
+            var tempStates = new HashMap<PatchType, CompanionHashState>();
+            var nodes = getPullNodes(jid, patchTypes, tempStates);
+            return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync", nodes))
+                    .thenApplyAsync(this::parseSyncRequest)
+                    .thenApplyAsync(records -> decodeSyncs(jid, tempStates, records))
+                    .thenComposeAsync(remaining -> handlePullResult(jid, remaining))
+                    .orTimeout(TIMEOUT, TimeUnit.SECONDS)
+                    .whenCompleteAsync((result, error) -> {
+                        pullSemaphore.release();
+                        if(error != null) {
+                            Exceptions.rethrow(error);
+                        }
+                    });
+        }catch (Throwable throwable) {
+            pullSemaphore.release();
+            return CompletableFuture.failedFuture(throwable);
+        }
     }
 
     private CompletableFuture<Boolean> handlePullResult(Jid jid, Set<PatchType> remaining) {
-        return remaining.isEmpty() ? CompletableFuture.completedFuture(true) : pullUninterruptedly(jid, remaining);
+        return remaining.isEmpty() ? CompletableFuture.completedFuture(true) : pull(jid, remaining);
     }
 
     private List<Node> getPullNodes(Jid jid, Set<PatchType> patchTypes, Map<PatchType, CompanionHashState> tempStates) {
@@ -476,7 +471,7 @@ class AppStateHandler {
                 var format = timeFormatAction.twentyFourHourFormatEnabled();
                 socketHandler.store().setTwentyFourHourFormat(format);
             }
-            case DeleteChatAction deleteChatAction -> targetChat.ifPresent(Chat::removeMessages);
+            case DeleteChatAction ignored -> targetChat.ifPresent(Chat::removeMessages);
             default -> {}
         }
         socketHandler.onAction(action, messageIndex);
@@ -649,9 +644,6 @@ class AppStateHandler {
 
     protected void dispose() {
         attempts.clear();
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdownNow();
-        }
     }
 
     private record SyncRecord(CompanionHashState state, List<ActionDataSync> records) {
@@ -682,7 +674,7 @@ class AppStateHandler {
 
     }
 
-    public record MutationResult(MutationSync sync, byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
+    private record MutationResult(MutationSync sync, byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
 
     }
 }

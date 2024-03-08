@@ -41,11 +41,11 @@ public class FutureReference<T> {
     }
 
     public void setValue(T value) {
-        if (future != null) {
+        if (future != null && !future.isDone()) {
             future.cancel(true);
-            future = null;
         }
 
+        this.future = null;
         this.value = value;
     }
 }
