@@ -27,6 +27,7 @@ public class MobileLoginExample {
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addLoggedInListener(api -> System.out.println("Logged in"))
                 .connect() // If you get error 403 o 503 the account is banned
-                .join();
+                .join()
+                .awaitDisconnection();
     }
 }

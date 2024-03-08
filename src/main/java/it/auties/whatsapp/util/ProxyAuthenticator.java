@@ -37,8 +37,8 @@ public class ProxyAuthenticator extends Authenticator {
         var host = Objects.requireNonNull(uri.getHost(), "Invalid proxy, expected a host: %s".formatted(uri));
         var port = getProxyPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
         return switch (scheme) {
-            case "http", "https" -> new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port));
-            case "socks4", "socks5" -> new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(host, port));
+            case "http", "https" -> new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(host, port));
+            case "socks4", "socks5" -> new Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port));
             default -> throw new IllegalStateException("Unexpected scheme: " + scheme);
         };
     }

@@ -82,8 +82,8 @@ class StreamHandler {
     private final WebVerificationHandler webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
-    private ScheduledExecutorService service;
-    private CompletableFuture<Void> mediaConnectionFuture;
+    private volatile CompletableFuture<Void> mediaConnectionFuture;
+    private volatile CompletableFuture<Void> pingFuture;
 
     protected StreamHandler(SocketHandler socketHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = socketHandler;
@@ -865,6 +865,7 @@ class StreamHandler {
     }
 
     private void digestSuccess(Node node) {
+        socketHandler.confirmConnection();
         node.attributes().getOptionalJid("lid")
                 .ifPresent(socketHandler.store()::setLid);
         socketHandler.sendQuery("set", "passive", Node.of("active"));
@@ -1126,15 +1127,6 @@ class StreamHandler {
                         .thenApplyAsync(entries -> Node.of("category", Map.of("id", entries.getFirst().id()))));
     }
 
-    private void schedulePing() {
-        if (service != null && !service.isShutdown()) {
-            return;
-        }
-
-        service = Executors.newSingleThreadScheduledExecutor();
-        service.scheduleAtFixedRate(this::sendPing, 0, PING_INTERVAL, TimeUnit.SECONDS);
-    }
-
     private void onInitialInfo() {
         socketHandler.keys().setRegistered(true);
         schedulePing();
@@ -1315,17 +1307,23 @@ class StreamHandler {
         socketHandler.onMetadata(properties);
     }
 
-    private void sendPing() {
+    private void schedulePing() {
+        var executor = CompletableFuture.delayedExecutor(PING_INTERVAL, TimeUnit.SECONDS, Thread::startVirtualThread);
+        ping(executor);
+    }
+
+    private void ping(Executor executor) {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return;
         }
 
         socketHandler.sendQuery("get", "w:p", Node.of("ping"))
-                .thenRun(() -> socketHandler.onSocketEvent(SocketEvent.PING))
+                .thenRunAsync(() -> socketHandler.onSocketEvent(SocketEvent.PING))
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
         socketHandler.store().serialize(true);
         socketHandler.store().serializer().linkMetadata(socketHandler.store());
         socketHandler.keys().serialize(true);
+        this.pingFuture = CompletableFuture.runAsync(() -> ping(executor), executor);
     }
 
     private CompletableFuture<Void> createMediaConnection(int tries, Throwable error) {
@@ -1535,21 +1533,21 @@ class StreamHandler {
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store().setJid(companion);
         socketHandler.store().setPhoneNumber(PhoneNumber.of(companion.user()));
-        socketHandler.markConnected();
+        socketHandler.addToKnownConnections();
         var me = new Contact(companion.toSimpleJid(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
         socketHandler.store().addContact(me);
     }
 
     protected void dispose() {
-        if(mediaConnectionFuture != null) {
+        if(mediaConnectionFuture != null && !mediaConnectionFuture.isDone()) {
             mediaConnectionFuture.cancel(true);
         }
 
-        retries.clear();
-        if (service != null) {
-            service.shutdownNow();
+        if(pingFuture != null && !pingFuture.isDone()) {
+            pingFuture.cancel(true);
         }
 
+        retries.clear();
         lastLinkCodeKey.set(null);
     }
 }

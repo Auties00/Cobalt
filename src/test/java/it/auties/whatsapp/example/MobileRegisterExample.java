@@ -35,6 +35,7 @@ public class MobileRegisterExample {
                     api.disconnect().join();
                 }))
                 .connect()
-                .join();
+                .join()
+                .awaitDisconnection();
     }
 }

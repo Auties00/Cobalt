@@ -97,7 +97,6 @@ public class Whatsapp {
     }
 
     private final SocketHandler socketHandler;
-    private RegistrationResponse response;
 
     /**
      * Checks if a connection exists
@@ -193,10 +192,23 @@ public class Whatsapp {
      *
      * @return a future
      */
-    public synchronized CompletableFuture<Whatsapp> connect() {
+    public CompletableFuture<Whatsapp> connect() {
         return socketHandler.connect()
                 .thenRunAsync(() -> instances.put(store().uuid(), this))
                 .thenApply(ignored -> this);
+    }
+
+    /**
+     * Waits for this session to be disconnected
+     */
+    public void awaitDisconnection() {
+        var future = new CompletableFuture<Void>();
+        addDisconnectedListener((reason) -> {
+            if(reason == DisconnectReason.DISCONNECTED || reason == DisconnectReason.LOGGED_OUT) {
+                future.complete(null);
+            }
+        });
+        future.join();
     }
 
     /**
@@ -3862,14 +3874,5 @@ public class Whatsapp {
     private Jid jidOrThrowError() {
         return store().jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
-    }
-
-    public Whatsapp setResponse(RegistrationResponse response) {
-        this.response = response;
-        return this;
-    }
-
-    public RegistrationResponse getResponse() {
-        return response;
     }
 }

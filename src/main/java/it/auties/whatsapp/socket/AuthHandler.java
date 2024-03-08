@@ -104,7 +104,6 @@ class AuthHandler {
                 .releaseChannel(socketHandler.store().releaseChannel())
                 .localeLanguageIso6391(socketHandler.store().locale().map(CountryLocale::languageValue).orElse("en"))
                 .localeCountryIso31661Alpha2(socketHandler.store().locale().map(CountryLocale::languageCode).orElse("US"))
-                .deviceType(UserAgent.DeviceType.PHONE)
                 .build();
     }
 
