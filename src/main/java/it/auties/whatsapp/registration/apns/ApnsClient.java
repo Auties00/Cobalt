@@ -198,10 +198,10 @@ public class ApnsClient {
             sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
             var sslSocketFactory = sslContext.getSocketFactory();
             var underlyingSocket = new Socket();
-            socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
             var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
             underlyingSocket.connect(new InetSocketAddress(endpoint, PORT));
             this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);
+            socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
             socket.setSSLParameters(sslParameters);
             socket.startHandshake();
         }catch (IOException exception) {

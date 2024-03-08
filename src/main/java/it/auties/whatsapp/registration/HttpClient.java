@@ -5,7 +5,6 @@ import it.auties.whatsapp.util.ProxyAuthenticator;
 import javax.net.ssl.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.*;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -15,18 +14,53 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
-public class HttpClient {
-    static {
-        Authenticator.setDefault(new ProxyAuthenticator());
+class HttpClient {
+    private final ProxyAuthenticator authenticator;
+    private volatile SSLFactoryWithParams factoryWithParams;
+    HttpClient() {
+        this.authenticator = new ProxyAuthenticator();
     }
 
-    private final SSLSocketFactory sslFactory;
-    public HttpClient() {
-        this.sslFactory = randomSSLContext();
+    public CompletableFuture<byte[]> get(URI uri, Proxy proxy, Map<String, ?> headers) {
+        return sendRequest("GET", uri, proxy, headers);
     }
 
-    private static SSLSocketFactory randomSSLContext() {
+    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, Map<String, ?> headers) {
+        return sendRequest("POST", uri, proxy, headers);
+    }
+
+    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Proxy proxy, Map<String, ?> headers) {
+        var future = new CompletableFuture<byte[]>();
+        Thread.startVirtualThread(() -> {
+            try {
+                var url = uri.toURL();
+                var connection = (HttpsURLConnection) createConnection(proxy, url);
+                connection.setRequestMethod(method);
+                headers.forEach((key, value) -> connection.setRequestProperty(key, String.valueOf(value)));
+                connection.setAuthenticator(authenticator);
+                connection.setSSLSocketFactory(getOrCreateParams());
+                connection.setInstanceFollowRedirects(true);
+                connection.connect();
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    throw new IllegalStateException("Invalid status code: " + connection.getResponseCode());
+                }
+
+                try (var inputStream = connection.getInputStream()) {
+                    future.complete(inputStream.readAllBytes());
+                }
+            } catch (IOException exception) {
+                future.completeExceptionally(exception);
+            }
+        });
+        return future;
+    }
+
+    private SSLSocketFactory getOrCreateParams() {
         try {
+            if(factoryWithParams != null) {
+                return factoryWithParams;
+            }
+
             var sslContext = SSLContext.getInstance("TLSv1." + (ThreadLocalRandom.current().nextBoolean() ? 2 : 3));
             sslContext.init(null, null, new SecureRandom());
             var sslParameters = sslContext.getDefaultSSLParameters();
@@ -46,43 +80,10 @@ public class HttpClient {
                     }))
                     .toArray(String[]::new);
             sslParameters.setNamedGroups(supportedNamedGroups);
-            var sslEngine = sslContext.createSSLEngine();
-            sslEngine.setSSLParameters(sslParameters);
-            return new SSLFactoryWithParams(sslContext.getSocketFactory(), sslParameters);
+            return factoryWithParams = new SSLFactoryWithParams(sslContext.getSocketFactory(), sslParameters);
         } catch (Throwable exception) {
             throw new RuntimeException(exception);
         }
-    }
-
-    public CompletableFuture<byte[]> get(URI uri, Proxy proxy, Map<String, ?> headers) {
-        return sendRequest("GET", uri, proxy, headers);
-    }
-
-    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, Map<String, ?> headers) {
-        return sendRequest("POST", uri, proxy, headers);
-    }
-
-    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Proxy proxy, Map<String, ?> headers) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                var url = uri.toURL();
-                var connection = (HttpsURLConnection) createConnection(proxy, url);
-                connection.setRequestMethod(method);
-                headers.forEach((key, value) -> connection.setRequestProperty(key, String.valueOf(value)));
-                connection.setSSLSocketFactory(sslFactory);
-                connection.setInstanceFollowRedirects(true);
-                connection.connect();
-                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    throw new IllegalStateException("Invalid status code: " + connection.getResponseCode());
-                }
-
-                try (var inputStream = connection.getInputStream()) {
-                    return inputStream.readAllBytes();
-                }
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
-            }
-        }, Thread::startVirtualThread);
     }
 
     private URLConnection createConnection(Proxy proxy, URL url) throws IOException {
