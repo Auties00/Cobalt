@@ -6,7 +6,7 @@ import it.auties.whatsapp.model.companion.CompanionDevice;
 
 import java.util.Scanner;
 
-public class MobileExistsResponse {
+public class MobileExistsExample {
     public static void main(String[] args) {
         System.out.println("Enter the phone number: ");
         Scanner scanner = new Scanner(System.in);

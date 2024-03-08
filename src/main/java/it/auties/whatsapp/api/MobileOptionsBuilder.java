@@ -7,6 +7,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.registration.WhatsappRegistration;
 
 import java.util.Optional;
@@ -146,7 +147,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      */
     public CompletableFuture<Boolean> exists(long phoneNumber) {
         store.setPhoneNumber(PhoneNumber.of(phoneNumber));
-        var service = new WhatsappRegistration(store, keys, null, null);
+        var service = new WhatsappRegistration(store, keys, null, VerificationCodeMethod.NONE);
         return service.exists();
     }
 }

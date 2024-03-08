@@ -273,7 +273,9 @@ public class ApnsClient {
                 }
             }
             socket.getOutputStream().write(byteArrayOutputStream.toByteArray());
-        } catch (IOException exception) {
+        } catch (SocketException ignored) {
+            // Ignored
+        }catch (IOException exception) {
             throw new UncheckedIOException("Cannot send message", exception);
         }
     }
