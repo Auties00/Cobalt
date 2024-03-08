@@ -82,7 +82,7 @@ public class HttpClient {
             } catch (IOException exception) {
                 throw new UncheckedIOException(exception);
             }
-        });
+        }, Thread::startVirtualThread);
     }
 
     private URLConnection createConnection(Proxy proxy, URL url) throws IOException {
