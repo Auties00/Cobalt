@@ -83,11 +83,11 @@ public final class WhatsappRegistration {
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
-                    .thenComposeAsync(pushToken -> exists(originalDevice, null))
+                    .thenComposeAsync(pushToken -> exists(originalDevice, true, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getIOSPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
-            case ANDROID, ANDROID_BUSINESS -> exists(null, null)
+            case ANDROID, ANDROID_BUSINESS -> exists(null, true, null)
                     .thenComposeAsync(response -> requestVerificationCode(null, null));
             case KAIOS -> requestVerificationCode(null, null);
             default -> throw new IllegalStateException("Unsupported mobile os");
@@ -107,7 +107,7 @@ public final class WhatsappRegistration {
     public CompletableFuture<Boolean> exists() {
         var originalDevice = store.device();
         store.setDevice(originalDevice.toBusiness());
-        return exists(null, null)
+        return exists(null, false, null)
                 .thenApplyAsync(registrationResponse -> registrationResponse.whatsappOldEligible() || registrationResponse.possibleMigration())
                 .whenCompleteAsync((result, exception) -> {
                     store.setDevice(originalDevice);
@@ -144,7 +144,7 @@ public final class WhatsappRegistration {
         return apnsClient.getAppToken(store.device().platform().isBusiness());
     }
 
-    private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, VerificationCodeError lastError) {
+    private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, VerificationCodeError lastError) {
         return getIOSPushToken().thenComposeAsync(pushToken -> {
             var ios = store.device().platform().isIOS();
             var options = getRegistrationOptions(
@@ -157,7 +157,7 @@ public final class WhatsappRegistration {
             );
             return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
                 var response = Json.readValue(result, RegistrationResponse.class);
-                if (response.errorReason() == VerificationCodeError.INCORRECT) {
+                if (response.errorReason() == VerificationCodeError.INCORRECT || !throwError) {
                     return CompletableFuture.completedFuture(response);
                 }
 
@@ -171,7 +171,7 @@ public final class WhatsappRegistration {
                     store.setDevice(originalDevice);
                 }
 
-                return exists(originalDevice, response.errorReason()).whenComplete((finalResult, error) -> {
+                return exists(originalDevice, true, response.errorReason()).whenComplete((finalResult, error) -> {
                     if(useOriginalDevice) {
                         store.setDevice(currentDevice);
                     }

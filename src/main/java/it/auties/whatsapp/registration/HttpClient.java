@@ -48,6 +48,7 @@ class HttpClient {
                 try (var inputStream = connection.getInputStream()) {
                     future.complete(inputStream.readAllBytes());
                 }
+                connection.disconnect();
             } catch (IOException exception) {
                 future.completeExceptionally(exception);
             }
@@ -72,14 +73,6 @@ class HttpClient {
                     }))
                     .toArray(String[]::new);
             sslParameters.setCipherSuites(supportedCiphers);
-            var supportedNamedGroups = Arrays.stream(sslParameters.getNamedGroups())
-                    .filter(entry -> ThreadLocalRandom.current().nextBoolean())
-                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> {
-                        Collections.shuffle(result);
-                        return result;
-                    }))
-                    .toArray(String[]::new);
-            sslParameters.setNamedGroups(supportedNamedGroups);
             return factoryWithParams = new SSLFactoryWithParams(sslContext.getSocketFactory(), sslParameters);
         } catch (Throwable exception) {
             throw new RuntimeException(exception);
