@@ -2,7 +2,6 @@ package it.auties.whatsapp.registration.apns;
 
 import com.dd.plist.NSDictionary;
 import it.auties.whatsapp.crypto.Sha1;
-import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -28,7 +27,6 @@ import java.util.regex.Pattern;
 public class ApnsClient {
     static {
         Security.addProvider(new BouncyCastleProvider());
-        Authenticator.setDefault(new ProxyAuthenticator());
     }
 
     private static final long PING_INTERVAL = 5;

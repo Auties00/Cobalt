@@ -14,8 +14,7 @@ public class Specification {
         public static final byte[] NOISE_PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
         public static final String WEB_ORIGIN = "https://web.whatsapp.com";
         public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
-        public static final String SOCKET_ENDPOINT = "g.whatsapp.net";
-        public static final int SOCKET_PORT = 443;
+        public static final URI SOCKET_ENDPOINT = URI.create("http://g.whatsapp.net:443");
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
         public static final String MOBILE_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp";
         public static final String MOBILE_IOS_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1";
@@ -28,7 +27,8 @@ public class Specification {
         public static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
         public static final String APNS_WHATSAPP_BUSINESS_NAME = "net.whatsapp.WhatsAppSMB";
         public static final String APNS_WHATSAPP_NAME = "net.whatsapp.WhatsApp";
-        public static final Version MOBILE_DEFAULT_IOS_VERSION = Version.of("2.24.4.78");
+        public static final Version MOBILE_DEFAULT_PERSONAL_IOS_VERSION = Version.of("2.24.5.74");
+        public static final Version MOBILE_DEFAULT_BUSINESS_IOS_VERSION = Version.of("2.24.4.78");
         public static final String[] DEFAULT_APNS_FILTERS = new String[]{
                 "net.whatsapp.WhatsApp",
                 "net.whatsapp.WhatsApp.voip",

@@ -4,8 +4,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 public class MobileRegisterExample {
     public static void main(String[] args) {
@@ -28,14 +26,6 @@ public class MobileRegisterExample {
                     return new Scanner(System.in).nextLine();
                 })
                 .register(phoneNumber)
-                .join()
-                .whatsapp()
-                .addLoggedInListener(api -> CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS).execute(() -> {
-                    System.out.println(api.keys().toString());
-                    api.disconnect().join();
-                }))
-                .connect()
-                .join()
-                .awaitDisconnection();
+                .join();
     }
 }

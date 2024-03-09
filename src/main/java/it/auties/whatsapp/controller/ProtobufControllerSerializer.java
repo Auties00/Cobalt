@@ -220,6 +220,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
 
     private void writeFile(byte[] object, String fileName, Path outputFile) {
         try {
+            Files.createDirectories(outputFile.getParent());
             var tempFile = Files.createTempFile(fileName, ".tmp");
             try (var tempFileOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
                 tempFileOutputStream.write(object);

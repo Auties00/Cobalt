@@ -29,7 +29,6 @@ public class MobileGroupExample {
                         System.out.println("Creating group...");
                         var result = api.createGroup("Test", Jid.of(toAdd)).join();
                         System.out.println("Created group: " + result);
-                        api.disconnect().join();
                     });
                 })
                 .connect() // If you get error 403 o 503 the account is banned

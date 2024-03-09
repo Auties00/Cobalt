@@ -6,26 +6,16 @@ import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 
-// TODO: Write a custom implementation of Socket that supports a custom proxy
 public class ProxyAuthenticator extends Authenticator {
-    private final static Map<String, URI> credentials;
+    private static volatile ProxyAuthenticator instance;
 
     static {
         allowAll();
-        credentials = new ConcurrentHashMap<>();
     }
 
     public static void allowAll() {
         System.setProperty("jdk.http.auth.proxying.disabledSchemes", "");
         System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
-    }
-
-    public static void register(URI uri) {
-        credentials.put("%s:%s".formatted(uri.getHost(), uri.getPort()), uri);
-    }
-
-    public static void unregister(URI uri) {
-        credentials.remove("%s:%s".formatted(uri.getHost(), uri.getPort()));
     }
 
     public static Proxy getProxy(URI uri) {
@@ -38,7 +28,7 @@ public class ProxyAuthenticator extends Authenticator {
         var port = getProxyPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
         return switch (scheme) {
             case "http", "https" -> new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(host, port));
-            case "socks4", "socks5" -> new Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port));
+            case "socks5" -> new Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port));
             default -> throw new IllegalStateException("Unexpected scheme: " + scheme);
         };
     }
@@ -49,6 +39,31 @@ public class ProxyAuthenticator extends Authenticator {
             case "https" -> OptionalInt.of(443);
             default -> OptionalInt.empty();
         };
+    }
+
+    // We can't have a specialized authenticator as the Socket class doesn't provide a way to pass one
+    // Http(s) sockets under the hood use the HTTP(S)UrlConnection class, which supports setAuthenticator
+    // But Socks5 proxies invoke Authenticator#requestPasswordAuthentication which uses the default authenticator
+    // For now this is good enough, even though in a shared environment it could be a problem because two proxies could have the same host and port, but different users
+    public static ProxyAuthenticator globalAuthenticator() {
+        if(instance == null) {
+            instance = new ProxyAuthenticator();
+        }
+
+        return instance;
+    }
+
+    private final Map<String, URI> credentials;
+    private ProxyAuthenticator() {
+        this.credentials = new ConcurrentHashMap<>();
+    }
+
+    public void register(URI uri) {
+        credentials.put("%s:%s".formatted(uri.getHost(), uri.getPort()), uri);
+    }
+
+    public void unregister(URI uri) {
+        credentials.remove("%s:%s".formatted(uri.getHost(), uri.getPort()));
     }
 
     @Override

@@ -92,7 +92,7 @@ public final class WhatsappMetadata {
             var result = Json.readValue(response, IosVersionResponse.class)
                     .version()
                     .filter(version -> String.valueOf(version.tertiary()).length() != 1 || String.valueOf(version.quaternary()).length() != 1)
-                    .orElse(Whatsapp.MOBILE_DEFAULT_IOS_VERSION);
+                    .orElse(business ? Whatsapp.MOBILE_DEFAULT_BUSINESS_IOS_VERSION : Whatsapp.MOBILE_DEFAULT_PERSONAL_IOS_VERSION);
             if(business) {
                 businessIosVersion = result;
             }else {

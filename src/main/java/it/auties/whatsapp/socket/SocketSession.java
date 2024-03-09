@@ -16,7 +16,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
-import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_PORT;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     private static final int MESSAGE_LENGTH = 3;
@@ -69,7 +68,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             return HttpClient.newBuilder()
                     .executor(executor)
                     .proxy(ProxySelector.of((InetSocketAddress) ProxyAuthenticator.getProxy(proxy).address()))
-                    .authenticator(new ProxyAuthenticator())
+                    .authenticator(ProxyAuthenticator.globalAuthenticator())
                     .build()
                     .newWebSocketBuilder()
                     .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
@@ -159,7 +158,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
     static final class RawSocketSession extends SocketSession {
         static {
-            Authenticator.setDefault(new ProxyAuthenticator());
+            Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
         }
 
         private Socket socket;
@@ -182,7 +181,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             try {
                 this.socket = new Socket(ProxyAuthenticator.getProxy(proxy));
                 socket.setKeepAlive(true);
-                socket.connect(proxy != null ? InetSocketAddress.createUnresolved(SOCKET_ENDPOINT, SOCKET_PORT) : new InetSocketAddress(SOCKET_ENDPOINT, SOCKET_PORT));
+                socket.connect(proxy != null ? InetSocketAddress.createUnresolved(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()) : new InetSocketAddress(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()));
                 listener.onOpen(RawSocketSession.this);
                 executor.execute(this::readNextMessage);
             } catch (IOException exception) {
@@ -225,13 +224,15 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 var read = 0;
                 while (read != data.length) {
                     var chunk = socket.getInputStream().read(data, read, data.length - read);
-                    if(chunk < 0) {
+                    if (chunk < 0) {
                         return false;
                     }
 
                     read += chunk;
                 }
                 return true;
+            }catch (SocketException exception) {
+                return false;
             } catch (IOException exception) {
                 throw new UncheckedIOException(exception);
             }
@@ -253,7 +254,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
 
         private boolean isOpen() {
-            return socket != null && !socket.isClosed();
+            return socket != null && socket.isConnected();
         }
 
         @Override
@@ -266,7 +267,9 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 try {
                     outputLock.lock();
                     socket.getOutputStream().write(bytes);
+                    socket.getOutputStream().flush();
                 } catch (IOException exception) {
+                    System.out.println("error");
                     throw new UncheckedIOException(exception);
                 } finally {
                     outputLock.unlock();

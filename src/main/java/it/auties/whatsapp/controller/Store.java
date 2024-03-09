@@ -334,7 +334,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
-            ProxyAuthenticator.register(proxy);
+            ProxyAuthenticator.globalAuthenticator().register(proxy);
         }
 
         this.proxy = proxy;
@@ -1153,9 +1153,9 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      */
     public Store setProxy(URI proxy) {
         if (proxy != null && proxy.getUserInfo() != null) {
-            ProxyAuthenticator.register(proxy);
+            ProxyAuthenticator.globalAuthenticator().register(proxy);
         } else if (proxy == null && this.proxy != null) {
-            ProxyAuthenticator.unregister(this.proxy);
+            ProxyAuthenticator.globalAuthenticator().unregister(this.proxy);
         }
 
         this.proxy = proxy;
@@ -1481,17 +1481,12 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
 
         Objects.requireNonNull(device, "The device cannot be null");
         this.device = device;
-        this.version = new FutureReference<>(null, () -> WhatsappMetadata.getVersion(device.platform()));
+        this.version = new FutureReference<>(device.appVersion().orElse(null), () -> WhatsappMetadata.getVersion(device.platform()));
         return this;
     }
 
     public Store setCheckPatchMacs(boolean checkPatchMacs) {
         this.checkPatchMacs = checkPatchMacs;
-        return this;
-    }
-
-    public Store setVersion(Version version) {
-        this.version.setValue(version);
         return this;
     }
 
