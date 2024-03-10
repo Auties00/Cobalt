@@ -193,7 +193,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
             return CompletableFuture.completedFuture(null);
         }
 
-        var fileName = CHAT_PREFIX + chat.jid() + ".proto";
+        var fileName = CHAT_PREFIX + chat.jid().user() + ".proto";
         var outputFile = getSessionFile(store, fileName);
         return CompletableFuture.runAsync(() -> writeFile(ChatSpec.encode(chat), fileName, outputFile))
                 .exceptionallyAsync(this::onError);
@@ -213,7 +213,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeNewsletterAsync(Store store, Newsletter newsletter) {
-        var fileName = NEWSLETTER_PREFIX + newsletter.jid() + ".proto";
+        var fileName = NEWSLETTER_PREFIX + newsletter.jid().user() + ".proto";
         var outputFile = getSessionFile(store, fileName);
         return CompletableFuture.runAsync(() -> writeFile(NewsletterSpec.encode(newsletter), fileName, outputFile));
     }
@@ -466,8 +466,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
         }
         var chatName = entry.getFileName().toString()
                 .replaceFirst(CHAT_PREFIX, "")
-                .replace(".proto", "")
-                .replaceAll("~~", ":");
+                .replace(".proto", "");
         return new ChatBuilder()
                 .jid(Jid.of(chatName))
                 .build();
@@ -493,8 +492,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
         }
         var newsletterName = entry.getFileName().toString()
                 .replaceFirst(CHAT_PREFIX, "")
-                .replace(".proto", "")
-                .replaceAll("~~", ":");
+                .replace(".proto", "");
         return new Newsletter(Jid.of(newsletterName), null, null, null);
     }
 
@@ -514,8 +512,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
 
     private Path getSessionFile(Store store, String fileName) {
         try {
-            var fixedName = fileName.replaceAll(":", "~~");
-            var result = getSessionFile(store.clientType(), store.uuid().toString(), fixedName);
+            var result = getSessionFile(store.clientType(), store.uuid().toString(), fileName);
             Files.createDirectories(result.getParent());
             return result;
         } catch (IOException exception) {
@@ -686,7 +683,7 @@ class ProtobufControllerSerializer implements ControllerSerializer {
 
         @Override
         public void replaceAll(UnaryOperator<E> operator) {
-            delegate.replaceAll(operator);
+            throw new UnsupportedOperationException();
         }
 
         @Override
