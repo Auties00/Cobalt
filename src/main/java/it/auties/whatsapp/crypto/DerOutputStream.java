@@ -40,30 +40,14 @@ import java.math.BigInteger;
  * DER data encodings which are defined.  That subset is sufficient for
  * generating most X.509 certificates.
  *
- *
  * @author David Brownell
  * @author Amit Kapoor
  * @author Hemma Prafullchandra
  */
 public class DerOutputStream extends ByteArrayOutputStream {
-    /** Tag value indicating an ASN.1 "INTEGER" value. */
-    private static final byte    tag_Integer = 0x02;
-
-    /** Tag value indicating an ASN.1 "BIT STRING" value. */
-    private static final byte    tag_BitString = 0x03;
-
-
-    /**
-     * Tag value indicating an ASN.1
-     * "SEQUENCE" (zero to N elements, order is significant).
-     */
-    public static final byte    tag_Sequence = 0x30;
-
-
-    /**
-     * Construct an DER output stream.
-     */
-    public DerOutputStream() { }
+    private static final byte tag_Integer = 0x02;
+    private static final byte tag_BitString = 0x03;
+    private static final byte tag_Sequence = 0x30;
 
     public void writeSequence(byte[] buf) {
         write(tag_Sequence);
@@ -74,53 +58,9 @@ public class DerOutputStream extends ByteArrayOutputStream {
 
     public void putInteger(BigInteger i) {
         write(tag_Integer);
-        byte[]    buf = i.toByteArray(); // least number  of bytes
+        byte[] buf = i.toByteArray(); // least number  of bytes
         putLength(buf.length);
         write(buf, 0, buf.length);
-    }
-
-    private void putIntegerContents(int i) {
-
-        byte[] bytes = new byte[4];
-        int start = 0;
-
-        // Obtain the four bytes of the int
-
-        bytes[3] = (byte) (i & 0xff);
-        bytes[2] = (byte)((i & 0xff00) >>> 8);
-        bytes[1] = (byte)((i & 0xff0000) >>> 16);
-        bytes[0] = (byte)((i & 0xff000000) >>> 24);
-
-        // Reduce them to the least number of bytes needed to
-        // represent this int
-
-        if (bytes[0] == (byte)0xff) {
-
-            // Eliminate redundant 0xff
-
-            for (int j = 0; j < 3; j++) {
-                if ((bytes[j] == (byte)0xff) &&
-                        ((bytes[j+1] & 0x80) == 0x80))
-                    start++;
-                else
-                    break;
-            }
-        } else if (bytes[0] == 0x00) {
-
-            // Eliminate redundant 0x00
-
-            for (int j = 0; j < 3; j++) {
-                if ((bytes[j] == 0x00) &&
-                        ((bytes[j+1] & 0x80) == 0))
-                    start++;
-                else
-                    break;
-            }
-        }
-
-        putLength(4 - start);
-        for (int k = start; k < 4; k++)
-            write(bytes[k]);
     }
 
     public void putBitString(byte[] bits) throws IOException {
@@ -132,29 +72,29 @@ public class DerOutputStream extends ByteArrayOutputStream {
 
     private void putLength(int len) {
         if (len < 128) {
-            write((byte)len);
+            write((byte) len);
 
         } else if (len < (1 << 8)) {
-            write((byte)0x081);
-            write((byte)len);
+            write((byte) 0x081);
+            write((byte) len);
 
         } else if (len < (1 << 16)) {
-            write((byte)0x082);
-            write((byte)(len >> 8));
-            write((byte)len);
+            write((byte) 0x082);
+            write((byte) (len >> 8));
+            write((byte) len);
 
         } else if (len < (1 << 24)) {
-            write((byte)0x083);
-            write((byte)(len >> 16));
-            write((byte)(len >> 8));
-            write((byte)len);
+            write((byte) 0x083);
+            write((byte) (len >> 16));
+            write((byte) (len >> 8));
+            write((byte) len);
 
         } else {
-            write((byte)0x084);
-            write((byte)(len >> 24));
-            write((byte)(len >> 16));
-            write((byte)(len >> 8));
-            write((byte)len);
+            write((byte) 0x084);
+            write((byte) (len >> 24));
+            write((byte) (len >> 16));
+            write((byte) (len >> 8));
+            write((byte) len);
         }
     }
 }

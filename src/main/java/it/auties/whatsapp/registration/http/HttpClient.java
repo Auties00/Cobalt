@@ -2,7 +2,9 @@ package it.auties.whatsapp.registration.http;
 
 import it.auties.whatsapp.util.ProxyAuthenticator;
 
-import javax.net.ssl.*;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.*;
 import java.security.SecureRandom;
