@@ -94,7 +94,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             outputLock.lock();
-            return session.sendBinary(ByteBuffer.wrap(bytes), true).whenCompleteAsync((result, error) -> {
+            return session.sendBinary(ByteBuffer.wrap(bytes), true).whenComplete((result, error) -> {
                 outputLock.unlock();
                 if(error != null) {
                     throw new RequestException(error);

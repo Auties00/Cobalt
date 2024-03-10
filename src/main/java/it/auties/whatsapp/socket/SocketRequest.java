@@ -14,6 +14,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -134,16 +135,19 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
 
     public boolean complete(Node response, boolean exceptionally) {
         if (response == null) {
-            future.complete(null);
+            future.complete(Node.of("error", Map.of("closed", true))); // Prevent NPEs all over the place
             return true;
         }
+
         if (exceptionally) {
             future.completeExceptionally(new RuntimeException("Cannot process request %s with %s".formatted(this, response), caller));
             return true;
         }
+
         if (filter != null && !filter.apply(response)) {
             return false;
         }
+
         future.complete(response);
         return true;
     }
