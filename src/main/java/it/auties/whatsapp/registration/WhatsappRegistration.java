@@ -309,9 +309,7 @@ public final class WhatsappRegistration {
         }
 
         return switch (response.errorReason()) {
-            case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS ->
-                    throw new RegistrationException(response, "Please wait before trying to register this phone number again");
-            case NO_ROUTES, BLOCKED -> throw new RegistrationException(response, result);
+            case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS, NO_ROUTES, BLOCKED -> throw new RegistrationException(response, result);
             default -> {
                 var newErrorReason = response.errorReason();
                 Validate.isTrue(newErrorReason != lastError, () -> new RegistrationException(response, result));

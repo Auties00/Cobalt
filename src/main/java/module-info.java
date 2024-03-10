@@ -29,7 +29,7 @@ open module it.auties.cobalt {
     requires com.aspose.words;
     requires com.github.kokorin.jaffree;
     requires org.slf4j;
-    requires ezvcard;
+    requires com.googlecode.ezvcard;
 
     // Mobile api
     requires libphonenumber;

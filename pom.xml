@@ -184,11 +184,11 @@
         <curve25519.version>1.2</curve25519.version>
         <lazysodium.version>5.1.4</lazysodium.version>
         <linkpreview.version>2.3</linkpreview.version>
-        <vcard.version>62bf6d1566</vcard.version>
+        <vcard.version>0.12.1</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
         <libphonenumber.version>8.13.13</libphonenumber.version>
         <maven.versions.version>2.15.0</maven.versions.version>
-        <apk.parser.version>2.6.10</apk.parser.version>
+        <apk.parser.version>master-SNAPSHOT</apk.parser.version>
         <plist.version>1.27</plist.version>
         <aspose.words.version>22.11</aspose.words.version>
         <ffmpeg.version>2023.09.10</ffmpeg.version>
@@ -314,7 +314,7 @@
 
         <!-- Parse Android APK for token generation (Mobile API) -->
         <dependency>
-            <groupId>net.dongliu</groupId>
+            <groupId>com.github.Auties00</groupId>
             <artifactId>apk-parser</artifactId>
             <version>${apk.parser.version}</version>
         </dependency>
@@ -349,7 +349,7 @@
             <version>1.7.32</version>
         </dependency>
         <dependency>
-            <groupId>com.github.Auties00</groupId>
+            <groupId>com.googlecode.ez-vcard</groupId>
             <artifactId>ez-vcard</artifactId>
             <version>${vcard.version}</version>
         </dependency>

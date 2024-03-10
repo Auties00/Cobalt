@@ -28,7 +28,6 @@ public class ApnsCrypto {
     private static final byte[] FAIRPLAY_PRIVATE_KEY_PRIME_EXPONENT_P = {118, 36, -100, 106, 75, -97, 114, 124, -81, -49, 4, 25, -19, 28, 41, -1, -83, 126, 122, -74, 9, 24, -47, 109, 111, 96, -90, -73, -61, 78, -24, 3, -98, -123, -54, 41, 28, -58, 80, 4, 37, -78, -43, -25, 38, -1, -69, -119, -2, -122, 119, 106, -9, -55, 117, 96, 72, -35, -15, -81, -2, 74, 94, -101};
     private static final byte[] FAIRPLAY_PRIVATE_KEY_PRIME_EXPONENT_Q = {24, -59, -14, -96, 48, 99, -90, -19, -29, -37, -90, -61, 71, 62, -79, -75, 43, 59, -21, -70, -2, 85, -53, 83, 45, 34, -6, -8, -18, 4, 105, -91, -27, -36, -15, 38, 10, -68, 127, 83, -26, -109, -115, 78, 57, -81, -80, -25, -117, -58, 126, -63, -40, 72, 36, 83, -35, -100, -105, 29, 22, 76, 6, 31};
     private static final byte[] FAIRPLAY_PRIVATE_KEY_CRT_EXPONENT = {61, 15, -80, 86, -92, 99, 115, -120, 119, 31, 11, -68, 35, -87, 101, -109, -36, 33, -92, -81, 78, -17, 65, 75, -93, 81, 76, 85, -42, -78, -76, 73, 76, -54, -84, -48, -37, -3, 57, 124, -58, -5, 23, -84, -102, 90, 27, -66, 67, 97, -122, 94, -9, 101, 81, 24, -128, -34, -42, 52, 10, -57, -52, -45};
-    private static final String ALGORITHM = "SHA256WithRSA";
     private static final int BLOCK_SIZE = 64;
 
     static {
@@ -79,7 +78,7 @@ public class ApnsCrypto {
     }
 
     private static byte[] getCertificateSignature(KeyPair keyPair, byte[] certReqInfo) throws GeneralSecurityException {
-        var signature = Signature.getInstance(ALGORITHM);
+        var signature = Signature.getInstance("SHA256WithRSA");
         signature.initSign(keyPair.getPrivate());
         signature.update(certReqInfo);
         return signature.sign();
