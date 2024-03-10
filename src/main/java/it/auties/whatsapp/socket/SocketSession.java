@@ -19,6 +19,9 @@ import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     private static final int MESSAGE_LENGTH = 3;
+    static {
+        ProxyAuthenticator.allowAll();
+    }
 
     final URI proxy;
     final ExecutorService executor;

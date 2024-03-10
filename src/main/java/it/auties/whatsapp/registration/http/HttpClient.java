@@ -16,13 +16,10 @@ import java.util.stream.Collectors;
 public class HttpClient {
     static {
         ProxyAuthenticator.allowAll();
+        Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
     }
 
-    private final ProxyAuthenticator authenticator;
     private volatile ProxySSLFactory factoryWithParams;
-    public HttpClient() {
-        this.authenticator = ProxyAuthenticator.globalAuthenticator();
-    }
 
     public CompletableFuture<String> get(URI uri, Proxy proxy, Map<String, ?> headers) {
         return sendRequest("GET", uri, proxy, headers);
@@ -40,7 +37,6 @@ public class HttpClient {
                 var connection = (HttpsURLConnection) createConnection(proxy, url);
                 connection.setRequestMethod(method);
                 headers.forEach((key, value) -> connection.setRequestProperty(key, String.valueOf(value)));
-                connection.setAuthenticator(authenticator);
                 connection.setSSLSocketFactory(getOrCreateParams());
                 connection.setInstanceFollowRedirects(true);
                 connection.connect();
