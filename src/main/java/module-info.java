@@ -34,8 +34,6 @@ open module it.auties.cobalt {
     // Mobile api
     requires libphonenumber;
     requires net.dongliu.apkparser;
-    requires org.bouncycastle.pkix;
-    requires org.bouncycastle.provider;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

@@ -272,7 +272,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     socket.getOutputStream().write(bytes);
                     socket.getOutputStream().flush();
                 } catch (IOException exception) {
-                    System.out.println("error");
                     throw new UncheckedIOException(exception);
                 } finally {
                     outputLock.unlock();
