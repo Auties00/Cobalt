@@ -2225,7 +2225,7 @@ public class Whatsapp {
         var mediaKey = mediaMessage.mediaKey()
                 .orElseThrow(() -> new NoSuchElementException("Missing media key"));
         var retryKey = Hkdf.extractAndExpand(mediaKey, "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
-        var retryIv = BytesHelper.random(12);
+        var retryIv = Bytes.random(12);
         var retryIdData = info.key().id().getBytes(StandardCharsets.UTF_8);
         var receipt = ServerErrorReceiptSpec.encode(new ServerErrorReceipt(info.id()));
         var ciphertext = AesGcm.encrypt(retryIv, receipt, retryKey, retryIdData);
@@ -2277,7 +2277,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<GroupMetadata>> createCommunity(String subject, String body) {
-        var descriptionId = HexFormat.of().formatHex(BytesHelper.random(12));
+        var descriptionId = HexFormat.of().formatHex(Bytes.random(12));
         var entry = Node.of("create", Map.of("subject", subject),
                 Node.of("description", Map.of("id", descriptionId),
                         Node.of("body", Objects.requireNonNullElse(body, "").getBytes(StandardCharsets.UTF_8))),
@@ -2376,12 +2376,12 @@ public class Whatsapp {
 
     private CompletableFuture<CompanionLinkResult> linkDevice(byte[] advIdentity, byte[] identityKey, String ref, byte[] publicKey) {
         var deviceIdentity = new DeviceIdentityBuilder()
-                .rawId(KeyHelper.agent())
+                .rawId(ThreadLocalRandom.current().nextInt(800_000_000, 900_000_000))
                 .keyIndex(store().linkedDevices().size() + 1)
                 .timestamp(Clock.nowSeconds())
                 .build();
         var deviceIdentityBytes = DeviceIdentitySpec.encode(deviceIdentity);
-        var accountSignatureMessage = BytesHelper.concat(
+        var accountSignatureMessage = Bytes.concat(
                 Specification.Whatsapp.ACCOUNT_SIGNATURE_HEADER,
                 deviceIdentityBytes,
                 advIdentity
@@ -2407,7 +2407,7 @@ public class Whatsapp {
                 .validIndexes(knownDevices)
                 .build();
         var keyIndexListBytes = KeyIndexListSpec.encode(keyIndexList);
-        var deviceSignatureMessage = BytesHelper.concat(Specification.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
+        var deviceSignatureMessage = Bytes.concat(Specification.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
         var keyAccountSignature = Curve25519.sign(keys().identityKeyPair().privateKey(), deviceSignatureMessage, true);
         var signedKeyIndexList = new SignedKeyIndexListBuilder()
                 .accountSignature(keyAccountSignature)
@@ -2654,7 +2654,7 @@ public class Whatsapp {
 
     private AppStateSyncKey createAppKey(Jid jid, int index) {
         return new AppStateSyncKeyBuilder()
-                .keyId(new AppStateSyncKeyId(KeyHelper.appKeyId()))
+                .keyId(new AppStateSyncKeyId(Bytes.intToBytes(ThreadLocalRandom.current().nextInt(19000, 20000), 6)))
                 .keyData(createAppKeyData(jid, index))
                 .build();
     }
@@ -2669,7 +2669,7 @@ public class Whatsapp {
 
     private AppStateSyncKeyFingerprint createAppKeyFingerprint(Jid jid, int index) {
         return new AppStateSyncKeyFingerprintBuilder()
-                .rawId(KeyHelper.senderKeyId())
+                .rawId(ThreadLocalRandom.current().nextInt())
                 .currentIndex(index)
                 .deviceIndexes(new ArrayList<>(store().linkedDevicesKeys().values()))
                 .build();
@@ -2812,7 +2812,7 @@ public class Whatsapp {
                 .build();
         var message = MessageContainer.of(call);
         var cipher = new SessionCipher(provider.toJid().toSignalAddress(), keys());
-        var encodedMessage = BytesHelper.messageToBytes(message);
+        var encodedMessage = Bytes.messageToBytes(message);
         var cipheredMessage = cipher.encrypt(encodedMessage);
         return Node.of("enc", Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
     }

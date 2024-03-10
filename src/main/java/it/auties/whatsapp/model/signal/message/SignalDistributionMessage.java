@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.Arrays;
 
@@ -32,14 +32,14 @@ public final class SignalDistributionMessage extends SignalProtocolMessage<Signa
 
     public static SignalDistributionMessage ofSerialized(byte[] serialized) {
         return SignalDistributionMessageSpec.decode(Arrays.copyOfRange(serialized, 1, serialized.length))
-                .setVersion(BytesHelper.bytesToVersion(serialized[0]))
+                .setVersion(Bytes.bytesToVersion(serialized[0]))
                 .setSerialized(serialized);
     }
 
     @Override
     public byte[] serialized() {
         if (serialized == null) {
-            this.serialized = BytesHelper.concat(serializedVersion(), SignalDistributionMessageSpec.encode(this));
+            this.serialized = Bytes.concat(serializedVersion(), SignalDistributionMessageSpec.encode(this));
         }
 
         return serialized;

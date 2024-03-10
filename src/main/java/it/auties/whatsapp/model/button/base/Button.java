@@ -6,7 +6,7 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonBody.Type;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.HexFormat;
 import java.util.Optional;
@@ -32,7 +32,7 @@ public record Button(
      * @return a non-null button
      */
     public static Button of(ButtonBody body) {
-        var id = HexFormat.of().formatHex(BytesHelper.random(6));
+        var id = HexFormat.of().formatHex(Bytes.random(6));
         return Button.of(id, body);
     }
 

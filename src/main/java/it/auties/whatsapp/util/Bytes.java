@@ -18,8 +18,12 @@ import java.util.zip.Inflater;
 
 import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
 
-public final class BytesHelper {
+public final class Bytes {
     private static final String CROCKFORD_CHARACTERS = "123456789ABCDEFGHJKLMNPQRSTVWXYZ";
+
+    public static byte random() {
+        return (byte) ThreadLocalRandom.current().nextInt();
+    }
 
     public static byte[] random(int length) {
         var bytes = new byte[length];
@@ -30,7 +34,7 @@ public final class BytesHelper {
     public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
                 .filter(Objects::nonNull)
-                .reduce(new byte[0], BytesHelper::concat);
+                .reduce(new byte[0], Bytes::concat);
     }
 
     public static byte[] concat(byte first, byte[] second) {
@@ -111,7 +115,7 @@ public final class BytesHelper {
             return null;
         }
 
-        var padRandomByte = KeyHelper.header();
+        var padRandomByte = 1 + (15 & random());
         var padding = new byte[padRandomByte];
         Arrays.fill(padding, (byte) padRandomByte);
         return concat(MessageContainerSpec.encode(container), padding);

@@ -3,6 +3,8 @@ package it.auties.whatsapp.controller;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
+import it.auties.protobuf.annotation.ProtobufConverter;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
@@ -50,6 +52,7 @@ import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,8 +70,8 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     /**
      * The version used by this session
      */
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, overrideType = Version.class)
-    FutureReference<Version> version;
+    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, overrideType = Version.class, mixin = ProtobufFutureMixin.class)
+    CompletableFuture<Version> version;
 
     /**
      * Whether this account is online for other users
@@ -331,7 +334,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
          * All args constructor
          */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, FutureReference<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, CompletableFuture<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.globalAuthenticator().register(proxy);
@@ -368,7 +371,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.requests = new ConcurrentHashMap<>();
         this.replyHandlers = new ConcurrentHashMap<>();
         this.listeners = ConcurrentHashMap.newKeySet();
-        this.tag = HexFormat.of().formatHex(BytesHelper.random(1));
+        this.tag = HexFormat.of().formatHex(Bytes.random(1));
         this.initializationTimeStamp = Objects.requireNonNullElseGet(initializationTimeStamp, Clock::nowSeconds);
         this.mediaConnectionLatch = new CountDownLatch(1);
         this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
@@ -1272,10 +1275,10 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     @JsonGetter("version")
     public Version version() {
         if(version == null) {
-            this.version = new FutureReference<>(null, () -> WhatsappMetadata.getVersion(device.platform()));
+            this.version = WhatsappMetadata.getVersion(device.platform());
         }
 
-        return version.value();
+        return version.join();
     }
 
     public boolean online() {
@@ -1481,7 +1484,9 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
 
         Objects.requireNonNull(device, "The device cannot be null");
         this.device = device;
-        this.version = new FutureReference<>(device.appVersion().orElse(null), () -> WhatsappMetadata.getVersion(device.platform()));
+        this.version = device.appVersion()
+                .map(CompletableFuture::completedFuture)
+                .orElseGet(() -> WhatsappMetadata.getVersion(device.platform()));
         return this;
     }
 
@@ -1497,5 +1502,42 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     public Store setVerifiedName(String verifiedName) {
         this.verifiedName = verifiedName;
         return this;
+    }
+
+    private static class AsyncVersion {
+        private Version value;
+        private CompletableFuture<Version> future;
+
+        @JsonCreator
+        private AsyncVersion(Version initialValue) {
+            this.value = Objects.requireNonNull(initialValue, "Missing value");
+        }
+
+        public AsyncVersion(Version initialValue, Supplier<CompletableFuture<Version>> defaultValue) {
+            this.value = initialValue;
+            if (initialValue == null) {
+                this.future = defaultValue.get();
+            }
+        }
+
+        @ProtobufConverter
+        @JsonValue
+        public Version value() {
+            if (future != null) {
+                this.value = future.join();
+                future = null;
+            }
+
+            return value;
+        }
+
+        public void setValue(Version value) {
+            if (future != null && !future.isDone()) {
+                future.cancel(true);
+            }
+
+            this.future = null;
+            this.value = value;
+        }
     }
 }

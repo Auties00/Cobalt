@@ -23,13 +23,13 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.PatchType;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.ProtobufUuidMixin;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -190,7 +190,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
-        this.registrationId = Objects.requireNonNullElseGet(registrationId, KeyHelper::registrationId);
+        this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
         this.ephemeralKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalKeyPair::random);
         this.identityKeyPair = Objects.requireNonNull(identityKeyPair, "Missing identity keypair");
@@ -199,8 +199,8 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         this.signedKeyIndex = signedKeyIndex;
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
         this.preKeys = Objects.requireNonNullElseGet(preKeys, ArrayList::new);
-        this.fdid = Objects.requireNonNullElseGet(fdid, KeyHelper::fdid);
-        this.deviceId = Objects.requireNonNullElseGet(deviceId, KeyHelper::deviceId);
+        this.fdid = Objects.requireNonNullElseGet(fdid, UUID.randomUUID()::toString);
+        this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replaceAll("-", "")));
         this.advertisingId = Objects.requireNonNullElseGet(advertisingId, UUID::randomUUID);
         this.identityId = Objects.requireNonNull(identityId, "Missing identity id");
         this.companionIdentity = companionIdentity;
@@ -222,10 +222,9 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
                 .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
                 .alias(alias)
                 .clientType(clientType)
-                .registrationId(KeyHelper.registrationId())
                 .noiseKeyPair(SignalKeyPair.random())
                 .identityKeyPair(SignalKeyPair.random())
-                .identityId(KeyHelper.identityId())
+                .identityId(Bytes.random(16))
                 .build();
     }
 
@@ -235,7 +234,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * @return a non-null byte array
      */
     public byte[] encodedRegistrationId() {
-        return BytesHelper.intToBytes(registrationId(), 4);
+        return Bytes.intToBytes(registrationId(), 4);
     }
 
     /**

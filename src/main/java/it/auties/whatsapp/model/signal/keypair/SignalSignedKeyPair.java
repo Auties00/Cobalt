@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -20,7 +20,7 @@ public record SignalSignedKeyPair(
 ) implements ISignalKeyPair, ProtobufMessage {
     public static SignalSignedKeyPair of(int id, SignalKeyPair identityKeyPair) {
         var keyPair = SignalKeyPair.random();
-        var signature = Curve25519.sign(identityKeyPair.privateKey(), keyPair.encodedPublicKey(), true);
+        var signature = Curve25519.sign(identityKeyPair.privateKey(), keyPair.signalPublicKey(), true);
         return new SignalSignedKeyPair(id, keyPair, signature);
     }
 
@@ -30,7 +30,7 @@ public record SignalSignedKeyPair(
         }
         var id = node.findNode("id")
                 .flatMap(Node::contentAsBytes)
-                .map(bytes -> BytesHelper.bytesToInt(bytes, 3))
+                .map(bytes -> Bytes.bytesToInt(bytes, 3))
                 .orElseThrow(() -> new NoSuchElementException("Missing id in SignalSignedKeyPair"));
         var publicKey = node.findNode("value")
                 .flatMap(Node::contentAsBytes)

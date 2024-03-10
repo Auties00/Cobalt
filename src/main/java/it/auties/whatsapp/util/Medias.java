@@ -113,7 +113,7 @@ public final class Medias {
 
     public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
-        var uploadData = type.inflatable() ? BytesHelper.compress(file) : file;
+        var uploadData = type.inflatable() ? Bytes.compress(file) : file;
         var mediaFile = prepareMediaFile(type, uploadData);
         var path = type.path()
                 .orElseThrow(() -> new UnsupportedOperationException(type + " cannot be uploaded"));
@@ -154,13 +154,13 @@ public final class Medias {
         var keys = MediaKeys.random(type.keyName().orElseThrow());
         var encryptedMedia = AesCbc.encrypt(keys.iv(), uploadData, keys.cipherKey());
         var hmac = calculateMac(encryptedMedia, keys);
-        var encrypted = BytesHelper.concat(encryptedMedia, hmac);
+        var encrypted = Bytes.concat(encryptedMedia, hmac);
         var fileEncSha256 = Sha256.calculate(encrypted);
         return new MediaFile(encrypted, fileSha256, fileEncSha256, keys.mediaKey(), uploadData.length, null, null, null, Clock.nowSeconds());
     }
 
     private static byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
-        var hmacInput = BytesHelper.concat(keys.iv(), encryptedMedia);
+        var hmacInput = Bytes.concat(keys.iv(), encryptedMedia);
         var hmac = Hmac.calculateSha256(hmacInput, keys.macKey());
         return Arrays.copyOf(hmac, 10);
     }

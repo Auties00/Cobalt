@@ -3,7 +3,7 @@ package it.auties.whatsapp.binary;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Validate;
 
 import java.io.ByteArrayInputStream;
@@ -25,7 +25,7 @@ public final class BinaryDecoder implements AutoCloseable {
         if (token == 0) {
             this.dataInputStream = new DataInputStream(new ByteArrayInputStream(buffer, 1, buffer.length - 1));
         }else {
-            this.dataInputStream = new DataInputStream(new ByteArrayInputStream(BytesHelper.decompress(buffer, 1, buffer.length - 1)));
+            this.dataInputStream = new DataInputStream(new ByteArrayInputStream(Bytes.decompress(buffer, 1, buffer.length - 1)));
         }
     }
     

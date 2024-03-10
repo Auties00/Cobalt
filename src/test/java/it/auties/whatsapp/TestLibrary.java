@@ -29,7 +29,7 @@ import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.ConfigUtils;
 import it.auties.whatsapp.util.GithubActions;
 import it.auties.whatsapp.util.MediaUtils;
@@ -51,8 +51,9 @@ import java.util.stream.IntStream;
 // I repeat: DO NOT RUN THIS CI LOCALLY ON A BRAND-NEW NUMBER OR IT WILL GET BANNED
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class TestLibrary implements Listener  {  @SuppressWarnings("HttpUrlsUsage")
-private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+public class TestLibrary implements Listener  {
+    @SuppressWarnings("HttpUrlsUsage")
+    private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 
     private static Whatsapp api;
     private static CompletableFuture<?> future;
@@ -871,6 +872,6 @@ private static final String VIDEO_URL = "http://commondatastorage.googleapis.com
     }
 
     private String randomId()  {
-        return HexFormat.of().formatHex(BytesHelper.random(5));
+        return HexFormat.of().formatHex(Bytes.random(5));
     }
 }

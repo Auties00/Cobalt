@@ -11,10 +11,6 @@ import java.io.UncheckedIOException;
 public final class AesGcm {
     private static final int TAG_LENGTH = 128;
 
-    private AesGcm() {
-        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
-    }
-
     private static byte[] cipher(byte[] iv, byte[] input, byte[] key, byte[] additionalData, boolean encrypt) {
         try {
             var cipher = Cipher.getInstance("AES/GCM/NoPadding");

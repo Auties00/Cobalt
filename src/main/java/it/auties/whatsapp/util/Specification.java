@@ -38,9 +38,9 @@ public class Specification {
         public static final int GPIA_TOKEN_LENGTH = 430;
         private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
         private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
-        public static final byte[] WEB_PROLOGUE = BytesHelper.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
+        public static final byte[] WEB_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
         private static final byte[] MOBILE_VERSION = new byte[]{5, BinaryTokens.DICTIONARY_VERSION};
-        public static final byte[] MOBILE_PROLOGUE = BytesHelper.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
+        public static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
         public static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
         public static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
         public static final byte[] DEVICE_MOBILE_SIGNATURE_HEADER = {6, 2};

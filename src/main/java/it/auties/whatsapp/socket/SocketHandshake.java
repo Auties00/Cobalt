@@ -4,7 +4,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Sha256;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Specification;
 
 import java.util.Arrays;
@@ -26,7 +26,7 @@ class SocketHandshake {
     }
 
     void updateHash(byte[] data) {
-        var input = BytesHelper.concat(hash, data);
+        var input = Bytes.concat(hash, data);
         this.hash = Sha256.calculate(input);
     }
 

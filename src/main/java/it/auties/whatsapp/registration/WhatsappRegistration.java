@@ -401,7 +401,7 @@ public final class WhatsappRegistration {
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
-        var cipheredParameters = Base64.getUrlEncoder().encodeToString(BytesHelper.concat(keypair.publicKey(), buffer));
+        var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), buffer));
         var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
         var isAndroid = store.device().platform().isAndroid();
         var headers = Attributes.of()

@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.HexFormat;
 import java.util.Objects;
@@ -48,7 +48,7 @@ public final class TemplateMessage implements ContextualMessage<TemplateMessage>
     @ProtobufBuilder(className = "TemplateMessageSimpleBuilder")
     static TemplateMessage customBuilder(String id, HydratedFourRowTemplate content, TemplateFormatter format, ContextInfo contextInfo) {
         var builder = new TemplateMessageBuilder()
-                .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(BytesHelper.random(6))))
+                .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(Bytes.random(6))))
                 .content(content)
                 .contextInfo(contextInfo);
         switch (format) {

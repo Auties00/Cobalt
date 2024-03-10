@@ -140,9 +140,9 @@ public final class WhatsappMetadata {
 
     private static String getKaiOsToken(long phoneNumber, KaiOsApp kaiOsApp) {
         var staticTokenPart = HexFormat.of().parseHex(Whatsapp.MOBILE_KAIOS_STATIC);
-        var pagePart = HexFormat.of().formatHex(Sha256.calculate(BytesHelper.concat(kaiOsApp.indexHtml(), kaiOsApp.backendJs())));
+        var pagePart = HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(kaiOsApp.indexHtml(), kaiOsApp.backendJs())));
         var phonePart = String.valueOf(phoneNumber).getBytes(StandardCharsets.UTF_8);
-        return HexFormat.of().formatHex(Sha256.calculate(BytesHelper.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart)));
+        return HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart)));
     }
 
     private static String getAndroidToken(String phoneNumber, WhatsappApk whatsappData) {
@@ -261,7 +261,7 @@ public final class WhatsappMetadata {
     }
 
     private static SecretKey getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
-        var result = BytesHelper.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
+        var result = Bytes.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
         var whatsappLogoChars = new char[result.length];
         for (var i = 0; i < result.length; i++) {
             whatsappLogoChars[i] = (char) result[i];
@@ -382,13 +382,13 @@ public final class WhatsappMetadata {
     public static CompletableFuture<String> generateGpiaToken(UUID advertisingId, byte[] deviceIdentifier, boolean business) {
         return getAndroidData(business).thenApplyAsync(androidData -> {
             var uuidBytes = uuidToBytes(advertisingId);
-            var combinedBytes = BytesHelper.concat(deviceIdentifier, androidData.certificates().getFirst(), androidData.secretKey(), uuidBytes);
-            var randomBytes = BytesHelper.random(Math.max(0, Specification.Whatsapp.GPIA_TOKEN_LENGTH - combinedBytes.length));
-            combinedBytes = BytesHelper.concat(combinedBytes, randomBytes);
+            var combinedBytes = Bytes.concat(deviceIdentifier, androidData.certificates().getFirst(), androidData.secretKey(), uuidBytes);
+            var randomBytes = Bytes.random(Math.max(0, Specification.Whatsapp.GPIA_TOKEN_LENGTH - combinedBytes.length));
+            combinedBytes = Bytes.concat(combinedBytes, randomBytes);
             var hashedBytes = Sha256.calculate(combinedBytes);
             var truncatedBytes = new byte[Specification.Whatsapp.GPIA_TOKEN_LENGTH];
             System.arraycopy(hashedBytes, 0, truncatedBytes, 0, Math.min(hashedBytes.length, Specification.Whatsapp.GPIA_TOKEN_LENGTH));
-            var thirdHeaderRandom = BytesHelper.random(Specification.Whatsapp.GPIA_TOKEN_LENGTH - hashedBytes.length);
+            var thirdHeaderRandom = Bytes.random(Specification.Whatsapp.GPIA_TOKEN_LENGTH - hashedBytes.length);
             System.arraycopy(thirdHeaderRandom, 0, truncatedBytes, hashedBytes.length, thirdHeaderRandom.length);
             return Base64.getEncoder().encodeToString(truncatedBytes);
         });

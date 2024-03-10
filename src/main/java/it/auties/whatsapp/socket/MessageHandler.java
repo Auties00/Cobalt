@@ -35,6 +35,7 @@ import it.auties.whatsapp.model.poll.*;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.setting.EphemeralSettings;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentitySpec;
+import it.auties.whatsapp.model.signal.keypair.ISignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
@@ -248,7 +249,7 @@ class MessageHandler {
 
     private CompletableFuture<Void> attributePollCreationMessage(ChatMessageInfo info, PollCreationMessage pollCreationMessage) {
         var pollEncryptionKey = pollCreationMessage.encryptionKey()
-                .orElseGet(KeyHelper::senderKey);
+                .orElseGet(() -> Bytes.random(32));
         pollCreationMessage.setEncryptionKey(pollEncryptionKey);
         info.setMessageSecret(pollEncryptionKey);
         var metadata = new PollAdditionalMetadata(false);
@@ -286,7 +287,7 @@ class MessageHandler {
         pollUpdateMessage.setVoter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
-        var useSecretPayload = BytesHelper.concat(
+        var useSecretPayload = Bytes.concat(
                 pollUpdateMessage.pollCreationMessageKey().id().getBytes(StandardCharsets.UTF_8),
                 originalPollSender,
                 modificationSender,
@@ -295,7 +296,7 @@ class MessageHandler {
         var encryptionKey = originalPollMessage.encryptionKey()
                 .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
         var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload, 32);
-        var iv = BytesHelper.random(12);
+        var iv = Bytes.random(12);
         var pollUpdateEncryptedPayload = AesGcm.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
         var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadata(pollUpdateEncryptedPayload, iv);
         pollUpdateMessage.setEncryptedMetadata(pollUpdateEncryptedMetadata);
@@ -368,7 +369,7 @@ class MessageHandler {
             var byteArrayOutputStream = new ByteArrayOutputStream();
             byteArrayOutputStream.write(10);
             var encoded = textMessage.text().getBytes(StandardCharsets.UTF_8);
-            byteArrayOutputStream.writeBytes(BytesHelper.intToVarInt(encoded.length));
+            byteArrayOutputStream.writeBytes(Bytes.intToVarInt(encoded.length));
             byteArrayOutputStream.writeBytes(encoded);
             return Node.of("plaintext", byteArrayOutputStream.toByteArray());
         }
@@ -380,7 +381,7 @@ class MessageHandler {
     }
 
     private CompletableFuture<Node> encodeGroup(MessageSendRequest.Chat request) {
-        var encodedMessage = BytesHelper.messageToBytes(request.info().message());
+        var encodedMessage = Bytes.messageToBytes(request.info().message());
         var sender = socketHandler.store()
                 .jid()
                 .orElse(null);
@@ -436,7 +437,7 @@ class MessageHandler {
             return CompletableFuture.failedFuture(new IllegalStateException("Cannot create message: user is not signed in"));
         }
 
-        var encodedMessage = BytesHelper.messageToBytes(request.info().message());
+        var encodedMessage = Bytes.messageToBytes(request.info().message());
         if (request.peer()) {
             var chatJid = request.info().chatJid();
             var peerNode = createMessageNode(request, chatJid, encodedMessage, true);
@@ -445,7 +446,7 @@ class MessageHandler {
         }
 
         var deviceMessage = new DeviceSentMessage(request.info().chatJid(), request.info().message(), Optional.empty());
-        var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
+        var encodedDeviceMessage = Bytes.messageToBytes(deviceMessage);
         var recipients = getRecipients(request);
         return queryDevices(recipients, !isMe(request.info().chatJid()))
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
@@ -542,7 +543,7 @@ class MessageHandler {
             return CompletableFuture.completedFuture(List.of());
         }
         var whatsappMessage = new SenderKeyDistributionMessage(request.info().chatJid().toString(), distributionMessage);
-        var paddedMessage = BytesHelper.messageToBytes(whatsappMessage);
+        var paddedMessage = Bytes.messageToBytes(whatsappMessage);
         return querySessions(missingParticipants, force)
                 .thenApplyAsync(ignored -> createMessageNodes(request, missingParticipants, paddedMessage))
                 .thenApplyAsync(results -> {
@@ -693,11 +694,11 @@ class MessageHandler {
         var jid = node.attributes()
                 .getRequiredJid("jid");
         var registrationId = node.findNode("registration")
-                .map(id -> BytesHelper.bytesToInt(id.contentAsBytes().orElseThrow(), 4))
+                .map(id -> Bytes.bytesToInt(id.contentAsBytes().orElseThrow(), 4))
                 .orElseThrow(() -> new NoSuchElementException("Missing id"));
         var identity = node.findNode("identity")
                 .flatMap(Node::contentAsBytes)
-                .map(KeyHelper::withHeader)
+                .map(ISignalKeyPair::toSignalKey)
                 .orElseThrow(() -> new NoSuchElementException("Missing identity"));
         var signedKey = node.findNode("skey")
                 .flatMap(SignalSignedKeyPair::of)
@@ -965,7 +966,7 @@ class MessageHandler {
                 return;
             }
 
-            var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
+            var messageContainer = Bytes.bytesToMessage(decodedMessage.message()).unbox();
             var info = messageBuilder.key(key)
                     .broadcast(key.chatJid().hasServer(JidServer.BROADCAST))
                     .pushName(pushName)
@@ -1174,10 +1175,10 @@ class MessageHandler {
 
     private CompletableFuture<HistorySync> downloadHistorySyncNotification(HistorySyncNotification notification) {
         return notification.initialHistBootstrapInlinePayload()
-                .map(result -> CompletableFuture.completedFuture(HistorySyncSpec.decode(BytesHelper.decompress(result))))
+                .map(result -> CompletableFuture.completedFuture(HistorySyncSpec.decode(Bytes.decompress(result))))
                 .orElseGet(() -> Medias.downloadAsync(notification)
                         .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
-                        .thenApplyAsync(result -> HistorySyncSpec.decode(BytesHelper.decompress(result))));
+                        .thenApplyAsync(result -> HistorySyncSpec.decode(Bytes.decompress(result))));
     }
 
     private void onHistoryNotification(HistorySync history) {
@@ -1435,7 +1436,7 @@ class MessageHandler {
         pollUpdateMessage.setVoter(modificationSenderJid);
         var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
         var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
-        var useSecretPayload = BytesHelper.concat(
+        var useSecretPayload = Bytes.concat(
                 originalPollInfo.get().id().getBytes(StandardCharsets.UTF_8),
                 originalPollSender,
                 modificationSender,

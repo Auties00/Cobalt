@@ -38,14 +38,15 @@ class ProtobufControllerSerializer implements ControllerSerializer {
     private static final String KEYS_NAME = "keys.proto";
 
     private static final Map<Path, ProtobufControllerSerializer> serializers = new ConcurrentHashMap<>();
+    static {
+        serializers.put(DEFAULT_SERIALIZER_PATH, new ProtobufControllerSerializer(DEFAULT_SERIALIZER_PATH));
+    }
+
+
     private final Path baseDirectory;
     private final ConcurrentMap<UUID, CompletableFuture<Void>> attributeStoreSerializers;
     private LinkedList<UUID> cachedUuids;
     private LinkedList<PhoneNumber> cachedPhoneNumbers;
-
-    static {
-        serializers.put(DEFAULT_SERIALIZER_PATH, new ProtobufControllerSerializer(DEFAULT_SERIALIZER_PATH));
-    }
 
     public static ControllerSerializer ofDefaultPath() {
         return Objects.requireNonNull(serializers.get(DEFAULT_SERIALIZER_PATH));

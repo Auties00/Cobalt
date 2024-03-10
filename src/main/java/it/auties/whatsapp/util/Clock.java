@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Function;
 
-public class Clock {
+public final class Clock {
     public static long nowSeconds() {
         return Instant.now().getEpochSecond();
     }

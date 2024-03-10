@@ -4,7 +4,7 @@ import it.auties.protobuf.annotation.ProtobufMessageName;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.HexFormat;
 
@@ -21,6 +21,6 @@ public record ButtonRow(
         String id
 ) implements ProtobufMessage {
     public static ButtonRow of(String title, String description) {
-        return new ButtonRow(title, description, HexFormat.of().formatHex(BytesHelper.random(5)));
+        return new ButtonRow(title, description, HexFormat.of().formatHex(Bytes.random(5)));
     }
 }

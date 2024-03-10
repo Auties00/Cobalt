@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.DNSSource.ResolutionMethod;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Specification;
 
 import java.util.NoSuchElementException;
@@ -169,7 +169,7 @@ class AuthHandler {
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(socketHandler.store().version().toHash())
                 .eRegid(socketHandler.keys().encodedRegistrationId())
-                .eKeytype(BytesHelper.intToBytes(Specification.Signal.KEY_TYPE, 1))
+                .eKeytype(Bytes.intToBytes(Specification.Signal.KEY_TYPE, 1))
                 .eIdent(socketHandler.keys().identityKeyPair().publicKey())
                 .eSkeyId(socketHandler.keys().signedKeyPair().encodedId())
                 .eSkeyVal(socketHandler.keys().signedKeyPair().keyPair().publicKey())

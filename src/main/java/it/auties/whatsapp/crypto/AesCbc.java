@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Validate;
 
 import javax.crypto.Cipher;
@@ -15,9 +15,9 @@ public final class AesCbc {
     private static final int AES_BLOCK_SIZE = 16;
 
     public static byte[] encryptAndPrefix(byte[] plaintext, byte[] key) {
-        var iv = BytesHelper.random(AES_BLOCK_SIZE);
+        var iv = Bytes.random(AES_BLOCK_SIZE);
         var encrypted = encrypt(iv, plaintext, key);
-        return BytesHelper.concat(iv, encrypted);
+        return Bytes.concat(iv, encrypted);
     }
 
     public static byte[] encrypt(byte[] iv, byte[] plaintext, byte[] key) {

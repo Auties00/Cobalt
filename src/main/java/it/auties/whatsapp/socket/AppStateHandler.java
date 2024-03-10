@@ -144,7 +144,7 @@ class AppStateHandler {
         var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
         var record = new RecordSyncBuilder()
                 .index(new IndexSync(indexMac))
-                .value(new ValueSync(BytesHelper.concat(encrypted, valueMac)))
+                .value(new ValueSync(Bytes.concat(encrypted, valueMac)))
                 .keyId(syncId)
                 .build();
         var sync = new MutationSyncBuilder()
@@ -615,28 +615,28 @@ class AppStateHandler {
     }
 
     private byte[] generateMac(RecordSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {
-        var keyData = BytesHelper.concat(operation.content(), keyId);
+        var keyData = Bytes.concat(operation.content(), keyId);
         var last = new byte[Specification.Signal.MAC_LENGTH];
         last[last.length - 1] = (byte) keyData.length;
-        var total = BytesHelper.concat(keyData, data, last);
+        var total = Bytes.concat(keyData, data, last);
         var sha512 = Hmac.calculateSha512(total, key);
         return Arrays.copyOfRange(sha512, 0, Specification.Signal.KEY_LENGTH);
     }
 
     private byte[] generateSnapshotMac(byte[] ltHash, long version, PatchType patchType, byte[] key) {
-        var total = BytesHelper.concat(
+        var total = Bytes.concat(
                 ltHash,
-                BytesHelper.longToBytes(version),
+                Bytes.longToBytes(version),
                 patchType.toString().getBytes(StandardCharsets.UTF_8)
         );
         return Hmac.calculateSha256(total, key);
     }
 
     private byte[] generatePatchMac(byte[] snapshotMac, byte[][] valueMac, long version, PatchType patchType, byte[] key) {
-        var total = BytesHelper.concat(
+        var total = Bytes.concat(
                 snapshotMac,
-                BytesHelper.concat(valueMac),
-                BytesHelper.longToBytes(version),
+                Bytes.concat(valueMac),
+                Bytes.longToBytes(version),
                 patchType.toString().getBytes(StandardCharsets.UTF_8)
         );
         return Hmac.calculateSha256(total, key);

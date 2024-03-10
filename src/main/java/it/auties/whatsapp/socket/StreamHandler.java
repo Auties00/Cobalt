@@ -509,15 +509,15 @@ class StreamHandler {
                 .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
         var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
         var companionSharedKey = Curve25519.sharedKey(codePairingPublicKey, socketHandler.keys().companionKeyPair().privateKey());
-        var random = BytesHelper.random(32);
-        var linkCodeSalt = BytesHelper.random(32);
+        var random = Bytes.random(32);
+        var linkCodeSalt = Bytes.random(32);
         var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
-        var encryptPayload = BytesHelper.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
-        var encryptIv = BytesHelper.random(12);
+        var encryptPayload = Bytes.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
+        var encryptIv = Bytes.random(12);
         var encrypted = AesGcm.encrypt(encryptIv, encryptPayload, linkCodePairingExpanded);
-        var encryptedPayload = BytesHelper.concat(linkCodeSalt, encryptIv, encrypted);
+        var encryptedPayload = Bytes.concat(linkCodeSalt, encryptIv, encrypted);
         var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
-        var identityPayload = BytesHelper.concat(companionSharedKey, identitySharedKey, random);
+        var identityPayload = Bytes.concat(companionSharedKey, identitySharedKey, random);
         var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
         socketHandler.keys().setCompanionKeyPair(new SignalKeyPair(advSecretPublicKey, socketHandler.keys().companionKeyPair().privateKey()));
         var confirmation = Node.of(
@@ -965,7 +965,7 @@ class StreamHandler {
                 .put("call", "Opening.m4r")
                 .put("default", "note.m4r")
                 .put("groups", "node.m4r")
-                .put("id", HexFormat.of().formatHex(BytesHelper.random(32)))
+                .put("id", HexFormat.of().formatHex(Bytes.random(32)))
                 .put("lc", "US")
                 .put("lg", "en")
                 .put("nse_call", 0)
@@ -1419,7 +1419,7 @@ class StreamHandler {
     }
 
     private void askPairingCode(PairingCodeHandler codeHandler) {
-        var code = BytesHelper.bytesToCrockford(BytesHelper.random(5));
+        var code = Bytes.bytesToCrockford(Bytes.random(5));
         var registration = Node.of(
                 "link_code_companion_reg",
                 Map.of("jid", getPhoneNumberAsJid(), "stage", "companion_hello", "should_show_push_notification", true),
@@ -1437,13 +1437,13 @@ class StreamHandler {
 
     private byte[] cipherLinkPublicKey(String linkCodeKey) {
         try {
-            var salt = BytesHelper.random(32);
-            var randomIv = BytesHelper.random(16);
+            var salt = Bytes.random(32);
+            var randomIv = Bytes.random(16);
             var secretKey = getSecretPairingKey(linkCodeKey, salt);
             var cipher = Cipher.getInstance("AES/CTR/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(randomIv));
             var ciphered = cipher.doFinal(socketHandler.keys().companionKeyPair().publicKey());
-            return BytesHelper.concat(salt, randomIv, ciphered);
+            return Bytes.concat(salt, randomIv, ciphered);
         } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot cipher link code pairing key", exception);
         }
@@ -1493,7 +1493,7 @@ class StreamHandler {
             return;
         }
         var account = SignedDeviceIdentitySpec.decode(advIdentity.details());
-        var message = BytesHelper.concat(
+        var message = Bytes.concat(
                 ACCOUNT_SIGNATURE_HEADER,
                 account.details(),
                 socketHandler.keys().identityKeyPair().publicKey()
@@ -1502,7 +1502,7 @@ class StreamHandler {
             socketHandler.handleFailure(LOGIN, new HmacValidationException("message_header"));
             return;
         }
-        var deviceSignatureMessage = BytesHelper.concat(
+        var deviceSignatureMessage = Bytes.concat(
                 DEVICE_WEB_SIGNATURE_HEADER,
                 account.details(),
                 socketHandler.keys().identityKeyPair().publicKey(),

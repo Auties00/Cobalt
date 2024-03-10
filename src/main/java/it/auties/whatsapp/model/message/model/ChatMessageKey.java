@@ -7,7 +7,7 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.HexFormat;
 import java.util.Locale;
@@ -55,7 +55,7 @@ public final class ChatMessageKey implements ProtobufMessage {
      */
     public static String randomId() {
         return HexFormat.of()
-                .formatHex(BytesHelper.random(8))
+                .formatHex(Bytes.random(8))
                 .toUpperCase(Locale.ROOT);
     }
 

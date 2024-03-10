@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.util.KeyHelper;
 
 import java.util.Arrays;
 
@@ -16,7 +15,7 @@ public record SignalKeyPair(
         byte[] privateKey
 ) implements ISignalKeyPair, ProtobufMessage {
     public SignalKeyPair(byte[] publicKey, byte[] privateKey) {
-        this.publicKey = KeyHelper.withoutHeader(publicKey);
+        this.publicKey = ISignalKeyPair.toCurveKey(publicKey);
         this.privateKey = privateKey;
     }
 
