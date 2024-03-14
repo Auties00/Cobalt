@@ -1,6 +1,5 @@
 package it.auties.whatsapp.registration.gcm;
 
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
@@ -21,10 +20,12 @@ public class GcmService {
     private static final URI REGISTER_URL = URI.create("https://android.clients.google.com/c2dm/register3");
     private static final URI FCM_SUBSCRIBE_URL = URI.create("https://fcm.googleapis.com/fcm/connect/subscribe");
     private static final String APP_ID = "wp:receiver.push.com#";
+    private static final String TALK_SERVER_HOST = "mtalk.google.com";
+    private static final int TALK_SERVER_PORT = 5228;
 
     private final HttpClient httpClient;
     private final long senderId;
-    private final SignalKeyPair keyPair;
+    private final ECDH256KeyPair keyPair;
     private final byte[] authSecret;
     private final String appId;
     private CompletableFuture<Void> loginFuture;
@@ -34,7 +35,7 @@ public class GcmService {
     public GcmService(long senderId) {
         this.httpClient = new HttpClient();
         this.senderId = senderId;
-        this.keyPair = SignalKeyPair.random();
+        this.keyPair = ECDH256KeyPair.random();
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
         this.appId = APP_ID + UUID.randomUUID();
         this.loginFuture = checkIn()

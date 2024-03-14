@@ -75,14 +75,15 @@ public class HttpClient {
                 }
                 connection.connect();
                 if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    throw new IllegalStateException("Invalid status code: " + connection.getResponseCode());
+                    future.completeExceptionally(new IllegalStateException("Invalid status code: " + connection.getResponseCode()));
+                    return;
                 }
 
                 try (var inputStream = connection.getInputStream()) {
                     future.complete(inputStream.readAllBytes());
                 }
                 connection.disconnect();
-            } catch (IOException exception) {
+            } catch (Throwable exception) {
                 future.completeExceptionally(exception);
             }
         });
