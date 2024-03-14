@@ -108,7 +108,9 @@ public class GcmService {
         var data = Arrays.stream(body.split("&"))
                 .map(entry -> entry.split("=", 2))
                 .collect(Collectors.toUnmodifiableMap(entry -> entry[0], entry -> entry[1]));
-        return Objects.requireNonNull(data.get("token"), "Missing token");
+        var token = data.get("token");
+        Validate.isTrue(token != null, "Invalid registration response: " + body);
+        return token;
     }
 
     private CompletableFuture<Void> subscribe(String gcmToken) {
