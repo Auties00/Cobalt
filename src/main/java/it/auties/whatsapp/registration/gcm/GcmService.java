@@ -43,9 +43,9 @@ public class GcmService {
                 .thenComposeAsync(this::subscribe);
     }
 
-    // TEST
     public void await() {
         loginFuture.join();
+        System.out.println(token);
     }
 
     private CompletableFuture<AndroidCheckInResponse> checkIn() {

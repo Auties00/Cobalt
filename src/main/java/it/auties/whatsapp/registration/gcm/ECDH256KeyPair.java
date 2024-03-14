@@ -1,7 +1,5 @@
 package it.auties.whatsapp.registration.gcm;
 
-import it.auties.whatsapp.util.Bytes;
-
 import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -21,7 +19,12 @@ public record ECDH256KeyPair(
             keyPairGenerator.initialize(ecSpec, new SecureRandom());
             var keyPair = keyPairGenerator.generateKeyPair();
             var publicKey = (ECPublicKey) keyPair.getPublic();
-            var rawPublicKey = Bytes.concat(publicKey.getW().getAffineX().toByteArray(), publicKey.getW().getAffineY().toByteArray());
+            var affineX = publicKey.getW().getAffineX().toByteArray();
+            var affineY = publicKey.getW().getAffineY().toByteArray();
+            var rawPublicKey = new byte[affineX.length + affineY.length];
+            rawPublicKey[0] = 0x04;
+            System.arraycopy(affineX, 1, rawPublicKey, 1, affineX.length - 1);
+            System.arraycopy(affineY, 0, rawPublicKey, affineX.length, affineY.length);
             var privateKey = (ECPrivateKey) keyPair.getPrivate();
             var rawPrivateKey = privateKey.getS().toByteArray();
             return new ECDH256KeyPair(rawPublicKey, rawPrivateKey);
