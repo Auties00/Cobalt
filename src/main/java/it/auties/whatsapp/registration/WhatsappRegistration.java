@@ -343,6 +343,29 @@ public final class WhatsappRegistration {
                         return sendVerificationCode(retryTimes);
                     }
 
+                    if(response.errorReason() == VerificationCodeError.SECURITY_CODE) {
+                        return reset2fa(response);
+                    }
+
+                    throw new RegistrationException(response, result);
+                });
+    }
+
+    private CompletableFuture<RegistrationResponse> reset2fa(RegistrationResponse registrationResponse) {
+        var wipeToken = registrationResponse.wipeToken();
+        if(wipeToken == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return getRegistrationOptions(store, keys, false, Map.entry("reset", "wipe"), Map.entry("wipe_token", wipeToken))
+                .thenComposeAsync(attrs -> sendRequest("/security", attrs))
+                .thenComposeAsync(result -> {
+                    var response = Json.readValue(result, RegistrationResponse.class);
+                    if (response.status() == VerificationCodeStatus.SUCCESS) {
+                        saveRegistrationStatus(store, keys, true);
+                        return CompletableFuture.completedFuture(response);
+                    }
+
                     throw new RegistrationException(response, result);
                 });
     }
@@ -385,17 +408,12 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
-        System.out.println("Sending request to " + path + " with parameters " + params);
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var encodedParams = toFormParams(params);
         var userAgent = store.device().toUserAgent(store.version());
-        System.out.println("Using user agent " + userAgent);
         if (store.device().platform().isKaiOs()) {
             var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
-            return httpClient.get(uri, proxy, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
-                System.out.println("Received response " + path + " " + result);
-                return result;
-            });
+            return httpClient.get(uri, proxy, Map.of("User-Agent", userAgent));
         }
 
         var keypair = SignalKeyPair.random();
@@ -411,10 +429,7 @@ public final class WhatsappRegistration {
                 .put("request_token", UUID.randomUUID().toString(), isAndroid)
                 .put("Content-Type", "application/x-www-form-urlencoded", isAndroid)
                 .toMap();
-        return httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
-            System.out.println("Received response " + path + " " + result);
-            return result;
-        });
+        return httpClient.get(uri, proxy, headers);
     }
 
     @SafeVarargs

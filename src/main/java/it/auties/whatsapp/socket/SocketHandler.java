@@ -44,10 +44,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -112,7 +109,7 @@ public class SocketHandler implements SocketListener {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
-        this.socketExecutor = Objects.requireNonNullElse(socketExecutor, ForkJoinPool.commonPool());
+        this.socketExecutor = Objects.requireNonNullElse(socketExecutor, Executors.newSingleThreadExecutor(Thread::startVirtualThread));
         this.requestsCounter = new AtomicLong();
     }
 
@@ -508,7 +505,7 @@ public class SocketHandler implements SocketListener {
 
     private List<Jid> parseBlockList(Node result) {
         return result.findNode("list")
-                .orElseThrow(() -> new NoSuchElementException("Missing block list in newsletters"))
+                .orElseThrow(() -> new NoSuchElementException("Missing block list in response"))
                 .findNodes("item")
                 .stream()
                 .map(item -> item.attributes().getOptionalJid("jid"))

@@ -6,46 +6,28 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RequestException;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Specification;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 
-import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public record SocketRequest(String id, Object body, CompletableFuture<Node> future,
-                            Function<Node, Boolean> filter, Throwable caller) {
+                            Function<Node, Boolean> filter) {
     private static final int TIMEOUT = 60;
-    private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
 
     private SocketRequest(String id, Function<Node, Boolean> filter, Object body) {
-        this(id, body, new CompletableFuture<>(), filter, trace(body));
-        EXECUTOR.execute(this::cancelTimedFuture);
+        this(id, body, futureOrTimeout(), filter);
     }
 
-    private static Throwable trace(Object body) {
-        var current = Exceptions.current(null);
-        var actualStackTrace = Arrays.stream(current.getStackTrace())
-                .filter(entry -> !entry.getClassName().equals(SocketRequest.class.getName()) && !entry.getClassName().equals(Node.class.getName()))
-                .toArray(StackTraceElement[]::new);
-        current.setStackTrace(actualStackTrace);
-        return new RequestException(body instanceof Node node ? "%s node timed out".formatted(node.toString()) : "Binary timed out", current);
-    }
-
-    private void cancelTimedFuture() {
-        if (future.isDone()) {
-            return;
-        }
-        future.completeExceptionally(caller);
+    private static CompletableFuture<Node> futureOrTimeout() {
+        return new CompletableFuture<Node>().orTimeout(TIMEOUT, SECONDS);
     }
 
     public static SocketRequest of(Node body, Function<Node, Boolean> filter) {
@@ -76,7 +58,7 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
             dataOutputStream.write(ciphered);
             session.sendBinary(byteArrayOutputStream.toByteArray())
                     .thenRunAsync(() -> onSendSuccess(store, response))
-                    .exceptionallyAsync(this::onSendError);
+                    .exceptionallyAsync(error -> onSendError());
             return future;
         }catch (IOException exception) {
             throw new RequestException(exception);
@@ -128,19 +110,14 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
         store.addRequest(this);
     }
 
-    private Void onSendError(Throwable throwable) {
-        future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occurred".formatted(this), throwable));
-        return null;
-    }
-
     public boolean complete(Node response, boolean exceptionally) {
         if (response == null) {
-            future.complete(Node.of("error", Map.of("closed", true))); // Prevent NPEs all over the place
+            onSendError();
             return true;
         }
 
         if (exceptionally) {
-            future.completeExceptionally(new RuntimeException("Cannot process request %s with %s".formatted(this, response), caller));
+            future.completeExceptionally(new RuntimeException("Cannot process request %s with %s".formatted(this, response)));
             return true;
         }
 
@@ -150,5 +127,10 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
 
         future.complete(response);
         return true;
+    }
+
+    private <T> T onSendError() {
+        future.complete(Node.of("error", Map.of("closed", true))); // Prevent NPEs all over the place
+        return null;
     }
 }

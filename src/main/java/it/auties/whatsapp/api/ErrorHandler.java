@@ -135,7 +135,7 @@ public interface ErrorHandler {
 
     /**
      * The constants of this enumerated type describe the various types of actions that can be
-     * performed by an error handler in newsletters to a throwable
+     * performed by an error handler in response to a throwable
      */
     enum Result {
         /**

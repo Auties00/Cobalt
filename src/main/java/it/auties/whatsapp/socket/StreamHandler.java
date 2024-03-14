@@ -794,11 +794,10 @@ class StreamHandler {
 
     private List<Jid> parsePrivacyExcludedContacts(Node result) {
         return result.findNode("privacy")
-                .orElseThrow(() -> new NoSuchElementException("Missing privacy in newsletters: %s".formatted(result)))
-                .findNode("list")
-                .orElseThrow(() -> new NoSuchElementException("Missing list in newsletters: %s".formatted(result)))
-                .findNodes("user")
+                .flatMap(node -> node.findNode("list"))
+                .map(node -> node.findNodes("user"))
                 .stream()
+                .flatMap(Collection::stream)
                 .map(user -> user.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .toList();
@@ -1300,10 +1299,9 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> parsePrivacySettings(Node result) {
-        var privacy = result.findNode("privacy")
-                .orElseThrow(() -> new NoSuchElementException("Missing privacy in newsletters: %s".formatted(result)))
-                .children()
+        var privacy = result.findNodes("privacy")
                 .stream()
+                .flatMap(entry -> entry.children().stream())
                 .map(entry -> addPrivacySetting(entry, false))
                 .toArray(CompletableFuture[]::new);
         return CompletableFuture.allOf(privacy);
@@ -1373,7 +1371,7 @@ class StreamHandler {
     }
 
     private void scheduleMediaConnection(int seconds) {
-        var executor = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS);
+        var executor = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS, Thread::startVirtualThread);
         this.mediaConnectionFuture = CompletableFuture.runAsync(() -> createMediaConnection(0, null), executor);
     }
 
