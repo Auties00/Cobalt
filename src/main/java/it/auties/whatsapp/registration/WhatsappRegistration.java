@@ -354,7 +354,7 @@ public final class WhatsappRegistration {
     private CompletableFuture<RegistrationResponse> reset2fa(RegistrationResponse registrationResponse) {
         var wipeToken = registrationResponse.wipeToken();
         if(wipeToken == null) {
-            return CompletableFuture.completedFuture(null);
+            throw new RegistrationException(registrationResponse, "Missing wipe_token");
         }
 
         return getRegistrationOptions(store, keys, false, Map.entry("reset", "wipe"), Map.entry("wipe_token", wipeToken))
