@@ -21,18 +21,43 @@ public class HttpClient {
         Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
     }
 
+    public static String toFormParams(Map<String, ?> values) {
+        return values.entrySet()
+                .stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("&"));
+    }
+
     private volatile ProxySSLFactory factoryWithParams;
 
+    public CompletableFuture<String> get(URI uri, Map<String, ?> headers) {
+        return sendRequest("GET", uri, null, headers, null)
+                .thenApplyAsync(String::new);
+    }
+
     public CompletableFuture<String> get(URI uri, Proxy proxy, Map<String, ?> headers) {
-        return sendRequest("GET", uri, proxy, headers);
+        return sendRequest("GET", uri, proxy, headers, null)
+                .thenApplyAsync(String::new);
     }
 
-    public CompletableFuture<String> post(URI uri, Proxy proxy, Map<String, ?> headers) {
-        return sendRequest("POST", uri, proxy, headers);
+    public CompletableFuture<byte[]> post(URI uri, Map<String, ?> headers) {
+        return sendRequest("POST", uri, null, headers, null);
     }
 
-    private CompletableFuture<String> sendRequest(String method, URI uri, Proxy proxy, Map<String, ?> headers) {
-        var future = new CompletableFuture<String>();
+    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, Map<String, ?> headers) {
+        return sendRequest("POST", uri, proxy, headers, null);
+    }
+
+    public CompletableFuture<byte[]> post(URI uri, Map<String, ?> headers, byte[] body) {
+        return sendRequest("POST", uri, null, headers, body);
+    }
+
+    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, Map<String, ?> headers, byte[] body) {
+        return sendRequest("POST", uri, proxy, headers, body);
+    }
+
+    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Proxy proxy, Map<String, ?> headers, byte[] body) {
+        var future = new CompletableFuture<byte[]>();
         Thread.startVirtualThread(() -> {
             try {
                 var url = uri.toURL();
@@ -41,13 +66,20 @@ public class HttpClient {
                 headers.forEach((key, value) -> connection.setRequestProperty(key, String.valueOf(value)));
                 connection.setSSLSocketFactory(getOrCreateParams());
                 connection.setInstanceFollowRedirects(true);
+                if(body != null) {
+                    connection.setDoOutput(true);
+                    try(var outputStream = connection.getOutputStream()) {
+                        outputStream.write(body);
+                        outputStream.flush();
+                    }
+                }
                 connection.connect();
                 if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                     throw new IllegalStateException("Invalid status code: " + connection.getResponseCode());
                 }
 
                 try (var inputStream = connection.getInputStream()) {
-                    future.complete(new String(inputStream.readAllBytes()));
+                    future.complete(inputStream.readAllBytes());
                 }
                 connection.disconnect();
             } catch (IOException exception) {

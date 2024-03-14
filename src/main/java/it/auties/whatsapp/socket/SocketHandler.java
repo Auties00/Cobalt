@@ -505,9 +505,8 @@ public class SocketHandler implements SocketListener {
 
     private List<Jid> parseBlockList(Node result) {
         return result.findNode("list")
-                .orElseThrow(() -> new NoSuchElementException("Missing block list in response"))
-                .findNodes("item")
                 .stream()
+                .flatMap(node -> node.findNodes("item").stream())
                 .map(item -> item.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .toList();

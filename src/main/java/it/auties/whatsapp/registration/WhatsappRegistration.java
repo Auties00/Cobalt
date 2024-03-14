@@ -125,7 +125,7 @@ public final class WhatsappRegistration {
                 .put("rc", store.releaseChannel().index())
                 .put("ab_hash", abHash, abHash != null)
                 .toMap();
-        var uri = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes));
+        var uri = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + HttpClient.toFormParams(attributes));
         var userAgent = store.device().toUserAgent(store.version());
         var headers = Map.of(
                 "User-Agent", userAgent,
@@ -409,7 +409,7 @@ public final class WhatsappRegistration {
 
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
-        var encodedParams = toFormParams(params);
+        var encodedParams = HttpClient.toFormParams(params).getBytes();
         var userAgent = store.device().toUserAgent(store.version());
         if (store.device().platform().isKaiOs()) {
             var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
@@ -418,7 +418,7 @@ public final class WhatsappRegistration {
 
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
-        var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
+        var buffer = AesGcm.encrypt(new byte[12], encodedParams, key);
         var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), buffer));
         var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
         var isAndroid = store.device().platform().isAndroid();
@@ -464,13 +464,6 @@ public final class WhatsappRegistration {
                     .putAll(requiredAttributes)
                     .toMap();
         });
-    }
-
-    private String toFormParams(Map<String, ?> values) {
-        return values.entrySet()
-                .stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining("&"));
     }
 
     private void dispose() {
