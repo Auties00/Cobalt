@@ -7,11 +7,11 @@ import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +32,7 @@ public class GcmService {
     private static final String TALK_SERVER_HOST = "mtalk.google.com";
     private static final int TALK_SERVER_PORT = 5228;
     private static final String MCS_DOMAIN = "mcs.android.com";
-    private static final int MCS_VERSION = 41;
+    private static final byte[] FCM_VERSION = {41};
 
     private final HttpClient httpClient;
     private final long senderId;
@@ -41,7 +41,7 @@ public class GcmService {
     private final String appId;
     private final CopyOnWriteArrayList<String> receivedPersistentId;
     private final CompletableFuture<Void> loginFuture;
-    private Socket socket;
+    private SSLSocket socket;
     private long androidId;
     private long securityToken;
     private String token;
@@ -61,7 +61,7 @@ public class GcmService {
     public void await() {
         loginFuture.join();
         System.out.println(token);
-        while (true);
+        while (true); // peek keep alive
     }
 
     private CompletableFuture<AndroidCheckInResponse> checkIn() {
@@ -132,10 +132,10 @@ public class GcmService {
     private CompletableFuture<Void> openConnection() {
         return CompletableFuture.runAsync(() -> {
             try {
-                this.socket = new Socket();
-                socket.connect(new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT));
-                sendLoginPacket();
+                var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                this.socket = (SSLSocket) sslSocketFactory.createSocket(TALK_SERVER_HOST, TALK_SERVER_PORT);
                 readMessages();
+                sendLoginPacket();
             } catch (IOException exception) {
                 throw new UncheckedIOException(exception);
             }
@@ -146,8 +146,8 @@ public class GcmService {
         Thread.ofPlatform().start(() -> {
             try(var dataInputStream = new DataInputStream(socket.getInputStream())) {
                 var version = dataInputStream.readByte();
-                Validate.isTrue(version == MCS_VERSION,
-                        "Versions mismatch, expected %s got %s", MCS_VERSION, version);
+                Validate.isTrue(version == FCM_VERSION[0],
+                        "Versions mismatch, expected %s got %s", FCM_VERSION[0], version);
                 while (socket.isConnected()) {
                     var tag = dataInputStream.readByte();
                     var lengthBytes = new byte[5];
@@ -199,15 +199,13 @@ public class GcmService {
                 .lastRmqId(1L)
                 .setting(List.of(newVc))
                 .adaptiveHeartbeat(false)
-                .receivedPersistentId(receivedPersistentId)
                 .build();
         sendRequest(McsExchange.TAG_LOGIN_REQUEST, McsExchangeLoginRequestSpec.encode(request), true);
     }
 
     private void sendRequest(byte tagType, byte[] message, boolean version) {
         var requestSize = Bytes.intToVarInt(message.length);
-        var header = version ? new byte[]{0, 100, MCS_VERSION, tagType} : new byte[]{0, 100, tagType};
-        var data = Bytes.concat(header, requestSize, message);
+        var data = Bytes.concat(version ? FCM_VERSION : null, new byte[]{tagType}, requestSize, message);
         try {
             socket.getOutputStream().write(data);
             socket.getOutputStream().flush();

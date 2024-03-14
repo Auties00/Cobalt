@@ -34,7 +34,8 @@ public final class Bytes {
     public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
                 .filter(Objects::nonNull)
-                .reduce(new byte[0], Bytes::concat);
+                .reduce(Bytes::concat)
+                .orElseGet(() -> new byte[0]);
     }
 
     public static byte[] concat(byte first, byte[] second) {
