@@ -183,4 +183,19 @@ public final class Bytes {
         out.write((byte) (value & 0x7F));
         return out.toByteArray();
     }
+
+    public static int varIntToInt(byte[] varIntBytes) {
+        var value = 0;
+        var shift = 0;
+        var index = 0;
+        while (true) {
+            var b = varIntBytes[index++];
+            value |= (b & 0x7F) << shift;
+            if ((b & 0x80) == 0) {
+                break;
+            }
+            shift += 7;
+        }
+        return value;
+    }
 }

@@ -12,7 +12,6 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
@@ -24,13 +23,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     final URI proxy;
-    final ExecutorService executor;
     final ReentrantLock outputLock;
     SocketListener listener;
 
-    private SocketSession(URI proxy, ExecutorService executor) {
+    private SocketSession(URI proxy) {
         this.proxy = proxy;
-        this.executor = executor;
         this.outputLock = new ReentrantLock(true);
     }
 
@@ -43,12 +40,12 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
     public abstract CompletableFuture<?> sendBinary(byte[] bytes);
 
-    static SocketSession of(URI proxy, ExecutorService executor, boolean webSocket) {
+    static SocketSession of(URI proxy, boolean webSocket) {
         if (webSocket) {
-            return new WebSocketSession(proxy, executor);
+            return new WebSocketSession(proxy);
         }
 
-        return new RawSocketSession(proxy, executor);
+        return new RawSocketSession(proxy);
     }
 
     public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
@@ -56,8 +53,8 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         private byte[] message;
         private int messageOffset;
 
-        WebSocketSession(URI proxy, ExecutorService executor) {
-            super(proxy, executor);
+        WebSocketSession(URI proxy) {
+            super(proxy);
         }
 
         @SuppressWarnings("resource") // Not needed
@@ -69,7 +66,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
             super.connect(listener);
             return HttpClient.newBuilder()
-                    .executor(executor)
+                    .executor(command -> Thread.ofPlatform().start(command))
                     .proxy(ProxySelector.of((InetSocketAddress) ProxyAuthenticator.getProxy(proxy).address()))
                     .authenticator(ProxyAuthenticator.globalAuthenticator())
                     .build()
@@ -166,8 +163,8 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         private Socket socket;
 
-        RawSocketSession(URI proxy, ExecutorService executor) {
-            super(proxy, executor);
+        RawSocketSession(URI proxy) {
+            super(proxy);
         }
 
         @Override
@@ -186,40 +183,42 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 socket.setKeepAlive(true);
                 socket.connect(proxy != null ? InetSocketAddress.createUnresolved(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()) : new InetSocketAddress(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()));
                 listener.onOpen(RawSocketSession.this);
-                executor.execute(this::readNextMessage);
+                readMessages();
             } catch (IOException exception) {
                 throw new UncheckedIOException(exception);
             }
         }
 
-        private void readNextMessage() {
-            var lengthBytes = new byte[MESSAGE_LENGTH];
-            int length;
-            while (isOpen()) {
-                try {
-                    var lengthResult = readBytes(lengthBytes);
-                    if(!lengthResult) {
-                        break;
-                    }
+        private void readMessages() {
+            Thread.ofPlatform().start(() -> {
+                var lengthBytes = new byte[MESSAGE_LENGTH];
+                int length;
+                while (isOpen()) {
+                    try {
+                        var lengthResult = readBytes(lengthBytes);
+                        if(!lengthResult) {
+                            break;
+                        }
 
-                    length = (lengthBytes[0] << 16) | ((lengthBytes[1] & 0xFF) << 8) | (lengthBytes[2] & 0xFF);
-                    if (length < 0) {
-                        break;
-                    }
+                        length = (lengthBytes[0] << 16) | ((lengthBytes[1] & 0xFF) << 8) | (lengthBytes[2] & 0xFF);
+                        if (length < 0) {
+                            break;
+                        }
 
-                    var messageBytes = new byte[length];
-                    var messageResult = readBytes(messageBytes);
-                    if(!messageResult) {
-                        break;
-                    }
+                        var messageBytes = new byte[length];
+                        var messageResult = readBytes(messageBytes);
+                        if(!messageResult) {
+                            break;
+                        }
 
-                    listener.onMessage(messageBytes);
-                } catch (Throwable throwable) {
-                    listener.onError(throwable);
+                        listener.onMessage(messageBytes);
+                    } catch (Throwable throwable) {
+                        listener.onError(throwable);
+                    }
                 }
-            }
 
-            disconnect();
+                disconnect();
+            });
         }
 
         private boolean readBytes(byte[] data) {

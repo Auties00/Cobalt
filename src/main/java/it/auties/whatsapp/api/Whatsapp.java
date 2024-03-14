@@ -69,7 +69,10 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -128,8 +131,8 @@ public class Whatsapp {
         return SocketHandler.isConnected(alias);
     }
 
-    protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler, ExecutorService socketExecutor) {
-        this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler, socketExecutor);
+    protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
+        this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
         addDisconnectionHandler(store);
         registerListenersAutomatically(store);
     }

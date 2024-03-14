@@ -5,14 +5,12 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.util.Validate;
 
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 
 public class WhatsappCustomBuilder {
     private Store store;
     private Keys keys;
     private ErrorHandler errorHandler;
     private WebVerificationHandler webVerificationHandler;
-    private ExecutorService socketExecutor;
 
     WhatsappCustomBuilder() {
 
@@ -38,11 +36,6 @@ public class WhatsappCustomBuilder {
         return this;
     }
 
-    public WhatsappCustomBuilder socketExecutor(ExecutorService socketExecutor) {
-        this.socketExecutor = socketExecutor;
-        return this;
-    }
-
     public Whatsapp build() {
         Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUID mismatch: %s != %s", store.uuid(), keys.uuid());
         var knownInstance = Whatsapp.getInstanceByUuid(store.uuid());
@@ -51,7 +44,7 @@ public class WhatsappCustomBuilder {
         }
 
         var checkedSupport = getWebVerificationMethod(store, keys, webVerificationHandler);
-        return new Whatsapp(store, keys, errorHandler, checkedSupport, socketExecutor);
+        return new Whatsapp(store, keys, errorHandler, checkedSupport);
     }
 
     private static WebVerificationHandler getWebVerificationMethod(Store store, Keys keys, WebVerificationHandler webVerificationHandler) {

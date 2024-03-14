@@ -46,7 +46,10 @@ import it.auties.whatsapp.model.sync.HistorySync.Type;
 import it.auties.whatsapp.model.sync.HistorySyncNotification;
 import it.auties.whatsapp.model.sync.HistorySyncSpec;
 import it.auties.whatsapp.model.sync.PushName;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.Validate;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.System.Logger;

@@ -44,7 +44,9 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -72,7 +74,6 @@ public class SocketHandler implements SocketListener {
 
     private final ErrorHandler errorHandler;
 
-    private final ExecutorService socketExecutor;
     private final AtomicLong requestsCounter;
 
     private volatile SocketState state;
@@ -99,7 +100,7 @@ public class SocketHandler implements SocketListener {
         return connectedAlias.contains(id);
     }
 
-    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler, ExecutorService socketExecutor) {
+    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.whatsapp = whatsapp;
         this.store = store;
         this.keys = keys;
@@ -109,7 +110,6 @@ public class SocketHandler implements SocketListener {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
-        this.socketExecutor = Objects.requireNonNullElse(socketExecutor, Executors.newSingleThreadExecutor(Thread::startVirtualThread));
         this.requestsCounter = new AtomicLong();
     }
 
@@ -257,7 +257,7 @@ public class SocketHandler implements SocketListener {
             this.loginFuture = new CompletableFuture<>();
         }
 
-        this.session = SocketSession.of(store.proxy().orElse(null), socketExecutor, store.clientType() == ClientType.WEB);
+        this.session = SocketSession.of(store.proxy().orElse(null), store.clientType() == ClientType.WEB);
         return session.connect(this);
     }
 

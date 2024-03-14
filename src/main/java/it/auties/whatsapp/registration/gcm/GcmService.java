@@ -1,14 +1,23 @@
 package it.auties.whatsapp.registration.gcm;
 
+import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
 import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.Validate;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class GcmService {
@@ -22,13 +31,17 @@ public class GcmService {
     private static final String APP_ID = "wp:receiver.push.com#";
     private static final String TALK_SERVER_HOST = "mtalk.google.com";
     private static final int TALK_SERVER_PORT = 5228;
+    private static final String MCS_DOMAIN = "mcs.android.com";
+    private static final int MCS_VERSION = 41;
 
     private final HttpClient httpClient;
     private final long senderId;
     private final ECDH256KeyPair keyPair;
     private final byte[] authSecret;
     private final String appId;
-    private CompletableFuture<Void> loginFuture;
+    private final CopyOnWriteArrayList<String> receivedPersistentId;
+    private final CompletableFuture<Void> loginFuture;
+    private Socket socket;
     private long androidId;
     private long securityToken;
     private String token;
@@ -38,14 +51,17 @@ public class GcmService {
         this.keyPair = ECDH256KeyPair.random();
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
         this.appId = APP_ID + UUID.randomUUID();
+        this.receivedPersistentId = new CopyOnWriteArrayList<>();
         this.loginFuture = checkIn()
                 .thenComposeAsync(this::register)
-                .thenComposeAsync(this::subscribe);
+                .thenComposeAsync(this::subscribe)
+                .thenComposeAsync(ignored -> openConnection());
     }
 
     public void await() {
         loginFuture.join();
         System.out.println(token);
+        while (true);
     }
 
     private CompletableFuture<AndroidCheckInResponse> checkIn() {
@@ -111,5 +127,92 @@ public class GcmService {
     private void handleSubscription(byte[] subscriptionResponse) {
         var fcmRegistrationResponse = Json.readValue(subscriptionResponse, FcmRegistrationResponse.class);
         this.token = fcmRegistrationResponse.token();
+    }
+
+    private CompletableFuture<Void> openConnection() {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                this.socket = new Socket();
+                socket.connect(new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT));
+                sendLoginPacket();
+                readMessages();
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
+            }
+        });
+    }
+
+    private void readMessages() {
+        Thread.ofPlatform().start(() -> {
+            try(var dataInputStream = new DataInputStream(socket.getInputStream())) {
+                var version = dataInputStream.readByte();
+                Validate.isTrue(version == MCS_VERSION,
+                        "Versions mismatch, expected %s got %s", MCS_VERSION, version);
+                while (socket.isConnected()) {
+                    var tag = dataInputStream.readByte();
+                    var lengthBytes = new byte[5];
+                    dataInputStream.readFully(lengthBytes);
+                    var length = Bytes.varIntToInt(lengthBytes);
+                    if (length <= 0) {
+                        continue;
+                    }
+
+                    var message = new byte[length];
+                    dataInputStream.readFully(message);
+                    var payload = McsExchange.readMessage(tag, message);
+                    if(payload.isEmpty()) {
+                        continue;
+                    }
+
+                    handleMessage(payload.get());
+                }
+            }catch (IOException exception) {
+                if(socket.isClosed()) {
+                    return;
+                }
+
+                throw new UncheckedIOException(exception);
+            }
+        });
+    }
+
+    private void handleMessage(ProtobufMessage payload) {
+        System.out.println("Received " + payload);
+    }
+
+    private void sendLoginPacket() {
+        var newVc = new McsExchangeSettingBuilder()
+                .name("new_vc")
+                .value("1")
+                .build();
+        var request = new McsExchangeLoginRequestBuilder()
+                .accountId(1000000L)
+                .authService(AuthService.ANDROID_ID)
+                .authToken(String.valueOf(securityToken))
+                .id("chrome-" + CHROME_VERSION)
+                .domain(MCS_DOMAIN)
+                .deviceId("android-" + Long.toHexString(androidId))
+                .networkType(1)
+                .resource(String.valueOf(androidId))
+                .user(String.valueOf(androidId))
+                .useRmq2(true)
+                .lastRmqId(1L)
+                .setting(List.of(newVc))
+                .adaptiveHeartbeat(false)
+                .receivedPersistentId(receivedPersistentId)
+                .build();
+        sendRequest(McsExchange.TAG_LOGIN_REQUEST, McsExchangeLoginRequestSpec.encode(request), true);
+    }
+
+    private void sendRequest(byte tagType, byte[] message, boolean version) {
+        var requestSize = Bytes.intToVarInt(message.length);
+        var header = version ? new byte[]{0, 100, MCS_VERSION, tagType} : new byte[]{0, 100, tagType};
+        var data = Bytes.concat(header, requestSize, message);
+        try {
+            socket.getOutputStream().write(data);
+            socket.getOutputStream().flush();
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 }

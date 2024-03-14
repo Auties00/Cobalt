@@ -12,6 +12,8 @@ public record ECDH256KeyPair(
         byte[] publicKey,
         byte[] privateKey
 ) {
+    private static final int PUBLIC_KEY_PART_LENGTH = 32;
+
     public static ECDH256KeyPair random() {
         try {
             var keyPairGenerator = KeyPairGenerator.getInstance("EC");
@@ -21,10 +23,10 @@ public record ECDH256KeyPair(
             var publicKey = (ECPublicKey) keyPair.getPublic();
             var affineX = publicKey.getW().getAffineX().toByteArray();
             var affineY = publicKey.getW().getAffineY().toByteArray();
-            var rawPublicKey = new byte[affineX.length + affineY.length];
+            var rawPublicKey = new byte[PUBLIC_KEY_PART_LENGTH * 2 + 1];
             rawPublicKey[0] = 0x04;
-            System.arraycopy(affineX, 1, rawPublicKey, 1, affineX.length - 1);
-            System.arraycopy(affineY, 0, rawPublicKey, affineX.length, affineY.length);
+            System.arraycopy(affineX, affineX[0] == 0 ? 1 : 0, rawPublicKey, 1, PUBLIC_KEY_PART_LENGTH);
+            System.arraycopy(affineY, affineY[0] == 0 ? 1 : 0, rawPublicKey, PUBLIC_KEY_PART_LENGTH + 1, PUBLIC_KEY_PART_LENGTH);
             var privateKey = (ECPrivateKey) keyPair.getPrivate();
             var rawPrivateKey = privateKey.getS().toByteArray();
             return new ECDH256KeyPair(rawPublicKey, rawPrivateKey);

@@ -12,7 +12,6 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 /**
@@ -23,23 +22,21 @@ public sealed class MobileRegistrationBuilder {
     final Store store;
     final Keys keys;
     final ErrorHandler errorHandler;
-    final ExecutorService socketExecutor;
     RegisteredResult result;
     AsyncVerificationCodeSupplier verificationCodeSupplier;
 
-    MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
+    MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler) {
         this.store = store;
         this.keys = keys;
         this.errorHandler = errorHandler;
-        this.socketExecutor = socketExecutor;
     }
 
     public final static class Unregistered extends MobileRegistrationBuilder {
         private UnverifiedResult unregisteredResult;
         private VerificationCodeMethod verificationCodeMethod;
 
-        Unregistered(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
-            super(store, keys, errorHandler, socketExecutor);
+        Unregistered(Store store, Keys keys, ErrorHandler errorHandler) {
+            super(store, keys, errorHandler);
             this.verificationCodeMethod = VerificationCodeMethod.SMS;
         }
 
@@ -91,7 +88,6 @@ public sealed class MobileRegistrationBuilder {
                             .store(store)
                             .keys(keys)
                             .errorHandler(errorHandler)
-                            .socketExecutor(socketExecutor)
                             .build();
                     return this.result = new RegisteredResult(api, Optional.ofNullable(response));
                 });
@@ -101,7 +97,6 @@ public sealed class MobileRegistrationBuilder {
                     .store(store)
                     .keys(keys)
                     .errorHandler(errorHandler)
-                    .socketExecutor(socketExecutor)
                     .build();
             return CompletableFuture.completedFuture(result);
         }
@@ -124,19 +119,19 @@ public sealed class MobileRegistrationBuilder {
             if (!keys.registered()) {
                 var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
                 return registration.requestVerificationCode().thenApply(response -> {
-                    var unverified = new Unverified(store, keys, errorHandler, socketExecutor, verificationCodeSupplier);
+                    var unverified = new Unverified(store, keys, errorHandler, verificationCodeSupplier);
                     return this.unregisteredResult = new UnverifiedResult(unverified, Optional.ofNullable(response));
                 });
             }
 
-            var unverified = new Unverified(store, keys, errorHandler, socketExecutor, verificationCodeSupplier);
+            var unverified = new Unverified(store, keys, errorHandler, verificationCodeSupplier);
             return CompletableFuture.completedFuture(this.unregisteredResult = new UnverifiedResult(unverified, Optional.empty()));
         }
     }
 
     public final static class Unverified extends MobileRegistrationBuilder {
-        Unverified(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor, AsyncVerificationCodeSupplier verificationCodeSupplier) {
-            super(store, keys, errorHandler, socketExecutor);
+        Unverified(Store store, Keys keys, ErrorHandler errorHandler, AsyncVerificationCodeSupplier verificationCodeSupplier) {
+            super(store, keys, errorHandler);
             this.verificationCodeSupplier = verificationCodeSupplier;
         }
 
@@ -190,7 +185,6 @@ public sealed class MobileRegistrationBuilder {
                         .store(store)
                         .keys(keys)
                         .errorHandler(errorHandler)
-                        .socketExecutor(socketExecutor)
                         .build();
                 return this.result = new RegisteredResult(api, Optional.ofNullable(response));
             });

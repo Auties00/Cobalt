@@ -38,7 +38,6 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
                     .keys(keys)
                     .errorHandler(errorHandler)
                     .webVerificationSupport(qrHandler)
-                    .socketExecutor(socketExecutor)
                     .build();
         }
 
@@ -60,7 +59,6 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
                     .keys(keys)
                     .errorHandler(errorHandler)
                     .webVerificationSupport(pairingCodeHandler)
-                    .socketExecutor(socketExecutor)
                     .build();
         }
 
@@ -84,7 +82,6 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
                     .store(store)
                     .keys(keys)
                     .errorHandler(errorHandler)
-                    .socketExecutor(socketExecutor)
                     .build();
         }
 
