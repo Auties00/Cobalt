@@ -15,6 +15,7 @@ import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.response.AbPropsResponse;
 import it.auties.whatsapp.model.response.RegistrationResponse;
+import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.registration.apns.ApnsClient;
 import it.auties.whatsapp.registration.apns.ApnsPacket;
@@ -379,7 +380,7 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<Object> logIosRegistration() {
-        if (!store.device().platform().isBusiness()) {
+        if(store.device().platform() != UserAgent.PlatformType.IOS_BUSINESS) {
             return CompletableFuture.completedFuture(null);
         }
 
