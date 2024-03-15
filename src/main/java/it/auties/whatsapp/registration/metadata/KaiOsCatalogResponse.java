@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.response;
+package it.auties.whatsapp.registration.metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.model.signal.auth.Version;

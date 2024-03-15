@@ -20,7 +20,9 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.registration.apns.ApnsClient;
 import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
+import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.http.HttpClient;
+import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
@@ -44,7 +46,9 @@ public final class WhatsappRegistration {
     private final AsyncVerificationCodeSupplier codeHandler;
     private final VerificationCodeMethod method;
     private final ApnsClient apnsClient;
+    private final GcmClient gcmClient;
     private final CountryCode countryCode;
+    private volatile CompletableFuture<String> gpiaToken;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
         this.store = store;
@@ -53,6 +57,7 @@ public final class WhatsappRegistration {
         this.method = method;
         this.httpClient = new HttpClient();
         this.apnsClient = store.device().platform().isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
+        this.gcmClient = store.device().platform().isAndroid() && method != VerificationCodeMethod.NONE ? new GcmClient() : null;
         var index = ThreadLocalRandom.current().nextInt(CountryCode.values().length);
         this.countryCode = CountryCode.values()[index];
     }
@@ -84,10 +89,11 @@ public final class WhatsappRegistration {
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(pushToken -> exists(originalDevice, true, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
-                    .thenComposeAsync(ignored -> getIOSPushCode())
+                    .thenComposeAsync(ignored -> getPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
             case ANDROID, ANDROID_BUSINESS -> exists(null, true, null)
-                    .thenComposeAsync(response -> requestVerificationCode(null, null));
+                    .thenComposeAsync(ignored -> getPushCode())
+                    .thenComposeAsync(pushCode -> requestVerificationCode(pushCode, null));
             case KAIOS -> requestVerificationCode(null, null);
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
@@ -140,65 +146,78 @@ public final class WhatsappRegistration {
         });
     }
 
-    private CompletableFuture<String> getIOSPushToken() {
-        if (apnsClient == null) {
-            return CompletableFuture.completedFuture(null);
+    private CompletableFuture<String> getPushToken() {
+        if (apnsClient != null) {
+            return apnsClient.getAppToken(store.device().platform().isBusiness());
         }
 
-        return apnsClient.getAppToken(store.device().platform().isBusiness());
+        if(gcmClient != null) {
+            return gcmClient.getPushToken();
+        }
+
+        return CompletableFuture.completedFuture(null);
     }
 
     private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, VerificationCodeError lastError) {
-        return getIOSPushToken().thenComposeAsync(pushToken -> {
+        return getPushToken().thenComposeAsync(pushToken -> {
             var ios = store.device().platform().isIOS();
-            var options = getRegistrationOptions(
-                    store,
-                    keys,
-                    false,
-                    ios ? Map.entry("offline_ab", Specification.Whatsapp.MOBILE_OFFLINE_AB) : null,
-                    pushToken == null ? null : Map.entry("push_token", convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8))),
-                    ios ? Map.entry("recovery_token_error", "-25300") : null
-            );
-            return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
-                var response = Json.readValue(result, RegistrationResponse.class);
-                if (response.errorReason() == VerificationCodeError.INCORRECT || !throwError) {
-                    return CompletableFuture.completedFuture(response);
-                }
+            var android = store.device().platform().isAndroid();
+            var registrationParametersFuture = android ? getRequestVerificationCodeParameters(pushToken) : CompletableFuture.<Entry<String, Object>[]>completedFuture(null);
+            return registrationParametersFuture.thenComposeAsync(registrationParameters -> {
+                var entries = Attributes.of(registrationParameters)
+                        .put("offline_ab", Specification.Whatsapp.MOBILE_OFFLINE_AB, ios)
+                        .put("push_token", android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
+                        .put("recovery_token_error", "-25300", ios)
+                        .toEntries();
+                var options = getRegistrationOptions(
+                        store,
+                        keys,
+                        android,
+                        entries
+                );
+                return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
+                    var response = Json.readValue(result, RegistrationResponse.class);
+                    if (response.errorReason() == VerificationCodeError.INCORRECT || !throwError) {
+                        return CompletableFuture.completedFuture(response);
+                    }
 
-                if (lastError != null) {
-                    throw new RegistrationException(response, result);
-                }
+                    if (lastError != null) {
+                        throw new RegistrationException(response, result);
+                    }
 
-                var useOriginalDevice = originalDevice != null && response.errorReason() == VerificationCodeError.FORMAT_WRONG;
-                var currentDevice = store.device();
-                if(useOriginalDevice) {
-                    store.setDevice(originalDevice);
-                }
-
-                return exists(originalDevice, true, response.errorReason()).whenComplete((finalResult, error) -> {
+                    var useOriginalDevice = originalDevice != null && response.errorReason() == VerificationCodeError.FORMAT_WRONG;
+                    var currentDevice = store.device();
                     if(useOriginalDevice) {
-                        store.setDevice(currentDevice);
+                        store.setDevice(originalDevice);
                     }
 
-                    if(error != null) {
-                        Exceptions.rethrow(error);
-                    }
+                    return exists(originalDevice, true, response.errorReason()).whenComplete((finalResult, error) -> {
+                        if(useOriginalDevice) {
+                            store.setDevice(currentDevice);
+                        }
+
+                        if(error != null) {
+                            Exceptions.rethrow(error);
+                        }
+                    });
                 });
             });
         });
     }
 
-    private CompletableFuture<String> getIOSPushCode() {
-        if (apnsClient == null) {
-            return CompletableFuture.completedFuture(null);
+    private CompletableFuture<String> getPushCode() {
+        if (apnsClient != null) {
+            return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
+                    .thenApply(this::readIOSPushCode)
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .exceptionallyAsync(ignored -> { throw new RegistrationException(null, "Apns timeout"); });
         }
 
-        return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
-                .thenApply(this::readIOSPushCode)
-                .orTimeout(10, TimeUnit.SECONDS)
-                .exceptionally(ignored -> {
-                    throw new RegistrationException(null, "Apns timeout");
-                });
+        if(gcmClient != null) {
+            return gcmClient.getPushCode();
+        }
+
+        return CompletableFuture.completedFuture(null);
     }
 
     private String readIOSPushCode(ApnsPacket packet) {
@@ -244,66 +263,79 @@ public final class WhatsappRegistration {
                 .orElseThrow()
                 .countryCode();
         return switch (store.device().platform()) {
-            case ANDROID, ANDROID_BUSINESS ->
-                    WhatsappMetadata.generateGpiaToken(keys.advertisingId(), keys.deviceId(), store.device().platform().isBusiness())
-                            .thenApply(gpiaToken -> getAndroidRequestParameters(gpiaToken, countryCode));
+            case ANDROID, ANDROID_BUSINESS -> getGpiaToken()
+                    .thenApplyAsync(gpiaToken -> getAndroidRequestParameters(pushCode, gpiaToken, countryCode));
             case IOS, IOS_BUSINESS -> CompletableFuture.completedFuture(getIosRequestParameters(pushCode));
             case KAIOS -> CompletableFuture.completedFuture(getKaiOsRequestParameters(countryCode));
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
     }
 
-    @SuppressWarnings("unchecked")
+    private CompletableFuture<String> getGpiaToken() {
+        if(gpiaToken != null) {
+            return gpiaToken;
+        }
+
+        var business = store.device().platform().isBusiness();
+        return gpiaToken = WhatsappMetadata.generateGpiaToken(keys.advertisingId(), keys.deviceId(), business);
+    }
+    
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
-        return new Entry[]{
-                Map.entry("mcc", countryCode.mcc()),
-                Map.entry("mnc", "000"),
-                Map.entry("method", method.data()),
-        };
+        return Attributes.of()
+                .put("mcc", countryCode.mcc())
+                .put("mnc", "000")
+                .put("method", method.data())
+                .toEntries();
     }
-
-    @SuppressWarnings("unchecked")
+    
     private Entry<String, Object>[] getIosRequestParameters(String pushCode) {
-        return new Entry[]{
-                Map.entry("method", method.data()),
-                Map.entry("sim_mcc", "000"),
-                Map.entry("sim_mnc", "000"),
-                Map.entry("reason", ""),
-                Map.entry("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8))),
-                Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(2, 5))
-        };
+        return Attributes.of()
+                .put("method", method.data())
+                .put("sim_mcc", "000")
+                .put("sim_mnc", "000")
+                .put("reason", "")
+                .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
+                .put("cellular_strength", ThreadLocalRandom.current().nextInt(2, 5))
+                .toEntries();
     }
 
-    @SuppressWarnings("unchecked")
-    private Entry<String, Object>[] getAndroidRequestParameters(String gpiaToken, CountryCode countryCode) {
-        return new Entry[]{
-                Map.entry("method", method.data()),
-                Map.entry("sim_mcc", countryCode.mcc()),
-                Map.entry("sim_mnc", countryCode.mcc()),
-                Map.entry("reason", ""),
-                Map.entry("mcc", countryCode.mcc()),
-                Map.entry("mnc", "000"),
-                Map.entry("feo2_query_status", "error_security_exception"),
-                Map.entry("sim_type", 1),
-                Map.entry("network_radio_type", 1),
-                Map.entry("prefer_sms_over_flash", true),
-                Map.entry("simnum", 0),
-                Map.entry("sim_state", 3),
-                Map.entry("clicked_education_link", false),
-                Map.entry("airplane_mode_type", 0),
-                Map.entry("mistyped", 7),
-                Map.entry("advertising_id", keys.advertisingId()),
-                Map.entry("hasinrc", 1),
-                Map.entry("roaming_type", 0),
-                Map.entry("device_ram", 4),
-                Map.entry("client_metrics", URLEncoder.encode("{\"attempts\":1}", StandardCharsets.UTF_8)),
-                Map.entry("education_screen_displayed", true),
-                Map.entry("read_phone_permission_granted", 1),
-                Map.entry("pid", ProcessHandle.current().pid()),
-                Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6)),
-                Map.entry("gpia_token", gpiaToken),
-                Map.entry("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
-        };
+    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, String gpiaToken, CountryCode countryCode) {
+        return Attributes.of()
+                .put("method", method.data())
+                .put("sim_mcc", countryCode.mcc())
+                .put("sim_mnc", countryCode.mcc())
+                .put("reason", "")
+                .put("mcc", countryCode.mcc())
+                .put("mnc", "000")
+                .put("language_selector_time_spent", 0)
+                .put("feo2_query_status", "error_security_exception")
+                .put("sim_type", 1)
+                .put("network_radio_type", 1)
+                .put("network_operator_name", "")
+                .put("prefer_sms_over_flash", true)
+                .put("simnum", 0)
+                .put("sim_state", 5)
+                .put("clicked_education_link", false)
+                .put("airplane_mode_type", 1)
+                .put("mistyped", 7)
+                .put("advertising_id", keys.advertisingId())
+                .put("hasinrc", 1)
+                .put("roaming_type", 0)
+                .put("device_ram", 4)
+                .put("language_selector_clicked_count", 0)
+                .put("backup_token", convertBufferToUrlHex(Bytes.random(20)))
+                .put("backup_token_error", "null_token")
+                .put("client_metrics", URLEncoder.encode("{\"attempts\":1,\"was_activated_from_stub\":false}", StandardCharsets.UTF_8))
+                .put("education_screen_displayed", true)
+                .put("read_phone_permission_granted", 0)
+                .put("pid", ProcessHandle.current().pid())
+                .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
+                .put("sim_operator_name", "Vodafone")
+                .put("gpia_token", gpiaToken)
+                .put("device_name", Bytes.bytesToCrockford(Bytes.random(5)))
+                .put("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
+                .put("push_code", pushCode, pushCode != null)
+                .toEntries();
     }
 
     private CompletionStage<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, String result) {

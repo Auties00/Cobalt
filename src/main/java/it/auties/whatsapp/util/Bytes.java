@@ -31,6 +31,27 @@ public final class Bytes {
         return bytes;
     }
 
+    public static byte[] reversedConcat(byte[][] entries) {
+        var arrayLength = 0;
+        for (byte[] entry : entries) {
+            if(entry != null) {
+                arrayLength += entry.length;
+            }
+        }
+
+        var result = new byte[arrayLength];
+        var offset = 0;
+        for(var i = entries.length - 1; i >= 0; i--) {
+            var array = entries[i];
+            if(array != null) {
+                System.arraycopy(array, 0, result, offset, array.length);
+                offset += array.length;
+            }
+        }
+
+        return result;
+    }
+
     public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
                 .filter(Objects::nonNull)
@@ -183,20 +204,5 @@ public final class Bytes {
         }
         out.write((byte) (value & 0x7F));
         return out.toByteArray();
-    }
-
-    public static int varIntToInt(byte[] varIntBytes) {
-        var value = 0;
-        var shift = 0;
-        var index = 0;
-        while (true) {
-            var b = varIntBytes[index++];
-            value |= (b & 0x7F) << shift;
-            if ((b & 0x80) == 0) {
-                break;
-            }
-            shift += 7;
-        }
-        return value;
     }
 }

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.registration;
+package it.auties.whatsapp.registration.metadata;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
@@ -9,9 +9,6 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
-import it.auties.whatsapp.model.response.IosVersionResponse;
-import it.auties.whatsapp.model.response.KaiOsCatalogResponse;
-import it.auties.whatsapp.model.response.WebVersionResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.*;
@@ -54,9 +51,9 @@ public final class WhatsappMetadata {
     private static volatile Version webVersion;
     private static volatile Version personalIosVersion;
     private static volatile Version businessIosVersion;
-    private static volatile WhatsappApk personalApk;
-    private static volatile WhatsappApk businessApk;
-    private static volatile KaiOsApp kaiOsApp;
+    private static volatile WhatsappAndroidApp personalApk;
+    private static volatile WhatsappAndroidApp businessApk;
+    private static volatile WhatsappKaiOsApp kaiOsApp;
 
     private static final Path androidCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/android");
     private static final Path kaiOsCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
@@ -66,13 +63,13 @@ public final class WhatsappMetadata {
             case WEB, WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(platform.isBusiness()).thenApply(WhatsappApk::version);
+                    getAndroidData(platform.isBusiness()).thenApply(WhatsappAndroidApp::version);
             case IOS ->
                     getIosVersion(false);
             case IOS_BUSINESS ->
                     getIosVersion(true);
             case KAIOS ->
-                    getKaiOsData().thenApply(KaiOsApp::version);
+                    getKaiOsData().thenApply(WhatsappKaiOsApp::version);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
@@ -136,14 +133,14 @@ public final class WhatsappMetadata {
         return CompletableFuture.completedFuture(HexFormat.of().formatHex(MD5.calculate(token)));
     }
 
-    private static String getKaiOsToken(long phoneNumber, KaiOsApp kaiOsApp) {
+    private static String getKaiOsToken(long phoneNumber, WhatsappKaiOsApp kaiOsApp) {
         var staticTokenPart = HexFormat.of().parseHex(Whatsapp.MOBILE_KAIOS_STATIC);
         var pagePart = HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(kaiOsApp.indexHtml(), kaiOsApp.backendJs())));
         var phonePart = String.valueOf(phoneNumber).getBytes(StandardCharsets.UTF_8);
         return HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart)));
     }
 
-    private static String getAndroidToken(String phoneNumber, WhatsappApk whatsappData) {
+    private static String getAndroidToken(String phoneNumber, WhatsappAndroidApp whatsappData) {
         try {
             var mac = Mac.getInstance("HMACSHA1");
             var secretKeyBytes = whatsappData.secretKey();
@@ -158,7 +155,7 @@ public final class WhatsappMetadata {
         }
     }
 
-    private static CompletableFuture<WhatsappApk> getAndroidData(boolean business) {
+    private static CompletableFuture<WhatsappAndroidApp> getAndroidData(boolean business) {
         if (!business && personalApk != null) {
             return CompletableFuture.completedFuture(personalApk);
         }
@@ -172,7 +169,7 @@ public final class WhatsappMetadata {
                 .orElseGet(() -> downloadAndroidData(business));
     }
 
-    private static Optional<WhatsappApk> getCachedAndroidApk(boolean business) {
+    private static Optional<WhatsappAndroidApp> getCachedAndroidApk(boolean business) {
         try {
             var localCache = getAndroidLocalCache(business);
             if (Files.notExists(localCache)) {
@@ -185,7 +182,7 @@ public final class WhatsappMetadata {
                 return Optional.empty();
             }
 
-            return Optional.of(Json.readValue(Files.readString(localCache), WhatsappApk.class));
+            return Optional.of(Json.readValue(Files.readString(localCache), WhatsappAndroidApp.class));
         } catch (Throwable throwable) {
             return Optional.empty();
         }
@@ -195,7 +192,7 @@ public final class WhatsappMetadata {
         return androidCache.resolve(business ? "whatsapp_business.json" : "whatsapp.json");
     }
 
-    private static CompletableFuture<WhatsappApk> downloadAndroidData(boolean business) {
+    private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(boolean business) {
         return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_ANDROID_URL : Whatsapp.MOBILE_ANDROID_URL, (String) null).thenApplyAsync(apk -> {
             try (var apkFile = new ByteArrayApkFile(apk)) {
                 var version = Version.of(apkFile.getApkMeta().getVersionName());
@@ -203,12 +200,12 @@ public final class WhatsappMetadata {
                 var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
                 var certificates = getCertificates(apkFile);
                 if (business) {
-                    var result = new WhatsappApk(version, md5Hash, secretKey, certificates, true);
+                    var result = new WhatsappAndroidApp(version, md5Hash, secretKey, certificates, true);
                     cacheWhatsappData(result);
                     return businessApk = result;
                 }
 
-                var result = new WhatsappApk(version, md5Hash, secretKey, certificates, false);
+                var result = new WhatsappAndroidApp(version, md5Hash, secretKey, certificates, false);
                 cacheWhatsappData(result);
                 return personalApk = result;
             } catch (IOException | GeneralSecurityException exception) {
@@ -217,7 +214,7 @@ public final class WhatsappMetadata {
         });
     }
 
-    private static void cacheWhatsappData(WhatsappApk apk) {
+    private static void cacheWhatsappData(WhatsappAndroidApp apk) {
         CompletableFuture.runAsync(() -> {
             try {
                 var json = Json.writeValueAsString(apk, true);
@@ -267,7 +264,7 @@ public final class WhatsappMetadata {
         return kaiOsCache.resolve("whatsapp.json");
     }
 
-    private static CompletableFuture<KaiOsApp> getKaiOsData() {
+    private static CompletableFuture<WhatsappKaiOsApp> getKaiOsData() {
         if (kaiOsApp != null) {
             return CompletableFuture.completedFuture(kaiOsApp);
         }
@@ -277,7 +274,7 @@ public final class WhatsappMetadata {
                 .orElseGet(WhatsappMetadata::downloadKaiOsData);
     }
 
-    private static Optional<KaiOsApp> getCachedKaiOsApp() {
+    private static Optional<WhatsappKaiOsApp> getCachedKaiOsApp() {
         try {
             var localCache = getKaiOsLocalCache();
             if (Files.notExists(localCache)) {
@@ -290,13 +287,13 @@ public final class WhatsappMetadata {
                 return Optional.empty();
             }
 
-            return Optional.of(Json.readValue(Files.readString(localCache), KaiOsApp.class));
+            return Optional.of(Json.readValue(Files.readString(localCache), WhatsappKaiOsApp.class));
         } catch (Throwable throwable) {
             return Optional.empty();
         }
     }
 
-    private static CompletableFuture<KaiOsApp> downloadKaiOsData() {
+    private static CompletableFuture<WhatsappKaiOsApp> downloadKaiOsData() {
         return Medias.downloadAsync(URI.create(Whatsapp.MOBILE_KAIOS_URL), Whatsapp.MOBILE_KAIOS_USER_AGENT, Map.entry("Content-Type", "application/json")).thenComposeAsync(catalogResponse -> {
             try (var compressedStream = new GZIPInputStream(new ByteArrayInputStream(catalogResponse))) {
                 var catalog = Json.readValue(compressedStream.readAllBytes(), KaiOsCatalogResponse.class);
@@ -318,7 +315,7 @@ public final class WhatsappMetadata {
                             }
                         }
 
-                        var result = new KaiOsApp(
+                        var result = new WhatsappKaiOsApp(
                                 new Version(app.version().primary(), app.version().secondary(), app.version().tertiary()),
                                 Objects.requireNonNull(indexHtml, "Missing index.html"),
                                 Objects.requireNonNull(backendJs, "Missing backendRoot.js")
@@ -335,7 +332,7 @@ public final class WhatsappMetadata {
         });
     }
 
-    private static void cacheKaiOsData(KaiOsApp app) {
+    private static void cacheKaiOsData(WhatsappKaiOsApp app) {
         CompletableFuture.runAsync(() -> {
             try {
                 var json = Json.writeValueAsString(app, true);
@@ -361,14 +358,6 @@ public final class WhatsappMetadata {
                 .signature(Curve25519.sign(keys.identityKeyPair().privateKey(), encodedDetails, true))
                 .build();
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
-    }
-
-    private record WhatsappApk(Version version, byte[] md5Hash, byte[] secretKey, List<byte[]> certificates, boolean business) {
-
-    }
-
-    private record KaiOsApp(Version version, byte[] indexHtml, byte[] backendJs) {
-
     }
 
     public static CompletableFuture<String> generateGpiaToken(UUID advertisingId, byte[] deviceIdentifier, boolean business) {

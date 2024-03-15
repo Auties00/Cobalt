@@ -291,8 +291,6 @@ final class McsExchange {
             String to,
             @ProtobufProperty(index = 5, type = ProtobufType.STRING)
             String category,
-            @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-            String token,
             @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
             List<AppData> appData,
             @ProtobufProperty(index = 9, type = ProtobufType.STRING)

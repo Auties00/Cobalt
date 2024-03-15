@@ -28,6 +28,12 @@ public class HttpClient {
                 .collect(Collectors.joining("&"));
     }
 
+    public static Map<String, String> parseFormParams(String params) {
+        return Arrays.stream(params.split("&"))
+                .map(entry -> entry.split("=", 2))
+                .collect(Collectors.toUnmodifiableMap(entry -> entry[0], entry -> entry[1]));
+    }
+
     private volatile ProxySSLFactory factoryWithParams;
 
     public CompletableFuture<String> get(URI uri, Map<String, ?> headers) {

@@ -1,6 +1,9 @@
 package it.auties.whatsapp.registration.gcm;
 
 import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.whatsapp.crypto.HttpEce;
+import it.auties.whatsapp.registration.gcm.McsExchange.AppData;
+import it.auties.whatsapp.registration.gcm.McsExchange.DataMessageStanza;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginResponse;
 import it.auties.whatsapp.registration.http.HttpClient;
@@ -18,10 +21,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-public class GcmService {
+public class GcmClient {
+    private static final long DEFAULT_GCM_SENDER_ID = 293955441834L;
     private static final int AUTH_SECRET_LENGTH = 16;
     private static final String CHROME_VERSION = "63.0.3234.0";
     private static final URI CHECK_IN_URL = URI.create("https://android.clients.google.com/checkin");
@@ -40,20 +43,20 @@ public class GcmService {
     private final ECDH256KeyPair keyPair;
     private final byte[] authSecret;
     private final String appId;
-    private final CopyOnWriteArrayList<String> receivedPersistentId;
-    private final CompletableFuture<Void> loginFuture;
+    private final CompletableFuture<String> loginFuture;
+    private final CompletableFuture<String> dataFuture;
     private SSLSocket socket;
     private long androidId;
     private long securityToken;
     private String token;
-    public GcmService(long senderId) {
+    public GcmClient() {
         this.httpClient = new HttpClient();
-        this.senderId = senderId;
+        this.senderId = DEFAULT_GCM_SENDER_ID;
         this.keyPair = ECDH256KeyPair.random();
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
         this.appId = APP_ID + UUID.randomUUID();
-        this.receivedPersistentId = new CopyOnWriteArrayList<>();
         this.loginFuture = new CompletableFuture<>();
+        this.dataFuture = new CompletableFuture<>();
         login();
     }
 
@@ -67,11 +70,6 @@ public class GcmService {
     private Void handleLoginError(Throwable error) {
         loginFuture.completeExceptionally(error);
         return null;
-    }
-
-    public void await() {
-        loginFuture.join();
-        System.out.println(token);
     }
 
     private CompletableFuture<AndroidCheckInResponse> checkIn() {
@@ -115,9 +113,7 @@ public class GcmService {
 
     private String handleRegistration(byte[] registrationResponse) {
         var body = new String(registrationResponse);
-        var data = Arrays.stream(body.split("&"))
-                .map(entry -> entry.split("=", 2))
-                .collect(Collectors.toUnmodifiableMap(entry -> entry[0], entry -> entry[1]));
+        var data = HttpClient.parseFormParams(body);
         var token = data.get("token");
         Validate.isTrue(token != null, "Invalid registration response: " + body);
         return token;
@@ -162,15 +158,14 @@ public class GcmService {
                         "Versions mismatch, expected %s got %s", FCM_VERSION[0], version);
                 while (socket.isConnected()) {
                     var tag = dataInputStream.readByte();
-                    var lengthBytes = new byte[5];
-                    dataInputStream.readFully(lengthBytes);
-                    var length = Bytes.varIntToInt(lengthBytes);
+                    var length = readLength(dataInputStream);
                     if (length <= 0) {
                         continue;
                     }
 
                     var message = new byte[length];
                     dataInputStream.readFully(message);
+                    System.out.println("Read message " + HexFormat.of().formatHex(message));
                     var payload = McsExchange.readMessage(tag, message);
                     if(payload.isEmpty()) {
                         continue;
@@ -188,44 +183,94 @@ public class GcmService {
         });
     }
 
+    private int readLength(DataInputStream dataInputStream) throws IOException {
+        var continuationBit = true;
+        byte varIntByte;
+        var result = new StringBuilder();
+        while (continuationBit) {
+            varIntByte = dataInputStream.readByte();
+            continuationBit = getVarIntContinuation(varIntByte);
+            result.insert(0, getVarIntValue(varIntByte));
+        }
+
+        return Integer.parseUnsignedInt(result.toString(), 2);
+    }
+
+    private boolean getVarIntContinuation(byte originalValue) {
+        return (originalValue & 0x80) != 0;
+    }
+
+    private String getVarIntValue(byte number) {
+        var result = Integer.toBinaryString(Byte.toUnsignedInt(number));
+        return ("0".repeat(8 - result.length()) + result).substring(1);
+    }
+
     private void handleMessage(ProtobufMessage payload) {
-        System.out.println("Received " + payload);
-        if (payload instanceof LoginResponse) {
-            loginFuture.complete(null);
+        switch (payload) {
+            case LoginResponse ignored -> onLogin();
+            case DataMessageStanza dataMessageStanza -> onStanza(dataMessageStanza);
+            default -> {}
         }
     }
 
-    private void sendLoginPacket() {
-        var newVc = new McsExchangeSettingBuilder()
-                .name("new_vc")
-                .value("1")
-                .build();
-        var request = new McsExchangeLoginRequestBuilder()
-                .accountId(1000000L)
-                .authService(AuthService.ANDROID_ID)
-                .authToken(String.valueOf(securityToken))
-                .id("chrome-" + CHROME_VERSION)
-                .domain(MCS_DOMAIN)
-                .deviceId("android-" + Long.toHexString(androidId))
-                .networkType(1)
-                .resource(String.valueOf(androidId))
-                .user(String.valueOf(androidId))
-                .useRmq2(true)
-                .lastRmqId(1L)
-                .setting(List.of(newVc))
-                .adaptiveHeartbeat(false)
-                .build();
-        sendRequest(McsExchange.TAG_LOGIN_REQUEST, McsExchangeLoginRequestSpec.encode(request), true);
+    private void onLogin() {
+        loginFuture.complete(token);
     }
 
-    private void sendRequest(byte tagType, byte[] message, boolean version) {
-        var requestSize = Bytes.intToVarInt(message.length);
-        var data = Bytes.concat(version ? FCM_VERSION : null, new byte[]{tagType}, requestSize, message);
+    private void onStanza(DataMessageStanza dataMessageStanza) {
+        var dataMap = dataMessageStanza.appData()
+                .stream()
+                .filter(entry -> entry.value() != null)
+                .collect(Collectors.toUnmodifiableMap(AppData::key, AppData::value));
+        var salt = Base64.getUrlDecoder().decode(dataMap.get("encryption").substring(5));
+        var dh = Base64.getUrlDecoder().decode(dataMap.get("crypto-key").substring(3));
+        var deciphered = HttpEce.decrypt(
+                dataMessageStanza.rawData(),
+                salt,
+                keyPair.publicKey(),
+                keyPair.privateKey(),
+                dh,
+                authSecret
+        );
+        dataFuture.complete(Base64.getEncoder().encodeToString(deciphered));
+    }
+
+    private void sendLoginPacket() {
         try {
+            var newVc = new McsExchangeSettingBuilder()
+                    .name("new_vc")
+                    .value("1")
+                    .build();
+            var request = new McsExchangeLoginRequestBuilder()
+                    .accountId(1000000L)
+                    .authService(AuthService.ANDROID_ID)
+                    .authToken(String.valueOf(securityToken))
+                    .id("chrome-" + CHROME_VERSION)
+                    .domain(MCS_DOMAIN)
+                    .deviceId("android-" + Long.toHexString(androidId))
+                    .networkType(1)
+                    .resource(String.valueOf(androidId))
+                    .user(String.valueOf(androidId))
+                    .useRmq2(true)
+                    .lastRmqId(1L)
+                    .setting(List.of(newVc))
+                    .adaptiveHeartbeat(false)
+                    .build();
+            var message = McsExchangeLoginRequestSpec.encode(request);
+            var requestSize = Bytes.intToVarInt(message.length);
+            var data = Bytes.concat(FCM_VERSION, new byte[]{McsExchange.TAG_LOGIN_REQUEST}, requestSize, message);
             socket.getOutputStream().write(data);
             socket.getOutputStream().flush();
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
+    }
+
+    public CompletableFuture<String> getPushToken() {
+        return loginFuture;
+    }
+
+    public CompletableFuture<String> getPushCode() {
+        return dataFuture;
     }
 }

@@ -77,4 +77,5 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.newsletter;
     exports it.auties.whatsapp.registration;
     exports it.auties.whatsapp.listener.processor;
+    exports it.auties.whatsapp.registration.metadata;
 }

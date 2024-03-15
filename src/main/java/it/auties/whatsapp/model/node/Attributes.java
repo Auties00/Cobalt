@@ -405,4 +405,9 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
 
         return this;
     }
+
+    @SuppressWarnings("unchecked")
+    public Entry<String, Object>[] toEntries() {
+        return toMap.entrySet().toArray(Entry[]::new);
+    }
 }
