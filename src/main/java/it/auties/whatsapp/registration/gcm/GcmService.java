@@ -2,6 +2,7 @@ package it.auties.whatsapp.registration.gcm;
 
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
+import it.auties.whatsapp.registration.gcm.McsExchange.LoginResponse;
 import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
@@ -52,16 +53,25 @@ public class GcmService {
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
         this.appId = APP_ID + UUID.randomUUID();
         this.receivedPersistentId = new CopyOnWriteArrayList<>();
-        this.loginFuture = checkIn()
-                .thenComposeAsync(this::register)
+        this.loginFuture = new CompletableFuture<>();
+        login();
+    }
+
+    private void login() {
+        checkIn().thenComposeAsync(this::register)
                 .thenComposeAsync(this::subscribe)
-                .thenComposeAsync(ignored -> openConnection());
+                .thenComposeAsync(ignored -> openConnection())
+                .exceptionallyAsync(this::handleLoginError);
+    }
+
+    private Void handleLoginError(Throwable error) {
+        loginFuture.completeExceptionally(error);
+        return null;
     }
 
     public void await() {
         loginFuture.join();
         System.out.println(token);
-        while (true); // peek keep alive
     }
 
     private CompletableFuture<AndroidCheckInResponse> checkIn() {
@@ -180,6 +190,9 @@ public class GcmService {
 
     private void handleMessage(ProtobufMessage payload) {
         System.out.println("Received " + payload);
+        if (payload instanceof LoginResponse) {
+            loginFuture.complete(null);
+        }
     }
 
     private void sendLoginPacket() {

@@ -3,6 +3,7 @@ package it.auties.whatsapp.registration;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.MD5;
+import it.auties.whatsapp.crypto.PBKDF2;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
@@ -20,9 +21,6 @@ import net.dongliu.apk.parser.bean.ApkSigner;
 import net.dongliu.apk.parser.bean.CertificateMeta;
 
 import javax.crypto.Mac;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -205,12 +203,12 @@ public final class WhatsappMetadata {
                 var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
                 var certificates = getCertificates(apkFile);
                 if (business) {
-                    var result = new WhatsappApk(version, md5Hash, secretKey.getEncoded(), certificates, true);
+                    var result = new WhatsappApk(version, md5Hash, secretKey, certificates, true);
                     cacheWhatsappData(result);
                     return businessApk = result;
                 }
 
-                var result = new WhatsappApk(version, md5Hash, secretKey.getEncoded(), certificates, false);
+                var result = new WhatsappApk(version, md5Hash, secretKey, certificates, false);
                 cacheWhatsappData(result);
                 return personalApk = result;
             } catch (IOException | GeneralSecurityException exception) {
@@ -260,15 +258,9 @@ public final class WhatsappMetadata {
                 .toList();
     }
 
-    private static SecretKey getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
-        var result = Bytes.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
-        var whatsappLogoChars = new char[result.length];
-        for (var i = 0; i < result.length; i++) {
-            whatsappLogoChars[i] = (char) result[i];
-        }
-        var factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT");
-        var key = new PBEKeySpec(whatsappLogoChars, Whatsapp.MOBILE_ANDROID_SALT, 128, 512);
-        return factory.generateSecret(key);
+    private static byte[] getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
+        var password = Bytes.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
+        return PBKDF2.hmacSha1With8Bit(password, Whatsapp.MOBILE_ANDROID_SALT, 128, 512);
     }
 
     private static Path getKaiOsLocalCache() {

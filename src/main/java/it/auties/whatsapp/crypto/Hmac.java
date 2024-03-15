@@ -13,6 +13,10 @@ public final class Hmac {
         return calculate(HMAC_SHA_256, plain, key);
     }
 
+    public static byte[] calculateSha512(byte[] plain, byte[] key) {
+        return calculate(HMAC_SHA_512, plain, key);
+    }
+
     private static byte[] calculate(String algorithm, byte[] plain, byte[] key) {
         try {
             var localMac = Mac.getInstance(algorithm);
@@ -21,9 +25,5 @@ public final class Hmac {
         } catch (GeneralSecurityException exception) {
             throw new IllegalArgumentException("Cannot calculate hmac", exception);
         }
-    }
-
-    public static byte[] calculateSha512(byte[] plain, byte[] key) {
-        return calculate(HMAC_SHA_512, plain, key);
     }
 }
