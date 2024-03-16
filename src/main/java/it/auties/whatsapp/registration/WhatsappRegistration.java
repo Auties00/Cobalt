@@ -163,6 +163,7 @@ public final class WhatsappRegistration {
             return registrationParametersFuture.thenComposeAsync(registrationParameters -> {
                 var entries = Attributes.of(registrationParameters)
                         .put("offline_ab", Specification.Whatsapp.MOBILE_OFFLINE_AB, ios)
+                        .put("offline_ab", "{\"exposure\":[\"reg_phone_number_update_colors_prod_universe|reg_phone_number_update_colors_prod_experiment|test\"],\"metrics\":{}}", android)
                         .put("push_token", android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
                         .put("recovery_token_error", "-25300", ios)
                         .toEntries();
@@ -315,42 +316,35 @@ public final class WhatsappRegistration {
     }
 
     private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, String gpiaToken, CountryCode countryCode) {
-        return Attributes.of()
-                .put("method", method.data())
-                .put("sim_mcc", countryCode.mcc())
-                .put("sim_mnc", countryCode.mcc())
-                .put("reason", "")
-                .put("mcc", countryCode.mcc())
-                .put("mnc", "000")
-                .put("language_selector_time_spent", 0)
-                .put("feo2_query_status", "error_security_exception")
-                .put("sim_type", 1)
-                .put("network_radio_type", 1)
-                .put("network_operator_name", "")
-                .put("prefer_sms_over_flash", true)
-                .put("simnum", 0)
-                .put("sim_state", 5)
-                .put("clicked_education_link", false)
-                .put("airplane_mode_type", 1)
-                .put("mistyped", 7)
-                .put("advertising_id", keys.advertisingId())
-                .put("hasinrc", 1)
-                .put("roaming_type", 0)
-                .put("device_ram", 4)
-                .put("language_selector_clicked_count", 0)
-                .put("backup_token", convertBufferToUrlHex(Bytes.random(20)))
-                .put("backup_token_error", "null_token")
-                .put("client_metrics", URLEncoder.encode("{\"attempts\":1,\"was_activated_from_stub\":false}", StandardCharsets.UTF_8))
-                .put("education_screen_displayed", true)
-                .put("read_phone_permission_granted", 0)
-                .put("pid", ProcessHandle.current().pid())
-                .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
-                .put("sim_operator_name", "Vodafone")
-                .put("gpia_token", gpiaToken)
-                .put("device_name", Bytes.bytesToCrockford(Bytes.random(5)))
-                .put("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
-                .put("push_code", pushCode, pushCode != null)
-                .toEntries();
+        return new Entry[]{
+                Map.entry("method", method.data()),
+                Map.entry("sim_mcc", countryCode.mcc()),
+                Map.entry("sim_mnc", countryCode.mcc()),
+                Map.entry("reason", ""),
+                Map.entry("mcc", countryCode.mcc()),
+                Map.entry("mnc", "000"),
+                Map.entry("feo2_query_status", "error_security_exception"),
+                Map.entry("sim_type", 1),
+                Map.entry("network_radio_type", 1),
+                Map.entry("prefer_sms_over_flash", true),
+                Map.entry("simnum", 0),
+                Map.entry("sim_state", 3),
+                Map.entry("clicked_education_link", false),
+                Map.entry("airplane_mode_type", 0),
+                Map.entry("mistyped", 7),
+                Map.entry("advertising_id", keys.advertisingId()),
+                Map.entry("hasinrc", 1),
+                Map.entry("roaming_type", 0),
+                Map.entry("device_ram", 4),
+                Map.entry("client_metrics", URLEncoder.encode("{\"attempts\":1}", StandardCharsets.UTF_8)),
+                Map.entry("education_screen_displayed", true),
+                Map.entry("read_phone_permission_granted", 1),
+                Map.entry("pid", ProcessHandle.current().pid()),
+                Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6)),
+                Map.entry("gpia_token", gpiaToken),
+                Map.entry("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D"),
+                Map.entry("push_code", pushCode)
+        };
     }
 
     private CompletionStage<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, String result) {
@@ -456,7 +450,7 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
-        System.out.println("Sending request to " + path + " with parameters " + params);
+        System.out.println("Sending request to " + path + " with parameters " + Json.writeValueAsString(params, true));
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var encodedParams = HttpClient.toFormParams(params).getBytes();
         var userAgent = store.device().toUserAgent(store.version());

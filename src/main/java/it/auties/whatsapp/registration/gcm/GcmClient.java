@@ -61,7 +61,7 @@ public class GcmClient {
     }
 
     private void login() {
-        checkIn().thenComposeAsync(checkInResponse -> register(checkInResponse, false))
+        checkIn().thenComposeAsync(this::register)
                 .thenComposeAsync(this::subscribe)
                 .thenComposeAsync(ignored -> openConnection())
                 .exceptionallyAsync(this::handleLoginError);
@@ -93,7 +93,7 @@ public class GcmClient {
                 .thenApplyAsync(AndroidCheckInResponseSpec::decode);
     }
 
-    private CompletableFuture<String> register(AndroidCheckInResponse checkInResponse, boolean isRetry) {
+    private CompletableFuture<String> register(AndroidCheckInResponse checkInResponse) {
         this.androidId = checkInResponse.androidId();
         this.securityToken = checkInResponse.securityToken();
         var params = Map.of(
@@ -108,22 +108,18 @@ public class GcmClient {
                 "Authorization", "AidLogin %s:%s".formatted(checkInResponse.androidId(), checkInResponse.securityToken())
         );
         return httpClient.post(REGISTER_URL, headers, formParams)
-                .thenComposeAsync(registrationResponse -> handleRegistration(checkInResponse, registrationResponse, isRetry));
+                .thenApplyAsync(this::handleRegistration);
     }
 
-    private CompletableFuture<String> handleRegistration(AndroidCheckInResponse checkInResponse, byte[] registrationResponse, boolean isRetry) {
+    private String handleRegistration(byte[] registrationResponse) {
         var body = new String(registrationResponse);
         var data = HttpClient.parseFormParams(body);
         var token = data.get("token");
-        if(token != null) {
-            return CompletableFuture.completedFuture(token);
-        }
-
-        if(isRetry) {
+        if(token == null) {
             throw new IllegalArgumentException("Invalid registration response: " + body);
         }
 
-        return register(checkInResponse, true);
+        return token;
     }
 
     private CompletableFuture<Void> subscribe(String gcmToken) {
@@ -166,6 +162,7 @@ public class GcmClient {
                 while (socket.isConnected()) {
                     var tag = dataInputStream.readByte();
                     var length = readLength(dataInputStream);
+                    System.out.println("Read length " + length);
                     if (length <= 0) {
                         continue;
                     }
