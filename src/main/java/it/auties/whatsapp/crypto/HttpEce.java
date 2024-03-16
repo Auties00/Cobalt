@@ -31,9 +31,9 @@ public final class HttpEce {
         var context = Bytes.concat(
                 KEY_LABEL,
                 new byte[1],
-                Bytes.unsignedShortToBytes(publicKey.length),
+                unsignedShortToBigEndianBytes(publicKey.length),
                 publicKey,
-                Bytes.unsignedShortToBytes(dh.length),
+                unsignedShortToBigEndianBytes(dh.length),
                 dh
         );
         var expandedSecret = Hkdf.extractAndExpand(
@@ -104,5 +104,12 @@ public final class HttpEce {
         dst[9] = (byte) (a[9] ^ b[9]);
         dst[10] = (byte) (a[10] ^ b[10]);
         dst[11] = (byte) (a[11] ^ b[11]);
+    }
+
+    private static byte[] unsignedShortToBigEndianBytes(int value) {
+        var bytes = new byte[2];
+        bytes[0] = (byte) ((value >> 8) & 0xFF);
+        bytes[1] = (byte) (value & 0xFF);
+        return bytes;
     }
 }
