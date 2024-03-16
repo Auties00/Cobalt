@@ -61,7 +61,7 @@ public class GcmClient {
     }
 
     private void login() {
-        checkIn().thenComposeAsync(this::register)
+        checkIn().thenComposeAsync(checkInResponse -> register(checkInResponse, false))
                 .thenComposeAsync(this::subscribe)
                 .thenComposeAsync(ignored -> openConnection())
                 .exceptionallyAsync(this::handleLoginError);
@@ -93,7 +93,7 @@ public class GcmClient {
                 .thenApplyAsync(AndroidCheckInResponseSpec::decode);
     }
 
-    private CompletableFuture<String> register(AndroidCheckInResponse checkInResponse) {
+    private CompletableFuture<String> register(AndroidCheckInResponse checkInResponse, boolean isRetry) {
         this.androidId = checkInResponse.androidId();
         this.securityToken = checkInResponse.securityToken();
         var params = Map.of(
@@ -108,15 +108,22 @@ public class GcmClient {
                 "Authorization", "AidLogin %s:%s".formatted(checkInResponse.androidId(), checkInResponse.securityToken())
         );
         return httpClient.post(REGISTER_URL, headers, formParams)
-                .thenApplyAsync(this::handleRegistration);
+                .thenComposeAsync(registrationResponse -> handleRegistration(checkInResponse, registrationResponse, isRetry));
     }
 
-    private String handleRegistration(byte[] registrationResponse) {
+    private CompletableFuture<String> handleRegistration(AndroidCheckInResponse checkInResponse, byte[] registrationResponse, boolean isRetry) {
         var body = new String(registrationResponse);
         var data = HttpClient.parseFormParams(body);
         var token = data.get("token");
-        Validate.isTrue(token != null, "Invalid registration response: " + body);
-        return token;
+        if(token != null) {
+            return CompletableFuture.completedFuture(token);
+        }
+
+        if(isRetry) {
+            throw new IllegalArgumentException("Invalid registration response: " + body);
+        }
+
+        return register(checkInResponse, true);
     }
 
     private CompletableFuture<Void> subscribe(String gcmToken) {
@@ -165,7 +172,6 @@ public class GcmClient {
 
                     var message = new byte[length];
                     dataInputStream.readFully(message);
-                    System.out.println("Read message " + HexFormat.of().formatHex(message));
                     var payload = McsExchange.readMessage(tag, message);
                     if(payload.isEmpty()) {
                         continue;
@@ -173,12 +179,18 @@ public class GcmClient {
 
                     handleMessage(payload.get());
                 }
-            }catch (IOException exception) {
-                if(socket.isClosed()) {
+            }catch (Throwable throwable) {
+                if(!loginFuture.isDone()) {
+                    loginFuture.completeExceptionally(throwable);
                     return;
                 }
 
-                throw new UncheckedIOException(exception);
+                if(!dataFuture.isDone()) {
+                    dataFuture.completeExceptionally(throwable);
+                    return;
+                }
+
+                throw new RuntimeException(throwable);
             }
         });
     }
@@ -218,21 +230,27 @@ public class GcmClient {
     }
 
     private void onStanza(DataMessageStanza dataMessageStanza) {
-        var dataMap = dataMessageStanza.appData()
-                .stream()
-                .filter(entry -> entry.value() != null)
-                .collect(Collectors.toUnmodifiableMap(AppData::key, AppData::value));
-        var salt = Base64.getUrlDecoder().decode(dataMap.get("encryption").substring(5));
-        var dh = Base64.getUrlDecoder().decode(dataMap.get("crypto-key").substring(3));
-        var deciphered = HttpEce.decrypt(
-                dataMessageStanza.rawData(),
-                dh,
-                keyPair.publicKey(),
-                keyPair.privateKey(),
-                salt,
-                authSecret
-        );
-        dataFuture.complete(Base64.getEncoder().encodeToString(deciphered));
+       try {
+           var dataMap = dataMessageStanza.appData()
+                   .stream()
+                   .filter(entry -> entry.value() != null)
+                   .collect(Collectors.toUnmodifiableMap(AppData::key, AppData::value));
+           var salt = Base64.getUrlDecoder().decode(dataMap.get("encryption").substring(5));
+           var dh = Base64.getUrlDecoder().decode(dataMap.get("crypto-key").substring(3));
+           var deciphered = HttpEce.decrypt(
+                   dataMessageStanza.rawData(),
+                   dh,
+                   keyPair.publicKey(),
+                   keyPair.jcaPrivateKey(),
+                   salt,
+                   authSecret
+           );
+           var cleanText = Arrays.copyOfRange(deciphered, 2, deciphered.length);
+           var whatsappResponse = Json.readValue(cleanText, GcmWhatsappResponse.class);
+           dataFuture.complete(whatsappResponse.data().pushCode());
+       }catch (Throwable throwable) {
+           dataFuture.completeExceptionally(throwable);
+       }
     }
 
     private void sendLoginPacket() {

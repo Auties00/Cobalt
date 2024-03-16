@@ -31,10 +31,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public final class WhatsappRegistration {
@@ -210,11 +207,29 @@ public final class WhatsappRegistration {
             return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
                     .thenApply(this::readIOSPushCode)
                     .orTimeout(10, TimeUnit.SECONDS)
-                    .exceptionallyAsync(ignored -> { throw new RegistrationException(null, "Apns timeout"); });
+                    .exceptionallyAsync(error -> {
+                        if(error instanceof TimeoutException) {
+                            throw new RegistrationException(null, "Apns timeout");
+                        }
+
+                        var exception = new RegistrationException(null, "Apns error");
+                        exception.addSuppressed(error);
+                        throw exception;
+                    });
         }
 
         if(gcmClient != null) {
-            return gcmClient.getPushCode();
+            return gcmClient.getPushCode()
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .exceptionallyAsync(error -> {
+                        if(error instanceof TimeoutException) {
+                            throw new RegistrationException(null, "Gcm timeout");
+                        }
+
+                        var exception = new RegistrationException(null, "Gcm error");
+                        exception.addSuppressed(error);
+                        throw exception;
+                    });
         }
 
         return CompletableFuture.completedFuture(null);

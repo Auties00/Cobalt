@@ -1,54 +1,65 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.util.Bytes;
 
+import javax.crypto.KeyAgreement;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 
 public final class HttpEce {
     private static final int IV_LENGTH = 12;
     private static final int KEY_LENGTH = 16;
     private static final int SECRET_LENGTH = 32;
-    private static final byte[] AUTH_INFO = "Content-Encoding: auth".getBytes();
-    private static final byte[] AES_GCM_INFO = "Content-Encoding: aesgcm".getBytes();
-    private static final byte[] IV_INFO = "Content-Encoding: nonce".getBytes();
-    private static final int RECORD_SIZE = 4096;
+    private static final byte[] AUTH_INFO = "Content-Encoding: auth\0".getBytes();
+    private static final byte[] AES_GCM_INFO = "Content-Encoding: aesgcm\0".getBytes();
+    private static final byte[] IV_INFO = "Content-Encoding: nonce\0".getBytes();
+    private static final byte[] KEY_LABEL = "P-256".getBytes();
+    private static final int RECORD_SIZE = 4112;
+    private static final byte[] P256_HEAD = Base64.getDecoder().decode("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE");
 
-    public static byte[] decrypt(byte[] content, byte[] dh, byte[] publicKey, byte[] privateKey, byte[] salt, byte[] authSecret) {
-        var publicKeyLength = publicKey.length;
-        var publicKeyLengthBuffer = Bytes.unsignedShortToBytes(publicKeyLength);
-
-        var dhLength = dh.length;
-        var dhLengthBuffer = Bytes.unsignedShortToBytes(dhLength);
-
+    public static byte[] decrypt(byte[] content, byte[] dh, byte[] publicKey, ECPrivateKey privateKey, byte[] salt, byte[] authSecret) {
+        var secret = calculateSharedSecret(dh, privateKey);
         var context = Bytes.concat(
+                KEY_LABEL,
                 new byte[1],
-                publicKeyLengthBuffer,
+                Bytes.unsignedShortToBytes(publicKey.length),
                 publicKey,
-                dhLengthBuffer,
+                Bytes.unsignedShortToBytes(dh.length),
                 dh
         );
-
-        // TODO: ECDH shared key, curve25519 uses ECDH under the hood so it should be possible to use this
-        var sharedKey = Curve25519.sharedKey(publicKey, privateKey);
-        var sharedSecret = Hkdf.extractAndExpand(sharedKey, authSecret, AUTH_INFO, SECRET_LENGTH);
-        var keyInfo = Bytes.concat(AES_GCM_INFO, context);
-        var ivInfo = Bytes.concat(IV_INFO, context);
-
-        var key = Hkdf.extractAndExpand(keyInfo, salt, sharedSecret, KEY_LENGTH);
-        var baseIv = Hkdf.extractAndExpand(ivInfo, salt, sharedSecret, IV_LENGTH);
-
+        var expandedSecret = Hkdf.extractAndExpand(
+                secret,
+                authSecret,
+                AUTH_INFO,
+                SECRET_LENGTH
+        );
+        var key = Hkdf.extractAndExpand(
+                expandedSecret,
+                salt,
+                Bytes.concat(AES_GCM_INFO, context),
+                KEY_LENGTH
+        );
+        var baseIv = Hkdf.extractAndExpand(
+                expandedSecret,
+                salt,
+                Bytes.concat(IV_INFO, context),
+                IV_LENGTH
+        );
         try(var result = new ByteArrayOutputStream()) {
             var start = 0;
             var counter = 0;
             while (start < content.length) {
                 var end = Math.min(start + RECORD_SIZE, content.length);
-
-                var iv = ByteBuffer.allocate(12)
+                var iv = ByteBuffer.allocate(IV_LENGTH)
                         .putInt(8, counter)
                         .array();
                 xor12(iv, baseIv, iv);
@@ -60,6 +71,23 @@ public final class HttpEce {
             return result.toByteArray();
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
+        }
+    }
+
+    private static byte[] calculateSharedSecret(byte[] dh, ECPrivateKey privateKey) {
+        try {
+            var encodedKey = new byte[P256_HEAD.length + dh.length - 1];
+            System.arraycopy(P256_HEAD, 0, encodedKey, 0, P256_HEAD.length);
+            System.arraycopy(dh, 1, encodedKey, P256_HEAD.length, dh.length - 1);
+            var keyFactory = KeyFactory.getInstance("EC");
+            var spec = new X509EncodedKeySpec(encodedKey);
+            var jcaPublicKey = (ECPublicKey) keyFactory.generatePublic(spec);
+            var keyAgreement = KeyAgreement.getInstance("ECDH");
+            keyAgreement.init(privateKey);
+            keyAgreement.doPhase(jcaPublicKey, true);
+            return keyAgreement.generateSecret();
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException(exception);
         }
     }
 

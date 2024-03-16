@@ -207,9 +207,9 @@ public final class Bytes {
     }
 
     public static byte[] unsignedShortToBytes(int value) {
-        byte[] bytes = new byte[2];
-        bytes[0] = (byte) (value & 0xFF);
-        bytes[1] = (byte) ((value >> 8) & 0xFF);
+        var bytes = new byte[2];
+        bytes[0] = (byte) ((value >> 8) & 0xFF);
+        bytes[1] = (byte) (value & 0xFF);
         return bytes;
     }
 }
