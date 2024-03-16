@@ -7,7 +7,6 @@ import java.security.SecureRandom;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
-import java.util.Arrays;
 
 record ECDH256KeyPair(
         byte[] publicKey,
@@ -31,7 +30,7 @@ record ECDH256KeyPair(
             System.arraycopy(affineX, affineX[0] == 0 ? 1 : 0, rawPublicKey, 1, PUBLIC_KEY_PART_LENGTH);
             System.arraycopy(affineY, affineY[0] == 0 ? 1 : 0, rawPublicKey, PUBLIC_KEY_PART_LENGTH + 1, PUBLIC_KEY_PART_LENGTH);
             var privateKey = (ECPrivateKey) keyPair.getPrivate();
-            var rawPrivateKey = Arrays.copyOfRange(privateKey.getS().toByteArray(), 1, 33);
+            var rawPrivateKey = privateKey.getS().toByteArray();
             return new ECDH256KeyPair(rawPublicKey, rawPrivateKey, publicKey, privateKey);
         }catch (NoSuchAlgorithmException exception) {
             throw new RuntimeException("Missing ECDH256 implementation", exception);
