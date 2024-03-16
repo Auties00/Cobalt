@@ -1,168 +1,80 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.util.Bytes;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-// TODO: Implement
-public class HttpEce {
-    private static final int AUTH_TAG_LENGTH_BYTES = 16;
-    private static final int KEY_LENGTH_BYTES = 16;
-    private static final int NONCE_LENGTH_BYTES = 12;
-    private static final int SHA_256_LENGTH_BYTES = 32;
+public final class HttpEce {
+    private static final int IV_LENGTH = 12;
+    private static final int KEY_LENGTH = 16;
+    private static final int SECRET_LENGTH = 32;
+    private static final byte[] AUTH_INFO = "Content-Encoding: auth".getBytes();
+    private static final byte[] AES_GCM_INFO = "Content-Encoding: aesgcm".getBytes();
+    private static final byte[] IV_INFO = "Content-Encoding: nonce".getBytes();
+    private static final int RECORD_SIZE = 4096;
 
-    public static byte[] decrypt(byte[] buffer, byte[] salt, byte[] publicKey, byte[] privateKey, byte[] dh, byte[] authSecret) {
-        var keyAndNonce = deriveKeyAndNonce(salt, publicKey, privateKey, dh, authSecret);
-        int start = 0;
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
+    public static byte[] decrypt(byte[] content, byte[] dh, byte[] publicKey, byte[] privateKey, byte[] salt, byte[] authSecret) {
+        var publicKeyLength = publicKey.length;
+        var publicKeyLengthBuffer = Bytes.unsignedShortToBytes(publicKeyLength);
 
-        for (int i = 0; start < buffer.length; ++i) {
-            int end = start + 4096 + AUTH_TAG_LENGTH_BYTES;
-            if (end == buffer.length) {
-                throw new IllegalArgumentException("Truncated payload");
+        var dhLength = dh.length;
+        var dhLengthBuffer = Bytes.unsignedShortToBytes(dhLength);
+
+        var context = Bytes.concat(
+                new byte[1],
+                publicKeyLengthBuffer,
+                publicKey,
+                dhLengthBuffer,
+                dh
+        );
+
+        // TODO: ECDH shared key, curve25519 uses ECDH under the hood so it should be possible to use this
+        var sharedKey = Curve25519.sharedKey(publicKey, privateKey);
+        var sharedSecret = Hkdf.extractAndExpand(sharedKey, authSecret, AUTH_INFO, SECRET_LENGTH);
+        var keyInfo = Bytes.concat(AES_GCM_INFO, context);
+        var ivInfo = Bytes.concat(IV_INFO, context);
+
+        var key = Hkdf.extractAndExpand(keyInfo, salt, sharedSecret, KEY_LENGTH);
+        var baseIv = Hkdf.extractAndExpand(ivInfo, salt, sharedSecret, IV_LENGTH);
+
+        try(var result = new ByteArrayOutputStream()) {
+            var start = 0;
+            var counter = 0;
+            while (start < content.length) {
+                var end = Math.min(start + RECORD_SIZE, content.length);
+
+                var iv = ByteBuffer.allocate(12)
+                        .putInt(8, counter)
+                        .array();
+                xor12(iv, baseIv, iv);
+                var chunk = Arrays.copyOfRange(content, start, end);
+                result.write(AesGcm.decrypt(iv, chunk, key, null));
+                start = end;
+                counter++;
             }
-            end = Math.min(end, buffer.length);
-            if (end - start <= AUTH_TAG_LENGTH_BYTES) {
-                throw new IllegalArgumentException("Invalid block: too small at " + i);
-            }
-
-            byte[] record = Arrays.copyOfRange(buffer, start, end);
-            try {
-                result.write(decryptRecord(keyAndNonce.key, keyAndNonce.nonce, i, record));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            start = end;
-        }
-        return result.toByteArray();
-    }
-
-    private static byte[] decryptRecord(byte[] key, byte[] nonceBase, int counter, byte[] buffer) {
-        byte[] nonce = generateNonce(nonceBase, counter);
-
-        byte[] data = AesGcm.decrypt(nonce, buffer, key, null);
-
-
-        int pad = (int) readLongBE(data, 0, 2); // This cast is OK because the padding is 65537 max
-        if (pad + 2 > data.length) {
-            throw new IllegalArgumentException("padding exceeds block size");
-        }
-        for (int i = 2; i < 2 + pad; i++) {
-            if (data[i] != 0) {
-                throw new IllegalArgumentException("invalid padding");
-            }
-        }
-        return Arrays.copyOfRange(data, 2 + pad, data.length);
-    }
-
-    private static KeyAndNonce deriveKeyAndNonce(byte[] salt, byte[] publicKey, byte[] privateKey, byte[] dh, byte[] authSecret) {
-        SecretAndContext sc = generateSecretAndContext(publicKey, privateKey, dh);
-        if (sc.secret == null) {
-            throw new IllegalStateException("Unable to determine the secret");
-        }
-
-        sc.expandSecret(authSecret);
-
-        var keyInfo = buildInfo("aesgcm", sc.context);
-        var nonceInfo = buildInfo("nonce", sc.context);
-
-        byte[] hkdfKey = hkdfExpand(sc.secret, salt, keyInfo, KEY_LENGTH_BYTES);
-        byte[] hkdfNonce = hkdfExpand(sc.secret, salt, nonceInfo, NONCE_LENGTH_BYTES);
-
-        return new KeyAndNonce(hkdfKey, hkdfNonce);
-    }
-
-    private record KeyAndNonce(byte[] key, byte[] nonce) {
-
-    }
-
-    // TODO: Implement
-    private static SecretAndContext generateSecretAndContext(byte[] publicKey, byte[] privateKey, byte[] otherPublicKey)  {
-       throw new UnsupportedOperationException();
-    }
-
-    private static byte[] hkdfExpand(byte[] ikm, byte[] salt, byte[] info, int length) {
-        return Hkdf.extractAndExpand(ikm, salt, info, length);
-    }
-
-    private static byte[] generateNonce(byte[] base, int counter) {
-        byte[] nonce = base.clone();
-        long m = readLongBE(nonce, base.length - 6, 6);
-        long x = ((m ^ counter) & 0xffffff) +
-                ((((m / 0x1000000) ^ (counter / 0x1000000)) & 0xffffff) * 0x1000000);
-        writeLongBE(nonce, x, base.length - 6, 6);
-        return nonce;
-    }
-
-    private static byte[] buildInfo(String type, byte[] context) {
-        ByteBuffer buffer = ByteBuffer.allocate(19 + type.length() + context.length);
-        buffer.put("Content-Encoding: ".getBytes(), 0, 18);
-        buffer.put(type.getBytes(), 0, type.length());
-        buffer.put(new byte[1], 0, 1);
-        buffer.put(context, 0, context.length);
-        return buffer.array();
-    }
-
-    private static byte[] lengthPrefix(byte[] key) {
-        byte[] b = concat(new byte[2], key);
-        writeLongBE(b, key.length, 0, 2);
-        return b;
-    }
-
-    private static byte[] concat(byte[]... arrays) {
-        int combinedLength = 0;
-        for (byte[] array : arrays) {
-            if (array != null) {
-                combinedLength += array.length;
-            }
-        }
-        int lastPos = 0;
-        byte[] combined = new byte[combinedLength];
-
-        for (byte[] array : arrays) {
-            if (array == null) {
-                continue;
-            }
-            System.arraycopy(array, 0, combined, lastPos, array.length);
-            lastPos += array.length;
-        }
-
-        return combined;
-    }
-
-    private static long readLongBE(byte[] buffer, int offset, int len) {
-        long result = 0;
-        for (int i = 0; i < len; i++) {
-            result <<= 8;
-            result |= (buffer[i + offset] & 0xFF);
-        }
-        return result;
-    }
-
-    private static void writeLongBE(byte[] buffer, long value, int offset, int len) {
-        for (int i = len - 1; i >= 0; i--) {
-            buffer[i + offset] = (byte) (value & 0xFF);
-            value >>= 8;
+            return result.toByteArray();
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
         }
     }
 
-    private static class SecretAndContext {
-        private byte[] secret;
-        private byte[] context;
-
-        public SecretAndContext(byte[] secret, byte[] context) {
-            this.secret = secret;
-            this.context = context;
-        }
-
-        public SecretAndContext(byte[] secret) {
-            this(secret, new byte[0]);
-        }
-
-        public void expandSecret(byte[] authSecret) {
-            this.secret = hkdfExpand(this.secret, authSecret, buildInfo("auth", new byte[0]), SHA_256_LENGTH_BYTES);
-        }
+    private static void xor12(byte[] dst, byte[] a, byte[] b) {
+        dst[0] = (byte) (a[0] ^ b[0]);
+        dst[1] = (byte) (a[1] ^ b[1]);
+        dst[2] = (byte) (a[2] ^ b[2]);
+        dst[3] = (byte) (a[3] ^ b[3]);
+        dst[4] = (byte) (a[4] ^ b[4]);
+        dst[5] = (byte) (a[5] ^ b[5]);
+        dst[6] = (byte) (a[6] ^ b[6]);
+        dst[7] = (byte) (a[7] ^ b[7]);
+        dst[8] = (byte) (a[8] ^ b[8]);
+        dst[9] = (byte) (a[9] ^ b[9]);
+        dst[10] = (byte) (a[10] ^ b[10]);
+        dst[11] = (byte) (a[11] ^ b[11]);
     }
 }

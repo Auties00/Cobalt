@@ -226,10 +226,10 @@ public class GcmClient {
         var dh = Base64.getUrlDecoder().decode(dataMap.get("crypto-key").substring(3));
         var deciphered = HttpEce.decrypt(
                 dataMessageStanza.rawData(),
-                salt,
+                dh,
                 keyPair.publicKey(),
                 keyPair.privateKey(),
-                dh,
+                salt,
                 authSecret
         );
         dataFuture.complete(Base64.getEncoder().encodeToString(deciphered));
