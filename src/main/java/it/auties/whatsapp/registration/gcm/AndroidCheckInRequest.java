@@ -6,7 +6,7 @@ import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 
-public record AndroidCheckInRequest(
+record AndroidCheckInRequest(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String imei,
         @ProtobufProperty(index = 10, type = ProtobufType.STRING)

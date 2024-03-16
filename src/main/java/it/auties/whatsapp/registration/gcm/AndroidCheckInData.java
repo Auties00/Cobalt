@@ -6,7 +6,7 @@ import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
-public record AndroidCheckInData(
+record AndroidCheckInData(
         @ProtobufProperty(index = 2, type = ProtobufType.INT64)
         long lastCheckInMs,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
@@ -22,7 +22,7 @@ public record AndroidCheckInData(
         @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
         ChromeBuild chromeBuild
 ) implements ProtobufMessage {
-    public enum DeviceType implements ProtobufEnum {
+    enum DeviceType implements ProtobufEnum {
         DEVICE_ANDROID_OS(1),
         DEVICE_IOS_OS(2),
         DEVICE_CHROME_BROWSER(3),

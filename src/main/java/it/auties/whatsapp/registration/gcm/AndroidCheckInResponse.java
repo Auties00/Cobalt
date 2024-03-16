@@ -6,7 +6,7 @@ import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 
-public record AndroidCheckInResponse(
+record AndroidCheckInResponse(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean statsOk,
         @ProtobufProperty(index = 3, type = ProtobufType.INT64)
@@ -28,7 +28,7 @@ public record AndroidCheckInResponse(
         @ProtobufProperty(index = 11, type = ProtobufType.STRING)
         String versionInfo
 ) implements ProtobufMessage {
-    public record Setting(
+    record Setting(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String key,
             @ProtobufProperty(index = 2, type = ProtobufType.STRING)

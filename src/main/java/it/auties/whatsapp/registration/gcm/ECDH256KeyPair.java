@@ -9,7 +9,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 
-public record ECDH256KeyPair(
+record ECDH256KeyPair(
         byte[] publicKey,
         byte[] privateKey,
         ECPublicKey jcaPublicKey,
@@ -17,7 +17,7 @@ public record ECDH256KeyPair(
 ) {
     private static final int PUBLIC_KEY_PART_LENGTH = 32;
 
-    public static ECDH256KeyPair random() {
+    static ECDH256KeyPair random() {
         try {
             var keyPairGenerator = KeyPairGenerator.getInstance("EC");
             var ecSpec = new ECGenParameterSpec("secp256r1");

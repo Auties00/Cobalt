@@ -6,7 +6,7 @@ import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
-public record ChromeBuild(
+record ChromeBuild(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Platform platform,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
@@ -14,7 +14,7 @@ public record ChromeBuild(
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Channel channel
 ) implements ProtobufMessage {
-    public enum Platform implements ProtobufEnum {
+    enum Platform implements ProtobufEnum {
         PLATFORM_WIN(1),
         PLATFORM_MAC(2),
         PLATFORM_LINUX(3),
@@ -28,7 +28,7 @@ public record ChromeBuild(
         }
     }
 
-    public enum Channel implements ProtobufEnum {
+    enum Channel implements ProtobufEnum {
         CHANNEL_STABLE(1),
         CHANNEL_BETA(2),
         CHANNEL_DEV(3),

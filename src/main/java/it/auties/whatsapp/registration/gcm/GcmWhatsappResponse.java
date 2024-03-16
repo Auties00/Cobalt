@@ -2,7 +2,7 @@ package it.auties.whatsapp.registration.gcm;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record GcmWhatsappResponse(
+record GcmWhatsappResponse(
         @JsonProperty("data")
         Data data,
         @JsonProperty("from")
@@ -14,7 +14,7 @@ public record GcmWhatsappResponse(
         @JsonProperty("collapse_key")
         String collapseKey
 ) {
-    public record Data(
+    record Data(
             @JsonProperty("push_ts")
             long pushTimestamp,
             @JsonProperty("registration_code")

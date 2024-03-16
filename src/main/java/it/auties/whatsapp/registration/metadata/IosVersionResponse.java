@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public final class IosVersionResponse {
+final class IosVersionResponse {
     private static final IosVersionResponse EMPTY = new IosVersionResponse(null);
     private final Version version;
     IosVersionResponse(Version version) {
