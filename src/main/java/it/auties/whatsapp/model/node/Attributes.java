@@ -25,9 +25,20 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
      * @return a new instance of Attributes
      */
     @SafeVarargs
-    @JsonCreator
     public static Attributes of(Entry<String, Object>... entries) {
         return ofNullable(ofEntries(entries));
+    }
+
+    /**
+     * Constructs a new map using the non-null provided entries
+     *
+     * @param entries the non-null entries
+     * @return a new instance of Attributes
+     */
+    @SafeVarargs
+    @JsonCreator
+    public static Attributes ofNullable(Entry<String, Object>... entries) {
+        return entries == null ? of() : ofNullable(ofEntries(entries));
     }
 
     /**

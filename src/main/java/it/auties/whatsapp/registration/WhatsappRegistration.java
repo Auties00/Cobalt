@@ -161,7 +161,7 @@ public final class WhatsappRegistration {
             var android = store.device().platform().isAndroid();
             var registrationParametersFuture = android ? getRequestVerificationCodeParameters(pushToken) : CompletableFuture.<Entry<String, Object>[]>completedFuture(null);
             return registrationParametersFuture.thenComposeAsync(registrationParameters -> {
-                var entries = Attributes.of(registrationParameters)
+                var entries = Attributes.ofNullable(registrationParameters)
                         .put("offline_ab", Specification.Whatsapp.MOBILE_OFFLINE_AB, ios)
                         .put("offline_ab", "{\"exposure\":[\"reg_phone_number_update_colors_prod_universe|reg_phone_number_update_colors_prod_experiment|test\"],\"metrics\":{}}", android)
                         .put("push_token", android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)

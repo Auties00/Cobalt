@@ -6,7 +6,6 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.*;
-import it.auties.whatsapp.model.signal.auth.DNSSource.ResolutionMethod;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Specification;
@@ -104,6 +103,7 @@ class AuthHandler {
                 .releaseChannel(socketHandler.store().releaseChannel())
                 .localeLanguageIso6391(socketHandler.store().locale().map(CountryLocale::languageValue).orElse("en"))
                 .localeCountryIso31661Alpha2(socketHandler.store().locale().map(CountryLocale::languageCode).orElse("US"))
+                .deviceType(UserAgent.DeviceType.PHONE)
                 .build();
     }
 
@@ -117,15 +117,15 @@ class AuthHandler {
                         .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
-                        .passive(true)
+                        .passive(false)
                         .userAgent(agent)
                         .pushName(socketHandler.store().name())
                         .sessionId(ThreadLocalRandom.current().nextInt(100_000_000, 1_000_000_000))
                         .shortConnect(true)
-                        .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                        .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                         .dnsSource(getDnsSource())
-                        .connectAttemptCount(ThreadLocalRandom.current().nextInt(5, 20))
+                        .connectAttemptCount(0)
                         .device(0)
                         .oc(false)
                         .build();
@@ -160,8 +160,8 @@ class AuthHandler {
 
     private DNSSource getDnsSource() {
         return new DNSSourceBuilder()
+                .dnsMethod(DNSSource.ResolutionMethod.SYSTEM)
                 .appCached(false)
-                .dnsMethod(ResolutionMethod.SYSTEM)
                 .build();
     }
 
