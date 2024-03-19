@@ -8,8 +8,8 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 public class WebLoginExample {
     public static void main(String[] args) {
         Whatsapp.webBuilder()
-                .newConnection()
-                .historyLength(WebHistoryLength.zero())
+                .lastConnection()
+                .historyLength(WebHistoryLength.extended())
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))

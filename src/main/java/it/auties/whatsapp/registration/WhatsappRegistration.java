@@ -84,11 +84,11 @@ public final class WhatsappRegistration {
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
-                    .thenComposeAsync(pushToken -> exists(originalDevice, true, null))
+                    .thenComposeAsync(pushToken -> exists(originalDevice, true, false, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
-            case ANDROID, ANDROID_BUSINESS -> exists(null, true, null)
+            case ANDROID, ANDROID_BUSINESS -> exists(null, true, false, null)
                     .thenComposeAsync(ignored -> getPushCode())
                     .thenComposeAsync(pushCode -> requestVerificationCode(pushCode, null));
             case KAIOS -> requestVerificationCode(null, null);
@@ -109,7 +109,7 @@ public final class WhatsappRegistration {
     public CompletableFuture<Boolean> exists() {
         var originalDevice = store.device();
         store.setDevice(originalDevice.toBusiness());
-        return exists(null, false, null)
+        return exists(null, false, true, null)
                 .thenApplyAsync(registrationResponse -> registrationResponse.whatsappOldEligible() || registrationResponse.possibleMigration())
                 .whenCompleteAsync((result, exception) -> {
                     store.setDevice(originalDevice);
@@ -155,16 +155,16 @@ public final class WhatsappRegistration {
         return CompletableFuture.completedFuture(null);
     }
 
-    private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, VerificationCodeError lastError) {
+    private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, boolean swapDevice, VerificationCodeError lastError) {
         return getPushToken().thenComposeAsync(pushToken -> {
             var ios = store.device().platform().isIOS();
             var android = store.device().platform().isAndroid();
             var registrationParametersFuture = android ? getRequestVerificationCodeParameters(pushToken) : CompletableFuture.<Entry<String, Object>[]>completedFuture(null);
             return registrationParametersFuture.thenComposeAsync(registrationParameters -> {
                 var entries = Attributes.ofNullable(registrationParameters)
-                        .put("offline_ab", Specification.Whatsapp.MOBILE_OFFLINE_AB, ios)
-                        .put("offline_ab", "{\"exposure\":[\"reg_phone_number_update_colors_prod_universe|reg_phone_number_update_colors_prod_experiment|test\"],\"metrics\":{}}", android)
-                        .put("push_token", android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
+                        .put("offline_ab", Specification.Whatsapp.MOBILE_IOS_OFFLINE_AB, ios)
+                        .put("offline_ab", Specification.Whatsapp.MOBILE_ANDROID_OFFLINE_AB, android)
+                        .put("push_token", pushToken == null || android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
                         .put("recovery_token_error", "-25300", ios)
                         .toEntries();
                 var options = getRegistrationOptions(
@@ -175,6 +175,7 @@ public final class WhatsappRegistration {
                 );
                 return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
                     var response = Json.readValue(result, RegistrationResponse.class);
+                    var currentDevice = store.device();
                     if (response.errorReason() == VerificationCodeError.INCORRECT || !throwError) {
                         return CompletableFuture.completedFuture(response);
                     }
@@ -183,14 +184,15 @@ public final class WhatsappRegistration {
                         throw new RegistrationException(response, result);
                     }
 
-                    var useOriginalDevice = originalDevice != null && response.errorReason() == VerificationCodeError.FORMAT_WRONG;
-                    var currentDevice = store.device();
+                    var useOriginalDevice = originalDevice != null
+                            && !Objects.equals(currentDevice, originalDevice)
+                            && response.errorReason() == VerificationCodeError.FORMAT_WRONG;
                     if(useOriginalDevice) {
                         store.setDevice(originalDevice);
                     }
 
-                    return exists(originalDevice, true, response.errorReason()).whenComplete((finalResult, error) -> {
-                        if(useOriginalDevice) {
+                    return exists(originalDevice, true, swapDevice, response.errorReason()).whenComplete((finalResult, error) -> {
+                        if(useOriginalDevice && swapDevice) {
                             store.setDevice(currentDevice);
                         }
 
@@ -316,35 +318,35 @@ public final class WhatsappRegistration {
     }
 
     private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, String gpiaToken, CountryCode countryCode) {
-        return new Entry[]{
-                Map.entry("method", method.data()),
-                Map.entry("sim_mcc", countryCode.mcc()),
-                Map.entry("sim_mnc", countryCode.mcc()),
-                Map.entry("reason", ""),
-                Map.entry("mcc", countryCode.mcc()),
-                Map.entry("mnc", "000"),
-                Map.entry("feo2_query_status", "error_security_exception"),
-                Map.entry("sim_type", 1),
-                Map.entry("network_radio_type", 1),
-                Map.entry("prefer_sms_over_flash", true),
-                Map.entry("simnum", 0),
-                Map.entry("sim_state", 3),
-                Map.entry("clicked_education_link", false),
-                Map.entry("airplane_mode_type", 0),
-                Map.entry("mistyped", 7),
-                Map.entry("advertising_id", keys.advertisingId()),
-                Map.entry("hasinrc", 1),
-                Map.entry("roaming_type", 0),
-                Map.entry("device_ram", 4),
-                Map.entry("client_metrics", URLEncoder.encode("{\"attempts\":1}", StandardCharsets.UTF_8)),
-                Map.entry("education_screen_displayed", true),
-                Map.entry("read_phone_permission_granted", 1),
-                Map.entry("pid", ProcessHandle.current().pid()),
-                Map.entry("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6)),
-                Map.entry("gpia_token", gpiaToken),
-                Map.entry("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D"),
-                Map.entry("push_code", pushCode)
-        };
+        return Attributes.of()
+                .put("method", method.data())
+                .put("sim_mcc", countryCode.mcc())
+                .put("sim_mnc", countryCode.mcc())
+                .put("reason", "")
+                .put("mcc", countryCode.mcc())
+                .put("mnc", "000")
+                .put("feo2_query_status", "error_security_exception")
+                .put("sim_type", 1)
+                .put("network_radio_type", 1)
+                .put("prefer_sms_over_flash", true)
+                .put("simnum", 0)
+                .put("sim_state", 3)
+                .put("clicked_education_link", false)
+                .put("airplane_mode_type", 0)
+                .put("mistyped", 7)
+                .put("advertising_id", keys.advertisingId())
+                .put("hasinrc", 1)
+                .put("roaming_type", 0)
+                .put("device_ram", 4)
+                .put("client_metrics", URLEncoder.encode("{\"attempts\":1}", StandardCharsets.UTF_8))
+                .put("education_screen_displayed", true)
+                .put("read_phone_permission_granted", 1)
+                .put("pid", ProcessHandle.current().pid())
+                .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
+                .put("gpia_token", gpiaToken)
+                .put("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
+                .put("push_code", pushCode)
+                .toEntries();
     }
 
     private CompletionStage<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, String result) {
