@@ -255,7 +255,7 @@
   "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
 },
 {
-  "name":"it.auties.whatsapp.model.response.IosVersionResponse",
+  "name":"it.auties.whatsapp.registration.metadata.IosVersionResponse",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
   "queryAllDeclaredConstructors":true,

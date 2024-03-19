@@ -44,9 +44,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -75,6 +73,7 @@ public class SocketHandler implements SocketListener {
     private final ErrorHandler errorHandler;
 
     private final AtomicLong requestsCounter;
+    private final ScheduledExecutorService scheduler;
 
     private volatile SocketState state;
 
@@ -85,8 +84,6 @@ public class SocketHandler implements SocketListener {
     private Store store;
 
     private Thread shutdownHook;
-
-    private ExecutorService listenersService;
 
     public static boolean isConnected(UUID uuid) {
         return connectedUuids.contains(uuid);
@@ -111,6 +108,7 @@ public class SocketHandler implements SocketListener {
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
         this.requestsCounter = new AtomicLong();
+        this.scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
     }
 
     private void onShutdown(boolean reconnect) {
@@ -965,16 +963,14 @@ public class SocketHandler implements SocketListener {
         streamHandler.dispose();
         messageHandler.dispose();
         appStateHandler.dispose();
-        if (listenersService != null) {
-            listenersService.shutdown();
-        }
+        scheduler.shutdownNow();
     }
 
     protected <T> T handleFailure(Location location, Throwable throwable) {
         if (state() == SocketState.RESTORE || state() == SocketState.LOGGED_OUT) {
             return null;
         }
-        var result = errorHandler.handleError(store.clientType(), location, throwable);
+        var result = errorHandler.handleError(whatsapp, location, throwable);
         switch (result) {
             case RESTORE -> disconnect(DisconnectReason.RESTORE);
             case LOG_OUT -> disconnect(DisconnectReason.LOGGED_OUT);
@@ -1036,5 +1032,9 @@ public class SocketHandler implements SocketListener {
         }
 
         loginFuture.complete(null);
+    }
+
+    protected ScheduledFuture<?> scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
+        return scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
     }
 }

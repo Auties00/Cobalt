@@ -4,7 +4,7 @@ import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.Exceptions;
 
 import java.nio.file.Path;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static java.lang.System.Logger.Level.ERROR;
@@ -18,20 +18,21 @@ public interface ErrorHandler {
     /**
      * Handles an error that occurred inside the api
      *
-     * @param type      the type of client experiencing the error
+     * @param whatsapp  the caller api
      * @param location  the location where the error occurred
      * @param throwable a stacktrace of the error, if available
      * @return a newsletters determining what should be done
      */
-    Result handleError(ClientType type, Location location, Throwable throwable);
+    Result handleError(Whatsapp whatsapp, Location location, Throwable throwable);
 
     /**
      * Default error handler. Prints the exception on the terminal.
      *
      * @return a non-null error handler
      */
+    @SuppressWarnings("CallToPrintStackTrace")
     static ErrorHandler toTerminal() {
-        return defaultErrorHandler(Throwable::printStackTrace);
+        return defaultErrorHandler((api, error) -> error.printStackTrace());
     }
 
     /**
@@ -41,7 +42,7 @@ public interface ErrorHandler {
      * @return a non-null error handler
      */
     static ErrorHandler toFile() {
-        return defaultErrorHandler(Exceptions::save);
+        return defaultErrorHandler((api, error) -> Exceptions.save(error));
     }
 
     /**
@@ -52,7 +53,7 @@ public interface ErrorHandler {
      * @return a non-null error handler
      */
     static ErrorHandler toFile(Path directory) {
-        return defaultErrorHandler(throwable -> Exceptions.save(directory, throwable));
+        return defaultErrorHandler((api, error) -> Exceptions.save(directory, error));
     }
 
     /**
@@ -61,15 +62,15 @@ public interface ErrorHandler {
      * @param printer a consumer that handles the printing of the throwable, can be null
      * @return a non-null error handler
      */
-    static ErrorHandler defaultErrorHandler(Consumer<Throwable> printer) {
-        return (type, location, throwable) -> {
+    static ErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {
+        return (whatsapp, location, throwable) -> {
             var logger = System.getLogger("ErrorHandler");
             logger.log(ERROR, "Socket failure at %s".formatted(location));
             if (printer != null) {
-                printer.accept(throwable);
+                printer.accept(whatsapp, throwable);
             }
 
-            if (location == CRYPTOGRAPHY && type == ClientType.MOBILE) {
+            if (location == CRYPTOGRAPHY && whatsapp.store().clientType() == ClientType.MOBILE) {
                 logger.log(WARNING, "Reconnecting");
                 return Result.RECONNECT;
             }
@@ -77,7 +78,7 @@ public interface ErrorHandler {
             if (location == INITIAL_APP_STATE_SYNC
                     || location == CRYPTOGRAPHY
                     || (location == MESSAGE && throwable instanceof HmacValidationException)) {
-                logger.log(WARNING, "Socket failure at %s".formatted(location));
+                logger.log(WARNING, "Restore");
                 return Result.RESTORE;
             }
 

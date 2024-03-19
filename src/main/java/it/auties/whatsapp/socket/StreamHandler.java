@@ -74,7 +74,6 @@ class StreamHandler {
     private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
     private static final int MOBILE_PRE_KEYS_UPLOAD_CHUNK = 811;
     private static final int PING_INTERVAL = 30;
-    private static final int MEDIA_CONNECTION_DEFAULT_INTERVAL = 60;
     private static final int MAX_ATTEMPTS = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
 
@@ -82,8 +81,8 @@ class StreamHandler {
     private final WebVerificationHandler webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
-    private volatile CompletableFuture<Void> mediaConnectionFuture;
-    private volatile CompletableFuture<Void> pingFuture;
+    private volatile ScheduledFuture<?> pingFuture;
+    private volatile ScheduledFuture<?> mediaConnectionFuture;
 
     protected StreamHandler(SocketHandler socketHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = socketHandler;
@@ -838,17 +837,26 @@ class StreamHandler {
         }
 
         if (node.hasNode("bad-mac")) {
-            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
+            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac. Unresolved nodes: " + getUnresolvedNodes()));
             return;
         }
 
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
-            case 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            case 403, 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
             case 500 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             case 401 -> handleStreamError(node);
             default -> node.children().forEach(error -> socketHandler.store().resolvePendingRequest(error, true));
         }
+    }
+
+    private String getUnresolvedNodes() {
+        return socketHandler.store()
+                .pendingRequests()
+                .stream()
+                .map(SocketRequest::body)
+                .map(String::valueOf)
+                .collect(Collectors.joining("\n"));
     }
 
     private void handleStreamError(Node node) {
@@ -875,10 +883,15 @@ class StreamHandler {
         var loggedInFuture = queryRequiredInfo()
                 .thenComposeAsync(ignored -> initSession())
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        if (!socketHandler.keys().initialAppSync()) {
-            configureWhatsappAccount()
+        var initialAppSync = socketHandler.keys().initialAppSync();
+        if (!initialAppSync) {
+            configureApi()
                     .exceptionally(throwable -> socketHandler.handleFailure(LOGIN, throwable))
-                    .thenRunAsync(() -> { onRegistration(); onInitialInfo(); });
+                    .thenRunAsync(() -> {
+                        onRegistration();
+                        onInitialInfo();
+                        notifyChatsAndNewsletters(true);
+                    });
         }else {
             loggedInFuture.thenRunAsync(this::onInitialInfo);
         }
@@ -888,12 +901,12 @@ class StreamHandler {
                 .attributeStore(socketHandler.store())
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
         CompletableFuture.allOf(loggedInFuture, attributionFuture)
-                .thenRunAsync(this::onAttribution);
+                .thenRunAsync(() -> notifyChatsAndNewsletters(initialAppSync));
     }
 
     private CompletableFuture<Void> initSession() {
         return CompletableFuture.allOf(
-                createMediaConnection(0, null),
+                scheduleMediaConnectionUpdate(0, null),
                 updateSelfPresence(),
                 queryInitial2fa(),
                 queryInitialAboutPrivacy(),
@@ -906,24 +919,29 @@ class StreamHandler {
         );
     }
 
-    private CompletableFuture<Void> configureWhatsappAccount() {
-        return CompletableFuture.allOf(
-                acceptTermsOfService(),
-                setPushEndpoint(),
-                setDefaultStatus(),
-                resetMultiDevice(),
-                setupGoogleCrypto(),
-                sendNumberMetadata(),
-                setupRescueToken(),
-                queryGroups(),
-                getInviteSender(),
-                queryNewsletters()
-        );
+    private CompletableFuture<Void> configureApi() {
+        return switch (socketHandler.store().clientType()) {
+            case WEB -> CompletableFuture.allOf(
+                    queryGroups(),
+                    queryNewsletters()
+            );
+            case MOBILE -> CompletableFuture.allOf(
+                    acceptTermsOfService(),
+                    setPushEndpoint(),
+                    setDefaultStatus(),
+                    resetMultiDevice(),
+                    setupGoogleCrypto(),
+                    sendNumberMetadata(),
+                    setupRescueToken(),
+                    queryGroups(),
+                    getInviteSender(),
+                    queryNewsletters()
+            );
+        };
     }
 
-    private CompletableFuture<Void> getInviteSender() {
-        return socketHandler.sendQuery("get", "w:growth", Node.of("invite", Node.of("get_sender")))
-                .thenRun(() -> {});
+    private CompletableFuture<?> getInviteSender() {
+        return socketHandler.sendQuery("get", "w:growth", Node.of("invite", Node.of("get_sender")));
     }
 
     private CompletableFuture<Void> setDefaultStatus() {
@@ -942,7 +960,7 @@ class StreamHandler {
                 .thenRun(() -> {});
     }
 
-    private CompletableFuture<Void> sendNumberMetadata() {
+    private CompletableFuture<?> sendNumberMetadata() {
         var wamBinary = "57414d0501010001200b800d086950686f6e652058800f0631362e372e34801109322e32342e322e373110152017502fc8a2b265206928830138790604387b060288eb0a03636c6e186b1818a71c88911e063230483234308879240431372e3018fb2e18ed3318ab3888fb3c09353537393735393734290c147602705fefb1a86cd941";
         var wamData = new String(HexFormat.of().parseHex(wamBinary))
                 .replace("iPhone X", socketHandler.store().device().model().replaceAll("_", " "))
@@ -950,15 +968,10 @@ class StreamHandler {
                 .replace("557975974", String.valueOf(socketHandler.store().phoneNumber().orElseThrow().numberWithoutPrefix()))
                 .getBytes();
         var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
-        return socketHandler.sendQuery("set", "w:stats", addNode)
-                .thenRun(() -> {});
+        return socketHandler.sendQuery("set", "w:stats", addNode);
     }
 
-    private CompletableFuture<Void> setPushEndpoint() {
-        if(socketHandler.store().clientType() != ClientType.MOBILE) {
-            return CompletableFuture.completedFuture(null);
-        }
-
+    private CompletableFuture<?> setPushEndpoint() {
         var configAttributes = Attributes.of()
                 .put("background_location", 1)
                 .put("call", "Opening.m4r")
@@ -978,39 +991,26 @@ class StreamHandler {
                 .put("voip", "35e178c41d2bd90b8db50c7a2684a38bf802e760cd1f2d7ff803d663412a9320")
                 .put("voip_payload_type", 2)
                 .toMap();
-        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes))
-                .thenAccept(result -> socketHandler.keys().setInitialAppSync(true));
+        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes));
     }
 
-    private CompletableFuture<Void> resetMultiDevice() {
-        if(socketHandler.store().clientType() != ClientType.MOBILE) {
-            return CompletableFuture.completedFuture(null);
-        }
-
+    private CompletableFuture<?> resetMultiDevice() {
         return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("set", "w:sync:app:state", Node.of("delete_all_data")))
-                .thenRun(() -> {});
+                .thenComposeAsync(ignored -> socketHandler.sendQuery("set", "w:sync:app:state", Node.of("delete_all_data")));
     }
 
-    private CompletableFuture<Void> setupRescueToken() {
-        return socketHandler.sendQuery("set", "w:auth:token", Node.of("token", HexFormat.of().parseHex("20292dbd11e06094feb1908737ca76e6")))
-                .thenRun(() -> {});
+    private CompletableFuture<?> setupRescueToken() {
+        return socketHandler.sendQuery("set", "w:auth:token", Node.of("token", HexFormat.of().parseHex("20292dbd11e06094feb1908737ca76e6")));
     }
 
-    private CompletableFuture<Void> setupGoogleCrypto() {
+    private CompletableFuture<?> setupGoogleCrypto() {
         var firstCrypto = Node.of("crypto", Map.of("action", "create"), Node.of("google", HexFormat.of().parseHex("7d7ce52cde18aa4854bf522bc72899074e06b60b1bf51864de82e8576b759d12")));
         var secondCrypto = Node.of("crypto", Map.of("action", "create"), Node.of("google", HexFormat.of().parseHex("2f39184f8feb97d57493a69bf5558507472c6bfb633b1c2d369f3409210401c6")));
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", firstCrypto)
-                .thenCompose(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", secondCrypto))
-                .thenRun(() -> {});
+                .thenCompose(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", secondCrypto));
     }
 
     private CompletableFuture<Void> acceptTermsOfService() {
-        if(socketHandler.store().clientType() != ClientType.MOBILE) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-
         var firstNotice = Node.of("notice", Map.of("id", "20230902"));
         var secondNotice = Node.of("notice", Map.of("id", "20230901"));
         var thirdNotice = Node.of("notice", Map.of("id", "20231027"));
@@ -1024,9 +1024,16 @@ class StreamHandler {
     private void onRegistration() {
         socketHandler.store().serialize(true);
         socketHandler.keys().serialize(true);
+        if(socketHandler.store().clientType() == ClientType.MOBILE) {
+            socketHandler.keys().setInitialAppSync(true);
+        }
     }
 
-    private void onAttribution() {
+    private void notifyChatsAndNewsletters(boolean notify) {
+        if(!notify) {
+            return;
+        }
+
         socketHandler.onChats();
         socketHandler.onNewsletters();
     }
@@ -1319,25 +1326,21 @@ class StreamHandler {
     }
 
     private void schedulePing() {
-        var executor = CompletableFuture.delayedExecutor(PING_INTERVAL, TimeUnit.SECONDS, Thread::startVirtualThread);
-        ping(executor);
-    }
-
-    private void ping(Executor executor) {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return;
         }
 
-        socketHandler.sendQuery("get", "w:p", Node.of("ping"))
-                .thenRunAsync(() -> socketHandler.onSocketEvent(SocketEvent.PING))
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
-        socketHandler.store().serialize(true);
-        socketHandler.store().serializer().linkMetadata(socketHandler.store());
-        socketHandler.keys().serialize(true);
-        this.pingFuture = CompletableFuture.runAsync(() -> ping(executor), executor);
+        this.pingFuture = socketHandler.scheduleAtFixedInterval(() -> {
+            socketHandler.sendQuery("get", "w:p", Node.of("ping"))
+                    .thenRunAsync(() -> socketHandler.onSocketEvent(SocketEvent.PING))
+                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
+            socketHandler.store().serialize(true);
+            socketHandler.store().serializer().linkMetadata(socketHandler.store());
+            socketHandler.keys().serialize(true);
+        }, PING_INTERVAL, PING_INTERVAL);
     }
 
-    private CompletableFuture<Void> createMediaConnection(int tries, Throwable error) {
+    private CompletableFuture<Void> scheduleMediaConnectionUpdate(int tries, Throwable error) {
         if (socketHandler.state() != SocketState.CONNECTED) {
             return CompletableFuture.completedFuture(null);
         }
@@ -1345,34 +1348,33 @@ class StreamHandler {
         if (tries >= MAX_ATTEMPTS) {
             socketHandler.store().setMediaConnection(null);
             socketHandler.handleFailure(MEDIA_CONNECTION, error);
-            scheduleMediaConnection(MEDIA_CONNECTION_DEFAULT_INTERVAL);
             return CompletableFuture.completedFuture(null);
         }
 
         return socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
-                .thenApplyAsync(node -> {
-                    var mediaConnection = node.findNode("media_conn").orElse(node);
-                    var auth = mediaConnection.attributes().getString("auth");
-                    var ttl = mediaConnection.attributes().getInt("ttl");
-                    var maxBuckets = mediaConnection.attributes().getInt("max_buckets");
-                    var timestamp = System.currentTimeMillis();
-                    var hosts = mediaConnection.findNodes("host")
-                            .stream()
-                            .map(Node::attributes)
-                            .map(attributes -> attributes.getString("hostname"))
-                            .toList();
-                    return new MediaConnection(auth, ttl, maxBuckets, timestamp, hosts);
-                })
-                .thenAcceptAsync(result -> {
-                    socketHandler.store().setMediaConnection(result);
-                    scheduleMediaConnection(result.ttl());
-                })
-                .exceptionallyCompose(throwable -> createMediaConnection(tries + 1, throwable));
+                .thenAcceptAsync(this::onMediaConnection)
+                .exceptionallyCompose(throwable -> scheduleMediaConnectionUpdate(tries + 1, throwable));
     }
 
-    private void scheduleMediaConnection(int seconds) {
-        var executor = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS, Thread::startVirtualThread);
-        this.mediaConnectionFuture = CompletableFuture.runAsync(() -> createMediaConnection(0, null), executor);
+    private void onMediaConnection(Node node) {
+        var mediaConnection = node.findNode("media_conn").orElse(node);
+        var auth = mediaConnection.attributes().getString("auth");
+        var ttl = mediaConnection.attributes().getInt("ttl");
+        var maxBuckets = mediaConnection.attributes().getInt("max_buckets");
+        var timestamp = System.currentTimeMillis();
+        var hosts = mediaConnection.findNodes("host")
+                .stream()
+                .map(Node::attributes)
+                .map(attributes -> attributes.getString("hostname"))
+                .toList();
+        var result = new MediaConnection(auth, ttl, maxBuckets, timestamp, hosts);
+        var alreadyScheduled = socketHandler.store().hasMediaConnection();
+        socketHandler.store().setMediaConnection(result);
+        if(alreadyScheduled) {
+            return;
+        }
+
+       this.mediaConnectionFuture = socketHandler.scheduleAtFixedInterval(() -> scheduleMediaConnectionUpdate(0, null), result.ttl(), result.ttl());
     }
 
     private void digestIq(Node node) {
@@ -1556,6 +1558,10 @@ class StreamHandler {
 
         if(pingFuture != null && !pingFuture.isDone()) {
             pingFuture.cancel(true);
+        }
+
+        if(mediaConnectionFuture != null && !mediaConnectionFuture.isDone()) {
+            mediaConnectionFuture.cancel(true);
         }
 
         retries.clear();

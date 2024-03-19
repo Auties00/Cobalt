@@ -34,6 +34,7 @@ public class ApnsClient {
     private final Set<ApnsListener> listeners;
     private final List<ApnsPacket> unhandledPackets;
     private final CompletableFuture<Void> loginFuture;
+    private final ScheduledExecutorService pingExecutor;
     private SSLSocket socket;
     private byte[] certificate;
     private byte[] authToken;
@@ -42,6 +43,7 @@ public class ApnsClient {
         this.keyPair = initRSAKeyPair();
         this.listeners = ConcurrentHashMap.newKeySet();
         this.unhandledPackets = new CopyOnWriteArrayList<>();
+        this.pingExecutor = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
         this.loginFuture = login();
     }
 
@@ -165,13 +167,12 @@ public class ApnsClient {
     }
 
     private void schedulePing() {
-        var executor = CompletableFuture.delayedExecutor(PING_INTERVAL, TimeUnit.SECONDS, Thread::startVirtualThread);
-        ping(executor);
-    }
-
-    private void ping(Executor executor) {
-        send(ApnsPayloadTag.KEEP_ALIVE_SEND, Map.of());
-        executor.execute(() -> ping(executor));
+        pingExecutor.scheduleAtFixedRate(
+                () -> send(ApnsPayloadTag.KEEP_ALIVE_SEND, Map.of()),
+                PING_INTERVAL,
+                PING_INTERVAL,
+                TimeUnit.SECONDS
+        );
     }
 
     private void createSocketConnection(ApnsBag bag) {
@@ -353,6 +354,7 @@ public class ApnsClient {
         try {
             listeners.clear();
             unhandledPackets.clear();
+            pingExecutor.shutdownNow();
             if(loginFuture != null && !loginFuture.isDone()) {
                 loginFuture.cancel(true);
             }

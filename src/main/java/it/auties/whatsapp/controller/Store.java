@@ -311,6 +311,9 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     @ProtobufProperty(index = 36, type = ProtobufType.BOOL)
     boolean automaticPresenceUpdates;
 
+    @ProtobufProperty(index = 41, type = ProtobufType.BOOL)
+    boolean automaticMessageReceipts;
+
     /**
      * The release channel to use when connecting to Whatsapp
      * This should allow the use of beta features
@@ -334,7 +337,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
          * All args constructor
          */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, CompletableFuture<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, CompletableFuture<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         if (proxy != null) {
             ProxyAuthenticator.globalAuthenticator().register(proxy);
@@ -379,6 +382,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.historyLength = Objects.requireNonNullElseGet(historyLength, WebHistoryLength::standard);
         this.autodetectListeners = autodetectListeners;
         this.automaticPresenceUpdates = automaticPresenceUpdates;
+        this.automaticMessageReceipts = automaticMessageReceipts;
         this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
         this.device = device;
         this.checkPatchMacs = checkPatchMacs;
@@ -396,6 +400,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
                 .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
                 .autodetectListeners(true)
                 .automaticPresenceUpdates(true)
+                .automaticMessageReceipts(clientType == ClientType.MOBILE)
                 .build();
     }
 
@@ -406,15 +411,11 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      * @return a non-null optional
      */
     public Optional<Contact> findContactByJid(JidProvider jid) {
-        if (jid == null) {
-            return Optional.empty();
-        }
-
-        if (jid instanceof Contact contact) {
-            return Optional.of(contact);
-        }
-
-        return Optional.ofNullable(contacts.get(jid.toJid()));
+       return switch (jid) {
+            case Contact contact -> Optional.of(contact);
+            case null -> Optional.empty();
+            default -> Optional.ofNullable(contacts.get(jid.toJid()));
+        };
     }
 
     /**
@@ -961,6 +962,10 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         return this;
     }
 
+    public boolean hasMediaConnection() {
+        return mediaConnection != null;
+    }
+
     /**
      * Returns all the blocked contacts
      *
@@ -1144,7 +1149,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      *
      * @return the same instance
      */
-    public Store removeListener() {
+    public Store removeListeners() {
         listeners.clear();
         return this;
     }
@@ -1268,6 +1273,15 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         return callId == null ? Optional.empty() : Optional.ofNullable(calls.get(callId));
     }
 
+    /**
+     * Returns all the calls registered
+     *
+     * @return an unmodifiable collection
+     */
+    public Collection<Call> calls() {
+        return Collections.unmodifiableCollection(calls.values());
+    }
+
     public String tag() {
         return tag;
     }
@@ -1353,8 +1367,8 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         return this.checkPatchMacs;
     }
 
-    public Map<String, Call> calls() {
-        return Collections.unmodifiableMap(calls);
+    public boolean automaticMessageReceipts() {
+        return automaticPresenceUpdates;
     }
 
     public Store setOnline(boolean online) {
@@ -1501,6 +1515,11 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
 
     public Store setVerifiedName(String verifiedName) {
         this.verifiedName = verifiedName;
+        return this;
+    }
+
+    public Store setAutomaticMessageReceipts(boolean automaticMessageReceipts) {
+        this.automaticMessageReceipts = automaticMessageReceipts;
         return this;
     }
 

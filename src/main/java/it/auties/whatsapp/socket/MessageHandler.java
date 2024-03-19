@@ -803,8 +803,10 @@ class MessageHandler {
                     .getRequiredString("id");
             if (notify) {
                 socketHandler.sendMessageAck(newsletterJid, messageNode);
-                var receiptType = getReceiptType("newsletter", false);
-                socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
+                if(socketHandler.store().automaticMessageReceipts()) {
+                    var receiptType = getReceiptType("newsletter", false);
+                    socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
+                }
             }
 
             var newsletter = socketHandler.store()
@@ -873,8 +875,10 @@ class MessageHandler {
                     .getBoolean("is_sender");
             if(notify) {
                 socketHandler.sendMessageAck(newsletterJid, messageNode);
-                var receiptType = getReceiptType("newsletter", false);
-                socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
+                if(socketHandler.store().automaticMessageReceipts()) {
+                    var receiptType = getReceiptType("newsletter", false);
+                    socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
+                }
             }
 
             var newsletter = socketHandler.store()
@@ -994,8 +998,13 @@ class MessageHandler {
         var participant = fromMe && senderJid == null ? chatJid : senderJid;
         var category = infoNode.attributes().getString("category");
         var receiptType = getReceiptType(category, fromMe);
-        socketHandler.sendMessageAck(chatJid, infoNode)
-                .thenComposeAsync(ignored -> socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType));
+        socketHandler.sendMessageAck(chatJid, infoNode).thenComposeAsync(ignored -> {
+            if(!socketHandler.store().automaticMessageReceipts()) {
+                return CompletableFuture.completedFuture(null);
+            }
+
+            return socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType);
+        });
     }
 
     private String getReceiptType(String category, boolean fromMe) {
@@ -1173,7 +1182,6 @@ class MessageHandler {
         return protocolMessage.historySyncNotification()
                 .map(this::downloadHistorySyncNotification)
                 .orElseGet(() -> CompletableFuture.completedFuture(null));
-
     }
 
     private CompletableFuture<HistorySync> downloadHistorySyncNotification(HistorySyncNotification notification) {
@@ -1290,7 +1298,7 @@ class MessageHandler {
     }
 
     private void scheduleHistorySyncTimeout() {
-        var executor = CompletableFuture.delayedExecutor(HISTORY_SYNC_TIMEOUT, TimeUnit.SECONDS);
+        var executor = CompletableFuture.delayedExecutor(HISTORY_SYNC_TIMEOUT, TimeUnit.SECONDS, Thread::startVirtualThread);
         if (historySyncTask != null && !historySyncTask.isDone()) {
             historySyncTask.cancel(true);
         }
