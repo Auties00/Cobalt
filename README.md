@@ -3,13 +3,14 @@
 Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
 The repository's history was cleared to comply with this request, but keep in mind that the project has been actively developed for over two years.
 To be clear, this library is not affiliated with Whatsapp LLC in any way.
-This is a personal project that I maintain in my free time
+I am not responsible for how you may use this library and you are expected to follow Whatsapp's TOS.
+This is a personal project that I maintain in my free time.
 
 ### What is Cobalt
 
 Cobalt is a library built to interact with Whatsapp.
 It can be used with:
-1. Whatsapp Web (Companion)
+1. Whatsapp Web (Companion - Web & Pairing Code)
 2. Whatsapp Mobile (Personal and Business)
 
 ### Donations
@@ -31,18 +32,14 @@ Until the library doesn't reach release 1.0, there will be major breaking change
 This is needed to finalize the design of the API.
 After this milestone, breaking changes will be present only in major releases.
 
-### Optimizing memory usage
-
-If the machine you are hosting this library on has memory constraints, please look into how to tune a JVM.
-The easiest thing you can do is use the -Xmx argument to specify the maximum size, in bytes, of the memory allocation pool.
-I have written this disclaimer because many new devs tend to get confused by Java's opportunistic memory allocation.
+### GraalVM (Native image)
+Native image support is now in beta, before release 1.0 it will become stable and documented.
 
 ### Can this library get my device banned?
 
-While there is no risk in using this library with your main account, keep in mind that Whatsapp has anti-spam measures for their web client.
-If you add a participant from a brand-new number to a group, it will most likely get you banned.
-If you compile the library yourself, don't run the CI on a brand-new number, or it will get banned for spamming too many requests(the CI has to test that all the library works).
-In short, if you use this library without a malicious intent, you will never get banned.
+While there is no risk in using this library with your main account, keep in mind that Whatsapp has anti-spam measures.
+For exmaple, if you add a participant from a brand-new number to a group, it will most likely get you banned.
+If you don't use the library in a malicious way and follow Whatsapp's TOS, then you shouldn't have to worry.
 
 ### How to install
 
