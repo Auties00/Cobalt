@@ -4,6 +4,8 @@ import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.Exceptions;
 
 import java.nio.file.Path;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
@@ -65,6 +67,16 @@ public interface ErrorHandler {
     static ErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {
         return (whatsapp, location, throwable) -> {
             var logger = System.getLogger("ErrorHandler");
+            if(location == RECONNECT) {
+                logger.log(WARNING, "Cannot reconnect: retrying on next timeout");
+                return Result.DISCARD;
+            }
+
+            if(throwable instanceof CompletionException && throwable.getCause() instanceof TimeoutException) {
+                logger.log(WARNING, "Detected possible network anomaly: reconnecting");
+                return Result.RECONNECT;
+            }
+
             logger.log(ERROR, "Socket failure at %s".formatted(location));
             if (printer != null) {
                 printer.accept(whatsapp, throwable);
@@ -131,7 +143,11 @@ public interface ErrorHandler {
         /**
          * Called when syncing messages after first QR scan
          */
-        HISTORY_SYNC
+        HISTORY_SYNC,
+        /**
+         * Called when reconnection fails
+         */
+        RECONNECT
     }
 
     /**

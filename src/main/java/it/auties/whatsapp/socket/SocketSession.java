@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.exception.RequestException;
+import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
 
@@ -11,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -75,6 +77,14 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     .thenAcceptAsync(webSocket -> {
                         this.session = webSocket;
                         listener.onOpen(this);
+                    })
+                    .exceptionallyAsync(throwable -> {
+                        if(throwable instanceof CompletionException && throwable.getCause() instanceof ConnectException) {
+                            throw new RuntimeException("Cannot connect to Whatsapp: check your connection and whether it's available in your country");
+                        }
+
+                        Exceptions.rethrow(throwable);
+                        return null;
                     });
         }
 
@@ -270,8 +280,8 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                     outputLock.lock();
                     socket.getOutputStream().write(bytes);
                     socket.getOutputStream().flush();
-                } catch (IOException exception) {
-                    throw new UncheckedIOException(exception);
+                } catch (Throwable throwable) {
+                    throw new RuntimeException(throwable);
                 } finally {
                     outputLock.unlock();
                 }

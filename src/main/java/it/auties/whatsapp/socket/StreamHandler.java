@@ -124,14 +124,12 @@ class StreamHandler {
     }
 
     private void digestChatState(Node node) {
-        CompletableFuture.runAsync(() -> {
-            var chatJid = node.attributes()
-                    .getRequiredJid("from");
-            var participantJid = node.attributes()
-                    .getOptionalJid("participant")
-                    .orElse(chatJid);
-            updateContactPresence(chatJid, getUpdateType(node), participantJid);
-        }).exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
+        var chatJid = node.attributes()
+                .getRequiredJid("from");
+        var participantJid = node.attributes()
+                .getOptionalJid("participant")
+                .orElse(chatJid);
+        updateContactPresence(chatJid, getUpdateType(node), participantJid);
     }
 
     private ContactStatus getUpdateType(Node node) {
@@ -1331,9 +1329,7 @@ class StreamHandler {
         }
 
         this.pingFuture = socketHandler.scheduleAtFixedInterval(() -> {
-            socketHandler.sendQuery("get", "w:p", Node.of("ping"))
-                    .thenRunAsync(() -> socketHandler.onSocketEvent(SocketEvent.PING))
-                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(STREAM, throwable));
+            socketHandler.sendPing();
             socketHandler.store().serialize(true);
             socketHandler.store().serializer().linkMetadata(socketHandler.store());
             socketHandler.keys().serialize(true);

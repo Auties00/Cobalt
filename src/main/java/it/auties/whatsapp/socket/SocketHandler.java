@@ -38,6 +38,7 @@ import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Exceptions;
 
 import java.net.SocketException;
 import java.net.URI;
@@ -208,7 +209,7 @@ public class SocketHandler implements SocketListener {
         try {
             return AesGcm.decrypt(keys.readCounter(true), message, readKey);
         }  catch (Throwable throwable) {
-            return handleFailure(CRYPTOGRAPHY, throwable);
+            return null;
         }
     }
 
@@ -256,7 +257,21 @@ public class SocketHandler implements SocketListener {
         }
 
         this.session = SocketSession.of(store.proxy().orElse(null), store.clientType() == ClientType.WEB);
-        return session.connect(this);
+        return session.connect(this).exceptionallyAsync(throwable -> {
+            if(state == SocketState.CONNECTED || state == SocketState.RECONNECTING || state == SocketState.PAUSED) {
+                setState(SocketState.PAUSED);
+                onSocketEvent(SocketEvent.PAUSED);
+                handleFailure(Location.RECONNECT, throwable);
+                return null;
+            }
+
+            if(loginFuture != null && !loginFuture.isDone()) {
+                loginFuture.completeExceptionally(throwable);
+            }
+
+            Exceptions.rethrow(throwable);
+            return null;
+        });
     }
 
     public CompletableFuture<Void> disconnect(DisconnectReason reason) {
@@ -406,7 +421,6 @@ public class SocketHandler implements SocketListener {
         return sendInteractiveQuery(List.of(query), List.of(body), List.of())
                 .thenApplyAsync(this::parseAbout);
     }
-
 
     public CompletableFuture<List<Node>> sendInteractiveQuery(Collection<Node> queries, Collection<Node> listData, Collection<Node> sideListData) {
         var query = Node.of("query", queries);
@@ -1036,5 +1050,11 @@ public class SocketHandler implements SocketListener {
 
     protected ScheduledFuture<?> scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
         return scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
+    }
+
+    protected void sendPing() {
+        sendQuery("get", "w:p", Node.of("ping"))
+                .thenRunAsync(() -> onSocketEvent(SocketEvent.PING))
+                .exceptionallyAsync(throwable -> handleFailure(STREAM, throwable));
     }
 }

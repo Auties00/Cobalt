@@ -21,13 +21,19 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public record SocketRequest(String id, Object body, CompletableFuture<Node> future,
                             Function<Node, Boolean> filter) {
     private static final int TIMEOUT = 60;
+    private static final int PING_TIMEOUT = 5;
+
 
     private SocketRequest(String id, Function<Node, Boolean> filter, Object body) {
-        this(id, body, futureOrTimeout(), filter);
+        this(id, body, futureOrTimeout(body), filter);
     }
 
-    private static CompletableFuture<Node> futureOrTimeout() {
-        return new CompletableFuture<Node>().orTimeout(TIMEOUT, SECONDS);
+    private static CompletableFuture<Node> futureOrTimeout(Object body) {
+        return new CompletableFuture<Node>().orTimeout(calculateTimeout(body), SECONDS);
+    }
+
+    private static int calculateTimeout(Object body) {
+        return body instanceof Node node && node.hasNode("ping") ? PING_TIMEOUT : TIMEOUT;
     }
 
     public static SocketRequest of(Node body, Function<Node, Boolean> filter) {

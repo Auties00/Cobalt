@@ -8,7 +8,8 @@ public enum SocketState {
     DISCONNECTED,
     RECONNECTING,
     LOGGED_OUT,
-    RESTORE;
+    RESTORE,
+    PAUSED;
 
     static SocketState of(DisconnectReason reason) {
         return switch (reason) {
@@ -22,7 +23,7 @@ public enum SocketState {
     DisconnectReason toReason() {
         return switch (this) {
             case WAITING, CONNECTED, RECONNECTING -> DisconnectReason.RECONNECTING;
-            case DISCONNECTED -> DisconnectReason.DISCONNECTED;
+            case DISCONNECTED, PAUSED -> DisconnectReason.DISCONNECTED;
             case LOGGED_OUT -> DisconnectReason.LOGGED_OUT;
             case RESTORE -> DisconnectReason.RESTORE;
         };

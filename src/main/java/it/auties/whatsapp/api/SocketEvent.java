@@ -22,5 +22,10 @@ public enum SocketEvent {
     /**
      * Called when a ping is sent
      */
-    PING
+    PING,
+
+    /**
+     * Called when the socket is paused because of a network issue
+     */
+    PAUSED
 }
