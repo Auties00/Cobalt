@@ -136,7 +136,7 @@ public final class WhatsappRegistration {
                 "Content-Type", "application/x-www-form-urlencoded"
         );
         System.out.println("Using user agent " + userAgent);
-        System.out.println("Sending request to /reg_onboard_abprop with parameters " + attributes);
+        System.out.println("Sending GET request to /reg_onboard_abprop with parameters " + attributes);
         return httpClient.get(uri, ProxyAuthenticator.getProxy(store.proxy().orElse(null)), headers).thenApplyAsync(response -> {
             System.out.println("Received respose /reg_onboard_abprop " + response);
             return Json.readValue(response, AbPropsResponse.class);
@@ -162,8 +162,8 @@ public final class WhatsappRegistration {
             var registrationParametersFuture = android ? getRequestVerificationCodeParameters(pushToken) : CompletableFuture.<Entry<String, Object>[]>completedFuture(null);
             return registrationParametersFuture.thenComposeAsync(registrationParameters -> {
                 var entries = Attributes.ofNullable(registrationParameters)
-                        .put("offline_ab", Specification.Whatsapp.MOBILE_IOS_OFFLINE_AB, ios)
-                        .put("offline_ab", Specification.Whatsapp.MOBILE_ANDROID_OFFLINE_AB, android)
+                        .put("offline_ab", Whatsapp.MOBILE_IOS_OFFLINE_AB, ios)
+                        .put("offline_ab", Whatsapp.MOBILE_ANDROID_OFFLINE_AB, android)
                         .put("push_token", pushToken == null || android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
                         .put("recovery_token_error", "-25300", ios)
                         .toEntries();
@@ -452,36 +452,53 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
-        System.out.println("Sending request to " + path + " with parameters " + Json.writeValueAsString(params, true));
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var encodedParams = HttpClient.toFormParams(params).getBytes();
         var userAgent = store.device().toUserAgent(store.version());
         System.out.println("Using user agent " + userAgent);
-        if (store.device().platform().isKaiOs()) {
-            var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
-            return httpClient.get(uri, proxy, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
-                System.out.println("Received response " + path + " " + result);
-                return result;
-            });
-        }
-
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams, key);
         var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), buffer));
-        var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
-        var isAndroid = store.device().platform().isAndroid();
-        var headers = Attributes.of()
-                .put("User-Agent", userAgent)
-                .put("Accept", "text/json", isAndroid)
-                .put("WaMsysRequest", "1", isAndroid)
-                .put("request_token", UUID.randomUUID().toString(), isAndroid)
-                .put("Content-Type", "application/x-www-form-urlencoded", isAndroid)
-                .toMap();
-        return httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
-            System.out.println("Received response " + path + " " + result);
-            return result;
-        });
+        return switch (store.device().platform()) {
+            case IOS, IOS_BUSINESS -> {
+                System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                var uri = URI.create("%s%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path));
+                var headers = Attributes.of()
+                        .put("User-Agent", userAgent)
+                        .put("Content-Type", "application/x-www-form-urlencoded")
+                        .toMap();
+                yield httpClient.post(uri, proxy, headers, "ENC=%s".formatted(cipheredParameters).getBytes()).thenApplyAsync(result -> {
+                    var body = new String(result);
+                    System.out.println("Received response " + path + " " + body);
+                    return body;
+                });
+            }
+            case ANDROID, ANDROID_BUSINESS -> {
+                System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
+                var headers = Attributes.of()
+                        .put("User-Agent", userAgent)
+                        .put("Accept", "text/json")
+                        .put("WaMsysRequest", "1")
+                        .put("request_token", UUID.randomUUID().toString())
+                        .put("Content-Type", "application/x-www-form-urlencoded")
+                        .toMap();
+                yield httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
+                    System.out.println("Received response " + path + " " + result);
+                    return result;
+                });
+            }
+            case KAIOS -> {
+                System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
+                yield httpClient.get(uri, proxy, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
+                    System.out.println("Received response " + path + " " + result);
+                    return result;
+                });
+            }
+            default -> throw new IllegalStateException("Unsupported mobile os");
+        };
     }
 
     @SafeVarargs

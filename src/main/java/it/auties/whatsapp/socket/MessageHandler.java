@@ -713,7 +713,6 @@ class MessageHandler {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    // TODO: Make this async and move the lock as far as possible into the cipher chain for better performance
     public void decode(Node node, JidProvider chatOverride, boolean notify) {
         try {
             var businessName = getBusinessName(node);

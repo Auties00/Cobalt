@@ -222,7 +222,9 @@ public enum CountryCode {
     NORTH_KOREA("850", 467, "ko", "KP"),
     REUNION("262", 647, "fr", "RE"),
     SOUTH_KOREA("82", 450, "ko", "KR"),
-    VIETNAM("84", 452, "vi", "VN");
+    VIETNAM("84", 452, "vi", "VN"),
+    KYRGYZSTAN("996", 437, "ky", "KG"),
+    SOMALI_DEMOCRATIC_REPUBLIC("252", 637, "so", "SO");
 
     private final String prefix;
     private final int mcc;

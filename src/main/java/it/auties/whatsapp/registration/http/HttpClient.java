@@ -102,7 +102,7 @@ public class HttpClient {
                 return factoryWithParams;
             }
 
-            var sslContext = SSLContext.getInstance("TLSv1." + (ThreadLocalRandom.current().nextBoolean() ? 2 : 3));
+            var sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(null, null, new SecureRandom());
             var sslParameters = sslContext.getDefaultSSLParameters();
             var supportedCiphers = Arrays.stream(sslParameters.getCipherSuites())
