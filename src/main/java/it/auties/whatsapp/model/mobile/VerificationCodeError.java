@@ -33,6 +33,7 @@ public enum VerificationCodeError {
     INCORRECT("incorrect"),
     DEVICE_CONFIRM_OR_SECOND_CODE("device_confirm_or_second_code"),
     SECURITY_CODE("security_code"),
+    STALE("stale"),
     SUCCESS("");
 
     private final String data;

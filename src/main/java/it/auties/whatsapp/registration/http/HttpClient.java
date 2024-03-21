@@ -9,13 +9,34 @@ import java.io.IOException;
 import java.net.*;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class HttpClient {
+    private static final String[] IOS_CIPHER_SUITE = {
+            "TLS_AES_128_GCM_SHA256",
+            "TLS_AES_256_GCM_SHA384",
+            "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+            "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+    };
+
     static {
         ProxyAuthenticator.allowAll();
         Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
@@ -102,17 +123,11 @@ public class HttpClient {
                 return factoryWithParams;
             }
 
-            var sslContext = SSLContext.getInstance("TLSv1.2");
+            var sslContext = SSLContext.getInstance("TLSv1.3");
             sslContext.init(null, null, new SecureRandom());
             var sslParameters = sslContext.getDefaultSSLParameters();
-            var supportedCiphers = Arrays.stream(sslParameters.getCipherSuites())
-                    .filter(entry -> ThreadLocalRandom.current().nextBoolean())
-                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> {
-                        Collections.shuffle(result);
-                        return result;
-                    }))
-                    .toArray(String[]::new);
-            sslParameters.setCipherSuites(supportedCiphers);
+            sslParameters.setCipherSuites(IOS_CIPHER_SUITE);
+            sslParameters.setUseCipherSuitesOrder(true);
             return factoryWithParams = new ProxySSLFactory(sslContext.getSocketFactory(), sslParameters);
         } catch (Throwable exception) {
             throw new RuntimeException(exception);

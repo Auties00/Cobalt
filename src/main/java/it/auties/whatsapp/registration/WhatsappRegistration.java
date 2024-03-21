@@ -55,8 +55,7 @@ public final class WhatsappRegistration {
         this.httpClient = new HttpClient();
         this.apnsClient = store.device().platform().isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
         this.gcmClient = store.device().platform().isAndroid() && method != VerificationCodeMethod.NONE ? new GcmClient() : null;
-        var index = ThreadLocalRandom.current().nextInt(CountryCode.values().length);
-        this.countryCode = CountryCode.values()[index];
+        this.countryCode = store.phoneNumber().orElseThrow().countryCode();
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
@@ -311,9 +310,9 @@ public final class WhatsappRegistration {
                 .put("method", method.data())
                 .put("sim_mcc", "000")
                 .put("sim_mnc", "000")
-                .put("reason", "")
+                .put("reason", "jailbroken")
                 .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
-                .put("cellular_strength", ThreadLocalRandom.current().nextInt(2, 5))
+                .put("cellular_strength", ThreadLocalRandom.current().nextInt(1, 5))
                 .toEntries();
     }
 
@@ -387,7 +386,7 @@ public final class WhatsappRegistration {
                         return sendVerificationCode(retryTimes);
                     }
 
-                    if(response.errorReason() == VerificationCodeError.SECURITY_CODE) {
+                    if(response.errorReason() == VerificationCodeError.SECURITY_CODE || response.errorReason() == VerificationCodeError.DEVICE_CONFIRM_OR_SECOND_CODE) {
                         return reset2fa(response);
                     }
 
