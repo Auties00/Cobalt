@@ -23,7 +23,7 @@ class AuthHandler {
         this.socketHandler = socketHandler;
     }
 
-    protected CompletableFuture<Boolean> login(SocketSession session, byte[] message) {
+    protected CompletableFuture<Boolean> login(byte[] message) {
         try {
             var serverHello = readHandshake(message);
             if (serverHello.isEmpty()) {
@@ -48,7 +48,7 @@ class AuthHandler {
             var handshakeMessage = new HandshakeMessageBuilder()
                     .clientFinish(clientFinish)
                     .build();
-            return sendHandshake(session, handshake, handshakeMessage);
+            return sendHandshake(handshake, handshakeMessage);
         } catch (Throwable throwable) {
             return CompletableFuture.failedFuture(throwable);
         }
@@ -70,9 +70,8 @@ class AuthHandler {
         }
     }
 
-    private CompletableFuture<Boolean> sendHandshake(SocketSession session, SocketHandshake handshake, HandshakeMessage handshakeMessage) {
-        return SocketRequest.of(HandshakeMessageSpec.encode(handshakeMessage))
-                .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
+    private CompletableFuture<Boolean> sendHandshake(SocketHandshake handshake, HandshakeMessage handshakeMessage) {
+        return socketHandler.sendBinaryWithNoResponse(HandshakeMessageSpec.encode(handshakeMessage), false)
                 .thenApplyAsync(result -> onHandshakeSent(handshake));
     }
 

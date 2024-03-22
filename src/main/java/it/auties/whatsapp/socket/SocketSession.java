@@ -1,6 +1,5 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.exception.RequestException;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification;
@@ -14,7 +13,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
 
@@ -25,12 +23,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     final URI proxy;
-    final ReentrantLock outputLock;
     SocketListener listener;
 
     private SocketSession(URI proxy) {
         this.proxy = proxy;
-        this.outputLock = new ReentrantLock(true);
     }
 
     CompletableFuture<Void> connect(SocketListener listener) {
@@ -103,13 +99,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return CompletableFuture.completedFuture(null);
             }
 
-            outputLock.lock();
-            return session.sendBinary(ByteBuffer.wrap(bytes), true).whenComplete((result, error) -> {
-                outputLock.unlock();
-                if(error != null) {
-                    throw new RequestException(error);
-                }
-            });
+            return session.sendBinary(ByteBuffer.wrap(bytes), true);
         }
 
         @Override
@@ -277,13 +267,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
             return CompletableFuture.runAsync(() -> {
                 try {
-                    outputLock.lock();
                     socket.getOutputStream().write(bytes);
                     socket.getOutputStream().flush();
                 } catch (Throwable throwable) {
                     throw new RuntimeException(throwable);
-                } finally {
-                    outputLock.unlock();
                 }
             });
         }

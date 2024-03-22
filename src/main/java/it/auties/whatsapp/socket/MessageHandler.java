@@ -52,8 +52,6 @@ import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Validate;
 
 import java.io.ByteArrayOutputStream;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -74,7 +72,6 @@ class MessageHandler {
     private final Map<Jid, List<GroupPastParticipant>> pastParticipantsQueue;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
     private final Set<Jid> historyCache;
-    private final Logger logger;
     private final EnumSet<Type> historySyncTypes;
     private final ReentrantLock lock;
     private CompletableFuture<?> historySyncTask;
@@ -84,7 +81,6 @@ class MessageHandler {
         this.pastParticipantsQueue = new ConcurrentHashMap<>();
         this.devicesCache = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
-        this.logger = System.getLogger("MessageHandler");
         this.historySyncTypes = EnumSet.noneOf(Type.class);
         this.lock = new ReentrantLock(true);
     }
@@ -342,7 +338,7 @@ class MessageHandler {
                     .put("type", type)
                     .put("media_id", getPlainMessageHandle(request), Objects::nonNull)
                     .toMap();
-            return socketHandler.send(Node.of("message", attributes, messageNode))
+            return socketHandler.sendNode(Node.of("message", attributes, messageNode))
                     .thenRunAsync(() -> {
                         var newsletter = request.info().newsletter();
                         newsletter.addMessage(request.info());
@@ -402,7 +398,7 @@ class MessageHandler {
             return queryDevices(request.recipients(), false)
                     .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, request.force()))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
-                    .thenComposeAsync(socketHandler::send);
+                    .thenComposeAsync(socketHandler::sendNode);
         }
 
         if(request.info().chatJid().type() == JidType.STATUS) {
@@ -414,7 +410,7 @@ class MessageHandler {
             return queryDevices(recipients, false)
                     .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, true))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
-                    .thenComposeAsync(socketHandler::send);
+                    .thenComposeAsync(socketHandler::sendNode);
         }
 
         if (request.force()) {
@@ -422,14 +418,14 @@ class MessageHandler {
                     .thenComposeAsync(this::getGroupDevices)
                     .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, true))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
-                    .thenComposeAsync(socketHandler::send);
+                    .thenComposeAsync(socketHandler::sendNode);
         }
 
         return socketHandler.queryGroupMetadata(request.info().chatJid())
                 .thenComposeAsync(this::getGroupDevices)
                 .thenComposeAsync(allDevices -> createGroupNodes(request, signalMessage, allDevices, false))
                 .thenApplyAsync(preKeys -> createEncodedMessageNode(request, preKeys, messageNode))
-                .thenComposeAsync(socketHandler::send);
+                .thenComposeAsync(socketHandler::sendNode);
     }
 
     private CompletableFuture<Node> encodeConversation(MessageSendRequest.Chat request) {
@@ -445,7 +441,7 @@ class MessageHandler {
             var chatJid = request.info().chatJid();
             var peerNode = createMessageNode(request, chatJid, encodedMessage, true);
             var encodedMessageNode = createEncodedMessageNode(request, List.of(peerNode), null);
-            return socketHandler.send(encodedMessageNode);
+            return socketHandler.sendNode(encodedMessageNode);
         }
 
         var deviceMessage = new DeviceSentMessage(request.info().chatJid(), request.info().message(), Optional.empty());
@@ -454,7 +450,7 @@ class MessageHandler {
         return queryDevices(recipients, !isMe(request.info().chatJid()))
                 .thenComposeAsync(allDevices -> createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request, sessions, null))
-                .thenComposeAsync(socketHandler::send);
+                .thenComposeAsync(socketHandler::sendNode);
     }
 
     private Set<Jid> getRecipients(MessageSendRequest.Chat request) {
@@ -958,7 +954,7 @@ class MessageHandler {
             }
 
             if (messageNode == null) {
-                logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s)".formatted(id, from));
+                socketHandler.handleFailure(MESSAGE, new RuntimeException("Cannot decode message(id: %s, from: %s)".formatted(id, from)));
                 sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }
@@ -967,7 +963,7 @@ class MessageHandler {
             var encodedMessage = messageNode.contentAsBytes().orElse(null);
             var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
             if (decodedMessage.hasError()) {
-                logger.log(Level.WARNING, "Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage.error().getMessage()));
+                socketHandler.handleFailure(MESSAGE, new RuntimeException("Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage.error().getMessage())));
                 sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }

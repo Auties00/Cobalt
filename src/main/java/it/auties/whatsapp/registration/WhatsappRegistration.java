@@ -28,6 +28,7 @@ import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
@@ -310,7 +311,7 @@ public final class WhatsappRegistration {
                 .put("method", method.data())
                 .put("sim_mcc", "000")
                 .put("sim_mnc", "000")
-                .put("reason", "jailbroken")
+                .put("reason", "")
                 .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(1, 5))
                 .toEntries();

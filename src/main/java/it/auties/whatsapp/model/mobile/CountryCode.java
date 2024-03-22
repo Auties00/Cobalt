@@ -130,7 +130,7 @@ public enum CountryCode {
     MONGOLIA("976", 428, "mn", "MN"),
     MONTENEGRO("382", 297, "sr", "ME"),
     MONTSERRAT("1-664", 354, "en", "MS"),
-    MOROCCO("212", 604, "ar", "MA"),
+    MOROCCO("212", 604, "zgh", "MA"),
     MOZAMBIQUE("258", 643, "pt", "MZ"),
     MYANMAR("95", 414, "my", "MM"),
     NAMIBIA("264", 649, "en", "NA"),

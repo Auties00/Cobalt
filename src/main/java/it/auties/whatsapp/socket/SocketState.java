@@ -9,6 +9,7 @@ public enum SocketState {
     RECONNECTING,
     LOGGED_OUT,
     RESTORE,
+    BANNED,
     PAUSED;
 
     static SocketState of(DisconnectReason reason) {
@@ -16,6 +17,7 @@ public enum SocketState {
             case DISCONNECTED -> DISCONNECTED;
             case RECONNECTING -> RECONNECTING;
             case LOGGED_OUT -> LOGGED_OUT;
+            case BANNED -> BANNED;
             case RESTORE -> RESTORE;
         };
     }
@@ -26,6 +28,7 @@ public enum SocketState {
             case DISCONNECTED, PAUSED -> DisconnectReason.DISCONNECTED;
             case LOGGED_OUT -> DisconnectReason.LOGGED_OUT;
             case RESTORE -> DisconnectReason.RESTORE;
+            case BANNED -> DisconnectReason.BANNED;
         };
     }
 }

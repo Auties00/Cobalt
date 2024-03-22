@@ -433,7 +433,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * @param increment whether the counter should be incremented after the call
      * @return an unsigned long
      */
-    public long writeCounter(boolean increment) {
+    public synchronized long nextWriteCounter(boolean increment) {
         return increment ? writeCounter.getAndIncrement() : writeCounter.get();
     }
 
@@ -443,7 +443,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * @param increment whether the counter should be incremented after the call
      * @return an unsigned long
      */
-    public long readCounter(boolean increment) {
+    public synchronized long nextReadCounter(boolean increment) {
         return increment ? readCounter.getAndIncrement() : readCounter.get();
     }
 

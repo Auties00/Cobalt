@@ -415,6 +415,10 @@ class ProtobufControllerSerializer implements ControllerSerializer {
     }
 
     private void delete(Path path) throws IOException {
+        if(Files.notExists(path)) {
+            return;
+        }
+
         Files.walkFileTree(path, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {

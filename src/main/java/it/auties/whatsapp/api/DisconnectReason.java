@@ -23,5 +23,10 @@ public enum DisconnectReason {
     /**
      * Session restore
      */
-    RESTORE
+    RESTORE,
+
+    /**
+     * Ban
+     */
+    BANNED
 }
