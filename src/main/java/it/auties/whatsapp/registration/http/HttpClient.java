@@ -36,10 +36,32 @@ public class HttpClient {
             "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
             "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
     };
+    private static final String[] ANDROID_CIPHER_SUITE = {
+            "TLS_AES_128_GCM_SHA256",
+            "TLS_AES_256_GCM_SHA384",
+            "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_RSA_WITH_AES_256_CBC_SHA"
+    };
 
     static {
         ProxyAuthenticator.allowAll();
         Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
+    }
+
+    private final String[] cipherSuite;
+    public HttpClient(boolean ios) {
+        this.cipherSuite = ios ? IOS_CIPHER_SUITE : ANDROID_CIPHER_SUITE;
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -126,7 +148,7 @@ public class HttpClient {
             var sslContext = SSLContext.getInstance("TLSv1.3");
             sslContext.init(null, null, new SecureRandom());
             var sslParameters = sslContext.getDefaultSSLParameters();
-            sslParameters.setCipherSuites(IOS_CIPHER_SUITE);
+            sslParameters.setCipherSuites(cipherSuite);
             sslParameters.setUseCipherSuitesOrder(true);
             return factoryWithParams = new ProxySSLFactory(sslContext.getSocketFactory(), sslParameters);
         } catch (Throwable exception) {

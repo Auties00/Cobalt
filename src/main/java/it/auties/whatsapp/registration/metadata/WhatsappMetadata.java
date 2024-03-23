@@ -178,7 +178,7 @@ public final class WhatsappMetadata {
 
             var now = Instant.now();
             var fileTime = Files.getLastModifiedTime(localCache);
-            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) > 7) {
+            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) >= 1) {
                 return Optional.empty();
             }
 
@@ -283,7 +283,7 @@ public final class WhatsappMetadata {
 
             var now = Instant.now();
             var fileTime = Files.getLastModifiedTime(localCache);
-            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) > 7) {
+            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) >= 1) {
                 return Optional.empty();
             }
 

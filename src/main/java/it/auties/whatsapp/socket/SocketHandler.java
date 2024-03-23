@@ -296,6 +296,10 @@ public class SocketHandler implements SocketListener {
             dataOutputStream.write(ciphered);
             session.sendBinary(byteArrayOutputStream.toByteArray()).whenComplete((result, error) -> {
                 writeSemaphore.release();
+                if(request.body() instanceof Node body) {
+                    onNodeSent(body);
+                }
+
                 if(error != null) {
                     if(response) {
                         request.future().complete(Node.of("error", Map.of("closed", true))); // Prevent NPEs all over the place
@@ -1061,10 +1065,9 @@ public class SocketHandler implements SocketListener {
         return null;
     }
 
-    public CompletableFuture<Void> querySessions(Jid jid) {
-        return messageHandler.querySessions(List.of(jid), true)
-                .thenComposeAsync(values -> messageHandler.queryDevices(List.of(jid), false))
-                .thenRun(() -> {});
+    public CompletableFuture<List<Jid>> querySessions(List<Jid> jid) {
+        return messageHandler.querySessions(jid, true)
+                .thenComposeAsync(values -> messageHandler.queryDevices(jid, false));
     }
 
     public void parseSessions(Node result) {

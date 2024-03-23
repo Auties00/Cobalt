@@ -14,6 +14,7 @@ import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.response.AbPropsResponse;
+import it.auties.whatsapp.model.response.CheckNumberResponse;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -28,7 +29,6 @@ import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
@@ -53,8 +53,9 @@ public final class WhatsappRegistration {
         this.keys = keys;
         this.codeHandler = codeHandler;
         this.method = method;
-        this.httpClient = new HttpClient();
-        this.apnsClient = store.device().platform().isIOS() && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
+        var ios = store.device().platform().isIOS();
+        this.httpClient = new HttpClient(ios);
+        this.apnsClient = ios && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
         this.gcmClient = store.device().platform().isAndroid() && method != VerificationCodeMethod.NONE ? new GcmClient() : null;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
     }
@@ -80,7 +81,10 @@ public final class WhatsappRegistration {
         }
 
         var originalDevice = store.device();
-        store.setDevice(originalDevice.toPersonal());
+        if(store.phoneNumber().isPresent() && store.phoneNumber().get().countryCode() == CountryCode.UNITED_STATES) {
+            store.setDevice(originalDevice.toPersonal());
+        }
+
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
@@ -106,11 +110,15 @@ public final class WhatsappRegistration {
         });
     }
 
-    public CompletableFuture<Boolean> exists() {
+    public CompletableFuture<CheckNumberResponse> exists() {
         var originalDevice = store.device();
         store.setDevice(originalDevice.toBusiness());
         return exists(null, false, true, null)
-                .thenApplyAsync(registrationResponse -> registrationResponse.whatsappOldEligible() || registrationResponse.possibleMigration())
+                .thenApplyAsync(registrationResponse -> {
+                    var hasWhatsapp = registrationResponse.whatsappOldEligible() || registrationResponse.possibleMigration();
+                    var hasBan = registrationResponse.errorReason() == VerificationCodeError.BLOCKED;
+                    return new CheckNumberResponse(hasWhatsapp, hasBan, registrationResponse);
+                })
                 .whenCompleteAsync((result, exception) -> {
                     store.setDevice(originalDevice);
                     dispose();
@@ -159,12 +167,13 @@ public final class WhatsappRegistration {
         return getPushToken().thenComposeAsync(pushToken -> {
             var ios = store.device().platform().isIOS();
             var android = store.device().platform().isAndroid();
+            var business = store.device().platform().isBusiness();
             var registrationParametersFuture = android ? getRequestVerificationCodeParameters(pushToken) : CompletableFuture.<Entry<String, Object>[]>completedFuture(null);
             return registrationParametersFuture.thenComposeAsync(registrationParameters -> {
                 var entries = Attributes.ofNullable(registrationParameters)
-                        .put("offline_ab", Whatsapp.MOBILE_IOS_OFFLINE_AB, ios)
+                        .put("offline_ab", business ? Whatsapp.MOBILE_BUSINESS_IOS_OFFLINE_AB : Whatsapp.MOBILE_IOS_OFFLINE_AB, ios)
                         .put("offline_ab", Whatsapp.MOBILE_ANDROID_OFFLINE_AB, android)
-                        .put("push_token", pushToken == null || android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
+                        .put("push_token", pushToken == null ? "" : android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
                         .put("recovery_token_error", "-25300", ios)
                         .toEntries();
                 var options = getRegistrationOptions(
@@ -345,7 +354,7 @@ public final class WhatsappRegistration {
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
                 .put("gpia_token", gpiaToken)
                 .put("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
-                .put("push_code", pushCode)
+                .put("push_code", pushCode, pushCode != null)
                 .toEntries();
     }
 
@@ -538,6 +547,10 @@ public final class WhatsappRegistration {
     private void dispose() {
         if (apnsClient != null) {
             apnsClient.close();
+        }
+
+        if(gcmClient != null) {
+            gcmClient.close();
         }
     }
 }

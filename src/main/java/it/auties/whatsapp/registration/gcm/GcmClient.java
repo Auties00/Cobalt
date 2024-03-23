@@ -16,6 +16,7 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +51,7 @@ public class GcmClient {
     private long securityToken;
     private String token;
     public GcmClient() {
-        this.httpClient = new HttpClient();
+        this.httpClient = new HttpClient(false);
         this.senderId = DEFAULT_GCM_SENDER_ID;
         this.keyPair = ECDH256KeyPair.random();
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
@@ -162,7 +163,6 @@ public class GcmClient {
                 while (socket.isConnected()) {
                     var tag = dataInputStream.readByte();
                     var length = readLength(dataInputStream);
-                    System.out.println("Read length " + length);
                     if (length <= 0) {
                         continue;
                     }
@@ -184,6 +184,10 @@ public class GcmClient {
 
                 if(!dataFuture.isDone()) {
                     dataFuture.completeExceptionally(throwable);
+                    return;
+                }
+
+                if(throwable instanceof SocketException) {
                     return;
                 }
 
@@ -227,27 +231,27 @@ public class GcmClient {
     }
 
     private void onStanza(DataMessageStanza dataMessageStanza) {
-       try {
-           var dataMap = dataMessageStanza.appData()
-                   .stream()
-                   .filter(entry -> entry.value() != null)
-                   .collect(Collectors.toUnmodifiableMap(AppData::key, AppData::value));
-           var salt = Base64.getUrlDecoder().decode(dataMap.get("encryption").substring(5));
-           var dh = Base64.getUrlDecoder().decode(dataMap.get("crypto-key").substring(3));
-           var deciphered = HttpEce.decrypt(
-                   dataMessageStanza.rawData(),
-                   dh,
-                   keyPair.publicKey(),
-                   keyPair.jcaPrivateKey(),
-                   salt,
-                   authSecret
-           );
-           var cleanText = Arrays.copyOfRange(deciphered, 2, deciphered.length);
-           var whatsappResponse = Json.readValue(cleanText, GcmWhatsappResponse.class);
-           dataFuture.complete(whatsappResponse.data().pushCode());
-       }catch (Throwable throwable) {
-           dataFuture.completeExceptionally(throwable);
-       }
+        try {
+            var dataMap = dataMessageStanza.appData()
+                    .stream()
+                    .filter(entry -> entry.value() != null)
+                    .collect(Collectors.toUnmodifiableMap(AppData::key, AppData::value));
+            var salt = Base64.getUrlDecoder().decode(dataMap.get("encryption").substring(5));
+            var dh = Base64.getUrlDecoder().decode(dataMap.get("crypto-key").substring(3));
+            var deciphered = HttpEce.decrypt(
+                    dataMessageStanza.rawData(),
+                    dh,
+                    keyPair.publicKey(),
+                    keyPair.jcaPrivateKey(),
+                    salt,
+                    authSecret
+            );
+            var cleanText = Arrays.copyOfRange(deciphered, 2, deciphered.length);
+            var whatsappResponse = Json.readValue(cleanText, GcmWhatsappResponse.class);
+            dataFuture.complete(whatsappResponse.data().pushCode());
+        }catch (Throwable throwable) {
+            dataFuture.completeExceptionally(throwable);
+        }
     }
 
     private void sendLoginPacket() {
@@ -287,5 +291,23 @@ public class GcmClient {
 
     public CompletableFuture<String> getPushCode() {
         return dataFuture;
+    }
+
+    public void close() {
+        try {
+            if(!loginFuture.isDone()) {
+                loginFuture.completeExceptionally(new RuntimeException("Closed"));
+            }
+
+            if(!dataFuture.isDone()) {
+                dataFuture.completeExceptionally(new RuntimeException("Closed"));
+            }
+
+            if(socket != null) {
+                socket.close();
+            }
+        }catch (IOException exception) {
+            // Ignored
+        }
     }
 }
