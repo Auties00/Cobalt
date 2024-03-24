@@ -16,7 +16,6 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.SocketException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -187,7 +186,7 @@ public class GcmClient {
                     return;
                 }
 
-                if(throwable instanceof SocketException) {
+                if(socket.isClosed()) {
                     return;
                 }
 

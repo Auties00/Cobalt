@@ -1546,11 +1546,11 @@ class StreamHandler {
             mediaConnectionFuture.cancel(true);
         }
 
-        if(pingFuture != null && !pingFuture.isDone()) {
+        if(pingFuture != null) {
             pingFuture.cancel(true);
         }
 
-        if(mediaConnectionFuture != null && !mediaConnectionFuture.isDone()) {
+        if(mediaConnectionFuture != null) {
             mediaConnectionFuture.cancel(true);
         }
 

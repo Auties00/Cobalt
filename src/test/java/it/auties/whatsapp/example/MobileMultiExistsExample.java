@@ -1,7 +1,6 @@
 package it.auties.whatsapp.example;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.companion.CompanionDevice;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,11 +22,8 @@ public class MobileMultiExistsExample {
             System.out.println("Starting check");
             var success = new AtomicInteger();
             for(var entry : Arrays.copyOf(data.split("\n"), TOTAL)) {
-                var future =  Whatsapp.mobileBuilder()
-                        .newConnection()
-                        .device(CompanionDevice.ios(true))
-                        // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy and use a random id to change the ip at every request
-                        .exists(Long.parseLong(entry))
+                // URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
+                var future =  Whatsapp.checkNumber(Long.parseLong(entry))
                         .thenRun(() -> System.out.println("Progress: " + (success.incrementAndGet() * 100 / TOTAL) + "% in " + (System.currentTimeMillis() - start) + "ms"))
                         .exceptionally(error -> null);
                 futures.add(future);
