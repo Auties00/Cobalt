@@ -2,6 +2,7 @@ package it.auties.whatsapp.registration.metadata;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.crypto.PBKDF2;
 import it.auties.whatsapp.crypto.Sha256;
@@ -27,7 +28,6 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,7 +84,7 @@ public final class WhatsappMetadata {
             return personalIosVersion;
         }
 
-        var future = Medias.downloadAsync(URI.create(business ? Whatsapp.MOBILE_BUSINESS_IOS_URL : Whatsapp.MOBILE_IOS_URL), Whatsapp.MOBILE_IOS_USER_AGENT)
+        var future = Medias.downloadAsync(URI.create(business ? Whatsapp.MOBILE_BUSINESS_IOS_URL : Whatsapp.MOBILE_IOS_URL))
                 .thenApplyAsync(response -> parseIosVersion(business, response));
         if(business) {
             businessIosVersion = future;
@@ -210,17 +210,25 @@ public final class WhatsappMetadata {
     private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(boolean business) {
         return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_ANDROID_URL : Whatsapp.MOBILE_ANDROID_URL, (String) null).thenApplyAsync(apk -> {
             try (var apkFile = new ByteArrayApkFile(apk)) {
+                var packageName = apkFile.getApkMeta().getPackageName();
                 var version = Version.of(apkFile.getApkMeta().getVersionName());
-                var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
+                var classes = apkFile.getFileData("classes.dex");
+                var md5Hash = MD5.calculate(classes);
+                var sha256Hash = Sha256.calculate(classes);
+                var compactSha256Hash = Sha256.calculate(Arrays.copyOf(classes, 10));
                 var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
                 var certificates = getCertificates(apkFile);
-                if (business) {
-                    var result = new WhatsappAndroidApp(version, md5Hash, secretKey, certificates, true);
-                    cacheWhatsappData(result);
-                    return result;
-                }
-
-                var result = new WhatsappAndroidApp(version, md5Hash, secretKey, certificates, false);
+                var result = new WhatsappAndroidApp(
+                        packageName,
+                        version,
+                        md5Hash,
+                        sha256Hash,
+                        compactSha256Hash,
+                        secretKey,
+                        certificates,
+                        classes.length,
+                        business
+                );
                 cacheWhatsappData(result);
                 return result;
             } catch (IOException | GeneralSecurityException exception) {
@@ -360,7 +368,6 @@ public final class WhatsappMetadata {
         });
     }
 
-
     public static String generateBusinessCertificate(Keys keys) {
         var details = new BusinessVerifiedNameDetailsBuilder()
                 .name("")
@@ -375,25 +382,38 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<String> generateGpiaToken(UUID advertisingId, byte[] deviceIdentifier, boolean business) {
-        return getAndroidData(business).thenApplyAsync(androidData -> {
-            var uuidBytes = uuidToBytes(advertisingId);
-            var combinedBytes = Bytes.concat(deviceIdentifier, androidData.certificates().getFirst(), androidData.secretKey(), uuidBytes);
-            var randomBytes = Bytes.random(Math.max(0, Specification.Whatsapp.GPIA_TOKEN_LENGTH - combinedBytes.length));
-            combinedBytes = Bytes.concat(combinedBytes, randomBytes);
-            var hashedBytes = Sha256.calculate(combinedBytes);
-            var truncatedBytes = new byte[Specification.Whatsapp.GPIA_TOKEN_LENGTH];
-            System.arraycopy(hashedBytes, 0, truncatedBytes, 0, Math.min(hashedBytes.length, Specification.Whatsapp.GPIA_TOKEN_LENGTH));
-            var thirdHeaderRandom = Bytes.random(Specification.Whatsapp.GPIA_TOKEN_LENGTH - hashedBytes.length);
-            System.arraycopy(thirdHeaderRandom, 0, truncatedBytes, hashedBytes.length, thirdHeaderRandom.length);
-            return Base64.getEncoder().encodeToString(truncatedBytes);
+    public static CompletableFuture<AndroidBackedData> getAndroidBackedData(byte[] authKey, String enc, boolean business) {
+        return getAndroidData(business).thenComposeAsync(androidData -> {
+            try(var client = HttpClient.newHttpClient()) {
+                var authKeyBase64 = Base64.getUrlEncoder().encodeToString(authKey);
+                var encBase64 = Base64.getUrlEncoder().encodeToString(enc.getBytes());
+                var request = HttpRequest.newBuilder()
+                        .uri(URI.create("http://192.168.1.22:8080/authKey=%s&enc=%s".formatted(authKeyBase64, encBase64)))
+                        .GET()
+                        .build();
+                return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
+                    var supportData = Json.readValue(response.body(), AndroidResponse.class);
+                    var gpiaData = new AndroidGpiaData(
+                            Specification.Whatsapp.MOBILE_ANDROID_GPIA_CERTIFICATE,
+                            androidData.packageName(),
+                            Base64.getEncoder().encodeToString(androidData.sha256Hash()),
+                            Base64.getEncoder().encodeToString(androidData.compactSha256Hash()),
+                            androidData.size(),
+                            supportData.integrityToken(),
+                            0
+                    );
+                    var gpiaPayload = AesCbc.encryptAndPrefix(Json.writeValueAsBytes(gpiaData), authKey);
+                    return new AndroidBackedData(supportData.authHeader(), supportData.signature(), Base64.getUrlEncoder().encodeToString(gpiaPayload));
+                });
+            }
         });
     }
 
-    private static byte[] uuidToBytes(UUID uuid) {
-        var bb = ByteBuffer.wrap(new byte[16]);
-        bb.putLong(uuid.getMostSignificantBits());
-        bb.putLong(uuid.getLeastSignificantBits());
-        return bb.array();
+    private record AndroidGpiaData(String cert, String packageName, String sha256, String shatr, int sizeInBytes, String token, int code) {
+
+    }
+
+    private record AndroidResponse(String authHeader, String signature, String integrityToken) {
+
     }
 }

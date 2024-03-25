@@ -1,11 +1,10 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.routine;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.util.Specification.Whatsapp;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,6 +32,17 @@ public class UpdateTokens {
     private static final String DICTIONARY_DECLARATION_REGEX = "const %s=\\[\"(.*?)\"]";
     private static final String PROPS_REGEX = "\\.ABPropConfigs=\\{(.*?)]}},";
 
+    public static void main(String[] args) throws IOException, InterruptedException {
+        System.out.println("Creating tokens class...");
+        var javascriptSource = getJavascriptSource();
+        var singleByteToken = getSingleByteTokens(javascriptSource);
+        var doubleByteTokens = getDoubleByteTokens(javascriptSource);
+        var props = getAbPropsList(javascriptSource);
+        var sourceFile = getSourceFile().formatted(singleByteToken, doubleByteTokens, props);
+        Files.writeString(findTokensFile(), sourceFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        System.out.printf("Created tokens class at %s%n", findTokensFile());
+    }
+
     private static HttpRequest createRequest(String url) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -46,27 +56,15 @@ public class UpdateTokens {
                 .build();
     }
 
-    @Test
-    public void createClass() throws IOException, InterruptedException {
-        System.out.println("Creating tokens class...");
-        var javascriptSource = getJavascriptSource();
-        var singleByteToken = getSingleByteTokens(javascriptSource);
-        var doubleByteTokens = getDoubleByteTokens(javascriptSource);
-        var props = getAbPropsList(javascriptSource);
-        var sourceFile = getSourceFile().formatted(singleByteToken, doubleByteTokens, props);
-        Files.writeString(findTokensFile(), sourceFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        System.out.printf("Created tokens class at %s%n", findTokensFile());
-    }
-
-    private Path findTokensFile() {
+    private static Path findTokensFile() {
         return Path.of("src/main/java/it/auties/whatsapp/binary/BinaryTokens.java").toAbsolutePath();
     }
 
-    private String getSingleByteTokens(String javascriptSource) {
+    private static String getSingleByteTokens(String javascriptSource) {
         return '"' + findResult(javascriptSource, SINGLE_BYTE_REGEX) + '"';
     }
 
-    private String getDoubleByteTokens(String javascriptSource) {
+    private static String getDoubleByteTokens(String javascriptSource) {
         return Pattern.compile(DICTIONARY_ASSIGNMENT_REGEX, Pattern.MULTILINE)
                 .matcher(javascriptSource)
                 .results()
@@ -75,7 +73,7 @@ public class UpdateTokens {
                 .collect(Collectors.joining(", "));
     }
 
-    private String getAbPropsList(String source) {
+    private static String getAbPropsList(String source) {
        try {
            var props = findResult(source, PROPS_REGEX) + "]";
            var json = '{' + props.replaceAll("!0", "true").replaceAll("!1", "false") + '}';
@@ -101,7 +99,7 @@ public class UpdateTokens {
        }
     }
 
-    private Object parseValue(Object value, Object type) {
+    private static Object parseValue(Object value, Object type) {
         if (!type.equals("string")) {
             return value;
         }
@@ -114,13 +112,13 @@ public class UpdateTokens {
         return '"' + string.replaceAll("\\\\/", "\\\\\\\\/").replaceAll("\\\\\\.", "\\\\\\\\.") + '"';
     }
 
-    private String getSourceFile() throws IOException {
+    private static String getSourceFile() throws IOException {
         var sourceStream = ClassLoader.getSystemResourceAsStream(SOURCE_NAME);
         Objects.requireNonNull(sourceStream, "Cannot find source resource at %s".formatted(SOURCE_NAME));
         return new String(sourceStream.readAllBytes(), StandardCharsets.UTF_8);
     }
 
-    private String getJavascriptSource() throws IOException, InterruptedException {
+    private static String getJavascriptSource() throws IOException, InterruptedException {
         var whatsappRequest = createRequest(Whatsapp.WEB_ORIGIN);
         var whatsappResponse = HTTP_CLIENT.send(whatsappRequest, ofString());
         var token = findResult(whatsappResponse.body(), TOKEN_REGEX);
@@ -128,7 +126,7 @@ public class UpdateTokens {
         return HTTP_CLIENT.send(sourceRequest, ofString()).body();
     }
 
-    private String findResult(String input, String regex) {
+    private static String findResult(String input, String regex) {
         return Pattern.compile(regex, Pattern.MULTILINE)
                 .matcher(input)
                 .results()

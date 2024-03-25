@@ -23,6 +23,7 @@ import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.http.HttpClient;
+import it.auties.whatsapp.registration.metadata.AndroidBackedData;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
@@ -46,17 +47,22 @@ public final class WhatsappRegistration {
     private final ApnsClient apnsClient;
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
-    private volatile CompletableFuture<String> gpiaToken;
+    private final URI androidVerificationServer;
+    private volatile CompletableFuture<AndroidBackedData> androidSupportData;
 
-    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
+    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, URI androidVerificationServer) {
         this.store = store;
         this.keys = keys;
         this.codeHandler = codeHandler;
         this.method = method;
         var ios = store.device().platform().isIOS();
+        var android = store.device().platform().isAndroid();
+        var requiresVerification = method != VerificationCodeMethod.NONE;
+        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         this.httpClient = new HttpClient(ios);
-        this.apnsClient = ios && method != VerificationCodeMethod.NONE ? new ApnsClient() : null;
-        this.gcmClient = store.device().platform().isAndroid() && method != VerificationCodeMethod.NONE ? new GcmClient() : null;
+        this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient() : null;
+        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(proxy) : null;
+        this.androidVerificationServer = androidVerificationServer;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
     }
 
@@ -287,7 +293,7 @@ public final class WhatsappRegistration {
                 .orElseThrow()
                 .countryCode();
         return switch (store.device().platform()) {
-            case ANDROID, ANDROID_BUSINESS -> getGpiaToken()
+            case ANDROID, ANDROID_BUSINESS -> getAndroidSupportData()
                     .thenApplyAsync(gpiaToken -> getAndroidRequestParameters(pushCode, gpiaToken, countryCode));
             case IOS, IOS_BUSINESS -> CompletableFuture.completedFuture(getIosRequestParameters(pushCode));
             case KAIOS -> CompletableFuture.completedFuture(getKaiOsRequestParameters(countryCode));
@@ -295,13 +301,18 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletableFuture<String> getGpiaToken() {
-        if(gpiaToken != null) {
-            return gpiaToken;
+    private CompletableFuture<AndroidBackedData> getAndroidSupportData() {
+        if(androidVerificationServer == null) {
+            return CompletableFuture.completedFuture(null);
         }
 
+        if(androidSupportData != null) {
+            return androidSupportData;
+        }
+
+        var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return gpiaToken = WhatsappMetadata.generateGpiaToken(keys.advertisingId(), keys.deviceId(), business);
+        return androidSupportData = WhatsappMetadata.getAndroidBackedData(publicKey, null, business);
     }
     
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -323,7 +334,7 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
-    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, String gpiaToken, CountryCode countryCode) {
+    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, AndroidBackedData backedData, CountryCode countryCode) {
         return Attributes.of()
                 .put("method", method.data())
                 .put("sim_mcc", countryCode.mcc())
@@ -349,8 +360,8 @@ public final class WhatsappRegistration {
                 .put("read_phone_permission_granted", 1)
                 .put("pid", ProcessHandle.current().pid())
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
-                .put("gpia_token", gpiaToken)
-                .put("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D")
+                .put("gpia_token", backedData == null ? "" : backedData.gpiaToken(), backedData != null)
+                .put("gpia", backedData == null ? "" : ("%7B%22token%22%3A%22" + backedData.gpiaToken() + "%22%2C%22error_code%22%3A0%7D"), backedData != null)
                 .put("push_code", pushCode, pushCode != null)
                 .toEntries();
     }

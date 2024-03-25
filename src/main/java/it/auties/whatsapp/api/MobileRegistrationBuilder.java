@@ -34,10 +34,13 @@ public sealed class MobileRegistrationBuilder {
     public final static class Unregistered extends MobileRegistrationBuilder {
         private UnverifiedResult unregisteredResult;
         private VerificationCodeMethod verificationCodeMethod;
+        private boolean cloudMessagingVerification;
+        private URI androidVerificationServer;
 
         Unregistered(Store store, Keys keys, ErrorHandler errorHandler) {
             super(store, keys, errorHandler);
             this.verificationCodeMethod = VerificationCodeMethod.SMS;
+            this.cloudMessagingVerification = true;
         }
 
         public Unregistered verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
@@ -65,6 +68,16 @@ public sealed class MobileRegistrationBuilder {
             return this;
         }
 
+        public Unregistered cloudMessagingVerification(boolean cloudMessagingVerification) {
+            this.cloudMessagingVerification = cloudMessagingVerification;
+            return this;
+        }
+
+        public Unregistered androidVerificationServer(URI androidVerificationServer) {
+            this.androidVerificationServer = androidVerificationServer;
+            return this;
+        }
+
         /**
          * Registers a phone number by asking for a verification code and then sending it to Whatsapp
          *
@@ -82,7 +95,7 @@ public sealed class MobileRegistrationBuilder {
                 var number = PhoneNumber.of(phoneNumber);
                 keys.setPhoneNumber(number);
                 store.setPhoneNumber(number);
-                var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
+                var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod, cloudMessagingVerification, androidVerificationServer);
                 return registration.registerPhoneNumber().thenApply(response -> {
                     var api = Whatsapp.customBuilder()
                             .store(store)
@@ -117,7 +130,7 @@ public sealed class MobileRegistrationBuilder {
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             if (!keys.registered()) {
-                var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
+                var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod, cloudMessagingVerification, androidVerificationServer);
                 return registration.requestVerificationCode().thenApply(response -> {
                     var unverified = new Unverified(store, keys, errorHandler, verificationCodeSupplier);
                     return this.unregisteredResult = new UnverifiedResult(unverified, Optional.ofNullable(response));
@@ -130,9 +143,12 @@ public sealed class MobileRegistrationBuilder {
     }
 
     public final static class Unverified extends MobileRegistrationBuilder {
+        private boolean cloudMessagingVerification;
+        private URI androidVerificationServer;
         Unverified(Store store, Keys keys, ErrorHandler errorHandler, AsyncVerificationCodeSupplier verificationCodeSupplier) {
             super(store, keys, errorHandler);
             this.verificationCodeSupplier = verificationCodeSupplier;
+            this.cloudMessagingVerification = true;
         }
 
         public Unverified verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
@@ -152,6 +168,16 @@ public sealed class MobileRegistrationBuilder {
 
         public Unverified proxy(URI proxy) {
             store.setProxy(proxy);
+            return this;
+        }
+
+        public Unverified cloudMessagingVerification(boolean cloudMessagingVerification) {
+            this.cloudMessagingVerification = cloudMessagingVerification;
+            return this;
+        }
+
+        public Unverified androidVerificationServer(URI androidVerificationServer) {
+            this.androidVerificationServer = androidVerificationServer;
             return this;
         }
 
@@ -179,7 +205,7 @@ public sealed class MobileRegistrationBuilder {
 
             Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
-            var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, VerificationCodeMethod.NONE);
+            var registration = new WhatsappRegistration(store, keys, verificationCodeSupplier, VerificationCodeMethod.NONE, cloudMessagingVerification, androidVerificationServer);
             return registration.sendVerificationCode().thenApply(response -> {
                 var api = Whatsapp.customBuilder()
                         .store(store)

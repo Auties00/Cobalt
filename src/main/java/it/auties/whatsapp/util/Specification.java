@@ -29,7 +29,7 @@ public class Specification {
         public static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
         public static final String APNS_WHATSAPP_BUSINESS_NAME = "net.whatsapp.WhatsAppSMB";
         public static final String APNS_WHATSAPP_NAME = "net.whatsapp.WhatsApp";
-        public static final Version MOBILE_DEFAULT_PERSONAL_IOS_VERSION = Version.of("2.24.5.74");
+        public static final Version MOBILE_DEFAULT_PERSONAL_IOS_VERSION = Version.of("2.24.6.77");
         public static final Version MOBILE_DEFAULT_BUSINESS_IOS_VERSION = Version.of("2.24.4.78");
         public static final String[] DEFAULT_APNS_FILTERS = new String[]{
                 "net.whatsapp.WhatsApp",
@@ -37,7 +37,6 @@ public class Specification {
                 "net.whatsapp.WhatsAppSMB",
                 "net.whatsapp.WhatsAppSMB.voip"
         };
-        public static final int GPIA_TOKEN_LENGTH = 430;
         private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
         private static final byte[] WEB_VERSION = new byte[]{6, BinaryTokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
@@ -68,6 +67,7 @@ public class Specification {
         public static final String BUSINESS_NAME_VCARD_PROPERTY = "X-WA-BIZ-NAME";
         public static final String PHONE_NUMBER_VCARD_PROPERTY = "WAID";
         public static final String DEFAULT_NUMBER_VCARD_TYPE = "CELL";
+        public static final String MOBILE_ANDROID_GPIA_CERTIFICATE = "OKD31QX+GP7GT780Psqq8xDb15k=";
     }
 
     public final static class Signal {
