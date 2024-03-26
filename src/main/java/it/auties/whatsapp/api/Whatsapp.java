@@ -1529,20 +1529,22 @@ public class Whatsapp {
                 .map(list -> list.findNodes("user"))
                 .stream()
                 .flatMap(Collection::stream)
-                .flatMap(this::parseAddedContact)
+                .map(this::parseAddedContact)
                 .toList();
     }
 
-    private Stream<Jid> parseAddedContact(Node user) {
+    private Jid parseAddedContact(Node user) {
         var jid = user.attributes().getOptionalJid("jid");
         if(jid.isEmpty()) {
-            return Stream.empty();
+            return null;
         }
 
-        return user.findNode("contact")
-                .filter(contact -> contact.attributes().hasValue("type", "in"))
-                .flatMap(ignored -> jid)
-                .stream();
+        var contactNode = user.findNode("contact");
+        if(contactNode.isEmpty() || !contactNode.get().attributes().hasValue("type", "in")) {
+            return null;
+        }
+
+        return jid.get();
     }
 
     private Optional<GroupMetadata> parseGroupResponse(Node response) {
