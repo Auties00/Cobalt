@@ -17,6 +17,10 @@ public class GenerateAndroidServerApk {
             System.out.println("Enter your JAVA_HOME: ");
             return scanner.nextLine().trim();
         });
+        var androidHome = Objects.requireNonNullElseGet(System.getenv("ANDROID_HOME"), () -> {
+            System.out.println("Enter your ANDROID_HOME: ");
+            return scanner.nextLine().trim();
+        });
         System.out.println("Select if the server apk is business or personal:\n(1) Business (2) Personal");
         var business = switch (scanner.nextInt()) {
             case 1 -> true;
@@ -39,6 +43,7 @@ public class GenerateAndroidServerApk {
                 .directory(localPath.toFile())
                 .inheritIO();
         buildProcess.environment().put("JAVA_HOME", javaHome);
+        buildProcess.environment().put("ANDROID_HOME", androidHome);
         var buildExitCode = buildProcess.start().waitFor();
         if(buildExitCode != 0) {
             System.err.println("Invalid build exit code: " + buildExitCode);
