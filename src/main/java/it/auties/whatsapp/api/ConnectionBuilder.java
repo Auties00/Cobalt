@@ -110,6 +110,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .identityKeyPair(sixParts.identityKeyPair())
                 .identityId(sixParts.identityId())
                 .registered(true)
+                .clientType(ClientType.MOBILE)
                 .build();
         keys.setSerializer(serializer);
         var phoneNumber = keys.phoneNumber()
