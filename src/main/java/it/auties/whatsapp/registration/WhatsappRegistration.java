@@ -22,7 +22,6 @@ import it.auties.whatsapp.registration.apns.ApnsClient;
 import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
-import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.registration.metadata.AndroidCert;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
@@ -60,9 +59,9 @@ public final class WhatsappRegistration {
         var android = store.device().platform().isAndroid();
         var requiresVerification = method != VerificationCodeMethod.NONE;
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
-        this.httpClient = new HttpClient(ios);
+        this.httpClient = new HttpClient(proxy, store.device().platform());
         this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient() : null;
-        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(proxy) : null;
+        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient) : null;
         this.androidVerificationServer = androidVerificationServer;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
     }
@@ -149,7 +148,7 @@ public final class WhatsappRegistration {
         );
         System.out.println("Using user agent " + userAgent);
         System.out.println("Sending GET request to /reg_onboard_abprop with parameters " + attributes);
-        return httpClient.get(uri, ProxyAuthenticator.getProxy(store.proxy().orElse(null)), headers).thenApplyAsync(response -> {
+        return httpClient.get(uri, headers).thenApplyAsync(response -> {
             System.out.println("Received respose /reg_onboard_abprop " + response);
             return Json.readValue(response, AbPropsResponse.class);
         });
@@ -470,7 +469,6 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
-        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var encodedParams = HttpClient.toFormParams(params).getBytes();
         var userAgent = store.device().toUserAgent(store.version());
         System.out.println("Using user agent " + userAgent);
@@ -487,7 +485,7 @@ public final class WhatsappRegistration {
                         .put("User-Agent", userAgent)
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .toMap();
-                yield httpClient.post(uri, proxy, headers, "ENC=%s".formatted(encBase64).getBytes()).thenApplyAsync(result -> {
+                yield httpClient.post(uri, headers, "ENC=%s".formatted(encBase64)).thenApplyAsync(result -> {
                     var body = new String(result);
                     System.out.println("Received response " + path + " " + body);
                     return body;
@@ -509,7 +507,7 @@ public final class WhatsappRegistration {
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .put("Authorization", androidCert == null ? "" : androidCert.authHeader(), androidCert != null)
                         .toMap();
-                return httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
+                return httpClient.get(uri, headers).thenApplyAsync(result -> {
                     System.out.println("Received response " + path + " " + result);
                     return result;
                 });
@@ -517,7 +515,7 @@ public final class WhatsappRegistration {
             case KAIOS -> {
                 System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
-                yield httpClient.get(uri, proxy, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
+                yield httpClient.get(uri, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
                     System.out.println("Received response " + path + " " + result);
                     return result;
                 });
@@ -574,6 +572,12 @@ public final class WhatsappRegistration {
     }
 
     private void dispose() {
+        try {
+            httpClient.close();
+        } catch (Exception e) {
+            // Ignored
+        }
+
         if (apnsClient != null) {
             apnsClient.close();
         }
