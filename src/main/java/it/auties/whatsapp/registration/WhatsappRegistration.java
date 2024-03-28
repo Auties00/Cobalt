@@ -48,9 +48,10 @@ public final class WhatsappRegistration {
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
     private final URI androidVerificationServer;
+    private final boolean printRequests;
     private volatile CompletableFuture<AndroidBackedData> androidSupportData;
 
-    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, URI androidVerificationServer) {
+    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, URI androidVerificationServer, boolean printRequests) {
         this.store = store;
         this.keys = keys;
         this.codeHandler = codeHandler;
@@ -64,6 +65,7 @@ public final class WhatsappRegistration {
         this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(proxy) : null;
         this.androidVerificationServer = androidVerificationServer;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
+        this.printRequests = printRequests;
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
@@ -146,10 +148,14 @@ public final class WhatsappRegistration {
                 "User-Agent", userAgent,
                 "Content-Type", "application/x-www-form-urlencoded"
         );
-        System.out.println("Using user agent " + userAgent);
-        System.out.println("Sending GET request to /reg_onboard_abprop with parameters " + attributes);
+        if(printRequests) {
+            System.out.println("Using user agent " + userAgent);
+            System.out.println("Sending GET request to /reg_onboard_abprop with parameters " + attributes);
+        }
         return httpClient.get(uri, ProxyAuthenticator.getProxy(store.proxy().orElse(null)), headers).thenApplyAsync(response -> {
-            System.out.println("Received respose /reg_onboard_abprop " + response);
+            if(printRequests) {
+                System.out.println("Received respose /reg_onboard_abprop " + response);
+            }
             return Json.readValue(response, AbPropsResponse.class);
         });
     }
@@ -472,14 +478,18 @@ public final class WhatsappRegistration {
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var encodedParams = HttpClient.toFormParams(params).getBytes();
         var userAgent = store.device().toUserAgent(store.version());
-        System.out.println("Using user agent " + userAgent);
+        if(printRequests) {
+            System.out.println("Using user agent " + userAgent);
+        }
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams, key);
         var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), buffer));
         return switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> {
-                System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                if(printRequests) {
+                    System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                }
                 var uri = URI.create("%s%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path));
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
@@ -487,12 +497,16 @@ public final class WhatsappRegistration {
                         .toMap();
                 yield httpClient.post(uri, proxy, headers, "ENC=%s".formatted(cipheredParameters).getBytes()).thenApplyAsync(result -> {
                     var body = new String(result);
-                    System.out.println("Received response " + path + " " + body);
+                    if(printRequests) {
+                        System.out.println("Received response " + path + " " + body);
+                    }
                     return body;
                 });
             }
             case ANDROID, ANDROID_BUSINESS -> {
-                System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                if(printRequests) {
+                    System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                }
                 var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
@@ -502,15 +516,21 @@ public final class WhatsappRegistration {
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .toMap();
                 yield httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
-                    System.out.println("Received response " + path + " " + result);
+                    if(printRequests) {
+                        System.out.println("Received response " + path + " " + result);
+                    }
                     return result;
                 });
             }
             case KAIOS -> {
-                System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                if(printRequests) {
+                    System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                }
                 var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
                 yield httpClient.get(uri, proxy, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
-                    System.out.println("Received response " + path + " " + result);
+                    if(printRequests) {
+                        System.out.println("Received response " + path + " " + result);
+                    }
                     return result;
                 });
             }
