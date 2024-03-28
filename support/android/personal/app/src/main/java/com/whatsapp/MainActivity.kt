@@ -1,4 +1,4 @@
-package com.whatsapp.w4b
+package com.whatsapp
 
 import android.annotation.SuppressLint
 import android.content.Context

@@ -382,38 +382,50 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<AndroidBackedData> getAndroidBackedData(byte[] authKey, String enc, boolean business) {
+    public static CompletableFuture<String> getGpiaToken(URI androidServer, byte[] authKey, boolean business) {
         return getAndroidData(business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
                 var authKeyBase64 = Base64.getUrlEncoder().encodeToString(authKey);
-                var encBase64 = Base64.getUrlEncoder().encodeToString(enc.getBytes());
                 var request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://192.168.1.22:8080/authKey=%s&enc=%s".formatted(authKeyBase64, encBase64)))
+                        .uri(androidServer.resolve("/gpia?authKey=" + authKeyBase64))
                         .GET()
                         .build();
                 return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
-                    var supportData = Json.readValue(response.body(), AndroidResponse.class);
-                    var gpiaData = new AndroidGpiaData(
+                    var supportData = Json.readValue(response.body(), GpiaResponse.class);
+                    var gpiaData = new GpiaData(
                             Specification.Whatsapp.MOBILE_ANDROID_GPIA_CERTIFICATE,
                             androidData.packageName(),
                             Base64.getEncoder().encodeToString(androidData.sha256Hash()),
                             Base64.getEncoder().encodeToString(androidData.compactSha256Hash()),
                             androidData.size(),
-                            supportData.integrityToken(),
+                            supportData.token(),
                             0
                     );
                     var gpiaPayload = AesCbc.encryptAndPrefix(Json.writeValueAsBytes(gpiaData), authKey);
-                    return new AndroidBackedData(supportData.authHeader(), supportData.signature(), Base64.getUrlEncoder().encodeToString(gpiaPayload));
+                    return Base64.getUrlEncoder().encodeToString(gpiaPayload);
                 });
             }
         });
     }
 
-    private record AndroidGpiaData(String cert, String packageName, String sha256, String shatr, int sizeInBytes, String token, int code) {
+    private record GpiaResponse(String token) {
 
     }
 
-    private record AndroidResponse(String authHeader, String signature, String integrityToken) {
+    private record GpiaData(String cert, String packageName, String sha256, String shatr, int sizeInBytes, String token, int code) {
 
+    }
+
+    public static CompletableFuture<AndroidCert> getAndroidCert(URI androidServer, byte[] authKey, byte[] enc) {
+        try(var client = HttpClient.newHttpClient()) {
+            var authKeyBase64 = Base64.getUrlEncoder().encodeToString(authKey);
+            var encBase64 = Base64.getUrlEncoder().encodeToString(enc);
+            var request = HttpRequest.newBuilder()
+                    .uri(androidServer.resolve("/cert?authKey=" + authKeyBase64 + "&enc=" + encBase64))
+                    .GET()
+                    .build();
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApplyAsync(response -> Json.readValue(response.body(), AndroidCert.class));
+        }
     }
 }
