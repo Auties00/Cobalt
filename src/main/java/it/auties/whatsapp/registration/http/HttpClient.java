@@ -108,12 +108,19 @@ public class HttpClient {
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Proxy proxy, Map<String, ?> headers, byte[] body) {
         var future = new CompletableFuture<byte[]>();
         Thread.startVirtualThread(() -> {
+            HttpURLConnection connection = null;
+            var disconnected = false;
             try {
                 var url = uri.toURL();
-                var connection = (HttpsURLConnection) createConnection(proxy, url);
+                connection = (HttpURLConnection) createConnection(proxy, url);
                 connection.setRequestMethod(method);
-                headers.forEach((key, value) -> connection.setRequestProperty(key, String.valueOf(value)));
-                connection.setSSLSocketFactory(getOrCreateParams());
+                for (var entry : headers.entrySet()) {
+                    connection.setRequestProperty(entry.getKey(), String.valueOf(entry.getValue()));
+                }
+                connection.setRequestProperty("Connection", "close");
+                if(connection instanceof HttpsURLConnection httpsConnection) {
+                    httpsConnection.setSSLSocketFactory(getOrCreateParams());
+                }
                 connection.setInstanceFollowRedirects(true);
                 if(body != null) {
                     connection.setDoOutput(true);
@@ -128,11 +135,19 @@ public class HttpClient {
                     return;
                 }
 
+                byte[] result;
                 try (var inputStream = connection.getInputStream()) {
-                    future.complete(inputStream.readAllBytes());
+                    result = inputStream.readAllBytes();
+                    connection.disconnect();
+                    disconnected = true;
                 }
-                connection.disconnect();
+
+                future.complete(result);
             } catch (Throwable exception) {
+                if(connection != null && !disconnected) {
+                    connection.disconnect();
+                }
+
                 future.completeExceptionally(exception);
             }
         });

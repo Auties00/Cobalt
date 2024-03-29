@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.Whatsapp;
 
 import java.util.Scanner;
 
-public class MobileExistsExample {
+public class MobileHttpExistsExample {
     public static void main(String[] args) {
         System.out.println("Enter the phone number: ");
         Scanner scanner = new Scanner(System.in);
