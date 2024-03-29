@@ -18,7 +18,7 @@ public class MobileRegisterExample {
         };
         Whatsapp.mobileBuilder()
                 .newConnection()
-                .device(CompanionDevice.android(business))
+                .device(CompanionDevice.ios(business))
                 // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
                 .unregistered()
                 .verificationCodeSupplier(() -> {
