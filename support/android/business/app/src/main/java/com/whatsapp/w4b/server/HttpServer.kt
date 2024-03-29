@@ -3,7 +3,6 @@ package com.whatsapp.w4b.server
 import android.content.Context
 import com.whatsapp.w4b.generator.generateCertificate
 import com.whatsapp.w4b.generator.generateIntegrityToken
-import com.whatsapp.w4b.result.ServerResult
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
 import io.ktor.server.application.install
@@ -23,13 +22,17 @@ fun startServer(context: Context) {
             json()
         }
         routing {
-            get("/") {
+            get("/gpia") {
+                val authKey = Base64.getUrlDecoder().decode(call.request.queryParameters["authKey"])
+                val integrityToken = generateIntegrityToken(authKey, context)
+                call.respond(integrityToken)
+            }
+
+            get("/cert") {
                 val authKey = Base64.getUrlDecoder().decode(call.request.queryParameters["authKey"])
                 val enc = call.request.queryParameters["enc"]!!
                 val certificate = generateCertificate(authKey, enc)
-                val integrityToken = generateIntegrityToken(authKey, context)
-                val result = ServerResult(certificate.authHeader, certificate.signatureHeader, integrityToken.token)
-                call.respond(result)
+                call.respond(certificate)
             }
         }
     }

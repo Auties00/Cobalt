@@ -49,7 +49,8 @@ public final class WhatsappRegistration {
     private final CountryCode countryCode;
     private final URI androidVerificationServer;
     private final boolean printRequests;
-    private volatile CompletableFuture<AndroidBackedData> androidSupportData;
+    private volatile CompletableFuture<String> gpiaToken;
+    private volatile CompletableFuture<AndroidCert> androidCert;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, URI androidVerificationServer, boolean printRequests) {
         this.store = store;
@@ -299,7 +300,7 @@ public final class WhatsappRegistration {
                 .orElseThrow()
                 .countryCode();
         return switch (store.device().platform()) {
-            case ANDROID, ANDROID_BUSINESS -> getAndroidSupportData()
+            case ANDROID, ANDROID_BUSINESS -> getGpiaToken()
                     .thenApplyAsync(gpiaToken -> getAndroidRequestParameters(pushCode, gpiaToken, countryCode));
             case IOS, IOS_BUSINESS -> CompletableFuture.completedFuture(getIosRequestParameters(pushCode));
             case KAIOS -> CompletableFuture.completedFuture(getKaiOsRequestParameters(countryCode));
@@ -307,18 +308,18 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletableFuture<AndroidBackedData> getAndroidSupportData() {
+    private CompletableFuture<String> getGpiaToken() {
         if(androidVerificationServer == null) {
             return CompletableFuture.completedFuture(null);
         }
 
-        if(androidSupportData != null) {
-            return androidSupportData;
+        if(gpiaToken != null) {
+            return gpiaToken;
         }
 
         var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return androidSupportData = WhatsappMetadata.getAndroidBackedData(publicKey, null, business);
+        return gpiaToken = WhatsappMetadata.getGpiaToken(androidVerificationServer, publicKey, business);
     }
     
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -340,7 +341,7 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
-    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, AndroidBackedData backedData, CountryCode countryCode) {
+    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, String gpiaToken, CountryCode countryCode) {
         return Attributes.of()
                 .put("method", method.data())
                 .put("sim_mcc", countryCode.mcc())
@@ -366,8 +367,8 @@ public final class WhatsappRegistration {
                 .put("read_phone_permission_granted", 1)
                 .put("pid", ProcessHandle.current().pid())
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
-                .put("gpia_token", backedData == null ? "" : backedData.gpiaToken(), backedData != null)
-                .put("gpia", backedData == null ? "" : ("%7B%22token%22%3A%22" + backedData.gpiaToken() + "%22%2C%22error_code%22%3A0%7D"), backedData != null)
+                .put("gpia_token", gpiaToken, gpiaToken != null)
+                .put("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D", gpiaToken != null)
                 .put("push_code", pushCode, pushCode != null)
                 .toEntries();
     }
@@ -484,7 +485,8 @@ public final class WhatsappRegistration {
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams, key);
-        var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), buffer));
+        var enc = Bytes.concat(keypair.publicKey(), buffer);
+        var encBase64 = Base64.getUrlEncoder().encodeToString(enc);
         return switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> {
                 if(printRequests) {
@@ -495,7 +497,7 @@ public final class WhatsappRegistration {
                         .put("User-Agent", userAgent)
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .toMap();
-                yield httpClient.post(uri, proxy, headers, "ENC=%s".formatted(cipheredParameters).getBytes()).thenApplyAsync(result -> {
+                yield httpClient.post(uri, proxy, headers, "ENC=%s".formatted(encBase64).getBytes()).thenApplyAsync(result -> {
                     var body = new String(result);
                     if(printRequests) {
                         System.out.println("Received response " + path + " " + body);
@@ -504,9 +506,7 @@ public final class WhatsappRegistration {
                 });
             }
             case ANDROID, ANDROID_BUSINESS -> {
-                if(printRequests) {
-                    System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
-                }
+                System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
@@ -536,6 +536,19 @@ public final class WhatsappRegistration {
             }
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
+    }
+
+    private CompletableFuture<AndroidCert> getAndroidCert(byte[] enc) {
+        if(androidVerificationServer == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        if(androidCert != null) {
+            return androidCert;
+        }
+
+        var publicKey = keys.noiseKeyPair().publicKey();
+        return androidCert =  WhatsappMetadata.getAndroidCert(androidVerificationServer, publicKey, enc);
     }
 
     @SafeVarargs
