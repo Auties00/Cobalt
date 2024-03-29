@@ -6,8 +6,8 @@ import it.auties.whatsapp.registration.gcm.McsExchange.AppData;
 import it.auties.whatsapp.registration.gcm.McsExchange.DataMessageStanza;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginResponse;
+import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.HttpClient;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 
@@ -16,6 +16,7 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.Proxy;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,7 @@ public class GcmClient {
     private static final byte[] FCM_VERSION = {41};
 
     private final HttpClient httpClient;
+    private final Proxy proxy;
     private final long senderId;
     private final ECDH256KeyPair keyPair;
     private final byte[] authSecret;
@@ -49,8 +51,9 @@ public class GcmClient {
     private long androidId;
     private long securityToken;
     private String token;
-    public GcmClient(HttpClient httpClient) {
+    public GcmClient(HttpClient httpClient, Proxy proxy) {
         this.httpClient = httpClient;
+        this.proxy = proxy;
         this.senderId = DEFAULT_GCM_SENDER_ID;
         this.keyPair = ECDH256KeyPair.random();
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
@@ -106,7 +109,7 @@ public class GcmClient {
                 "Content-Type", "application/x-www-form-urlencoded",
                 "Authorization", "AidLogin %s:%s".formatted(checkInResponse.androidId(), checkInResponse.securityToken())
         );
-        return httpClient.post(REGISTER_URL, headers, HttpClient.toFormParams(params))
+        return httpClient.post(REGISTER_URL, proxy, headers, HttpClient.toFormParams(params).getBytes())
                 .thenApplyAsync(this::handleRegistration);
     }
 
@@ -129,7 +132,7 @@ public class GcmClient {
                 "encryption_key", encoder.encodeToString(keyPair.publicKey()),
                 "encryption_auth", encoder.encodeToString(authSecret)
         );
-        return httpClient.post(FCM_SUBSCRIBE_URL, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params))
+        return httpClient.post(FCM_SUBSCRIBE_URL, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
                 .thenAcceptAsync(this::handleSubscription);
     }
 

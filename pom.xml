@@ -192,7 +192,6 @@
         <plist.version>1.27</plist.version>
         <aspose.words.version>22.11</aspose.words.version>
         <ffmpeg.version>2023.09.10</ffmpeg.version>
-        <httpclient.version>5.3.1</httpclient.version>
         <sl4j.version>1.7.32</sl4j.version>
     </properties>
 
@@ -259,12 +258,7 @@
     </build>
 
     <dependencies>
-        <!-- HTTP client -->
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>${httpclient.version}</version>
-        </dependency>
+        <!-- Logging client -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

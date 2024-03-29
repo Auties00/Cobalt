@@ -2,8 +2,7 @@ package it.auties.whatsapp.registration.apns;
 
 import com.dd.plist.NSDictionary;
 import it.auties.whatsapp.crypto.Sha1;
-import it.auties.whatsapp.model.signal.auth.UserAgent;
-import it.auties.whatsapp.util.HttpClient;
+import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.util.Specification;
 
 import javax.net.ssl.SSLContext;
@@ -41,7 +40,7 @@ public class ApnsClient {
 
     public ApnsClient() {
         // Create a new http client instead of reusing the other one as we don't want to use a proxy
-        this.httpClient = new HttpClient(Proxy.NO_PROXY, UserAgent.PlatformType.IOS);
+        this.httpClient = new HttpClient(true);
         this.keyPair = initRSAKeyPair();
         this.listeners = ConcurrentHashMap.newKeySet();
         this.unhandledPackets = new CopyOnWriteArrayList<>();
@@ -71,7 +70,7 @@ public class ApnsClient {
             var endpoint = URI.create("https://albert.apple.com/WebObjects/ALUnbrick.woa/wa/deviceActivation");
             var body = "device=Windows&activation-info=" + URLEncoder.encode(activationBody, StandardCharsets.UTF_8);
             var headers = Map.of("Content-Type", "application/x-www-form-urlencoded");
-            return httpClient.post(endpoint, headers, body).thenAcceptAsync(response -> {
+            return httpClient.post(endpoint, null,  headers, body.getBytes()).thenAcceptAsync(response -> {
                 var protocol = PROTOCOL_PATTERN.matcher(new String(response))
                         .results()
                         .findFirst()
@@ -353,8 +352,6 @@ public class ApnsClient {
             if(socket != null) {
                 socket.close();
             }
-
-            httpClient.close();
         }catch (Throwable ignored) {
             // Ignored
         }

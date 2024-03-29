@@ -23,7 +23,7 @@ import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.http.HttpClient;
-import it.auties.whatsapp.registration.metadata.AndroidBackedData;
+import it.auties.whatsapp.registration.metadata.AndroidCert;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
@@ -63,7 +63,7 @@ public final class WhatsappRegistration {
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         this.httpClient = new HttpClient(ios);
         this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient() : null;
-        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(proxy) : null;
+        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, proxy) : null;
         this.androidVerificationServer = androidVerificationServer;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
         this.printRequests = printRequests;
@@ -505,23 +505,31 @@ public final class WhatsappRegistration {
                     return body;
                 });
             }
-            case ANDROID, ANDROID_BUSINESS -> {
-                System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
-                var uri = URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters));
+            case ANDROID, ANDROID_BUSINESS -> getAndroidCert(enc).thenComposeAsync(androidCert -> {
+                if(printRequests) {
+                    System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                }
+                var uri = URI.create("%s%s?ENC=%s%s".formatted(
+                        Whatsapp.MOBILE_REGISTRATION_ENDPOINT,
+                        path,
+                        encBase64,
+                        androidCert == null ? "" : "&H=" + androidCert.signatureHeader()
+                ));
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
                         .put("Accept", "text/json")
                         .put("WaMsysRequest", "1")
                         .put("request_token", UUID.randomUUID().toString())
                         .put("Content-Type", "application/x-www-form-urlencoded")
+                        .put("Authorization", androidCert == null ? "" : androidCert.authHeader(), androidCert != null)
                         .toMap();
-                yield httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
+                return httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
                     if(printRequests) {
                         System.out.println("Received response " + path + " " + result);
                     }
                     return result;
                 });
-            }
+            });
             case KAIOS -> {
                 if(printRequests) {
                     System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));

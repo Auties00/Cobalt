@@ -79,6 +79,10 @@ public class HttpClient {
 
     private volatile ProxySSLFactory factoryWithParams;
 
+    public CompletableFuture<byte[]> get(URI uri) {
+        return sendRequest("GET", uri, null, null, null);
+    }
+
     public CompletableFuture<String> get(URI uri, Map<String, ?> headers) {
         return sendRequest("GET", uri, null, headers, null)
                 .thenApplyAsync(String::new);
@@ -114,8 +118,10 @@ public class HttpClient {
                 var url = uri.toURL();
                 connection = (HttpURLConnection) createConnection(proxy, url);
                 connection.setRequestMethod(method);
-                for (var entry : headers.entrySet()) {
-                    connection.setRequestProperty(entry.getKey(), String.valueOf(entry.getValue()));
+                if(headers != null) {
+                    for (var entry : headers.entrySet()) {
+                        connection.setRequestProperty(entry.getKey(), String.valueOf(entry.getValue()));
+                    }
                 }
                 connection.setRequestProperty("Connection", "close");
                 if(connection instanceof HttpsURLConnection httpsConnection) {
