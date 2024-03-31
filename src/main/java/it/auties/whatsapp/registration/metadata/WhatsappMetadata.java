@@ -382,6 +382,7 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
+    // TODO: Invoke gpia.js instead of rest api
     public static CompletableFuture<String> getGpiaToken(URI androidServer, byte[] authKey, boolean business) {
         return getAndroidData(business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
