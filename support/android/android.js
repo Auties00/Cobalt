@@ -120,25 +120,37 @@ function findIntegrityRequestMeta(integrityTokenProvider) {
 
 // authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
 let integrityCounter = 0
-function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, callback) {
+function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, onSuccess, onError) {
     integrityCounter++
     let integrityRequestBuilder = integrityRequestBuilderMethod.overload().call(integrityRequestType)
     integrityRequestBuilder.setRequestHash(authKey)
     let integrityRequest = integrityRequestBuilder.build()
     let javaIntegrityTokenProvider = Java.cast(integrityTokenProvider, Java.use(integrityTokenProvider.$className))
     let integrityTokenResponse = javaIntegrityTokenProvider.request(integrityRequest)
-    let onIntegrityTokenListenerType = Java.registerClass({
-        name: 'TokenHandler' + integrityCounter,
+    let onIntegrityTokenSuccessListenerType = Java.registerClass({
+        name: 'TokenSuccessHandler' + integrityCounter,
         implements: [Java.use("com.google.android.gms.tasks.OnSuccessListener")],
         methods: {
             onSuccess: function (result) {
                 let javaResult = Java.cast(result, Java.use(result.$className))
-                callback(javaResult.token())
+                onSuccess(javaResult.token())
             }
         }
     })
-    let onIntegrityTokenListener = onIntegrityTokenListenerType.$new()
-    integrityTokenResponse["addOnSuccessListener"].overload('com.google.android.gms.tasks.OnSuccessListener').call(integrityTokenResponse, onIntegrityTokenListener)
+    let onIntegrityTokenErrorListenerType = Java.registerClass({
+        name: 'TokenFailureHandler' + integrityCounter,
+        implements: [Java.use("com.google.android.gms.tasks.OnFailureListener")],
+        methods: {
+            onFailure: function (result) {
+                let javaResult = Java.cast(result, Java.use(result.$className))
+                onError(javaResult.getMessage())
+            }
+        }
+    })
+    let onIntegrityTokenSuccessListener = onIntegrityTokenSuccessListenerType.$new()
+    let onIntegrityTokenErrorListener = onIntegrityTokenErrorListenerType.$new()
+    integrityTokenResponse["addOnSuccessListener"].overload('com.google.android.gms.tasks.OnSuccessListener').call(integrityTokenResponse, onIntegrityTokenSuccessListener)
+    integrityTokenResponse["addOnFailureListener"].overload('com.google.android.gms.tasks.OnFailureListener').call(integrityTokenResponse, onIntegrityTokenErrorListener)
 }
 
 function createGpiaListener(integrityTokenProvider, integrityRequestType, integrityRequestBuilder) {
@@ -158,6 +170,15 @@ function createGpiaListener(integrityTokenProvider, integrityRequestType, integr
                     "caller": "gpia",
                     "authKey": authKey,
                     "token": token
+                })
+            },
+            (error) => {
+                console.log("[*] Error while computing gpia token")
+                send({
+                    "caller": "gpia",
+                    "authKey": authKey,
+                    "type": "error",
+                    "description": error
                 })
             }
         )

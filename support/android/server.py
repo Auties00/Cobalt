@@ -13,8 +13,9 @@ app = Flask(__name__)
 
 gpia_requests: dict[str, Future] = {}
 gpia_requests_lock: Lock = Lock()
-cert_requests: dict[str, Future]  = {}
+cert_requests: dict[str, Future] = {}
 cert_requests_lock: Lock = Lock()
+
 
 def concat_base64(base64_str1: str | None, base64_str2: str | None) -> str:
     bytes1 = base64.urlsafe_b64decode(base64_str1)
@@ -53,7 +54,7 @@ def cert_route() -> (str, int):
 
 
 def on_message(message: dict[str, Any], _):
-    print("[*] Handling incoming device message")
+    print(f"[*] Handling incoming device message {message}")
     message_payload = message.get("payload", {})
     message_type: str | None = message.get("type")
     if message_type is None:
