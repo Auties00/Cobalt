@@ -120,6 +120,7 @@ function findIntegrityRequestMeta(integrityTokenProvider) {
 
 // authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
 let integrityCounter = 0
+
 function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, callback) {
     integrityCounter++
     let integrityRequestBuilder = integrityRequestBuilderMethod.overload().call(integrityRequestType)
@@ -141,7 +142,30 @@ function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, i
     integrityTokenResponse["addOnSuccessListener"].overload('com.google.android.gms.tasks.OnSuccessListener').call(integrityTokenResponse, onIntegrityTokenListener)
 }
 
-function createGpiaListener() {
+function createGpiaListener(integrityTokenProvider, integrityRequestType, integrityRequestBuilder) {
+    console.log("[*] Ready for next gpia request")
+    recv("gpia", function (message) {
+        createGpiaListener(integrityTokenProvider, integrityRequestType, integrityRequestBuilder)
+        console.log("[*] Computing gpia token...")
+        let authKey = message["authKey"]
+        calculateIntegrityToken(
+            integrityTokenProvider,
+            integrityRequestType,
+            integrityRequestBuilder,
+            authKey,
+            (token) => {
+                console.log("[*] Finished computing gpia token")
+                send({
+                    "caller": "gpia",
+                    "authKey": authKey,
+                    "token": token
+                })
+            }
+        )
+    })
+}
+
+function setupGpia() {
     const integrityManagerProvider = findIntegrityManagerProvider()
     console.log("[*] Found integrity provider")
     const integrityManager = getIntegrityManager(integrityManagerProvider)
@@ -154,22 +178,11 @@ function createGpiaListener() {
         prepareIntegrityRequestBuilder,
         (integrityTokenProvider) => {
             const [integrityRequestType, integrityRequestBuilder] = findIntegrityRequestMeta(integrityTokenProvider)
-            recv("gpia", function (message) {
-	            let authKey = message["authKey"]
-                calculateIntegrityToken(
-                    integrityTokenProvider,
-                    integrityRequestType,
-                    integrityRequestBuilder,
-                    authKey,
-                    (token) => {
-                        send({
-                            "authKey": authKey,
-                            "token": token
-                        })
-                    }
-                )
-            })
-            console.log("[*] Listening for gpia requests")
+            createGpiaListener(
+                integrityTokenProvider,
+                integrityRequestType,
+                integrityRequestBuilder
+            )
         }
     )
 }
@@ -191,10 +204,12 @@ function toHexString(byteArray) {
 }
 
 let certificateCounter = 0
+
 function createCertificateListener() {
-    const KeyGenParameterSpecBuilder = Java.use('android.security.keystore.KeyGenParameterSpec$Builder')
-    const KeyProperties = Java.use('android.security.keystore.KeyProperties')
+    console.log("[*] Ready for next cert request")
     recv("cert", function (message) {
+        createCertificateListener()
+        console.log("[*] Computing certificate...")
         let data = message["data"]
         let decodedData = Base64.getUrlDecoder().decode(data)
         let authKey = Arrays.copyOf(decodedData, 32)
@@ -218,6 +233,8 @@ function createCertificateListener() {
         attestationChallenge.get(attestationChallengeBytes);
 
         let keyPairGenerator = KeyPairGenerator.getInstance('EC', 'AndroidKeyStore')
+        let KeyGenParameterSpecBuilder = Java.use('android.security.keystore.KeyGenParameterSpec$Builder')
+        let KeyProperties = Java.use('android.security.keystore.KeyProperties')
         let keySpec = KeyGenParameterSpecBuilder.$new(alias, KeyProperties.PURPOSE_SIGN.value)
             .setDigests(Java.array('java.lang.String', [KeyProperties.DIGEST_SHA256.value, KeyProperties.DIGEST_SHA512.value]))
             .setUserAuthenticationRequired(false)
@@ -264,17 +281,18 @@ function createCertificateListener() {
         let encCert = Base64.getUrlEncoder().encodeToString(ba.toByteArray())
         ba.close()
 
+        console.log("[*] Finished computing certificate")
         send({
+            "caller": "cert",
             "authKey": encAuthKey,
             "signature": encSign,
             "certificate": encCert
         })
     })
-    console.log("[*] Listening for cert requests")
 }
 
 Java.perform(function () {
     console.log("[*] Loading script...")
-    createGpiaListener()
+    setupGpia()
     createCertificateListener()
 })
