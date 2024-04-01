@@ -7,15 +7,14 @@ from flask import Flask, request
 import frida
 from waitress import serve
 
-global business_script
+global script
 
 app = Flask(__name__)
 
 gpia_requests: dict[str, Future] = {}
 gpia_requests_lock: Lock = Lock()
-cert_requests: dict[str, Future] = {}
+cert_requests: dict[str, Future]  = {}
 cert_requests_lock: Lock = Lock()
-
 
 def concat_base64(base64_str1: str | None, base64_str2: str | None) -> str:
     bytes1 = base64.urlsafe_b64decode(base64_str1)
@@ -28,16 +27,8 @@ def gpia_route() -> (str, int):
     auth_key: str | None = request.args.get('authKey')
     if auth_key is None:
         return "Missing authKey parameter", 400
-
-    business: str | None = request.args.get("business")
-    if business is None:
-        return "Missing business parameter", 400
-
     future = Future()
-    if bool(business):
-        business_script.post({"type": "gpia", "authKey": auth_key})
-    else:
-        personal_script.post({"type": "gpia", "authKey": auth_key})
+    script.post({"type": "gpia", "authKey": auth_key})
     gpia_requests_lock.acquire()
     gpia_requests[auth_key] = future
     gpia_requests_lock.release()
@@ -49,21 +40,12 @@ def cert_route() -> (str, int):
     auth_key: str | None = request.args.get('authKey')
     if auth_key is None:
         return "Missing authKey parameter", 400
-
     enc: str | None = request.args.get('enc')
     if enc is None:
         return "Missing enc parameter", 400
-
-    business: str | None = request.args.get("business")
-    if business is None:
-        return "Missing business parameter", 400
-
     data = concat_base64(auth_key, enc)
     future = Future()
-    if bool(business):
-        business_script.post({"type": "cert", "data": data})
-    else:
-        personal_script.post({"type": "cert", "data": data})
+    script.post({"type": "cert", "data": data})
     cert_requests_lock.acquire()
     cert_requests[auth_key] = future
     cert_requests_lock.release()
@@ -118,19 +100,14 @@ def on_message(message: dict[str, Any], _):
 
 if __name__ == '__main__':
     device = frida.get_usb_device()
+    session = device.attach("WhatsApp Business")
 
     with open('android.js', 'r', encoding='utf-8') as script_file:
         js_code = script_file.read()
 
-    business_session = device.attach("WhatsApp Business")
-    business_script = business_session.create_script(js_code)
-    business_script.load()
-    business_script.on("message", on_message)
-
-    personal_session = device.attach("WhatsApp")
-    personal_script = business_session.create_script(js_code)
-    personal_script.load()
-    personal_script.on("message", on_message)
+    script = session.create_script(js_code)
+    script.load()
+    script.on("message", on_message)
 
     print('[*] Running server on port 1119')
 
