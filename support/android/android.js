@@ -1,4 +1,15 @@
 const Modifier = Java.use("java.lang.reflect.Modifier")
+const KeyPairGenerator = Java.use('java.security.KeyPairGenerator')
+const KeyStore = Java.use('java.security.KeyStore')
+const KeyStorePrivateKeyEntry = Java.use("java.security.KeyStore$PrivateKeyEntry")
+const Signature = Java.use('java.security.Signature')
+const Base64 = Java.use('java.util.Base64')
+const Date = Java.use('java.util.Date')
+const ByteBuffer = Java.use('java.nio.ByteBuffer')
+const ByteOrder = Java.use("java.nio.ByteOrder")
+const ByteArrayOutputStream = Java.use('java.io.ByteArrayOutputStream')
+const System = Java.use('java.lang.System')
+const Arrays = Java.use('java.util.Arrays')
 const projectId = 293955441834
 const appSignature = "3987d043d10aefaf5a8710b3671418fe57e0e19b653c9df82558feb5ffce5d44"
 
@@ -38,25 +49,25 @@ function getIntegrityManager(provider) {
 }
 
 function findPrepareIntegrityRequestMeta(integrityManager) {
-    const integrityManagerMethods = integrityManager.class.getDeclaredMethods()
-    if (integrityManagerMethods.length !== 1) {
-        throw new Error('Too many methods in integrity manager: ' + integrityManagerMethods.length)
+    const prepareIntegrityManagerMethods = integrityManager.class.getDeclaredMethods()
+    if (prepareIntegrityManagerMethods.length !== 1) {
+        throw new Error('Too many methods in integrity manager: ' + prepareIntegrityManagerMethods.length)
     }
 
-    const integrityManagerMethod = integrityManagerMethods[0]
+    const prepareIntegrityManagerMethod = prepareIntegrityManagerMethods[0]
     console.log("[*] Found prepare integrity request method")
-    const integrityManagerMethodParamTypes = integrityManagerMethod.getParameterTypes()
-    if (integrityManagerMethodParamTypes.length !== 1) {
-        throw new Error('Unexpected number of parameters: ' + integrityManagerMethodParamTypes.length)
+    const prepareIntegrityManagerMethodParamTypes = prepareIntegrityManagerMethod.getParameterTypes()
+    if (prepareIntegrityManagerMethodParamTypes.length !== 1) {
+        throw new Error('Unexpected number of parameters: ' + prepareIntegrityManagerMethodParamTypes.length)
     }
 
-    const requestType = integrityManagerMethodParamTypes[0]
-    const requestTypeClass = Java.use(requestType.getName())
+    const prepareRequestType = prepareIntegrityManagerMethodParamTypes[0]
+    const prepareRequestTypeClass = Java.use(prepareRequestType.getName())
     console.log("[*] Found prepare integrity request type")
-    const requestTypeMethods = requestType.getDeclaredMethods()
-    for (const requestTypeMethod of requestTypeMethods) {
-        if (Modifier.isStatic(requestTypeMethod.getModifiers()) && requestTypeMethod.getParameterTypes().length === 0) {
-            return [requestTypeClass, requestTypeClass[requestTypeMethod.getName()]]
+    const prepareRequestTypeMethods = prepareRequestType.getDeclaredMethods()
+    for (const prepareRequestTypeMethod of prepareRequestTypeMethods) {
+        if (Modifier.isStatic(prepareRequestTypeMethod.getModifiers()) && prepareRequestTypeMethod.getParameterTypes().length === 0) {
+            return [prepareRequestTypeClass, prepareRequestTypeClass[prepareRequestTypeMethod.getName()]]
         }
     }
 
@@ -108,7 +119,7 @@ function findIntegrityRequestMeta(integrityTokenProvider) {
 }
 
 // authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
-var integrityCounter = 0
+let integrityCounter = 0
 function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, callback) {
     integrityCounter++
     let integrityRequestBuilder = integrityRequestBuilderMethod.overload().call(integrityRequestType)
@@ -117,11 +128,11 @@ function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, i
     let javaIntegrityTokenProvider = Java.cast(integrityTokenProvider, Java.use(integrityTokenProvider.$className))
     let integrityTokenResponse = javaIntegrityTokenProvider.request(integrityRequest)
     let onIntegrityTokenListenerType = Java.registerClass({
-        name: 'TokenHandler' + counter,
+        name: 'TokenHandler' + integrityCounter,
         implements: [Java.use("com.google.android.gms.tasks.OnSuccessListener")],
         methods: {
             onSuccess: function (result) {
-                var javaResult = Java.cast(result, Java.use(result.$className))
+                let javaResult = Java.cast(result, Java.use(result.$className))
                 callback(javaResult.token())
             }
         }
@@ -131,20 +142,20 @@ function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, i
 }
 
 function createGpiaListener() {
-     const integrityManagerProvider = findIntegrityManagerProvider()
-     console.log("[*] Found integrity provider")
-     const integrityManager = getIntegrityManager(integrityManagerProvider)
-     console.log("[*] Found integrity manager")
-     const [prepareIntegrityRequestType, prepareIntegrityRequestBuilder] = findPrepareIntegrityRequestMeta(integrityManager)
-     console.log("[*] Found prepare integrity metadata")
-     createIntegrityTokenProvider(
+    const integrityManagerProvider = findIntegrityManagerProvider()
+    console.log("[*] Found integrity provider")
+    const integrityManager = getIntegrityManager(integrityManagerProvider)
+    console.log("[*] Found integrity manager")
+    const [prepareIntegrityRequestType, prepareIntegrityRequestBuilder] = findPrepareIntegrityRequestMeta(integrityManager)
+    console.log("[*] Found prepare integrity metadata")
+    createIntegrityTokenProvider(
         integrityManager,
         prepareIntegrityRequestType,
         prepareIntegrityRequestBuilder,
         (integrityTokenProvider) => {
             const [integrityRequestType, integrityRequestBuilder] = findIntegrityRequestMeta(integrityTokenProvider)
-            console.log("[*] Found integrity metadata")
-            recv("gpia", function (authKey) {
+            recv("gpia", function (message) {
+	            let authKey = message["authKey"]
                 calculateIntegrityToken(
                     integrityTokenProvider,
                     integrityRequestType,
@@ -160,7 +171,7 @@ function createGpiaListener() {
             })
             console.log("[*] Listening for gpia requests")
         }
-     )
+    )
 }
 
 function hexStringToByteArray(s) {
@@ -179,24 +190,12 @@ function toHexString(byteArray) {
     return result
 }
 
-var certificateCounter = 0
+let certificateCounter = 0
 function createCertificateListener() {
     const KeyGenParameterSpecBuilder = Java.use('android.security.keystore.KeyGenParameterSpec$Builder')
     const KeyProperties = Java.use('android.security.keystore.KeyProperties')
-    const KeyPairGenerator = Java.use('java.security.KeyPairGenerator')
-    const KeyStore = Java.use('java.security.KeyStore')
-    const KeyStorePrivateKeyEntry = Java.use("java.security.KeyStore$PrivateKeyEntry")
-    const Signature = Java.use('java.security.Signature')
-    const Base64 = Java.use('java.util.Base64')
-    const Date = Java.use('java.util.Date')
-    const AtomicInteger = Java.use('java.util.concurrent.atomic.AtomicInteger')
-    const ByteBuffer = Java.use('java.nio.ByteBuffer')
-    const ByteOrder = Java.use("java.nio.ByteOrder")
-    const StandardCharsets = Java.use('java.nio.charset.StandardCharsets')
-    const ByteArrayOutputStream = Java.use('java.io.ByteArrayOutputStream')
-    const System = Java.use('java.lang.System')
-
-    recv("cert", function (data) {
+    recv("cert", function (message) {
+        let data = message["data"]
         let decodedData = Base64.getUrlDecoder().decode(data)
         let authKey = Arrays.copyOf(decodedData, 32)
         let enc = Arrays.copyOfRange(decodedData, 32, decodedData.length)
@@ -220,11 +219,11 @@ function createCertificateListener() {
 
         let keyPairGenerator = KeyPairGenerator.getInstance('EC', 'AndroidKeyStore')
         let keySpec = KeyGenParameterSpecBuilder.$new(alias, KeyProperties.PURPOSE_SIGN.value)
-                           .setDigests(Java.array('java.lang.String', [KeyProperties.DIGEST_SHA256.value, KeyProperties.DIGEST_SHA512.value]))
-                           .setUserAuthenticationRequired(false)
-                           .setCertificateNotAfter(expireTime)
-                           .setAttestationChallenge(attestationChallengeBytes)
-                           .build()
+            .setDigests(Java.array('java.lang.String', [KeyProperties.DIGEST_SHA256.value, KeyProperties.DIGEST_SHA512.value]))
+            .setUserAuthenticationRequired(false)
+            .setCertificateNotAfter(expireTime)
+            .setAttestationChallenge(attestationChallengeBytes)
+            .build()
         keyPairGenerator.initialize(keySpec)
         keyPairGenerator.generateKeyPair()
 
@@ -238,20 +237,20 @@ function createCertificateListener() {
         let c0Hex = toHexString(certs[0].getEncoded())
         let pubHex = toHexString(authKey)
         let timeBytes = ByteBuffer.allocate(8)
-                    .putLong(System.currentTimeMillis())
-                    .array()
+            .putLong(System.currentTimeMillis())
+            .array()
         let time = toHexString(timeBytes).substring(4)
         let pubIndex = c0Hex.indexOf(pubHex)
         let timeIndex = pubIndex + 64 + 20
         let signIndex = timeIndex + time.length + 80
         let tailIndex = signIndex + appSignature.length
         let newC0Hex = c0Hex.substring(0, timeIndex)
-                        + time
-                        + c0Hex.substring(timeIndex + time.length, signIndex)
-                         + appSignature
-                         + c0Hex.substring(tailIndex)
-        let data = hexStringToByteArray(newC0Hex)
-        ba.write(data, 0, data.length)
+            + time
+            + c0Hex.substring(timeIndex + time.length, signIndex)
+            + appSignature
+            + c0Hex.substring(tailIndex)
+        let newC0HexBytes = hexStringToByteArray(newC0Hex)
+        ba.write(newC0HexBytes, 0, newC0HexBytes.length)
 
         let s = Signature.getInstance('SHA256withECDSA')
         let entry = Java.cast(ks.getEntry(alias, null), KeyStorePrivateKeyEntry)
@@ -268,7 +267,7 @@ function createCertificateListener() {
         send({
             "authKey": encAuthKey,
             "signature": encSign,
-            "certificate", encCert
+            "certificate": encCert
         })
     })
     console.log("[*] Listening for cert requests")
