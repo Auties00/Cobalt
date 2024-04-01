@@ -382,13 +382,12 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    // TODO: Invoke gpia.js instead of rest api
-    public static CompletableFuture<String> getGpiaToken(URI androidServer, byte[] authKey, boolean business) {
+    public static CompletableFuture<String> getGpiaToken(byte[] authKey, boolean business) {
         return getAndroidData(business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
-                var authKeyBase64 = Base64.getUrlEncoder().encodeToString(authKey);
+                var authKeyBase64 = Base64.getEncoder().withoutPadding().encodeToString(authKey);
                 var request = HttpRequest.newBuilder()
-                        .uri(androidServer.resolve("/gpia?authKey=" + authKeyBase64))
+                        .uri(URI.create("http://localhost:1119/gpia?authKey=" + URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8)))
                         .GET()
                         .build();
                 return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
@@ -417,12 +416,12 @@ public final class WhatsappMetadata {
 
     }
 
-    public static CompletableFuture<AndroidCert> getAndroidCert(URI androidServer, byte[] authKey, byte[] enc) {
+    public static CompletableFuture<AndroidCert> getAndroidCert(byte[] authKey, byte[] enc) {
         try(var client = HttpClient.newHttpClient()) {
             var authKeyBase64 = Base64.getUrlEncoder().encodeToString(authKey);
             var encBase64 = Base64.getUrlEncoder().encodeToString(enc);
             var request = HttpRequest.newBuilder()
-                    .uri(androidServer.resolve("/cert?authKey=" + authKeyBase64 + "&enc=" + encBase64))
+                    .uri(URI.create("http://localhost:1119/cert?authKey=%s&enc=%s".formatted(authKeyBase64, encBase64)))
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())

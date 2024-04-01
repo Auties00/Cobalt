@@ -47,12 +47,11 @@ public final class WhatsappRegistration {
     private final ApnsClient apnsClient;
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
-    private final URI androidVerificationServer;
     private final boolean printRequests;
     private volatile CompletableFuture<String> gpiaToken;
     private volatile CompletableFuture<AndroidCert> androidCert;
 
-    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, URI androidVerificationServer, boolean printRequests) {
+    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
         this.store = store;
         this.keys = keys;
         this.codeHandler = codeHandler;
@@ -62,9 +61,8 @@ public final class WhatsappRegistration {
         var requiresVerification = method != VerificationCodeMethod.NONE;
         var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         this.httpClient = new HttpClient(ios);
-        this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient() : null;
+        this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient(httpClient, proxy) : null;
         this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, proxy) : null;
-        this.androidVerificationServer = androidVerificationServer;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
         this.printRequests = printRequests;
     }
@@ -309,17 +307,13 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<String> getGpiaToken() {
-        if(androidVerificationServer == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-
         if(gpiaToken != null) {
             return gpiaToken;
         }
 
         var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return gpiaToken = WhatsappMetadata.getGpiaToken(androidVerificationServer, publicKey, business);
+        return gpiaToken = WhatsappMetadata.getGpiaToken(publicKey, business);
     }
     
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -547,16 +541,12 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<AndroidCert> getAndroidCert(byte[] enc) {
-        if(androidVerificationServer == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-
         if(androidCert != null) {
             return androidCert;
         }
 
         var publicKey = keys.noiseKeyPair().publicKey();
-        return androidCert =  WhatsappMetadata.getAndroidCert(androidVerificationServer, publicKey, enc);
+        return androidCert =  WhatsappMetadata.getAndroidCert(publicKey, enc);
     }
 
     @SafeVarargs

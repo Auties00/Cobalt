@@ -31,27 +31,6 @@ public final class Bytes {
         return bytes;
     }
 
-    public static byte[] reversedConcat(byte[][] entries) {
-        var arrayLength = 0;
-        for (byte[] entry : entries) {
-            if(entry != null) {
-                arrayLength += entry.length;
-            }
-        }
-
-        var result = new byte[arrayLength];
-        var offset = 0;
-        for(var i = entries.length - 1; i >= 0; i--) {
-            var array = entries[i];
-            if(array != null) {
-                System.arraycopy(array, 0, result, offset, array.length);
-                offset += array.length;
-            }
-        }
-
-        return result;
-    }
-
     public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
                 .filter(Objects::nonNull)

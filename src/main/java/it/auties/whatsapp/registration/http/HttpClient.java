@@ -79,8 +79,8 @@ public class HttpClient {
 
     private volatile ProxySSLFactory factoryWithParams;
 
-    public CompletableFuture<byte[]> get(URI uri) {
-        return sendRequest("GET", uri, null, null, null);
+    public CompletableFuture<byte[]> get(URI uri, Proxy proxy) {
+        return sendRequest("GET", uri, proxy, null, null);
     }
 
     public CompletableFuture<String> get(URI uri, Map<String, ?> headers) {

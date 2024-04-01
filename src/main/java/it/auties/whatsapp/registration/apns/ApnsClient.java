@@ -29,6 +29,7 @@ public class ApnsClient {
     private static final int PORT = 5223;
 
     private final HttpClient httpClient;
+    private final Proxy proxy;
     private final KeyPair keyPair;
     private final Set<ApnsListener> listeners;
     private final List<ApnsPacket> unhandledPackets;
@@ -38,9 +39,9 @@ public class ApnsClient {
     private byte[] certificate;
     private byte[] authToken;
 
-    public ApnsClient() {
-        // Create a new http client instead of reusing the other one as we don't want to use a proxy
-        this.httpClient = new HttpClient(true);
+    public ApnsClient(HttpClient httpClient, Proxy proxy) {
+        this.httpClient = httpClient;
+        this.proxy = proxy;
         this.keyPair = initRSAKeyPair();
         this.listeners = ConcurrentHashMap.newKeySet();
         this.unhandledPackets = new CopyOnWriteArrayList<>();
@@ -70,7 +71,7 @@ public class ApnsClient {
             var endpoint = URI.create("https://albert.apple.com/WebObjects/ALUnbrick.woa/wa/deviceActivation");
             var body = "device=Windows&activation-info=" + URLEncoder.encode(activationBody, StandardCharsets.UTF_8);
             var headers = Map.of("Content-Type", "application/x-www-form-urlencoded");
-            return httpClient.post(endpoint, null,  headers, body.getBytes()).thenAcceptAsync(response -> {
+            return httpClient.post(endpoint, proxy,  headers, body.getBytes()).thenAcceptAsync(response -> {
                 var protocol = PROTOCOL_PATTERN.matcher(new String(response))
                         .results()
                         .findFirst()
@@ -109,7 +110,7 @@ public class ApnsClient {
     }
 
     private CompletableFuture<ApnsBag> getAPNSBag() {
-        return httpClient.get(URI.create("http://init-p01st.push.apple.com/bag"))
+        return httpClient.get(URI.create("http://init-p01st.push.apple.com/bag"), proxy)
                     .thenApply(ApnsBag::ofPlist);
     }
 
@@ -172,7 +173,7 @@ public class ApnsClient {
             var sslParameters = sslContext.getDefaultSSLParameters();
             sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
             var sslSocketFactory = sslContext.getSocketFactory();
-            var underlyingSocket = new Socket();
+            var underlyingSocket = proxy == null ? new Socket() : new Socket(proxy);
             var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
             underlyingSocket.connect(new InetSocketAddress(endpoint, PORT));
             this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);

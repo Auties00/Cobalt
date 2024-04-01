@@ -35,7 +35,6 @@ public sealed class MobileRegistrationBuilder {
         private UnverifiedResult unregisteredResult;
         private VerificationCodeMethod verificationCodeMethod;
         private boolean cloudMessagingVerification;
-        private URI androidVerificationServer;
         private boolean printRequests;
 
         Unregistered(Store store, Keys keys, ErrorHandler errorHandler) {
@@ -75,11 +74,6 @@ public sealed class MobileRegistrationBuilder {
             return this;
         }
 
-        public Unregistered androidVerificationServer(URI androidVerificationServer) {
-            this.androidVerificationServer = androidVerificationServer;
-            return this;
-        }
-
         public Unregistered printRequests(boolean printRequests) {
             this.printRequests = printRequests;
             return this;
@@ -108,7 +102,6 @@ public sealed class MobileRegistrationBuilder {
                         verificationCodeSupplier,
                         verificationCodeMethod,
                         cloudMessagingVerification,
-                        androidVerificationServer,
                         printRequests
                 );
                 return registration.registerPhoneNumber().thenApply(response -> {
@@ -151,7 +144,6 @@ public sealed class MobileRegistrationBuilder {
                         verificationCodeSupplier,
                         verificationCodeMethod,
                         cloudMessagingVerification,
-                        androidVerificationServer,
                         printRequests
                 );
                 return registration.requestVerificationCode().thenApply(response -> {
@@ -167,7 +159,6 @@ public sealed class MobileRegistrationBuilder {
 
     public final static class Unverified extends MobileRegistrationBuilder {
         private boolean cloudMessagingVerification;
-        private URI androidVerificationServer;
         private boolean printRequests;
         Unverified(Store store, Keys keys, ErrorHandler errorHandler, AsyncVerificationCodeSupplier verificationCodeSupplier) {
             super(store, keys, errorHandler);
@@ -198,11 +189,6 @@ public sealed class MobileRegistrationBuilder {
 
         public Unverified cloudMessagingVerification(boolean cloudMessagingVerification) {
             this.cloudMessagingVerification = cloudMessagingVerification;
-            return this;
-        }
-
-        public Unverified androidVerificationServer(URI androidVerificationServer) {
-            this.androidVerificationServer = androidVerificationServer;
             return this;
         }
 
@@ -241,7 +227,6 @@ public sealed class MobileRegistrationBuilder {
                     verificationCodeSupplier,
                     VerificationCodeMethod.NONE,
                     cloudMessagingVerification,
-                    androidVerificationServer,
                     printRequests
             );
             return registration.sendVerificationCode().thenApply(response -> {

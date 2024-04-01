@@ -162,10 +162,9 @@ public class Whatsapp {
         var keys = Keys.newKeys(randomedUUID, phoneNumber, null, ClientType.MOBILE);
         keys.setSerializer(ControllerSerializer.discarding());
         store.setPhoneNumber(PhoneNumber.of(phoneNumber));
-        var service = new WhatsappRegistration(store, keys, null, VerificationCodeMethod.NONE, false, null, false);
+        var service = new WhatsappRegistration(store, keys, null, VerificationCodeMethod.NONE, false, false);
         return service.exists();
     }
-
 
     protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
