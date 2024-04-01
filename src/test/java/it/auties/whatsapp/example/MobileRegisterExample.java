@@ -5,15 +5,7 @@ import it.auties.whatsapp.model.companion.CompanionDevice;
 
 import java.util.Scanner;
 
-// Android setup:
-//   1. Rooted android phone
-//   2. Magisk installed with Magisk Hide and Play integrity fix module
-//   3. Download any play integrity app from the play store: the phone must pass device and basic integrity (emulators and rooted devices without the Play integrity fix module can't do this)
-//   4. Frida-server installed and running on the phone (leave the phone connected via usb)
-//   5. Compile, install and open the app located at support/cert on the phone
-//   6. Download whatsapp business on the phone and try to register any number, leave the app open
-//   7. Start the go backend located at support/gpia
-//   8. Now you can register
+// Android setup: open the directory at support/android and read README.md
 // iOS setup: none necessary
 // KaiOS setup: none necessary
 public class MobileRegisterExample {
