@@ -120,7 +120,6 @@ function findIntegrityRequestMeta(integrityTokenProvider) {
 
 // authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
 let integrityCounter = 0
-
 function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, callback) {
     integrityCounter++
     let integrityRequestBuilder = integrityRequestBuilderMethod.overload().call(integrityRequestType)
