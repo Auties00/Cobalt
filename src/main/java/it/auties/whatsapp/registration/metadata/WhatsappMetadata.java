@@ -221,9 +221,9 @@ public final class WhatsappMetadata {
                 var result = new WhatsappAndroidApp(
                         packageName,
                         version,
-                        md5Hash,
                         sha256Hash,
                         compactSha256Hash,
+                        md5Hash,
                         secretKey,
                         certificates,
                         classes.length,
