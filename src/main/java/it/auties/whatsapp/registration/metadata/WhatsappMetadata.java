@@ -152,8 +152,8 @@ public final class WhatsappMetadata {
             var secretKeyBytes = whatsappData.secretKey();
             var secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, "PBKDF2");
             mac.init(secretKey);
-            whatsappData.certificates().forEach(mac::update);
-            mac.update(whatsappData.classesMD5());
+            mac.update(whatsappData.signature());
+            mac.update(whatsappData.classesMd5());
             mac.update(phoneNumber.getBytes(StandardCharsets.UTF_8));
             return URLEncoder.encode(Base64.getEncoder().encodeToString(mac.doFinal()), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException throwable) {
@@ -293,21 +293,21 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<AndroidToken> getGpiaToken(byte[] authKey, boolean business) {
+    public static CompletableFuture<WhatsappAndroidToken> getGpiaToken(byte[] authKey, boolean business) {
         return getAndroidData(business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
                 var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
                 var request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:1119/gpia?authKey=" + URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8)))
+                        .uri(URI.create("http://localhost:1119/gpia?authKey=%s&business=%s".formatted(URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8), business)))
                         .GET()
                         .build();
                 return client.sendAsync(request, ofString()).thenApplyAsync(response -> {
                     var supportData = Json.readValue(response.body(), GpiaResponse.class);
                     var gpiaData = new GpiaData(
-                            Base64.getEncoder().encodeToString(androidData.certificatesSha1()),
+                            Base64.getEncoder().encodeToString(androidData.signatureSha1()),
                             androidData.packageName(),
                             Base64.getEncoder().encodeToString(androidData.apkSha256()),
-                            Base64.getEncoder().encodeToString(androidData.apkCompactSha256()),
+                            Base64.getEncoder().encodeToString(androidData.apkShatr()),
                             androidData.apkSize(),
                             supportData.token(),
                             0
@@ -316,7 +316,7 @@ public final class WhatsappMetadata {
                             Json.writeValueAsBytes(gpiaData),
                             Sha256.calculate(authKeyBase64)
                     );
-                    return new AndroidToken(
+                    return new WhatsappAndroidToken(
                             supportData.token(),
                             Base64.getEncoder().encodeToString(gpiaPayload)
                     );
@@ -335,16 +335,16 @@ public final class WhatsappMetadata {
 
     }
 
-    public static CompletableFuture<AndroidCert> getAndroidCert(byte[] authKey, byte[] enc) {
+    public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(byte[] authKey, byte[] enc, boolean business) {
         try(var client = HttpClient.newHttpClient()) {
             var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
             var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
             var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:1119/cert?authKey=%s&enc=%s".formatted(authKeyBase64, encBase64)))
+                    .uri(URI.create("http://localhost:1119/cert?authKey=%s&enc=%s&business=%s".formatted(authKeyBase64, encBase64, business)))
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApplyAsync(response -> Json.readValue(response.body(), AndroidCert.class))
+                    .thenApplyAsync(response -> Json.readValue(response.body(), WhatsappAndroidCert.class))
                     .exceptionallyAsync(throwable -> {
                         throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
                     });

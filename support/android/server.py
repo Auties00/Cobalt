@@ -94,18 +94,18 @@ def info_route() -> (str, int):
 
 
 def on_message(message: dict[str, Any], _):
-    print(f"[*] Handling incoming device message {message}")
     message_payload = message.get("payload", {})
-    message_type: str | None = message.get("type")
-    if message_type is None:
-        print("[*] Missing message type")
-        return
-
+    print(f"[*] Handling incoming device message {message_payload}")
     message_caller: str | None = message_payload.get("caller")
     if message_caller == "gpia":
         auth_key: str | None = message_payload.get("authKey")
         if auth_key is None:
             print("[*] No gpia auth key")
+            return
+
+        message_type: str | None = message.get("type")
+        if message_type is None:
+            print("[*] Missing message type")
             return
 
         gpia_requests_lock.acquire()
@@ -130,6 +130,11 @@ def on_message(message: dict[str, Any], _):
             print("[*] No cert auth key")
             return
 
+        message_type: str | None = message.get("type")
+        if message_type is None:
+            print("[*] Missing message type")
+            return
+
         cert_requests_lock.acquire()
         cert_future = cert_requests.get(auth_key)
         cert_requests_lock.release()
@@ -152,8 +157,13 @@ def on_message(message: dict[str, Any], _):
             print("[*] No message id")
             return
 
+        message_type: str | None = message_payload.get("type")
+        if message_type is None:
+            print("[*] Missing message type")
+            return
+
         info_requests_lock.acquire()
-        info_future = cert_requests.get(message_id)
+        info_future = info_requests.get(message_id)
         info_requests_lock.release()
         if info_future is None:
             print("[*] No info request found")
@@ -161,12 +171,19 @@ def on_message(message: dict[str, Any], _):
 
         if message_type == "error":
             info_future.set_result({
-                "error": message.get("description", "Unknown error")
+                "error": message_payload.get("description", "Unknown error")
             })
         else:
             info_future.set_result({
-                "signature": message_payload.get("signature"),
-                "certificate": message_payload.get("certificate"),
+                    "packageName": message_payload.get("packageName"),
+                    "version": message_payload.get("version"),
+                    "apkSha256": message_payload.get("apkSha256"),
+                    "apkShatr": message_payload.get("apkShatr"),
+                    "apkSize": message_payload.get("apkSize"),
+                    "classesMd5": message_payload.get("classesMd5"),
+                    "secretKey": message_payload.get("secretKey"),
+                    "signature": message_payload.get("signature"),
+                    "signatureSha1": message_payload.get("signatureSha1")
             })
 
 

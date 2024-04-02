@@ -23,7 +23,7 @@ import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.http.HttpClient;
-import it.auties.whatsapp.registration.metadata.AndroidToken;
+import it.auties.whatsapp.registration.metadata.WhatsappAndroidToken;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
@@ -47,7 +47,7 @@ public final class WhatsappRegistration {
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
     private final boolean printRequests;
-    private volatile CompletableFuture<AndroidToken> androidToken;
+    private volatile CompletableFuture<WhatsappAndroidToken> androidToken;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
         this.store = store;
@@ -342,7 +342,7 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletableFuture<AndroidToken> getAndroidToken() {
+    private CompletableFuture<WhatsappAndroidToken> getAndroidToken() {
         if(androidToken != null) {
             return androidToken;
         }
@@ -371,7 +371,7 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
-    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, AndroidToken androidToken, CountryCode countryCode) {
+    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, WhatsappAndroidToken androidToken, CountryCode countryCode) {
         return Attributes.of()
                 .put("method", method.data())
                 .put("sim_mcc", countryCode.mcc())
@@ -536,7 +536,7 @@ public final class WhatsappRegistration {
                     return resultAsString;
                 });
             }
-            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(keys.noiseKeyPair().publicKey(), enc).thenComposeAsync(androidCert -> {
+            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
                 if(printRequests) {
                     System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 }
