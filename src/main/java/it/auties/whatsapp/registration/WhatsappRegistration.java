@@ -239,6 +239,7 @@ public final class WhatsappRegistration {
                     .put("device_name", randomDeviceName())
                     .put("language_selector_time_spent", 0)
                     .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
+                    .put("offline_ab", Whatsapp.MOBILE_ANDROID_OFFLINE_AB)
                     .toEntries());
             case IOS, IOS_BUSINESS -> {
                 var attributes = Attributes.of()

@@ -7,13 +7,13 @@ import java.util.List;
 record WhatsappAndroidApp(
         String packageName,
         Version version,
-        byte[] sha256Hash,
-        byte[] compactSha256Hash,
-        byte[] md5Hash,
+        byte[] apkSha256,
+        byte[] apkCompactSha256,
+        int apkSize,
+        byte[] classesMD5,
         byte[] secretKey,
         List<byte[]> certificates,
         byte[] certificatesSha1,
-        int size,
         boolean business
 ) {
 

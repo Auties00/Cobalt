@@ -2,7 +2,9 @@ package it.auties.whatsapp.registration.metadata;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.crypto.*;
+import it.auties.whatsapp.crypto.AesCbc;
+import it.auties.whatsapp.crypto.MD5;
+import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
@@ -10,11 +12,11 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification.Whatsapp;
-import net.dongliu.apk.parser.ByteArrayApkFile;
-import net.dongliu.apk.parser.bean.ApkSigner;
-import net.dongliu.apk.parser.bean.CertificateMeta;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -31,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -54,7 +55,6 @@ public final class WhatsappMetadata {
     private static volatile CompletableFuture<WhatsappAndroidApp> businessApk;
     private static volatile CompletableFuture<WhatsappKaiOsApp> kaiOsApp;
 
-    private static final Path androidCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/android");
     private static final Path kaiOsCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
 
     public static CompletableFuture<Version> getVersion(PlatformType platform) {
@@ -153,7 +153,7 @@ public final class WhatsappMetadata {
             var secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, "PBKDF2");
             mac.init(secretKey);
             whatsappData.certificates().forEach(mac::update);
-            mac.update(whatsappData.md5Hash());
+            mac.update(whatsappData.classesMD5());
             mac.update(phoneNumber.getBytes(StandardCharsets.UTF_8));
             return URLEncoder.encode(Base64.getEncoder().encodeToString(mac.doFinal()), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException throwable) {
@@ -170,9 +170,7 @@ public final class WhatsappMetadata {
             return businessApk;
         }
 
-        var future = getCachedAndroidApk(business)
-                .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> downloadAndroidData(business));
+        var future = downloadAndroidData(business);
         if(business) {
             businessApk = future;
         }else {
@@ -182,105 +180,18 @@ public final class WhatsappMetadata {
         return future;
     }
 
-    private static Optional<WhatsappAndroidApp> getCachedAndroidApk(boolean business) {
-        try {
-            var localCache = getAndroidLocalCache(business);
-            if (Files.notExists(localCache)) {
-                return Optional.empty();
-            }
-
-            var now = Instant.now();
-            var fileTime = Files.getLastModifiedTime(localCache);
-            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) >= 1) {
-                return Optional.empty();
-            }
-
-            return Optional.of(Json.readValue(Files.readString(localCache), WhatsappAndroidApp.class));
-        } catch (Throwable throwable) {
-            return Optional.empty();
-        }
-    }
-
-    private static Path getAndroidLocalCache(boolean business) {
-        return androidCache.resolve(business ? "whatsapp_business.json" : "whatsapp.json");
-    }
-
     private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(boolean business) {
-        return Medias.downloadAsync(business ? Whatsapp.MOBILE_BUSINESS_ANDROID_URL : Whatsapp.MOBILE_ANDROID_URL, (String) null).thenApplyAsync(apk -> {
-            try (var apkFile = new ByteArrayApkFile(apk)) {
-                var packageName = apkFile.getApkMeta().getPackageName();
-                var version = Version.of(apkFile.getApkMeta().getVersionName());
-                var classes = apkFile.getFileData("classes.dex");
-                var md5Hash = MD5.calculate(classes);
-                var sha256Hash = Sha256.calculate(classes);
-                var compactSha256Hash = Sha256.calculate(Arrays.copyOf(classes, 10));
-                var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
-                var certificates = getCertificates(apkFile);
-                var certificatesSha1 = Sha1.calculate(Bytes.concat(certificates));
-                var result = new WhatsappAndroidApp(
-                        packageName,
-                        version,
-                        sha256Hash,
-                        compactSha256Hash,
-                        md5Hash,
-                        secretKey,
-                        certificates,
-                        certificatesSha1,
-                        classes.length,
-                        business
-                );
-                cacheWhatsappData(result);
-                return result;
-            } catch (IOException | GeneralSecurityException exception) {
-                throw new RuntimeException("Cannot extract certificates from APK", exception);
-            }
-        });
-    }
-
-    private static void cacheWhatsappData(WhatsappAndroidApp apk) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                var json = Json.writeValueAsString(apk, true);
-                var file = getAndroidLocalCache(apk.business());
-                Files.createDirectories(file.getParent());
-                Files.writeString(file, json);
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
-            }
-        });
-    }
-
-    private static byte[] getAboutLogo(ByteArrayApkFile apkFile) throws IOException {
-        var resource = apkFile.getFileData("res/drawable-hdpi/about_logo.png");
-        if (resource != null) {
-            return resource;
+        try(var client = HttpClient.newHttpClient()) {
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:1119/info?business=" + business))
+                    .GET()
+                    .build();
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApplyAsync(response -> Json.readValue(response.body(), WhatsappAndroidApp.class))
+                    .exceptionallyAsync(throwable -> {
+                        throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
+                    });
         }
-
-        var resourceV4 = apkFile.getFileData("res/drawable-hdpi-v4/about_logo.png");
-        if (resourceV4 != null) {
-            return resourceV4;
-        }
-
-        var xxResourceV4 = apkFile.getFileData("res/drawable-xxhdpi-v4/about_logo.png");
-        if (xxResourceV4 != null) {
-            return xxResourceV4;
-        }
-
-        throw new NoSuchElementException("Missing about_logo.png from apk");
-    }
-
-    private static List<byte[]> getCertificates(ByteArrayApkFile apkFile) throws IOException, CertificateException {
-        return apkFile.getApkSingers()
-                .stream()
-                .map(ApkSigner::getCertificateMetas)
-                .flatMap(Collection::stream)
-                .map(CertificateMeta::getData)
-                .toList();
-    }
-
-    private static byte[] getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
-        var password = Bytes.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
-        return PBKDF2.hmacSha1With8Bit(password, Whatsapp.MOBILE_ANDROID_SALT, 128, 512);
     }
 
     private static Path getKaiOsLocalCache() {
@@ -385,25 +296,25 @@ public final class WhatsappMetadata {
     public static CompletableFuture<AndroidToken> getGpiaToken(byte[] authKey, boolean business) {
         return getAndroidData(business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
-                var authKeyBase64 = Base64.getEncoder().withoutPadding().encodeToString(authKey);
+                var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
                 var request = HttpRequest.newBuilder()
                         .uri(URI.create("http://localhost:1119/gpia?authKey=" + URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8)))
                         .GET()
                         .build();
-                return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
+                return client.sendAsync(request, ofString()).thenApplyAsync(response -> {
                     var supportData = Json.readValue(response.body(), GpiaResponse.class);
                     var gpiaData = new GpiaData(
                             Base64.getEncoder().encodeToString(androidData.certificatesSha1()),
                             androidData.packageName(),
-                            Base64.getEncoder().encodeToString(androidData.sha256Hash()),
-                            Base64.getEncoder().encodeToString(androidData.compactSha256Hash()),
-                            androidData.size(),
+                            Base64.getEncoder().encodeToString(androidData.apkSha256()),
+                            Base64.getEncoder().encodeToString(androidData.apkCompactSha256()),
+                            androidData.apkSize(),
                             supportData.token(),
                             0
                     );
                     var gpiaPayload = AesCbc.encryptAndPrefix(
                             Json.writeValueAsBytes(gpiaData),
-                            Sha256.calculate(Base64.getEncoder().encodeToString(authKey))
+                            Sha256.calculate(authKeyBase64)
                     );
                     return new AndroidToken(
                             supportData.token(),
@@ -426,8 +337,8 @@ public final class WhatsappMetadata {
 
     public static CompletableFuture<AndroidCert> getAndroidCert(byte[] authKey, byte[] enc) {
         try(var client = HttpClient.newHttpClient()) {
-            var authKeyBase64 = Base64.getUrlEncoder().encodeToString(authKey);
-            var encBase64 = Base64.getUrlEncoder().encodeToString(enc);
+            var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
+            var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
             var request = HttpRequest.newBuilder()
                     .uri(URI.create("http://localhost:1119/cert?authKey=%s&enc=%s".formatted(authKeyBase64, encBase64)))
                     .GET()

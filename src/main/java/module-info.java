@@ -33,7 +33,6 @@ open module it.auties.cobalt {
 
     // Mobile api
     requires libphonenumber;
-    requires net.dongliu.apkparser;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

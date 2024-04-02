@@ -10,6 +10,11 @@ const ByteOrder = Java.use("java.nio.ByteOrder")
 const ByteArrayOutputStream = Java.use('java.io.ByteArrayOutputStream')
 const System = Java.use('java.lang.System')
 const Arrays = Java.use('java.util.Arrays')
+const File = Java.use('java.io.File')
+const Files = Java.use('java.nio.file.Files')
+const MessageDigest = Java.use('java.security.MessageDigest')
+const ByteArrayInputStream = Java.use("java.io.ByteArrayInputStream")
+const ZipInputStream = Java.use("java.util.zip.ZipInputStream")
 const projectId = 293955441834
 const appSignature = "3987d043d10aefaf5a8710b3671418fe57e0e19b653c9df82558feb5ffce5d44"
 
@@ -74,7 +79,7 @@ function findPrepareIntegrityRequestMeta(integrityManager) {
     throw new Error('Cannot find prepare request builder method')
 }
 
-function createIntegrityTokenProvider(integrityManager, prepareIntegrityRequestType, prepareIntegrityRequestBuilder, callback) {
+function createIntegrityTokenProvider(integrityManager, prepareIntegrityRequestType, prepareIntegrityRequestBuilder, onSuccess, onError) {
     const integrityTokenPrepareRequestBuilder = prepareIntegrityRequestBuilder.overload().call(prepareIntegrityRequestType)
     integrityTokenPrepareRequestBuilder.setCloudProjectNumber(projectId)
     const integrityTokenPrepareRequest = integrityTokenPrepareRequestBuilder.build()
@@ -84,12 +89,24 @@ function createIntegrityTokenProvider(integrityManager, prepareIntegrityRequestT
         implements: [Java.use("com.google.android.gms.tasks.OnSuccessListener")],
         methods: {
             onSuccess: function (integrityTokenProvider) {
-                callback(Java.cast(integrityTokenProvider, Java.use(integrityTokenProvider.$className)))
+                onSuccess(Java.cast(integrityTokenProvider, Java.use(integrityTokenProvider.$className)))
             }
         }
     })
+    let onTokenProviderFailedListenerType = Java.registerClass({
+                name: 'IntegrityTokenProviderErrorHandler',
+                implements: [Java.use("com.google.android.gms.tasks.OnFailureListener")],
+                methods: {
+                    onFailure: function (result) {
+                        let javaResult = Java.cast(result, Java.use(result.$className))
+                        onError(javaResult.getMessage())
+                    }
+                }
+    })
     const onTokenProviderCreatedListener = onTokenProviderCreatedListenerType.$new()
+    const onTokenProviderFailureListener = onTokenProviderFailedListenerType.$new()
     integrityTokenPrepareResponse["addOnSuccessListener"].overload('com.google.android.gms.tasks.OnSuccessListener').call(integrityTokenPrepareResponse, onTokenProviderCreatedListener)
+    integrityTokenPrepareResponse["addOnFailureListener"].overload('com.google.android.gms.tasks.OnFailureListener').call(integrityTokenPrepareResponse, onTokenProviderFailureListener)
 }
 
 function findIntegrityRequestMeta(integrityTokenProvider) {
@@ -160,11 +177,12 @@ function createGpiaListener(integrityTokenProvider, integrityRequestType, integr
         createGpiaListener(integrityTokenProvider, integrityRequestType, integrityRequestBuilder)
         console.log("[*] Computing gpia token...")
         let authKey = message["authKey"]
+        let nonce = Base64.getEncoder().withoutPadding().encodeToString(Base64.getDecoder().decode(authKey))
         calculateIntegrityToken(
             integrityTokenProvider,
             integrityRequestType,
             integrityRequestBuilder,
-            authKey,
+            nonce,
             (token) => {
                 console.log("[*] Finished computing gpia token")
                 send({
@@ -204,6 +222,9 @@ function setupGpia() {
                 integrityRequestType,
                 integrityRequestBuilder
             )
+        },
+        (error) => {
+            console.log("[*] Cannot prepare integrity manager: ", error)
         }
     )
 }
@@ -232,7 +253,7 @@ function createCertificateListener() {
         createCertificateListener()
         console.log("[*] Computing certificate...")
         let data = message["data"]
-        let decodedData = Base64.getUrlDecoder().decode(data)
+        let decodedData = Base64.getDecoder().decode(data)
         let authKey = Arrays.copyOf(decodedData, 32)
         let enc = Arrays.copyOfRange(decodedData, 32, decodedData.length)
 
@@ -297,7 +318,7 @@ function createCertificateListener() {
         s.update(enc)
         ks.deleteEntry(alias)
 
-        let encAuthKey = Base64.getUrlEncoder().encodeToString(authKey)
+        let encAuthKey = Base64.getEncoder().encodeToString(authKey)
         let encSign = Base64.getEncoder().encodeToString(s.sign())
         let encCert = Base64.getEncoder().encodeToString(ba.toByteArray())
         ba.close()
@@ -312,8 +333,95 @@ function createCertificateListener() {
     })
 }
 
+function sha256(data, length) {
+    let digest = MessageDigest.getInstance("SHA-256");
+    digest.update(data, 0, length);
+    return digest.digest();
+}
+
+function md5(data) {
+    let digest = MessageDigest.getInstance("MD5");
+    digest.update(data, 0, data.length);
+    return digest.digest();
+}
+
+function getApk(context) {
+    let packageName = context.getPackageName()
+    let rawPath = context.getPackageManager().getApplicationInfo(packageName, 0).sourceDir.value
+    let file = File.$new(rawPath)
+    return file.toPath()
+}
+
+function readZipEntry(zipInputStream) {
+    let output = ByteArrayOutputStream.$new()
+    let data = Java.array("byte", new Array(1024).fill(0))
+    while(true) {
+        let read = zipInputStream.read(data, 0, data.length)
+        if(read !== -1) {
+            output.write(data, 0, read)
+        }else {
+            break;
+        }
+    }
+    let result = output.toByteArray()
+    output.close()
+    return result
+}
+
+function createInfoListener() {
+    console.log("[*] Ready for next info request")
+
+    recv("info", function (message) {
+        console.log("[*] Computing info...")
+
+        let ActivityThread = Java.use('android.app.ActivityThread')
+        let PackageManager = Java.use("android.content.pm.PackageManager")
+
+        let context = ActivityThread.currentApplication().getApplicationContext()
+        let packageName = context.getPackageName()
+
+        let packageInfo = context.getPackageManager().getPackageInfo(packageName, 0)
+        let packageVersion = packageInfo.versionName.value
+
+        let apkPath = getApk(context)
+        let apkSource = Files.readAllBytes(apkPath)
+        let apkSha256 = sha256(apkSource, apkSource.length)
+        let apkShatr = sha256(apkSource, 10 * 1024 * 1024)
+        let classesMd5 = undefined
+        let aboutLogo = undefined
+        let zipInputStream = ZipInputStream.$new(ByteArrayInputStream.$new(apkSource))
+        let zipEntry = undefined
+        do {
+            zipEntry = zipInputStream.getNextEntry()
+            if(zipEntry != null) {
+                if(zipEntry.getName().includes("classes.dex")) {
+                    classesMd5 = md5(readZipEntry(zipInputStream))
+                }else if(zipEntry.getName().includes("about_logo.png")) {
+                    aboutLogo = readZipEntry(zipInputStream)
+                }
+            }
+        }while(zipEntry !== undefined || (classesMd5 !== undefined && aboutLogo !== undefined))
+        zipInputStream.close()
+        let signature = context.getPackageManager().getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()
+
+        console.log("[*] Finished computing info")
+        console.log(JSON.stringify({
+            "caller": "info",
+            "packageName": packageName,
+            "version": packageVersion,
+            "apkSha256": Base64.getEncoder().encodeToString(apkSha256),
+            "apkShatr": Base64.getEncoder().encodeToString(apkShatr),
+            "apkSize": apkSource.length,
+            "classesMd5": Base64.getEncoder().encodeToString(classesMd5),
+            "aboutLogo": Base64.getEncoder().encodeToString(aboutLogo),
+            "signature": Base64.getEncoder().encodeToString(signature)
+        }))
+    })
+}
+
 Java.perform(function () {
     console.log("[*] Loading script...")
     setupGpia()
+    createInfoListener()
     createCertificateListener()
 })
