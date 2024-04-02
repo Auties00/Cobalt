@@ -2,10 +2,8 @@ package it.auties.whatsapp.registration.metadata;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.crypto.AesCbc;
-import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.crypto.PBKDF2;
-import it.auties.whatsapp.crypto.Sha256;
+import it.auties.whatsapp.crypto.*;
+import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
@@ -218,6 +216,7 @@ public final class WhatsappMetadata {
                 var compactSha256Hash = Sha256.calculate(Arrays.copyOf(classes, 10));
                 var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
                 var certificates = getCertificates(apkFile);
+                var certificatesSha1 = Sha1.calculate(Bytes.concat(certificates));
                 var result = new WhatsappAndroidApp(
                         packageName,
                         version,
@@ -226,6 +225,7 @@ public final class WhatsappMetadata {
                         md5Hash,
                         secretKey,
                         certificates,
+                        certificatesSha1,
                         classes.length,
                         business
                 );
@@ -382,7 +382,7 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<String> getGpiaToken(byte[] authKey, boolean business) {
+    public static CompletableFuture<AndroidToken> getGpiaToken(byte[] authKey, boolean business) {
         return getAndroidData(business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
                 var authKeyBase64 = Base64.getEncoder().withoutPadding().encodeToString(authKey);
@@ -393,7 +393,7 @@ public final class WhatsappMetadata {
                 return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
                     var supportData = Json.readValue(response.body(), GpiaResponse.class);
                     var gpiaData = new GpiaData(
-                            Specification.Whatsapp.MOBILE_ANDROID_GPIA_CERTIFICATE,
+                            Base64.getEncoder().encodeToString(androidData.certificatesSha1()),
                             androidData.packageName(),
                             Base64.getEncoder().encodeToString(androidData.sha256Hash()),
                             Base64.getEncoder().encodeToString(androidData.compactSha256Hash()),
@@ -401,8 +401,16 @@ public final class WhatsappMetadata {
                             supportData.token(),
                             0
                     );
-                    var gpiaPayload = AesCbc.encryptAndPrefix(Json.writeValueAsBytes(gpiaData), authKey);
-                    return Base64.getUrlEncoder().encodeToString(gpiaPayload);
+                    var gpiaPayload = AesCbc.encryptAndPrefix(
+                            Json.writeValueAsBytes(gpiaData),
+                            Sha256.calculate(Base64.getUrlEncoder().encodeToString(authKey))
+                    );
+                    return new AndroidToken(
+                            supportData.token(),
+                            Base64.getEncoder().encodeToString(gpiaPayload)
+                    );
+                }).exceptionallyAsync(throwable -> {
+                    throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
                 });
             }
         });
@@ -425,7 +433,10 @@ public final class WhatsappMetadata {
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApplyAsync(response -> Json.readValue(response.body(), AndroidCert.class));
+                    .thenApplyAsync(response -> Json.readValue(response.body(), AndroidCert.class))
+                    .exceptionallyAsync(throwable -> {
+                        throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
+                    });
         }
     }
 }
