@@ -118,6 +118,12 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     final byte[] identityId;
 
     /**
+     * The recovery token for the mobile api
+     */
+    @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
+    final byte[] backupToken;
+
+    /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
@@ -188,7 +194,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     byte[] writeKey, readKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
@@ -203,6 +209,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replaceAll("-", "")));
         this.advertisingId = Objects.requireNonNullElseGet(advertisingId, UUID::randomUUID);
         this.identityId = Objects.requireNonNull(identityId, "Missing identity id");
+        this.backupToken = Objects.requireNonNull(backupToken, "Missing backup token");
         this.companionIdentity = companionIdentity;
         this.senderKeys = Objects.requireNonNullElseGet(senderKeys, ConcurrentHashMap::new);
         this.appStateKeys = Objects.requireNonNullElseGet(appStateKeys, ArrayList::new);
@@ -225,6 +232,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
                 .noiseKeyPair(SignalKeyPair.random())
                 .identityKeyPair(SignalKeyPair.random())
                 .identityId(Bytes.random(16))
+                .backupToken(Bytes.random(20))
                 .build();
     }
 
@@ -572,6 +580,10 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
 
     public byte[] identityId() {
         return this.identityId;
+    }
+
+    public byte[] backupToken() {
+        return backupToken;
     }
 
     public Map<SenderKeyName, SenderKeyRecord> senderKeys() {

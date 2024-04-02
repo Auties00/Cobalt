@@ -12,6 +12,7 @@ record WhatsappAndroidApp(
         byte[] md5Hash,
         byte[] secretKey,
         List<byte[]> certificates,
+        byte[] certificatesSha1,
         int size,
         boolean business
 ) {

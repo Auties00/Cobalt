@@ -32,7 +32,7 @@ public final class AesCbc {
     }
 
     public static byte[] decrypt(byte[] encrypted, byte[] key) {
-        var iv = Arrays.copyOfRange(encrypted, 0, 16);
+        var iv = Arrays.copyOfRange(encrypted, 0, AES_BLOCK_SIZE);
         var encryptedNoIv = Arrays.copyOfRange(encrypted, iv.length, encrypted.length);
         return decrypt(iv, encryptedNoIv, key);
     }

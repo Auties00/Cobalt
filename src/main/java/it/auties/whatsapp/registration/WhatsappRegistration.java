@@ -23,12 +23,12 @@ import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.http.HttpClient;
+import it.auties.whatsapp.registration.metadata.AndroidToken;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import java.net.URI;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
@@ -47,7 +47,7 @@ public final class WhatsappRegistration {
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
     private final boolean printRequests;
-    private volatile CompletableFuture<String> gpiaToken;
+    private volatile CompletableFuture<AndroidToken> androidToken;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
         this.store = store;
@@ -173,22 +173,13 @@ public final class WhatsappRegistration {
 
     private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, boolean swapDevice, VerificationCodeError lastError) {
         return getPushToken().thenComposeAsync(pushToken -> {
-            var ios = store.device().platform().isIOS();
-            var android = store.device().platform().isAndroid();
-            var business = store.device().platform().isBusiness();
-            var registrationParametersFuture = android ? getRequestVerificationCodeParameters(pushToken) : CompletableFuture.<Entry<String, Object>[]>completedFuture(null);
-            return registrationParametersFuture.thenComposeAsync(registrationParameters -> {
-                var entries = Attributes.ofNullable(registrationParameters)
-                        .put("offline_ab", business ? Whatsapp.MOBILE_BUSINESS_IOS_OFFLINE_AB : Whatsapp.MOBILE_IOS_OFFLINE_AB, ios)
-                        .put("offline_ab", Whatsapp.MOBILE_ANDROID_OFFLINE_AB, android)
-                        .put("push_token", pushToken == null ? "" : android ? pushToken : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
-                        .put("recovery_token_error", "-25300", ios)
-                        .toEntries();
+            var requiresToken = store.device().platform().isAndroid();
+            return getExistsParameters(pushToken).thenComposeAsync(existsParameters -> {
                 var options = getRegistrationOptions(
                         store,
                         keys,
-                        android,
-                        entries
+                        requiresToken,
+                        existsParameters
                 );
                 return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
                     var response = Json.readValue(result, RegistrationResponse.class);
@@ -222,6 +213,50 @@ public final class WhatsappRegistration {
         });
     }
 
+    private CompletableFuture<Entry<String, Object>[]> getExistsParameters(String pushToken) {
+        var platform = store.device().platform();
+        return switch (platform) {
+            case ANDROID, ANDROID_BUSINESS -> getAndroidToken().thenApplyAsync(androidToken -> Attributes.of()
+                    .put("feo2_query_status", "error_security_exception")
+                    .put("sim_type", 1)
+                    .put("network_radio_type", 1)
+                    .put("network_operator_name", "")
+                    .put("sim_operator_name", "Vodafone")
+                    .put("simnum", 0)
+                    .put("airplane_mode_type", 1)
+                    .put("mistyped", 7)
+                    .put("advertising_id", keys.advertisingId())
+                    .put("hasinrc", 1)
+                    .put("roaming_type", 0)
+                    .put("device_ram", 4)
+                    .put("client_metrics", "{\"attempts\":15,\"was_activated_from_stub\":false}")
+                    .put("pid", ProcessHandle.current().pid())
+                    .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
+                    .put("gpia_token", androidToken == null ? "" : androidToken.gpiaToken(), androidToken != null)
+                    .put("gpia", androidToken == null ? "" : androidToken.gpia(), androidToken != null)
+                    .put("backup_token", convertBufferToUrlHex(keys.backupToken()))
+                    .put("backup_token_error", "null_token")
+                    .put("device_name", randomDeviceName())
+                    .put("language_selector_time_spent", 0)
+                    .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
+                    .toEntries());
+            case IOS, IOS_BUSINESS -> {
+                var attributes = Attributes.of()
+                        .put("offline_ab", platform.isBusiness() ? Whatsapp.MOBILE_BUSINESS_IOS_OFFLINE_AB : Whatsapp.MOBILE_IOS_OFFLINE_AB)
+                        .put("push_token", pushToken == null ? "" : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
+                        .put("recovery_token_error", "-25300")
+                        .toEntries();
+                yield CompletableFuture.completedFuture(attributes);
+            }
+            case KAIOS -> CompletableFuture.completedFuture(Attributes.of().toEntries());
+            default -> throw new IllegalStateException("Unsupported mobile os");
+        };
+    }
+
+    private String randomDeviceName() {
+        return Bytes.bytesToCrockford(Bytes.random(8));
+    }
+
     private CompletableFuture<String> getPushCode() {
         if (apnsClient != null) {
             return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
@@ -240,7 +275,7 @@ public final class WhatsappRegistration {
 
         if(gcmClient != null) {
             return gcmClient.getPushCode()
-                    .orTimeout(10, TimeUnit.SECONDS)
+                    .orTimeout(60, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
                         if(error instanceof TimeoutException) {
                             throw new RegistrationException(null, "Gcm timeout");
@@ -298,7 +333,7 @@ public final class WhatsappRegistration {
                 .orElseThrow()
                 .countryCode();
         return switch (store.device().platform()) {
-            case ANDROID, ANDROID_BUSINESS -> getGpiaToken()
+            case ANDROID, ANDROID_BUSINESS -> getAndroidToken()
                     .thenApplyAsync(gpiaToken -> getAndroidRequestParameters(pushCode, gpiaToken, countryCode));
             case IOS, IOS_BUSINESS -> CompletableFuture.completedFuture(getIosRequestParameters(pushCode));
             case KAIOS -> CompletableFuture.completedFuture(getKaiOsRequestParameters(countryCode));
@@ -306,14 +341,14 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletableFuture<String> getGpiaToken() {
-        if(gpiaToken != null) {
-            return gpiaToken;
+    private CompletableFuture<AndroidToken> getAndroidToken() {
+        if(androidToken != null) {
+            return androidToken;
         }
 
         var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return gpiaToken = WhatsappMetadata.getGpiaToken(publicKey, business);
+        return androidToken = WhatsappMetadata.getGpiaToken(publicKey, business);
     }
     
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -335,11 +370,11 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
-    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, String gpiaToken, CountryCode countryCode) {
+    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, AndroidToken androidToken, CountryCode countryCode) {
         return Attributes.of()
                 .put("method", method.data())
                 .put("sim_mcc", countryCode.mcc())
-                .put("sim_mnc", countryCode.mcc())
+                .put("sim_mnc", "002")
                 .put("reason", "")
                 .put("mcc", countryCode.mcc())
                 .put("mnc", "000")
@@ -348,22 +383,22 @@ public final class WhatsappRegistration {
                 .put("network_radio_type", 1)
                 .put("prefer_sms_over_flash", true)
                 .put("simnum", 0)
-                .put("sim_state", 3)
                 .put("clicked_education_link", false)
-                .put("airplane_mode_type", 0)
+                .put("airplane_mode_type", 1)
                 .put("mistyped", 7)
                 .put("advertising_id", keys.advertisingId())
                 .put("hasinrc", 1)
                 .put("roaming_type", 0)
                 .put("device_ram", 4)
-                .put("client_metrics", URLEncoder.encode("{\"attempts\":1}", StandardCharsets.UTF_8))
-                .put("education_screen_displayed", true)
-                .put("read_phone_permission_granted", 1)
+                .put("client_metrics", "{\"attempts\":1}")
+                .put("education_screen_displayed", false)
                 .put("pid", ProcessHandle.current().pid())
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
-                .put("gpia_token", gpiaToken, gpiaToken != null)
-                .put("gpia", "%7B%22token%22%3A%22" + gpiaToken + "%22%2C%22error_code%22%3A0%7D", gpiaToken != null)
+                .put("gpia_token", androidToken == null ? "" : androidToken.gpiaToken(), androidToken != null)
+                .put("gpia", androidToken == null ? "" : androidToken.gpia(), androidToken != null)
                 .put("push_code", pushCode, pushCode != null)
+                .put("backup_token", convertBufferToUrlHex(keys.backupToken()))
+                .put("hasav", 2)
                 .toEntries();
     }
 

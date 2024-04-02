@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.DataFormatException;
@@ -29,6 +30,13 @@ public final class Bytes {
         var bytes = new byte[length];
         ThreadLocalRandom.current().nextBytes(bytes);
         return bytes;
+    }
+
+    public static byte[] concat(List<byte[]> entries) {
+        return entries.stream()
+                .filter(Objects::nonNull)
+                .reduce(Bytes::concat)
+                .orElseGet(() -> new byte[0]);
     }
 
     public static byte[] concat(byte[]... entries) {

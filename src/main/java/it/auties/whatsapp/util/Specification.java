@@ -66,7 +66,6 @@ public class Specification {
         public static final String BUSINESS_NAME_VCARD_PROPERTY = "X-WA-BIZ-NAME";
         public static final String PHONE_NUMBER_VCARD_PROPERTY = "WAID";
         public static final String DEFAULT_NUMBER_VCARD_TYPE = "CELL";
-        public static final String MOBILE_ANDROID_GPIA_CERTIFICATE = "OKD31QX+GP7GT780Psqq8xDb15k=";
     }
 
     public final static class Signal {

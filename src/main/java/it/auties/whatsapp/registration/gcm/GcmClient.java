@@ -16,10 +16,9 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.Proxy;
-import java.net.URI;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 public class GcmClient {
     private static final long DEFAULT_GCM_SENDER_ID = 293955441834L;
     private static final int AUTH_SECRET_LENGTH = 16;
-    private static final String CHROME_VERSION = "63.0.3234.0";
+    private static final String CHROME_VERSION = "123.0.6312.86";
     private static final URI CHECK_IN_URL = URI.create("https://android.clients.google.com/checkin");
     private static final String FCM_SERVER_KEY = "BDOU99-h67HcA6JeFXHbSNMu7e2yNNu3RzoMj8TM4W88jITfq7ZmPvIM1Iv-4_l2LxQcYwhqby2xGpWwzjfAnG4";
     private static final String FCM_ENDPOINT = "https://fcm.googleapis.com/fcm/send/";
@@ -53,7 +52,7 @@ public class GcmClient {
     private String token;
     public GcmClient(HttpClient httpClient, Proxy proxy) {
         this.httpClient = httpClient;
-        this.proxy = proxy;
+        this.proxy = null;
         this.senderId = DEFAULT_GCM_SENDER_ID;
         this.keyPair = ECDH256KeyPair.random();
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
@@ -92,7 +91,7 @@ public class GcmClient {
                 .version(3)
                 .userSerialNumber(0)
                 .build();
-        return httpClient.post(CHECK_IN_URL, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
+        return httpClient.post(CHECK_IN_URL, proxy, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
                 .thenApplyAsync(AndroidCheckInResponseSpec::decode);
     }
 
@@ -132,7 +131,7 @@ public class GcmClient {
                 "encryption_key", encoder.encodeToString(keyPair.publicKey()),
                 "encryption_auth", encoder.encodeToString(authSecret)
         );
-        return httpClient.post(FCM_SUBSCRIBE_URL, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
+        return httpClient.post(FCM_SUBSCRIBE_URL, proxy, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
                 .thenAcceptAsync(this::handleSubscription);
     }
 
@@ -145,7 +144,11 @@ public class GcmClient {
         return CompletableFuture.runAsync(() -> {
             try {
                 var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                this.socket = (SSLSocket) sslSocketFactory.createSocket(TALK_SERVER_HOST, TALK_SERVER_PORT);
+                var underlyingSocket = proxy == null ? new Socket() : new Socket(proxy);
+                underlyingSocket.connect(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
+                this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, TALK_SERVER_HOST, TALK_SERVER_PORT, true);
+                socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
+                socket.startHandshake();
                 readMessages();
                 sendLoginPacket();
             } catch (IOException exception) {
