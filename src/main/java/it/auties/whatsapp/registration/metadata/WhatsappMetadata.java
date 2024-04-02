@@ -403,7 +403,7 @@ public final class WhatsappMetadata {
                     );
                     var gpiaPayload = AesCbc.encryptAndPrefix(
                             Json.writeValueAsBytes(gpiaData),
-                            Sha256.calculate(Base64.getUrlEncoder().encodeToString(authKey))
+                            Sha256.calculate(Base64.getEncoder().encodeToString(authKey))
                     );
                     return new AndroidToken(
                             supportData.token(),

@@ -86,11 +86,11 @@ public record CompanionDevice(
 
     public static CompanionDevice android(Version appVersion, boolean business) {
         return new CompanionDevice(
-                "MI_" + ThreadLocalRandom.current().nextInt(6, 15),
-                "Xiaomi",
+                "Pixel_2",
+                "Google",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
                 Optional.ofNullable(appVersion),
-                Version.of(String.valueOf(ThreadLocalRandom.current().nextInt(8, 13)))
+                Version.of("11")
         );
     }
 

@@ -132,6 +132,7 @@ function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, i
         implements: [Java.use("com.google.android.gms.tasks.OnSuccessListener")],
         methods: {
             onSuccess: function (result) {
+                console.log("[*] Token wrapper type ", result.$className)
                 let javaResult = Java.cast(result, Java.use(result.$className))
                 onSuccess(javaResult.token())
             }
@@ -297,8 +298,8 @@ function createCertificateListener() {
         ks.deleteEntry(alias)
 
         let encAuthKey = Base64.getUrlEncoder().encodeToString(authKey)
-        let encSign = Base64.getUrlEncoder().encodeToString(s.sign())
-        let encCert = Base64.getUrlEncoder().encodeToString(ba.toByteArray())
+        let encSign = Base64.getEncoder().encodeToString(s.sign())
+        let encCert = Base64.getEncoder().encodeToString(ba.toByteArray())
         ba.close()
 
         console.log("[*] Finished computing certificate")

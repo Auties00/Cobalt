@@ -537,27 +537,29 @@ public final class WhatsappRegistration {
             }
             case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(keys.noiseKeyPair().publicKey(), enc).thenComposeAsync(androidCert -> {
                 if(printRequests) {
-                    System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                    System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 }
-                var uri = URI.create("%s%s?ENC=%s%s".formatted(
+                var uri = URI.create("%s%s".formatted(
                         Whatsapp.MOBILE_REGISTRATION_ENDPOINT,
-                        path,
-                        encBase64,
-                        androidCert == null ? "" : "&H=" + androidCert.signature()
+                        path
                 ));
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
-                        .put("Accept", "text/json")
                         .put("WaMsysRequest", "1")
+                        .put("Authorization", androidCert == null ? "" : androidCert.certificate(), androidCert != null)
                         .put("request_token", UUID.randomUUID().toString())
                         .put("Content-Type", "application/x-www-form-urlencoded")
-                        .put("Authorization", androidCert == null ? "" : androidCert.certificate(), androidCert != null)
                         .toMap();
-                return httpClient.get(uri, proxy, headers).thenApplyAsync(result -> {
+                var body = "ENC=%s%s".formatted(
+                        encBase64,
+                        androidCert == null ? "" : "&H=" + androidCert.signature()
+                );
+                return httpClient.post(uri, proxy, headers, body.getBytes()).thenApplyAsync(result -> {
+                    var resultAsString = new String(result);
                     if(printRequests) {
-                        System.out.println("Received response " + path + " " + result);
+                        System.out.println("Received response " + path + " " + resultAsString);
                     }
-                    return result;
+                    return resultAsString;
                 });
             });
             case KAIOS -> {
