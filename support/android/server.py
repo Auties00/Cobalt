@@ -23,9 +23,9 @@ info_requests_lock: Lock = Lock()
 
 
 def concat_base64(base64_str1: str | None, base64_str2: str | None) -> str:
-    bytes1 = base64.urlsafe_b64decode(base64_str1)
-    bytes2 = base64.urlsafe_b64decode(base64_str2)
-    return base64.urlsafe_b64encode(bytes1 + bytes2).decode('utf-8')
+    bytes1 = base64.b64decode(base64_str1)
+    bytes2 = base64.b64decode(base64_str2)
+    return base64.b64encode(bytes1 + bytes2).decode('utf-8')
 
 
 @app.route('/gpia')
@@ -94,8 +94,8 @@ def info_route() -> (str, int):
 
 
 def on_message(message: dict[str, Any], _):
+    print(f"[*] Handling incoming device message {message}")
     message_payload = message.get("payload", {})
-    print(f"[*] Handling incoming device message {message_payload}")
     message_caller: str | None = message_payload.get("caller")
     if message_caller == "gpia":
         auth_key: str | None = message_payload.get("authKey")

@@ -153,9 +153,8 @@ Java.perform(function () {
         throw new Error('Cannot find request builder method')
     }
 
-// authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
+    // authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
     let integrityCounter = 0
-
     function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, onSuccess, onError) {
         integrityCounter++
         let integrityRequestBuilder = integrityRequestBuilderMethod.overload().call(integrityRequestType)
@@ -457,9 +456,9 @@ Java.perform(function () {
                 let passwordLength = password.length.value
                 let passwordChars = Java.array("char", new Array(passwordLength).fill(''))
                 for (let i = 0; i < passwordChars.length; i++) {
-                    passwordChars[i] = String.fromCharCode(password[i]);
+                    passwordChars[i] = String.fromCharCode(password[i] & 0xFF);
                 }
-                console.log("Finished")
+
                 let factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT")
                 let key = PBEKeySpec.$new(passwordChars, secretKeySalt, 128, 512)
                 let secretKey = Java.cast(factory.generateSecret(key), Key).getEncoded()
