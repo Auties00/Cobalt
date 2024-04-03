@@ -886,13 +886,11 @@ class StreamHandler {
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
         var initialAppSync = socketHandler.keys().initialAppSync();
         if (!initialAppSync) {
-            configureApi()
-                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable))
-                    .thenRunAsync(() -> {
-                        onRegistration();
-                        onInitialInfo();
-                        notifyChatsAndNewsletters(true);
-                    });
+            configureApi().thenRunAsync(() -> {
+                onRegistration();
+                onInitialInfo();
+                notifyChatsAndNewsletters(true);
+            }).exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
         }else {
             loggedInFuture.thenRunAsync(this::onInitialInfo);
         }
@@ -962,6 +960,8 @@ class StreamHandler {
     }
 
     private CompletableFuture<?> setPushEndpoint() {
+        /*
+        FIXME: This makes the whole app hang when sending a message for some reason even though it's completed normally
         var configAttributes = Attributes.of()
                 .put("background_location", 1)
                 .put("call", "Opening.m4r")
@@ -981,7 +981,10 @@ class StreamHandler {
                 .put("voip", "35e178c41d2bd90b8db50c7a2684a38bf802e760cd1f2d7ff803d663412a9320")
                 .put("voip_payload_type", 2)
                 .toMap();
-        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes));
+        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes))
+                .thenAccept(result -> socketHandler.keys().setInitialAppSync(true));
+         */
+        return CompletableFuture.completedFuture(null);
     }
 
     private CompletableFuture<?> resetMultiDevice() {
@@ -1379,7 +1382,7 @@ class StreamHandler {
         }
     }
 
-    private CompletableFuture<?> sendPreKeys() {
+    private void sendPreKeys() {
         var startId = socketHandler.keys().lastPreKeyId() + 1;
         var toUpload = socketHandler.store().clientType() == ClientType.MOBILE ? MOBILE_PRE_KEYS_UPLOAD_CHUNK : WEB_PRE_KEYS_UPLOAD_CHUNK;
         var preKeys = IntStream.range(startId, startId + toUpload)
@@ -1387,7 +1390,7 @@ class StreamHandler {
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        return socketHandler.sendQuery(
+        socketHandler.sendQuery(
                 "set",
                 "encrypt",
                 Node.of("registration", socketHandler.keys().encodedRegistrationId()),
