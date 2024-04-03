@@ -308,17 +308,20 @@ public final class WhatsappMetadata {
                             androidData.packageName(),
                             Base64.getEncoder().encodeToString(androidData.apkSha256()),
                             Base64.getEncoder().encodeToString(androidData.apkShatr()),
-                            androidData.apkSize(),
                             supportData.token(),
+                            String.valueOf(androidData.apkSize()),
                             0
                     );
+                    var gpiaJsonData = Json.writeValueAsString(gpiaData)
+                            .replaceAll(" ", "")
+                            .replaceAll("/", "\\\\/");
                     var gpiaPayload = AesCbc.encryptAndPrefix(
-                            Json.writeValueAsBytes(gpiaData),
+                            gpiaJsonData.getBytes(),
                             Sha256.calculate(authKeyBase64)
                     );
                     return new WhatsappAndroidToken(
-                            supportData.token(),
-                            Base64.getEncoder().encodeToString(gpiaPayload)
+                            Base64.getEncoder().encodeToString(gpiaPayload),
+                            supportData.token()
                     );
                 }).exceptionallyAsync(throwable -> {
                     throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
@@ -331,7 +334,7 @@ public final class WhatsappMetadata {
 
     }
 
-    private record GpiaData(String cert, String packageName, String sha256, String shatr, int sizeInBytes, String token, int code) {
+    private record GpiaData(String cert, String packageName, String sha256, String shatr, String token, String sizeInBytes, int code) {
 
     }
 

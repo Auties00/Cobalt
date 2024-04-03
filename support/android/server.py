@@ -39,7 +39,7 @@ def gpia_route() -> (str, int):
         return "Missing business parameter", 400
 
     future = Future()
-    if bool(business):
+    if business.lower() == "true":
         business_script.post({"type": "gpia", "authKey": auth_key})
     else:
         personal_script.post({"type": "gpia", "authKey": auth_key})
@@ -65,7 +65,7 @@ def cert_route() -> (str, int):
 
     data = concat_base64(auth_key, enc)
     future = Future()
-    if bool(business):
+    if business.lower() == "true":
         business_script.post({"type": "cert", "data": data})
     else:
         personal_script.post({"type": "cert", "data": data})
@@ -83,7 +83,7 @@ def info_route() -> (str, int):
 
     future = Future()
     message_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    if bool(business):
+    if business.lower() == "true":
         business_script.post({"type": "info", "id": message_id})
     else:
         personal_script.post({"type": "info", "id": message_id})
@@ -94,7 +94,6 @@ def info_route() -> (str, int):
 
 
 def on_message(message: dict[str, Any], _):
-    print(f"[*] Handling incoming device message {message}")
     message_payload = message.get("payload", {})
     message_caller: str | None = message_payload.get("caller")
     if message_caller == "gpia":
@@ -199,7 +198,7 @@ if __name__ == '__main__':
     business_script.on("message", on_message)
 
     personal_session = device.attach("WhatsApp")
-    personal_script = business_session.create_script(js_code)
+    personal_script = personal_session.create_script(js_code)
     personal_script.load()
     personal_script.on("message", on_message)
 

@@ -52,7 +52,7 @@ public class GcmClient {
     private String token;
     public GcmClient(HttpClient httpClient, Proxy proxy) {
         this.httpClient = httpClient;
-        this.proxy = null;
+        this.proxy = proxy;
         this.senderId = DEFAULT_GCM_SENDER_ID;
         this.keyPair = ECDH256KeyPair.random();
         this.authSecret = Bytes.random(AUTH_SECRET_LENGTH);
@@ -144,8 +144,8 @@ public class GcmClient {
         return CompletableFuture.runAsync(() -> {
             try {
                 var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                var underlyingSocket = proxy == null ? new Socket() : new Socket(proxy);
-                underlyingSocket.connect(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
+                var underlyingSocket = proxy == null || proxy == Proxy.NO_PROXY ? new Socket() : new Socket(proxy);
+                underlyingSocket.connect(proxy == null || proxy == Proxy.NO_PROXY ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
                 this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, TALK_SERVER_HOST, TALK_SERVER_PORT, true);
                 socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
                 socket.startHandshake();

@@ -516,7 +516,7 @@ public final class WhatsappRegistration {
         var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams, key);
         var enc = Bytes.concat(keypair.publicKey(), buffer);
-        var encBase64 = Base64.getUrlEncoder().encodeToString(enc);
+        var encBase64 = getBase64UrlEncoder().encodeToString(enc);
         return switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> {
                 if(printRequests) {
@@ -595,22 +595,30 @@ public final class WhatsappRegistration {
                     .put("rc", store.releaseChannel().index(), !store.device().platform().isKaiOs())
                     .put("lg", countryCode.lg())
                     .put("lc", countryCode.lc())
-                    .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
+                    .put("authkey", getBase64UrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
                     .put("vname", certificate, certificate != null)
-                    .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
-                    .put("e_keytype", Base64.getUrlEncoder().encodeToString(Specification.Signal.KEY_BUNDLE_TYPE))
-                    .put("e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
-                    .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
-                    .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
-                    .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
+                    .put("e_regid", getBase64UrlEncoder().encodeToString(keys.encodedRegistrationId()))
+                    .put("e_keytype", getBase64UrlEncoder().encodeToString(Specification.Signal.KEY_BUNDLE_TYPE))
+                    .put("e_ident", getBase64UrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
+                    .put("e_skey_id", getBase64UrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
+                    .put("e_skey_val", getBase64UrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
+                    .put("e_skey_sig", getBase64UrlEncoder().encodeToString(keys.signedKeyPair().signature()))
                     .put("fdid", keys.fdid().toLowerCase(Locale.ROOT), store.device().platform().isAndroid())
                     .put("fdid", keys.fdid().toUpperCase(Locale.ROOT), store.device().platform().isIOS())
-                    .put("expid", Base64.getUrlEncoder().encodeToString(keys.deviceId()), !store.device().platform().isKaiOs())
+                    .put("expid", getBase64UrlEncoder().encodeToString(keys.deviceId()), !store.device().platform().isKaiOs())
                     .put("id", convertBufferToUrlHex(keys.identityId()))
                     .put("token", token, useToken)
                     .putAll(requiredAttributes)
                     .toMap();
         });
+    }
+
+    private Base64.Encoder getBase64UrlEncoder() {
+        if(store.device().platform().isIOS()) {
+            return Base64.getUrlEncoder();
+        }
+
+        return Base64.getUrlEncoder().withoutPadding();
     }
 
     private void dispose() {

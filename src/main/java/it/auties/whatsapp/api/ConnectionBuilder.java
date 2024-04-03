@@ -6,6 +6,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.controller.StoreKeysPair;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.List;
 import java.util.Objects;
@@ -109,6 +110,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .noiseKeyPair(sixParts.noiseKeyPair())
                 .identityKeyPair(sixParts.identityKeyPair())
                 .identityId(sixParts.identityId())
+                .backupToken(Bytes.random(20))
                 .registered(true)
                 .clientType(ClientType.MOBILE)
                 .build();

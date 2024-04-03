@@ -16,7 +16,6 @@ Java.perform(function () {
     const File = Java.use('java.io.File')
     const Files = Java.use('java.nio.file.Files')
     const MessageDigest = Java.use('java.security.MessageDigest')
-    const ByteArrayInputStream = Java.use("java.io.ByteArrayInputStream")
     const ZipInputStream = Java.use("java.util.zip.ZipInputStream")
     const ActivityThread = Java.use('android.app.ActivityThread')
     const OnSuccessListenerType = Java.use("com.google.android.gms.tasks.OnSuccessListener")
@@ -155,6 +154,7 @@ Java.perform(function () {
 
     // authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
     let integrityCounter = 0
+
     function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, onSuccess, onError) {
         integrityCounter++
         let integrityRequestBuilder = integrityRequestBuilderMethod.overload().call(integrityRequestType)
@@ -335,7 +335,7 @@ Java.perform(function () {
             ks.deleteEntry(alias)
 
             let encAuthKey = Base64.getEncoder().encodeToString(authKey)
-            let encSign = Base64.getEncoder().encodeToString(s.sign())
+            let encSign = Base64.getUrlEncoder().withoutPadding().encodeToString(s.sign())
             let encCert = Base64.getEncoder().encodeToString(ba.toByteArray())
             ba.close()
 
@@ -351,17 +351,14 @@ Java.perform(function () {
 
     function sha256(file, length) {
         let inputStream = Files.newInputStream(file, Java.array("java.nio.file.OpenOption", new Array(0)))
-        let data = Java.array("byte", new Array(10240).fill(0))
+        let data = Java.array("byte", new Array(4096).fill(0))
         let digest = MessageDigest.getInstance("SHA-256")
-        let read
         let total = 0
-        do {
-            read = inputStream.read(data);
-            if (read > 0) {
-                digest.update(data, 0, length === undefined ? read : Math.min(read, length - total));
-                total += read
-            }
-        } while (read !== -1 && (length === undefined || total < length));
+        let read
+        while ((read = inputStream.read(data)) !== -1 && (length === undefined || total < length)) {
+            digest.update(data, 0, length === undefined ? read : Math.min(read, length - total));
+            total += read
+        }
         inputStream.close();
         return digest.digest();
     }
@@ -373,15 +370,12 @@ Java.perform(function () {
     }
 
     function md5(inputStream) {
-        let data = Java.array("byte", new Array(10240).fill(0))
+        let data = Java.array("byte", new Array(4096).fill(0))
         let digest = MessageDigest.getInstance("MD5")
         let read
-        do {
-            read = inputStream.read(data, 0, data.length);
-            if (read > 0) {
-                digest.update(data, 0, read);
-            }
-        } while (read !== -1);
+        while ((read = inputStream.read(data, 0, data.length)) !== -1) {
+            digest.update(data, 0, read);
+        }
         return digest.digest();
     }
 
@@ -395,18 +389,87 @@ Java.perform(function () {
 
     function readZipEntry(zipInputStream) {
         let output = ByteArrayOutputStream.$new()
-        let data = Java.array("byte", new Array(1024).fill(0))
-        while (true) {
-            let read = zipInputStream.read(data, 0, data.length)
-            if (read !== -1) {
-                output.write(data, 0, read)
-            } else {
-                break;
-            }
+        let data = Java.array("byte", new Array(4096).fill(0))
+        let read
+        while ((read = zipInputStream.read(data, 0, data.length)) !== -1) {
+            output.write(data, 0, read)
         }
-        let result = output.toByteArray()
         output.close()
-        return result
+        return output.toByteArray()
+    }
+
+    function getDataInApk(apkPath) {
+        let zipInputStream = ZipInputStream.$new(Files.newInputStream(apkPath, Java.array("java.nio.file.OpenOption", new Array(0))))
+        let zipEntry = undefined
+        let classesMd5 = undefined
+        let aboutLogo = undefined
+        do {
+            zipEntry = zipInputStream.getNextEntry()
+            if (zipEntry != null) {
+                if (zipEntry.getName().includes("classes.dex")) {
+                    console.log("[*] Found classes.dex: ", zipEntry.getName())
+                    classesMd5 = md5(zipInputStream)
+                } else if (zipEntry.getName().includes("about_logo.png")) {
+                    console.log("[*] Found about_logo.png: ", zipEntry.getName())
+                    aboutLogo = readZipEntry(zipInputStream)
+                }
+            }
+        } while (zipEntry !== undefined && (classesMd5 === undefined || aboutLogo === undefined))
+        zipInputStream.close()
+        return [classesMd5, aboutLogo]
+    }
+
+    let infoData = undefined
+
+    function computeInfo() {
+        console.log("[*] Computing info...")
+        let context = ActivityThread.currentApplication().getApplicationContext()
+        let packageName = context.getPackageName()
+
+        let packageInfo = context.getPackageManager().getPackageInfo(packageName, 0)
+        let packageVersion = packageInfo.versionName.value
+
+        let apkPath = getApk(context)
+        let apkSha256 = sha256(apkPath)
+        let apkShatr = sha256(apkPath, 10 * 1024 * 1024)
+        let [classesMd5, aboutLogo] = getDataInApk(apkPath)
+        if (classesMd5 === undefined || aboutLogo === undefined) {
+            throw new Error("Incomplete apk data")
+        }
+
+        let packageNameBytes = JavaString.$new(packageName).getBytes(StandardCharsets.UTF_8.value)
+        let password = Java.array("byte", new Array(packageNameBytes.length + aboutLogo.length).fill(0))
+        System.arraycopy(packageNameBytes, 0, password, 0, packageNameBytes.length)
+        System.arraycopy(aboutLogo, 0, password, packageNameBytes.length, aboutLogo.length)
+        let passwordChars = Java.array("char", new Array(password.length).fill(''))
+        for (let i = 0; i < passwordChars.length; i++) {
+            passwordChars[i] = String.fromCharCode(password[i] & 0xFF);
+        }
+
+        let factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT")
+        let key = PBEKeySpec.$new(passwordChars, secretKeySalt, 128, 512)
+        let secretKey = Java.cast(factory.generateSecret(key), Key).getEncoded()
+
+        let signatures = context.getPackageManager().getPackageInfo(packageName, PackageManager.GET_SIGNATURES.value).signatures.value
+        if (signatures.length !== 1) {
+            throw new Error("Unexpected number of signatures: ", signatures.length)
+        }
+        let signature = signatures[0].toByteArray()
+
+        console.log("[*] Finished computing info")
+        infoData = {
+            "type": "success",
+            "caller": "info",
+            "packageName": packageName,
+            "version": packageVersion,
+            "apkSha256": Base64.getEncoder().encodeToString(apkSha256),
+            "apkShatr": Base64.getEncoder().encodeToString(apkShatr),
+            "apkSize": Files.size(apkPath),
+            "classesMd5": Base64.getEncoder().encodeToString(classesMd5),
+            "secretKey": Base64.getEncoder().encodeToString(secretKey),
+            "signature": Base64.getEncoder().encodeToString(signature),
+            "signatureSha1": Base64.getEncoder().encodeToString(sha1(signature))
+        }
     }
 
     function createInfoListener() {
@@ -414,73 +477,15 @@ Java.perform(function () {
 
         recv("info", function (message) {
             createInfoListener()
-            console.log("[*] Computing info...")
-            let messageId = message["id"]
             try {
-                let context = ActivityThread.currentApplication().getApplicationContext()
-                let packageName = context.getPackageName()
-
-                let packageInfo = context.getPackageManager().getPackageInfo(packageName, 0)
-                let packageVersion = packageInfo.versionName.value
-
-                let apkPath = getApk(context)
-                let apkSha256 = sha256(apkPath)
-                let apkShatr = sha256(apkPath, 10 * 1024 * 1024)
-                let classesMd5 = undefined
-                let aboutLogo = undefined
-                let zipInputStream = ZipInputStream.$new(Files.newInputStream(apkPath, Java.array("java.nio.file.OpenOption", new Array(0))))
-                let zipEntry = undefined
-                console.log("[*] Running apk lookup...")
-                do {
-                    zipEntry = zipInputStream.getNextEntry()
-                    if (zipEntry != null) {
-                        if (zipEntry.getName().includes("classes.dex")) {
-                            console.log("[*] Found classes.dex")
-                            classesMd5 = md5(zipInputStream)
-                            console.log("[*] Got classes.dex md5")
-                        } else if (zipEntry.getName().includes("about_logo.png")) {
-                            console.log("[*] Found about_logo.png")
-                            aboutLogo = readZipEntry(zipInputStream)
-                            console.log("[*] Got about_logo.png")
-                        }
-                    }
-                } while (zipEntry !== undefined && (classesMd5 === undefined || aboutLogo === undefined))
-                zipInputStream.close()
-                console.log("[*] Finished apk lookup")
-
-                let packageNameBytes = JavaString.$new(packageName).getBytes(StandardCharsets.UTF_8.value)
-
-                let password = Java.array("byte", new Array(packageNameBytes.length + aboutLogo.length).fill(0))
-                System.arraycopy(packageNameBytes, 0, password, 0, packageNameBytes.length)
-                System.arraycopy(aboutLogo, 0, password, packageNameBytes.length, aboutLogo.length)
-                let passwordLength = password.length.value
-                let passwordChars = Java.array("char", new Array(passwordLength).fill(''))
-                for (let i = 0; i < passwordChars.length; i++) {
-                    passwordChars[i] = String.fromCharCode(password[i] & 0xFF);
+                let messageId = message["id"]
+                if (infoData === undefined) {
+                    computeInfo();
                 }
 
-                let factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1And8BIT")
-                let key = PBEKeySpec.$new(passwordChars, secretKeySalt, 128, 512)
-                let secretKey = Java.cast(factory.generateSecret(key), Key).getEncoded()
-
-                let signatures = context.getPackageManager().getPackageInfo(packageName, PackageManager.GET_SIGNATURES.value).signatures.value
-                console.log("[*] Found ", signatures.length, " signatures")
-                let signature = signatures[0].toByteArray()
-
-                console.log("[*] Finished computing info")
                 send({
                     "id": messageId,
-                    "type": "success",
-                    "caller": "info",
-                    "packageName": packageName,
-                    "version": packageVersion,
-                    "apkSha256": Base64.getEncoder().encodeToString(apkSha256),
-                    "apkShatr": Base64.getEncoder().encodeToString(apkShatr),
-                    "apkSize": Files.size(apkPath),
-                    "classesMd5": Base64.getEncoder().encodeToString(classesMd5),
-                    "secretKey": Base64.getEncoder().encodeToString(secretKey),
-                    "signature": Base64.getEncoder().encodeToString(signature),
-                    "signatureSha1": Base64.getEncoder().encodeToString(sha1(signature))
+                    ...infoData
                 })
             } catch (error) {
                 console.log("[*] An error occurred while computing info")
@@ -494,6 +499,7 @@ Java.perform(function () {
             }
         })
     }
+
     console.log("[*] Loaded methods")
 
     setupGpia()
