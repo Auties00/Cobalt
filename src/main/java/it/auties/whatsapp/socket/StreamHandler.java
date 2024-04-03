@@ -746,20 +746,26 @@ class StreamHandler {
 
     private CompletableFuture<Void> addPrivacySetting(Node node, boolean update) {
         var privacySettingName = node.attributes().getString("name");
-        var privacyType = PrivacySettingType.of(privacySettingName)
-                .orElseThrow(() -> new NoSuchElementException("Unknown privacy option: %s".formatted(privacySettingName)));
-        var privacyValueName = node.attributes().getString("value");
-        var privacyValue = PrivacySettingValue.of(privacyValueName)
-                .orElseThrow(() -> new NoSuchElementException("Unknown privacy value: %s".formatted(privacyValueName)));
-        if (!update) {
-            return queryPrivacyExcludedContacts(privacyType, privacyValue)
-                    .thenAcceptAsync(response -> socketHandler.store().addPrivacySetting(privacyType, new PrivacySettingEntry(privacyType, privacyValue, response)));
+        var privacyType = PrivacySettingType.of(privacySettingName);
+        if(privacyType.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
         }
 
-        var oldEntry = socketHandler.store().findPrivacySetting(privacyType);
-        var newValues = getUpdatedBlockedList(node, oldEntry, privacyValue);
-        var newEntry = new PrivacySettingEntry(privacyType, privacyValue, Collections.unmodifiableList(newValues));
-        socketHandler.store().addPrivacySetting(privacyType, newEntry);
+        var privacyValueName = node.attributes().getString("value");
+        var privacyValue = PrivacySettingValue.of(privacyValueName);
+        if(privacyValue.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        if (!update) {
+            return queryPrivacyExcludedContacts(privacyType.get(), privacyValue.get())
+                    .thenAcceptAsync(response -> socketHandler.store().addPrivacySetting(privacyType.get(), new PrivacySettingEntry(privacyType.get(), privacyValue.get(), response)));
+        }
+
+        var oldEntry = socketHandler.store().findPrivacySetting(privacyType.get());
+        var newValues = getUpdatedBlockedList(node, oldEntry, privacyValue.get());
+        var newEntry = new PrivacySettingEntry(privacyType.get(), privacyValue.get(), Collections.unmodifiableList(newValues));
+        socketHandler.store().addPrivacySetting(privacyType.get(), newEntry);
         socketHandler.onPrivacySettingChanged(oldEntry, newEntry);
         return CompletableFuture.completedFuture(null);
     }
