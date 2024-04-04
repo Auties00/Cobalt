@@ -23,7 +23,6 @@ import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.http.HttpClient;
-import it.auties.whatsapp.registration.metadata.WhatsappAndroidToken;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
@@ -47,7 +46,7 @@ public final class WhatsappRegistration {
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
     private final boolean printRequests;
-    private volatile CompletableFuture<WhatsappAndroidToken> androidToken;
+    private volatile CompletableFuture<String> androidToken;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
         this.store = store;
@@ -92,13 +91,17 @@ public final class WhatsappRegistration {
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
-                    .thenComposeAsync(pushToken -> exists(originalDevice, true, false, null))
+                    .thenComposeAsync(ignored -> exists(originalDevice, true, false, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
-            case ANDROID, ANDROID_BUSINESS -> exists(null, true, false, null)
-                    .thenComposeAsync(ignored -> getPushCode())
-                    .thenComposeAsync(pushCode -> requestVerificationCode(pushCode, null));
+            case ANDROID, ANDROID_BUSINESS ->
+                    onboard("1", 2155550000L, null)
+                            .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
+                            .thenComposeAsync(ignored -> exists(null, true, false, null))
+                            .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
+                            .thenComposeAsync(ignored -> getPushCode())
+                            .thenComposeAsync(pushCode -> requestVerificationCode(pushCode, null));
             case KAIOS -> requestVerificationCode(null, null);
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
@@ -188,7 +191,7 @@ public final class WhatsappRegistration {
                         return CompletableFuture.completedFuture(response);
                     }
 
-                    if (lastError != null) {
+                    if (response.errorReason() == VerificationCodeError.BLOCKED || lastError != null) {
                         throw new RegistrationException(response, result);
                     }
 
@@ -217,29 +220,34 @@ public final class WhatsappRegistration {
         var platform = store.device().platform();
         return switch (platform) {
             case ANDROID, ANDROID_BUSINESS -> getAndroidToken().thenApplyAsync(androidToken -> Attributes.of()
+                    .put("gpia", androidToken, androidToken != null)
+                    .put("read_phone_permission_granted", 0)
+                    .put("offline_ab", Whatsapp.MOBILE_ANDROID_OFFLINE_AB)
+                    .put("device_ram", "3.57")
+                    .put("language_selector_clicked_count", 0)
+                    .put("backup_token", convertBufferToUrlHex(keys.backupToken()))
+                    .put("roaming_type", 0)
+                    .put("backup_token_error", "success")
                     .put("feo2_query_status", "error_security_exception")
-                    .put("sim_type", 1)
+                    .put("sim_type", 0)
                     .put("network_radio_type", 1)
                     .put("network_operator_name", "")
-                    .put("sim_operator_name", "Vodafone")
+                    .put("sim_operator_name", "")
                     .put("simnum", 0)
-                    .put("airplane_mode_type", 1)
+                    .put("db", 1)
+                    .put("sim_state", 1)
+                    .put("airplane_mode_type", 0)
                     .put("mistyped", 7)
-                    .put("advertising_id", keys.advertisingId())
+                    .put("advertising_id", keys.advertisingId().toString().toLowerCase())
                     .put("hasinrc", 1)
                     .put("roaming_type", 0)
-                    .put("device_ram", 4)
-                    .put("client_metrics", "{\"attempts\":15,\"was_activated_from_stub\":false}")
+                    .put("client_metrics", Whatsapp.MOBILE_ANDROID_CLIENT_METRICS)
                     .put("pid", ProcessHandle.current().pid())
                     .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
-                    .put("gpia_token", androidToken == null ? "" : androidToken.gpiaToken(), androidToken != null)
-                    .put("gpia", androidToken == null ? "" : androidToken.gpia(), androidToken != null)
-                    .put("backup_token", convertBufferToUrlHex(keys.backupToken()))
-                    .put("backup_token_error", "null_token")
-                    .put("device_name", randomDeviceName())
+                    .put("recaptcha", "%7B%22stage%22%3A%22ABPROP_DISABLED%22%7D")
+                    .put("device_name", "walleye")
                     .put("language_selector_time_spent", 0)
                     .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
-                    .put("offline_ab", Whatsapp.MOBILE_ANDROID_OFFLINE_AB)
                     .toEntries());
             case IOS, IOS_BUSINESS -> {
                 var attributes = Attributes.of()
@@ -252,10 +260,6 @@ public final class WhatsappRegistration {
             case KAIOS -> CompletableFuture.completedFuture(Attributes.of().toEntries());
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
-    }
-
-    private String randomDeviceName() {
-        return Bytes.bytesToCrockford(Bytes.random(8));
     }
 
     private CompletableFuture<String> getPushCode() {
@@ -342,7 +346,7 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletableFuture<WhatsappAndroidToken> getAndroidToken() {
+    private CompletableFuture<String> getAndroidToken() {
         if(androidToken != null) {
             return androidToken;
         }
@@ -371,7 +375,7 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
-    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, WhatsappAndroidToken androidToken, CountryCode countryCode) {
+    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, String gpiaToken, CountryCode countryCode) {
         return Attributes.of()
                 .put("method", method.data())
                 .put("sim_mcc", countryCode.mcc())
@@ -380,24 +384,25 @@ public final class WhatsappRegistration {
                 .put("mcc", countryCode.mcc())
                 .put("mnc", "000")
                 .put("feo2_query_status", "error_security_exception")
-                .put("sim_type", 1)
+                .put("db", 1)
+                .put("sim_type", 0)
+                .put("recaptcha", "%7B%22stage%22%3A%22ABPROP_DISABLED%22%7D")
                 .put("network_radio_type", 1)
                 .put("prefer_sms_over_flash", true)
                 .put("simnum", 0)
                 .put("clicked_education_link", false)
-                .put("airplane_mode_type", 1)
+                .put("airplane_mode_type", 0)
+                .put("client_metrics", Whatsapp.MOBILE_ANDROID_CLIENT_METRICS)
                 .put("mistyped", 7)
                 .put("advertising_id", keys.advertisingId())
                 .put("hasinrc", 1)
                 .put("roaming_type", 0)
-                .put("device_ram", 4)
-                .put("client_metrics", "{\"attempts\":1}")
+                .put("device_ram", "3.57")
                 .put("education_screen_displayed", false)
                 .put("pid", ProcessHandle.current().pid())
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
-                .put("gpia_token", androidToken == null ? "" : androidToken.gpiaToken(), androidToken != null)
-                .put("gpia", androidToken == null ? "" : androidToken.gpia(), androidToken != null)
-                .put("push_code", pushCode, pushCode != null)
+                .put("gpia", gpiaToken, gpiaToken != null)
+                .put("push_code", pushCode == null ? "" : convertBufferToUrlHex(pushCode.getBytes()), pushCode != null)
                 .put("backup_token", convertBufferToUrlHex(keys.backupToken()))
                 .put("hasav", 2)
                 .toEntries();

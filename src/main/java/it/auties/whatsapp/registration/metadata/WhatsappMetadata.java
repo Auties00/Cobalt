@@ -293,7 +293,7 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<WhatsappAndroidToken> getGpiaToken(byte[] authKey, boolean business) {
+    public static CompletableFuture<String> getGpiaToken(byte[] authKey, boolean business) {
         return getAndroidData(business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
                 var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
@@ -319,10 +319,7 @@ public final class WhatsappMetadata {
                             gpiaJsonData.getBytes(),
                             Sha256.calculate(authKeyBase64)
                     );
-                    return new WhatsappAndroidToken(
-                            Base64.getEncoder().encodeToString(gpiaPayload),
-                            supportData.token()
-                    );
+                    return Base64.getEncoder().encodeToString(gpiaPayload);
                 }).exceptionallyAsync(throwable -> {
                     throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
                 });

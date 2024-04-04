@@ -28,7 +28,6 @@ open module it.auties.cobalt {
     requires it.auties.linkpreview;
     requires com.aspose.words;
     requires com.github.kokorin.jaffree;
-    requires org.slf4j;
     requires com.googlecode.ezvcard;
 
     // Mobile api
