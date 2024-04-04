@@ -38,6 +38,7 @@ public class ApnsClient {
     private SSLSocket socket;
     private byte[] certificate;
     private byte[] authToken;
+    private boolean disconnected;
 
     public ApnsClient(HttpClient httpClient, Proxy proxy) {
         this.httpClient = httpClient;
@@ -111,7 +112,7 @@ public class ApnsClient {
 
     private CompletableFuture<ApnsBag> getAPNSBag() {
         return httpClient.get(URI.create("http://init-p01st.push.apple.com/bag"), proxy)
-                    .thenApply(ApnsBag::ofPlist);
+                    .thenApplyAsync(ApnsBag::ofPlist);
     }
 
     private void setFilters() {
@@ -192,6 +193,10 @@ public class ApnsClient {
     }
 
     private CompletableFuture<ApnsPacket> waitForPacketDirect(Function<ApnsPacket, Boolean> listener) {
+        if(disconnected) {
+            return CompletableFuture.failedFuture(new RuntimeException("APNS connection lost"));
+        }
+
         var listenerWithFuture = new ApnsListener(listener);
         var result = unhandledPackets.removeIf(entry -> {
             var entryResult = listener.apply(entry);
@@ -218,11 +223,15 @@ public class ApnsClient {
                     3, new byte[]{0x00, 0x00}
             ));
             return waitForPacketDirect(packet -> packet.tag() == ApnsPayloadTag.TOKEN_RESPONSE && Arrays.equals(packet.fields().get(0x3), topicHash))
-                    .thenApply(packet -> HexFormat.of().formatHex(packet.fields().get(0x2)));
+                    .thenApplyAsync(packet -> HexFormat.of().formatHex(packet.fields().get(0x2)));
         });
     }
 
     private void send(ApnsPayloadTag payloadType, Map<Integer, ?> fields) {
+        if(disconnected) {
+            throw new RuntimeException("APNS connection lost");
+        }
+
         var payloadLength = getPayloadLength(fields);
         var byteArrayOutputStream = new ByteArrayOutputStream(payloadLength);
         try (var dataOutputStream = new DataOutputStream(byteArrayOutputStream)) {
@@ -294,11 +303,16 @@ public class ApnsClient {
                     onPacket(packet);
                 }
             }catch (IOException exception) {
-                if(socket.isClosed()) {
-                    return;
+                if(!socket.isClosed()) {
+                    throw new UncheckedIOException(exception);
                 }
-
-                throw new UncheckedIOException(exception);
+            }finally {
+                this.disconnected = true;
+                var apnsConnectionLost = new RuntimeException("APNS connection lost");
+                listeners.forEach(listener -> listener.future().completeExceptionally(apnsConnectionLost));
+                if(!loginFuture.isDone()) {
+                    loginFuture.completeExceptionally(apnsConnectionLost);
+                }
             }
         });
     }
