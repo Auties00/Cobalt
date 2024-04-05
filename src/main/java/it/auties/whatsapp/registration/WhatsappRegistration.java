@@ -28,6 +28,7 @@ import it.auties.whatsapp.util.*;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
@@ -85,9 +86,7 @@ public final class WhatsappRegistration {
         }
 
         var originalDevice = store.device();
-        if(originalDevice.platform().isIOS()) {
-            store.setDevice(originalDevice.toPersonal());
-        }
+        store.setDevice(originalDevice.toPersonal());
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
@@ -95,11 +94,9 @@ public final class WhatsappRegistration {
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null));
-            case ANDROID, ANDROID_BUSINESS ->
-                    onboard("1", 2155550000L, null)
+            case ANDROID, ANDROID_BUSINESS -> onboard("1", 2155550000L, null)
                             .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                             .thenComposeAsync(ignored -> exists(null, true, false, null))
-                            .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                             .thenComposeAsync(ignored -> getPushCode())
                             .thenComposeAsync(pushCode -> requestVerificationCode(pushCode, null));
             case KAIOS -> requestVerificationCode(null, null);
@@ -144,17 +141,41 @@ public final class WhatsappRegistration {
                 .put("rc", store.releaseChannel().index())
                 .put("ab_hash", abHash, abHash != null)
                 .toMap();
-        var uri = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + HttpClient.toFormParams(attributes));
+        var body = HttpClient.toFormParams(attributes);
         var userAgent = store.device().toUserAgent(store.version());
-        var headers = Map.of(
-                "User-Agent", userAgent,
-                "Content-Type", "application/x-www-form-urlencoded"
-        );
+
+
         if(printRequests) {
             System.out.println("Using user agent " + userAgent);
-            System.out.println("Sending GET request to /reg_onboard_abprop with parameters " + attributes);
+            System.out.println("Sending request to /reg_onboard_abprop with parameters " + attributes);
         }
-        return httpClient.get(uri, ProxyAuthenticator.getProxy(store.proxy().orElse(null)), headers).thenApplyAsync(response -> {
+        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
+        var future = switch (store.device().platform()) {
+            case ANDROID, ANDROID_BUSINESS -> {
+                var cipheredBody = Base64.getUrlEncoder().encodeToString(cipherRequestPayload(body.getBytes()));
+                var postBody = ("ENC=" + cipheredBody).getBytes();
+                var postEndpoint = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop");
+                var headers = Attributes.of()
+                        .put("User-Agent", userAgent)
+                        .put("WaMsysRequest", "1")
+                        .put("request_token", UUID.randomUUID().toString())
+                        .put("Content-Type", "application/x-www-form-urlencoded")
+                        .put("Accept-Encoding", "gzip")
+                        .toMap();
+                yield httpClient.post(postEndpoint, proxy, headers, postBody)
+                        .thenApply(String::new);
+            }
+            case IOS, IOS_BUSINESS -> {
+                var headers = Map.of(
+                    "User-Agent", userAgent,
+                    "Content-Type", "application/x-www-form-urlencoded"
+            );
+                var getEndpoint = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + body);
+                yield httpClient.get(getEndpoint, proxy, headers);
+            }
+            default -> throw new IllegalStateException("Unsupported mobile os");
+        };
+        return future.thenApplyAsync(response -> {
             if(printRequests) {
                 System.out.println("Received respose /reg_onboard_abprop " + response);
             }
@@ -517,11 +538,8 @@ public final class WhatsappRegistration {
         if(printRequests) {
             System.out.println("Using user agent " + userAgent);
         }
-        var keypair = SignalKeyPair.random();
-        var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
-        var buffer = AesGcm.encrypt(new byte[12], encodedParams, key);
-        var enc = Bytes.concat(keypair.publicKey(), buffer);
-        var encBase64 = getBase64UrlEncoder().encodeToString(enc);
+        var enc = cipherRequestPayload(encodedParams);
+        var encBase64 = encodeBase64(enc);
         return switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> {
                 if(printRequests) {
@@ -542,9 +560,6 @@ public final class WhatsappRegistration {
                 });
             }
             case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
-                if(printRequests) {
-                    System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
-                }
                 var uri = URI.create("%s%s".formatted(
                         Whatsapp.MOBILE_REGISTRATION_ENDPOINT,
                         path
@@ -555,11 +570,19 @@ public final class WhatsappRegistration {
                         .put("Authorization", androidCert == null ? "" : androidCert.certificate(), androidCert != null)
                         .put("request_token", UUID.randomUUID().toString())
                         .put("Content-Type", "application/x-www-form-urlencoded")
+                        .put("Accept-Encoding", "gzip")
                         .toMap();
                 var body = "ENC=%s%s".formatted(
                         encBase64,
-                        androidCert == null ? "" : "&H=" + androidCert.signature()
+                        androidCert == null ? "" : "&H=" + URLEncoder.encode(androidCert.signature(), StandardCharsets.UTF_8)
                 );
+                if(printRequests) {
+                    if(androidCert != null) {
+                        System.out.println("Using certificate: " + androidCert.certificate());
+                        System.out.println("Using signature: " + androidCert.signature());
+                    }
+                    System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                }
                 return httpClient.post(uri, proxy, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
                     if(printRequests) {
@@ -584,6 +607,13 @@ public final class WhatsappRegistration {
         };
     }
 
+    private byte[] cipherRequestPayload(byte[] encodedParams) {
+        var keypair = SignalKeyPair.random();
+        var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
+        var buffer = AesGcm.encrypt(new byte[12], encodedParams, key);
+        return Bytes.concat(keypair.publicKey(), buffer);
+    }
+
     @SafeVarargs
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
@@ -600,17 +630,17 @@ public final class WhatsappRegistration {
                     .put("rc", store.releaseChannel().index(), !store.device().platform().isKaiOs())
                     .put("lg", countryCode.lg())
                     .put("lc", countryCode.lc())
-                    .put("authkey", getBase64UrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
+                    .put("authkey", encodeBase64(keys.noiseKeyPair().publicKey()))
                     .put("vname", certificate, certificate != null)
-                    .put("e_regid", getBase64UrlEncoder().encodeToString(keys.encodedRegistrationId()))
-                    .put("e_keytype", getBase64UrlEncoder().encodeToString(Specification.Signal.KEY_BUNDLE_TYPE))
-                    .put("e_ident", getBase64UrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
-                    .put("e_skey_id", getBase64UrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
-                    .put("e_skey_val", getBase64UrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
-                    .put("e_skey_sig", getBase64UrlEncoder().encodeToString(keys.signedKeyPair().signature()))
+                    .put("e_regid", encodeBase64(keys.encodedRegistrationId()))
+                    .put("e_keytype", encodeBase64(Specification.Signal.KEY_BUNDLE_TYPE))
+                    .put("e_ident", encodeBase64(keys.identityKeyPair().publicKey()))
+                    .put("e_skey_id", encodeBase64(keys.signedKeyPair().encodedId()))
+                    .put("e_skey_val", encodeBase64(keys.signedKeyPair().publicKey()))
+                    .put("e_skey_sig", encodeBase64(keys.signedKeyPair().signature()))
                     .put("fdid", keys.fdid().toLowerCase(Locale.ROOT), store.device().platform().isAndroid())
                     .put("fdid", keys.fdid().toUpperCase(Locale.ROOT), store.device().platform().isIOS())
-                    .put("expid", getBase64UrlEncoder().encodeToString(keys.deviceId()), !store.device().platform().isKaiOs())
+                    .put("expid", encodeBase64(keys.deviceId()), !store.device().platform().isKaiOs())
                     .put("id", convertBufferToUrlHex(keys.identityId()))
                     .put("token", token, useToken)
                     .putAll(requiredAttributes)
@@ -618,12 +648,12 @@ public final class WhatsappRegistration {
         });
     }
 
-    private Base64.Encoder getBase64UrlEncoder() {
+    private String encodeBase64(byte[] data) {
         if(store.device().platform().isIOS()) {
-            return Base64.getUrlEncoder();
+            return Base64.getUrlEncoder().encodeToString(data);
         }
 
-        return Base64.getUrlEncoder().withoutPadding();
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
     }
 
     private void dispose() {

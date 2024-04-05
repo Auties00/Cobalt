@@ -59,9 +59,9 @@ public class HttpClient {
         Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
     }
 
-    private final String[] cipherSuite;
+    private final SSLSocketFactory sslFactory;
     public HttpClient(boolean ios) {
-        this.cipherSuite = ios ? IOS_CIPHER_SUITE : ANDROID_CIPHER_SUITE;
+        this.sslFactory = getOrCreateParams(ios);
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -76,8 +76,6 @@ public class HttpClient {
                 .map(entry -> entry.split("=", 2))
                 .collect(Collectors.toUnmodifiableMap(entry -> entry[0], entry -> entry[1]));
     }
-
-    private volatile ProxySSLFactory factoryWithParams;
 
     public CompletableFuture<byte[]> get(URI uri, Proxy proxy) {
         return sendRequest("GET", uri, proxy, null, null);
@@ -125,7 +123,7 @@ public class HttpClient {
                 }
                 connection.setRequestProperty("Connection", "close");
                 if(connection instanceof HttpsURLConnection httpsConnection) {
-                    httpsConnection.setSSLSocketFactory(getOrCreateParams());
+                    httpsConnection.setSSLSocketFactory(sslFactory);
                 }
                 connection.setInstanceFollowRedirects(true);
                 if(body != null) {
@@ -160,18 +158,14 @@ public class HttpClient {
         return future;
     }
 
-    private SSLSocketFactory getOrCreateParams() {
+    private SSLSocketFactory getOrCreateParams(boolean ios) {
         try {
-            if(factoryWithParams != null) {
-                return factoryWithParams;
-            }
-
-            var sslContext = SSLContext.getInstance("TLSv1.3");
+            var sslContext = SSLContext.getInstance("TLSv1." + (ios ? 3 : 2));
             sslContext.init(null, null, new SecureRandom());
             var sslParameters = sslContext.getDefaultSSLParameters();
-            sslParameters.setCipherSuites(cipherSuite);
+            sslParameters.setCipherSuites(ios ? IOS_CIPHER_SUITE : ANDROID_CIPHER_SUITE);
             sslParameters.setUseCipherSuitesOrder(true);
-            return factoryWithParams = new ProxySSLFactory(sslContext.getSocketFactory(), sslParameters);
+            return new ProxySSLFactory(sslContext.getSocketFactory(), sslParameters);
         } catch (Throwable exception) {
             throw new RuntimeException(exception);
         }

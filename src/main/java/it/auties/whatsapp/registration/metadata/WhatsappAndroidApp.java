@@ -11,7 +11,8 @@ record WhatsappAndroidApp(
         byte[] classesMd5,
         byte[] secretKey,
         byte[] signature,
-        byte[] signatureSha1
+        byte[] signatureSha1,
+        String error
 ) {
 
 }

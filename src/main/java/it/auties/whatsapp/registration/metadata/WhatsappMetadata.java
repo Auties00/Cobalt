@@ -5,7 +5,6 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.crypto.Sha256;
-import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
@@ -187,9 +186,16 @@ public final class WhatsappMetadata {
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApplyAsync(response -> Json.readValue(response.body(), WhatsappAndroidApp.class))
+                    .thenApplyAsync(response -> {
+                        var app = Json.readValue(response.body(), WhatsappAndroidApp.class);
+                        if(app.error() != null) {
+                            throw new RuntimeException(app.error());
+                        }
+
+                        return app;
+                    })
                     .exceptionallyAsync(throwable -> {
-                        throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
+                        throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
                     });
         }
     }
@@ -303,6 +309,10 @@ public final class WhatsappMetadata {
                         .build();
                 return client.sendAsync(request, ofString()).thenApplyAsync(response -> {
                     var supportData = Json.readValue(response.body(), GpiaResponse.class);
+                    if(supportData.error() != null) {
+                        throw new RuntimeException(supportData.error());
+                    }
+
                     var gpiaData = new GpiaData(
                             Base64.getEncoder().encodeToString(androidData.signatureSha1()),
                             androidData.packageName(),
@@ -319,15 +329,15 @@ public final class WhatsappMetadata {
                             gpiaJsonData.getBytes(),
                             Sha256.calculate(authKeyBase64)
                     );
-                    return Base64.getEncoder().encodeToString(gpiaPayload);
+                    return URLEncoder.encode(Base64.getEncoder().encodeToString(gpiaPayload), StandardCharsets.UTF_8);
                 }).exceptionallyAsync(throwable -> {
-                    throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
+                    throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
                 });
             }
         });
     }
 
-    private record GpiaResponse(String token) {
+    private record GpiaResponse(String token, String error) {
 
     }
 
@@ -344,9 +354,16 @@ public final class WhatsappMetadata {
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApplyAsync(response -> Json.readValue(response.body(), WhatsappAndroidCert.class))
+                    .thenApplyAsync(response -> {
+                        var cert = Json.readValue(response.body(), WhatsappAndroidCert.class);
+                        if(cert.error() != null) {
+                            throw new RuntimeException(cert.error());
+                        }
+
+                        return cert;
+                    })
                     .exceptionallyAsync(throwable -> {
-                        throw new RegistrationException(null, "Android middleware error: " + throwable.getMessage());
+                        throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
                     });
         }
     }

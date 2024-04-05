@@ -17,7 +17,6 @@ import java.util.Optional;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
@@ -36,7 +35,6 @@ public final class Json {
                     .registerModule(new JavaTimeModule())
                     .registerModule(new ParameterNamesModule())
                     .registerModule(optionalModule)
-                    .setSerializationInclusion(NON_DEFAULT)
                     .enable(FAIL_ON_EMPTY_BEANS)
                     .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
                     .disable(FAIL_ON_UNKNOWN_PROPERTIES)

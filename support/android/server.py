@@ -94,17 +94,16 @@ def info_route() -> (str, int):
 
 
 def on_message(message: dict[str, Any], _):
+    print(f"[*] Handling {message}")
     message_payload = message.get("payload", {})
     message_caller: str | None = message_payload.get("caller")
+    message_type: str | None = message.get("type")
+    payload_type: str | None = message_payload.get("type")
+    message_error: str = message.get("description", message_payload.get("description", "Unknown error"))
     if message_caller == "gpia":
         auth_key: str | None = message_payload.get("authKey")
         if auth_key is None:
             print("[*] No gpia auth key")
-            return
-
-        message_type: str | None = message.get("type")
-        if message_type is None:
-            print("[*] Missing message type")
             return
 
         gpia_requests_lock.acquire()
@@ -114,11 +113,13 @@ def on_message(message: dict[str, Any], _):
             print("[*] No gpia request found")
             return
 
-        if message_type == "error":
+        if message_type == "error" or payload_type == "error":
+            print("[*] Sending back gpia error")
             gpia_future.set_result({
-                "error": message.get("description", "Unknown error")
+                "error": message_error
             })
         else:
+            print("[*] Sending back gpia data")
             gpia_future.set_result({
                 "token": message_payload.get("token")
             })
@@ -129,11 +130,6 @@ def on_message(message: dict[str, Any], _):
             print("[*] No cert auth key")
             return
 
-        message_type: str | None = message.get("type")
-        if message_type is None:
-            print("[*] Missing message type")
-            return
-
         cert_requests_lock.acquire()
         cert_future = cert_requests.get(auth_key)
         cert_requests_lock.release()
@@ -141,11 +137,13 @@ def on_message(message: dict[str, Any], _):
             print("[*] No cert request found")
             return
 
-        if message_type == "error":
+        if message_type == "error" or payload_type == "error":
+            print("[*] Sending back cert error")
             cert_future.set_result({
-                "error": message.get("description", "Unknown error")
+                "error": message_error
             })
         else:
+            print("[*] Sending back cert info")
             cert_future.set_result({
                 "signature": message_payload.get("signature"),
                 "certificate": message_payload.get("certificate"),
@@ -156,11 +154,6 @@ def on_message(message: dict[str, Any], _):
             print("[*] No message id")
             return
 
-        message_type: str | None = message_payload.get("type")
-        if message_type is None:
-            print("[*] Missing message type")
-            return
-
         info_requests_lock.acquire()
         info_future = info_requests.get(message_id)
         info_requests_lock.release()
@@ -168,11 +161,13 @@ def on_message(message: dict[str, Any], _):
             print("[*] No info request found")
             return
 
-        if message_type == "error":
+        if message_type == "error" or payload_type == "error":
+            print("[*] Sending back info error")
             info_future.set_result({
-                "error": message_payload.get("description", "Unknown error")
+                "error": message_error
             })
         else:
+            print("[*] Sending back info data")
             info_future.set_result({
                     "packageName": message_payload.get("packageName"),
                     "version": message_payload.get("version"),
