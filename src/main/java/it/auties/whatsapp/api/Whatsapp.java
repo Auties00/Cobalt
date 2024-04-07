@@ -665,7 +665,7 @@ public class Whatsapp {
                         .status(MessageStatus.PENDING)
                         .senderJid(jidOrThrowError())
                         .key(key)
-                        .message(MessageContainer.ofEditedMessage(protocol))
+                        .message(MessageContainer.of(protocol))
                         .timestampSeconds(Clock.nowSeconds())
                         .broadcast(oldChatInfo.chatJid().hasServer(JidServer.BROADCAST))
                         .build();
