@@ -75,7 +75,7 @@ public record CompanionDevice(
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 Optional.ofNullable(appVersion),
-                Version.of("17.3.1")
+                Version.of("17.4.1")
         );
     }
 

@@ -272,7 +272,7 @@ public final class WhatsappRegistration {
                     .toEntries());
             case IOS, IOS_BUSINESS -> {
                 var attributes = Attributes.of()
-                        .put("offline_ab", platform.isBusiness() ? Whatsapp.MOBILE_BUSINESS_IOS_OFFLINE_AB : Whatsapp.MOBILE_IOS_OFFLINE_AB)
+                        .put("offline_ab", Whatsapp.MOBILE_IOS_OFFLINE_AB)
                         .put("push_token", pushToken == null ? "" : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
                         .put("recovery_token_error", "-25300")
                         .toEntries();
