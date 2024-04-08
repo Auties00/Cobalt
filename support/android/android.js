@@ -259,24 +259,8 @@ Java.perform(function () {
         )
     }
 
-    function hexStringToByteArray(s) {
-        const result = []
-        for (let i = 0; i < s.length; i += 2) {
-            result.push(parseInt(s.substring(i, i + 2), 16))
-        }
-        return Java.array('byte', result)
-    }
-
-    function toHexString(byteArray) {
-        let result = ''
-        for (let i = 0; i < byteArray.length; i++) {
-            result += ('0' + (byteArray[i] & 0xFF).toString(16)).slice(-2)
-        }
-        return result
-    }
 
     let certificateCounter = 0
-
     function createCertificateListener() {
         console.log("[*] Ready for next cert request")
         recv("cert", function (message) {
@@ -291,66 +275,53 @@ Java.perform(function () {
 
                 certificateCounter++
                 let alias = "ws_cert_" + certificateCounter
-                let ks = KeyStore.getInstance('AndroidKeyStore')
-                ks.load(null)
-                ks.deleteEntry(alias)
 
-                let expireTime = Date.$new()
-                expireTime.setTime(System.currentTimeMillis().valueOf() + 80 * 365 * 24 * 60 * 60 * 1000)
+                let keyPairGenerator = KeyPairGenerator.getInstance("EC", "AndroidKeyStore")
 
-                let attestationChallenge = ByteBuffer.allocate(authKey.length + 9)
+                let attestationChallenge = ByteBuffer.allocate(authKey.length + 8 + 1)
                 attestationChallenge.order(ByteOrder.BIG_ENDIAN.value)
-                attestationChallenge.putLong(System.currentTimeMillis().valueOf() / 1000 - 15)
+                attestationChallenge.putLong((System.currentTimeMillis()) / 1000)
                 attestationChallenge.put(0x1F)
                 attestationChallenge.put(authKey)
                 let attestationChallengeBytes = Java.array("byte", new Array(attestationChallenge.remaining()).fill(0));
                 attestationChallenge.get(attestationChallengeBytes);
 
-                let keyPairGenerator = KeyPairGenerator.getInstance('EC', 'AndroidKeyStore')
-                let keySpec = KeyGenParameterSpecBuilder.$new(alias, KeyProperties.PURPOSE_SIGN.value)
+                let keyStore = KeyStore.getInstance("AndroidKeyStore")
+                keyStore.load(null)
+                keyStore.deleteEntry(alias)
+
+                let date = Date.$new()
+                date.setTime((System.currentTimeMillis()) + (1000*60*60*24))
+                let spec = KeyGenParameterSpecBuilder.$new(alias, KeyProperties.PURPOSE_SIGN.value)
                     .setDigests(Java.array('java.lang.String', [KeyProperties.DIGEST_SHA256.value, KeyProperties.DIGEST_SHA512.value]))
                     .setUserAuthenticationRequired(false)
-                    .setCertificateNotAfter(expireTime)
+                    .setCertificateNotAfter(date)
                     .setAttestationChallenge(attestationChallengeBytes)
                     .build()
-                keyPairGenerator.initialize(keySpec)
+                keyPairGenerator.initialize(spec)
                 keyPairGenerator.generateKeyPair()
+                keyStore.load(null)
 
-                let certs = ks.getCertificateChain(alias)
-                let ba = ByteArrayOutputStream.$new()
-                for (let i = certs.length - 1; i >= 1; i--) {
-                    let encoded = certs[i].getEncoded()
-                    ba.write(encoded, 0, encoded.length)
-                }
+                let entry = keyStore.getEntry(alias, null)
+                let keyStoreEntry = Java.cast(entry, KeyStorePrivateKeyEntry)
+                let keyStoreEntryPrivateKey = keyStoreEntry.getPrivateKey()
+                let signature = Signature.getInstance("SHA256withECDSA")
+                signature.initSign(keyStoreEntryPrivateKey)
+                signature.update(enc)
+                let sign = signature.sign()
 
-                let c0Hex = toHexString(certs[0].getEncoded())
-                let pubHex = toHexString(authKey)
-                let timeBytes = ByteBuffer.allocate(8)
-                    .putLong(System.currentTimeMillis())
-                    .array()
-                let time = toHexString(timeBytes).substring(4)
-                let pubIndex = c0Hex.indexOf(pubHex)
-                let timeIndex = pubIndex + 64 + 20
-                let signIndex = timeIndex + time.length + 80
-                let tailIndex = signIndex + appSignature.length
-                let newC0Hex = c0Hex.substring(0, timeIndex)
-                    + time
-                    + c0Hex.substring(timeIndex + time.length, signIndex)
-                    + appSignature
-                    + c0Hex.substring(tailIndex)
-                let newC0HexBytes = hexStringToByteArray(newC0Hex)
-                ba.write(newC0HexBytes, 0, newC0HexBytes.length)
+                let certs = keyStore.getCertificateChain(alias)
+                let chain = ByteArrayOutputStream.$new()
+                let firstEncodedChain = certs[2].getEncoded();
+                chain.write(firstEncodedChain, 0, firstEncodedChain.length)
+                let secondEncodedChain = certs[1].getEncoded();
+                chain.write(secondEncodedChain, 0, secondEncodedChain.length)
+                let thirdEncodedChain = certs[0].getEncoded();
+                chain.write(thirdEncodedChain, 0, thirdEncodedChain.length)
+                chain.close()
 
-                let s = Signature.getInstance('SHA256withECDSA')
-                let entry = Java.cast(ks.getEntry(alias, null), KeyStorePrivateKeyEntry)
-                let privateKey = entry.getPrivateKey()
-                s.initSign(privateKey)
-                s.update(enc)
-                ks.deleteEntry(alias)
-
-                let encSign = Base64.getUrlEncoder().withoutPadding().encodeToString(s.sign())
-                let encCert = Base64.getEncoder().encodeToString(ba.toByteArray())
-                ba.close()
+                let encSign = Base64.getUrlEncoder().withoutPadding().encodeToString(sign)
+                let encCert = Base64.getEncoder().encodeToString(chain.toByteArray())
 
                 console.log("[*] Finished computing certificate")
                 send({
@@ -365,7 +336,7 @@ Java.perform(function () {
                     "caller": "cert",
                     "type": "error",
                     "authKey": encAuthKey,
-                    "description": error.toString()
+                    "description": error.toString() + "\n" + error.stack
                 })
             }
         })
