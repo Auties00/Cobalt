@@ -15,10 +15,9 @@ public record CountryLocale(
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         String separator
 ) implements ProtobufMessage {
-    public static CountryLocale of(String encoded) {
+    public static Optional<CountryLocale> of(String encoded) {
         return of(encoded, "-")
-                .or(() -> of(encoded, "_"))
-                .orElseThrow(() -> new IllegalArgumentException("Cannot decode locale: " + encoded));
+                .or(() -> of(encoded, "_"));
     }
 
     public static Optional<CountryLocale> of(String encoded, String separator) {

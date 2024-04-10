@@ -394,7 +394,8 @@ class AppStateHandler {
         switch (setting) {
             case LocaleSettings localeSettings -> {
                 var oldLocale = socketHandler.store().locale();
-                socketHandler.updateLocale(CountryLocale.of(localeSettings.locale()), oldLocale.orElse(null));
+                CountryLocale.of(localeSettings.locale())
+                        .ifPresent(newLocale -> socketHandler.updateLocale(newLocale, oldLocale.orElse(null)));
             }
             case PushNameSettings pushNameSettings -> {
                 var oldName = socketHandler.store().name();

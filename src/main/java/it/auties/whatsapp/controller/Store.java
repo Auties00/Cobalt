@@ -1289,7 +1289,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     @JsonGetter("version")
     public Version version() {
         if(version == null) {
-            this.version = WhatsappMetadata.getVersion(device.platform());
+            this.version = WhatsappMetadata.getVersion(device.platform(), device.middleware().orElse(null));
         }
 
         return version.join();
@@ -1500,7 +1500,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.device = device;
         this.version = device.appVersion()
                 .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> WhatsappMetadata.getVersion(device.platform()));
+                .orElseGet(() -> WhatsappMetadata.getVersion(device.platform(), device.middleware().orElse(null)));
         return this;
     }
 

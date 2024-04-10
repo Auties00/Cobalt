@@ -374,7 +374,7 @@ public final class WhatsappRegistration {
 
         var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return androidToken = WhatsappMetadata.getGpiaToken(publicKey, business);
+        return androidToken = WhatsappMetadata.getGpiaToken(store.device().middleware().orElse(null), publicKey, business);
     }
     
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -559,7 +559,7 @@ public final class WhatsappRegistration {
                     return resultAsString;
                 });
             }
-            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
+            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(store.device().middleware().orElse(null), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
                 var uri = URI.create("%s%s".formatted(
                         Whatsapp.MOBILE_REGISTRATION_ENDPOINT,
                         path
@@ -618,7 +618,7 @@ public final class WhatsappRegistration {
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version());
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), store.device().middleware().orElse(null));
         return tokenFuture.thenApplyAsync(token -> {
             var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)

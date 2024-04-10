@@ -48,20 +48,18 @@ public final class WhatsappMetadata {
     }
 
     private static volatile CompletableFuture<Version> webVersion;
-    private static volatile CompletableFuture<Version> personalIosVersion;
-    private static volatile CompletableFuture<Version> businessIosVersion;
     private static volatile CompletableFuture<WhatsappAndroidApp> personalApk;
     private static volatile CompletableFuture<WhatsappAndroidApp> businessApk;
     private static volatile CompletableFuture<WhatsappKaiOsApp> kaiOsApp;
 
     private static final Path kaiOsCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
 
-    public static CompletableFuture<Version> getVersion(PlatformType platform) {
+    public static CompletableFuture<Version> getVersion(PlatformType platform, URI androidMiddleware) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(platform.isBusiness()).thenApply(WhatsappAndroidApp::version);
+                    getAndroidData(androidMiddleware, platform.isBusiness()).thenApply(WhatsappAndroidApp::version);
             case IOS ->
                     getIosVersion(false);
             case IOS_BUSINESS ->
@@ -73,30 +71,7 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<Version> getIosVersion(boolean business) {
-        if (business && businessIosVersion != null) {
-            return businessIosVersion;
-        }
-
-        if (!business && personalIosVersion != null) {
-            return personalIosVersion;
-        }
-
-        var future = Medias.downloadAsync(URI.create(business ? Whatsapp.MOBILE_BUSINESS_IOS_URL : Whatsapp.MOBILE_IOS_URL))
-                .thenApplyAsync(response -> parseIosVersion(business, response));
-        if(business) {
-            businessIosVersion = future;
-        }else {
-            personalIosVersion = future;
-        }
-
-        return future;
-    }
-
-    private static Version parseIosVersion(boolean business, byte[] response) {
-        return Json.readValue(response, IosVersionResponse.class)
-                .version()
-                .filter(version -> String.valueOf(version.tertiary()).length() != 1 || String.valueOf(version.quaternary()).length() != 1)
-                .orElse(business ? Whatsapp.MOBILE_DEFAULT_BUSINESS_IOS_VERSION : Whatsapp.MOBILE_DEFAULT_PERSONAL_IOS_VERSION);
+        return CompletableFuture.completedFuture(business ? Whatsapp.MOBILE_DEFAULT_BUSINESS_IOS_VERSION : Whatsapp.MOBILE_DEFAULT_PERSONAL_IOS_VERSION);
     }
 
     private static CompletableFuture<Version> getWebVersion() {
@@ -121,9 +96,9 @@ public final class WhatsappMetadata {
         return Version.of(webVersionResponse.currentVersion());
     }
 
-    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, Version appVersion) {
+    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, Version appVersion, URI androidMiddleware) {
         return switch (platform) {
-            case ANDROID, ANDROID_BUSINESS -> getAndroidData(platform.isBusiness())
+            case ANDROID, ANDROID_BUSINESS -> getAndroidData(androidMiddleware, platform.isBusiness())
                     .thenApplyAsync(whatsappData -> getAndroidToken(String.valueOf(phoneNumber), whatsappData));
             case IOS, IOS_BUSINESS -> getIosToken(phoneNumber, appVersion, platform.isBusiness());
             case KAIOS -> getKaiOsData()
@@ -160,7 +135,7 @@ public final class WhatsappMetadata {
         }
     }
 
-    private static CompletableFuture<WhatsappAndroidApp> getAndroidData(boolean business) {
+    private static CompletableFuture<WhatsappAndroidApp> getAndroidData(URI androidMiddleware, boolean business) {
         if (!business && personalApk != null) {
             return personalApk;
         }
@@ -169,7 +144,7 @@ public final class WhatsappMetadata {
             return businessApk;
         }
 
-        var future = downloadAndroidData(business);
+        var future = downloadAndroidData(androidMiddleware, business);
         if(business) {
             businessApk = future;
         }else {
@@ -179,10 +154,17 @@ public final class WhatsappMetadata {
         return future;
     }
 
-    private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(boolean business) {
+    private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(URI androidMiddleware, boolean business) {
         try(var client = HttpClient.newHttpClient()) {
+            System.out.println("http://%s/info?business=%s".formatted(
+                    getAndroidMiddleware(androidMiddleware),
+                    business
+            ));
             var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:1119/info?business=" + business))
+                    .uri(URI.create("http://%s/info?business=%s".formatted(
+                            getAndroidMiddleware(androidMiddleware),
+                            business
+                    )))
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -195,7 +177,7 @@ public final class WhatsappMetadata {
                         return app;
                     })
                     .exceptionallyAsync(throwable -> {
-                        throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
+                        throw new RuntimeException("Cannot connect to android middleware: " + androidMiddleware, throwable);
                     });
         }
     }
@@ -299,12 +281,16 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<String> getGpiaToken(byte[] authKey, boolean business) {
-        return getAndroidData(business).thenComposeAsync(androidData -> {
+    public static CompletableFuture<String> getGpiaToken(URI androidMiddleware, byte[] authKey, boolean business) {
+        return getAndroidData(androidMiddleware, business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
                 var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
                 var request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:1119/gpia?authKey=%s&business=%s".formatted(URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8), business)))
+                        .uri(URI.create("http://%s/gpia?authKey=%s&business=%s".formatted(
+                                getAndroidMiddleware(androidMiddleware),
+                                URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8),
+                                business
+                        )))
                         .GET()
                         .build();
                 return client.sendAsync(request, ofString()).thenApplyAsync(response -> {
@@ -331,10 +317,18 @@ public final class WhatsappMetadata {
                     );
                     return URLEncoder.encode(Base64.getEncoder().encodeToString(gpiaPayload), StandardCharsets.UTF_8);
                 }).exceptionallyAsync(throwable -> {
-                    throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
+                    throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage(), throwable);
                 });
             }
         });
+    }
+
+    private static String getAndroidMiddleware(URI androidMiddleware) {
+        if (androidMiddleware == null) {
+            return "localhost:1119";
+        }
+
+        return androidMiddleware.getHost() + ":" + androidMiddleware.getPort();
     }
 
     private record GpiaResponse(String token, String error) {
@@ -345,12 +339,17 @@ public final class WhatsappMetadata {
 
     }
 
-    public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(byte[] authKey, byte[] enc, boolean business) {
+    public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(URI androidMiddleware, byte[] authKey, byte[] enc, boolean business) {
         try(var client = HttpClient.newHttpClient()) {
             var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
             var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
             var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:1119/cert?authKey=%s&enc=%s&business=%s".formatted(authKeyBase64, encBase64, business)))
+                    .uri(URI.create("http://%s/cert?authKey=%s&enc=%s&business=%s".formatted(
+                            getAndroidMiddleware(androidMiddleware),
+                            authKeyBase64,
+                            encBase64,
+                            business
+                    )))
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
