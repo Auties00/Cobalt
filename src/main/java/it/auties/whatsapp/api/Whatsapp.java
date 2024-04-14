@@ -653,11 +653,16 @@ public class Whatsapp {
                         .fromMe(true)
                         .senderJid(jidOrThrowError())
                         .build();
+                var protocol = new ProtocolMessageBuilder()
+                        .protocolType(ProtocolMessage.Type.MESSAGE_EDIT)
+                        .key(key)
+                        .editedMessage(MessageContainer.of(newMessage))
+                        .build();
                 var info = new ChatMessageInfoBuilder()
                         .status(MessageStatus.PENDING)
                         .senderJid(jidOrThrowError())
                         .key(key)
-                        .message(MessageContainer.ofEditedMessage(newMessage))
+                        .message(MessageContainer.of(protocol))
                         .timestampSeconds(Clock.nowSeconds())
                         .broadcast(oldChatInfo.chatJid().hasServer(JidServer.BROADCAST))
                         .build();
