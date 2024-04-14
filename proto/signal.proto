@@ -1,0 +1,151 @@
+syntax = "proto2";
+
+message SessionStructure {
+  message Chain {
+    optional bytes senderRatchetKey = 1;
+    optional bytes senderRatchetKeyPrivate = 2;
+
+    message ChainKey {
+      optional uint32 index = 1;
+      optional bytes  key = 2;
+    }
+
+    optional ChainKey chainKey = 3;
+
+    message MessageKey {
+      optional uint32 index = 1;
+      optional bytes  cipherKey = 2;
+      optional bytes  macKey = 3;
+      optional bytes  iv = 4;
+    }
+
+    repeated MessageKey messageKeys = 4;
+  }
+
+  message PendingKeyExchange {
+    optional uint32 sequence = 1;
+    optional bytes  localBaseKey = 2;
+    optional bytes  localBaseKeyPrivate = 3;
+    optional bytes  localRatchetKey = 4;
+    optional bytes  localRatchetKeyPrivate = 5;
+    optional bytes  localIdentityKey = 7;
+    optional bytes  localIdentityKeyPrivate = 8;
+  }
+
+  message PendingPreKey {
+    optional uint32 preKeyId = 1;
+    optional int32  signedPreKeyId = 3;
+    optional bytes  baseKey = 2;
+  }
+
+  optional uint32 sessionVersion = 1;
+  optional bytes localIdentityPublic = 2;
+  optional bytes remoteIdentityPublic = 3;
+
+  optional bytes rootKey = 4;
+  optional uint32 previousCounter = 5;
+
+  optional Chain senderChain = 6;
+  repeated Chain receiverChains = 7;
+
+  optional PendingKeyExchange pendingKeyExchange = 8;
+  optional PendingPreKey      pendingPreKey = 9;
+
+  optional uint32 remoteRegistrationId = 10;
+  optional uint32 localRegistrationId = 11;
+
+  optional bool needsRefresh = 12;
+  optional bytes aliceBaseKey = 13;
+}
+
+message RecordStructure {
+  optional SessionStructure currentSession = 1;
+  repeated SessionStructure previousSessions = 2;
+}
+
+message PreKeyRecordStructure {
+  optional uint32 id = 1;
+  optional bytes  publicKey = 2;
+  optional bytes  privateKey = 3;
+}
+
+message SignedPreKeyRecordStructure {
+  optional uint32  id = 1;
+  optional bytes   publicKey = 2;
+  optional bytes   privateKey = 3;
+  optional bytes   signature = 4;
+  optional fixed64 timestamp = 5;
+}
+
+message IdentityKeyPairStructure {
+  optional bytes publicKey = 1;
+  optional bytes privateKey = 2;
+}
+
+message SenderKeyStateStructure {
+  message SenderChainKey {
+    optional uint32 iteration = 1;
+    optional bytes  seed = 2;
+  }
+
+  message SenderMessageKey {
+    optional uint32 iteration = 1;
+    optional bytes  seed = 2;
+  }
+
+  message SenderSigningKey {
+    optional bytes public = 1;
+    optional bytes private = 2;
+  }
+
+  optional uint32           senderKeyId = 1;
+  optional SenderChainKey   senderChainKey = 2;
+  optional SenderSigningKey senderSigningKey = 3;
+  repeated SenderMessageKey senderMessageKeys = 4;
+}
+
+message SenderKeyRecordStructure {
+  repeated SenderKeyStateStructure senderKeyStates = 1;
+}
+
+message SignalMessage {
+  optional bytes  ratchetKey = 1;
+  optional uint32 counter = 2;
+  optional uint32 previousCounter = 3;
+  optional bytes  ciphertext = 4;
+}
+
+message PreKeySignalMessage {
+  optional uint32 registrationId = 5;
+  optional uint32 preKeyId = 1;
+  optional uint32 signedPreKeyId = 6;
+  optional bytes  baseKey = 2;
+  optional bytes  identityKey = 3;
+  optional bytes  message = 4; // SignalMessage
+}
+
+message KeyExchangeMessage {
+  optional uint32 id = 1;
+  optional bytes  baseKey = 2;
+  optional bytes  ratchetKey = 3;
+  optional bytes  identityKey = 4;
+  optional bytes  baseKeySignature = 5;
+}
+
+message SenderKeyMessage {
+  optional uint32 id = 1;
+  optional uint32 iteration = 2;
+  optional bytes  ciphertext = 3;
+}
+
+message SenderKeyDistributionMessage {
+  optional uint32 id = 1;
+  optional uint32 iteration = 2;
+  optional bytes  chainKey = 3;
+  optional bytes  signingKey = 4;
+}
+
+message DeviceConsistencyCodeMessage {
+  optional uint32 generation = 1;
+  optional bytes  signature = 2;
+}
