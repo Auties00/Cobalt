@@ -1,6 +1,33 @@
-Java.perform(function () {
-    console.log("[*] Loading script...")
+import Fastify from 'fastify'
 
+const fastify = Fastify({
+    logger: true
+})
+
+let CountdownLatch = function (limit) {
+    this.limit = limit
+    this.count = 0
+    this.waitBlock = function () {
+    }
+}
+CountdownLatch.prototype.countDown = function () {
+    this.count = this.count + 1
+    if (this.limit <= this.count) {
+        return this.waitBlock()
+    }
+}
+CountdownLatch.prototype.await = function (success) {
+    this.waitBlock = success
+}
+
+let setupLatch = new CountdownLatch(2)
+let integrityTokenProvider, integrityRequestType, integrityRequestBuilder
+
+let integrityCounter = 0
+let certificateCounter = 0
+let infoData
+
+Java.perform(function () {
     const Modifier = Java.use("java.lang.reflect.Modifier")
     const KeyPairGenerator = Java.use('java.security.KeyPairGenerator')
     const KeyStore = Java.use('java.security.KeyStore')
@@ -29,12 +56,12 @@ Java.perform(function () {
     const SecretKeyFactory = Java.use("javax.crypto.SecretKeyFactory")
     const PBEKeySpec = Java.use("javax.crypto.spec.PBEKeySpec")
     const Key = Java.use("java.security.Key")
-    console.log("[*] Loaded types")
 
     const projectId = 293955441834
-    const appSignature = "3987d043d10aefaf5a8710b3671418fe57e0e19b653c9df82558feb5ffce5d44"
     const secretKeySalt = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN")
-    console.log("[*] Loaded constants")
+    const personalPackageId = "com.whatsapp"
+    const personalServerPort = 1119
+    const businessServerPort = 1120
 
     function findIntegrityManagerProvider() {
         const loadedClasses = Java.enumerateLoadedClassesSync()
@@ -58,7 +85,6 @@ Java.perform(function () {
 
     function getIntegrityManager(provider) {
         const context = ActivityThread.currentApplication().getApplicationContext()
-        console.log("[*] Loaded activity context")
         const integrityFactory = provider.overload("android.content.Context").call(context)
         const methods = integrityFactory.class.getDeclaredMethods()
         if (methods.length !== 1) {
@@ -66,7 +92,6 @@ Java.perform(function () {
         }
 
         const method = methods[0]
-        console.log("[*] Found integrity factory method")
         return integrityFactory[method.getName()].call(integrityFactory)
     }
 
@@ -77,7 +102,6 @@ Java.perform(function () {
         }
 
         const prepareIntegrityManagerMethod = prepareIntegrityManagerMethods[0]
-        console.log("[*] Found prepare integrity request method")
         const prepareIntegrityManagerMethodParamTypes = prepareIntegrityManagerMethod.getParameterTypes()
         if (prepareIntegrityManagerMethodParamTypes.length !== 1) {
             throw new Error('Unexpected number of parameters: ' + prepareIntegrityManagerMethodParamTypes.length)
@@ -85,7 +109,6 @@ Java.perform(function () {
 
         const prepareRequestType = prepareIntegrityManagerMethodParamTypes[0]
         const prepareRequestTypeClass = Java.use(prepareRequestType.getName())
-        console.log("[*] Found prepare integrity request type")
         const prepareRequestTypeMethods = prepareRequestType.getDeclaredMethods()
         for (const prepareRequestTypeMethod of prepareRequestTypeMethods) {
             if (Modifier.isStatic(prepareRequestTypeMethod.getModifiers()) && prepareRequestTypeMethod.getParameterTypes().length === 0) {
@@ -105,8 +128,8 @@ Java.perform(function () {
             name: 'IntegrityTokenProviderHandler',
             implements: [OnSuccessListenerType],
             methods: {
-                onSuccess: function (integrityTokenProvider) {
-                    onSuccess(Java.cast(integrityTokenProvider, Java.use(integrityTokenProvider.$className)))
+                onSuccess: function (result) {
+                    onSuccess(Java.cast(result, Java.use(result.$className)))
                 }
             }
         })
@@ -126,35 +149,6 @@ Java.perform(function () {
         integrityTokenPrepareResponse["addOnFailureListener"].overload('com.google.android.gms.tasks.OnFailureListener').call(integrityTokenPrepareResponse, onTokenProviderFailureListener)
     }
 
-    function findIntegrityRequestMeta(integrityTokenProvider) {
-        const integrityManagerMethods = integrityTokenProvider.class.getDeclaredMethods()
-        if (integrityManagerMethods.length !== 1) {
-            throw new Error('Too many methods in integrity manager: ' + integrityManagerMethods.length)
-        }
-
-        const integrityManagerMethod = integrityManagerMethods[0]
-        console.log("[*] Found integrity request method")
-        const integrityManagerMethodParamTypes = integrityManagerMethod.getParameterTypes()
-        if (integrityManagerMethodParamTypes.length !== 1) {
-            throw new Error('Unexpected number of parameters: ' + integrityManagerMethodParamTypes.length)
-        }
-
-        const requestType = integrityManagerMethodParamTypes[0]
-        const requestTypeClass = Java.use(requestType.getName())
-        console.log("[*] Found integrity request type")
-        const requestTypeMethods = requestType.getDeclaredMethods()
-        for (const requestTypeMethod of requestTypeMethods) {
-            if (Modifier.isStatic(requestTypeMethod.getModifiers()) && requestTypeMethod.getParameterTypes().length === 0) {
-                return [requestTypeClass, requestTypeClass[requestTypeMethod.getName()]]
-            }
-        }
-
-        throw new Error('Cannot find request builder method')
-    }
-
-    // authKey is the curve25519 public key encoded as base64 with flags DEFAULT | NO_PADDING | NO_WRAP
-    let integrityCounter = 0
-
     function calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilderMethod, authKey, onSuccess, onError) {
         integrityCounter++
         let integrityRequestBuilder = integrityRequestBuilderMethod.overload().call(integrityRequestType)
@@ -167,7 +161,6 @@ Java.perform(function () {
             implements: [OnSuccessListenerType],
             methods: {
                 onSuccess: function (result) {
-                    console.log("[*] Token wrapper type ", result.$className)
                     let javaResult = Java.cast(result, Java.use(result.$className))
                     onSuccess(javaResult.token())
                 }
@@ -189,157 +182,46 @@ Java.perform(function () {
         integrityTokenResponse["addOnFailureListener"].overload('com.google.android.gms.tasks.OnFailureListener').call(integrityTokenResponse, onIntegrityTokenErrorListener)
     }
 
-    function createGpiaListener(integrityTokenProvider, integrityRequestType, integrityRequestBuilder) {
-        console.log("[*] Ready for next gpia request")
-        recv("gpia", function (message) {
-            createGpiaListener(integrityTokenProvider, integrityRequestType, integrityRequestBuilder)
-            let authKey = message["authKey"]
-            try {
-                console.log("[*] Computing gpia token...")
-
-                let nonce = Base64.getEncoder().withoutPadding().encodeToString(Base64.getDecoder().decode(authKey))
-                calculateIntegrityToken(
-                    integrityTokenProvider,
-                    integrityRequestType,
-                    integrityRequestBuilder,
-                    nonce,
-                    (token) => {
-                        console.log("[*] Finished computing gpia token")
-                        send({
-                            "caller": "gpia",
-                            "type": "success",
-                            "authKey": authKey,
-                            "token": token
-                        })
-                    },
-                    (error) => {
-                        console.log("[*] Error while computing gpia token")
-                        send({
-                            "caller": "gpia",
-                            "type": "error",
-                            "authKey": authKey,
-                            "description": error
-                        })
-                    }
-                )
-            } catch (error) {
-                console.log("[*] Error while computing gpia token")
-                send({
-                    "caller": "gpia",
-                    "type": "error",
-                    "authKey": authKey,
-                    "description": error.toString()
-                })
-            }
-        })
-    }
-
-    function setupGpia() {
+    function initIntegrityComponent() {
         const integrityManagerProvider = findIntegrityManagerProvider()
-        console.log("[*] Found integrity provider")
         const integrityManager = getIntegrityManager(integrityManagerProvider)
-        console.log("[*] Found integrity manager")
         const [prepareIntegrityRequestType, prepareIntegrityRequestBuilder] = findPrepareIntegrityRequestMeta(integrityManager)
-        console.log("[*] Found prepare integrity metadata")
         createIntegrityTokenProvider(
             integrityManager,
             prepareIntegrityRequestType,
             prepareIntegrityRequestBuilder,
-            (integrityTokenProvider) => {
-                const [integrityRequestType, integrityRequestBuilder] = findIntegrityRequestMeta(integrityTokenProvider)
-                createGpiaListener(
-                    integrityTokenProvider,
-                    integrityRequestType,
-                    integrityRequestBuilder
-                )
+            (result) => {
+                const integrityManagerMethods = result.class.getDeclaredMethods()
+                if (integrityManagerMethods.length !== 1) {
+                    throw new Error('Too many methods in integrity manager: ' + integrityManagerMethods.length)
+                }
+
+                const integrityManagerMethod = integrityManagerMethods[0]
+                const integrityManagerMethodParamTypes = integrityManagerMethod.getParameterTypes()
+                if (integrityManagerMethodParamTypes.length !== 1) {
+                    throw new Error('Unexpected number of parameters: ' + integrityManagerMethodParamTypes.length)
+                }
+
+                const requestType = integrityManagerMethodParamTypes[0]
+                const requestTypeClass = Java.use(requestType.getName())
+                const requestTypeMethods = requestType.getDeclaredMethods()
+                for (const requestTypeMethod of requestTypeMethods) {
+                    if (Modifier.isStatic(requestTypeMethod.getModifiers()) && requestTypeMethod.getParameterTypes().length === 0) {
+                        integrityTokenProvider = result
+                        integrityRequestType = requestTypeClass
+                        integrityRequestBuilder = requestTypeClass[requestTypeMethod.getName()]
+                        console.log("[*] Initialized integrity component")
+                        setupLatch.countDown()
+                        return
+                    }
+                }
+
+                throw new Error('Cannot find request builder method')
             },
             (error) => {
-                console.log("[*] Cannot prepare integrity manager: ", error)
+                throw new Error('Cannot prepare integrity manager: ', error.toString(), "\n", error.stack.toString())
             }
         )
-    }
-
-
-    let certificateCounter = 0
-    function createCertificateListener() {
-        console.log("[*] Ready for next cert request")
-        recv("cert", function (message) {
-            createCertificateListener()
-            let data = message["data"]
-            let decodedData = Base64.getDecoder().decode(data)
-            let authKey = Arrays.copyOf(decodedData, 32)
-            let enc = Arrays.copyOfRange(decodedData, 32, decodedData.length)
-            let encAuthKey = Base64.getEncoder().encodeToString(authKey)
-            try {
-                console.log("[*] Computing certificate...")
-
-                certificateCounter++
-                let alias = "ws_cert_" + certificateCounter
-
-                let keyPairGenerator = KeyPairGenerator.getInstance("EC", "AndroidKeyStore")
-
-                let attestationChallenge = ByteBuffer.allocate(authKey.length + 8 + 1)
-                attestationChallenge.order(ByteOrder.BIG_ENDIAN.value)
-                attestationChallenge.putLong((System.currentTimeMillis()) / 1000)
-                attestationChallenge.put(0x1F)
-                attestationChallenge.put(authKey)
-                let attestationChallengeBytes = Java.array("byte", new Array(attestationChallenge.remaining()).fill(0));
-                attestationChallenge.get(attestationChallengeBytes);
-
-                let keyStore = KeyStore.getInstance("AndroidKeyStore")
-                keyStore.load(null)
-                keyStore.deleteEntry(alias)
-
-                let date = Date.$new()
-                date.setTime((System.currentTimeMillis()) + (1000*60*60*24))
-                let spec = KeyGenParameterSpecBuilder.$new(alias, KeyProperties.PURPOSE_SIGN.value)
-                    .setDigests(Java.array('java.lang.String', [KeyProperties.DIGEST_SHA256.value, KeyProperties.DIGEST_SHA512.value]))
-                    .setUserAuthenticationRequired(false)
-                    .setCertificateNotAfter(date)
-                    .setAttestationChallenge(attestationChallengeBytes)
-                    .build()
-                keyPairGenerator.initialize(spec)
-                keyPairGenerator.generateKeyPair()
-                keyStore.load(null)
-
-                let entry = keyStore.getEntry(alias, null)
-                let keyStoreEntry = Java.cast(entry, KeyStorePrivateKeyEntry)
-                let keyStoreEntryPrivateKey = keyStoreEntry.getPrivateKey()
-                let signature = Signature.getInstance("SHA256withECDSA")
-                signature.initSign(keyStoreEntryPrivateKey)
-                signature.update(enc)
-                let sign = signature.sign()
-
-                let certs = keyStore.getCertificateChain(alias)
-                let chain = ByteArrayOutputStream.$new()
-                let firstEncodedChain = certs[2].getEncoded();
-                chain.write(firstEncodedChain, 0, firstEncodedChain.length)
-                let secondEncodedChain = certs[1].getEncoded();
-                chain.write(secondEncodedChain, 0, secondEncodedChain.length)
-                let thirdEncodedChain = certs[0].getEncoded();
-                chain.write(thirdEncodedChain, 0, thirdEncodedChain.length)
-                chain.close()
-
-                let encSign = Base64.getUrlEncoder().withoutPadding().encodeToString(sign)
-                let encCert = Base64.getEncoder().encodeToString(chain.toByteArray())
-
-                console.log("[*] Finished computing certificate")
-                send({
-                    "caller": "cert",
-                    "type": "success",
-                    "authKey": encAuthKey,
-                    "signature": encSign,
-                    "certificate": encCert
-                })
-            } catch (error) {
-                send({
-                    "caller": "cert",
-                    "type": "error",
-                    "authKey": encAuthKey,
-                    "description": error.toString() + "\n" + error.stack
-                })
-            }
-        })
     }
 
     function sha256(file, length) {
@@ -400,10 +282,8 @@ Java.perform(function () {
             zipEntry = zipInputStream.getNextEntry()
             if (zipEntry != null) {
                 if (zipEntry.getName().includes("classes.dex")) {
-                    console.log("[*] Found classes.dex: ", zipEntry.getName())
                     classesMd5 = md5(zipInputStream)
                 } else if (zipEntry.getName().includes("about_logo.png")) {
-                    console.log("[*] Found about_logo.png: ", zipEntry.getName())
                     aboutLogo = readZipEntry(zipInputStream)
                 }
             }
@@ -412,10 +292,7 @@ Java.perform(function () {
         return [classesMd5, aboutLogo]
     }
 
-    let infoData = undefined
-
-    function computeInfo() {
-        console.log("[*] Computing info...")
+    function intInfoComponent() {
         let context = ActivityThread.currentApplication().getApplicationContext()
         let packageName = context.getPackageName()
 
@@ -449,10 +326,8 @@ Java.perform(function () {
         }
         let signature = signatures[0].toByteArray()
 
-        console.log("[*] Finished computing info")
+        console.log("[*] Initialized info component")
         infoData = {
-            "type": "success",
-            "caller": "info",
             "packageName": packageName,
             "version": packageVersion,
             "apkSha256": Base64.getEncoder().encodeToString(apkSha256),
@@ -463,40 +338,130 @@ Java.perform(function () {
             "signature": Base64.getEncoder().encodeToString(signature),
             "signatureSha1": Base64.getEncoder().encodeToString(sha1(signature))
         }
+        setupLatch.countDown()
     }
 
-    function createInfoListener() {
-        console.log("[*] Ready for next info request")
-
-        recv("info", function (message) {
-            createInfoListener()
-            try {
-                let messageId = message["id"]
-                if (infoData === undefined) {
-                    computeInfo();
+    function onIntegrity(req, res) {
+        let authKey = req.request.query.authKey
+        try {
+            let nonce = Base64.getEncoder().withoutPadding().encodeToString(Base64.getDecoder().decode(authKey))
+            calculateIntegrityToken(
+                integrityTokenProvider,
+                integrityRequestType,
+                integrityRequestBuilder,
+                nonce,
+                (token) => {
+                    res.send({
+                        "token": token
+                    })
+                },
+                (error) => {
+                    res.send({
+                        "error": error.toString() + "\n" + error.stack
+                    })
                 }
-
-                send({
-                    "id": messageId,
-                    ...infoData
-                })
-            } catch (error) {
-                console.log("[*] An error occurred while computing info")
-                console.log(error.stack)
-                send({
-                    "id": messageId,
-                    "caller": "info",
-                    "type": "error",
-                    "description": error.toString()
-                })
-            }
-        })
+            )
+        } catch (error) {
+            res.send({
+                "error": error.toString() + "\n" + error.stack
+            })
+        }
     }
 
-    console.log("[*] Loaded methods")
+    function onCert(req, res) {
+        let data = req.request.query.data
+        let decodedData = Base64.getDecoder().decode(data)
+        let authKey = Arrays.copyOf(decodedData, 32)
+        let enc = Arrays.copyOfRange(decodedData, 32, decodedData.length)
+        try {
+            certificateCounter++
+            let alias = "ws_cert_" + certificateCounter
 
-    setupGpia()
-    createInfoListener()
-    createCertificateListener()
-    console.log("[*] Loaded script")
+            let keyPairGenerator = KeyPairGenerator.getInstance("EC", "AndroidKeyStore")
+
+            let attestationChallenge = ByteBuffer.allocate(authKey.length + 8 + 1)
+            attestationChallenge.order(ByteOrder.BIG_ENDIAN.value)
+            attestationChallenge.putLong((System.currentTimeMillis()) / 1000)
+            attestationChallenge.put(0x1F)
+            attestationChallenge.put(authKey)
+            let attestationChallengeBytes = Java.array("byte", new Array(attestationChallenge.remaining()).fill(0));
+            attestationChallenge.get(attestationChallengeBytes);
+
+            let keyStore = KeyStore.getInstance("AndroidKeyStore")
+            keyStore.load(null)
+            keyStore.deleteEntry(alias)
+
+            let date = Date.$new()
+            date.setTime((System.currentTimeMillis()) + (1000 * 60 * 60 * 24))
+            let spec = KeyGenParameterSpecBuilder.$new(alias, KeyProperties.PURPOSE_SIGN.value)
+                .setDigests(Java.array('java.lang.String', [KeyProperties.DIGEST_SHA256.value, KeyProperties.DIGEST_SHA512.value]))
+                .setUserAuthenticationRequired(false)
+                .setCertificateNotAfter(date)
+                .setAttestationChallenge(attestationChallengeBytes)
+                .build()
+            keyPairGenerator.initialize(spec)
+            keyPairGenerator.generateKeyPair()
+            keyStore.load(null)
+
+            let entry = keyStore.getEntry(alias, null)
+            let keyStoreEntry = Java.cast(entry, KeyStorePrivateKeyEntry)
+            let keyStoreEntryPrivateKey = keyStoreEntry.getPrivateKey()
+            let signature = Signature.getInstance("SHA256withECDSA")
+            signature.initSign(keyStoreEntryPrivateKey)
+            signature.update(enc)
+            let sign = signature.sign()
+
+            let certs = keyStore.getCertificateChain(alias)
+            let chain = ByteArrayOutputStream.$new()
+            let firstEncodedChain = certs[2].getEncoded();
+            chain.write(firstEncodedChain, 0, firstEncodedChain.length)
+            let secondEncodedChain = certs[1].getEncoded();
+            chain.write(secondEncodedChain, 0, secondEncodedChain.length)
+            let thirdEncodedChain = certs[0].getEncoded();
+            chain.write(thirdEncodedChain, 0, thirdEncodedChain.length)
+            chain.close()
+
+            let encSign = Base64.getUrlEncoder().withoutPadding().encodeToString(sign)
+            let encCert = Base64.getEncoder().encodeToString(chain.toByteArray())
+
+            res.send({
+                "signature": encSign,
+                "certificate": encCert
+            })
+        } catch (error) {
+            res.send({
+                "error": error.toString() + "\n" + error.stack
+            })
+        }
+    }
+
+    function onInfo(req, res) {
+        try {
+            res.send(infoData)
+        } catch (error) {
+            res.send({
+                "error": error.toString() + "\n" + error.stack
+            })
+        }
+    }
+
+    console.log("[*] Initializing server components...")
+    initIntegrityComponent()
+    intInfoComponent()
+    setupLatch.await(() => {
+            console.log("[*] All server components are ready")
+
+            const serverPort = infoData["packageName"] === personalPackageId ? personalServerPort : businessServerPort
+
+            fastify
+                .get('/gpia', (req, res) => onIntegrity(req, res))
+                .get('/cert', (req, res) => onCert(req, res))
+                .get('/info', (req, res) => onInfo(req, res))
+
+            fastify.listen({port: serverPort}, (err, address) => {
+                if (err) throw err
+                console.log("[*] Listening at ", address)
+            })
+        }
+    );
 })

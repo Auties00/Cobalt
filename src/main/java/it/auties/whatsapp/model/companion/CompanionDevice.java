@@ -5,10 +5,9 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
-import it.auties.whatsapp.util.ProtobufUriMixin;
 
-import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -32,8 +31,8 @@ public record CompanionDevice(
         Optional<Version> appVersion,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         Version osVersion,
-        @ProtobufProperty(index = 6, type = ProtobufType.STRING, mixin = ProtobufUriMixin.class)
-        Optional<URI> middleware
+        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+        String address
 ) implements ProtobufMessage {
     private static final List<String> IPHONES = List.of(
             "iPhone_11",
@@ -66,7 +65,7 @@ public record CompanionDevice(
                 PlatformType.WEB,
                 Optional.ofNullable(appVersion),
                 Version.of("1.0"),
-                Optional.empty()
+                null
         );
     }
 
@@ -81,26 +80,22 @@ public record CompanionDevice(
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 Optional.ofNullable(appVersion),
                 Version.of("17.4.1"),
-                Optional.empty()
+                null
         );
     }
 
-    public static CompanionDevice android(boolean business) {
-        return android(null, business, null);
+    public static CompanionDevice android(boolean business, String deviceAddress) {
+        return android(null, business, deviceAddress);
     }
 
-    public static CompanionDevice android(boolean business, URI middlewareServer) {
-        return android(null, business, middlewareServer);
-    }
-
-    public static CompanionDevice android(Version appVersion, boolean business, URI middleware) {
+    public static CompanionDevice android(Version appVersion, boolean business, String deviceAddress) {
         return new CompanionDevice(
                 "Pixel_2",
                 "Google",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
                 Optional.ofNullable(appVersion),
                 Version.of("11"),
-                Optional.ofNullable(middleware)
+                Objects.requireNonNull(deviceAddress, "A device is required for android registration")
         );
     }
 
@@ -115,7 +110,7 @@ public record CompanionDevice(
                 PlatformType.KAIOS,
                 Optional.ofNullable(appVersion),
                 Version.of("2.5.4"),
-                Optional.empty()
+                null
         );
     }
 
@@ -139,7 +134,7 @@ public record CompanionDevice(
                 platform.toPersonal(),
                 appVersion,
                 osVersion,
-                middleware
+                address
         );
     }
 
@@ -154,7 +149,7 @@ public record CompanionDevice(
                 platform.toBusiness(),
                 appVersion,
                 osVersion,
-                middleware
+                address
         );
     }
 

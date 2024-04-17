@@ -197,12 +197,11 @@ public final class WhatsappRegistration {
 
     private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, boolean swapDevice, VerificationCodeError lastError) {
         return getPushToken().thenComposeAsync(pushToken -> {
-            var requiresToken = store.device().platform().isAndroid();
             return getExistsParameters(pushToken).thenComposeAsync(existsParameters -> {
                 var options = getRegistrationOptions(
                         store,
                         keys,
-                        requiresToken,
+                        true,
                         existsParameters
                 );
                 return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
@@ -374,7 +373,7 @@ public final class WhatsappRegistration {
 
         var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return androidToken = WhatsappMetadata.getGpiaToken(store.device().middleware().orElse(null), publicKey, business);
+        return androidToken = WhatsappMetadata.getGpiaToken(store.device().address(), publicKey, business);
     }
     
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -559,7 +558,7 @@ public final class WhatsappRegistration {
                     return resultAsString;
                 });
             }
-            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(store.device().middleware().orElse(null), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
+            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(store.device().address(), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
                 var uri = URI.create("%s%s".formatted(
                         Whatsapp.MOBILE_REGISTRATION_ENDPOINT,
                         path
@@ -618,7 +617,7 @@ public final class WhatsappRegistration {
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), store.device().middleware().orElse(null));
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), store.device().address());
         return tokenFuture.thenApplyAsync(token -> {
             var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)

@@ -15,9 +15,7 @@ public class Specification {
         public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
         public static final URI SOCKET_ENDPOINT = URI.create("http://g.whatsapp.net:443");
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=2.2245.9&platform=web";
-        public static final String MOBILE_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp";
         public static final String MOBILE_ANDROID_USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
-        public static final String MOBILE_BUSINESS_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
         public static final String MOBILE_IOS_OFFLINE_AB = "%7B%22%65%78%70%6F%73%75%72%65%22%3A%5B%22%68%69%64%65%5F%6C%69%6E%6B%5F%64%65%76%69%63%65%5F%62%75%74%74%6F%6E%5F%72%65%6C%65%61%73%65%5F%72%6F%6C%6C%6F%75%74%5F%75%6E%69%76%65%72%73%65%7C%68%69%64%65%5F%6C%69%6E%6B%5F%64%65%76%69%63%65%5F%62%75%74%74%6F%6E%5F%72%65%6C%65%61%73%65%5F%72%6F%6C%6C%6F%75%74%5F%65%78%70%65%72%69%6D%65%6E%74%7C%63%6F%6E%74%72%6F%6C%22%2C%22%69%6F%73%5F%63%6F%6E%66%6C%75%65%6E%63%65%5F%74%6F%73%5F%70%70%5F%6C%69%6E%6B%5F%75%70%64%61%74%65%5F%75%6E%69%76%65%72%73%65%7C%69%70%68%6F%6E%65%5F%63%6F%6E%66%6C%75%65%6E%63%65%5F%74%6F%73%5F%70%70%5F%6C%69%6E%6B%5F%75%70%64%61%74%65%5F%65%78%70%7C%74%65%73%74%22%2C%22%77%66%73%5F%6F%66%66%6C%69%6E%65%5F%63%61%63%68%65%5F%70%72%6F%64%5F%75%6E%69%76%65%72%73%65%5F%69%6F%73%7C%77%66%73%5F%6F%66%66%6C%69%6E%65%5F%63%61%63%68%65%5F%70%72%6F%64%5F%65%78%70%65%72%69%6D%65%6E%74%5F%69%6F%73%7C%63%6F%6E%74%72%6F%6C%22%2C%22%64%75%6D%6D%79%5F%61%61%5F%70%72%6F%64%5F%75%6E%69%76%65%72%73%65%5F%69%6F%73%7C%64%75%6D%6D%79%5F%61%61%5F%70%72%6F%64%5F%65%78%70%65%72%69%6D%65%6E%74%5F%69%6F%73%7C%63%6F%6E%74%72%6F%6C%22%5D%2C%22%6D%65%74%72%69%63%73%22%3A%7B%22%65%78%70%69%64%5F%63%64%22%3A%31%37%31%31%32%32%32%37%31%35%2C%22%65%78%70%69%64%5F%6D%64%22%3A%31%37%31%31%32%32%32%37%31%35%2C%22%72%63%5F%63%22%3A%74%72%75%65%7D%7D";
         public static final String MOBILE_ANDROID_OFFLINE_AB = "%7B%22exposure%22%3A%5B%22android_confluence_tos_pp_link_update_universe%7Candroid_confluence_tos_pp_link_update_exp%7Ccontrol%22%2C%22reg_phone_number_update_colors_prod_universe%7Creg_phone_number_update_colors_prod_experiment%7Ccontrol%22%2C%22android_rollout_quebec_tos_reg_universe%7Candroid_rollout_ca_tos_reg_experiment%7Ccontrol%22%2C%22dummy_aa_prod_universe%7Cdummy_aa_prod_experiment%7Ccontrol%22%5D%2C%22metrics%22%3A%7B%22backup_token_source%22%3A%22block_store%22%7D%7D";
@@ -26,8 +24,8 @@ public class Specification {
         public static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
         public static final String APNS_WHATSAPP_BUSINESS_NAME = "net.whatsapp.WhatsAppSMB";
         public static final String APNS_WHATSAPP_NAME = "net.whatsapp.WhatsApp";
-        public static final Version MOBILE_DEFAULT_PERSONAL_IOS_VERSION = Version.of("2.24.7.79");
-        public static final Version MOBILE_DEFAULT_BUSINESS_IOS_VERSION = Version.of("2.24.7.79");
+        public static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.8.77");
+        public static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.8.77");
         public static final String[] DEFAULT_APNS_FILTERS = new String[]{
                 "net.whatsapp.WhatsApp",
                 "net.whatsapp.WhatsApp.voip",

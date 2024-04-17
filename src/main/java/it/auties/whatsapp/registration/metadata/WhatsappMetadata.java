@@ -43,6 +43,10 @@ import java.util.zip.ZipInputStream;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 public final class WhatsappMetadata {
+
+    public static final int ANDROID_BUSINESS_PORT = 1120;
+    public static final int ANDROID_PERSONAL_PORT = 1119;
+
     static {
         ProxyAuthenticator.allowAll();
     }
@@ -54,12 +58,12 @@ public final class WhatsappMetadata {
 
     private static final Path kaiOsCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
 
-    public static CompletableFuture<Version> getVersion(PlatformType platform, URI androidMiddleware) {
+    public static CompletableFuture<Version> getVersion(PlatformType platform, String deviceAddress) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(androidMiddleware, platform.isBusiness()).thenApply(WhatsappAndroidApp::version);
+                    getAndroidData(deviceAddress, platform.isBusiness()).thenApply(WhatsappAndroidApp::version);
             case IOS ->
                     getIosVersion(false);
             case IOS_BUSINESS ->
@@ -71,7 +75,7 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<Version> getIosVersion(boolean business) {
-        return CompletableFuture.completedFuture(business ? Whatsapp.MOBILE_DEFAULT_BUSINESS_IOS_VERSION : Whatsapp.MOBILE_DEFAULT_PERSONAL_IOS_VERSION);
+        return CompletableFuture.completedFuture(business ? Whatsapp.MOBILE_BUSINESS_IOS_VERSION : Whatsapp.MOBILE_PERSONAL_IOS_VERSION);
     }
 
     private static CompletableFuture<Version> getWebVersion() {
@@ -96,9 +100,9 @@ public final class WhatsappMetadata {
         return Version.of(webVersionResponse.currentVersion());
     }
 
-    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, Version appVersion, URI androidMiddleware) {
+    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, Version appVersion, String deviceAddress) {
         return switch (platform) {
-            case ANDROID, ANDROID_BUSINESS -> getAndroidData(androidMiddleware, platform.isBusiness())
+            case ANDROID, ANDROID_BUSINESS -> getAndroidData(deviceAddress, platform.isBusiness())
                     .thenApplyAsync(whatsappData -> getAndroidToken(String.valueOf(phoneNumber), whatsappData));
             case IOS, IOS_BUSINESS -> getIosToken(phoneNumber, appVersion, platform.isBusiness());
             case KAIOS -> getKaiOsData()
@@ -135,7 +139,7 @@ public final class WhatsappMetadata {
         }
     }
 
-    private static CompletableFuture<WhatsappAndroidApp> getAndroidData(URI androidMiddleware, boolean business) {
+    private static CompletableFuture<WhatsappAndroidApp> getAndroidData(String deviceAddress, boolean business) {
         if (!business && personalApk != null) {
             return personalApk;
         }
@@ -144,7 +148,7 @@ public final class WhatsappMetadata {
             return businessApk;
         }
 
-        var future = downloadAndroidData(androidMiddleware, business);
+        var future = downloadAndroidData(deviceAddress, business);
         if(business) {
             businessApk = future;
         }else {
@@ -154,17 +158,11 @@ public final class WhatsappMetadata {
         return future;
     }
 
-    private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(URI androidMiddleware, boolean business) {
+    private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(String deviceAddress, boolean business) {
+        var backendAddress = getAndroidMiddleware(deviceAddress, business);
         try(var client = HttpClient.newHttpClient()) {
-            System.out.println("http://%s/info?business=%s".formatted(
-                    getAndroidMiddleware(androidMiddleware),
-                    business
-            ));
             var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://%s/info?business=%s".formatted(
-                            getAndroidMiddleware(androidMiddleware),
-                            business
-                    )))
+                    .uri(URI.create("http://%s/info?business=%s".formatted(backendAddress, business)))
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -177,7 +175,7 @@ public final class WhatsappMetadata {
                         return app;
                     })
                     .exceptionallyAsync(throwable -> {
-                        throw new RuntimeException("Cannot connect to android middleware: " + androidMiddleware, throwable);
+                        throw new RuntimeException("Cannot connect to android middleware at " + backendAddress, throwable);
                     });
         }
     }
@@ -281,16 +279,12 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<String> getGpiaToken(URI androidMiddleware, byte[] authKey, boolean business) {
-        return getAndroidData(androidMiddleware, business).thenComposeAsync(androidData -> {
+    public static CompletableFuture<String> getGpiaToken(String deviceAddress, byte[] authKey, boolean business) {
+        return getAndroidData(deviceAddress, business).thenComposeAsync(androidData -> {
             try(var client = HttpClient.newHttpClient()) {
                 var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
                 var request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://%s/gpia?authKey=%s&business=%s".formatted(
-                                getAndroidMiddleware(androidMiddleware),
-                                URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8),
-                                business
-                        )))
+                        .uri(URI.create("http://%s/gpia?authKey=%s".formatted(getAndroidMiddleware(deviceAddress, business), URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8))))
                         .GET()
                         .build();
                 return client.sendAsync(request, ofString()).thenApplyAsync(response -> {
@@ -323,12 +317,8 @@ public final class WhatsappMetadata {
         });
     }
 
-    private static String getAndroidMiddleware(URI androidMiddleware) {
-        if (androidMiddleware == null) {
-            return "localhost:1119";
-        }
-
-        return androidMiddleware.getHost() + ":" + androidMiddleware.getPort();
+    private static String getAndroidMiddleware(String deviceAddress, boolean business) {
+        return "%s:%s".formatted(deviceAddress, business ? ANDROID_BUSINESS_PORT : ANDROID_PERSONAL_PORT);
     }
 
     private record GpiaResponse(String token, String error) {
@@ -339,17 +329,12 @@ public final class WhatsappMetadata {
 
     }
 
-    public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(URI androidMiddleware, byte[] authKey, byte[] enc, boolean business) {
+    public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(String deviceAddress, byte[] authKey, byte[] enc, boolean business) {
         try(var client = HttpClient.newHttpClient()) {
             var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
             var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
             var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://%s/cert?authKey=%s&enc=%s&business=%s".formatted(
-                            getAndroidMiddleware(androidMiddleware),
-                            authKeyBase64,
-                            encBase64,
-                            business
-                    )))
+                    .uri(URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(getAndroidMiddleware(deviceAddress, business), authKeyBase64, encBase64)))
                     .GET()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())

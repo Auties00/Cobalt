@@ -1,7 +1,9 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.binary.BinaryEncoder;
+import it.auties.whatsapp.exception.RequestException;
 import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.util.Exceptions;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,7 +22,13 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
     }
 
     private static CompletableFuture<Node> futureOrTimeout(Object body) {
-        return new CompletableFuture<Node>().orTimeout(calculateTimeout(body), SECONDS);
+        var stacktraceProvider = Exceptions.current("Node timed out");
+        return new CompletableFuture<Node>().orTimeout(calculateTimeout(body), SECONDS).exceptionally(throwable -> {
+            var error = new RequestException(throwable.getMessage());
+            error.setStackTrace(stacktraceProvider.getStackTrace());
+            error.addSuppressed(throwable);
+            throw error;
+        });
     }
 
     private static int calculateTimeout(Object body) {

@@ -1,0 +1,1 @@
+frida -U WhatsApp\xa0Business -s frida.js
