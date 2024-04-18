@@ -2,15 +2,14 @@
   "name": "android",
   "version": "1.0.0",
   "description": "Example showing how to use frida-net's server functionality",
+  "type": "module",
   "scripts": {
     "prepare": "npm run build",
     "build": "frida-compile frida -o _frida.js",
     "watch": "frida-compile frida -o _frida.js -w"
   },
   "dependencies": {
-    "fastify": "^4.26.2",
-    "frida-compile": "^16.4.1",
-    "async_hooks": "^1.0.0"
+    "frida-compile": "^16.4.1"
   },
   "devDependencies": {
     "@types/node": "^20.12.7"

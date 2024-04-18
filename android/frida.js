@@ -1,22 +1,17 @@
-import Fastify from 'fastify'
+import http from 'http';
 
-const fastify = Fastify({
-    logger: true
-})
-
-let CountdownLatch = function (limit) {
+let CountdownLatch = function (limit, onSuccess) {
     this.limit = limit
     this.count = 0
-    this.waitBlock = function () {
-    }
+    this.waitBlock = onSuccess
 }
 CountdownLatch.prototype.countDown = function () {
     this.count = this.count + 1
     if (this.limit <= this.count) {
-        return this.waitBlock()
+        this.waitBlock()
     }
 }
-CountdownLatch.prototype.await = function (success) {
+CountdownLatch.prototype.onSuccess = function (success) {
     this.waitBlock = success
 }
 
@@ -326,8 +321,7 @@ Java.perform(function () {
         }
         let signature = signatures[0].toByteArray()
 
-        console.log("[*] Initialized info component")
-        infoData = {
+        infoData = JSON.stringify({
             "packageName": packageName,
             "version": packageVersion,
             "apkSha256": Base64.getEncoder().encodeToString(apkSha256),
@@ -337,12 +331,13 @@ Java.perform(function () {
             "secretKey": Base64.getEncoder().encodeToString(secretKey),
             "signature": Base64.getEncoder().encodeToString(signature),
             "signatureSha1": Base64.getEncoder().encodeToString(sha1(signature))
-        }
+        })
+        console.log("[*] Initialized info component")
         setupLatch.countDown()
     }
 
     function onIntegrity(req, res) {
-        let authKey = req.request.query.authKey
+        let authKey = req.authKey
         try {
             let nonce = Base64.getEncoder().withoutPadding().encodeToString(Base64.getDecoder().decode(authKey))
             calculateIntegrityToken(
@@ -351,25 +346,25 @@ Java.perform(function () {
                 integrityRequestBuilder,
                 nonce,
                 (token) => {
-                    res.send({
+                    res.send(JSON.stringify({
                         "token": token
-                    })
+                    }))
                 },
                 (error) => {
-                    res.send({
+                    res.send(JSON.stringify({
                         "error": error.toString() + "\n" + error.stack
-                    })
+                    }))
                 }
             )
         } catch (error) {
-            res.send({
+            res.send(JSON.stringify({
                 "error": error.toString() + "\n" + error.stack
-            })
+            }))
         }
     }
 
     function onCert(req, res) {
-        let data = req.request.query.data
+        let data = req.data
         let decodedData = Base64.getDecoder().decode(data)
         let authKey = Arrays.copyOf(decodedData, 32)
         let enc = Arrays.copyOfRange(decodedData, 32, decodedData.length)
@@ -424,44 +419,61 @@ Java.perform(function () {
             let encSign = Base64.getUrlEncoder().withoutPadding().encodeToString(sign)
             let encCert = Base64.getEncoder().encodeToString(chain.toByteArray())
 
-            res.send({
+            res.send(JSON.stringify({
                 "signature": encSign,
                 "certificate": encCert
-            })
+            }))
         } catch (error) {
-            res.send({
+            res.send(JSON.stringify({
                 "error": error.toString() + "\n" + error.stack
-            })
+            }))
         }
     }
 
-    function onInfo(req, res) {
+    function onInfo(res) {
         try {
             res.send(infoData)
         } catch (error) {
-            res.send({
+            res.send(JSON.stringify({
                 "error": error.toString() + "\n" + error.stack
-            })
+            }))
         }
     }
 
     console.log("[*] Initializing server components...")
-    initIntegrityComponent()
-    intInfoComponent()
-    setupLatch.await(() => {
+    setupLatch.onSuccess(() => {
             console.log("[*] All server components are ready")
 
             const serverPort = infoData["packageName"] === personalPackageId ? personalServerPort : businessServerPort
+            const server = http.createServer((req, res) => {
+                if (req.method !== "GET") {
+                    res.statusCode = 405;
+                    res.end(JSON.stringify({"error": "HTTP method not allowed"}));
+                }else {
+                    res.writeHead(200, {"Content-Type": "application/json"});
+                    let parsedRequest = url.parse(req.url, true)
+                    switch (parsedRequest.url) {
+                        case "/gpia":
+                            onIntegrity(parsedRequest.query, res)
+                            break;
+                        case "/cert":
+                            onCert(parsedRequest.query, res)
+                            break;
+                        case "/info":
+                            onInfo(res)
+                            break;
+                        default:
+                            res.statusCode = 404;
+                            res.end(JSON.stringify({"error": "Unknown method"}))
+                    }
+                }
+            })
 
-            fastify
-                .get('/gpia', (req, res) => onIntegrity(req, res))
-                .get('/cert', (req, res) => onCert(req, res))
-                .get('/info', (req, res) => onInfo(req, res))
-
-            fastify.listen({port: serverPort}, (err, address) => {
-                if (err) throw err
-                console.log("[*] Listening at ", address)
+            server.listen(serverPort, () => {
+                console.log("[*] Server ready on port", serverPort)
             })
         }
-    );
+    )
+    initIntegrityComponent()
+    intInfoComponent()
 })

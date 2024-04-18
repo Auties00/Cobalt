@@ -196,44 +196,44 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, boolean swapDevice, VerificationCodeError lastError) {
-        return getPushToken().thenComposeAsync(pushToken -> {
-            return getExistsParameters(pushToken).thenComposeAsync(existsParameters -> {
-                var options = getRegistrationOptions(
-                        store,
-                        keys,
-                        true,
-                        existsParameters
-                );
-                return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
-                    var response = Json.readValue(result, RegistrationResponse.class);
-                    var currentDevice = store.device();
-                    if (response.errorReason() == VerificationCodeError.INCORRECT || !throwError) {
-                        return CompletableFuture.completedFuture(response);
-                    }
-
-                    if (response.errorReason() == VerificationCodeError.BLOCKED || lastError != null) {
-                        throw new RegistrationException(response, result);
-                    }
-
-                    var useOriginalDevice = originalDevice != null
-                            && !Objects.equals(currentDevice, originalDevice)
-                            && response.errorReason() == VerificationCodeError.FORMAT_WRONG;
-                    if(useOriginalDevice) {
-                        store.setDevice(originalDevice);
-                    }
-
-                    return exists(originalDevice, true, swapDevice, response.errorReason()).whenComplete((finalResult, error) -> {
-                        if(useOriginalDevice && swapDevice) {
-                            store.setDevice(currentDevice);
+        return getPushToken()
+                .thenComposeAsync(this::getExistsParameters)
+                .thenComposeAsync(existsParameters -> {
+                    var options = getRegistrationOptions(
+                            store,
+                            keys,
+                            true,
+                            existsParameters
+                    );
+                    return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
+                        var response = Json.readValue(result, RegistrationResponse.class);
+                        var currentDevice = store.device();
+                        if (response.errorReason() == VerificationCodeError.INCORRECT || !throwError) {
+                            return CompletableFuture.completedFuture(response);
                         }
 
-                        if(error != null) {
-                            Exceptions.rethrow(error);
+                        if (response.errorReason() == VerificationCodeError.BLOCKED || lastError != null) {
+                            throw new RegistrationException(response, result);
                         }
+
+                        var useOriginalDevice = originalDevice != null
+                                && !Objects.equals(currentDevice, originalDevice)
+                                && response.errorReason() == VerificationCodeError.FORMAT_WRONG;
+                        if(useOriginalDevice) {
+                            store.setDevice(originalDevice);
+                        }
+
+                        return exists(originalDevice, true, swapDevice, response.errorReason()).whenComplete((finalResult, error) -> {
+                            if(useOriginalDevice && swapDevice) {
+                                store.setDevice(currentDevice);
+                            }
+
+                            if(error != null) {
+                                Exceptions.rethrow(error);
+                            }
+                        });
                     });
                 });
-            });
-        });
     }
 
     private CompletableFuture<Entry<String, Object>[]> getExistsParameters(String pushToken) {
