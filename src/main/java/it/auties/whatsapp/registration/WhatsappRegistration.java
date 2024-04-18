@@ -89,6 +89,7 @@ public final class WhatsappRegistration {
         store.setDevice(originalDevice.toPersonal());
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
+                    .thenComposeAsync(response -> onboard("1", 2155550000L, response.abHash()))
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> exists(originalDevice, true, false, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
@@ -389,7 +390,7 @@ public final class WhatsappRegistration {
                 .put("method", method.data())
                 .put("sim_mcc", "000")
                 .put("sim_mnc", "000")
-                .put("reason", "")
+                .put("reason", "jailbroken")
                 .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(1, 5))
                 .toEntries();
