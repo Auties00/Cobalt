@@ -77,37 +77,37 @@ public class HttpClient {
                 .collect(Collectors.toUnmodifiableMap(entry -> entry[0], entry -> entry[1]));
     }
 
-    public CompletableFuture<byte[]> get(URI uri, Proxy proxy) {
-        return sendRequest("GET", uri, proxy, null, null);
+    public CompletableFuture<byte[]> get(URI uri, boolean useCustomSslFactory, Proxy proxy) {
+        return sendRequest("GET", uri, useCustomSslFactory, proxy, null, null);
     }
 
-    public CompletableFuture<String> get(URI uri, Map<String, ?> headers) {
-        return sendRequest("GET", uri, null, headers, null)
+    public CompletableFuture<String> get(URI uri, boolean useCustomSslFactory, Map<String, ?> headers) {
+        return sendRequest("GET", uri, useCustomSslFactory, null, headers, null)
                 .thenApplyAsync(String::new);
     }
 
-    public CompletableFuture<String> get(URI uri, Proxy proxy, Map<String, ?> headers) {
-        return sendRequest("GET", uri, proxy, headers, null)
+    public CompletableFuture<String> get(URI uri, Proxy proxy, boolean useCustomSslFactory, Map<String, ?> headers) {
+        return sendRequest("GET", uri, useCustomSslFactory, proxy, headers, null)
                 .thenApplyAsync(String::new);
     }
 
-    public CompletableFuture<byte[]> post(URI uri, Map<String, ?> headers) {
-        return sendRequest("POST", uri, null, headers, null);
+    public CompletableFuture<byte[]> post(URI uri, boolean useCustomSslFactory, Map<String, ?> headers) {
+        return sendRequest("POST", uri, useCustomSslFactory, null, headers, null);
     }
 
-    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, Map<String, ?> headers) {
-        return sendRequest("POST", uri, proxy, headers, null);
+    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, boolean useCustomSslFactory, Map<String, ?> headers) {
+        return sendRequest("POST", uri, useCustomSslFactory, proxy, headers, null);
     }
 
-    public CompletableFuture<byte[]> post(URI uri, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, null, headers, body);
+    public CompletableFuture<byte[]> post(URI uri, boolean useCustomSslFactory, Map<String, ?> headers, byte[] body) {
+        return sendRequest("POST", uri, useCustomSslFactory, null, headers, body);
     }
 
-    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, proxy, headers, body);
+    public CompletableFuture<byte[]> post(URI uri, Proxy proxy, boolean useCustomSslFactory, Map<String, ?> headers, byte[] body) {
+        return sendRequest("POST", uri, useCustomSslFactory, proxy, headers, body);
     }
 
-    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Proxy proxy, Map<String, ?> headers, byte[] body) {
+    private CompletableFuture<byte[]> sendRequest(String method, URI uri, boolean useCustomSslFactory, Proxy proxy, Map<String, ?> headers, byte[] body) {
         var future = new CompletableFuture<byte[]>();
         Thread.startVirtualThread(() -> {
             HttpURLConnection connection = null;
@@ -122,7 +122,7 @@ public class HttpClient {
                     }
                 }
                 connection.setRequestProperty("Connection", "close");
-                if(connection instanceof HttpsURLConnection httpsConnection) {
+                if(connection instanceof HttpsURLConnection httpsConnection && useCustomSslFactory) {
                     httpsConnection.setSSLSocketFactory(sslFactory);
                 }
                 connection.setInstanceFollowRedirects(true);

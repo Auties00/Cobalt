@@ -446,27 +446,23 @@ Java.perform(function () {
 
             const serverPort = infoData["packageName"] === personalPackageId ? personalServerPort : businessServerPort
             const server = http.createServer((req, res) => {
-                if (req.method !== "GET") {
-                    res.statusCode = 405;
-                    res.end(JSON.stringify({"error": "HTTP method not allowed"}));
-                }else {
-                    res.writeHead(200, {"Content-Type": "application/json"});
-                    let parsedRequest = url.parse(req.url, true)
-                    switch (parsedRequest.url) {
-                        case "/gpia":
-                            onIntegrity(parsedRequest.query, res)
-                            break;
-                        case "/cert":
-                            onCert(parsedRequest.query, res)
-                            break;
-                        case "/info":
-                            onInfo(res)
-                            break;
-                        default:
-                            res.statusCode = 404;
-                            res.end(JSON.stringify({"error": "Unknown method"}))
-                    }
-                }
+            console.log("Received", req.method, "request")
+            res.writeHead(200, {"Content-Type": "application/json"});
+                           let parsedRequest = url.parse(req.url, true)
+                           switch (parsedRequest.url) {
+                               case "/gpia":
+                                   onIntegrity(parsedRequest.query, res)
+                                   break;
+                               case "/cert":
+                                   onCert(parsedRequest.query, res)
+                                   break;
+                               case "/info":
+                                   onInfo(res)
+                                   break;
+                               default:
+                                   res.statusCode = 404;
+                                   res.end(JSON.stringify({"error": "Unknown method"}))
+                           }
             })
 
             server.listen(serverPort, () => {

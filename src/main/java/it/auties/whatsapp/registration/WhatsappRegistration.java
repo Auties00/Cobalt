@@ -88,7 +88,8 @@ public final class WhatsappRegistration {
         var originalDevice = store.device();
         store.setDevice(originalDevice.toPersonal());
         var future = switch (store.device().platform()) {
-            case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
+            case IOS, IOS_BUSINESS -> sendRequest("/exist", Map.of())
+                    .thenComposeAsync(response -> onboard("1", 2155550000L, null))
                     .thenComposeAsync(response -> onboard("1", 2155550000L, response.abHash()))
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> exists(originalDevice, true, false, null))
@@ -163,7 +164,7 @@ public final class WhatsappRegistration {
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .put("Accept-Encoding", "gzip")
                         .toMap();
-                yield httpClient.post(postEndpoint, proxy, headers, postBody)
+                yield httpClient.post(postEndpoint, proxy, true, headers, postBody)
                         .thenApply(String::new);
             }
             case IOS, IOS_BUSINESS -> {
@@ -172,13 +173,13 @@ public final class WhatsappRegistration {
                     "Content-Type", "application/x-www-form-urlencoded"
             );
                 var getEndpoint = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + body);
-                yield httpClient.get(getEndpoint, proxy, headers);
+                yield httpClient.get(getEndpoint, proxy, true, headers);
             }
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
         return future.thenApplyAsync(response -> {
             if(printRequests) {
-                System.out.println("Received respose /reg_onboard_abprop " + response);
+                System.out.println("Received response /reg_onboard_abprop " + response);
             }
             return Json.readValue(response, AbPropsResponse.class);
         });
@@ -390,7 +391,7 @@ public final class WhatsappRegistration {
                 .put("method", method.data())
                 .put("sim_mcc", "000")
                 .put("sim_mnc", "000")
-                .put("reason", "jailbroken")
+                .put("reason", "")
                 .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
                 .put("cellular_strength", ThreadLocalRandom.current().nextInt(1, 5))
                 .toEntries();
@@ -551,7 +552,7 @@ public final class WhatsappRegistration {
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .toMap();
                 var body = "ENC=%s".formatted(encBase64);
-                yield httpClient.post(uri, proxy, headers, body.getBytes()).thenApplyAsync(result -> {
+                yield httpClient.post(uri, proxy, true, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
                     if(printRequests) {
                         System.out.println("Received response " + path + " " + resultAsString);
@@ -583,7 +584,7 @@ public final class WhatsappRegistration {
                     }
                     System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 }
-                return httpClient.post(uri, proxy, headers, body.getBytes()).thenApplyAsync(result -> {
+                return httpClient.post(uri, proxy, true, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
                     if(printRequests) {
                         System.out.println("Received response " + path + " " + resultAsString);
@@ -596,7 +597,7 @@ public final class WhatsappRegistration {
                     System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 }
                 var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
-                yield httpClient.get(uri, proxy, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
+                yield httpClient.get(uri, proxy, true, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
                     if(printRequests) {
                         System.out.println("Received response " + path + " " + result);
                     }

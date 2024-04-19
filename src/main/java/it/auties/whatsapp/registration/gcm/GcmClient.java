@@ -34,7 +34,7 @@ public class GcmClient {
     private static final URI FCM_SUBSCRIBE_URL = URI.create("https://fcm.googleapis.com/fcm/connect/subscribe");
     private static final String APP_ID = "wp:receiver.push.com#";
     private static final String TALK_SERVER_HOST = "mtalk.google.com";
-    private static final int TALK_SERVER_PORT = 5228;
+    private static final int TALK_SERVER_PORT = 443;
     private static final String MCS_DOMAIN = "mcs.android.com";
     private static final byte[] FCM_VERSION = {41};
 
@@ -91,7 +91,7 @@ public class GcmClient {
                 .version(3)
                 .userSerialNumber(0)
                 .build();
-        return httpClient.post(CHECK_IN_URL, proxy, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
+        return httpClient.post(CHECK_IN_URL, proxy, false, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
                 .thenApplyAsync(AndroidCheckInResponseSpec::decode);
     }
 
@@ -108,7 +108,7 @@ public class GcmClient {
                 "Content-Type", "application/x-www-form-urlencoded",
                 "Authorization", "AidLogin %s:%s".formatted(checkInResponse.androidId(), checkInResponse.securityToken())
         );
-        return httpClient.post(REGISTER_URL, proxy, headers, HttpClient.toFormParams(params).getBytes())
+        return httpClient.post(REGISTER_URL, proxy, false, headers, HttpClient.toFormParams(params).getBytes())
                 .thenApplyAsync(this::handleRegistration);
     }
 
@@ -131,7 +131,7 @@ public class GcmClient {
                 "encryption_key", encoder.encodeToString(keyPair.publicKey()),
                 "encryption_auth", encoder.encodeToString(authSecret)
         );
-        return httpClient.post(FCM_SUBSCRIBE_URL, proxy, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
+        return httpClient.post(FCM_SUBSCRIBE_URL, proxy, false, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
                 .thenAcceptAsync(this::handleSubscription);
     }
 
