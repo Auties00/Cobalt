@@ -173,7 +173,7 @@
         <java.version>21</java.version>
         <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
         <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
-        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+        <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
