@@ -23,7 +23,8 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
                         @ProtobufProperty(index = 11, type = STRING) String localeLanguageIso6391,
                         @ProtobufProperty(index = 12, type = STRING) String localeCountryIso31661Alpha2,
                         @ProtobufProperty(index = 13, type = STRING) String deviceBoard,
-                        @ProtobufProperty(index = 15, type = OBJECT) DeviceType deviceType) implements ProtobufMessage {
+                        @ProtobufProperty(index = 15, type = OBJECT) DeviceType deviceType,
+                        @ProtobufProperty(index = 16, type = STRING) String deviceModelType) implements ProtobufMessage {
 
     @ProtobufMessageName("ClientPayload.UserAgent.Platform")
     public enum PlatformType implements ProtobufEnum {

@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 class ProxySSLFactory extends SSLSocketFactory {
     private final SSLSocketFactory sslSocketFactory;
     private final SSLParameters sslParameters;
@@ -42,7 +41,7 @@ class ProxySSLFactory extends SSLSocketFactory {
     }
 
     @Override
-    public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException, UnknownHostException {
+    public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
         var socket = (SSLSocket) sslSocketFactory.createSocket(host, port, localHost, localPort);
         socket.setSSLParameters(sslParameters);
         return socket;

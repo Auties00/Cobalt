@@ -6,15 +6,14 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * A model for a mobile companion
  *
- * @param model        the non-null model of the device
+ * @param model        the non-null model ozf the device
  * @param manufacturer the non-null manufacturer of the device
  * @param platform     the non-null os of the device
  * @param appVersion   the version of the app, or empty
@@ -23,6 +22,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public record CompanionDevice(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String model,
+        @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+        String modelId,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String manufacturer,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
@@ -31,27 +32,29 @@ public record CompanionDevice(
         Optional<Version> appVersion,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         Version osVersion,
+        @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+        String osBuildNumber,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
         String address
 ) implements ProtobufMessage {
-    private static final List<String> IPHONES = List.of(
-            "iPhone_11",
-            "iPhone_11_Pro",
-            "iPhone_11_Pro_Max",
-            "iPhone_12",
-            "iPhone_12_Pro",
-            "iPhone_12_Pro_Max",
-            "iPhone_13",
-            "iPhone_13_Pro",
-            "iPhone_13_Pro_Max",
-            "iPhone_14",
-            "iPhone_14_Plus",
-            "iPhone_14_Pro",
-            "iPhone_14_Pro_Max",
-            "iPhone_15",
-            "iPhone_15_Plus",
-            "iPhone_15_Pro",
-            "iPhone_15_Pro_Max"
+    private static final List<Entry<String, String>> IPHONES = List.of(
+            Map.entry("iPhone_11", "iPhone12,1"),
+            Map.entry("iPhone_11_Pro", "iPhone12,3"),
+            Map.entry("iPhone_11_Pro_Max", "iPhone12,5"),
+            Map.entry("iPhone_12", "iPhone13,2"),
+            Map.entry("iPhone_12_Pro", "iPhone13,3"),
+            Map.entry("iPhone_12_Pro_Max", "iPhone13,4"),
+            Map.entry("iPhone_13", "iPhone14,5"),
+            Map.entry("iPhone_13_Pro", "iPhone14,2"),
+            Map.entry("iPhone_13_Pro_Max", "iPhone14,3"),
+            Map.entry("iPhone_14", "iPhone14,7"),
+            Map.entry("iPhone_14_Plus", "iPhone14,8"),
+            Map.entry("iPhone_14_Pro", "iPhone15,2"),
+            Map.entry("iPhone_14_Pro_Max", "iPhone15,3"),
+            Map.entry("iPhone_15", "iPhone15,4"),
+            Map.entry("iPhone_15_Plus", "iPhone15,5"),
+            Map.entry("iPhone_15_Pro", "iPhone16,1"),
+            Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
     );
 
     public static CompanionDevice web() {
@@ -61,10 +64,12 @@ public record CompanionDevice(
     public static CompanionDevice web(Version appVersion) {
         return new CompanionDevice(
                 "Chrome",
+                "Chrome",
                 "Google",
                 PlatformType.WEB,
                 Optional.ofNullable(appVersion),
                 Version.of("1.0"),
+                null,
                 null
         );
     }
@@ -74,16 +79,18 @@ public record CompanionDevice(
     }
 
     public static CompanionDevice ios(Version appVersion, boolean business) {
+        var model = IPHONES.get(ThreadLocalRandom.current().nextInt(IPHONES.size()));
         return new CompanionDevice(
-                IPHONES.get(ThreadLocalRandom.current().nextInt(IPHONES.size())),
+                model.getKey(),
+                model.getValue(),
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 Optional.ofNullable(appVersion),
                 Version.of("17.4.1"),
+                "20H240",
                 null
         );
     }
-
     public static CompanionDevice android(boolean business, String deviceAddress) {
         return android(null, business, deviceAddress);
     }
@@ -91,10 +98,12 @@ public record CompanionDevice(
     public static CompanionDevice android(Version appVersion, boolean business, String deviceAddress) {
         return new CompanionDevice(
                 "Pixel_2",
+                "Pixel_2",
                 "Google",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
                 Optional.ofNullable(appVersion),
                 Version.of("11"),
+                null,
                 Objects.requireNonNull(deviceAddress, "A device is required for android registration")
         );
     }
@@ -106,12 +115,19 @@ public record CompanionDevice(
     public static CompanionDevice kaiOs(Version appVersion) {
         return new CompanionDevice(
                 "8110",
+                "8110",
                 "Nokia",
                 PlatformType.KAIOS,
                 Optional.ofNullable(appVersion),
                 Version.of("2.5.4"),
+                null,
                 null
         );
+    }
+
+    @Override
+    public String osBuildNumber() {
+        return Objects.requireNonNullElse(osBuildNumber, osVersion.toString());
     }
 
     public String toUserAgent(Version appVersion) {
@@ -130,10 +146,12 @@ public record CompanionDevice(
 
         return new CompanionDevice(
                 model,
+                modelId,
                 manufacturer,
                 platform.toPersonal(),
                 appVersion,
                 osVersion,
+                osBuildNumber,
                 address
         );
     }
@@ -145,10 +163,12 @@ public record CompanionDevice(
 
         return new CompanionDevice(
                 model,
+                modelId,
                 manufacturer,
                 platform.toBusiness(),
                 appVersion,
                 osVersion,
+                osBuildNumber,
                 address
         );
     }

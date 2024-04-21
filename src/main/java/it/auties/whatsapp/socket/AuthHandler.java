@@ -97,12 +97,13 @@ class AuthHandler {
                 .osVersion(mobile ? socketHandler.store().device().osVersion().toString() : null)
                 .manufacturer(mobile ? socketHandler.store().device().manufacturer() : null)
                 .device(mobile ? socketHandler.store().device().model().replaceAll("_", " ") : null)
-                .osBuildNumber(mobile ? socketHandler.store().device().osVersion().toString() : null)
-                .phoneId(mobile ? socketHandler.keys().fdid() : null)
+                .osBuildNumber(mobile ? socketHandler.store().device().osBuildNumber() : null)
+                .phoneId(mobile ? socketHandler.keys().fdid().toUpperCase() : null)
                 .releaseChannel(socketHandler.store().releaseChannel())
                 .localeLanguageIso6391(socketHandler.store().locale().map(CountryLocale::languageValue).orElse("en"))
                 .localeCountryIso31661Alpha2(socketHandler.store().locale().map(CountryLocale::languageCode).orElse("US"))
                 .deviceType(UserAgent.DeviceType.PHONE)
+                .deviceModelType(socketHandler.store().device().modelId())
                 .build();
     }
 
@@ -116,9 +117,8 @@ class AuthHandler {
                         .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
-                        .passive(false)
+                        .passive(true)
                         .userAgent(agent)
-                        .pushName(socketHandler.store().name())
                         .sessionId(ThreadLocalRandom.current().nextInt(100_000_000, 1_000_000_000))
                         .shortConnect(true)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)

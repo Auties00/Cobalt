@@ -5,6 +5,7 @@ import it.auties.whatsapp.model.signal.auth.Version;
 record WhatsappAndroidApp(
         String packageName,
         Version version,
+        String apkPath,
         byte[] apkSha256,
         byte[] apkShatr,
         int apkSize,

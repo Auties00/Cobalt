@@ -1,4 +1,5 @@
 import http from 'http';
+import url from "url";
 
 let CountdownLatch = function (limit, onSuccess) {
     this.limit = limit
@@ -51,6 +52,7 @@ Java.perform(function () {
     const SecretKeyFactory = Java.use("javax.crypto.SecretKeyFactory")
     const PBEKeySpec = Java.use("javax.crypto.spec.PBEKeySpec")
     const Key = Java.use("java.security.Key")
+    const Path = Java.use("java.nio.file.Path")
 
     const projectId = 293955441834
     const secretKeySalt = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN")
@@ -120,18 +122,14 @@ Java.perform(function () {
         const integrityTokenPrepareRequest = integrityTokenPrepareRequestBuilder.build()
         const integrityTokenPrepareResponse = integrityManager.prepareIntegrityToken(integrityTokenPrepareRequest)
         const onTokenProviderCreatedListenerType = Java.registerClass({
-            name: 'IntegrityTokenProviderHandler',
-            implements: [OnSuccessListenerType],
-            methods: {
+            name: 'IntegrityTokenProviderHandler', implements: [OnSuccessListenerType], methods: {
                 onSuccess: function (result) {
                     onSuccess(Java.cast(result, Java.use(result.$className)))
                 }
             }
         })
         let onTokenProviderFailedListenerType = Java.registerClass({
-            name: 'IntegrityTokenProviderErrorHandler',
-            implements: [OnFailureListenerType],
-            methods: {
+            name: 'IntegrityTokenProviderErrorHandler', implements: [OnFailureListenerType], methods: {
                 onFailure: function (result) {
                     let javaResult = Java.cast(result, Java.use(result.$className))
                     onError(javaResult.getMessage())
@@ -152,9 +150,7 @@ Java.perform(function () {
         let javaIntegrityTokenProvider = Java.cast(integrityTokenProvider, Java.use(integrityTokenProvider.$className))
         let integrityTokenResponse = javaIntegrityTokenProvider.request(integrityRequest)
         let onIntegrityTokenSuccessListenerType = Java.registerClass({
-            name: 'TokenSuccessHandler' + integrityCounter,
-            implements: [OnSuccessListenerType],
-            methods: {
+            name: 'TokenSuccessHandler' + integrityCounter, implements: [OnSuccessListenerType], methods: {
                 onSuccess: function (result) {
                     let javaResult = Java.cast(result, Java.use(result.$className))
                     onSuccess(javaResult.token())
@@ -162,9 +158,7 @@ Java.perform(function () {
             }
         })
         let onIntegrityTokenErrorListenerType = Java.registerClass({
-            name: 'TokenFailureHandler' + integrityCounter,
-            implements: [OnFailureListenerType],
-            methods: {
+            name: 'TokenFailureHandler' + integrityCounter, implements: [OnFailureListenerType], methods: {
                 onFailure: function (result) {
                     let javaResult = Java.cast(result, Java.use(result.$className))
                     onError(javaResult.getMessage())
@@ -181,42 +175,36 @@ Java.perform(function () {
         const integrityManagerProvider = findIntegrityManagerProvider()
         const integrityManager = getIntegrityManager(integrityManagerProvider)
         const [prepareIntegrityRequestType, prepareIntegrityRequestBuilder] = findPrepareIntegrityRequestMeta(integrityManager)
-        createIntegrityTokenProvider(
-            integrityManager,
-            prepareIntegrityRequestType,
-            prepareIntegrityRequestBuilder,
-            (result) => {
-                const integrityManagerMethods = result.class.getDeclaredMethods()
-                if (integrityManagerMethods.length !== 1) {
-                    throw new Error('Too many methods in integrity manager: ' + integrityManagerMethods.length)
-                }
-
-                const integrityManagerMethod = integrityManagerMethods[0]
-                const integrityManagerMethodParamTypes = integrityManagerMethod.getParameterTypes()
-                if (integrityManagerMethodParamTypes.length !== 1) {
-                    throw new Error('Unexpected number of parameters: ' + integrityManagerMethodParamTypes.length)
-                }
-
-                const requestType = integrityManagerMethodParamTypes[0]
-                const requestTypeClass = Java.use(requestType.getName())
-                const requestTypeMethods = requestType.getDeclaredMethods()
-                for (const requestTypeMethod of requestTypeMethods) {
-                    if (Modifier.isStatic(requestTypeMethod.getModifiers()) && requestTypeMethod.getParameterTypes().length === 0) {
-                        integrityTokenProvider = result
-                        integrityRequestType = requestTypeClass
-                        integrityRequestBuilder = requestTypeClass[requestTypeMethod.getName()]
-                        console.log("[*] Initialized integrity component")
-                        setupLatch.countDown()
-                        return
-                    }
-                }
-
-                throw new Error('Cannot find request builder method')
-            },
-            (error) => {
-                throw new Error('Cannot prepare integrity manager: ', error.toString(), "\n", error.stack.toString())
+        createIntegrityTokenProvider(integrityManager, prepareIntegrityRequestType, prepareIntegrityRequestBuilder, (result) => {
+            const integrityManagerMethods = result.class.getDeclaredMethods()
+            if (integrityManagerMethods.length !== 1) {
+                throw new Error('Too many methods in integrity manager: ' + integrityManagerMethods.length)
             }
-        )
+
+            const integrityManagerMethod = integrityManagerMethods[0]
+            const integrityManagerMethodParamTypes = integrityManagerMethod.getParameterTypes()
+            if (integrityManagerMethodParamTypes.length !== 1) {
+                throw new Error('Unexpected number of parameters: ' + integrityManagerMethodParamTypes.length)
+            }
+
+            const requestType = integrityManagerMethodParamTypes[0]
+            const requestTypeClass = Java.use(requestType.getName())
+            const requestTypeMethods = requestType.getDeclaredMethods()
+            for (const requestTypeMethod of requestTypeMethods) {
+                if (Modifier.isStatic(requestTypeMethod.getModifiers()) && requestTypeMethod.getParameterTypes().length === 0) {
+                    integrityTokenProvider = result
+                    integrityRequestType = requestTypeClass
+                    integrityRequestBuilder = requestTypeClass[requestTypeMethod.getName()]
+                    console.log("[*] Initialized integrity component")
+                    setupLatch.countDown()
+                    return
+                }
+            }
+
+            throw new Error('Cannot find request builder method')
+        }, (error) => {
+            throw new Error('Cannot prepare integrity manager: ', error.toString(), "\n", error.stack.toString())
+        })
     }
 
     function sha256(file, length) {
@@ -254,7 +242,7 @@ Java.perform(function () {
         let packageName = context.getPackageName()
         let rawPath = context.getPackageManager().getApplicationInfo(packageName, 0).sourceDir.value
         let file = File.$new(rawPath)
-        return file.toPath()
+        return Java.cast(file.toPath(), Path)
     }
 
     function readZipEntry(zipInputStream) {
@@ -321,9 +309,10 @@ Java.perform(function () {
         }
         let signature = signatures[0].toByteArray()
 
-        infoData = JSON.stringify({
+        infoData = {
             "packageName": packageName,
             "version": packageVersion,
+            "apkPath": apkPath.toString(),
             "apkSha256": Base64.getEncoder().encodeToString(apkSha256),
             "apkShatr": Base64.getEncoder().encodeToString(apkShatr),
             "apkSize": Files.size(apkPath),
@@ -331,7 +320,7 @@ Java.perform(function () {
             "secretKey": Base64.getEncoder().encodeToString(secretKey),
             "signature": Base64.getEncoder().encodeToString(signature),
             "signatureSha1": Base64.getEncoder().encodeToString(sha1(signature))
-        })
+        }
         console.log("[*] Initialized info component")
         setupLatch.countDown()
     }
@@ -340,34 +329,25 @@ Java.perform(function () {
         let authKey = req.authKey
         try {
             let nonce = Base64.getEncoder().withoutPadding().encodeToString(Base64.getDecoder().decode(authKey))
-            calculateIntegrityToken(
-                integrityTokenProvider,
-                integrityRequestType,
-                integrityRequestBuilder,
-                nonce,
-                (token) => {
-                    res.send(JSON.stringify({
-                        "token": token
-                    }))
-                },
-                (error) => {
-                    res.send(JSON.stringify({
-                        "error": error.toString() + "\n" + error.stack
-                    }))
-                }
-            )
+            calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilder, nonce, (token) => {
+                res.end(JSON.stringify({
+                    "token": token
+                }))
+            }, (error) => {
+                res.end(JSON.stringify({
+                    "error": error.toString() + "\n" + error.stack
+                }))
+            })
         } catch (error) {
-            res.send(JSON.stringify({
+            res.end(JSON.stringify({
                 "error": error.toString() + "\n" + error.stack
             }))
         }
     }
 
     function onCert(req, res) {
-        let data = req.data
-        let decodedData = Base64.getDecoder().decode(data)
-        let authKey = Arrays.copyOf(decodedData, 32)
-        let enc = Arrays.copyOfRange(decodedData, 32, decodedData.length)
+        let authKey = Base64.getDecoder().decode(req.authKey)
+        let enc = Base64.getDecoder().decode(req.enc)
         try {
             certificateCounter++
             let alias = "ws_cert_" + certificateCounter
@@ -419,12 +399,12 @@ Java.perform(function () {
             let encSign = Base64.getUrlEncoder().withoutPadding().encodeToString(sign)
             let encCert = Base64.getEncoder().encodeToString(chain.toByteArray())
 
-            res.send(JSON.stringify({
+            res.end(JSON.stringify({
                 "signature": encSign,
                 "certificate": encCert
             }))
         } catch (error) {
-            res.send(JSON.stringify({
+            res.end(JSON.stringify({
                 "error": error.toString() + "\n" + error.stack
             }))
         }
@@ -432,9 +412,9 @@ Java.perform(function () {
 
     function onInfo(res) {
         try {
-            res.send(infoData)
+            res.end(JSON.stringify(infoData))
         } catch (error) {
-            res.send(JSON.stringify({
+            res.end(JSON.stringify({
                 "error": error.toString() + "\n" + error.stack
             }))
         }
@@ -442,34 +422,39 @@ Java.perform(function () {
 
     console.log("[*] Initializing server components...")
     setupLatch.onSuccess(() => {
-            console.log("[*] All server components are ready")
+        console.log("[*] All server components are ready")
 
-            const serverPort = infoData["packageName"] === personalPackageId ? personalServerPort : businessServerPort
-            const server = http.createServer((req, res) => {
-            console.log("Received", req.method, "request")
-            res.writeHead(200, {"Content-Type": "application/json"});
-                           let parsedRequest = url.parse(req.url, true)
-                           switch (parsedRequest.url) {
-                               case "/gpia":
-                                   onIntegrity(parsedRequest.query, res)
-                                   break;
-                               case "/cert":
-                                   onCert(parsedRequest.query, res)
-                                   break;
-                               case "/info":
-                                   onInfo(res)
-                                   break;
-                               default:
-                                   res.statusCode = 404;
-                                   res.end(JSON.stringify({"error": "Unknown method"}))
-                           }
-            })
+        const serverPort = infoData["packageName"] === personalPackageId ? personalServerPort : businessServerPort
+        const server = http.createServer((req, res) => {
+            try {
+                let parsedRequest = url.parse(req.url, true)
+                switch (parsedRequest.pathname) {
+                    case "/gpia":
+                        res.writeHead(200, {"Content-Type": "application/json"});
+                        onIntegrity(parsedRequest.query, res)
+                        break;
+                    case "/cert":
+                        res.writeHead(200, {"Content-Type": "application/json"});
+                        onCert(parsedRequest.query, res)
+                        break;
+                    case "/info":
+                        res.writeHead(200, {"Content-Type": "application/json"});
+                        onInfo(res)
+                        break;
+                    default:
+                        res.writeHead(404, {"Content-Type": "application/json"});
+                        res.end(JSON.stringify({"error": "Unknown method"}))
+                }
+            } catch (error) {
+                res.writeHead(500, {"Content-Type": "application/json"});
+                res.end(JSON.stringify({"error": error.toString() + "\n" + error.stack}))
+            }
+        })
 
-            server.listen(serverPort, () => {
-                console.log("[*] Server ready on port", serverPort)
-            })
-        }
-    )
+        server.listen(serverPort, () => {
+            console.log("[*] Server ready on port", serverPort)
+        })
+    })
     initIntegrityComponent()
     intInfoComponent()
 })

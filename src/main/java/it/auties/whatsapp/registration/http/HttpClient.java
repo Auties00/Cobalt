@@ -1,5 +1,6 @@
 package it.auties.whatsapp.registration.http;
 
+import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.ProxyAuthenticator;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -109,6 +110,7 @@ public class HttpClient {
 
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, boolean useCustomSslFactory, Proxy proxy, Map<String, ?> headers, byte[] body) {
         var future = new CompletableFuture<byte[]>();
+        var cause = Exceptions.current("Request failed");
         Thread.startVirtualThread(() -> {
             HttpURLConnection connection = null;
             var disconnected = false;
@@ -152,7 +154,8 @@ public class HttpClient {
                     connection.disconnect();
                 }
 
-                future.completeExceptionally(exception);
+                cause.addSuppressed(exception);
+                future.completeExceptionally(cause);
             }
         });
         return future;

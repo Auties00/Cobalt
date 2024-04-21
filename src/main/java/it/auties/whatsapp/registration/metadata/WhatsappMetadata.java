@@ -1,5 +1,6 @@
 package it.auties.whatsapp.registration.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesCbc;
@@ -83,7 +84,7 @@ public final class WhatsappMetadata {
             return webVersion;
         }
 
-        try (var client = HttpClient.newHttpClient()) {
+        try (var client = buildHttpClient()) {
             var request = HttpRequest.newBuilder()
                     .GET()
                     .uri(URI.create(Whatsapp.WEB_UPDATE_URL))
@@ -160,24 +161,28 @@ public final class WhatsappMetadata {
 
     private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(String deviceAddress, boolean business) {
         var backendAddress = getAndroidMiddleware(deviceAddress, business);
-        try(var client = HttpClient.newHttpClient()) {
+        try(var client = buildHttpClient()) {
             var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://%s/info?business=%s".formatted(backendAddress, business)))
+                    .uri(URI.create("http://%s/info".formatted(backendAddress)))
                     .GET()
                     .build();
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApplyAsync(response -> {
-                        var app = Json.readValue(response.body(), WhatsappAndroidApp.class);
-                        if(app.error() != null) {
-                            throw new RuntimeException(app.error());
-                        }
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
+                var app = Json.readValue(response.body(), WhatsappAndroidApp.class);
+                if (app.error() != null) {
+                    throw new RuntimeException(app.error());
+                }
 
-                        return app;
-                    })
-                    .exceptionallyAsync(throwable -> {
-                        throw new RuntimeException("Cannot connect to android middleware at " + backendAddress, throwable);
-                    });
+                return app;
+            }).exceptionallyAsync(throwable -> {
+                throw new RuntimeException("Cannot connect to android middleware at " + backendAddress, throwable);
+            });
         }
+    }
+
+    private static HttpClient buildHttpClient() {
+        return HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
     }
 
     private static Path getKaiOsLocalCache() {
@@ -279,9 +284,9 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<String> getGpiaToken(String deviceAddress, byte[] authKey, boolean business) {
+    public static CompletableFuture<WhatsappAndroidTokens> getGpiaToken(String deviceAddress, byte[] authKey, boolean business) {
         return getAndroidData(deviceAddress, business).thenComposeAsync(androidData -> {
-            try(var client = HttpClient.newHttpClient()) {
+            try(var client = buildHttpClient()) {
                 var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
                 var request = HttpRequest.newBuilder()
                         .uri(URI.create("http://%s/gpia?authKey=%s".formatted(getAndroidMiddleware(deviceAddress, business), URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8))))
@@ -292,7 +297,7 @@ public final class WhatsappMetadata {
                     if(supportData.error() != null) {
                         throw new RuntimeException(supportData.error());
                     }
-
+                    System.out.println("Apk path: " + androidData);
                     var gpiaData = new GpiaData(
                             Base64.getEncoder().encodeToString(androidData.signatureSha1()),
                             androidData.packageName(),
@@ -300,16 +305,25 @@ public final class WhatsappMetadata {
                             Base64.getEncoder().encodeToString(androidData.apkShatr()),
                             supportData.token(),
                             String.valueOf(androidData.apkSize()),
+                            androidData.apkPath(),
                             0
                     );
-                    var gpiaJsonData = Json.writeValueAsString(gpiaData)
-                            .replaceAll(" ", "")
-                            .replaceAll("/", "\\\\/");
-                    var gpiaPayload = AesCbc.encryptAndPrefix(
-                            gpiaJsonData.getBytes(),
-                            Sha256.calculate(authKeyBase64)
+                    var gpia = encryptAndroidToken(gpiaData, authKeyBase64);
+                    var ggData = new GgData(
+                            0,
+                            supportData.token()
                     );
-                    return URLEncoder.encode(Base64.getEncoder().encodeToString(gpiaPayload), StandardCharsets.UTF_8);
+                    var gg = encryptAndroidToken(ggData, authKeyBase64);
+                    var giData = new GiData(
+                            Base64.getEncoder().encodeToString(androidData.signatureSha1()),
+                            androidData.apkPath(),
+                            Base64.getEncoder().encodeToString(androidData.apkSha256()),
+                            Base64.getEncoder().encodeToString(androidData.apkShatr()),
+                            androidData.packageName(),
+                            String.valueOf(androidData.apkSize())
+                    );
+                    var gi = encryptAndroidToken(giData, authKeyBase64);
+                    return new WhatsappAndroidTokens(gpia, gg, gi);
                 }).exceptionallyAsync(throwable -> {
                     throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage(), throwable);
                 });
@@ -317,20 +331,77 @@ public final class WhatsappMetadata {
         });
     }
 
+    private static String encryptAndroidToken(Object data, String authKeyBase64) {
+        var jsonData = Json.writeValueAsString(data)
+                .replaceAll(" ", "")
+                .replaceAll("/", "\\\\/");
+        var payload = AesCbc.encryptAndPrefix(
+                jsonData.getBytes(),
+                Sha256.calculate(authKeyBase64)
+        );
+        return URLEncoder.encode(Base64.getEncoder().encodeToString(payload), StandardCharsets.UTF_8);
+    }
+
     private static String getAndroidMiddleware(String deviceAddress, boolean business) {
         return "%s:%s".formatted(deviceAddress, business ? ANDROID_BUSINESS_PORT : ANDROID_PERSONAL_PORT);
     }
 
-    private record GpiaResponse(String token, String error) {
+    private record GpiaResponse(
+            String token,
+            String error
+    ) {
 
     }
 
-    private record GpiaData(String cert, String packageName, String sha256, String shatr, String token, String sizeInBytes, int code) {
+    private record GpiaData(
+            @JsonProperty("cert")
+            String apkSha1,
+            @JsonProperty("packageName")
+            String packageName,
+            @JsonProperty("sha256")
+            String sha256,
+            @JsonProperty("shatr")
+            String shatr,
+            @JsonProperty("token")
+            String token,
+            @JsonProperty("sizeInBytes")
+            String sizeInBytes,
+            @JsonProperty("p")
+            String apkPath,
+            @JsonProperty("code")
+            int code
+    ) {
+
+    }
+
+    private record GiData(
+            @JsonProperty("_icr")
+            String apkSha1,
+            @JsonProperty("_p")
+            String apkPath,
+            @JsonProperty("_is")
+            String sha256,
+            @JsonProperty("_ist")
+            String shatr,
+            @JsonProperty("_ip")
+            String packageName,
+            @JsonProperty("_isb")
+            String sizeInBytes
+    ) {
+
+    }
+
+    private record GgData(
+            @JsonProperty("_ic")
+            int code,
+            @JsonProperty("_it")
+            String token
+    ) {
 
     }
 
     public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(String deviceAddress, byte[] authKey, byte[] enc, boolean business) {
-        try(var client = HttpClient.newHttpClient()) {
+        try(var client = buildHttpClient()) {
             var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
             var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
             var request = HttpRequest.newBuilder()
