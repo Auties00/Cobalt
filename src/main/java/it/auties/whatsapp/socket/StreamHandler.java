@@ -938,7 +938,8 @@ class StreamHandler {
                     setupGoogleCrypto(),
                     setupRescueToken(),
                     getInviteSender(),
-                    preRegistrationAddRequests()
+                    preRegistrationAddRequests(),
+                    sendNumberMetadata()
             );
         };
     }
@@ -965,9 +966,19 @@ class StreamHandler {
         return socketHandler.sendQuery("set", "w:stats", addNode);
     }
 
+    private CompletableFuture<Void> sendNumberMetadata() {
+        var wamBinary = "57414d0501010001200b800d086950686f6e652058800f0631362e372e34801109322e32342e322e373110152017502fc8a2b265206928830138790604387b060288eb0a03636c6e186b1818a71c88911e063230483234308879240431372e3018fb2e18ed3318ab3888fb3c09353537393735393734290c147602705fefb1a86cd941";
+        var wamData = new String(HexFormat.of().parseHex(wamBinary))
+                .replace("iPhone X", socketHandler.store().device().model().replaceAll("_", " "))
+                .replace("2.24.2.71", socketHandler.store().version().toString())
+                .replace("557975974", String.valueOf(socketHandler.store().phoneNumber().orElseThrow().numberWithoutPrefix()))
+                .getBytes();
+        var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
+        return socketHandler.sendQuery("set", "w:stats", addNode)
+                .thenRun(() -> {});
+    }
+
     private CompletableFuture<?> setPushEndpoint() {
-        /*
-        FIXME: This makes the whole app hang when sending a message for some reason even though it's completed normally
         var configAttributes = Attributes.of()
                 .put("background_location", 1)
                 .put("call", "Opening.m4r")
@@ -987,10 +998,7 @@ class StreamHandler {
                 .put("voip", "35e178c41d2bd90b8db50c7a2684a38bf802e760cd1f2d7ff803d663412a9320")
                 .put("voip_payload_type", 2)
                 .toMap();
-        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes))
-                .thenAccept(result -> socketHandler.keys().setInitialAppSync(true));
-         */
-        return CompletableFuture.completedFuture(null);
+        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes));
     }
 
     private CompletableFuture<?> resetMultiDevice() {

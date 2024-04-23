@@ -602,6 +602,10 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message) {
+        return sendChatMessage(recipient, message, true);
+    }
+
+    public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message, boolean compose) {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
         return prepareChat(recipient, timestamp).thenComposeAsync(chatResult -> {
@@ -626,7 +630,8 @@ public class Whatsapp {
                 return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
 
-            return addTrustedContact(recipient, timestamp)
+            var composingFuture = compose ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
+            return composingFuture.thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
                     .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
                     .thenComposeAsync(deltaResult -> deltaResult ? sendMessage(info) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
         });

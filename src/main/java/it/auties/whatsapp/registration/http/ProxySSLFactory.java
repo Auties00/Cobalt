@@ -72,6 +72,7 @@ class ProxySSLFactory extends SSLSocketFactory {
     public Socket createSocket() throws IOException {
         var socket = (SSLSocket) sslSocketFactory.createSocket();
         socket.setSSLParameters(sslParameters);
+
         return socket;
     }
 }

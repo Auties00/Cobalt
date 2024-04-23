@@ -16,7 +16,6 @@ import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.response.AbPropsResponse;
 import it.auties.whatsapp.model.response.CheckNumberResponse;
 import it.auties.whatsapp.model.response.RegistrationResponse;
-import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.registration.apns.ApnsClient;
 import it.auties.whatsapp.registration.apns.ApnsPacket;
@@ -48,6 +47,7 @@ public final class WhatsappRegistration {
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
     private final boolean printRequests;
+    private final long timestamp;
     private volatile CompletableFuture<WhatsappAndroidTokens> androidToken;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
@@ -64,6 +64,7 @@ public final class WhatsappRegistration {
         this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, proxy) : null;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
         this.printRequests = printRequests;
+        this.timestamp = Clock.nowSeconds();
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
@@ -88,12 +89,8 @@ public final class WhatsappRegistration {
 
         var originalDevice = store.device();
         store.setDevice(originalDevice.toPersonal());
-        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
-        System.out.println(httpClient.get(URI.create("https://ip.oxylabs.io/location"), proxy, true, Map.of()).join());
         var future = switch (store.device().platform()) {
-            case IOS, IOS_BUSINESS -> sendRequest("/exist", Map.of())
-                    .thenComposeAsync(response -> onboard("1", 2155550000L, null))
-                    .thenComposeAsync(response -> onboard("1", 2155550000L, response.abHash()))
+            case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> exists(originalDevice, true, false, null))
                     .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
@@ -281,8 +278,13 @@ public final class WhatsappRegistration {
                     .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
                     .toEntries());
             case IOS, IOS_BUSINESS -> {
+                var ab = "{\\\"exposure\\\":[\\\"hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control\\\",\\\"ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test\\\",\\\"wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|test\\\",\\\"dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|test\\\"],\\\"metrics\\\":{\\\"expid_c\\\":%s,\\\"rc_old\\\":%s,\\\"fdid_c\\\":%s,\\\"expid_md\\\":1713710228,\\\"expid_cd\\\":1713710228}}"
+                        .formatted(ThreadLocalRandom.current().nextBoolean(), ThreadLocalRandom.current().nextBoolean(), ThreadLocalRandom.current().nextBoolean());
+                if(printRequests) {
+                    System.out.println("Ab: " + ab);
+                }
                 var attributes = Attributes.of()
-                        .put("offline_ab", Whatsapp.MOBILE_IOS_OFFLINE_AB)
+                        .put("offline_ab", convertBufferToUrlHex(ab.getBytes()))
                         .put("push_token", pushToken == null ? "" : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
                         .put("recovery_token_error", "-25300")
                         .toEntries();
@@ -355,10 +357,10 @@ public final class WhatsappRegistration {
 
     private CompletableFuture<RegistrationResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
         return getRequestVerificationCodeParameters(pushCode)
-                .thenCompose(params -> getRegistrationOptions(store, keys, true, params))
-                .thenCompose(attrs -> sendRequest("/code", attrs))
-                .thenCompose(result -> onCodeRequestSent(pushCode, lastError, result))
-                .thenApply(result -> {
+                .thenComposeAsync(params -> getRegistrationOptions(store, keys, true, params))
+                .thenComposeAsync(attrs -> sendRequest("/code", attrs))
+                .thenComposeAsync(result -> onCodeRequestSent(pushCode, lastError, result))
+                .thenApplyAsync(result -> {
                     saveRegistrationStatus(store, keys, false);
                     return result;
                 });
@@ -402,7 +404,7 @@ public final class WhatsappRegistration {
                 .put("sim_mnc", "000")
                 .put("reason", "")
                 .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
-                .put("cellular_strength", ThreadLocalRandom.current().nextInt(1, 5))
+                .put("cellular_strength", ThreadLocalRandom.current().nextInt(1, 6))
                 .toEntries();
     }
 
@@ -441,14 +443,14 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
-    private CompletionStage<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, String result) {
+    private CompletableFuture<RegistrationResponse> onCodeRequestSent(String pushCode, VerificationCodeError lastError, String result) {
         var response = Json.readValue(result, RegistrationResponse.class);
         if (response.status() == VerificationCodeStatus.SUCCESS) {
             return CompletableFuture.completedFuture(response);
         }
 
         return switch (response.errorReason()) {
-            case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS, NO_ROUTES, BLOCKED ->
+            case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS, BLOCKED, NO_ROUTES ->
                     throw new RegistrationException(response, result);
             default -> {
                 var newErrorReason = response.errorReason();
@@ -463,8 +465,7 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<RegistrationResponse> sendVerificationCode(int retryIndex) {
-        return logIosRegistration()
-                .thenComposeAsync((ignored) -> codeHandler.get())
+        return codeHandler.get()
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, Map.entry("code", normalizeCodeResult(code)), Map.entry("entered", "1")))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
                 .thenComposeAsync(result -> {
@@ -513,20 +514,6 @@ public final class WhatsappRegistration {
         } catch (InterruptedException exception) {
             throw new RuntimeException("Cannot sleep", exception);
         }
-    }
-
-    private CompletableFuture<Object> logIosRegistration() {
-        if (store.device().platform() != UserAgent.PlatformType.IOS_BUSINESS) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        return clientLog(null, Map.entry("event_name", "smb_client_onboarding_journey"),
-                Map.entry("is_logged_in_on_consumer_app", "0"),
-                Map.entry("sequence_number", "14"),
-                Map.entry("app_install_source", "unknown|unknown"),
-                Map.entry("smb_onboarding_step", "20"),
-                Map.entry("has_consumer_app", "1")
-        );
     }
 
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
@@ -661,7 +648,7 @@ public final class WhatsappRegistration {
                     .putAll(requiredAttributes)
                     .put("token", token, useToken)
                     .put("id", convertBufferToUrlHex(keys.identityId()))
-                    .put("t", Clock.nowSeconds(), store.device().platform().isIOS())
+                    .put("t", timestamp, store.device().platform().isIOS())
                     .toMap();
         });
     }

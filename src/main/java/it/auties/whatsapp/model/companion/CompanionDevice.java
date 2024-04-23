@@ -13,7 +13,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * A model for a mobile companion
  *
- * @param model        the non-null model ozf the device
+ * @param model        the non-null model of the device
  * @param manufacturer the non-null manufacturer of the device
  * @param platform     the non-null os of the device
  * @param appVersion   the version of the app, or empty
@@ -38,23 +38,24 @@ public record CompanionDevice(
         String address
 ) implements ProtobufMessage {
     private static final List<Entry<String, String>> IPHONES = List.of(
-            Map.entry("iPhone_11", "iPhone12,1"),
-            Map.entry("iPhone_11_Pro", "iPhone12,3"),
-            Map.entry("iPhone_11_Pro_Max", "iPhone12,5"),
-            Map.entry("iPhone_12", "iPhone13,2"),
-            Map.entry("iPhone_12_Pro", "iPhone13,3"),
-            Map.entry("iPhone_12_Pro_Max", "iPhone13,4"),
-            Map.entry("iPhone_13", "iPhone14,5"),
-            Map.entry("iPhone_13_Pro", "iPhone14,2"),
-            Map.entry("iPhone_13_Pro_Max", "iPhone14,3"),
-            Map.entry("iPhone_14", "iPhone14,7"),
-            Map.entry("iPhone_14_Plus", "iPhone14,8"),
-            Map.entry("iPhone_14_Pro", "iPhone15,2"),
-            Map.entry("iPhone_14_Pro_Max", "iPhone15,3"),
-            Map.entry("iPhone_15", "iPhone15,4"),
-            Map.entry("iPhone_15_Plus", "iPhone15,5"),
-            Map.entry("iPhone_15_Pro", "iPhone16,1"),
-            Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
+            Map.entry("iPhone_7", "iPhone9,1"),
+            Map.entry("iPhone_7_Plus", "iPhone9,2"),
+            Map.entry("iPhone_8", "iPhone10,1"),
+            Map.entry("iPhone_8_Plus", "iPhone10,2"),
+            Map.entry("iPhone_X", "iPhone10,3"),
+            Map.entry("iPhone_XR", "iPhone11,8"),
+            Map.entry("iPhone_XS", "iPhone11,2"),
+            Map.entry("iPhone_XS_Max", "iPhone11,6")
+    );
+    private static final List<Entry<String, String>> IOS_VERSION = List.of(
+            Map.entry("16.7", "20H19"),
+            Map.entry("16.7.1", "20H30"),
+            Map.entry("16.7.2", "20H115"),
+            Map.entry("16.7.3", "20H232"),
+            Map.entry("16.7.4", "20H240"),
+            Map.entry("16.7.5", "20H307"),
+            Map.entry("16.7.6", "20H320"),
+            Map.entry("16.7.7", "20H330")
     );
 
     public static CompanionDevice web() {
@@ -80,14 +81,15 @@ public record CompanionDevice(
 
     public static CompanionDevice ios(Version appVersion, boolean business) {
         var model = IPHONES.get(ThreadLocalRandom.current().nextInt(IPHONES.size()));
+        var version = IOS_VERSION.get(ThreadLocalRandom.current().nextInt(IOS_VERSION.size()));
         return new CompanionDevice(
                 model.getKey(),
                 model.getValue(),
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 Optional.ofNullable(appVersion),
-                Version.of("17.4.1"),
-                "20H240",
+                Version.of(version.getKey()),
+                version.getValue(),
                 null
         );
     }

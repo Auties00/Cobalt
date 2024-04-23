@@ -12,10 +12,12 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class HttpClient {
     private static final String[] IOS_CIPHER_SUITE = {
+            // "TLS_GREASE_IS_THE_WORD_1A",
             "TLS_AES_128_GCM_SHA256",
             "TLS_AES_256_GCM_SHA384",
             "TLS_CHACHA20_POLY1305_SHA256",
@@ -54,15 +56,31 @@ public class HttpClient {
             "TLS_RSA_WITH_AES_128_CBC_SHA",
             "TLS_RSA_WITH_AES_256_CBC_SHA"
     };
+    private static final String[] ALLOWED_NAMED_GROUPS = {
+            "x25519",
+            "secp256r1",
+            "secp384r1",
+            "secp521r1",
+            "x448",
+            "ffdhe2048",
+            "ffdhe3072",
+            "ffdhe4096",
+            "ffdhe6144",
+            "ffdhe8192",
+
+    };
 
     static {
+        System.setProperty("jdk.tls.client.enableSessionTicketExtension", "false");
         ProxyAuthenticator.allowAll();
         Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
     }
 
+    private final SecureRandom random;
     private final SSLSocketFactory sslFactory;
     public HttpClient(boolean ios) {
-        this.sslFactory = getOrCreateParams(ios);
+        this.random = new SecureRandom();
+        this.sslFactory = createSocketFactory(ios);
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -123,11 +141,11 @@ public class HttpClient {
                         connection.setRequestProperty(entry.getKey(), String.valueOf(entry.getValue()));
                     }
                 }
-                connection.setRequestProperty("Connection", "close");
+                // connection.setRequestProperty("Connection", "close");
                 if(connection instanceof HttpsURLConnection httpsConnection && useCustomSslFactory) {
                     httpsConnection.setSSLSocketFactory(sslFactory);
                 }
-                connection.setInstanceFollowRedirects(true);
+                // connection.setInstanceFollowRedirects(true);
                 if(body != null) {
                     connection.setDoOutput(true);
                     try(var outputStream = connection.getOutputStream()) {
@@ -161,13 +179,26 @@ public class HttpClient {
         return future;
     }
 
-    private SSLSocketFactory getOrCreateParams(boolean ios) {
+    private SSLSocketFactory createSocketFactory(boolean ios) {
         try {
-            var sslContext = SSLContext.getInstance("TLSv1." + (ios ? 3 : 2));
+            var protocol = "TLSv1." + (random.nextBoolean() ? 3 : 2);
+            System.out.println("TLS version: " + protocol);
+            var sslContext = SSLContext.getInstance(protocol);
             sslContext.init(null, null, new SecureRandom());
             var sslParameters = sslContext.getDefaultSSLParameters();
-            sslParameters.setCipherSuites(ios ? IOS_CIPHER_SUITE : ANDROID_CIPHER_SUITE);
-            sslParameters.setUseCipherSuitesOrder(true);
+            var suite = ios ? IOS_CIPHER_SUITE : ANDROID_CIPHER_SUITE;
+            var randomSuite = Arrays.copyOf(suite, ThreadLocalRandom.current().nextInt(3, suite.length));
+            System.out.println("TLS Suite: " + Arrays.toString(randomSuite));
+            sslParameters.setCipherSuites(randomSuite);
+            var packetSize = sslParameters.getMaximumPacketSize();
+            sslParameters.setMaximumPacketSize(random.nextInt(packetSize / 3, (int) (packetSize * 1.5)));
+            System.out.println("TLS Packet size: " + sslParameters.getMaximumPacketSize());
+            var allowedNamedGroups = Arrays.copyOf(ALLOWED_NAMED_GROUPS, ThreadLocalRandom.current().nextInt(3, ALLOWED_NAMED_GROUPS.length));
+            System.out.println("TLS named groups: " + Arrays.toString(allowedNamedGroups));
+            sslParameters.setNamedGroups(allowedNamedGroups);
+            var followOrder = random.nextBoolean();
+            System.out.println("TLS follow order " + followOrder);
+            sslParameters.setUseCipherSuitesOrder(followOrder);
             return new ProxySSLFactory(sslContext.getSocketFactory(), sslParameters);
         } catch (Throwable exception) {
             throw new RuntimeException(exception);
