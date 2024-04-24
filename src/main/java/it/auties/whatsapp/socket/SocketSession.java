@@ -1,12 +1,15 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.util.Exceptions;
-import it.auties.whatsapp.util.ProxyAuthenticator;
+import it.auties.whatsapp.util.SocketWithProxy;
 import it.auties.whatsapp.util.Specification;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.*;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
@@ -18,9 +21,6 @@ import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     private static final int MESSAGE_LENGTH = 3;
-    static {
-        ProxyAuthenticator.allowAll();
-    }
 
     final URI proxy;
     SocketListener listener;
@@ -65,8 +65,8 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             super.connect(listener);
             return HttpClient.newBuilder()
                     .executor(command -> Thread.ofPlatform().start(command))
-                    .proxy(ProxySelector.of((InetSocketAddress) ProxyAuthenticator.getProxy(proxy).address()))
-                    .authenticator(ProxyAuthenticator.globalAuthenticator())
+                    .proxy(SocketWithProxy.toProxySelector(proxy))
+                    .authenticator(SocketWithProxy.toAuthenticator(proxy))
                     .build()
                     .newWebSocketBuilder()
                     .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
@@ -157,11 +157,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     static final class RawSocketSession extends SocketSession {
-        static {
-            Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
-        }
-
-        private Socket socket;
+        private SocketWithProxy socket;
 
         RawSocketSession(URI proxy) {
             super(proxy);
@@ -179,9 +175,9 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         private void createConnection(SocketListener listener) {
             try {
-                this.socket = new Socket(ProxyAuthenticator.getProxy(proxy));
+                this.socket = SocketWithProxy.of(proxy);
                 socket.setKeepAlive(true);
-                socket.connect(proxy != null ? InetSocketAddress.createUnresolved(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()) : new InetSocketAddress(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()));
+                socket.connect(InetSocketAddress.createUnresolved(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()));
                 listener.onOpen(RawSocketSession.this);
                 readMessages();
             } catch (IOException exception) {

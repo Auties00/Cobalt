@@ -3,13 +3,17 @@ package it.auties.whatsapp.registration.apns;
 import com.dd.plist.NSDictionary;
 import it.auties.whatsapp.crypto.Sha1;
 import it.auties.whatsapp.registration.http.HttpClient;
+import it.auties.whatsapp.util.SocketWithProxy;
 import it.auties.whatsapp.util.Specification;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import java.io.*;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -29,7 +33,7 @@ public class ApnsClient {
     private static final int PORT = 443;
 
     private final HttpClient httpClient;
-    private final Proxy proxy;
+    private final URI proxy;
     private final KeyPair keyPair;
     private final Set<ApnsListener> listeners;
     private final List<ApnsPacket> unhandledPackets;
@@ -40,7 +44,7 @@ public class ApnsClient {
     private byte[] authToken;
     private boolean disconnected;
 
-    public ApnsClient(HttpClient httpClient, Proxy proxy) {
+    public ApnsClient(HttpClient httpClient, URI proxy) {
         this.httpClient = httpClient;
         this.proxy = proxy;
         this.keyPair = initRSAKeyPair();
@@ -174,9 +178,9 @@ public class ApnsClient {
             var sslParameters = sslContext.getDefaultSSLParameters();
             sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
             var sslSocketFactory = sslContext.getSocketFactory();
-            var underlyingSocket = proxy == null ? new Socket() : new Socket(proxy);
+            var underlyingSocket = SocketWithProxy.of(proxy);
             var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
-            underlyingSocket.connect(new InetSocketAddress(endpoint, PORT));
+            underlyingSocket.connect(InetSocketAddress.createUnresolved(endpoint, PORT));
             this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);
             socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
             socket.setSSLParameters(sslParameters);

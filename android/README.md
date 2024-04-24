@@ -9,5 +9,8 @@
 
 ### How to run
 
-1. Open Whatsapp and try to register a number, do the same with Whatsapp business (needed to load gpia components)
-2. Run personal_inject.js and business_inject.js
+1. Run npm install in the android directory 
+2. Open Whatsapp and try to register a number, do the same with Whatsapp business (needed to load gpia components)
+3. Run:
+    - `frida -U "WhatsApp" -l _frida.js`
+    - `frida -U "WhatsApp" -l _frida.js` 

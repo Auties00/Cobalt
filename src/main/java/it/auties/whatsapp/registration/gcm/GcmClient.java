@@ -9,6 +9,7 @@ import it.auties.whatsapp.registration.gcm.McsExchange.LoginResponse;
 import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.SocketWithProxy;
 import it.auties.whatsapp.util.Validate;
 
 import javax.net.ssl.SSLSocket;
@@ -16,7 +17,9 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
@@ -39,7 +42,7 @@ public class GcmClient {
     private static final byte[] FCM_VERSION = {41};
 
     private final HttpClient httpClient;
-    private final Proxy proxy;
+    private final URI proxy;
     private final long senderId;
     private final ECDH256KeyPair keyPair;
     private final byte[] authSecret;
@@ -50,7 +53,7 @@ public class GcmClient {
     private long androidId;
     private long securityToken;
     private String token;
-    public GcmClient(HttpClient httpClient, Proxy proxy) {
+    public GcmClient(HttpClient httpClient, URI proxy) {
         this.httpClient = httpClient;
         this.proxy = proxy;
         this.senderId = DEFAULT_GCM_SENDER_ID;
@@ -144,8 +147,8 @@ public class GcmClient {
         return CompletableFuture.runAsync(() -> {
             try {
                 var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                var underlyingSocket = proxy == null || proxy == Proxy.NO_PROXY ? new Socket() : new Socket(proxy);
-                underlyingSocket.connect(proxy == null || proxy == Proxy.NO_PROXY ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
+                var underlyingSocket = SocketWithProxy.of(proxy);
+                underlyingSocket.connect(InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
                 this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, TALK_SERVER_HOST, TALK_SERVER_PORT, true);
                 socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
                 socket.startHandshake();

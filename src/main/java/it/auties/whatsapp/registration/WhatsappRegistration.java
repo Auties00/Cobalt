@@ -32,7 +32,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public final class WhatsappRegistration {
@@ -58,10 +61,9 @@ public final class WhatsappRegistration {
         var ios = store.device().platform().isIOS();
         var android = store.device().platform().isAndroid();
         var requiresVerification = method != VerificationCodeMethod.NONE;
-        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
-        this.httpClient = new HttpClient(ios);
-        this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient(httpClient, proxy) : null;
-        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, proxy) : null;
+        this.httpClient = new HttpClient();
+        this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient(httpClient, store.proxy().orElse(null)) : null;
+        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, store.proxy().orElse(null)) : null;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
         this.printRequests = printRequests;
         this.timestamp = Clock.nowSeconds();
@@ -149,7 +151,6 @@ public final class WhatsappRegistration {
             System.out.println("Using user agent " + userAgent);
             System.out.println("Sending request to /reg_onboard_abprop with parameters " + attributes);
         }
-        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var future = switch (store.device().platform()) {
             case ANDROID, ANDROID_BUSINESS -> {
                 var cipheredBody = Base64.getUrlEncoder().encodeToString(cipherRequestPayload(body.getBytes()));
@@ -165,19 +166,23 @@ public final class WhatsappRegistration {
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .put("Accept-Encoding", "gzip")
                         .toMap();
-                yield httpClient.post(postEndpoint, proxy, true, headers, postBody)
+                yield httpClient.post(postEndpoint, store.proxy().orElse(null), true, headers, postBody)
                         .thenApply(String::new);
             }
             case IOS, IOS_BUSINESS -> {
                 var headers = Map.of(
                         "User-Agent", userAgent,
-                        "Content-Type", "application/x-www-form-urlencoded"
+                        "Content-Type", "application/x-www-form-urlencoded",
+                        "Accept", "*/*",
+                        "Accept-Language", "en-US,en;q=0.9",
+                        "Connection", "keep-alive",
+                        "Accept-Encoding", "gzip, deflate, br"
                 );
                 if (printRequests) {
                     System.out.println("Using " + body);
                 }
                 var getEndpoint = URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + body);
-                yield httpClient.get(getEndpoint, proxy, true, headers);
+                yield httpClient.get(getEndpoint, store.proxy().orElse(null), true, headers);
             }
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
@@ -278,8 +283,7 @@ public final class WhatsappRegistration {
                     .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
                     .toEntries());
             case IOS, IOS_BUSINESS -> {
-                var ab = "{\\\"exposure\\\":[\\\"hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control\\\",\\\"ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test\\\",\\\"wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|test\\\",\\\"dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|test\\\"],\\\"metrics\\\":{\\\"expid_c\\\":%s,\\\"rc_old\\\":%s,\\\"fdid_c\\\":%s,\\\"expid_md\\\":1713710228,\\\"expid_cd\\\":1713710228}}"
-                        .formatted(ThreadLocalRandom.current().nextBoolean(), ThreadLocalRandom.current().nextBoolean(), ThreadLocalRandom.current().nextBoolean());
+                var ab = "{\"exposure\":[\"hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control\",\"ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test\",\"wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|test\",\"dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|test\"],\"metrics\":{\"expid_c\":true,\"rc_old\":true,\"fdid_c\":false,\"expid_md\":1713710228,\"expid_cd\":1713710228}}";
                 if(printRequests) {
                     System.out.println("Ab: " + ab);
                 }
@@ -532,7 +536,6 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
-        var proxy = ProxyAuthenticator.getProxy(store.proxy().orElse(null));
         var encodedParams = HttpClient.toFormParams(params).getBytes();
         var userAgent = store.device().toUserAgent(store.version());
         if (printRequests) {
@@ -552,9 +555,13 @@ public final class WhatsappRegistration {
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
                         .put("Content-Type", "application/x-www-form-urlencoded")
+                        .put("Accept", "*/*")
+                        .put("Accept-Language", "en-US,en;q=0.9")
+                        .put("Connection", "keep-alive")
+                        .put("Accept-Encoding", "gzip, deflate, br")
                         .toMap();
                 var body = "ENC=%s".formatted(encBase64);
-                yield httpClient.post(uri, proxy, true, headers, body.getBytes()).thenApplyAsync(result -> {
+                yield httpClient.post(uri, store.proxy().orElse(null), true, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
                     if (printRequests) {
                         System.out.println("Received response " + path + " " + resultAsString);
@@ -587,7 +594,7 @@ public final class WhatsappRegistration {
                             }
                             System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                         }
-                        return httpClient.post(uri, proxy, true, headers, body.getBytes()).thenApplyAsync(result -> {
+                        return httpClient.post(uri, store.proxy().orElse(null), true, headers, body.getBytes()).thenApplyAsync(result -> {
                             var resultAsString = new String(result);
                             if (printRequests) {
                                 System.out.println("Received response " + path + " " + resultAsString);
@@ -600,7 +607,7 @@ public final class WhatsappRegistration {
                     System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 }
                 var uri = URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
-                yield httpClient.get(uri, proxy, true, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
+                yield httpClient.get(uri, store.proxy().orElse(null), true, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
                     if (printRequests) {
                         System.out.println("Received response " + path + " " + result);
                     }

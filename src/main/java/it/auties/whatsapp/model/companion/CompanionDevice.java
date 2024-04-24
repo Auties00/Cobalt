@@ -6,8 +6,11 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**

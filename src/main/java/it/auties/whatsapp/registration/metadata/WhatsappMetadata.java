@@ -15,7 +15,6 @@ import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.ProxyAuthenticator;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import javax.crypto.Mac;
@@ -44,13 +43,8 @@ import java.util.zip.ZipInputStream;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 public final class WhatsappMetadata {
-
     public static final int ANDROID_BUSINESS_PORT = 1120;
     public static final int ANDROID_PERSONAL_PORT = 1119;
-
-    static {
-        ProxyAuthenticator.allowAll();
-    }
 
     private static volatile CompletableFuture<Version> webVersion;
     private static volatile CompletableFuture<WhatsappAndroidApp> personalApk;

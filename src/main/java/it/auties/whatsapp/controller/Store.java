@@ -339,10 +339,6 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, CompletableFuture<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
-        if (proxy != null) {
-            ProxyAuthenticator.globalAuthenticator().register(proxy);
-        }
-
         this.proxy = proxy;
         this.version = version;
         this.online = online;
@@ -1160,12 +1156,6 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      * @return the same instance
      */
     public Store setProxy(URI proxy) {
-        if (proxy != null && proxy.getUserInfo() != null) {
-            ProxyAuthenticator.globalAuthenticator().register(proxy);
-        } else if (proxy == null && this.proxy != null) {
-            ProxyAuthenticator.globalAuthenticator().unregister(this.proxy);
-        }
-
         this.proxy = proxy;
         return this;
     }
