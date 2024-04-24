@@ -63,11 +63,13 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             super.connect(listener);
-            return HttpClient.newBuilder()
-                    .executor(command -> Thread.ofPlatform().start(command))
-                    .proxy(SocketWithProxy.toProxySelector(proxy))
-                    .authenticator(SocketWithProxy.toAuthenticator(proxy))
-                    .build()
+            var builder = HttpClient.newBuilder()
+                    .executor(command -> Thread.ofPlatform().start(command));
+            if(proxy != null) {
+                builder.proxy(SocketWithProxy.toProxySelector(proxy))
+                        .authenticator(SocketWithProxy.toAuthenticator(proxy));
+            }
+            return builder.build()
                     .newWebSocketBuilder()
                     .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
                     .thenAcceptAsync(webSocket -> {
