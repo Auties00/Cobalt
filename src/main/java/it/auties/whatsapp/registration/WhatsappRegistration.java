@@ -177,10 +177,7 @@ public final class WhatsappRegistration {
                 var headers = Map.of(
                         "User-Agent", userAgent,
                         "Content-Type", "application/x-www-form-urlencoded",
-                        "Accept", "*/*",
-                        "Accept-Language", "%s-%s,%s;q=0.9".formatted(countryCode.lg(), countryCode.lc(), countryCode.lg()),
-                        "Connection", "Close",
-                        "Accept-Encoding", "gzip, deflate, br"
+                        "Connection", "Close"
                 );
                 if (printRequests) {
                     System.out.println("Using body " + body);
@@ -559,10 +556,7 @@ public final class WhatsappRegistration {
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
                         .put("Content-Type", "application/x-www-form-urlencoded")
-                        .put("Accept", "*/*")
-                        .put("Accept-Language", "%s-%s,%s;q=0.9".formatted(countryCode.lg(), countryCode.lc(), countryCode.lg()))
                         .put("Connection", "Close")
-                        .put("Accept-Encoding", "gzip, deflate, br")
                         .toMap();
                 var body = "ENC=%s".formatted(encBase64);
                 yield httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
