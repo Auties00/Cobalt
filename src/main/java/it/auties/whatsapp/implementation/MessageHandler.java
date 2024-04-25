@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMatch;
@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.util.Specification.Signal.*;
+import static it.auties.whatsapp.util.SignalConstants.*;
 
 class MessageHandler {
     private static final int HISTORY_SYNC_TIMEOUT = 25;

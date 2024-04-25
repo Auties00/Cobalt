@@ -1,5 +1,6 @@
-package it.auties.whatsapp.util;
+package it.auties.whatsapp.net;
 
+import it.auties.whatsapp.util.Proxies;
 import sun.misc.Unsafe;
 
 import java.io.IOException;
@@ -8,103 +9,23 @@ import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.OptionalInt;
 
-// Treat all addresses as unresolved
-public abstract class SocketWithProxy extends Socket {
+public abstract class Socket extends java.net.Socket {
     static {
-        allowBasicAuth();
-    }
-
-    public static void allowBasicAuth() {
-        System.setProperty("jdk.http.auth.proxying.disabledSchemes", "");
-        System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
-    }
-
-    public static ProxySelector toProxySelector(URI uri) {
-        if (uri == null) {
-            return null;
-        }
-
-        var scheme = Objects.requireNonNull(uri.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(uri));
-        Validate.isTrue(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"),
-        "Only HTTP and HTTPS proxies are supported in this context");
-        var host = Objects.requireNonNull(uri.getHost(), "Invalid proxy, expected a host: %s".formatted(uri));
-        var port = getProxyPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
-        return ProxySelector.of(InetSocketAddress.createUnresolved(host, port));
-    }
-    
-    public static Proxy toProxy(URI uri) {
-        if (uri == null) {
-            return Proxy.NO_PROXY;
-        }
-
-        var scheme = Objects.requireNonNull(uri.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(uri));
-        var host = Objects.requireNonNull(uri.getHost(), "Invalid proxy, expected a host: %s".formatted(uri));
-        var port = getProxyPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
-        return switch (scheme) {
-            case "http", "https" -> new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(host, port));
-            case "socks5", "socks5h" -> new Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port));
-            default -> throw new IllegalStateException("Unexpected scheme: " + scheme);
-        };
-    }
-
-    private static OptionalInt getProxyPort(String scheme, int port) {
-        return port != -1 ? OptionalInt.of(port) : switch (scheme) {
-            case "http" -> OptionalInt.of(80);
-            case "https" -> OptionalInt.of(443);
-            default -> OptionalInt.empty();
-        };
-    }
-
-    private static UserInfo parseUserInfo(String userInfo) {
-        if(userInfo == null || userInfo.isEmpty()) {
-            return null;
-        }
-
-        var data = userInfo.split(":", 2);
-        if(data.length > 2) {
-            throw new IllegalArgumentException("Invalid proxy authentication: " + userInfo);
-        }
-
-        return new UserInfo(data[0], data.length == 2 ? data[1] : null);
-    }
-
-    private record UserInfo(String username, String password) {
-
-    }
-
-    public static Authenticator toAuthenticator(URI proxy) {
-        if(proxy == null) {
-            return null;
-        }
-
-        return new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                Validate.isTrue(Objects.equals(getRequestingHost(), proxy.getHost()) && Objects.equals(getRequestingPort(), proxy.getPort()),
-                        "Unexpected proxy request: %s:%s", getRequestingHost(), getRequestingPort());
-                var userInfo = parseUserInfo(proxy.getUserInfo());
-                if(userInfo == null) {
-                    return null;
-                }
-
-                return new PasswordAuthentication(userInfo.username(), userInfo.password().toCharArray());
-            }
-        };
+        Proxies.allowBasicAuth();
     }
 
     final URI proxy;
-    private SocketWithProxy(URI proxy) {
+    private Socket(URI proxy) {
         this.proxy = proxy;
     }
 
-    public static SocketWithProxy of(URI proxy) throws IOException {
+    public static Socket of(URI proxy) throws IOException {
         if(proxy == null) {
             return new Direct();
         }
 
-        var javaProxy = toProxy(proxy);
+        var javaProxy = Proxies.toProxy(proxy);
         if(javaProxy == Proxy.NO_PROXY) {
             return new Direct();
         }
@@ -117,7 +38,7 @@ public abstract class SocketWithProxy extends Socket {
     }
 
 
-    private static final class Http extends SocketWithProxy {
+    private static final class Http extends Socket {
         private static final Unsafe unsafe;
         private static final long offset;
         static {
@@ -169,8 +90,8 @@ public abstract class SocketWithProxy extends Socket {
             }
 
             var uri = URI.create("http://%s:%s/".formatted(address.getHostName(), address.getPort()));
-            this.httpConnection = (HttpURLConnection) uri.toURL().openConnection(toProxy(proxy));
-            httpConnection.setAuthenticator(toAuthenticator(proxy));
+            this.httpConnection = (HttpURLConnection) uri.toURL().openConnection(Proxies.toProxy(proxy));
+            httpConnection.setAuthenticator(Proxies.toAuthenticator(proxy));
             if(timeout > 0 ) {
                 httpConnection.setConnectTimeout(timeout);
             }
@@ -285,7 +206,7 @@ public abstract class SocketWithProxy extends Socket {
     }
 
     // No Socks4 support, nobody uses it
-    private static final class Socks5 extends SocketWithProxy {
+    private static final class Socks5 extends Socket {
         private static final int PROTO_VERS = 5;
 
         private static final int NO_AUTH = 0;
@@ -308,7 +229,7 @@ public abstract class SocketWithProxy extends Socket {
         private static final int CMD_NOT_SUPPORTED = 7;
         private static final int ADDR_TYPE_NOT_SUP = 8;
 
-        private Socket socket;
+        private java.net.Socket socket;
 
         Socks5(URI proxy) {
             super(proxy);
@@ -325,7 +246,7 @@ public abstract class SocketWithProxy extends Socket {
                 throw new IllegalArgumentException("Unsupported address type");
             }
 
-            this.socket = new Socket();
+            this.socket = new java.net.Socket();
             socket.setKeepAlive(true);
             socket.connect(new InetSocketAddress(proxy.getHost(), proxy.getPort()));
             getOutputStream().write(PROTO_VERS);
@@ -426,7 +347,7 @@ public abstract class SocketWithProxy extends Socket {
                 return false;
             }
 
-            var userInfo = parseUserInfo(proxy.getUserInfo());
+            var userInfo = Proxies.parseUserInfo(proxy.getUserInfo());
             if (userInfo == null) {
                 return false;
             }
@@ -510,8 +431,8 @@ public abstract class SocketWithProxy extends Socket {
         }
     }
 
-    private static final class Direct extends SocketWithProxy {
-        private Socket socket;
+    private static final class Direct extends Socket {
+        private java.net.Socket socket;
         Direct() {
             super(null);
         }
@@ -527,7 +448,7 @@ public abstract class SocketWithProxy extends Socket {
                 throw new IllegalArgumentException("Unsupported address type");
             }
 
-            this.socket = new Socket();
+            this.socket = new java.net.Socket();
             socket.setKeepAlive(true);
             socket.connect(new InetSocketAddress(address.getHostName(), address.getPort()));
         }

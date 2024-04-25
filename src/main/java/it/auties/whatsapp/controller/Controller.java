@@ -7,7 +7,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.ProtobufUuidMixin;
+import it.auties.whatsapp.util.Protobuf;
 
 import java.util.*;
 
@@ -20,7 +20,7 @@ public abstract sealed class Controller<T extends Controller<T>> implements Prot
     /**
      * The id of this controller
      */
-    @ProtobufProperty(index = 1, type = ProtobufType.STRING, mixin = ProtobufUuidMixin.class)
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING, mixin = Protobuf.UUIDMixin.class)
     protected final UUID uuid;
 
     /**

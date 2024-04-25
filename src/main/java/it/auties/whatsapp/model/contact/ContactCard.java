@@ -12,13 +12,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.util.Specification.Whatsapp.*;
-
 
 /**
  * A model class to represent and build the vcard of a contact
  */
 public sealed interface ContactCard {
+    String BUSINESS_NAME_VCARD_PROPERTY = "X-WA-BIZ-NAME";
+    String PHONE_NUMBER_VCARD_PROPERTY = "WAID";
+    String DEFAULT_NUMBER_VCARD_TYPE = "CELL";
+
     @ProtobufConverter
     static ContactCard ofNullable(String vcard) {
         return vcard == null ? null : of(vcard);

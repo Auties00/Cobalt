@@ -134,8 +134,8 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationH
                         return;
                     }
                     Desktop.getDesktop().open(path.toFile());
-                } catch (IOException exception) {
-                    throw new UncheckedIOException("Cannot open file with desktop", exception);
+                } catch (Throwable throwable) {
+                    throw new RuntimeException("Cannot open file with desktop", throwable);
                 }
             };
         }

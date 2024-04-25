@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.auties.whatsapp.util.Specification.Whatsapp;
+import it.auties.whatsapp.util.Medias;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -119,10 +119,10 @@ public class UpdateTokens {
     }
 
     private static String getJavascriptSource() throws IOException, InterruptedException {
-        var whatsappRequest = createRequest(Whatsapp.WEB_ORIGIN);
+        var whatsappRequest = createRequest(Medias.WEB_ORIGIN);
         var whatsappResponse = HTTP_CLIENT.send(whatsappRequest, ofString());
         var token = findResult(whatsappResponse.body(), TOKEN_REGEX);
-        var sourceRequest = createRequest("%s/app.%s.js".formatted(Whatsapp.WEB_ORIGIN, token));
+        var sourceRequest = createRequest("%s/app.%s.js".formatted(Medias.WEB_ORIGIN, token));
         return HTTP_CLIENT.send(sourceRequest, ofString()).body();
     }
 

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.crypto.AesCbc;
@@ -562,7 +562,7 @@ class AppStateHandler {
         return patch.mutations()
                 .stream()
                 .map(mutation -> mutation.record().value().blob())
-                .map(entry -> Arrays.copyOfRange(entry, entry.length - Specification.Signal.KEY_LENGTH, entry.length))
+                .map(entry -> Arrays.copyOfRange(entry, entry.length - SignalConstants.KEY_LENGTH, entry.length))
                 .toArray(byte[][]::new);
     }
 
@@ -603,8 +603,8 @@ class AppStateHandler {
             return Optional.empty();
         }
         var blob = sync.value().blob();
-        var encryptedBlob = Arrays.copyOfRange(blob, 0, blob.length - Specification.Signal.KEY_LENGTH);
-        var encryptedMac = Arrays.copyOfRange(blob, blob.length - Specification.Signal.KEY_LENGTH, blob.length);
+        var encryptedBlob = Arrays.copyOfRange(blob, 0, blob.length - SignalConstants.KEY_LENGTH);
+        var encryptedMac = Arrays.copyOfRange(blob, blob.length - SignalConstants.KEY_LENGTH, blob.length);
         Validate.isTrue(!socketHandler.store().checkPatchMacs() || Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.get().macKey())),
                 "decode_mutation", HmacValidationException.class);
         var result = AesCbc.decrypt(encryptedBlob, mutationKeys.get().encKey());
@@ -617,11 +617,11 @@ class AppStateHandler {
 
     private byte[] generateMac(RecordSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {
         var keyData = Bytes.concat(operation.content(), keyId);
-        var last = new byte[Specification.Signal.MAC_LENGTH];
+        var last = new byte[SignalConstants.MAC_LENGTH];
         last[last.length - 1] = (byte) keyData.length;
         var total = Bytes.concat(keyData, data, last);
         var sha512 = Hmac.calculateSha512(total, key);
-        return Arrays.copyOfRange(sha512, 0, Specification.Signal.KEY_LENGTH);
+        return Arrays.copyOfRange(sha512, 0, SignalConstants.KEY_LENGTH);
     }
 
     private byte[] generateSnapshotMac(byte[] ltHash, long version, PatchType patchType, byte[] key) {

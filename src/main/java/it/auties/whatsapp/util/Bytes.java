@@ -17,7 +17,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
+import static it.auties.whatsapp.util.SignalConstants.CURRENT_VERSION;
 
 public final class Bytes {
     private static final String CROCKFORD_CHARACTERS = "123456789ABCDEFGHJKLMNPQRSTVWXYZ";

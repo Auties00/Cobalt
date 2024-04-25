@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.curve25519.Curve25519;
@@ -42,7 +42,10 @@ import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchType;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.Validate;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -68,17 +71,24 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.util.Specification.Signal.KEY_BUNDLE_TYPE;
-import static it.auties.whatsapp.util.Specification.Whatsapp.ACCOUNT_SIGNATURE_HEADER;
-import static it.auties.whatsapp.util.Specification.Whatsapp.DEVICE_WEB_SIGNATURE_HEADER;
+import static it.auties.whatsapp.util.SignalConstants.KEY_BUNDLE_TYPE;
 
 class StreamHandler {
+    private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
     private static final int MOBILE_PRE_KEYS_UPLOAD_CHUNK = 811;
     private static final int PING_INTERVAL = 30;
     private static final int MAX_ATTEMPTS = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
+    private static final byte[][] CALL_RELAY = new byte[][]{
+            new byte[]{-105, 99, -47, -29, 13, -106},
+            new byte[]{-99, -16, -53, 62, 13, -106},
+            new byte[]{-99, -16, -25, 62, 13, -106},
+            new byte[]{-99, -16, -5, 62, 13, -106},
+            new byte[]{-71, 60, -37, 62, 13, -106}
+    };
+    private static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
 
     private final SocketHandler socketHandler;
     private final WebVerificationHandler webVerificationHandler;
@@ -341,7 +351,7 @@ class StreamHandler {
     }
 
     private void sendRelay(Jid callCreator, String callId, Jid to) {
-        for (var value : Specification.Whatsapp.CALL_RELAY) {
+        for (var value : CALL_RELAY) {
             var te = Node.of("te", Map.of("latency", 33554440), value);
             var relay = Node.of("relaylatency", Map.of("call-creator", callCreator, "call-id", callId), te);
             socketHandler.sendNode(Node.of("call", Map.of("to", to), relay));

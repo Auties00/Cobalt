@@ -9,7 +9,7 @@ import it.auties.whatsapp.util.Bytes;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static it.auties.whatsapp.util.Specification.Signal.MAC_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.MAC_LENGTH;
 
 @ProtobufMessageName("SignalMessage")
 public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {

@@ -5,7 +5,7 @@ import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.SignalConstants;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -26,14 +26,14 @@ public record SenderMessageKey(
 
     private static byte[] createIv(byte[] seed) {
         var derivative = getDerivedSeed(seed);
-        return Arrays.copyOf(derivative[0], Specification.Signal.IV_LENGTH);
+        return Arrays.copyOf(derivative[0], SignalConstants.IV_LENGTH);
     }
 
     private static byte[] createCipherKey(byte[] seed) {
         var derivative = getDerivedSeed(seed);
-        var data = Arrays.copyOfRange(derivative[0], Specification.Signal.IV_LENGTH, derivative[0].length);
+        var data = Arrays.copyOfRange(derivative[0], SignalConstants.IV_LENGTH, derivative[0].length);
         var concat = Bytes.concat(data, derivative[1]);
-        return Arrays.copyOf(concat, Specification.Signal.KEY_LENGTH);
+        return Arrays.copyOf(concat, SignalConstants.KEY_LENGTH);
     }
 
     private static byte[][] getDerivedSeed(byte[] seed) {

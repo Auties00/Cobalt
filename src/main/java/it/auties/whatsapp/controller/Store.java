@@ -11,6 +11,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.TextPreviewSetting;
 import it.auties.whatsapp.api.WebHistoryLength;
+import it.auties.whatsapp.implementation.SocketRequest;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -40,8 +41,9 @@ import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
-import it.auties.whatsapp.socket.SocketRequest;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Protobuf;
 
 import java.net.URI;
 import java.time.Duration;
@@ -61,16 +63,17 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store extends Controller<Store> implements ProtobufMessage {
+    public static final String DEFAULT_NAME = "Cobalt";
     /**
      * The version used by this session
      */
-    @ProtobufProperty(index = 5, type = ProtobufType.STRING, mixin = ProtobufUriMixin.class)
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING, mixin = Protobuf.URIMixin.class)
     URI proxy;
 
     /**
      * The version used by this session
      */
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, overrideType = Version.class, mixin = ProtobufFutureMixin.class)
+    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, overrideType = Version.class, mixin = Protobuf.FutureMixin.class)
     CompletableFuture<Version> version;
 
     /**
@@ -159,7 +162,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
-    @ProtobufProperty(index = 19, type = ProtobufType.STRING, mixin = ProtobufUriMixin.class)
+    @ProtobufProperty(index = 19, type = ProtobufType.STRING, mixin = Protobuf.URIMixin.class)
     URI profilePicture;
 
     /**
@@ -343,7 +346,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
         this.version = version;
         this.online = online;
         this.locale = locale;
-        this.name = Objects.requireNonNullElse(name, Specification.Whatsapp.DEFAULT_NAME);
+        this.name = Objects.requireNonNullElse(name, DEFAULT_NAME);
         this.verifiedName = verifiedName;
         this.businessAddress = businessAddress;
         this.businessLongitude = businessLongitude;
@@ -392,7 +395,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
                 .device(clientType == ClientType.MOBILE ? CompanionDevice.ios(false) : CompanionDevice.web())
                 .clientType(clientType)
                 .alias(alias)
-                .name(Specification.Whatsapp.DEFAULT_NAME)
+                .name(DEFAULT_NAME)
                 .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
                 .autodetectListeners(true)
                 .automaticPresenceUpdates(true)

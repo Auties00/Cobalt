@@ -15,7 +15,6 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 
 import java.time.ZonedDateTime;
@@ -31,6 +30,9 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
  */
 public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
         implements MediaMessage<DocumentMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+    private static final int THUMBNAIL_WIDTH = 480;
+    private static final int THUMBNAIL_HEIGHT = 339;
+
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;
 
@@ -126,8 +128,8 @@ public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
                 .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media).orElse(1))
                 .title(title)
                 .thumbnail(thumbnail != null ? null : Medias.getDocumentThumbnail(media).orElse(null))
-                .thumbnailWidth(Specification.Whatsapp.THUMBNAIL_WIDTH)
-                .thumbnailHeight(Specification.Whatsapp.THUMBNAIL_HEIGHT)
+                .thumbnailWidth(THUMBNAIL_WIDTH)
+                .thumbnailHeight(THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build()
                 .setDecodedMedia(media);

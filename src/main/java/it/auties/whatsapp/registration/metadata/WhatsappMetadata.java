@@ -12,10 +12,10 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.net.HttpClient;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,9 +24,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,11 +37,21 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static java.net.http.HttpResponse.BodyHandlers.ofString;
-
 public final class WhatsappMetadata {
-    public static final int ANDROID_BUSINESS_PORT = 1120;
-    public static final int ANDROID_PERSONAL_PORT = 1119;
+    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.8.77");
+    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.8.80");
+    private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
+    private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
+    private static final URI WEB_UPDATE_URL = URI.create("https://web.whatsapp.com/check-update?version=2.2245.9&platform=web");
+    private static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
+    private static final String MOBILE_BUSINESS_IOS_STATIC = "USUDuDYDeQhY4RF2fCSp5m3F6kJ1M2J8wS7bbNA2";
+    private static final String MOBILE_KAIOS_STATIC = "aa8243c465a743c488beb4645dda63edc2ca9a58";
+
+    private static final int ANDROID_BUSINESS_PORT = 1120;
+    private static final int ANDROID_PERSONAL_PORT = 1119;
+
+    private static volatile HttpClient httpClient;
+    private static final Object httpClientLock = new Object();
 
     private static volatile CompletableFuture<Version> webVersion;
     private static volatile CompletableFuture<WhatsappAndroidApp> personalApk;
@@ -70,7 +77,7 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<Version> getIosVersion(boolean business) {
-        return CompletableFuture.completedFuture(business ? Whatsapp.MOBILE_BUSINESS_IOS_VERSION : Whatsapp.MOBILE_PERSONAL_IOS_VERSION);
+        return CompletableFuture.completedFuture(business ? MOBILE_BUSINESS_IOS_VERSION : MOBILE_PERSONAL_IOS_VERSION);
     }
 
     private static CompletableFuture<Version> getWebVersion() {
@@ -78,20 +85,12 @@ public final class WhatsappMetadata {
             return webVersion;
         }
 
-        try (var client = buildHttpClient()) {
-            var request = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(URI.create(Whatsapp.WEB_UPDATE_URL))
-                    .build();
-            return webVersion = client.sendAsync(request, ofString())
-                    .thenApplyAsync(WhatsappMetadata::parseWebVersion);
-        } catch (Throwable throwable) {
-            throw new RuntimeException("Cannot fetch latest web version", throwable);
-        }
+        return webVersion = getOrCreateClient().getString(WEB_UPDATE_URL)
+                .thenApplyAsync(WhatsappMetadata::parseWebVersion);
     }
 
-    private static Version parseWebVersion(HttpResponse<String> response) {
-        var webVersionResponse = Json.readValue(response.body(), WebVersionResponse.class);
+    private static Version parseWebVersion(String response) {
+        var webVersionResponse = Json.readValue(response, WebVersionResponse.class);
         return Version.of(webVersionResponse.currentVersion());
     }
 
@@ -107,13 +106,13 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<String> getIosToken(long phoneNumber, Version version, boolean business) {
-        var staticToken = business ? Whatsapp.MOBILE_BUSINESS_IOS_STATIC : Whatsapp.MOBILE_IOS_STATIC;
+        var staticToken = business ? MOBILE_BUSINESS_IOS_STATIC : MOBILE_IOS_STATIC;
         var token = staticToken + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
         return CompletableFuture.completedFuture(HexFormat.of().formatHex(MD5.calculate(token)));
     }
 
     private static String getKaiOsToken(long phoneNumber, WhatsappKaiOsApp kaiOsApp) {
-        var staticTokenPart = HexFormat.of().parseHex(Whatsapp.MOBILE_KAIOS_STATIC);
+        var staticTokenPart = HexFormat.of().parseHex(MOBILE_KAIOS_STATIC);
         var pagePart = HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(kaiOsApp.indexHtml(), kaiOsApp.backendJs())));
         var phonePart = String.valueOf(phoneNumber).getBytes(StandardCharsets.UTF_8);
         return HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart)));
@@ -155,28 +154,17 @@ public final class WhatsappMetadata {
 
     private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(String deviceAddress, boolean business) {
         var backendAddress = getAndroidMiddleware(deviceAddress, business);
-        try(var client = buildHttpClient()) {
-            var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://%s/info".formatted(backendAddress)))
-                    .GET()
-                    .build();
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
-                var app = Json.readValue(response.body(), WhatsappAndroidApp.class);
-                if (app.error() != null) {
-                    throw new RuntimeException(app.error());
-                }
+        var endpoint = URI.create("http://%s/info".formatted(backendAddress));
+        return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
+            var app = Json.readValue(response, WhatsappAndroidApp.class);
+            if (app.error() != null) {
+                throw new RuntimeException(app.error());
+            }
 
-                return app;
-            }).exceptionallyAsync(throwable -> {
-                throw new RuntimeException("Cannot connect to android middleware at " + backendAddress, throwable);
-            });
-        }
-    }
-
-    private static HttpClient buildHttpClient() {
-        return HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .build();
+            return app;
+        }).exceptionallyAsync(throwable -> {
+            throw new RuntimeException("Cannot connect to android middleware at " + backendAddress, throwable);
+        });
     }
 
     private static Path getKaiOsLocalCache() {
@@ -213,7 +201,7 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<WhatsappKaiOsApp> downloadKaiOsData() {
-        return Medias.downloadAsync(URI.create(Whatsapp.MOBILE_KAIOS_URL), Whatsapp.MOBILE_KAIOS_USER_AGENT, Map.entry("Content-Type", "application/json")).thenComposeAsync(catalogResponse -> {
+        return Medias.downloadAsync(MOBILE_KAIOS_URL, MOBILE_KAIOS_USER_AGENT, Map.entry("Content-Type", "application/json")).thenComposeAsync(catalogResponse -> {
             try (var compressedStream = new GZIPInputStream(new ByteArrayInputStream(catalogResponse))) {
                 var catalog = Json.readValue(compressedStream.readAllBytes(), KaiOsCatalogResponse.class);
                 var app = catalog.apps()
@@ -221,7 +209,7 @@ public final class WhatsappMetadata {
                         .filter(entry -> Objects.equals(entry.name(), "whatsapp"))
                         .findFirst()
                         .orElseThrow(() -> new NoSuchElementException("Missing whatsapp from catalog"));
-                return Medias.downloadAsync(app.uri(), Whatsapp.MOBILE_KAIOS_USER_AGENT).thenApplyAsync(appArchiveResponse -> {
+                return Medias.downloadAsync(app.uri(), MOBILE_KAIOS_USER_AGENT).thenApplyAsync(appArchiveResponse -> {
                     try (var zipArchive = new ZipInputStream(new ByteArrayInputStream(appArchiveResponse))) {
                         byte[] indexHtml = null;
                         byte[] backendJs = null;
@@ -278,50 +266,44 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<WhatsappAndroidTokens> getGpiaToken(String deviceAddress, byte[] authKey, boolean business) {
+    public static CompletableFuture<WhatsappAndroidTokens> getAndroidTokens(String deviceAddress, byte[] authKey, boolean business) {
         return getAndroidData(deviceAddress, business).thenComposeAsync(androidData -> {
-            try(var client = buildHttpClient()) {
-                var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
-                var request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://%s/gpia?authKey=%s".formatted(getAndroidMiddleware(deviceAddress, business), URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8))))
-                        .GET()
-                        .build();
-                return client.sendAsync(request, ofString()).thenApplyAsync(response -> {
-                    var supportData = Json.readValue(response.body(), GpiaResponse.class);
-                    if(supportData.error() != null) {
-                        throw new RuntimeException(supportData.error());
-                    }
-                    System.out.println("Apk path: " + androidData);
-                    var gpiaData = new GpiaData(
-                            Base64.getEncoder().encodeToString(androidData.signatureSha1()),
-                            androidData.packageName(),
-                            Base64.getEncoder().encodeToString(androidData.apkSha256()),
-                            Base64.getEncoder().encodeToString(androidData.apkShatr()),
-                            supportData.token(),
-                            String.valueOf(androidData.apkSize()),
-                            androidData.apkPath(),
-                            0
-                    );
-                    var gpia = encryptAndroidToken(gpiaData, authKeyBase64);
-                    var ggData = new GgData(
-                            0,
-                            supportData.token()
-                    );
-                    var gg = encryptAndroidToken(ggData, authKeyBase64);
-                    var giData = new GiData(
-                            Base64.getEncoder().encodeToString(androidData.signatureSha1()),
-                            androidData.apkPath(),
-                            Base64.getEncoder().encodeToString(androidData.apkSha256()),
-                            Base64.getEncoder().encodeToString(androidData.apkShatr()),
-                            androidData.packageName(),
-                            String.valueOf(androidData.apkSize())
-                    );
-                    var gi = encryptAndroidToken(giData, authKeyBase64);
-                    return new WhatsappAndroidTokens(gpia, gg, gi);
-                }).exceptionallyAsync(throwable -> {
-                    throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage(), throwable);
-                });
-            }
+            var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
+            var endpoint = URI.create("http://%s/gpia?authKey=%s".formatted(getAndroidMiddleware(deviceAddress, business), URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8)));
+            return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
+                var supportData = Json.readValue(response, GpiaResponse.class);
+                if(supportData.error() != null) {
+                    throw new RuntimeException(supportData.error());
+                }
+                var gpiaData = new GpiaData(
+                        Base64.getEncoder().encodeToString(androidData.signatureSha1()),
+                        androidData.packageName(),
+                        Base64.getEncoder().encodeToString(androidData.apkSha256()),
+                        Base64.getEncoder().encodeToString(androidData.apkShatr()),
+                        supportData.token(),
+                        String.valueOf(androidData.apkSize()),
+                        androidData.apkPath(),
+                        0
+                );
+                var gpia = encryptAndroidToken(gpiaData, authKeyBase64);
+                var ggData = new GgData(
+                        0,
+                        supportData.token()
+                );
+                var gg = encryptAndroidToken(ggData, authKeyBase64);
+                var giData = new GiData(
+                        Base64.getEncoder().encodeToString(androidData.signatureSha1()),
+                        androidData.apkPath(),
+                        Base64.getEncoder().encodeToString(androidData.apkSha256()),
+                        Base64.getEncoder().encodeToString(androidData.apkShatr()),
+                        androidData.packageName(),
+                        String.valueOf(androidData.apkSize())
+                );
+                var gi = encryptAndroidToken(giData, authKeyBase64);
+                return new WhatsappAndroidTokens(gpia, gg, gi);
+            }).exceptionallyAsync(throwable -> {
+                throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage(), throwable);
+            });
         });
     }
 
@@ -395,25 +377,32 @@ public final class WhatsappMetadata {
     }
 
     public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(String deviceAddress, byte[] authKey, byte[] enc, boolean business) {
-        try(var client = buildHttpClient()) {
-            var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
-            var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
-            var request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(getAndroidMiddleware(deviceAddress, business), authKeyBase64, encBase64)))
-                    .GET()
-                    .build();
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApplyAsync(response -> {
-                        var cert = Json.readValue(response.body(), WhatsappAndroidCert.class);
-                        if(cert.error() != null) {
-                            throw new RuntimeException(cert.error());
-                        }
+        var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
+        var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
+        var endpoint = URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(getAndroidMiddleware(deviceAddress, business), authKeyBase64, encBase64));
+        return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
+            var cert = Json.readValue(response, WhatsappAndroidCert.class);
+            if(cert.error() != null) {
+                throw new RuntimeException(cert.error());
+            }
+            return cert;
+        }).exceptionallyAsync(throwable -> {
+            throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
+        });
+    }
 
-                        return cert;
-                    })
-                    .exceptionallyAsync(throwable -> {
-                        throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
-                    });
+    private static HttpClient getOrCreateClient() {
+        var value = httpClient;
+        if (value == null) {
+            synchronized (httpClientLock) {
+                value = httpClient;
+                if (value == null) {
+                    value = new HttpClient();
+                    httpClient = value;
+                }
+            }
         }
+
+        return value;
     }
 }

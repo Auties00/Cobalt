@@ -15,6 +15,8 @@ import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.SessionCipher;
+import it.auties.whatsapp.implementation.SocketHandler;
+import it.auties.whatsapp.implementation.SocketState;
 import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.listener.processor.RegisterListenerProcessor;
 import it.auties.whatsapp.model.action.*;
@@ -60,8 +62,6 @@ import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.registration.WhatsappRegistration;
-import it.auties.whatsapp.socket.SocketHandler;
-import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.util.*;
 
 import javax.imageio.ImageIO;
@@ -91,6 +91,11 @@ import static it.auties.whatsapp.model.contact.ContactStatus.RECORDING;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Whatsapp {
+    private static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
+    private static final byte[] DEVICE_MOBILE_SIGNATURE_HEADER = {6, 2};
+    private static final int COMPANION_PAIRING_TIMEOUT = 10;
+    private static final int MAX_COMPANIONS = 5;
+
     // The instances are added and removed when the client connects/disconnects
     // This is to make sure that the instances remain in memory only as long as it's needed
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
@@ -174,7 +179,7 @@ public class Whatsapp {
 
     private static void addDisconnectionHandler(Store store) {
         store.addListener((OnDisconnected) (reason) -> {
-            if (reason != DisconnectReason.RECONNECTING) {
+            if (reason != DisconnectReason.RECONNECTING && reason != DisconnectReason.RESTORE) {
                 removeInstanceByUuid(store.uuid());
             }
         });
@@ -2474,7 +2479,7 @@ public class Whatsapp {
                 .build();
         var deviceIdentityBytes = DeviceIdentitySpec.encode(deviceIdentity);
         var accountSignatureMessage = Bytes.concat(
-                Specification.Whatsapp.ACCOUNT_SIGNATURE_HEADER,
+                ACCOUNT_SIGNATURE_HEADER,
                 deviceIdentityBytes,
                 advIdentity
         );
@@ -2499,7 +2504,7 @@ public class Whatsapp {
                 .validIndexes(knownDevices)
                 .build();
         var keyIndexListBytes = KeyIndexListSpec.encode(keyIndexList);
-        var deviceSignatureMessage = Bytes.concat(Specification.Whatsapp.DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
+        var deviceSignatureMessage = Bytes.concat(DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
         var keyAccountSignature = Curve25519.sign(keys().identityKeyPair().privateKey(), deviceSignatureMessage, true);
         var signedKeyIndexList = new SignedKeyIndexListBuilder()
                 .accountSignature(keyAccountSignature)
@@ -2516,13 +2521,13 @@ public class Whatsapp {
     private int getMaxLinkedDevices() {
         var maxDevices = socketHandler.store().properties().get("linked_device_max_count");
         if (maxDevices == null) {
-            return Specification.Whatsapp.MAX_COMPANIONS;
+            return MAX_COMPANIONS;
         }
 
         try {
             return Integer.parseInt(maxDevices);
         } catch (NumberFormatException exception) {
-            return Specification.Whatsapp.MAX_COMPANIONS;
+            return MAX_COMPANIONS;
         }
     }
 
@@ -2555,7 +2560,7 @@ public class Whatsapp {
             }
         };
         addLinkedDevicesListener(listener);
-        return future.orTimeout(Specification.Whatsapp.COMPANION_PAIRING_TIMEOUT, TimeUnit.SECONDS)
+        return future.orTimeout(COMPANION_PAIRING_TIMEOUT, TimeUnit.SECONDS)
                 .exceptionally(ignored -> null)
                 .thenRun(() -> removeListener(listener));
     }

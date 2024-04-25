@@ -6,8 +6,8 @@ import it.auties.whatsapp.util.Bytes;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Specification.Signal.IV_LENGTH;
-import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.IV_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.KEY_LENGTH;
 
 public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) {
     private static final int EXPANDED_SIZE = 112;

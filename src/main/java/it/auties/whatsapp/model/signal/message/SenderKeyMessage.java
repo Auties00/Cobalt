@@ -9,7 +9,7 @@ import it.auties.whatsapp.util.Bytes;
 
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Specification.Signal.SIGNATURE_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.SIGNATURE_LENGTH;
 
 @ProtobufMessageName("SenderKeyMessage")
 public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessage> {

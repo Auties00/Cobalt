@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
 public interface SocketListener {
     void onOpen(SocketSession session);

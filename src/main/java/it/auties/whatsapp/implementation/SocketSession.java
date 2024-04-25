@@ -1,8 +1,9 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
+import it.auties.whatsapp.net.Socket;
 import it.auties.whatsapp.util.Exceptions;
-import it.auties.whatsapp.util.SocketWithProxy;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Proxies;
+import it.auties.whatsapp.util.Validate;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -13,13 +14,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import static it.auties.whatsapp.util.Specification.Whatsapp.SOCKET_ENDPOINT;
-
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
+    public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
+    private static final URI MOBILE_SOCKET_ENDPOINT = URI.create("http://g.whatsapp.net:443");
     private static final int MESSAGE_LENGTH = 3;
 
     final URI proxy;
@@ -63,15 +65,17 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             super.connect(listener);
-            var builder = HttpClient.newBuilder()
-                    .executor(command -> Thread.ofPlatform().start(command));
+            var builder = HttpClient.newBuilder();
+            builder.executor(Thread.ofPlatform()::start);
             if(proxy != null) {
-                builder.proxy(SocketWithProxy.toProxySelector(proxy))
-                        .authenticator(SocketWithProxy.toAuthenticator(proxy));
+                Validate.isTrue(Objects.equals(proxy.getScheme(), "http") || Objects.equals(proxy.getScheme(), "https"),
+                        "Only HTTP(S) proxies are supported on the web api");
+                builder.proxy(Proxies.toProxySelector(proxy));
+                builder.authenticator(Proxies.toAuthenticator(proxy));
             }
             return builder.build()
                     .newWebSocketBuilder()
-                    .buildAsync(Specification.Whatsapp.WEB_SOCKET_ENDPOINT, this)
+                    .buildAsync(WEB_SOCKET_ENDPOINT, this)
                     .thenAcceptAsync(webSocket -> {
                         this.session = webSocket;
                         listener.onOpen(this);
@@ -159,7 +163,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     static final class RawSocketSession extends SocketSession {
-        private SocketWithProxy socket;
+        private Socket socket;
 
         RawSocketSession(URI proxy) {
             super(proxy);
@@ -177,9 +181,9 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         private void createConnection(SocketListener listener) {
             try {
-                this.socket = SocketWithProxy.of(proxy);
+                this.socket = Socket.of(proxy);
                 socket.setKeepAlive(true);
-                socket.connect(InetSocketAddress.createUnresolved(SOCKET_ENDPOINT.getHost(), SOCKET_ENDPOINT.getPort()));
+                socket.connect(InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT.getHost(), MOBILE_SOCKET_ENDPOINT.getPort()));
                 listener.onOpen(RawSocketSession.this);
                 readMessages();
             } catch (IOException exception) {

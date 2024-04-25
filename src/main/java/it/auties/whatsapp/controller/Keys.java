@@ -25,7 +25,7 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.ProtobufUuidMixin;
+import it.auties.whatsapp.util.Protobuf;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -108,7 +108,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     @ProtobufProperty(index = 15, type = ProtobufType.BYTES)
     final byte[] deviceId;
 
-    @ProtobufProperty(index = 26, type = ProtobufType.STRING, mixin = ProtobufUuidMixin.class)
+    @ProtobufProperty(index = 26, type = ProtobufType.STRING, mixin = Protobuf.UUIDMixin.class)
     final UUID advertisingId;
 
     /**

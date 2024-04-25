@@ -2,14 +2,14 @@ package it.auties.whatsapp.registration.gcm;
 
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.crypto.HttpEce;
+import it.auties.whatsapp.net.HttpClient;
+import it.auties.whatsapp.net.Socket;
 import it.auties.whatsapp.registration.gcm.McsExchange.AppData;
 import it.auties.whatsapp.registration.gcm.McsExchange.DataMessageStanza;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginResponse;
-import it.auties.whatsapp.registration.http.HttpClient;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.SocketWithProxy;
 import it.auties.whatsapp.util.Validate;
 
 import javax.net.ssl.SSLSocket;
@@ -94,7 +94,7 @@ public class GcmClient {
                 .version(3)
                 .userSerialNumber(0)
                 .build();
-        return httpClient.post(CHECK_IN_URL, proxy, false, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
+        return httpClient.postRaw(CHECK_IN_URL, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
                 .thenApplyAsync(AndroidCheckInResponseSpec::decode);
     }
 
@@ -111,7 +111,7 @@ public class GcmClient {
                 "Content-Type", "application/x-www-form-urlencoded",
                 "Authorization", "AidLogin %s:%s".formatted(checkInResponse.androidId(), checkInResponse.securityToken())
         );
-        return httpClient.post(REGISTER_URL, proxy, false, headers, HttpClient.toFormParams(params).getBytes())
+        return httpClient.postRaw(REGISTER_URL, headers, HttpClient.toFormParams(params).getBytes())
                 .thenApplyAsync(this::handleRegistration);
     }
 
@@ -134,7 +134,7 @@ public class GcmClient {
                 "encryption_key", encoder.encodeToString(keyPair.publicKey()),
                 "encryption_auth", encoder.encodeToString(authSecret)
         );
-        return httpClient.post(FCM_SUBSCRIBE_URL, proxy, false, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
+        return httpClient.postRaw(FCM_SUBSCRIBE_URL, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
                 .thenAcceptAsync(this::handleSubscription);
     }
 
@@ -147,7 +147,7 @@ public class GcmClient {
         return CompletableFuture.runAsync(() -> {
             try {
                 var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                var underlyingSocket = SocketWithProxy.of(proxy);
+                var underlyingSocket = Socket.of(proxy);
                 underlyingSocket.connect(InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
                 this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, TALK_SERVER_HOST, TALK_SERVER_PORT, true);
                 socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());

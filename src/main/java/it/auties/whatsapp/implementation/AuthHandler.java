@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.exception.ProtobufDeserializationException;
@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.SignalConstants;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -30,7 +30,7 @@ class AuthHandler {
                 return CompletableFuture.completedFuture(false);
             }
 
-            var handshake = new SocketHandshake(socketHandler.keys(), getPrologueData());
+            var handshake = new SocketHandshake(socketHandler.keys(), SocketHandshake.getPrologue(socketHandler.store().clientType()));
             handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
             handshake.updateHash(serverHello.get().ephemeral());
             var sharedEphemeral = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys().ephemeralKeyPair().privateKey());
@@ -52,13 +52,6 @@ class AuthHandler {
         } catch (Throwable throwable) {
             return CompletableFuture.failedFuture(throwable);
         }
-    }
-
-    private byte[] getPrologueData() {
-        return switch (socketHandler.store().clientType()) {
-            case WEB -> Specification.Whatsapp.WEB_PROLOGUE;
-            case MOBILE -> Specification.Whatsapp.MOBILE_PROLOGUE;
-        };
     }
 
     private Optional<ServerHello> readHandshake(byte[] message) {
@@ -168,7 +161,7 @@ class AuthHandler {
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(socketHandler.store().version().toHash())
                 .eRegid(socketHandler.keys().encodedRegistrationId())
-                .eKeytype(Bytes.intToBytes(Specification.Signal.KEY_TYPE, 1))
+                .eKeytype(Bytes.intToBytes(SignalConstants.KEY_TYPE, 1))
                 .eIdent(socketHandler.keys().identityKeyPair().publicKey())
                 .eSkeyId(socketHandler.keys().signedKeyPair().encodedId())
                 .eSkeyVal(socketHandler.keys().signedKeyPair().keyPair().publicKey())

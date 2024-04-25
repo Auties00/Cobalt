@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
 import it.auties.whatsapp.api.DisconnectReason;
 

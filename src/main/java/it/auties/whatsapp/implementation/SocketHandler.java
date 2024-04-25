@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.implementation;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
@@ -40,7 +40,6 @@ import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Exceptions;
-import it.auties.whatsapp.util.Specification;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -286,10 +285,7 @@ public class SocketHandler implements SocketListener {
             writeSemaphore.acquire();
             var ciphered = encryptRequest(request);
             if(prologue) {
-                dataOutputStream.write(switch (store.clientType()) {
-                    case WEB -> Specification.Whatsapp.WEB_PROLOGUE;
-                    case MOBILE -> Specification.Whatsapp.MOBILE_PROLOGUE;
-                });
+                dataOutputStream.write(SocketHandshake.getPrologue(store.clientType()));
             }
             dataOutputStream.writeInt(ciphered.length >> 16);
             dataOutputStream.writeShort(65535 & ciphered.length);

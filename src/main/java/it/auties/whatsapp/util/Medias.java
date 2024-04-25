@@ -13,7 +13,8 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
-import it.auties.whatsapp.util.Specification.Whatsapp;
+import it.auties.whatsapp.model.node.Attributes;
+import it.auties.whatsapp.net.HttpClient;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -21,14 +22,9 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -37,16 +33,16 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
-import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
-import static java.net.http.HttpResponse.BodyHandlers.ofString;
-
 public final class Medias {
+    public static final String WEB_ORIGIN = "https://web.whatsapp.com";
+    private static final String MOBILE_ANDROID_USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
     private static final int WAVEFORM_SAMPLES = 64;
     private static final int PROFILE_PIC_SIZE = 640;
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
 
     private static volatile HttpClient httpClient;
+    private static final Object httpClientLock = new Object();
 
     public static byte[] getProfilePic(byte[] file) {
         try {
@@ -69,7 +65,7 @@ public final class Medias {
 
     @SafeVarargs
     public static CompletableFuture<byte[]> downloadAsync(URI uri, Map.Entry<String, String>... headers) {
-        return downloadAsync(uri, Whatsapp.MOBILE_ANDROID_USER_AGENT, headers);
+        return downloadAsync(uri, MOBILE_ANDROID_USER_AGENT, headers);
     }
 
     @SafeVarargs
@@ -79,36 +75,28 @@ public final class Medias {
                 return CompletableFuture.completedFuture(null);
             }
 
-            var request = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(uri);
-            if (userAgent != null) {
-                request.header("User-Agent", userAgent);
-            }
-            for(var header : headers) {
-                request.header(header.getKey(), header.getValue());
-            }
-            return getOrCreateClient().sendAsync(request.build(), BodyHandlers.ofByteArray()).thenCompose(response -> {
-                if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                    return CompletableFuture.failedFuture(new IllegalArgumentException("Erroneous status code: " + response.statusCode()));
-                }
-
-                return CompletableFuture.completedFuture(response.body());
-            });
+            var safeHeaders = Attributes.of(headers)
+                    .put("User-Agent", userAgent, Objects::nonNull)
+                    .toMap();
+            return httpClient.getRaw(uri, safeHeaders);
         } catch (Throwable exception) {
             return CompletableFuture.failedFuture(exception);
         }
     }
     
-    private static synchronized HttpClient getOrCreateClient() {
-        if(httpClient != null) {
-            return httpClient;
+    private static HttpClient getOrCreateClient() {
+        var value = httpClient;
+        if (value == null) {
+            synchronized (httpClientLock) {
+                value = httpClient;
+                if (value == null) {
+                    value = new HttpClient();
+                    httpClient = value;
+                }
+            }
         }
 
-        return httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.ALWAYS)
-                .build();
+        return value;
     }
 
     public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
@@ -121,16 +109,14 @@ public final class Medias {
                 .withoutPadding()
                 .encodeToString(Objects.requireNonNullElse(mediaFile.fileEncSha256(), mediaFile.fileSha256()));
         var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, path, token, auth, token));
-        var request = HttpRequest.newBuilder()
-                .POST(ofByteArray(Objects.requireNonNullElse(mediaFile.encryptedFile(), file)))
-                .uri(uri)
-                .header("Content-Type", "application/octet-stream")
-                .header("Accept", "application/json")
-                .header("Origin", Whatsapp.WEB_ORIGIN)
-                .build();
-        return getOrCreateClient().sendAsync(request, ofString()).thenApplyAsync(response -> {
-            Validate.isTrue(response.statusCode() == 200, "Invalid status code: %s", response.statusCode());
-            var upload = Json.readValue(response.body(), MediaUpload.class);
+        var headers = Map.of(
+                "Content-Type", "application/octet-stream",
+                "Accept", "application/json",
+                "Origin", WEB_ORIGIN
+        );
+        var body = Objects.requireNonNullElse(mediaFile.encryptedFile(), file);
+        return getOrCreateClient().postRaw(uri, headers, body).thenApplyAsync(response -> {
+            var upload = Json.readValue(response, MediaUpload.class);
             return new MediaFile(
                     mediaFile.encryptedFile(),
                     mediaFile.fileSha256(),
@@ -169,15 +155,12 @@ public final class Medias {
         try {
             var url = provider.mediaUrl()
                     .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
+                    .map(URI::create)
                     .orElseThrow(() -> new NoSuchElementException("Missing url and path from media"));
-            var request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-            return getOrCreateClient().sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+            return getOrCreateClient().getRaw(url)
                     .thenApplyAsync(response -> handleResponse(provider, response));
         } catch (Throwable error) {
-            return CompletableFuture.failedFuture(new RuntimeException("Cannot download media", error));
+            return CompletableFuture.completedFuture(Optional.empty());
         }
     }
 
@@ -185,12 +168,7 @@ public final class Medias {
         return "https://%s%s".formatted(DEFAULT_HOST, directPath);
     }
 
-    private static Optional<byte[]> handleResponse(MutableAttachmentProvider<?> provider, HttpResponse<byte[]> response) {
-        if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND || response.statusCode() == HttpURLConnection.HTTP_GONE) {
-            return Optional.empty();
-        }
-
-        var body = response.body();
+    private static Optional<byte[]> handleResponse(MutableAttachmentProvider<?> provider, byte[] body) {
         var sha256 = Sha256.calculate(body);
         Validate.isTrue(provider.mediaEncryptedSha256().isEmpty() || Arrays.equals(sha256, provider.mediaEncryptedSha256().get()),
                 "Cannot decode media: Invalid sha256 signature", SecurityException.class);
