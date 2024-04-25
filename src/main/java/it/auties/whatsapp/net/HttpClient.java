@@ -47,6 +47,10 @@ public class HttpClient implements AutoCloseable {
 
     private BasicCredentialsProvider createCredentialsProvider(URI proxy) {
         var credentials = Proxies.parseUserInfo(proxy.getUserInfo());
+        if(credentials == null) {
+            return null;
+        }
+
         var provider = new BasicCredentialsProvider();
         var authScope = new AuthScope(null, -1);
         var apacheCredentials = new UsernamePasswordCredentials(credentials.username(), credentials.password().toCharArray());
