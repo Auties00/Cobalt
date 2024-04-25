@@ -37,7 +37,8 @@ public abstract class Socket extends java.net.Socket {
         };
     }
 
-
+    // This approach is not fantastic, but it's the same that the internal Java API uses
+    // Though I can't use reflection directly as I'm not in the java.base module, so I'm using unsafe
     private static final class Http extends Socket {
         private static final Unsafe unsafe;
         private static final long offset;
@@ -92,7 +93,7 @@ public abstract class Socket extends java.net.Socket {
             var uri = URI.create("http://%s:%s/".formatted(address.getHostName(), address.getPort()));
             this.httpConnection = (HttpURLConnection) uri.toURL().openConnection(Proxies.toProxy(proxy));
             httpConnection.setAuthenticator(Proxies.toAuthenticator(proxy));
-            if(timeout > 0 ) {
+            if(timeout > 0) {
                 httpConnection.setConnectTimeout(timeout);
             }
             httpConnection.connect();

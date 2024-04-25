@@ -94,23 +94,29 @@ public class HttpClient implements AutoCloseable {
     }
 
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                var request = new BasicClassicHttpRequest(method, uri);
-                if(headers != null) {
-                    headers.forEach(request::setHeader);
-                }
+        return CompletableFuture.supplyAsync(() -> sendRequestImpl(method, uri, headers, body, false), Thread::startVirtualThread);
+    }
 
-                if(body != null) {
-                    var contentType = Objects.requireNonNull(headers == null ? null : headers.get("Content-Type"), "Missing Content-Type header");
-                    request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
-                }
-
-                return httpClient.execute(request, data -> data.getEntity().getContent().readAllBytes());
-            }catch (IOException exception) {
-                throw new UncheckedIOException(exception);
+    private byte[] sendRequestImpl(String method, URI uri, Map<String, ?> headers, byte[] body, boolean isRetry) {
+        try {
+            var request = new BasicClassicHttpRequest(method, uri);
+            if(headers != null) {
+                headers.forEach(request::setHeader);
             }
-        }, Thread::startVirtualThread);
+
+            if(body != null) {
+                var contentType = Objects.requireNonNull(headers == null ? null : headers.get("Content-Type"), "Missing Content-Type header");
+                request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
+            }
+
+            return httpClient.execute(request, data -> data.getEntity().getContent().readAllBytes());
+        }catch (Throwable throwable) {
+            if(!isRetry) {
+                return sendRequestImpl(method, uri, headers, body, true);
+            }
+
+            throw new RuntimeException("%s request to %s failed".formatted(method, uri), throwable);
+        }
     }
 
     private TlsConfig createSocketFactory() {
