@@ -38,7 +38,7 @@ public record CompanionDevice(
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         String osBuildNumber,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-        String address
+        Optional<String> address
 ) implements ProtobufMessage {
     private static final List<Entry<String, String>> IPHONES = List.of(
             Map.entry("iPhone_7", "iPhone9,1"),
@@ -74,7 +74,7 @@ public record CompanionDevice(
                 Optional.ofNullable(appVersion),
                 Version.of("1.0"),
                 null,
-                null
+                Optional.empty()
         );
     }
 
@@ -93,9 +93,14 @@ public record CompanionDevice(
                 Optional.ofNullable(appVersion),
                 Version.of(version.getKey()),
                 version.getValue(),
-                null
+                Optional.empty()
         );
     }
+
+    public static CompanionDevice android(boolean business) {
+        return android(null, business, null);
+    }
+
     public static CompanionDevice android(boolean business, String deviceAddress) {
         return android(null, business, deviceAddress);
     }
@@ -109,7 +114,7 @@ public record CompanionDevice(
                 Optional.ofNullable(appVersion),
                 Version.of("11"),
                 null,
-                Objects.requireNonNull(deviceAddress, "A device is required for android registration")
+                Optional.ofNullable(deviceAddress)
         );
     }
 
@@ -126,7 +131,7 @@ public record CompanionDevice(
                 Optional.ofNullable(appVersion),
                 Version.of("2.5.4"),
                 null,
-                null
+                Optional.empty()
         );
     }
 

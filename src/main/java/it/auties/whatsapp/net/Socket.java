@@ -1,7 +1,7 @@
 package it.auties.whatsapp.net;
 
 import it.auties.whatsapp.util.Proxies;
-import sun.misc.Unsafe;
+import it.auties.whatsapp.util.Reflection;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,17 +16,18 @@ public abstract class Socket extends java.net.Socket {
     }
 
     final URI proxy;
+
     private Socket(URI proxy) {
         this.proxy = proxy;
     }
 
     public static Socket of(URI proxy) throws IOException {
-        if(proxy == null) {
+        if (proxy == null) {
             return new Direct();
         }
 
         var javaProxy = Proxies.toProxy(proxy);
-        if(javaProxy == Proxy.NO_PROXY) {
+        if (javaProxy == Proxy.NO_PROXY) {
             return new Direct();
         }
 
@@ -40,41 +41,10 @@ public abstract class Socket extends java.net.Socket {
     // This approach is not fantastic, but it's the same that the internal Java API uses
     // Though I can't use reflection directly as I'm not in the java.base module, so I'm using unsafe
     private static final class Http extends Socket {
-        private static final Unsafe unsafe;
-        private static final long offset;
-        static {
-            unsafe = initUnsafe();
-            offset = initOffset();
-        }
-
-        private static Unsafe initUnsafe() {
-            try {
-                var unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-                unsafeField.setAccessible(true);
-                return (Unsafe) unsafeField.get(null);
-            }catch (ReflectiveOperationException exception) {
-                throw new RuntimeException("Cannot access unsafe");
-            }
-        }
-
-        @SuppressWarnings("all")
-        private static long initOffset() {
-            try {
-                class AccessibleObjectPlaceholder {
-                    boolean override;
-                    Object accessCheckCache;
-                }
-
-                var offsetField = AccessibleObjectPlaceholder.class.getDeclaredField("override");
-                return unsafe.objectFieldOffset(offsetField);
-            }catch (ReflectiveOperationException exception) {
-                throw new RuntimeException("Cannot access override field", exception);
-            }
-        }
-
         private HttpURLConnection httpConnection;
         private Object serverSocket;
         private boolean disconnected;
+
         Http(URI proxy) {
             super(proxy);
         }
@@ -86,14 +56,14 @@ public abstract class Socket extends java.net.Socket {
 
         @Override
         public void connect(SocketAddress endpoint, int timeout) throws IOException {
-            if(!(endpoint instanceof InetSocketAddress address)) {
+            if (!(endpoint instanceof InetSocketAddress address)) {
                 throw new IllegalArgumentException("Unsupported address type");
             }
 
             var uri = URI.create("http://%s:%s/".formatted(address.getHostName(), address.getPort()));
             this.httpConnection = (HttpURLConnection) uri.toURL().openConnection(Proxies.toProxy(proxy));
             httpConnection.setAuthenticator(Proxies.toAuthenticator(proxy));
-            if(timeout > 0) {
+            if (timeout > 0) {
                 httpConnection.setConnectTimeout(timeout);
             }
             httpConnection.connect();
@@ -103,9 +73,9 @@ public abstract class Socket extends java.net.Socket {
         private void doTunneling() {
             try {
                 var doTunnellingMethod = httpConnection.getClass().getMethod("doTunneling");
-                unsafe.putBoolean(doTunnellingMethod, offset, true);
+                Reflection.open(doTunnellingMethod);
                 doTunnellingMethod.invoke(httpConnection);
-            }catch (ReflectiveOperationException exception) {
+            } catch (ReflectiveOperationException exception) {
                 throw new RuntimeException("Cannot enable tunneling", exception);
             }
         }
@@ -135,7 +105,7 @@ public abstract class Socket extends java.net.Socket {
             disconnected = true;
             try {
                 httpConnection.disconnect();
-            }catch (Throwable ignored) {
+            } catch (Throwable ignored) {
                 // Ignored
             }
         }
@@ -146,7 +116,7 @@ public abstract class Socket extends java.net.Socket {
                 var httpServer = getServerSocket();
                 var outputStream = httpServer.getClass().getMethod("getOutputStream");
                 return (OutputStream) outputStream.invoke(httpServer);
-            }catch (ReflectiveOperationException exception) {
+            } catch (ReflectiveOperationException exception) {
                 throw new IOException("Cannot access output stream", exception);
             }
         }
@@ -157,21 +127,21 @@ public abstract class Socket extends java.net.Socket {
                 var httpServer = getServerSocket();
                 var inputStream = httpServer.getClass().getMethod("getInputStream");
                 return (InputStream) inputStream.invoke(httpServer);
-            }catch (ReflectiveOperationException exception) {
+            } catch (ReflectiveOperationException exception) {
                 throw new IOException("Cannot access input stream", exception);
             }
         }
 
         private Object getServerSocket() throws ReflectiveOperationException {
-            if(serverSocket != null) {
+            if (serverSocket != null) {
                 return serverSocket;
             }
 
             var httpClientField = httpConnection.getClass().getDeclaredField("http");
-            unsafe.putBoolean(httpClientField, offset, true);
+            Reflection.open(httpClientField);
             var httpClient = httpClientField.get(httpConnection);
             var httpServerField = httpClient.getClass().getSuperclass().getDeclaredField("serverSocket");
-            unsafe.putBoolean(httpServerField, offset, true);
+            Reflection.open(httpServerField);
             return serverSocket = httpServerField.get(httpClient);
         }
 
@@ -243,7 +213,7 @@ public abstract class Socket extends java.net.Socket {
 
         @Override
         public void connect(SocketAddress endpoint, int timeout) throws IOException {
-            if(!(endpoint instanceof InetSocketAddress address)) {
+            if (!(endpoint instanceof InetSocketAddress address)) {
                 throw new IllegalArgumentException("Unsupported address type");
             }
 
@@ -288,14 +258,14 @@ public abstract class Socket extends java.net.Socket {
 
             switch (data[1]) {
                 case REQUEST_OK -> onConnection(data);
-                case GENERAL_FAILURE ->throw new SocketException("SOCKS server general failure");
-                case NOT_ALLOWED ->throw new SocketException("SOCKS: Connection not allowed by ruleset");
-                case NET_UNREACHABLE ->throw new SocketException("SOCKS: Network unreachable");
-                case HOST_UNREACHABLE ->throw new SocketException("SOCKS: Host unreachable");
-                case CONN_REFUSED ->throw new SocketException("SOCKS: Connection refused");
-                case TTL_EXPIRED ->throw new SocketException("SOCKS: TTL expired");
-                case CMD_NOT_SUPPORTED ->throw new SocketException("SOCKS: Command not supported");
-                case ADDR_TYPE_NOT_SUP ->throw new SocketException("SOCKS: address type not supported");
+                case GENERAL_FAILURE -> throw new SocketException("SOCKS server general failure");
+                case NOT_ALLOWED -> throw new SocketException("SOCKS: Connection not allowed by ruleset");
+                case NET_UNREACHABLE -> throw new SocketException("SOCKS: Network unreachable");
+                case HOST_UNREACHABLE -> throw new SocketException("SOCKS: Host unreachable");
+                case CONN_REFUSED -> throw new SocketException("SOCKS: Connection refused");
+                case TTL_EXPIRED -> throw new SocketException("SOCKS: TTL expired");
+                case CMD_NOT_SUPPORTED -> throw new SocketException("SOCKS: Command not supported");
+                case ADDR_TYPE_NOT_SUP -> throw new SocketException("SOCKS: address type not supported");
             }
         }
 
@@ -373,7 +343,7 @@ public abstract class Socket extends java.net.Socket {
             var read = 0;
             while (read < data.length) {
                 var chunkRead = getInputStream().read(data, read, data.length - read);
-                if(chunkRead == -1) {
+                if (chunkRead == -1) {
                     break;
                 }
 
@@ -406,12 +376,12 @@ public abstract class Socket extends java.net.Socket {
         @Override
         public void close() {
             try {
-                if(socket == null) {
+                if (socket == null) {
                     return;
                 }
 
                 socket.close();
-            }catch (Throwable ignored) {
+            } catch (Throwable ignored) {
                 // Ignored
             }
         }
@@ -434,6 +404,7 @@ public abstract class Socket extends java.net.Socket {
 
     private static final class Direct extends Socket {
         private java.net.Socket socket;
+
         Direct() {
             super(null);
         }
@@ -445,7 +416,7 @@ public abstract class Socket extends java.net.Socket {
 
         @Override
         public void connect(SocketAddress endpoint, int timeout) throws IOException {
-            if(!(endpoint instanceof InetSocketAddress address)) {
+            if (!(endpoint instanceof InetSocketAddress address)) {
                 throw new IllegalArgumentException("Unsupported address type");
             }
 
@@ -477,12 +448,12 @@ public abstract class Socket extends java.net.Socket {
         @Override
         public void close() {
             try {
-                if(socket == null) {
+                if (socket == null) {
                     return;
                 }
 
                 socket.close();
-            }catch (Throwable ignored) {
+            } catch (Throwable ignored) {
                 // Ignored
             }
         }

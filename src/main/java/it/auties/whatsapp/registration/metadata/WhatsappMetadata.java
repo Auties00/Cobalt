@@ -65,7 +65,8 @@ public final class WhatsappMetadata {
             case WEB, WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(deviceAddress, platform.isBusiness()).thenApply(WhatsappAndroidApp::version);
+                    getAndroidData(deviceAddress, platform.isBusiness())
+                            .thenApply(WhatsappAndroidApp::version);
             case IOS ->
                     getIosVersion(false);
             case IOS_BUSINESS ->
@@ -319,6 +320,7 @@ public final class WhatsappMetadata {
     }
 
     private static String getAndroidMiddleware(String deviceAddress, boolean business) {
+        Objects.requireNonNull(deviceAddress, "Please specify the address of the physical device to use in CompanionDevice.android(...) as explained in android/README.md");
         return "%s:%s".formatted(deviceAddress, business ? ANDROID_BUSINESS_PORT : ANDROID_PERSONAL_PORT);
     }
 

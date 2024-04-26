@@ -1,24 +1,33 @@
 package it.auties.whatsapp.net;
 
-import it.auties.whatsapp.util.Proxies;
-import org.apache.hc.client5.http.auth.AuthScope;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
-import org.apache.hc.client5.http.config.TlsConfig;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
-import org.apache.hc.core5.http.ssl.TLS;
-import org.apache.hc.core5.http2.HttpVersionPolicy;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.http.protocol.HttpCoreContext;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
+import java.net.Socket;
+import java.net.*;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,34 +37,40 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class HttpClient implements AutoCloseable {
+    static {
+        System.setProperty("jdk.tls.client.enableSessionTicketExtension", "false");
+    }
+
+    private static final String PROXY_KEY = "proxy";
+
     final CloseableHttpClient httpClient;
+    final HttpsConnectionFactory httpsConnectionFactory;
+    final URI proxy;
     public HttpClient() {
         this(null);
     }
 
     public HttpClient(URI proxy) {
-        var connectionManager = new PoolingHttpClientConnectionManager();
-        connectionManager.setDefaultTlsConfig(createSocketFactory());
+        this.httpsConnectionFactory = new HttpsConnectionFactory();
+        var socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", new HttpConnectionFactory())
+                .register("https", httpsConnectionFactory)
+                .build();
+        var connectionManager = new PoolingHttpClientConnectionManager(
+                socketFactoryRegistry,
+                PoolConcurrencyPolicy.STRICT,
+                PoolReusePolicy.LIFO,
+                TimeValue.NEG_ONE_MILLISECOND,
+                null,
+                new DummyDnsResolver(),
+                null
+        );
         this.httpClient = HttpClients.custom()
-                .setProxy(proxy == null ? null : HttpHost.create(proxy))
                 .setConnectionManager(connectionManager)
-                .setDefaultCredentialsProvider(proxy == null ? null : createCredentialsProvider(proxy))
                 .setConnectionReuseStrategy((request, response, context) -> false)
                 .disableCookieManagement()
                 .build();
-    }
-
-    private BasicCredentialsProvider createCredentialsProvider(URI proxy) {
-        var credentials = Proxies.parseUserInfo(proxy.getUserInfo());
-        if(credentials == null) {
-            return null;
-        }
-
-        var provider = new BasicCredentialsProvider();
-        var authScope = new AuthScope(null, -1);
-        var apacheCredentials = new UsernamePasswordCredentials(credentials.username(), credentials.password().toCharArray());
-        provider.setCredentials(authScope, apacheCredentials);
-        return provider;
+        this.proxy = proxy;
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -112,37 +127,19 @@ public class HttpClient implements AutoCloseable {
                 var contentType = Objects.requireNonNull(headers == null ? null : headers.get("Content-Type"), "Missing Content-Type header");
                 request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
             }
-
-            return httpClient.execute(request, data -> data.getEntity().getContent().readAllBytes());
+            var context = HttpCoreContext.create();
+            context.setAttribute(PROXY_KEY, proxy);
+            return httpClient.execute(request, context, data -> data.getEntity().getContent().readAllBytes());
         }catch (Throwable throwable) {
             if(!isRetry) {
+                if(throwable instanceof SSLHandshakeException) {
+                    httpsConnectionFactory.rotateSSL();
+                }
+
                 return sendRequestImpl(method, uri, headers, body, true);
             }
 
             throw new RuntimeException("%s request to %s failed".formatted(method, uri), throwable);
-        }
-    }
-
-    private TlsConfig createSocketFactory() {
-        try {
-            var random = new SecureRandom();
-            var tlsVersion = random.nextBoolean() ? TLS.V_1_3 : TLS.V_1_2;
-            var sslContext = SSLContext.getInstance("TLSv1." + tlsVersion.getVersion().getMinor());
-            sslContext.init(null, null, new SecureRandom());
-            var supportedCiphers = Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())
-                    .filter(entry -> random.nextBoolean())
-                    .collect(Collectors.collectingAndThen(Collectors.toList(), result -> {
-                        Collections.shuffle(result, random);
-                        return result;
-                    }))
-                    .toArray(String[]::new);
-            return new TlsConfig.Builder()
-                    .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
-                    .setSupportedCipherSuites(supportedCiphers)
-                    .setSupportedProtocols(tlsVersion)
-                    .build();
-        } catch (Throwable exception) {
-            throw new RuntimeException(exception);
         }
     }
 
@@ -152,6 +149,113 @@ public class HttpClient implements AutoCloseable {
             httpClient.close();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private static class HttpConnectionFactory extends PlainConnectionSocketFactory {
+        @Override
+        public Socket createSocket(final HttpContext context) throws IOException {
+            return createSocket(null, context);
+        }
+
+        @Override
+        public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
+            var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
+            return it.auties.whatsapp.net.Socket.of(derivedProxy);
+        }
+
+        @Override
+        public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
+            var unresolvedRemote = InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort());
+            return super.connectSocket(connectTimeout, socket, host, unresolvedRemote, localAddress, context);
+        }
+
+        @Override
+        public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
+            var unresolvedRemote = InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort());
+            return super.connectSocket(socket, host, unresolvedRemote, localAddress, connectTimeout, attachment, context);
+        }
+    }
+
+    private static class HttpsConnectionFactory implements LayeredConnectionSocketFactory {
+        private SSLContext sslContext;
+        private SSLParameters sslParameters;
+        private HttpsConnectionFactory() {
+            rotateSSL();
+        }
+
+        private void rotateSSL() {
+            try {
+                var random = new SecureRandom();
+                var sslContext = SSLContext.getInstance("TLSv1." + (random.nextBoolean() ? 3 : 2));
+                sslContext.init(null, null, new SecureRandom());
+                this.sslParameters = sslContext.getDefaultSSLParameters();
+                sslParameters.setCipherSuites(Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())
+                        .filter(entry -> random.nextBoolean())
+                        .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result, random); return result; }))
+                        .toArray(String[]::new));
+                sslParameters.setUseCipherSuitesOrder(true);
+                this.sslContext = sslContext;
+            }catch (GeneralSecurityException exception) {
+                throw new RuntimeException(exception);
+            }
+        }
+
+        @Override
+        public Socket createSocket(final HttpContext context) throws IOException {
+            return createSocket(null, context);
+        }
+
+        @Override
+        public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
+            var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
+            return it.auties.whatsapp.net.Socket.of(derivedProxy);
+        }
+
+        @Override
+        public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
+            socket.connect(InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort()), connectTimeout.toMillisecondsIntBound());
+            return createLayeredSocket(socket, host.getHostName(), host.getPort(), context);
+        }
+
+        @Override
+        public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
+            socket.connect(InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort()));
+            return createLayeredSocket(socket, host.getHostName(), host.getPort(), context);
+        }
+
+        @Override
+        public Socket createLayeredSocket(Socket socket, String target, int port, HttpContext context) throws IOException {
+            return createLayeredSocket(socket, target, port, null, context);
+        }
+
+        @Override
+        public Socket createLayeredSocket(Socket socket, String target, int port, Object attachment, HttpContext context) throws IOException {
+            var sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket(
+                    socket,
+                    target,
+                    port,
+                    true
+            );
+            sslSocket.setSSLParameters(sslParameters);
+            sslSocket.setReuseAddress(false);
+            sslSocket.setKeepAlive(false);
+            sslSocket.startHandshake();
+            return sslSocket;
+        }
+    }
+
+    private static class DummyDnsResolver implements DnsResolver {
+        @Override
+        public InetAddress[] resolve(String host) throws UnknownHostException {
+            return new InetAddress[] {
+                    InetAddress.getByAddress(new byte[] { 1, 1, 1, 1 })
+            };
+        }
+
+        @Override
+        public String resolveCanonicalHostname(String host) {
+            return null;
         }
     }
 }

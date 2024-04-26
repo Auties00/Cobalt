@@ -19,7 +19,7 @@ public final class Proxies {
         Validate.isTrue(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"),
                 "Only HTTP and HTTPS proxies are supported in this context");
         var host = Objects.requireNonNull(uri.getHost(), "Invalid proxy, expected a host: %s".formatted(uri));
-        var port = getProxyPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
+        var port = getDefaultPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
         return ProxySelector.of(InetSocketAddress.createUnresolved(host, port));
     }
 
@@ -30,7 +30,7 @@ public final class Proxies {
 
         var scheme = Objects.requireNonNull(uri.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(uri));
         var host = Objects.requireNonNull(uri.getHost(), "Invalid proxy, expected a host: %s".formatted(uri));
-        var port = getProxyPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
+        var port = getDefaultPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
         return switch (scheme) {
             case "http", "https" -> new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(host, port));
             case "socks5", "socks5h" -> new Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port));
@@ -38,7 +38,7 @@ public final class Proxies {
         };
     }
 
-    private static OptionalInt getProxyPort(String scheme, int port) {
+    private static OptionalInt getDefaultPort(String scheme, int port) {
         return port != -1 ? OptionalInt.of(port) : switch (scheme) {
             case "http" -> OptionalInt.of(80);
             case "https" -> OptionalInt.of(443);
@@ -56,7 +56,7 @@ public final class Proxies {
             throw new IllegalArgumentException("Invalid proxy authentication: " + userInfo);
         }
 
-        return new UserInfo(data[0], data.length == 2 ? data[1] : null);
+        return new UserInfo(data[0], data.length == 2 ? data[1] : "");
     }
 
     public record UserInfo(String username, String password) {

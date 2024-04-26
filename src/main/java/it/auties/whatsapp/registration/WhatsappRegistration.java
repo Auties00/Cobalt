@@ -23,6 +23,7 @@ import it.auties.whatsapp.registration.apns.ApnsPacket;
 import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.metadata.WhatsappAndroidTokens;
+import it.auties.whatsapp.registration.metadata.WhatsappIosMetrics;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 
@@ -44,6 +45,12 @@ public final class WhatsappRegistration {
     private static final String MOBILE_ANDROID_OFFLINE_AB = "%7B%22exposure%22%3A%5B%22android_confluence_tos_pp_link_update_universe%7Candroid_confluence_tos_pp_link_update_exp%7Ccontrol%22%2C%22reg_phone_number_update_colors_prod_universe%7Creg_phone_number_update_colors_prod_experiment%7Ccontrol%22%2C%22android_rollout_quebec_tos_reg_universe%7Candroid_rollout_ca_tos_reg_experiment%7Ccontrol%22%2C%22dummy_aa_prod_universe%7Cdummy_aa_prod_experiment%7Ccontrol%22%5D%2C%22metrics%22%3A%7B%22backup_token_source%22%3A%22block_store%22%7D%7D";
     private static final int MAX_REGISTRATION_RETRIES = 3;
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
+    private static final List<String> MOBILE_IOS_OFFLINE_AB_EXPOSURES = List.of(
+            "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control",
+            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test",
+            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control",
+            "dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|control"
+    );
 
     private final HttpClient httpClient;
     private final Store store;
@@ -284,12 +291,21 @@ public final class WhatsappRegistration {
                     .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
                     .toEntries());
             case IOS, IOS_BUSINESS -> {
-                var ab = "{\"exposure\":[\"hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control\",\"ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test\",\"wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|test\",\"dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|test\"],\"metrics\":{\"expid_c\":true,\"rc_old\":true,\"fdid_c\":false,\"expid_md\":1713710228,\"expid_cd\":1713710228}}";
-                if(printRequests) {
-                    System.out.println("Ab: " + ab);
-                }
+                var installationTime = timestamp - ThreadLocalRandom.current().nextInt(30, 360);
+                var offlineAb = new WhatsappIosMetrics(
+                        MOBILE_IOS_OFFLINE_AB_EXPOSURES,
+                        new WhatsappIosMetrics.Metrics(
+                                true,
+                                true,
+                                true,
+                                installationTime,
+                                installationTime
+                        )
+                );
+                var encodedOfflineAB = convertBufferToUrlHex(Json.writeValueAsBytes(offlineAb));
+                System.out.println(encodedOfflineAB);
                 var attributes = Attributes.of()
-                        .put("offline_ab", convertBufferToUrlHex(ab.getBytes()))
+                        .put("offline_ab", encodedOfflineAB)
                         .put("push_token", pushToken == null ? "" : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
                         .put("recovery_token_error", "-25300")
                         .toEntries();
@@ -391,7 +407,7 @@ public final class WhatsappRegistration {
 
         var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return androidToken = WhatsappMetadata.getAndroidTokens(store.device().address(), publicKey, business);
+        return androidToken = WhatsappMetadata.getAndroidTokens(getAndroidAddress(), publicKey, business);
     }
 
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -568,7 +584,7 @@ public final class WhatsappRegistration {
                 });
             }
             case ANDROID, ANDROID_BUSINESS ->
-                    WhatsappMetadata.getAndroidCert(store.device().address(), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
+                    WhatsappMetadata.getAndroidCert(getAndroidAddress(), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
                         var uri = URI.create("%s%s".formatted(
                                 MOBILE_REGISTRATION_ENDPOINT,
                                 path
@@ -627,7 +643,7 @@ public final class WhatsappRegistration {
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), store.device().address());
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), getAndroidAddress());
         return tokenFuture.thenApplyAsync(token -> {
             var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)
@@ -664,6 +680,12 @@ public final class WhatsappRegistration {
         }
 
         return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
+    }
+
+    private String getAndroidAddress() {
+        return store.device()
+                .address()
+                .orElse(null);
     }
 
     private void dispose() {
