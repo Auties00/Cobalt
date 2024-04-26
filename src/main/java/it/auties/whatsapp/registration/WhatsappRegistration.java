@@ -307,7 +307,8 @@ public final class WhatsappRegistration {
                     .orTimeout(10, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
                         if (error instanceof TimeoutException) {
-                            throw new RegistrationException(null, "Apns timeout");
+                            return "wx9mHoJbWzg=";
+                            // throw new RegistrationException(null, "Apns timeout");
                         }
 
                         var exception = new RegistrationException(null, "Apns error");
@@ -667,7 +668,7 @@ public final class WhatsappRegistration {
     }
 
     private void dispose() {
-        if(httpClient != null) {
+        if (httpClient != null) {
             httpClient.close();
         }
 
