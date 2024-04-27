@@ -51,6 +51,8 @@ public final class WhatsappRegistration {
             "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control",
             "dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|control"
     );
+    private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
+    private static final int CLOUD_TIMEOUT = 10;
 
     private final HttpClient httpClient;
     private final Store store;
@@ -320,11 +322,10 @@ public final class WhatsappRegistration {
         if (apnsClient != null) {
             return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
                     .thenApply(this::readIOSPushCode)
-                    .orTimeout(10, TimeUnit.SECONDS)
+                    .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
                         if (error instanceof TimeoutException) {
-                            return "wx9mHoJbWzg=";
-                            // throw new RegistrationException(null, "Apns timeout");
+                            return DEFAULT_APNS_CODE;
                         }
 
                         var exception = new RegistrationException(null, "Apns error");
@@ -335,7 +336,7 @@ public final class WhatsappRegistration {
 
         if (gcmClient != null) {
             return gcmClient.getPushCode()
-                    .orTimeout(60, TimeUnit.SECONDS)
+                    .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
                         if (error instanceof TimeoutException) {
                             throw new RegistrationException(null, "Gcm timeout");
