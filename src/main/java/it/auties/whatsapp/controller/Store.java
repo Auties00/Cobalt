@@ -442,6 +442,16 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     }
 
     /**
+     * Checks if a contact is in memory
+     *
+     * @param jidProvider the non-null jid
+     * @return a boolean
+     */
+    public boolean hasContact(JidProvider jidProvider) {
+        return jidProvider != null && contacts.get(jidProvider.toJid()) != null;
+    }
+
+    /**
      * Queries every contact whose name is equal to {@code name}
      *
      * @param name the name to search

@@ -638,7 +638,7 @@ public class Whatsapp {
             var composingFuture = compose ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
             return composingFuture.thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
                     .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
-                    .thenComposeAsync(deltaResult -> deltaResult ? sendMessage(info) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
+                    .thenComposeAsync(deltaResult -> deltaResult ? addContacts(recipient).thenComposeAsync(ignored -> sendMessage(info)) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
         });
     }
 
@@ -1498,8 +1498,13 @@ public class Whatsapp {
      */
     public CompletableFuture<List<Jid>> addContacts(JidProvider... contacts) {
         var users = Arrays.stream(contacts)
+                .filter(entry -> !store().hasContact(entry))
                 .map(contact -> Node.of("user", Node.of("contact", contact.toJid().toPhoneNumber().getBytes())))
                 .toList();
+        if(users.isEmpty()) {
+            return CompletableFuture.completedFuture(List.of());
+        }
+
         var sync = Node.of(
                 "usync",
                 Map.of(
@@ -1549,6 +1554,7 @@ public class Whatsapp {
             return null;
         }
 
+        store().addContact(jid.get());
         return jid.get();
     }
 
@@ -1749,8 +1755,7 @@ public class Whatsapp {
                         .ephemeralExpiration(timer.period().toSeconds())
                         .build();
                 yield sendMessage(chat, message)
-                        .thenRun(() -> {
-                        });
+                        .thenRun(() -> {});
             }
             case GROUP -> {
                 var body = timer == ChatEphemeralTimer.OFF ? Node.of("not_ephemeral") : Node.of("ephemeral", Map.of("expiration", timer.period()
