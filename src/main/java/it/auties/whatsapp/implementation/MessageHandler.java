@@ -255,7 +255,6 @@ class MessageHandler {
         info.setPollAdditionalMetadata(metadata);
         info.message().deviceInfo().ifPresentOrElse(deviceInfo -> deviceInfo.setMessageSecret(pollEncryptionKey), () -> {
             var deviceInfo = new DeviceContextInfoBuilder()
-                    .deviceListMetadataVersion(2)
                     .messageSecret(pollEncryptionKey)
                     .build();
             var message = info.message().withDeviceInfo(deviceInfo);
@@ -953,22 +952,7 @@ class MessageHandler {
                 return;
             }
 
-            if (messageNode == null) {
-                socketHandler.handleFailure(MESSAGE, new RuntimeException("Cannot decode message(id: %s, from: %s)".formatted(id, from)));
-                sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
-                return;
-            }
-
-            var type = messageNode.attributes().getRequiredString("type");
-            var encodedMessage = messageNode.contentAsBytes().orElse(null);
-            var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
-            if (decodedMessage.hasError()) {
-                socketHandler.handleFailure(MESSAGE, new RuntimeException("Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage.error().getMessage())));
-                sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
-                return;
-            }
-
-            var messageContainer = Bytes.bytesToMessage(decodedMessage.message()).unbox();
+            var messageContainer = decodeChatMessageContainer(infoNode, messageNode, key, id, from, participant);
             var info = messageBuilder.key(key)
                     .broadcast(key.chatJid().hasServer(JidServer.BROADCAST))
                     .pushName(pushName)
@@ -987,6 +971,23 @@ class MessageHandler {
         } finally {
             lock.unlock();
         }
+    }
+
+    private MessageContainer decodeChatMessageContainer(Node infoNode, Node messageNode, ChatMessageKey key, String id, Jid from, Jid participant) {
+        if(messageNode == null) {
+            return MessageContainer.empty();
+        }
+
+        var type = messageNode.attributes().getRequiredString("type");
+        var encodedMessage = messageNode.contentAsBytes().orElse(null);
+        var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
+        if (decodedMessage.hasError()) {
+            socketHandler.handleFailure(MESSAGE, new RuntimeException("Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage.error().getMessage())));
+            sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+            return MessageContainer.empty();
+        }
+
+        return Bytes.bytesToMessage(decodedMessage.message()).unbox();
     }
 
     private void sendEncMessageReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {

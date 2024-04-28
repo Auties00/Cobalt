@@ -627,7 +627,7 @@ public class Whatsapp {
                     .status(MessageStatus.PENDING)
                     .senderJid(jidOrThrowError())
                     .key(key)
-                    .message(message.withDeviceInfo(deviceInfo))
+                    .message(recipient.toJid().hasServer(JidServer.GROUP) ? message : message.withDeviceInfo(deviceInfo))
                     .timestampSeconds(timestamp)
                     .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                     .build();
@@ -813,9 +813,6 @@ public class Whatsapp {
 
     public CompletableFuture<ChatMessageInfo> sendStatus(MessageContainer message) {
         var timestamp = Clock.nowSeconds();
-        var deviceInfo = new DeviceContextInfoBuilder()
-                .deviceListMetadataVersion(2)
-                .build();
         var key = new ChatMessageKeyBuilder()
                 .id(ChatMessageKey.randomId())
                 .chatJid(Jid.of("status@broadcast"))
@@ -826,7 +823,6 @@ public class Whatsapp {
                 .status(MessageStatus.PENDING)
                 .senderJid(jidOrThrowError())
                 .key(key)
-                .message(message.withDeviceInfo(deviceInfo))
                 .timestampSeconds(timestamp)
                 .broadcast(false)
                 .build();
