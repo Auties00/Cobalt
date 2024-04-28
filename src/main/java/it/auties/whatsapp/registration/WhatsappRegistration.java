@@ -101,7 +101,8 @@ public final class WhatsappRegistration {
         }
 
         var originalDevice = store.device();
-        store.setDevice(originalDevice.toPersonal());
+        // IMPORTANT: Depending on how Whatsapp decides to manage their risk control, it could be a good idea to enable or not this
+        // store.setDevice(originalDevice.toPersonal());
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
