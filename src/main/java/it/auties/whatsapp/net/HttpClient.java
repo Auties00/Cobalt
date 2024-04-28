@@ -42,6 +42,7 @@ public class HttpClient implements AutoCloseable {
     }
 
     private static final String PROXY_KEY = "proxy";
+    private static final String SSL_PARAMS_KEY = "ssl.params";
 
     final CloseableHttpClient httpClient;
     final HttpsConnectionFactory httpsConnectionFactory;
@@ -87,36 +88,36 @@ public class HttpClient implements AutoCloseable {
     }
 
     public CompletableFuture<byte[]> getRaw(URI uri) {
-        return sendRequest("GET", uri, null, null);
+        return sendRequest("GET", uri, null, null, true);
     }
 
     public CompletableFuture<byte[]> getRaw(URI uri, Map<String, ?> headers) {
-        return sendRequest("GET", uri, headers, null);
+        return sendRequest("GET", uri, headers, null, true);
     }
 
     public CompletableFuture<String> getString(URI uri) {
-        return sendRequest("GET", uri, null, null)
+        return sendRequest("GET", uri, null, null, true)
                 .thenApplyAsync(String::new);
     }
 
     public CompletableFuture<String> getString(URI uri, Map<String, ?> headers) {
-        return sendRequest("GET", uri, headers, null)
+        return sendRequest("GET", uri, headers, null, true)
                 .thenApplyAsync(String::new);
     }
 
-    public CompletableFuture<byte[]> postRaw(URI uri, Map<String, ?> headers) {
-        return sendRequest("POST", uri, headers, null);
-    }
-
     public CompletableFuture<byte[]> postRaw(URI uri, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, headers, body);
+        return sendRequest("POST", uri, headers, body, true);
     }
 
-    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body) {
-        return CompletableFuture.supplyAsync(() -> sendRequestImpl(method, uri, headers, body, false), Thread::startVirtualThread);
+    public CompletableFuture<byte[]> postRawWithoutSslParams(URI uri, Map<String, ?> headers, byte[] body) {
+        return sendRequest("POST", uri, headers, body, false);
     }
 
-    private byte[] sendRequestImpl(String method, URI uri, Map<String, ?> headers, byte[] body, boolean isRetry) {
+    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams) {
+        return CompletableFuture.supplyAsync(() -> sendRequestImpl(method, uri, headers, body, useSslParams, false), Thread::startVirtualThread);
+    }
+
+    private byte[] sendRequestImpl(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams, boolean isRetry) {
         try {
             var request = new BasicClassicHttpRequest(method, uri);
             if(headers != null) {
@@ -128,15 +129,16 @@ public class HttpClient implements AutoCloseable {
                 request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
             }
             var context = HttpCoreContext.create();
+            context.setAttribute(SSL_PARAMS_KEY, useSslParams);
             context.setAttribute(PROXY_KEY, proxy);
             return httpClient.execute(request, context, data -> data.getEntity().getContent().readAllBytes());
         }catch (Throwable throwable) {
             if(!isRetry) {
-                if(throwable instanceof SSLHandshakeException) {
+                if(throwable instanceof SSLHandshakeException && useSslParams) {
                     httpsConnectionFactory.rotateSSL();
                 }
 
-                return sendRequestImpl(method, uri, headers, body, true);
+                return sendRequestImpl(method, uri, headers, body, useSslParams, true);
             }
 
             throw new RuntimeException("%s request to %s failed".formatted(method, uri), throwable);
@@ -243,7 +245,10 @@ public class HttpClient implements AutoCloseable {
                     port,
                     true
             );
-            sslSocket.setSSLParameters(sslParameters);
+            var useSslParams = (boolean) context.getAttribute(SSL_PARAMS_KEY);
+            if(useSslParams) {
+                sslSocket.setSSLParameters(sslParameters);
+            }
             sslSocket.setReuseAddress(false);
             sslSocket.setKeepAlive(true);
             sslSocket.startHandshake();

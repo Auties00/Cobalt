@@ -83,7 +83,7 @@ public class ApnsClient {
             var endpoint = URI.create("https://albert.apple.com/WebObjects/ALUnbrick.woa/wa/deviceActivation");
             var body = "device=Windows&activation-info=" + URLEncoder.encode(activationBody, StandardCharsets.UTF_8);
             var headers = Map.of("Content-Type", "application/x-www-form-urlencoded");
-            return httpClient.postRaw(endpoint, headers, body.getBytes()).thenAcceptAsync(response -> {
+            return httpClient.postRawWithoutSslParams(endpoint, headers, body.getBytes()).thenAcceptAsync(response -> {
                 var protocol = PROTOCOL_PATTERN.matcher(new String(response))
                         .results()
                         .findFirst()

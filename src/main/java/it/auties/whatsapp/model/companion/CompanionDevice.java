@@ -41,24 +41,7 @@ public record CompanionDevice(
         Optional<String> address
 ) implements ProtobufMessage {
     private static final List<Entry<String, String>> IPHONES = List.of(
-            Map.entry("iPhone_7", "iPhone9,1"),
-            Map.entry("iPhone_7_Plus", "iPhone9,2"),
-            Map.entry("iPhone_8", "iPhone10,1"),
-            Map.entry("iPhone_8_Plus", "iPhone10,2"),
-            Map.entry("iPhone_X", "iPhone10,3"),
-            Map.entry("iPhone_XR", "iPhone11,8"),
-            Map.entry("iPhone_XS", "iPhone11,2"),
-            Map.entry("iPhone_XS_Max", "iPhone11,6")
-    );
-    private static final List<Entry<String, String>> IOS_VERSION = List.of(
-            Map.entry("16.7", "20H19"),
-            Map.entry("16.7.1", "20H30"),
-            Map.entry("16.7.2", "20H115"),
-            Map.entry("16.7.3", "20H232"),
-            Map.entry("16.7.4", "20H240"),
-            Map.entry("16.7.5", "20H307"),
-            Map.entry("16.7.6", "20H320"),
-            Map.entry("16.7.7", "20H330")
+            Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
     );
 
     public static CompanionDevice web() {
@@ -84,15 +67,14 @@ public record CompanionDevice(
 
     public static CompanionDevice ios(Version appVersion, boolean business) {
         var model = IPHONES.get(ThreadLocalRandom.current().nextInt(IPHONES.size()));
-        var version = IOS_VERSION.get(ThreadLocalRandom.current().nextInt(IOS_VERSION.size()));
         return new CompanionDevice(
                 model.getKey(),
                 model.getValue(),
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 Optional.ofNullable(appVersion),
-                Version.of(version.getKey()),
-                version.getValue(),
+                Version.of("17.4.1"),
+                "20H320",
                 Optional.empty()
         );
     }
