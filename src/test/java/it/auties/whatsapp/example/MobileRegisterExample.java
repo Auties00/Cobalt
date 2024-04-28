@@ -8,6 +8,7 @@ import java.util.Scanner;
 // Android setup: open the directory at support/android and read README.md
 // iOS setup: none necessary
 // KaiOS setup: none necessary
+// Recommended proxy: Rola Mobile
 public class MobileRegisterExample {
     public static void main(String[] args) {
         System.out.println("Enter the phone number: ");
