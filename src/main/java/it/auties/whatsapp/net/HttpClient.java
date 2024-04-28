@@ -220,7 +220,7 @@ public class HttpClient implements AutoCloseable {
 
         @Override
         public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
-            socket.connect(InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort()));
+            socket.connect(InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort()), connectTimeout.toMillisecondsIntBound());
             return createLayeredSocket(socket, host.getHostName(), host.getPort(), context);
         }
 

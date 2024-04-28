@@ -219,7 +219,7 @@ public abstract class Socket extends java.net.Socket {
 
             this.socket = new java.net.Socket();
             socket.setKeepAlive(true);
-            socket.connect(new InetSocketAddress(proxy.getHost(), proxy.getPort()));
+            socket.connect(new InetSocketAddress(proxy.getHost(), proxy.getPort()), timeout);
             getOutputStream().write(PROTO_VERS);
             getOutputStream().write(2);
             getOutputStream().write(NO_AUTH);

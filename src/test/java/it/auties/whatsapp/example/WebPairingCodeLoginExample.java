@@ -1,16 +1,20 @@
 package it.auties.whatsapp.example;
 
-import it.auties.whatsapp.api.QrHandler;
+import it.auties.whatsapp.api.PairingCodeHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 
-public class WebLoginExample {
+import java.util.Scanner;
+
+public class WebPairingCodeLoginExample {
     public static void main(String[] args) {
+        System.out.println("Enter the phone number: ");
+        var phoneNumber = new Scanner(System.in).nextLong();
         Whatsapp.webBuilder()
-                .lastConnection()
+                .newConnection()
                 .historyLength(WebHistoryLength.extended())
-                .unregistered(QrHandler.toTerminal())
+                .unregistered(phoneNumber, PairingCodeHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewChatMessageListener((api, message) -> System.out.println(message.toJson()))
