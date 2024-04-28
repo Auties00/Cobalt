@@ -10,10 +10,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
@@ -151,9 +148,17 @@ public final class BinaryDecoder implements AutoCloseable {
         for (var pair = size - 1; pair > 1; pair -= 2) {
             var key = readString();
             var value = read(true);
-            map.put(key, value);
+            map.put(key, getValueWithContext(key, value));
         }
         return map;
+    }
+
+    private static Object getValueWithContext(String key, Object value) {
+        if (value instanceof Jid jid && Objects.equals(key, "lid")) {
+            return jid.withServer(JidServer.LID);
+        }
+
+        return value;
     }
 
     @Override
