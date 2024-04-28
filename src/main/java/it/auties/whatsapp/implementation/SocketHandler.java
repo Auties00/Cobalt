@@ -240,17 +240,17 @@ public class SocketHandler implements SocketListener {
 
     @Override
     public void onError(Throwable throwable) {
-        if (isIgnorableSocketError(throwable)) {
+        if(!(throwable instanceof SocketException socketException)) {
+            onSocketEvent(SocketEvent.ERROR);
+            handleFailure(UNKNOWN, throwable);
             return;
         }
-        onSocketEvent(SocketEvent.ERROR);
-        handleFailure(UNKNOWN, throwable);
-    }
 
-    private boolean isIgnorableSocketError(Throwable throwable) {
-        return throwable instanceof SocketException socketException
-                && Objects.equals(socketException.getMessage(), "Socket closed")
-                && (state() == SocketState.RECONNECTING || state() == SocketState.DISCONNECTED);
+        if(state() == SocketState.RECONNECTING || state() == SocketState.DISCONNECTED) {
+            return;
+        }
+
+        handleFailure(STREAM, socketException);
     }
 
     public CompletableFuture<Node> sendNode(Node node) {
@@ -380,46 +380,60 @@ public class SocketHandler implements SocketListener {
         setState(newState);
         keys.clearReadWriteKey();
         return switch (reason) {
-            case DISCONNECTED -> {
-                if (session != null) {
-                    session.disconnect();
-                }
-                yield CompletableFuture.completedFuture(null);
-            }
-            case RECONNECTING -> {
-                store.resolveAllPendingRequests();
-                if (session != null) {
-                    session.disconnect();
-                }
-                yield connect();
-            }
-            case LOGGED_OUT, BANNED -> {
-                store.deleteSession();
-                store.resolveAllPendingRequests();
-                if (session != null) {
-                    session.disconnect();
-                }
-                yield CompletableFuture.completedFuture(null);
-            }
-            case RESTORE -> {
-                store.deleteSession();
-                store.resolveAllPendingRequests();
-                var oldListeners = new ArrayList<>(store.listeners());
-                if (session != null) {
-                    session.disconnect();
-                }
-                var uuid = UUID.randomUUID();
-                var number = store.phoneNumber()
-                        .map(PhoneNumber::number)
-                        .orElse(null);
-                var result = store.serializer()
-                        .newStoreKeysPair(uuid, number, store.alias(), store.clientType());
-                this.keys = result.keys();
-                this.store = result.store();
-                store.addListeners(oldListeners);
-                yield connect();
-            }
+            case DISCONNECTED -> handleDisconnection();
+            case RECONNECTING -> handleReconnection();
+            case LOGGED_OUT -> handleLoggedOut();
+            case RESTORE -> handleRestore();
+            case BANNED -> handleBan();
         };
+    }
+
+    private CompletableFuture<Void> handleBan() {
+        return switch (store().clientType()) {
+            case WEB -> handleDisconnection();
+            case MOBILE -> handleLoggedOut();
+        };
+    }
+
+    private CompletableFuture<Void> handleRestore() {
+        store.deleteSession();
+        store.resolveAllPendingRequests();
+        var oldListeners = new ArrayList<>(store.listeners());
+        if (session != null) {
+            session.disconnect();
+        }
+        var uuid = UUID.randomUUID();
+        var number = store.phoneNumber()
+                .map(PhoneNumber::number)
+                .orElse(null);
+        var result = store.serializer()
+                .newStoreKeysPair(uuid, number, store.alias(), store.clientType());
+        this.keys = result.keys();
+        this.store = result.store();
+        store.addListeners(oldListeners);
+        return connect();
+    }
+
+    private CompletableFuture<Void> handleLoggedOut() {
+        store.deleteSession();
+        store.resolveAllPendingRequests();
+        return handleDisconnection();
+    }
+
+    private CompletableFuture<Void> handleReconnection() {
+        if (session != null) {
+            session.disconnect();
+        }
+        return connect();
+    }
+
+    private CompletableFuture<Void> handleDisconnection() {
+        store.resolveAllPendingRequests();
+        if (session != null) {
+            session.disconnect();
+        }
+
+        return CompletableFuture.completedFuture(null);
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {
