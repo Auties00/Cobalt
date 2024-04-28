@@ -1,8 +1,10 @@
 package it.auties.whatsapp.net;
 
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Proxies;
 import it.auties.whatsapp.util.Reflection;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -178,7 +180,7 @@ public abstract class Socket extends java.net.Socket {
 
     // No Socks4 support, nobody uses it
     private static final class Socks5 extends Socket {
-        private static final int PROTO_VERS = 5;
+        private static final int VERSION_5 = 5;
 
         private static final int NO_AUTH = 0;
         private static final int USER_PASSW = 2;
@@ -219,17 +221,24 @@ public abstract class Socket extends java.net.Socket {
 
             this.socket = new java.net.Socket();
             socket.setKeepAlive(true);
-            socket.connect(new InetSocketAddress(proxy.getHost(), proxy.getPort()), timeout);
-            getOutputStream().write(PROTO_VERS);
-            getOutputStream().write(2);
-            getOutputStream().write(NO_AUTH);
-            getOutputStream().write(USER_PASSW);
-            getOutputStream().flush();
+            var proxyAddress = new InetSocketAddress(proxy.getHost(), proxy.getPort());
+            if(timeout >= 0) {
+                socket.connect(proxyAddress, timeout);
+            }else {
+                socket.connect(proxyAddress);
+            }
+            var outputStream = new BufferedOutputStream(getOutputStream(), 512);
+            outputStream.write(VERSION_5);
+            outputStream.write(2);
+            outputStream.write(NO_AUTH);
+            outputStream.write(USER_PASSW);
+            outputStream.flush();
             var data = new byte[2];
             readSocksReply(data);
             var socksVersion = data[0];
-            if (socksVersion != PROTO_VERS) {
-                throw new SocketException("SOCKS : Unsupported socks version " + socksVersion);
+            if (socksVersion != VERSION_5) {
+                var errorMessage = new String(Bytes.concat(data, getInputStream().readAllBytes()));
+                throw new SocketException(errorMessage);
             }
 
             var methods = data[1];
@@ -237,19 +246,19 @@ public abstract class Socket extends java.net.Socket {
                 throw new SocketException("SOCKS : No acceptable methods");
             }
 
-            if (!authenticate(data[1])) {
+            if (!authenticate(outputStream, data[1])) {
                 throw new SocketException("SOCKS : authentication failed");
             }
 
-            getOutputStream().write(PROTO_VERS);
-            getOutputStream().write(CONNECT);
-            getOutputStream().write(0);
-            getOutputStream().write(DOMAIN_NAME);
-            getOutputStream().write(address.getHostName().length());
-            getOutputStream().write(address.getHostName().getBytes(StandardCharsets.ISO_8859_1));
-            getOutputStream().write((address.getPort() >> 8) & 0xff);
-            getOutputStream().write((address.getPort()) & 0xff);
-            getOutputStream().flush();
+            outputStream.write(VERSION_5);
+            outputStream.write(CONNECT);
+            outputStream.write(0);
+            outputStream.write(DOMAIN_NAME);
+            outputStream.write(address.getHostName().length());
+            outputStream.write(address.getHostName().getBytes(StandardCharsets.ISO_8859_1));
+            outputStream.write((address.getPort() >> 8) & 0xff);
+            outputStream.write((address.getPort()) & 0xff);
+            outputStream.flush();
             data = new byte[4];
             var success = readSocksReply(data);
             if (!success) {
@@ -309,7 +318,7 @@ public abstract class Socket extends java.net.Socket {
             }
         }
 
-        private boolean authenticate(byte method) throws IOException {
+        private boolean authenticate(OutputStream outputStream, byte method) throws IOException {
             if (method == NO_AUTH) {
                 return true;
             }
@@ -323,16 +332,16 @@ public abstract class Socket extends java.net.Socket {
                 return false;
             }
 
-            getOutputStream().write(1);
-            getOutputStream().write(userInfo.username().length());
-            getOutputStream().write(userInfo.username().getBytes(StandardCharsets.ISO_8859_1));
+            outputStream.write(1);
+            outputStream.write(userInfo.username().length());
+            outputStream.write(userInfo.username().getBytes(StandardCharsets.ISO_8859_1));
             if (userInfo.password() != null) {
-                getOutputStream().write(userInfo.password().length());
-                getOutputStream().write(userInfo.password().getBytes(StandardCharsets.ISO_8859_1));
+                outputStream.write(userInfo.password().length());
+                outputStream.write(userInfo.password().getBytes(StandardCharsets.ISO_8859_1));
             } else {
-                getOutputStream().write(0);
+                outputStream.write(0);
             }
-            getOutputStream().flush();
+            outputStream.flush();
 
             var data = new byte[2];
             var success = readSocksReply(data);

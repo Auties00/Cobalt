@@ -245,7 +245,7 @@ public class HttpClient implements AutoCloseable {
             );
             sslSocket.setSSLParameters(sslParameters);
             sslSocket.setReuseAddress(false);
-            sslSocket.setKeepAlive(false);
+            sslSocket.setKeepAlive(true);
             sslSocket.startHandshake();
             return sslSocket;
         }
