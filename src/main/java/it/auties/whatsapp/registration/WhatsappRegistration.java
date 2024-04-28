@@ -47,7 +47,7 @@ public final class WhatsappRegistration {
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
     private static final List<String> MOBILE_IOS_OFFLINE_AB_EXPOSURES = List.of(
             "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control",
-            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test",
+            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|control",
             "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control",
             "dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|control"
     );
@@ -63,7 +63,6 @@ public final class WhatsappRegistration {
     private final GcmClient gcmClient;
     private final CountryCode countryCode;
     private final boolean printRequests;
-    private final long timestamp;
     private volatile CompletableFuture<WhatsappAndroidTokens> androidToken;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
@@ -79,7 +78,6 @@ public final class WhatsappRegistration {
         this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, store.proxy().orElse(null)) : null;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
         this.printRequests = printRequests;
-        this.timestamp = Clock.nowSeconds();
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
@@ -293,7 +291,7 @@ public final class WhatsappRegistration {
                     .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
                     .toEntries());
             case IOS, IOS_BUSINESS -> {
-                var installationTime = timestamp - ThreadLocalRandom.current().nextInt(30, 360);
+                var installationTime = Clock.nowSeconds() - ThreadLocalRandom.current().nextInt(30, 360);
                 var offlineAb = new WhatsappIosMetrics(
                         MOBILE_IOS_OFFLINE_AB_EXPOSURES,
                         new WhatsappIosMetrics.Metrics(
@@ -427,7 +425,7 @@ public final class WhatsappRegistration {
                 .put("sim_mnc", "000")
                 .put("reason", "")
                 .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
-                .put("cellular_strength", ThreadLocalRandom.current().nextInt(1, 6))
+                .put("cellular_strength", 1)
                 .toEntries();
     }
 
@@ -671,7 +669,7 @@ public final class WhatsappRegistration {
                     .putAll(requiredAttributes)
                     .put("token", token, useToken)
                     .put("id", convertBufferToUrlHex(keys.identityId()))
-                    .put("t", timestamp, store.device().platform().isIOS())
+                    .put("t", Clock.nowSeconds(), store.device().platform().isIOS())
                     .toMap();
         });
     }

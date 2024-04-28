@@ -187,7 +187,7 @@ public class HttpClient implements AutoCloseable {
         private void rotateSSL() {
             try {
                 var random = new SecureRandom();
-                var sslContext = SSLContext.getInstance("TLSv1." + (random.nextBoolean() ? 3 : 2));
+                var sslContext = SSLContext.getInstance("TLSv1.3");
                 sslContext.init(null, null, new SecureRandom());
                 this.sslParameters = sslContext.getDefaultSSLParameters();
                 sslParameters.setCipherSuites(Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())
@@ -195,6 +195,12 @@ public class HttpClient implements AutoCloseable {
                         .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result, random); return result; }))
                         .toArray(String[]::new));
                 sslParameters.setUseCipherSuitesOrder(true);
+                sslParameters.setNamedGroups(Arrays.stream(sslContext.getDefaultSSLParameters().getNamedGroups())
+                        .filter(entry -> random.nextBoolean())
+                        .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result, random); return result; }))
+                        .toArray(String[]::new));
+                var packetSize = sslParameters.getMaximumPacketSize();
+                sslParameters.setMaximumPacketSize(random.nextInt(packetSize / 5, packetSize * 5));
                 this.sslContext = sslContext;
             }catch (GeneralSecurityException exception) {
                 throw new RuntimeException(exception);

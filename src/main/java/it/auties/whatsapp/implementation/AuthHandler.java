@@ -111,6 +111,7 @@ class AuthHandler {
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
                         .passive(true)
+                        .pushName(socketHandler.store().name())
                         .userAgent(agent)
                         .sessionId(ThreadLocalRandom.current().nextInt(100_000_000, 1_000_000_000))
                         .shortConnect(true)
