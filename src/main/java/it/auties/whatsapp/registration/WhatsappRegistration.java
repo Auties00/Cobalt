@@ -17,6 +17,7 @@ import it.auties.whatsapp.model.response.AbPropsResponse;
 import it.auties.whatsapp.model.response.CheckNumberResponse;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.net.HttpClient;
 import it.auties.whatsapp.registration.apns.ApnsClient;
 import it.auties.whatsapp.registration.apns.ApnsPacket;
@@ -234,6 +235,10 @@ public final class WhatsappRegistration {
 
                         if (response.errorReason() == VerificationCodeError.BLOCKED || lastError != null) {
                             throw new RegistrationException(response, result);
+                        }
+
+                        if(response.errorReason() == VerificationCodeError.INVALID_SIGNED_KEY) {
+                            keys.setSignedKeyPair(SignalSignedKeyPair.of(keys.registrationId(), keys.identityKeyPair()));
                         }
 
                         var useOriginalDevice = originalDevice != null

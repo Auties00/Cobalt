@@ -75,7 +75,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * The signed pre key
      */
     @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-    final SignalSignedKeyPair signedKeyPair;
+    SignalSignedKeyPair signedKeyPair;
 
     /**
      * The signed key of the companion's device
@@ -632,6 +632,10 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
 
     public Optional<byte[]> readKey() {
         return Optional.ofNullable(this.readKey);
+    }
+
+    public void setSignedKeyPair(SignalSignedKeyPair signedKeyPair) {
+        this.signedKeyPair = signedKeyPair;
     }
 
     public Keys setCompanionKeyPair(SignalKeyPair companionKeyPair) {
