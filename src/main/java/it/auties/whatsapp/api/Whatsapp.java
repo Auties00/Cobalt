@@ -633,9 +633,8 @@ public class Whatsapp {
             }
 
             var composingFuture = compose ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
-            return composingFuture.thenComposeAsync(sleepResult -> addTrustedContact(recipient, timestamp), CompletableFuture.delayedExecutor(ThreadLocalRandom.current().nextInt(2, 4), TimeUnit.SECONDS))
-                    .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
-                    .thenComposeAsync(deltaResult -> deltaResult ? addContacts(recipient).thenComposeAsync(ignored -> sendMessage(info)) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
+            return composingFuture.thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
+                    .thenComposeAsync(deltaResult -> deltaResult ? sendMessage(info) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
         });
     }
 
@@ -704,11 +703,19 @@ public class Whatsapp {
 
             var secondQuery = List.of(Node.of("disappearing_mode"));
             var secondList = List.of(Node.of("user", Map.of("jid", recipient.toJid())));
-            return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of())
-                    .thenCompose(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
-                    .thenCompose(thirdResult -> subscribeToPresence(recipient.toJid()))
-                    .thenCompose(fourthResult -> socketHandler.querySessions(List.of(recipient.toJid())))
-                    .thenApply(ignored -> true);
+            return addContacts(recipient)
+                    .thenComposeAsync(firstResult -> {
+                        if(!firstResult.contains(recipient.toJid())) {
+                            return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of());
+                        }
+
+                        var delayedExecutor = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
+                        return CompletableFuture.supplyAsync(() -> socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of()).join(), delayedExecutor);
+                    })
+                    .thenComposeAsync(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
+                    .thenComposeAsync(thirdResult -> subscribeToPresence(recipient.toJid()))
+                    .thenComposeAsync(fourthResult -> socketHandler.querySessions(List.of(recipient.toJid())))
+                    .thenApplyAsync(ignored -> true);
         });
     }
 
@@ -2873,14 +2880,9 @@ public class Whatsapp {
      */
     public CompletableFuture<Call> startCall(JidProvider contact) {
         Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
-        return addTrustedContact(contact, Clock.nowSeconds())
-                .thenComposeAsync(ignored -> addContacts(contact))
+        return addContacts(contact)
                 .thenComposeAsync(ignored -> socketHandler.querySessions(List.of(contact.toJid())))
                 .thenComposeAsync(ignored -> sendCallMessage(contact));
-    }
-
-    private CompletableFuture<?> addTrustedContact(JidProvider contact, long timestamp) {
-        return socketHandler.sendQuery("set", "privacy", Node.of("tokens", Node.of("token", Map.of("jid", contact.toJid(), "t", timestamp, "type", "trusted_contact"))));
     }
 
     private CompletableFuture<Call> sendCallMessage(JidProvider provider) {

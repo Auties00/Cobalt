@@ -66,7 +66,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     /**
      * Default push name
      */
-    private static final String DEFAULT_NAME = "";
+    private static final String DEFAULT_NAME = "User";
 
     /**
      * The version used by this session
