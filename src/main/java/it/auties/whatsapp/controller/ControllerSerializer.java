@@ -47,6 +47,27 @@ public interface ControllerSerializer {
     }
 
     /**
+     * Returns a json serializer
+     * This implementation uses .json files with no compression
+     *
+     * @return a serializer
+     */
+    static ControllerSerializer toJson() {
+        return JsonControllerSerializer.ofDefaultPath();
+    }
+
+    /**
+     * Returns the default serializer
+     * This implementation uses .json files with no compression
+     *
+     * @param baseDirectory the directory where all the sessions should be saved
+     * @return a serializer
+     */
+    static ControllerSerializer toJson(Path baseDirectory) {
+        return JsonControllerSerializer.of(baseDirectory);
+    }
+
+    /**
      * Returns all the known IDs
      *
      * @param type the non-null type of client
