@@ -1,6 +1,5 @@
 package it.auties.whatsapp.registration.gcm;
 
-import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -36,7 +35,7 @@ record ECDH256KeyPair(
             return new ECDH256KeyPair(rawPublicKey, rawPrivateKey, publicKey, privateKey);
         }catch (NoSuchAlgorithmException exception) {
             throw new RuntimeException("Missing ECDH256 implementation", exception);
-        }catch (GeneralSecurityException exception) {
+        }catch (Throwable exception) {
             throw new RuntimeException("An error occurred while generating the keypair", exception);
         }
     }

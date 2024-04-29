@@ -141,7 +141,7 @@ public class HttpClient implements AutoCloseable {
                 return sendRequestImpl(method, uri, headers, body, useSslParams, true);
             }
 
-            throw new RuntimeException("%s request to %s failed".formatted(method, uri), throwable);
+            throw new RuntimeException("%s request to %s failed(%s)".formatted(method, uri, throwable.getMessage()), throwable);
         }
     }
 
