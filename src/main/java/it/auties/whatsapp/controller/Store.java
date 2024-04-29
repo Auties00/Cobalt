@@ -63,7 +63,11 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store extends Controller<Store> implements ProtobufMessage {
-    public static final String DEFAULT_NAME = "Cobalt";
+    /**
+     * Default push name
+     */
+    private static final String DEFAULT_NAME = "";
+
     /**
      * The version used by this session
      */
