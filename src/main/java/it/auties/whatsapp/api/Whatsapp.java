@@ -614,9 +614,6 @@ public class Whatsapp {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
         return prepareChat(recipient, timestamp).thenComposeAsync(chatResult -> {
-            var deviceInfo = new DeviceContextInfoBuilder()
-                    .deviceListMetadataVersion(2)
-                    .build();
             var key = new ChatMessageKeyBuilder()
                     .id(ChatMessageKey.randomId())
                     .chatJid(recipient.toJid())
@@ -627,7 +624,7 @@ public class Whatsapp {
                     .status(MessageStatus.PENDING)
                     .senderJid(jidOrThrowError())
                     .key(key)
-                    .message(recipient.toJid().hasServer(JidServer.GROUP) ? message : message.withDeviceInfo(deviceInfo))
+                    .message(message)
                     .timestampSeconds(timestamp)
                     .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                     .build();
@@ -2877,6 +2874,7 @@ public class Whatsapp {
     public CompletableFuture<Call> startCall(JidProvider contact) {
         Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
         return addTrustedContact(contact, Clock.nowSeconds())
+                .thenComposeAsync(ignored -> addContacts(contact))
                 .thenComposeAsync(ignored -> socketHandler.querySessions(List.of(contact.toJid())))
                 .thenComposeAsync(ignored -> sendCallMessage(contact));
     }
