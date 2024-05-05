@@ -20,7 +20,7 @@ public class MobileRegisterExample {
             case 2 -> false;
             default -> throw new IllegalStateException("Unexpected value: " + scanner.nextInt());
         };
-        Whatsapp.mobileBuilder()
+        var keys = Whatsapp.mobileBuilder()
                 .newConnection()
                 .device(CompanionDevice.ios(business))
                 // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
@@ -30,6 +30,10 @@ public class MobileRegisterExample {
                     return new Scanner(System.in).nextLine();
                 })
                 .register(phoneNumber)
-                .join();
+                .join()
+                .whatsapp()
+                .keys()
+                .toString();
+        System.out.println(keys);
     }
 }
