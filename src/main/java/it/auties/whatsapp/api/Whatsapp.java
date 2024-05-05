@@ -614,6 +614,9 @@ public class Whatsapp {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
         return prepareChat(recipient, timestamp).thenComposeAsync(chatResult -> {
+            var deviceInfo = recipient.toJid().hasServer(JidServer.WHATSAPP) ? new DeviceContextInfoBuilder()
+                    .deviceListMetadataVersion(2)
+                    .build() : null;
             var key = new ChatMessageKeyBuilder()
                     .id(ChatMessageKey.randomId())
                     .chatJid(recipient.toJid())
@@ -624,7 +627,7 @@ public class Whatsapp {
                     .status(MessageStatus.PENDING)
                     .senderJid(jidOrThrowError())
                     .key(key)
-                    .message(message)
+                    .message(message.withDeviceInfo(deviceInfo))
                     .timestampSeconds(timestamp)
                     .broadcast(recipient.toJid().hasServer(JidServer.BROADCAST))
                     .build();
@@ -1502,7 +1505,7 @@ public class Whatsapp {
      */
     public CompletableFuture<List<Jid>> addContacts(JidProvider... contacts) {
         var users = Arrays.stream(contacts)
-                .filter(entry -> !store().hasContact(entry))
+                .filter(entry -> entry.toJid().hasServer(JidServer.WHATSAPP) && !store().hasContact(entry))
                 .map(contact -> Node.of("user", Node.of("contact", contact.toJid().toPhoneNumber().getBytes())))
                 .toList();
         if(users.isEmpty()) {
