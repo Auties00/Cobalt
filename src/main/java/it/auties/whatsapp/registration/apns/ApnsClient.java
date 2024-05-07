@@ -187,7 +187,7 @@ public class ApnsClient {
             var sslSocketFactory = sslContext.getSocketFactory();
             var underlyingSocket = SocketFactory.of(proxy);
             var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
-            underlyingSocket.connect(InetSocketAddress.createUnresolved(endpoint, PORT));
+            underlyingSocket.connect(proxy == null ? new InetSocketAddress(endpoint, PORT) : InetSocketAddress.createUnresolved(endpoint, PORT));
             this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);
             socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
             socket.setSSLParameters(sslParameters);

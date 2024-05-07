@@ -148,7 +148,7 @@ public class GcmClient {
             try {
                 var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
                 var underlyingSocket = SocketFactory.of(proxy);
-                underlyingSocket.connect(InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
+                underlyingSocket.connect(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
                 this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, TALK_SERVER_HOST, TALK_SERVER_PORT, true);
                 socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
                 socket.startHandshake();
