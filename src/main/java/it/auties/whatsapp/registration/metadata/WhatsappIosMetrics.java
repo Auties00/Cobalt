@@ -11,7 +11,7 @@ public record WhatsappIosMetrics(List<String> exposure, Metrics metrics) {
             @JsonProperty("fdid_c")
             boolean fdid,
             @JsonProperty("rc_c")
-            boolean rcC,
+            boolean rc,
             @JsonProperty("expid_md")
             long expIdMd,
             @JsonProperty("expid_cd")

@@ -48,9 +48,8 @@ public final class WhatsappRegistration {
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
     private static final List<String> MOBILE_IOS_OFFLINE_AB_EXPOSURES = List.of(
             "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control",
-            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|control",
-            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control",
-            "dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|control"
+            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test",
+            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control"
     );
     private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
     private static final String DEFAULT_GCM_CODE = "36dimLEhnzs=";
@@ -102,9 +101,14 @@ public final class WhatsappRegistration {
             return CompletableFuture.completedFuture(null);
         }
 
+        // If you want to print the IP
+        // System.out.println(httpClient.getString(URI.create("http://api.ipify.org")).join());
         var originalDevice = store.device();
-        // IMPORTANT: Depending on how Whatsapp decides to manage their risk control, it could be a good idea to enable or not this
-        // store.setDevice(originalDevice.toPersonal());
+
+        // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
+        // it could be a good idea to enable this
+        store.setDevice(originalDevice.toPersonal());
+
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
@@ -310,7 +314,6 @@ public final class WhatsappRegistration {
                         )
                 );
                 var encodedOfflineAB = convertBufferToUrlHex(Json.writeValueAsBytes(offlineAb));
-                System.out.println(encodedOfflineAB);
                 var attributes = Attributes.of()
                         .put("offline_ab", encodedOfflineAB)
                         .put("push_token", pushToken == null ? "" : convertBufferToUrlHex(pushToken.getBytes(StandardCharsets.UTF_8)), pushToken != null)
@@ -461,7 +464,7 @@ public final class WhatsappRegistration {
                 .put("device_ram", "3.57")
                 .put("education_screen_displayed", false)
                 .put("pid", ProcessHandle.current().pid())
-                .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
+                .put("cellular_strength", 1)
                 .put("gpia", tokens == null ? "" : tokens.gpia(), tokens != null)
                 .put("_gg", tokens == null ? "" : tokens.gg(), tokens != null)
                 .put("_gi", tokens == null ? "" : tokens.gi(), tokens != null)
