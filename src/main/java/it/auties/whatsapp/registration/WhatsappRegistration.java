@@ -53,6 +53,7 @@ public final class WhatsappRegistration {
             "dummy_aa_prod_universe_ios|dummy_aa_prod_experiment_ios|control"
     );
     private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
+    private static final String DEFAULT_GCM_CODE = "36dimLEhnzs=";
     private static final int CLOUD_TIMEOUT = 10;
 
     private final HttpClient httpClient;
@@ -290,7 +291,7 @@ public final class WhatsappRegistration {
                     .put("roaming_type", 0)
                     .put("client_metrics", MOBILE_ANDROID_CLIENT_METRICS)
                     .put("pid", ProcessHandle.current().pid())
-                    .put("cellular_strength", ThreadLocalRandom.current().nextInt(3, 6))
+                    .put("cellular_strength", 1)
                     .put("recaptcha", "%7B%22stage%22%3A%22ABPROP_DISABLED%22%7D")
                     .put("device_name", Bytes.bytesToCrockford(Bytes.random(8)))
                     .put("language_selector_time_spent", 0)
@@ -343,7 +344,7 @@ public final class WhatsappRegistration {
                     .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
                         if (error instanceof TimeoutException) {
-                            throw new RegistrationException(null, "Gcm timeout");
+                            return DEFAULT_GCM_CODE;
                         }
 
                         var exception = new RegistrationException(null, "Gcm error");

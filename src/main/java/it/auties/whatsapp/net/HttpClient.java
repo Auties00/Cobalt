@@ -52,6 +52,7 @@ public class HttpClient implements AutoCloseable {
     }
 
     public HttpClient(URI proxy) {
+        this.proxy = proxy;
         this.httpsConnectionFactory = new HttpsConnectionFactory();
         var socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
                 .register("http", new HttpConnectionFactory())
@@ -63,7 +64,7 @@ public class HttpClient implements AutoCloseable {
                 PoolReusePolicy.LIFO,
                 TimeValue.NEG_ONE_MILLISECOND,
                 null,
-                new DummyDnsResolver(),
+                proxy == null ? null : DummyDnsResolver.instance(),
                 null
         );
         this.httpClient = HttpClients.custom()
@@ -71,7 +72,6 @@ public class HttpClient implements AutoCloseable {
                 .setConnectionReuseStrategy((request, response, context) -> false)
                 .disableCookieManagement()
                 .build();
-        this.proxy = proxy;
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -163,19 +163,32 @@ public class HttpClient implements AutoCloseable {
         @Override
         public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return it.auties.whatsapp.net.Socket.of(derivedProxy);
+            return SocketFactory.of(derivedProxy);
         }
 
         @Override
         public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
-            var unresolvedRemote = InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort());
-            return super.connectSocket(connectTimeout, socket, host, unresolvedRemote, localAddress, context);
+            return super.connectSocket(
+                    connectTimeout,
+                    socket,
+                    host,
+                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
+                    localAddress,
+                    context
+            );
         }
 
         @Override
         public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
-            var unresolvedRemote = InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort());
-            return super.connectSocket(socket, host, unresolvedRemote, localAddress, connectTimeout, attachment, context);
+            return super.connectSocket(
+                    socket,
+                    host,
+                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
+                    localAddress,
+                    connectTimeout,
+                    attachment,
+                    context
+            );
         }
     }
 
@@ -217,18 +230,24 @@ public class HttpClient implements AutoCloseable {
         @Override
         public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return it.auties.whatsapp.net.Socket.of(derivedProxy);
+            return SocketFactory.of(derivedProxy);
         }
 
         @Override
         public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
-            socket.connect(InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort()), connectTimeout.toMillisecondsIntBound());
+            socket.connect(
+                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
+                    connectTimeout.toMillisecondsIntBound()
+            );
             return createLayeredSocket(socket, host.getHostName(), host.getPort(), context);
         }
 
         @Override
         public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
-            socket.connect(InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort()), connectTimeout.toMillisecondsIntBound());
+            socket.connect(
+                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
+                    connectTimeout.toMillisecondsIntBound()
+            );
             return createLayeredSocket(socket, host.getHostName(), host.getPort(), context);
         }
 
@@ -257,6 +276,11 @@ public class HttpClient implements AutoCloseable {
     }
 
     private static class DummyDnsResolver implements DnsResolver {
+        private static final DummyDnsResolver INSTANCE = new DummyDnsResolver();
+        public static DummyDnsResolver instance() {
+            return INSTANCE;
+        }
+
         @Override
         public InetAddress[] resolve(String host) throws UnknownHostException {
             return new InetAddress[] {

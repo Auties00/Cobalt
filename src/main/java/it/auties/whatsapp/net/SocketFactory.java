@@ -12,29 +12,19 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public abstract class Socket extends java.net.Socket {
+public final class SocketFactory {
     static {
         Proxies.allowBasicAuth();
     }
 
-    final URI proxy;
-
-    private Socket(URI proxy) {
-        this.proxy = proxy;
-    }
-
     public static Socket of(URI proxy) throws IOException {
-        if (proxy == null) {
-            return new Direct();
-        }
-
         var javaProxy = Proxies.toProxy(proxy);
         if (javaProxy == Proxy.NO_PROXY) {
-            return new Direct();
+            return new Socket();
         }
 
         return switch (javaProxy.type()) {
-            case DIRECT -> new Direct();
+            case DIRECT -> new Socket();
             case HTTP -> new Http(proxy);
             case SOCKS -> new Socks5(proxy);
         };
@@ -43,12 +33,13 @@ public abstract class Socket extends java.net.Socket {
     // This approach is not fantastic, but it's the same that the internal Java API uses
     // Though I can't use reflection directly as I'm not in the java.base module, so I'm using unsafe
     private static final class Http extends Socket {
+        private final URI proxy;
         private HttpURLConnection httpConnection;
-        private Object serverSocket;
+        private Socket serverSocket;
         private boolean disconnected;
 
         Http(URI proxy) {
-            super(proxy);
+            this.proxy = proxy;
         }
 
         @Override
@@ -115,9 +106,7 @@ public abstract class Socket extends java.net.Socket {
         @Override
         public OutputStream getOutputStream() throws IOException {
             try {
-                var httpServer = getServerSocket();
-                var outputStream = httpServer.getClass().getMethod("getOutputStream");
-                return (OutputStream) outputStream.invoke(httpServer);
+                return getServerSocket().getOutputStream();
             } catch (ReflectiveOperationException exception) {
                 throw new IOException("Cannot access output stream", exception);
             }
@@ -126,15 +115,13 @@ public abstract class Socket extends java.net.Socket {
         @Override
         public InputStream getInputStream() throws IOException {
             try {
-                var httpServer = getServerSocket();
-                var inputStream = httpServer.getClass().getMethod("getInputStream");
-                return (InputStream) inputStream.invoke(httpServer);
+                return getServerSocket().getInputStream();
             } catch (ReflectiveOperationException exception) {
                 throw new IOException("Cannot access input stream", exception);
             }
         }
 
-        private Object getServerSocket() throws ReflectiveOperationException {
+        private Socket getServerSocket() throws ReflectiveOperationException {
             if (serverSocket != null) {
                 return serverSocket;
             }
@@ -144,7 +131,7 @@ public abstract class Socket extends java.net.Socket {
             var httpClient = httpClientField.get(httpConnection);
             var httpServerField = httpClient.getClass().getSuperclass().getDeclaredField("serverSocket");
             Reflection.open(httpServerField);
-            return serverSocket = httpServerField.get(httpClient);
+            return serverSocket = (Socket) httpServerField.get(httpClient);
         }
 
         @Override
@@ -202,10 +189,11 @@ public abstract class Socket extends java.net.Socket {
         private static final int CMD_NOT_SUPPORTED = 7;
         private static final int ADDR_TYPE_NOT_SUP = 8;
 
+        private final URI proxy;
         private java.net.Socket socket;
 
         Socks5(URI proxy) {
-            super(proxy);
+            this.proxy = proxy;
         }
 
         @Override
@@ -389,80 +377,11 @@ public abstract class Socket extends java.net.Socket {
                     return;
                 }
 
+                System.out.println("Disconnecting");
                 socket.close();
+                System.out.println("Disconnected");
             } catch (Throwable ignored) {
-                // Ignored
-            }
-        }
-
-        @Override
-        public OutputStream getOutputStream() throws IOException {
-            return Objects.requireNonNull(socket).getOutputStream();
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException {
-            return Objects.requireNonNull(socket).getInputStream();
-        }
-
-        @Override
-        public boolean isConnected() {
-            return socket != null && socket.isConnected();
-        }
-    }
-
-    private static final class Direct extends Socket {
-        private java.net.Socket socket;
-
-        Direct() {
-            super(null);
-        }
-
-        @Override
-        public void connect(SocketAddress endpoint) throws IOException {
-            connect(endpoint, -1);
-        }
-
-        @Override
-        public void connect(SocketAddress endpoint, int timeout) throws IOException {
-            if (!(endpoint instanceof InetSocketAddress address)) {
-                throw new IllegalArgumentException("Unsupported address type");
-            }
-
-            this.socket = new java.net.Socket();
-            socket.setKeepAlive(true);
-            socket.connect(new InetSocketAddress(address.getHostName(), address.getPort()));
-        }
-
-        @Override
-        public boolean isClosed() {
-            return socket != null && socket.isClosed();
-        }
-
-        @Override
-        public boolean isInputShutdown() {
-            return socket != null && socket.isInputShutdown();
-        }
-
-        @Override
-        public boolean isOutputShutdown() {
-            return socket != null && socket.isOutputShutdown();
-        }
-
-        @Override
-        public boolean isBound() {
-            return socket != null && socket.isBound();
-        }
-
-        @Override
-        public void close() {
-            try {
-                if (socket == null) {
-                    return;
-                }
-
-                socket.close();
-            } catch (Throwable ignored) {
+                System.out.println("error");
                 // Ignored
             }
         }

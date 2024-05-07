@@ -1,16 +1,13 @@
 package it.auties.whatsapp.implementation;
 
-import it.auties.whatsapp.net.Socket;
+import it.auties.whatsapp.net.SocketFactory;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Proxies;
 import it.auties.whatsapp.util.Validate;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
-import java.net.URI;
+import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
@@ -181,7 +178,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         private void createConnection(SocketListener listener) {
             try {
-                this.socket = Socket.of(proxy);
+                this.socket = SocketFactory.of(proxy);
                 socket.setKeepAlive(true);
                 socket.connect(InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT.getHost(), MOBILE_SOCKET_ENDPOINT.getPort()));
                 listener.onOpen(RawSocketSession.this);
