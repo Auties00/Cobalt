@@ -41,6 +41,7 @@ public class HttpClient implements AutoCloseable {
         System.setProperty("jdk.tls.client.enableSessionTicketExtension", "false");
     }
 
+    private static final int MAX_TRIES = 5;
     private static final String PROXY_KEY = "proxy";
     private static final String SSL_PARAMS_KEY = "ssl.params";
 
@@ -114,35 +115,36 @@ public class HttpClient implements AutoCloseable {
     }
 
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams) {
-        return CompletableFuture.supplyAsync(() -> sendRequestImpl(method, uri, headers, body, useSslParams, false), Thread::startVirtualThread);
+        return CompletableFuture.supplyAsync(() -> sendRequestImpl(method, uri, headers, body, useSslParams), Thread::startVirtualThread);
     }
 
-    private byte[] sendRequestImpl(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams, boolean isRetry) {
-        try {
-            var request = new BasicClassicHttpRequest(method, uri);
-            if(headers != null) {
-                headers.forEach(request::setHeader);
-            }
+    private byte[] sendRequestImpl(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams) {
+        Throwable lastError = null;
+        for(var i = 0; i < MAX_TRIES; i++) {
+            try {
+                var request = new BasicClassicHttpRequest(method, uri);
+                if(headers != null) {
+                    headers.forEach(request::setHeader);
+                }
 
-            if(body != null) {
-                var contentType = Objects.requireNonNull(headers == null ? null : headers.get("Content-Type"), "Missing Content-Type header");
-                request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
-            }
-            var context = HttpCoreContext.create();
-            context.setAttribute(SSL_PARAMS_KEY, useSslParams);
-            context.setAttribute(PROXY_KEY, proxy);
-            return httpClient.execute(request, context, data -> data.getEntity().getContent().readAllBytes());
-        }catch (Throwable throwable) {
-            if(!isRetry) {
+                if(body != null) {
+                    var contentType = Objects.requireNonNull(headers == null ? null : headers.get("Content-Type"), "Missing Content-Type header");
+                    request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
+                }
+                var context = HttpCoreContext.create();
+                context.setAttribute(SSL_PARAMS_KEY, useSslParams);
+                context.setAttribute(PROXY_KEY, proxy);
+                return httpClient.execute(request, context, data -> data.getEntity().getContent().readAllBytes());
+            }catch (Throwable throwable) {
                 if(throwable instanceof SSLHandshakeException && useSslParams) {
                     httpsConnectionFactory.rotateSSL();
                 }
 
-                return sendRequestImpl(method, uri, headers, body, useSslParams, true);
+                lastError = throwable;
             }
-
-            throw new RuntimeException("%s request to %s failed(%s)".formatted(method, uri, throwable.getMessage()), throwable);
         }
+
+        throw new RuntimeException("%s request to %s failed(%s)".formatted(method, uri, lastError.getMessage()), lastError);
     }
 
     @Override
