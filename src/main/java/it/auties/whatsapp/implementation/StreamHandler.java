@@ -860,7 +860,7 @@ class StreamHandler {
 
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
-            case 403, 503 -> socketHandler.disconnect(DisconnectReason.BANNED);
+            case 403, 503 -> socketHandler.disconnect(socketHandler.store().clientType() == ClientType.WEB ? DisconnectReason.RECONNECTING : DisconnectReason.BANNED);
             case 500 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             case 401 -> handleStreamError(node);
             default -> node.children().forEach(error -> socketHandler.store().resolvePendingRequest(error, true));

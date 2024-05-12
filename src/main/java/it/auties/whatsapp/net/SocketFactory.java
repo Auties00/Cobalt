@@ -69,7 +69,8 @@ public final class SocketFactory {
                 Reflection.open(doTunnellingMethod);
                 doTunnellingMethod.invoke(httpConnection);
             } catch (ReflectiveOperationException exception) {
-                throw new RuntimeException("Cannot enable tunneling", exception);
+                var cause = Objects.requireNonNullElse(exception.getCause(), exception);
+                throw new RuntimeException(Objects.requireNonNullElse(cause.getMessage(), "Cannot enable tunneling"), cause);
             }
         }
 
@@ -377,11 +378,8 @@ public final class SocketFactory {
                     return;
                 }
 
-                System.out.println("Disconnecting");
                 socket.close();
-                System.out.println("Disconnected");
             } catch (Throwable ignored) {
-                System.out.println("error");
                 // Ignored
             }
         }

@@ -209,7 +209,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replaceAll("-", "")));
         this.advertisingId = Objects.requireNonNullElseGet(advertisingId, UUID::randomUUID);
         this.identityId = Objects.requireNonNull(identityId, "Missing identity id");
-        this.backupToken = Objects.requireNonNull(backupToken, "Missing backup token");
+        this.backupToken = Objects.requireNonNullElseGet(backupToken, () -> Bytes.random(20));
         this.companionIdentity = companionIdentity;
         this.senderKeys = Objects.requireNonNullElseGet(senderKeys, ConcurrentHashMap::new);
         this.appStateKeys = Objects.requireNonNullElseGet(appStateKeys, ArrayList::new);
@@ -232,7 +232,6 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
                 .noiseKeyPair(SignalKeyPair.random())
                 .identityKeyPair(SignalKeyPair.random())
                 .identityId(Bytes.random(16))
-                .backupToken(Bytes.random(20))
                 .build();
     }
 

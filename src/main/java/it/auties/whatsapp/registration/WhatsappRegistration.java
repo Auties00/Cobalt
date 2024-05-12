@@ -41,15 +41,13 @@ import java.util.stream.Collectors;
 
 public final class WhatsappRegistration {
     public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
-    private static final String MOBILE_ANDROID_CLIENT_METRICS = "%7B%22attempts%22%3A1%2C%22app_campaign_download_source%22%3A%22google-play%7Cunknown%22%7D";
     private static final String MOBILE_KAIOS_REGISTRATION_ENDPOINT = "https://v-k.whatsapp.net/v2";
     private static final String MOBILE_ANDROID_OFFLINE_AB = "%7B%22exposure%22%3A%5B%22android_confluence_tos_pp_link_update_universe%7Candroid_confluence_tos_pp_link_update_exp%7Ccontrol%22%2C%22reg_phone_number_update_colors_prod_universe%7Creg_phone_number_update_colors_prod_experiment%7Ccontrol%22%2C%22android_rollout_quebec_tos_reg_universe%7Candroid_rollout_ca_tos_reg_experiment%7Ccontrol%22%2C%22dummy_aa_prod_universe%7Cdummy_aa_prod_experiment%7Ccontrol%22%5D%2C%22metrics%22%3A%7B%22backup_token_source%22%3A%22block_store%22%7D%7D";
     private static final int MAX_REGISTRATION_RETRIES = 3;
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
     private static final List<String> MOBILE_IOS_OFFLINE_AB_EXPOSURES = List.of(
             "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control",
-            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test",
-            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control"
+            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|control"
     );
     private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
     private static final String DEFAULT_GCM_CODE = "36dimLEhnzs=";
@@ -107,15 +105,32 @@ public final class WhatsappRegistration {
 
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
-        // store.setDevice(originalDevice.toPersonal());
+        // if(store.device().platform().isIOS()) {
+        //            store.setDevice(originalDevice.toPersonal());
+        // }
 
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> exists(originalDevice, true, false, null))
-                    .thenComposeAsync(response -> clientLog(response, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue")), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> getPushCode())
-                    .thenComposeAsync(result -> requestVerificationCode(result, null));
+                    .thenComposeAsync(result -> {
+                        clientLog(
+                                Map.entry("current_screen", "verify_sms"),
+                                Map.entry("previous_screen", "enter_number"),
+                                Map.entry("action_taken", "continue")
+                        );
+                        var response = requestVerificationCode(result, null);
+                        clientLog(
+                                Map.entry("event_name", "smb_client_onboarding_journey"),
+                                Map.entry("smb_onboarding_step", "20"),
+                                Map.entry("has_consumer_app", "1"),
+                                Map.entry("sequence_number", "14"),
+                                Map.entry("is_logged_in_on_consumer_app", "0"),
+                                Map.entry("app_install_source", "unknown|unknown")
+                        );
+                        return response;
+                    });
             case ANDROID, ANDROID_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> exists(null, true, false, null))
@@ -215,7 +230,7 @@ public final class WhatsappRegistration {
         }
 
         if (gcmClient != null) {
-            return gcmClient.getPushToken();
+            return gcmClient.login();
         }
 
         return CompletableFuture.completedFuture(null);
@@ -279,7 +294,7 @@ public final class WhatsappRegistration {
                     .put("language_selector_clicked_count", 0)
                     .put("backup_token", convertBufferToUrlHex(keys.backupToken()))
                     .put("roaming_type", 0)
-                    .put("backup_token_error", "success")
+                    .put("backup_token_error", "null_token")
                     .put("feo2_query_status", "error_security_exception")
                     .put("sim_type", 0)
                     .put("network_radio_type", 1)
@@ -293,11 +308,11 @@ public final class WhatsappRegistration {
                     .put("advertising_id", keys.advertisingId().toString().toLowerCase())
                     .put("hasinrc", 1)
                     .put("roaming_type", 0)
-                    .put("client_metrics", MOBILE_ANDROID_CLIENT_METRICS)
+                    .put("client_metrics", "%7B%22attempts%22%3A1%2C%22app_campaign_download_source%22%3A%22google-play%7Cunknown%22%7D")
                     .put("pid", ProcessHandle.current().pid())
-                    .put("cellular_strength", 1)
+                    .put("cellular_strength", 5)
                     .put("recaptcha", "%7B%22stage%22%3A%22ABPROP_DISABLED%22%7D")
-                    .put("device_name", Bytes.bytesToCrockford(Bytes.random(8)))
+                    .put("device_name", "walleye")
                     .put("language_selector_time_spent", 0)
                     .put("push_token", pushToken == null ? "" : pushToken, pushToken != null)
                     .toEntries());
@@ -333,6 +348,9 @@ public final class WhatsappRegistration {
                     .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
                         if (error instanceof TimeoutException) {
+                            if(printRequests) {
+                                System.out.println("Using default apns code");
+                            }
                             return DEFAULT_APNS_CODE;
                         }
 
@@ -347,6 +365,9 @@ public final class WhatsappRegistration {
                     .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
                         if (error instanceof TimeoutException) {
+                            if(printRequests) {
+                                System.out.println("Using default gcm code");
+                            }
                             return DEFAULT_GCM_CODE;
                         }
 
@@ -375,15 +396,14 @@ public final class WhatsappRegistration {
     }
 
     @SafeVarargs
-    private <T> CompletableFuture<T> clientLog(T data, Entry<String, Object>... attributes) {
+    private void clientLog(Entry<String, Object>... attributes) {
         var options = getRegistrationOptions(
                 store,
                 keys,
                 false,
                 attributes
         );
-        return options.thenCompose(attrs -> sendRequest("/client_log", attrs))
-                .thenApply(result -> data);
+        options.thenCompose(attrs -> sendRequest("/client_log", attrs));
     }
 
     private CompletableFuture<RegistrationResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
@@ -403,7 +423,7 @@ public final class WhatsappRegistration {
                 .countryCode();
         return switch (store.device().platform()) {
             case ANDROID, ANDROID_BUSINESS -> getAndroidTokens()
-                    .thenApplyAsync(tokens -> getAndroidRequestParameters(pushCode, tokens, countryCode));
+                    .thenApplyAsync(tokens -> getAndroidRequestParameters(pushCode, tokens));
             case IOS, IOS_BUSINESS -> CompletableFuture.completedFuture(getIosRequestParameters(pushCode));
             case KAIOS -> CompletableFuture.completedFuture(getKaiOsRequestParameters(countryCode));
             default -> throw new IllegalStateException("Unsupported mobile os");
@@ -439,24 +459,23 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
-    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, WhatsappAndroidTokens tokens, CountryCode countryCode) {
+    private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, WhatsappAndroidTokens tokens) {
         return Attributes.of()
                 .put("method", method.data())
-                .put("sim_mcc", countryCode.mcc())
-                .put("sim_mnc", "002")
+                .put("sim_mcc", "000")
+                .put("sim_mnc", "000")
                 .put("reason", "")
-                .put("mcc", countryCode.mcc())
+                .put("mcc", "000")
                 .put("mnc", "000")
                 .put("feo2_query_status", "error_security_exception")
                 .put("db", 1)
                 .put("sim_type", 0)
                 .put("recaptcha", "%7B%22stage%22%3A%22ABPROP_DISABLED%22%7D")
                 .put("network_radio_type", 1)
-                .put("prefer_sms_over_flash", true)
+                .put("prefer_sms_over_flash", false)
                 .put("simnum", 0)
-                .put("clicked_education_link", false)
                 .put("airplane_mode_type", 0)
-                .put("client_metrics", MOBILE_ANDROID_CLIENT_METRICS)
+                .put("client_metrics", "%7B%22attempts%22%3A20%2C%22app_campaign_download_source%22%3A%22google-play%7Cunknown%22%7D")
                 .put("mistyped", 7)
                 .put("advertising_id", keys.advertisingId())
                 .put("hasinrc", 1)
@@ -464,11 +483,11 @@ public final class WhatsappRegistration {
                 .put("device_ram", "3.57")
                 .put("education_screen_displayed", false)
                 .put("pid", ProcessHandle.current().pid())
-                .put("cellular_strength", 1)
                 .put("gpia", tokens == null ? "" : tokens.gpia(), tokens != null)
+                .put("cellular_strength", 5)
                 .put("_gg", tokens == null ? "" : tokens.gg(), tokens != null)
                 .put("_gi", tokens == null ? "" : tokens.gi(), tokens != null)
-                .put("push_code", pushCode == null ? "" : convertBufferToUrlHex(pushCode.getBytes()), pushCode != null)
+                //.put("push_code", pushCode == null ? "" : convertBufferToUrlHex(pushCode.getBytes()), pushCode != null)
                 .put("backup_token", convertBufferToUrlHex(keys.backupToken()))
                 .put("hasav", 2)
                 .toEntries();

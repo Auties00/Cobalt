@@ -110,7 +110,6 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .noiseKeyPair(sixParts.noiseKeyPair())
                 .identityKeyPair(sixParts.identityKeyPair())
                 .identityId(sixParts.identityId())
-                .backupToken(Bytes.random(20))
                 .registered(true)
                 .clientType(ClientType.MOBILE)
                 .build();

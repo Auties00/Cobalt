@@ -38,7 +38,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
-    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.9.74");
+    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.9.80");
     private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.9.74");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
@@ -269,8 +269,7 @@ public final class WhatsappMetadata {
 
     public static CompletableFuture<WhatsappAndroidTokens> getAndroidTokens(String deviceAddress, byte[] authKey, boolean business) {
         return getAndroidData(deviceAddress, business).thenComposeAsync(androidData -> {
-            var authKeyBase64 = Base64.getEncoder().encodeToString(authKey);
-            var endpoint = URI.create("http://%s/gpia?authKey=%s".formatted(getAndroidMiddleware(deviceAddress, business), URLEncoder.encode(authKeyBase64, StandardCharsets.UTF_8)));
+            var endpoint = URI.create("http://%s/gpia?authKey=%s".formatted(getAndroidMiddleware(deviceAddress, business), Base64.getUrlEncoder().encodeToString(authKey)));
             return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
                 var supportData = Json.readValue(response, GpiaResponse.class);
                 if(supportData.error() != null) {
@@ -286,12 +285,12 @@ public final class WhatsappMetadata {
                         androidData.apkPath(),
                         0
                 );
-                var gpia = encryptAndroidToken(gpiaData, authKeyBase64);
+                var gpia = encryptAndroidToken(gpiaData, authKey);
                 var ggData = new GgData(
                         0,
                         supportData.token()
                 );
-                var gg = encryptAndroidToken(ggData, authKeyBase64);
+                var gg = encryptAndroidToken(ggData, authKey);
                 var giData = new GiData(
                         Base64.getEncoder().encodeToString(androidData.signatureSha1()),
                         androidData.apkPath(),
@@ -300,7 +299,7 @@ public final class WhatsappMetadata {
                         androidData.packageName(),
                         String.valueOf(androidData.apkSize())
                 );
-                var gi = encryptAndroidToken(giData, authKeyBase64);
+                var gi = encryptAndroidToken(giData, authKey);
                 return new WhatsappAndroidTokens(gpia, gg, gi);
             }).exceptionallyAsync(throwable -> {
                 throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage(), throwable);
@@ -308,13 +307,13 @@ public final class WhatsappMetadata {
         });
     }
 
-    private static String encryptAndroidToken(Object data, String authKeyBase64) {
+    private static String encryptAndroidToken(Object data, byte[] authKey) {
         var jsonData = Json.writeValueAsString(data)
                 .replaceAll(" ", "")
                 .replaceAll("/", "\\\\/");
         var payload = AesCbc.encryptAndPrefix(
                 jsonData.getBytes(),
-                Sha256.calculate(authKeyBase64)
+                Sha256.calculate(Base64.getEncoder().encodeToString(authKey))
         );
         return URLEncoder.encode(Base64.getEncoder().encodeToString(payload), StandardCharsets.UTF_8);
     }

@@ -382,16 +382,8 @@ public class SocketHandler implements SocketListener {
         return switch (reason) {
             case DISCONNECTED -> handleDisconnection();
             case RECONNECTING -> handleReconnection();
-            case LOGGED_OUT -> handleLoggedOut();
+            case LOGGED_OUT, BANNED -> handleLoggedOut();
             case RESTORE -> handleRestore();
-            case BANNED -> handleBan();
-        };
-    }
-
-    private CompletableFuture<Void> handleBan() {
-        return switch (store().clientType()) {
-            case WEB -> handleDisconnection();
-            case MOBILE -> handleLoggedOut();
         };
     }
 
