@@ -230,7 +230,7 @@ public final class WhatsappRegistration {
         }
 
         if (gcmClient != null) {
-            return gcmClient.login();
+            return gcmClient.getPushToken();
         }
 
         return CompletableFuture.completedFuture(null);
