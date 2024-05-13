@@ -1076,10 +1076,12 @@ class MessageHandler {
             return;
         }
         if (info.message().hasCategory(MessageCategory.SERVER)) {
-            if (info.message().content() instanceof ProtocolMessage protocolMessage) {
+            if (!(info.message().content() instanceof ProtocolMessage protocolMessage)) return;
+            if (protocolMessage.protocolType() == null) return;
+            if (!protocolMessage.protocolType().equals(ProtocolMessage.Type.MESSAGE_EDIT)) {
                 handleProtocolMessage(info, protocolMessage);
+                return;
             }
-            return;
         }
 
         var chat = info.chat()
