@@ -721,9 +721,13 @@ public class SocketHandler implements SocketListener {
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
                 .put("to", jid)
                 .put("type", type, Objects::nonNull);
-        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.WHATSAPP)) {
-            attributes.put("recipient", jid);
-            attributes.put("to", participant);
+        if (Objects.equals(type, "sender")) {
+            if (jid.hasServer(JidServer.WHATSAPP))  {
+                attributes.put("recipient", jid);
+                attributes.put("to", participant);
+            } else if (jid.hasServer(JidServer.GROUP)) {
+                attributes.put("participant", participant);
+            }
         }
 
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
