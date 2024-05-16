@@ -25,12 +25,10 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.Socket;
 import java.net.*;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -195,6 +193,30 @@ public class HttpClient implements AutoCloseable {
     }
 
     private static class HttpsConnectionFactory implements LayeredConnectionSocketFactory {
+        private static final String[] IOS_CIPHERS = {
+                // "TLS_GREASE_IS_THE_WORD_1A",
+                "TLS_AES_128_GCM_SHA256",
+                "TLS_AES_256_GCM_SHA384",
+                "TLS_CHACHA20_POLY1305_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+                "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+                "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+                "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+                "TLS_RSA_WITH_AES_256_GCM_SHA384",
+                "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                "TLS_RSA_WITH_AES_256_CBC_SHA",
+                "TLS_RSA_WITH_AES_128_CBC_SHA",
+                "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
+                "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+                "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+    };
+
         private SSLContext sslContext;
         private SSLParameters sslParameters;
         private HttpsConnectionFactory() {
@@ -203,21 +225,11 @@ public class HttpClient implements AutoCloseable {
 
         private void rotateSSL() {
             try {
-                var random = new SecureRandom();
                 var sslContext = SSLContext.getInstance("TLSv1.3");
                 sslContext.init(null, null, new SecureRandom());
                 this.sslParameters = sslContext.getDefaultSSLParameters();
-                sslParameters.setCipherSuites(Arrays.stream(sslContext.getDefaultSSLParameters().getCipherSuites())
-                        .filter(entry -> random.nextBoolean())
-                        .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result, random); return result; }))
-                        .toArray(String[]::new));
+                sslParameters.setCipherSuites(IOS_CIPHERS);
                 sslParameters.setUseCipherSuitesOrder(true);
-                sslParameters.setNamedGroups(Arrays.stream(sslContext.getDefaultSSLParameters().getNamedGroups())
-                        .filter(entry -> random.nextBoolean())
-                        .collect(Collectors.collectingAndThen(Collectors.toList(), result -> { Collections.shuffle(result, random); return result; }))
-                        .toArray(String[]::new));
-                var packetSize = sslParameters.getMaximumPacketSize();
-                sslParameters.setMaximumPacketSize(random.nextInt(packetSize / 5, packetSize * 5));
                 this.sslContext = sslContext;
             }catch (GeneralSecurityException exception) {
                 throw new RuntimeException(exception);

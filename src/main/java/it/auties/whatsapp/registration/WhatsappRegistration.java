@@ -47,7 +47,9 @@ public final class WhatsappRegistration {
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
     private static final List<String> MOBILE_IOS_OFFLINE_AB_EXPOSURES = List.of(
             "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control",
-            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|control"
+            "ios_rollout_quebec_tos_reg_universe|ios_rollout_ca_tos_reg_experiment|control",
+            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test",
+            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control"
     );
     private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
     private static final String DEFAULT_GCM_CODE = "36dimLEhnzs=";
@@ -105,9 +107,9 @@ public final class WhatsappRegistration {
 
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
-        // if(store.device().platform().isIOS()) {
-        //            store.setDevice(originalDevice.toPersonal());
-        // }
+        if(store.device().platform().isIOS()) {
+            store.setDevice(originalDevice.toPersonal());
+        }
 
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
@@ -121,14 +123,16 @@ public final class WhatsappRegistration {
                                 Map.entry("action_taken", "continue")
                         );
                         var response = requestVerificationCode(result, null);
-                        clientLog(
-                                Map.entry("event_name", "smb_client_onboarding_journey"),
-                                Map.entry("smb_onboarding_step", "20"),
-                                Map.entry("has_consumer_app", "1"),
-                                Map.entry("sequence_number", "14"),
-                                Map.entry("is_logged_in_on_consumer_app", "0"),
-                                Map.entry("app_install_source", "unknown|unknown")
-                        );
+                        if(store.device().platform().isBusiness()) {
+                            clientLog(
+                                    Map.entry("event_name", "smb_client_onboarding_journey"),
+                                    Map.entry("smb_onboarding_step", "20"),
+                                    Map.entry("has_consumer_app", "1"),
+                                    Map.entry("sequence_number", "14"),
+                                    Map.entry("is_logged_in_on_consumer_app", "0"),
+                                    Map.entry("app_install_source", "unknown|unknown")
+                            );
+                        }
                         return response;
                     });
             case ANDROID, ANDROID_BUSINESS -> onboard("1", 2155550000L, null)
