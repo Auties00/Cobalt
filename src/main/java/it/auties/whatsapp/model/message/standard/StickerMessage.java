@@ -77,8 +77,11 @@ public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> i
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
     private final boolean avatar;
 
+    @ProtobufProperty(index = 20, type = ProtobufType.BOOL)
+    private final boolean ai;
+
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public StickerMessage(String mediaUrl, byte[] mediaSha256, byte[] mediaEncryptedSha256, byte[] mediaKey, String mimetype, Integer height, Integer width, String mediaDirectPath, Long mediaSize, Long mediaKeyTimestampSeconds, Integer firstFrameLength, byte[] firstFrameSidecar, boolean animated, byte[] thumbnail, ContextInfo contextInfo, Long stickerSentTimestamp, boolean avatar) {
+    public StickerMessage(String mediaUrl, byte[] mediaSha256, byte[] mediaEncryptedSha256, byte[] mediaKey, String mimetype, Integer height, Integer width, String mediaDirectPath, Long mediaSize, Long mediaKeyTimestampSeconds, Integer firstFrameLength, byte[] firstFrameSidecar, boolean animated, byte[] thumbnail, ContextInfo contextInfo, Long stickerSentTimestamp, boolean avatar, boolean ai) {
         this.mediaUrl = mediaUrl;
         this.mediaSha256 = mediaSha256;
         this.mediaEncryptedSha256 = mediaEncryptedSha256;
@@ -96,6 +99,7 @@ public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> i
         this.contextInfo = contextInfo;
         this.stickerSentTimestamp = stickerSentTimestamp;
         this.avatar = avatar;
+        this.ai = ai;
     }
 
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
@@ -123,6 +127,10 @@ public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> i
 
     public boolean avatar() {
         return avatar;
+    }
+
+    public boolean ai() { 
+        return ai; 
     }
 
     @Override
