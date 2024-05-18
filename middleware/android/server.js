@@ -412,7 +412,6 @@ Java.perform(function () {
             let authKey = req.authKey
             try {
                 let nonce = Base64.getEncoder().withoutPadding().encodeToString(Base64.getUrlDecoder().decode(authKey))
-                console.log("Using nonce:", nonce)
                 calculateIntegrityToken(integrityTokenProvider, integrityRequestType, integrityRequestBuilder, nonce, (token) => {
                     res.end(JSON.stringify({
                         "token": token
@@ -565,7 +564,7 @@ Java.perform(function () {
             try {
                 let parsedRequest = url.parse(req.url, true)
                 switch (parsedRequest.pathname) {
-                    case "/gpia":
+                    case "/integrity":
                         res.writeHead(200, {"Content-Type": "application/json"});
                         onIntegrity(parsedRequest.query, res)
                         break;
@@ -580,6 +579,7 @@ Java.perform(function () {
                     default:
                         res.writeHead(404, {"Content-Type": "application/json"});
                         res.end(JSON.stringify({"error": "Unknown method"}))
+                        break;
                 }
             } catch (error) {
                 res.writeHead(500, {"Content-Type": "application/json"});

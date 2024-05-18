@@ -78,10 +78,14 @@ public record CompanionDevice(
     }
 
     public static CompanionDevice ios(boolean business) {
-        return ios(null, business);
+        return ios(null, business, null);
     }
 
-    public static CompanionDevice ios(Version appVersion, boolean business) {
+    public static CompanionDevice ios(boolean business, String deviceAddress) {
+        return ios(null, business, deviceAddress);
+    }
+
+    public static CompanionDevice ios(Version appVersion, boolean business, String deviceAddress) {
         var model = IPHONES.get(ThreadLocalRandom.current().nextInt(IPHONES.size()));
         return new CompanionDevice(
                 model.getKey(),
@@ -91,12 +95,8 @@ public record CompanionDevice(
                 Optional.ofNullable(appVersion),
                 Version.of("17.4.1"),
                 "20H320",
-                Optional.empty()
+                Optional.ofNullable(deviceAddress)
         );
-    }
-
-    public static CompanionDevice android(boolean business) {
-        return android(null, business, null);
     }
 
     public static CompanionDevice android(boolean business, String deviceAddress) {

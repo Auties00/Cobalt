@@ -1,0 +1,17 @@
+{
+  "name": "ios",
+  "version": "1.0.0",
+  "description": "Example showing how to use frida-net's server functionality",
+  "private": true,
+  "main": "demo.js",
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "frida-compile server.js -o server_with_dependencies.js -c",
+    "watch": "frida-compile server.js -o server_with_dependencies.js -w"
+  },
+  "devDependencies": {
+    "@types/frida-gum": "^18.5.1",
+    "@types/node": "^18.19.3",
+    "frida-compile": "^16.4.1"
+  }
+}

@@ -39,7 +39,7 @@ import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
     private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.9.80");
-    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.9.78");
+    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.10.74");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
     private static final URI WEB_UPDATE_URL = URI.create("https://web.whatsapp.com/check-update?version=2.2245.9&platform=web");
@@ -154,7 +154,7 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(String deviceAddress, boolean business) {
-        var backendAddress = getAndroidMiddleware(deviceAddress, business);
+        var backendAddress = getMiddleware(deviceAddress, business);
         var endpoint = URI.create("http://%s/info".formatted(backendAddress));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var app = Json.readValue(response, WhatsappAndroidApp.class);
@@ -269,7 +269,7 @@ public final class WhatsappMetadata {
 
     public static CompletableFuture<WhatsappAndroidTokens> getAndroidTokens(String deviceAddress, byte[] authKey, boolean business) {
         return getAndroidData(deviceAddress, business).thenComposeAsync(androidData -> {
-            var endpoint = URI.create("http://%s/gpia?authKey=%s".formatted(getAndroidMiddleware(deviceAddress, business), Base64.getUrlEncoder().encodeToString(authKey)));
+            var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(getMiddleware(deviceAddress, business), Base64.getUrlEncoder().encodeToString(authKey)));
             return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
                 var supportData = Json.readValue(response, GpiaResponse.class);
                 if(supportData.error() != null) {
@@ -318,8 +318,8 @@ public final class WhatsappMetadata {
         return URLEncoder.encode(Base64.getEncoder().encodeToString(payload), StandardCharsets.UTF_8);
     }
 
-    private static String getAndroidMiddleware(String deviceAddress, boolean business) {
-        Objects.requireNonNull(deviceAddress, "Please specify the address of the physical device to use in CompanionDevice.android(...) as explained in android/README.md");
+    private static String getMiddleware(String deviceAddress, boolean business) {
+        Objects.requireNonNull(deviceAddress, "Please specify the address of the physical device to use in android/README.md or ios/README.md");
         return "%s:%s".formatted(deviceAddress, business ? ANDROID_BUSINESS_PORT : ANDROID_PERSONAL_PORT);
     }
 
@@ -380,7 +380,7 @@ public final class WhatsappMetadata {
     public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(String deviceAddress, byte[] authKey, byte[] enc, boolean business) {
         var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
         var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
-        var endpoint = URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(getAndroidMiddleware(deviceAddress, business), authKeyBase64, encBase64));
+        var endpoint = URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(getMiddleware(deviceAddress, business), authKeyBase64, encBase64));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var cert = Json.readValue(response, WhatsappAndroidCert.class);
             if(cert.error() != null) {
@@ -405,5 +405,29 @@ public final class WhatsappMetadata {
         }
 
         return value;
+    }
+
+    public static CompletableFuture<WhatsappIosTokens> getIosTokens(String deviceAddress, byte[] authKey, boolean business) {
+        var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(getMiddleware(deviceAddress, business), URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8)));
+        return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
+            var supportData = Json.readValue(response, IntegrityResponse.class);
+            if (supportData.error() != null) {
+                throw new RuntimeException(supportData.error());
+            }
+            var assertion = Base64.getUrlEncoder().encodeToString(Json.writeValueAsBytes(new IntegrityAssertion(supportData.assertion())));
+            return new WhatsappIosTokens(supportData.attestation(), assertion);
+        });
+    }
+
+    private record IntegrityResponse(
+            String attestation,
+            String assertion,
+            String error
+    ) {
+
+    }
+
+    private record IntegrityAssertion(String assertion) {
+
     }
 }

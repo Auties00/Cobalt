@@ -25,6 +25,7 @@ import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
 import it.auties.whatsapp.registration.gcm.GcmClient;
 import it.auties.whatsapp.registration.metadata.WhatsappAndroidTokens;
 import it.auties.whatsapp.registration.metadata.WhatsappIosMetrics;
+import it.auties.whatsapp.registration.metadata.WhatsappIosTokens;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.*;
 
@@ -65,6 +66,7 @@ public final class WhatsappRegistration {
     private final CountryCode countryCode;
     private final boolean printRequests;
     private volatile CompletableFuture<WhatsappAndroidTokens> androidToken;
+    private volatile CompletableFuture<WhatsappIosTokens> iosToken;
 
     public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
         this.store = store;
@@ -103,13 +105,11 @@ public final class WhatsappRegistration {
 
         // If you want to print the IP
         // System.out.println(httpClient.getString(URI.create("http://api.ipify.org")).join());
-        var originalDevice = store.device();
 
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
-        if(store.device().platform().isIOS()) {
-            store.setDevice(originalDevice.toPersonal());
-        }
+        var originalDevice = store.device();
+        // store.setDevice(originalDevice.toPersonal());
 
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
@@ -441,7 +441,17 @@ public final class WhatsappRegistration {
 
         var publicKey = keys.noiseKeyPair().publicKey();
         var business = store.device().platform().isBusiness();
-        return androidToken = WhatsappMetadata.getAndroidTokens(getAndroidAddress(), publicKey, business);
+        return androidToken = WhatsappMetadata.getAndroidTokens(getDeviceAddress(), publicKey, business);
+    }
+
+    private CompletableFuture<WhatsappIosTokens> getIosToken() {
+        if (iosToken != null) {
+            return iosToken;
+        }
+
+        var publicKey = keys.noiseKeyPair().publicKey();
+        var business = store.device().platform().isBusiness();
+        return iosToken = WhatsappMetadata.getIosTokens(getDeviceAddress(), publicKey, business);
     }
 
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -458,7 +468,7 @@ public final class WhatsappRegistration {
                 .put("sim_mcc", "000")
                 .put("sim_mnc", "000")
                 .put("reason", "")
-                .put("push_code", convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)))
+                .put("push_code", pushCode == null ? "" : convertBufferToUrlHex(pushCode.getBytes(StandardCharsets.UTF_8)), pushCode != null)
                 .put("cellular_strength", 1)
                 .toEntries();
     }
@@ -597,58 +607,67 @@ public final class WhatsappRegistration {
             System.out.println("Using body: " + encBase64);
         }
         return switch (store.device().platform()) {
-            case IOS, IOS_BUSINESS -> {
+            case IOS, IOS_BUSINESS -> getIosToken().thenComposeAsync(iosTokens -> {
                 if (printRequests) {
                     System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 }
                 var uri = URI.create("%s%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path));
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
+                        .put("Authorization", iosTokens == null ? "" : iosTokens.authorization(), iosTokens != null)
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .put("Connection", "Close")
                         .toMap();
-                var body = "ENC=%s".formatted(encBase64);
-                yield httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
+                var body = "ENC=%s%s".formatted(
+                        encBase64,
+                        iosTokens == null ? "" : "&H=" + iosTokens.signature()
+                );
+                if (printRequests && iosTokens != null) {
+                    System.out.println("Using attestation: " + iosTokens.authorization());
+                    System.out.println("Using assertion: " + iosTokens.signature());
+                }
+                return httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
                     if (printRequests) {
                         System.out.println("Received response " + path + " " + resultAsString);
                     }
                     return resultAsString;
                 });
-            }
-            case ANDROID, ANDROID_BUSINESS ->
-                    WhatsappMetadata.getAndroidCert(getAndroidAddress(), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
-                        var uri = URI.create("%s%s".formatted(
-                                MOBILE_REGISTRATION_ENDPOINT,
-                                path
-                        ));
-                        var headers = Attributes.of()
-                                .put("User-Agent", userAgent)
-                                .put("WaMsysRequest", "1")
-                                .put("Authorization", androidCert == null ? "" : androidCert.certificate(), androidCert != null)
-                                .put("request_token", UUID.randomUUID().toString())
-                                .put("Content-Type", "application/x-www-form-urlencoded")
-                                .put("Accept-Encoding", "gzip")
-                                .toMap();
-                        var body = "ENC=%s%s".formatted(
-                                encBase64,
-                                androidCert == null ? "" : "&H=" + URLEncoder.encode(androidCert.signature(), StandardCharsets.UTF_8)
-                        );
-                        if (printRequests) {
-                            if (androidCert != null) {
-                                System.out.println("Using certificate: " + androidCert.certificate());
-                                System.out.println("Using signature: " + androidCert.signature());
-                            }
-                            System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
-                        }
-                        return httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
-                            var resultAsString = new String(result);
-                            if (printRequests) {
-                                System.out.println("Received response " + path + " " + resultAsString);
-                            }
-                            return resultAsString;
-                        });
-                    });
+            });
+
+            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(getDeviceAddress(), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
+                var uri = URI.create("%s%s".formatted(
+                        MOBILE_REGISTRATION_ENDPOINT,
+                        path
+                ));
+                var headers = Attributes.of()
+                        .put("User-Agent", userAgent)
+                        .put("WaMsysRequest", "1")
+                        .put("Authorization", androidCert == null ? "" : androidCert.certificate(), androidCert != null)
+                        .put("request_token", UUID.randomUUID().toString())
+                        .put("Content-Type", "application/x-www-form-urlencoded")
+                        .put("Accept-Encoding", "gzip")
+                        .toMap();
+                var body = "ENC=%s%s".formatted(
+                        encBase64,
+                        androidCert == null ? "" : "&H=" + URLEncoder.encode(androidCert.signature(), StandardCharsets.UTF_8)
+                );
+                if (printRequests) {
+                    if (androidCert != null) {
+                        System.out.println("Using certificate: " + androidCert.certificate());
+                        System.out.println("Using signature: " + androidCert.signature());
+                    }
+                    System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                }
+                return httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
+                    var resultAsString = new String(result);
+                    if (printRequests) {
+                        System.out.println("Received response " + path + " " + resultAsString);
+                    }
+                    return resultAsString;
+                });
+            });
+
             case KAIOS -> {
                 if (printRequests) {
                     System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
@@ -676,7 +695,7 @@ public final class WhatsappRegistration {
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), getAndroidAddress());
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), getDeviceAddress());
         return tokenFuture.thenApplyAsync(token -> {
             var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)
@@ -715,7 +734,7 @@ public final class WhatsappRegistration {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
     }
 
-    private String getAndroidAddress() {
+    private String getDeviceAddress() {
         return store.device()
                 .address()
                 .orElse(null);

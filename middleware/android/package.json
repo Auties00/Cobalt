@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "prepare": "npm run build",
-    "build": "frida-compile frida -o _frida.js",
-    "watch": "frida-compile frida -o _frida.js -w"
+    "build": "frida-compile server -o server_with_dependencies.js",
+    "watch": "frida-compile server -o server_with_dependencies.js -w"
   },
   "dependencies": {
     "frida-compile": "^16.4.1"
