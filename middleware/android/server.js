@@ -561,30 +561,25 @@ Java.perform(function () {
         console.log("[*] All server components are ready")
         const serverPort = infoData["packageName"] === personalPackageId ? personalServerPort : businessServerPort
         const server = http.createServer((req, res) => {
-            try {
-                let parsedRequest = url.parse(req.url, true)
-                switch (parsedRequest.pathname) {
-                    case "/integrity":
-                        res.writeHead(200, {"Content-Type": "application/json"});
-                        onIntegrity(parsedRequest.query, res)
-                        break;
-                    case "/cert":
-                        res.writeHead(200, {"Content-Type": "application/json"});
-                        onCert(parsedRequest.query, res)
-                        break;
-                    case "/info":
-                        res.writeHead(200, {"Content-Type": "application/json"});
-                        onInfo(res)
-                        break;
-                    default:
-                        res.writeHead(404, {"Content-Type": "application/json"});
-                        res.end(JSON.stringify({"error": "Unknown method"}))
-                        break;
-                }
-            } catch (error) {
-                res.writeHead(500, {"Content-Type": "application/json"});
-                res.end(JSON.stringify({"error": error.toString() + "\n" + error.stack}))
-            }
+            let parsedRequest = url.parse(req.url, true)
+                            switch (parsedRequest.pathname) {
+                                case "/integrity":
+                                    res.writeHead(200, {"Content-Type": "application/json"});
+                                    onIntegrity(parsedRequest.query, res)
+                                    break;
+                                case "/cert":
+                                    res.writeHead(200, {"Content-Type": "application/json"});
+                                    onCert(parsedRequest.query, res)
+                                    break;
+                                case "/info":
+                                    res.writeHead(200, {"Content-Type": "application/json"});
+                                    onInfo(res)
+                                    break;
+                                default:
+                                    res.writeHead(404, {"Content-Type": "application/json"});
+                                    res.end(JSON.stringify({"error": "Unknown method"}))
+                                    break;
+                            }
         })
 
         server.listen(serverPort, () => {

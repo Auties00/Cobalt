@@ -47,8 +47,8 @@ public final class WhatsappMetadata {
     private static final String MOBILE_BUSINESS_IOS_STATIC = "USUDuDYDeQhY4RF2fCSp5m3F6kJ1M2J8wS7bbNA2";
     private static final String MOBILE_KAIOS_STATIC = "aa8243c465a743c488beb4645dda63edc2ca9a58";
 
-    private static final int ANDROID_BUSINESS_PORT = 1120;
-    private static final int ANDROID_PERSONAL_PORT = 1119;
+    private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
+    private static final int MIDDLEWARE_PERSONAL_PORT = 1119;
 
     private static volatile HttpClient httpClient;
     private static final Object httpClientLock = new Object();
@@ -319,8 +319,8 @@ public final class WhatsappMetadata {
     }
 
     private static String getMiddleware(String deviceAddress, boolean business) {
-        Objects.requireNonNull(deviceAddress, "Please specify the address of the physical device to use in android/README.md or ios/README.md");
-        return "%s:%s".formatted(deviceAddress, business ? ANDROID_BUSINESS_PORT : ANDROID_PERSONAL_PORT);
+        Objects.requireNonNull(deviceAddress, "Please specify the address of the physical device to use as explained in android/README.md or ios/README.md");
+        return "%s:%s".formatted(deviceAddress, business ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT);
     }
 
     private record GpiaResponse(
@@ -386,6 +386,7 @@ public final class WhatsappMetadata {
             if(cert.error() != null) {
                 throw new RuntimeException(cert.error());
             }
+
             return cert;
         }).exceptionallyAsync(throwable -> {
             throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
@@ -414,8 +415,11 @@ public final class WhatsappMetadata {
             if (supportData.error() != null) {
                 throw new RuntimeException(supportData.error());
             }
+
             var assertion = Base64.getUrlEncoder().encodeToString(Json.writeValueAsBytes(new IntegrityAssertion(supportData.assertion())));
             return new WhatsappIosTokens(supportData.attestation(), assertion);
+        }).exceptionallyAsync(throwable -> {
+            throw new RuntimeException("Cannot connect to ios middleware: " + throwable.getMessage());
         });
     }
 
