@@ -14,3 +14,5 @@
 3. Run:
     - `frida -U "WhatsApp" -l server_with_dependencies.js` (WhatsApp)
     - `frida -U "WhatsApp Business" -l server_with_dependencies.js` (WhatsApp Business)
+4. Make sure the Android device and PC running the protocol are on the same network, copy the local ip of the Android device and use it like this:
+   `CompanionDevice.android(business, ipAddress)`

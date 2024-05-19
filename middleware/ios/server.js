@@ -98,7 +98,7 @@ setTimeout(() => {
     function onIntegrity(req, res) {
         integritySemaphore.take(() => {
             try {
-                const authKey = NSData.dataFromBase64String_(NSString.stringWithUTF8String_(Memory.allocUtf8String(req.authKey))).SHA256Hash()
+                const authKey = NSData.alloc().initWithBase64EncodedString_options_(NSString.stringWithUTF8String_(Memory.allocUtf8String(req.authKey)), 0).SHA256Hash()
                 let keyHandler = new ObjC.Block({
                     retType: 'void',
                     argTypes: ['object', 'object'],
