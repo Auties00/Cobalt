@@ -226,6 +226,37 @@ public final class ContextInfo implements Info, ProtobufMessage {
                 .build();
     }
 
+    public static ContextInfo of(ContextInfo context, MessageInfo quotedMessage) {
+        return new ContextInfoBuilder()
+                .quotedMessageId(quotedMessage.id())
+                .quotedMessage(quotedMessage.message())
+                .quotedMessageChatJid(quotedMessage.parentJid())
+                .quotedMessageSenderJid(quotedMessage.senderJid())
+                .actionLink(context.actionLink().orElse(null))
+                .conversionData(context.conversionData().orElse(null))
+                .conversionSource(context.conversionSource().orElse(null))
+                .conversionDelaySeconds(context.conversionDelaySeconds())
+                .entryPointConversionApp(context.entryPointConversionApp().orElse(null))
+                .entryPointConversionSource(context.entryPointConversionSource().orElse(null))
+                .entryPointConversionDelaySeconds(context.entryPointConversionDelaySeconds())
+                .disappearingMode(context.disappearingMode().orElse(null))
+                .ephemeralExpiration(context.ephemeralExpiration())
+                .ephemeralSettingTimestamp(context.ephemeralSettingTimestamp())
+                .externalAdReply(context.externalAdReply().orElse(null))
+                .forwarded(context.forwarded())
+                .forwardingScore(context.forwardingScore())
+                .groupSubject(context.groupSubject().orElse(null))
+                .ephemeralSharedSecret(context.ephemeralSharedSecret().orElse(null))
+                .parentGroup(context.parentGroup().orElse(null))
+                .placeholderKey(context.placeholderKey().orElse(null))
+                .quotedAd(context.quotedAd().orElse(null))
+                .trustBannerAction(context.trustBannerAction())
+                .trustBannerType(context.trustBannerType().orElse(null))
+                .mentions(context.mentions())
+                .build();
+    }
+
+
     public static ContextInfo empty() {
         return new ContextInfoBuilder()
                 .mentions(new ArrayList<>())
