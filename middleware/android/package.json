@@ -2,16 +2,16 @@
   "name": "android",
   "version": "1.0.0",
   "description": "Example showing how to use frida-net's server functionality",
-  "type": "module",
+  "private": true,
+  "main": "demo.js",
   "scripts": {
     "prepare": "npm run build",
-    "build": "frida-compile server -o server_with_dependencies.js",
-    "watch": "frida-compile server -o server_with_dependencies.js -w"
-  },
-  "dependencies": {
-    "frida-compile": "^16.4.1"
+    "build": "frida-compile server.js -o server_with_dependencies.js -c",
+    "watch": "frida-compile server.js -o server_with_dependencies.js -w"
   },
   "devDependencies": {
-    "@types/node": "^20.12.7"
+    "@types/frida-gum": "^18.5.1",
+    "@types/node": "^18.19.3",
+    "frida-compile": "^16.4.1"
   }
 }
