@@ -440,8 +440,7 @@ public final class WhatsappRegistration {
         }
 
         var publicKey = keys.noiseKeyPair().publicKey();
-        var business = store.device().platform().isBusiness();
-        return androidToken = WhatsappMetadata.getAndroidTokens(getDeviceAddress(), publicKey, business);
+        return androidToken = WhatsappMetadata.getAndroidTokens(store.device(), publicKey);
     }
 
     private CompletableFuture<WhatsappIosTokens> getIosToken() {
@@ -450,8 +449,7 @@ public final class WhatsappRegistration {
         }
 
         var publicKey = keys.noiseKeyPair().publicKey();
-        var business = store.device().platform().isBusiness();
-        return iosToken = WhatsappMetadata.getIosTokens(getDeviceAddress(), publicKey, business);
+        return iosToken = WhatsappMetadata.getIosTokens(store.device(), publicKey);
     }
 
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
@@ -473,6 +471,7 @@ public final class WhatsappRegistration {
                 .toEntries();
     }
 
+    @SuppressWarnings("unused") // pushCode is not used the latest version
     private Entry<String, Object>[] getAndroidRequestParameters(String pushCode, WhatsappAndroidTokens tokens) {
         return Attributes.of()
                 .put("method", method.data())
@@ -635,7 +634,7 @@ public final class WhatsappRegistration {
                 });
             });
 
-            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(getDeviceAddress(), keys.noiseKeyPair().publicKey(), enc, store.device().platform().isBusiness()).thenComposeAsync(androidCert -> {
+            case ANDROID, ANDROID_BUSINESS -> WhatsappMetadata.getAndroidCert(store.device(), keys.noiseKeyPair().publicKey(), enc).thenComposeAsync(androidCert -> {
                 var uri = URI.create("%s%s".formatted(
                         MOBILE_REGISTRATION_ENDPOINT,
                         path
@@ -695,7 +694,7 @@ public final class WhatsappRegistration {
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version(), getDeviceAddress());
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(store.device(), store.version(), phoneNumber.numberWithoutPrefix());
         return tokenFuture.thenApplyAsync(token -> {
             var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)
@@ -732,12 +731,6 @@ public final class WhatsappRegistration {
         }
 
         return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
-    }
-
-    private String getDeviceAddress() {
-        return store.device()
-                .address()
-                .orElse(null);
     }
 
     private void dispose() {

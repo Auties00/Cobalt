@@ -635,6 +635,10 @@ public class Whatsapp {
                 return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
 
+            if(store().clientType() == ClientType.WEB) {
+                return sendMessage(info);
+            }
+
             var composingFuture = compose ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
             return composingFuture.thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
                     .thenComposeAsync(deltaResult -> deltaResult ? sendMessage(info) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
@@ -682,6 +686,10 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Boolean> prepareChat(JidProvider recipient, long timestamp) {
+        if(store().clientType() == ClientType.WEB) {
+            return CompletableFuture.completedFuture(true);
+        }
+
         if(!recipient.toJid().hasServer(JidServer.WHATSAPP)) {
             return CompletableFuture.completedFuture(true);
         }

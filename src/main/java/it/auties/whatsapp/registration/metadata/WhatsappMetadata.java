@@ -10,6 +10,7 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.net.HttpClient;
@@ -38,7 +39,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
-    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.9.80");
+    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.10.74");
     private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.10.74");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
@@ -54,18 +55,18 @@ public final class WhatsappMetadata {
     private static final Object httpClientLock = new Object();
 
     private static volatile CompletableFuture<Version> webVersion;
-    private static volatile CompletableFuture<WhatsappAndroidApp> personalApk;
-    private static volatile CompletableFuture<WhatsappAndroidApp> businessApk;
+    private static volatile CompletableFuture<WhatsappAndroidApp> androidPersonalData;
+    private static volatile CompletableFuture<WhatsappAndroidApp> androidBusinessData;
     private static volatile CompletableFuture<WhatsappKaiOsApp> kaiOsApp;
 
     private static final Path kaiOsCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
 
-    public static CompletableFuture<Version> getVersion(PlatformType platform, String deviceAddress) {
-        return switch (platform) {
+    public static CompletableFuture<Version> getVersion(CompanionDevice companion) {
+        return switch (companion.platform()) {
             case WEB, WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(deviceAddress, platform.isBusiness())
+                    getAndroidData(companion)
                             .thenApply(WhatsappAndroidApp::version);
             case IOS ->
                     getIosVersion(false);
@@ -73,7 +74,7 @@ public final class WhatsappMetadata {
                     getIosVersion(true);
             case KAIOS ->
                     getKaiOsData().thenApply(WhatsappKaiOsApp::version);
-            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
+            default -> throw new IllegalStateException("Unsupported mobile os: " + companion.platform());
         };
     }
 
@@ -95,14 +96,14 @@ public final class WhatsappMetadata {
         return Version.of(webVersionResponse.currentVersion());
     }
 
-    public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, Version appVersion, String deviceAddress) {
-        return switch (platform) {
-            case ANDROID, ANDROID_BUSINESS -> getAndroidData(deviceAddress, platform.isBusiness())
+    public static CompletableFuture<String> getToken(CompanionDevice companion, Version appVersion, long phoneNumber) {
+        return switch (companion.platform()) {
+            case ANDROID, ANDROID_BUSINESS -> getAndroidData(companion)
                     .thenApplyAsync(whatsappData -> getAndroidToken(String.valueOf(phoneNumber), whatsappData));
-            case IOS, IOS_BUSINESS -> getIosToken(phoneNumber, appVersion, platform.isBusiness());
+            case IOS, IOS_BUSINESS -> getIosToken(phoneNumber, appVersion, companion.platform().isBusiness());
             case KAIOS -> getKaiOsData()
                     .thenApplyAsync(kaiOsApp -> getKaiOsToken(phoneNumber, kaiOsApp));
-            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
+            default -> throw new IllegalStateException("Unsupported mobile os: " + companion.platform());
         };
     }
 
@@ -134,27 +135,29 @@ public final class WhatsappMetadata {
         }
     }
 
-    private static CompletableFuture<WhatsappAndroidApp> getAndroidData(String deviceAddress, boolean business) {
-        if (!business && personalApk != null) {
-            return personalApk;
+    private static CompletableFuture<WhatsappAndroidApp> getAndroidData(CompanionDevice companion) {
+        var business = companion.platform().isBusiness();
+        if (!business && androidPersonalData != null) {
+            return androidPersonalData;
         }
 
-        if (business && businessApk != null) {
-            return businessApk;
+        if (business && androidBusinessData != null) {
+            return androidBusinessData;
         }
 
-        var future = downloadAndroidData(deviceAddress, business);
+        var future = downloadAndroidData(companion);
         if(business) {
-            businessApk = future;
+            androidBusinessData = future;
         }else {
-            personalApk = future;
+            androidPersonalData = future;
         }
 
         return future;
     }
 
-    private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(String deviceAddress, boolean business) {
-        var backendAddress = getMiddleware(deviceAddress, business);
+    private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(CompanionDevice companion) {
+        var backendAddress = getMiddleware(companion)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot access android middleware"));
         var endpoint = URI.create("http://%s/info".formatted(backendAddress));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var app = Json.readValue(response, WhatsappAndroidApp.class);
@@ -267,9 +270,11 @@ public final class WhatsappMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    public static CompletableFuture<WhatsappAndroidTokens> getAndroidTokens(String deviceAddress, byte[] authKey, boolean business) {
-        return getAndroidData(deviceAddress, business).thenComposeAsync(androidData -> {
-            var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(getMiddleware(deviceAddress, business), Base64.getUrlEncoder().encodeToString(authKey)));
+    public static CompletableFuture<WhatsappAndroidTokens> getAndroidTokens(CompanionDevice companionDevice, byte[] authKey) {
+        return getAndroidData(companionDevice).thenComposeAsync(androidData -> {
+            var middleware = getMiddleware(companionDevice)
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot access android middleware"));
+            var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(middleware, Base64.getUrlEncoder().encodeToString(authKey)));
             return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
                 var supportData = Json.readValue(response, GpiaResponse.class);
                 if(supportData.error() != null) {
@@ -318,9 +323,19 @@ public final class WhatsappMetadata {
         return URLEncoder.encode(Base64.getEncoder().encodeToString(payload), StandardCharsets.UTF_8);
     }
 
-    private static String getMiddleware(String deviceAddress, boolean business) {
-        Objects.requireNonNull(deviceAddress, "Please specify the address of the physical device to use as explained in android/README.md or ios/README.md");
-        return "%s:%s".formatted(deviceAddress, business ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT);
+    private static Optional<String> getMiddleware(CompanionDevice device) {
+        if(device.platform().isAndroid()) {
+            var address = device.address()
+                            .orElseThrow(() -> new IllegalArgumentException("Please specify the address of the physical device to use as explained in android/README.md or ios/README.md"));
+            return Optional.of("%s:%s".formatted(address, device.platform().isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT));
+        }
+
+        if(device.platform().isIOS()) {
+            return device.address()
+                    .map(address -> "%s:%s".formatted(address, device.platform().isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT));
+        }
+
+        return Optional.empty();
     }
 
     private record GpiaResponse(
@@ -377,10 +392,12 @@ public final class WhatsappMetadata {
 
     }
 
-    public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(String deviceAddress, byte[] authKey, byte[] enc, boolean business) {
+    public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(CompanionDevice device, byte[] authKey, byte[] enc) {
         var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
         var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
-        var endpoint = URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(getMiddleware(deviceAddress, business), authKeyBase64, encBase64));
+        var middleware = getMiddleware(device)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot access android middleware"));
+        var endpoint = URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(middleware, authKeyBase64, encBase64));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var cert = Json.readValue(response, WhatsappAndroidCert.class);
             if(cert.error() != null) {
@@ -408,8 +425,13 @@ public final class WhatsappMetadata {
         return value;
     }
 
-    public static CompletableFuture<WhatsappIosTokens> getIosTokens(String deviceAddress, byte[] authKey, boolean business) {
-        var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(getMiddleware(deviceAddress, business), URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8)));
+    public static CompletableFuture<WhatsappIosTokens> getIosTokens(CompanionDevice device, byte[] authKey) {
+        var middleware = getMiddleware(device);
+        if(middleware.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(middleware, URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8)));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var supportData = Json.readValue(response, IntegrityResponse.class);
             if (supportData.error() != null) {

@@ -180,7 +180,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             try {
                 this.socket = SocketFactory.of(proxy);
                 socket.setKeepAlive(true);
-                socket.connect(InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT.getHost(), MOBILE_SOCKET_ENDPOINT.getPort()));
+                socket.connect(proxy != null ? InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT.getHost(), MOBILE_SOCKET_ENDPOINT.getPort()) : new InetSocketAddress(MOBILE_SOCKET_ENDPOINT.getHost(), MOBILE_SOCKET_ENDPOINT.getPort()));
                 listener.onOpen(RawSocketSession.this);
                 readMessages();
             } catch (IOException exception) {
