@@ -106,6 +106,9 @@ public final class WhatsappRegistration {
         // If you want to print the IP
         // System.out.println(httpClient.getString(URI.create("http://api.ipify.org")).join());
 
+        // If you want to check the IP
+        // System.out.println(httpClient.getString(URI.create("https://www.cloudflare.com/cdn-cgi/trace/")).join());
+
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
         var originalDevice = store.device();
@@ -422,9 +425,6 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<Entry<String, Object>[]> getRequestVerificationCodeParameters(String pushCode) {
-        var countryCode = store.phoneNumber()
-                .orElseThrow()
-                .countryCode();
         return switch (store.device().platform()) {
             case ANDROID, ANDROID_BUSINESS -> getAndroidTokens()
                     .thenApplyAsync(tokens -> getAndroidRequestParameters(pushCode, tokens));
@@ -617,9 +617,9 @@ public final class WhatsappRegistration {
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .put("Connection", "Close")
                         .toMap();
-                var body = "ENC=%s%s".formatted(
+                var body = "ENC=%s&H=%s".formatted(
                         encBase64,
-                        iosTokens == null ? "" : "&H=" + iosTokens.signature()
+                        iosTokens != null ? iosTokens.signature() : "eyJlcnJvckNvZGUiOjEwMDF9"
                 );
                 if (printRequests && iosTokens != null) {
                     System.out.println("Using attestation: " + iosTokens.authorization());

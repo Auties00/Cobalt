@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
 import it.auties.whatsapp.model.companion.CompanionDevice;
-import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.net.HttpClient;
 import it.auties.whatsapp.util.Bytes;
@@ -39,7 +38,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
-    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.10.74");
+    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.10.79");
     private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.10.74");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
@@ -403,7 +402,6 @@ public final class WhatsappMetadata {
             if(cert.error() != null) {
                 throw new RuntimeException(cert.error());
             }
-
             return cert;
         }).exceptionallyAsync(throwable -> {
             throw new RuntimeException("Cannot connect to android middleware: " + throwable.getMessage());
@@ -431,7 +429,7 @@ public final class WhatsappMetadata {
             return CompletableFuture.completedFuture(null);
         }
 
-        var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(middleware, URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8)));
+        var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(middleware.get(), URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8)));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var supportData = Json.readValue(response, IntegrityResponse.class);
             if (supportData.error() != null) {
