@@ -1144,15 +1144,18 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryRequiredWebInfo() {
-        return socketHandler.sendQuery("get", "w", Node.of("props"))
-                .thenAcceptAsync(this::parseProps)
-                .thenComposeAsync(ignored -> queryAbProps())
-                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+        return queryAbProps().exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
     }
 
     private CompletableFuture<Void> queryAbProps() {
-        return socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", "1")))
-                .thenAcceptAsync(result -> { /* TODO: Handle AB props */ });
+        var abPropsHash = Objects.requireNonNullElse(socketHandler.store().properties().get("ab_props_hash"), "");
+        return socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", abPropsHash)))
+                .thenAcceptAsync(result -> {
+                    var hash = result.findNode("props")
+                            .flatMap(node -> node.attributes().get("hash", String.class))
+                            .orElse("");
+                    socketHandler.store().addProperties(Map.of("ab_props_hash", hash));
+                });
     }
 
     private CompletableFuture<Void> checkBusinessStatus() {
