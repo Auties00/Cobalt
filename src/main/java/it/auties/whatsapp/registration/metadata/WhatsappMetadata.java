@@ -152,10 +152,9 @@ public final class WhatsappMetadata {
     }
 
     private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(CompanionDevice companion) {
-        var backendAddress = getMiddleware(companion)
+        var backendAddress = getMiddlewareEndpoint(companion)
                 .orElseThrow(() -> new IllegalArgumentException("Cannot access android middleware"));
-        var endpoint = URI.create("http://%s/info".formatted(backendAddress));
-        return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
+        return getOrCreateClient().getRaw(URI.create("%s/info".formatted(backendAddress))).thenApplyAsync(response -> {
             var app = Json.readValue(response, WhatsappAndroidApp.class);
             if (app.error() != null) {
                 throw new RuntimeException(app.error());
@@ -268,9 +267,9 @@ public final class WhatsappMetadata {
 
     public static CompletableFuture<WhatsappAndroidTokens> getAndroidTokens(CompanionDevice companionDevice, byte[] authKey) {
         return getAndroidData(companionDevice).thenComposeAsync(androidData -> {
-            var middleware = getMiddleware(companionDevice)
+            var middleware = getMiddlewareEndpoint(companionDevice)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot access android middleware"));
-            var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(middleware, Base64.getUrlEncoder().encodeToString(authKey)));
+            var endpoint = URI.create("%s/integrity?authKey=%s".formatted(middleware, Base64.getUrlEncoder().encodeToString(authKey)));
             return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
                 var supportData = Json.readValue(response, GpiaResponse.class);
                 if(supportData.error() != null) {
@@ -319,7 +318,7 @@ public final class WhatsappMetadata {
         return URLEncoder.encode(Base64.getEncoder().encodeToString(payload), StandardCharsets.UTF_8);
     }
 
-    private static Optional<String> getMiddleware(CompanionDevice device) {
+    private static Optional<String> getMiddlewareEndpoint(CompanionDevice device) {
         if(device.address().isEmpty() && device.platform().isAndroid()) {
             throw new IllegalArgumentException("Please specify the address of the physical device to use as explained in android/README.md");
         }
@@ -384,9 +383,9 @@ public final class WhatsappMetadata {
     public static CompletableFuture<WhatsappAndroidCert> getAndroidCert(CompanionDevice device, byte[] authKey, byte[] enc) {
         var authKeyBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8);
         var encBase64 = URLEncoder.encode(Base64.getEncoder().encodeToString(enc), StandardCharsets.UTF_8);
-        var middleware = getMiddleware(device)
+        var middleware = getMiddlewareEndpoint(device)
                 .orElseThrow(() -> new IllegalArgumentException("Cannot access android middleware"));
-        var endpoint = URI.create("http://%s/cert?authKey=%s&enc=%s".formatted(middleware, authKeyBase64, encBase64));
+        var endpoint = URI.create("%s/cert?authKey=%s&enc=%s".formatted(middleware, authKeyBase64, encBase64));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var cert = Json.readValue(response, WhatsappAndroidCert.class);
             if(cert.error() != null) {
@@ -414,12 +413,12 @@ public final class WhatsappMetadata {
     }
 
     public static CompletableFuture<WhatsappIosTokens> getIosTokens(CompanionDevice device, byte[] authKey) {
-        var middleware = getMiddleware(device);
+        var middleware = getMiddlewareEndpoint(device);
         if(middleware.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
 
-        var endpoint = URI.create("http://%s/integrity?authKey=%s".formatted(middleware.get(), URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8)));
+        var endpoint = URI.create("%s/integrity?authKey=%s".formatted(middleware.get(), URLEncoder.encode(Base64.getEncoder().encodeToString(authKey), StandardCharsets.UTF_8)));
         return getOrCreateClient().getRaw(endpoint).thenApplyAsync(response -> {
             var supportData = Json.readValue(response, IntegrityResponse.class);
             if (supportData.error() != null) {

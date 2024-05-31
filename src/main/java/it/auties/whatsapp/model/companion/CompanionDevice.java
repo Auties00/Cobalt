@@ -104,7 +104,7 @@ public final class CompanionDevice implements ProtobufMessage {
         this.osVersion = osVersion;
         this.osBuildNumber = osBuildNumber;
         var uri = address == null ? null : URI.create(address);
-        this.address = uri == null ? null : "%s://%s:%s/".formatted(
+        this.address = uri == null ? null : "%s://%s:%s".formatted(
                 Objects.requireNonNullElse(uri.getScheme(), "http"),
                 Objects.requireNonNull(uri.getHost(), "Missing hostname"),
                 uri.getPort() != -1 ? uri.getPort() : (platform.isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT)
