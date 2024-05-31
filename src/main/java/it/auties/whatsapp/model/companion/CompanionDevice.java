@@ -6,6 +6,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,6 +37,9 @@ public final class CompanionDevice implements ProtobufMessage {
             Map.entry("iPhone_15_Pro", "iPhone16,1"),
             Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
     );
+    private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
+    private static final int MIDDLEWARE_PERSONAL_PORT = 1119;
+
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String model;
 
@@ -99,7 +103,12 @@ public final class CompanionDevice implements ProtobufMessage {
         this.appVersion = appVersion;
         this.osVersion = osVersion;
         this.osBuildNumber = osBuildNumber;
-        this.address = address;
+        var uri = address == null ? null : URI.create(address);
+        this.address = uri == null ? null : "%s://%s:%s/".formatted(
+                Objects.requireNonNullElse(uri.getScheme(), "http"),
+                Objects.requireNonNull(uri.getHost(), "Missing hostname"),
+                uri.getPort() != -1 ? uri.getPort() : (platform.isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT)
+        );
     }
 
     public static CompanionDevice web() {

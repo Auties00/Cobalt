@@ -39,16 +39,13 @@ import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
     private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.10.79");
-    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.10.74");
+    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.10.79");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
     private static final URI WEB_UPDATE_URL = URI.create("https://web.whatsapp.com/check-update?version=2.2245.9&platform=web");
     private static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
     private static final String MOBILE_BUSINESS_IOS_STATIC = "USUDuDYDeQhY4RF2fCSp5m3F6kJ1M2J8wS7bbNA2";
     private static final String MOBILE_KAIOS_STATIC = "aa8243c465a743c488beb4645dda63edc2ca9a58";
-
-    private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
-    private static final int MIDDLEWARE_PERSONAL_PORT = 1119;
 
     private static volatile HttpClient httpClient;
     private static final Object httpClientLock = new Object();
@@ -323,18 +320,11 @@ public final class WhatsappMetadata {
     }
 
     private static Optional<String> getMiddleware(CompanionDevice device) {
-        if(device.platform().isAndroid()) {
-            var address = device.address()
-                            .orElseThrow(() -> new IllegalArgumentException("Please specify the address of the physical device to use as explained in android/README.md or ios/README.md"));
-            return Optional.of("%s:%s".formatted(address, device.platform().isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT));
+        if(device.address().isEmpty() && device.platform().isAndroid()) {
+            throw new IllegalArgumentException("Please specify the address of the physical device to use as explained in android/README.md");
         }
 
-        if(device.platform().isIOS()) {
-            return device.address()
-                    .map(address -> "%s:%s".formatted(address, device.platform().isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT));
-        }
-
-        return Optional.empty();
+        return device.address();
     }
 
     private record GpiaResponse(

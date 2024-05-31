@@ -215,7 +215,7 @@ public class HttpClient implements AutoCloseable {
                 "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
                 "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
                 "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
-    };
+        };
 
         private SSLContext sslContext;
         private SSLParameters sslParameters;
