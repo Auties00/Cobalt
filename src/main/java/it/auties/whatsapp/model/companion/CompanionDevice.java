@@ -218,7 +218,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 appVersion,
                 osVersion,
                 osBuildNumber,
-                List.of(address)
+                address
         );
     }
 
@@ -235,7 +235,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 appVersion,
                 osVersion,
                 osBuildNumber,
-                List.of(address)
+                address
         );
     }
 

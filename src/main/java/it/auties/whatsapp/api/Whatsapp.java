@@ -640,8 +640,8 @@ public class Whatsapp {
             }
 
             var composingFuture = compose ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
-            return composingFuture.thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient))
-                    .thenComposeAsync(deltaResult -> deltaResult ? sendMessage(info) : CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR)));
+            return composingFuture
+                    .thenComposeAsync(deltaResult -> sendMessage(info));
         });
     }
 
@@ -726,7 +726,7 @@ public class Whatsapp {
                     .thenComposeAsync(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
                     .thenComposeAsync(thirdResult -> subscribeToPresence(recipient.toJid()))
                     .thenComposeAsync(fourthResult -> socketHandler.querySessions(List.of(recipient.toJid())))
-                    .thenApplyAsync(ignored -> true);
+                    .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient));
         });
     }
 
