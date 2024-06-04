@@ -133,7 +133,7 @@ public final class CompanionDevice implements ProtobufMessage {
     }
 
     public static CompanionDevice ios(boolean business, String address) {
-        return ios(null, business, List.of(address));
+        return ios(null, business, address == null ? null : List.of(address));
     }
 
     public static CompanionDevice ios(boolean business, List<String> address) {
@@ -155,7 +155,7 @@ public final class CompanionDevice implements ProtobufMessage {
     }
 
     public static CompanionDevice android(boolean business, String address) {
-        return android(null, business, List.of(address));
+        return android(null, business, address == null ? null : List.of(address));
     }
 
     public static CompanionDevice android(boolean business, List<String> address) {
