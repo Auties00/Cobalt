@@ -1,9 +1,7 @@
-package it.auties.whatsapp.listener.processor;
+package it.auties.whatsapp.listener;
 
 import com.sun.source.util.TaskListener;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.listener.RegisterListener;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;

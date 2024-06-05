@@ -8,19 +8,18 @@ import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.QuotedMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.setting.Setting;
 
-import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +70,8 @@ public interface Listener {
     /**
      * Called when the socket successfully establishes a connection and logs in into an account. When
      * this event is called, any data, including chats and contact, is not guaranteed to be already in
-     * memory. Instead, {@link OnChats#onChats(Whatsapp, Collection)} ()} and
-     * {@link OnContacts#onContacts(Whatsapp, Collection)} ()} should be used.
+     * memory. Instead, {@link Listener#onChats(Whatsapp, Collection)} ()} and
+     * {@link Listener#onContacts(Whatsapp, Collection)} ()} should be used.
      *
      * @param whatsapp an instance to the calling api
      */
@@ -206,9 +205,8 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param chat     the chat that this update regards
      * @param jid      the contact that this update regards
-     * @param status   the new status of the contact
      */
-    default void onContactPresence(Whatsapp whatsapp, Chat chat, Jid jid, ContactStatus status) {
+    default void onContactPresence(Whatsapp whatsapp, Chat chat, JidProvider jid) {
     }
 
     /**
@@ -216,9 +214,8 @@ public interface Listener {
      *
      * @param chat   the chat that this update regards
      * @param jid    the contact that this update regards
-     * @param status the new status of the contact
      */
-    default void onContactPresence(Chat chat, Jid jid, ContactStatus status) {
+    default void onContactPresence(Chat chat, JidProvider jid) {
     }
 
     /**
@@ -505,25 +502,6 @@ public interface Listener {
      * @param newAbout the non-null new about
      */
     default void onAboutChanged(Whatsapp whatsapp, String oldAbout, String newAbout) {
-    }
-
-    /**
-     * Called when the companion's picture changes
-     *
-     * @param oldPicture the non-null old picture
-     * @param newPicture the non-null new picture
-     */
-    default void onProfilePictureChanged(URI oldPicture, URI newPicture) {
-    }
-
-    /**
-     * Called when the companion's picture changes
-     *
-     * @param whatsapp   an instance to the calling api
-     * @param oldPicture the non-null old picture
-     * @param newPicture the non-null new picture
-     */
-    default void onProfilePictureChanged(Whatsapp whatsapp, URI oldPicture, URI newPicture) {
     }
 
     /**

@@ -17,8 +17,9 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.implementation.SocketHandler;
 import it.auties.whatsapp.implementation.SocketState;
-import it.auties.whatsapp.listener.*;
-import it.auties.whatsapp.listener.processor.RegisterListenerProcessor;
+import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.listener.ListenerConsumer;
+import it.auties.whatsapp.listener.RegisterListenerProcessor;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -41,6 +42,7 @@ import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
 import it.auties.whatsapp.model.message.standard.NewsletterAdminInviteMessageBuilder;
 import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
 import it.auties.whatsapp.model.message.standard.TextMessage;
+import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.newsletter.*;
@@ -56,6 +58,7 @@ import it.auties.whatsapp.model.request.UpdateNewsletterRequest.UpdatePayload;
 import it.auties.whatsapp.model.response.*;
 import it.auties.whatsapp.model.setting.LocaleSettings;
 import it.auties.whatsapp.model.setting.PushNameSettings;
+import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.sync.*;
@@ -77,6 +80,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -173,12 +178,12 @@ public class Whatsapp {
 
     protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
-        addDisconnectionHandler(store);
+        handleDisconnections(store);
         registerListenersAutomatically(store);
     }
 
-    private static void addDisconnectionHandler(Store store) {
-        store.addListener((OnDisconnected) (reason) -> {
+    private void handleDisconnections(Store store) {
+        addDisconnectedListener((reason) -> {
             if (reason != DisconnectReason.RECONNECTING && reason != DisconnectReason.RESTORE) {
                 removeInstanceByUuid(store.uuid());
             }
@@ -2570,15 +2575,13 @@ public class Whatsapp {
 
     private CompletableFuture<Void> awaitCompanionRegistration(Jid device) {
         var future = new CompletableFuture<Void>();
-        OnLinkedDevices listener = data -> {
-            if (data.contains(device)) {
+        addLinkedDevicesListener((Collection<Jid> data) -> {
+            if (data.contains(device) && !future.isDone()) {
                 future.complete(null);
             }
-        };
-        addLinkedDevicesListener(listener);
+        });
         return future.orTimeout(COMPANION_PAIRING_TIMEOUT, TimeUnit.SECONDS)
-                .exceptionally(ignored -> null)
-                .thenRun(() -> removeListener(listener));
+                .exceptionally(ignored -> null);
     }
 
     private CompletableFuture<CompanionLinkResult> handleCompanionEncrypt(Node result, Jid companion, int keyId) {
@@ -3312,676 +3315,728 @@ public class Whatsapp {
         return this;
     }
 
-    /**
-     * Registers an action listener
-     *
-     * @param onAction the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addActionListener(OnAction onAction) {
-        return addListener(onAction);
-    }
+    // Generated code from it.auties.whatsapp.routine.GenerateListenersLambda
 
-    /**
-     * Registers a chat recent messages listener
-     *
-     * @param onChatRecentMessages the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addChatMessagesSyncListener(OnChatMessagesSync onChatRecentMessages) {
-        return addListener(onChatRecentMessages);
-    }
-
-    /**
-     * Registers a chats listener
-     *
-     * @param onChats the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addChatsListener(OnChats onChats) {
-        return addListener(onChats);
-    }
-
-    /**
-     * Registers a chats listener
-     *
-     * @param onChats the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addChatsListener(OnWhatsappChats onChats) {
-        return addListener(onChats);
-    }
-
-    /**
-     * Registers a newsletters listener
-     *
-     * @param onNewsletters the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewslettersListener(OnNewsletters onNewsletters) {
-        return addListener(onNewsletters);
-    }
-
-    /**
-     * Registers a newsletters listener
-     *
-     * @param onNewsletters the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewslettersListener(OnWhatsappNewsletters onNewsletters) {
-        return addListener(onNewsletters);
-    }
-
-
-    /**
-     * Registers a contact presence listener
-     *
-     * @param onContactPresence the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addContactPresenceListener(OnContactPresence onContactPresence) {
-        return addListener(onContactPresence);
-    }
-
-    /**
-     * Registers a contacts listener
-     *
-     * @param onContacts the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addContactsListener(OnContacts onContacts) {
-        return addListener(onContacts);
-    }
-
-    /**
-     * Registers a message status listener
-     *
-     * @param onAnyMessageStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMessageStatusListener(OnMessageStatus onAnyMessageStatus) {
-        return addListener(onAnyMessageStatus);
-    }
-
-    /**
-     * Registers a disconnected listener
-     *
-     * @param onDisconnected the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addDisconnectedListener(OnDisconnected onDisconnected) {
-        return addListener(onDisconnected);
-    }
-
-    /**
-     * Registers a features listener
-     *
-     * @param onFeatures the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addFeaturesListener(OnFeatures onFeatures) {
-        return addListener(onFeatures);
-    }
-
-    /**
-     * Registers a logged in listener
-     *
-     * @param onLoggedIn the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addLoggedInListener(OnLoggedIn onLoggedIn) {
-        return addListener(onLoggedIn);
-    }
-
-    /**
-     * Registers a message deleted listener
-     *
-     * @param onMessageDeleted the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMessageDeletedListener(OnMessageDeleted onMessageDeleted) {
-        return addListener(onMessageDeleted);
-    }
-
-    /**
-     * Registers a metadata listener
-     *
-     * @param onMetadata the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMetadataListener(OnMetadata onMetadata) {
-        return addListener(onMetadata);
-    }
-
-    /**
-     * Registers a new contact listener
-     *
-     * @param onNewContact the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewContactListener(OnNewContact onNewContact) {
-        return addListener(onNewContact);
-    }
-
-    /**
-     * Registers a new message listener
-     *
-     * @param onNewMessage the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewChatMessageListener(OnNewMessage onNewMessage) {
-        return addListener(onNewMessage);
-    }
-
-    /**
-     * Registers a new status listener
-     *
-     * @param onNewMediaStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewStatusListener(OnNewStatus onNewMediaStatus) {
-        return addListener(onNewMediaStatus);
-    }
-
-    /**
-     * Registers a received node listener
-     *
-     * @param onNodeReceived the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNodeReceivedListener(OnNodeReceived onNodeReceived) {
-        return addListener(onNodeReceived);
-    }
-
-    /**
-     * Registers a sent node listener
-     *
-     * @param onNodeSent the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNodeSentListener(OnNodeSent onNodeSent) {
-        return addListener(onNodeSent);
-    }
-
-    /**
-     * Registers a setting listener
-     *
-     * @param onSetting the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addSettingListener(OnSetting onSetting) {
-        return addListener(onSetting);
-    }
-
-    /**
-     * Registers a status listener
-     *
-     * @param onMediaStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMediaStatusListener(OnStatus onMediaStatus) {
-        return addListener(onMediaStatus);
-    }
-
-    /**
-     * Registers an event listener
-     *
-     * @param onSocketEvent the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addSocketEventListener(OnSocketEvent onSocketEvent) {
-        return addListener(onSocketEvent);
-    }
-
-    /**
-     * Registers an action listener
-     *
-     * @param onAction the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addActionListener(OnWhatsappAction onAction) {
-        return addListener(onAction);
-    }
-
-    /**
-     * Registers a sync progress listener
-     *
-     * @param onSyncProgress the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addHistorySyncProgressListener(OnHistorySyncProgress onSyncProgress) {
-        return addListener(onSyncProgress);
-    }
-
-    /**
-     * Registers a chat recent messages listener
-     *
-     * @param onChatRecentMessages the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addChatMessagesSyncListener(OnWhatsappChatMessagesSync onChatRecentMessages) {
-        return addListener(onChatRecentMessages);
-    }
-
-    /**
-     * Registers a contact presence listener
-     *
-     * @param onContactPresence the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addContactPresenceListener(OnWhatsappContactPresence onContactPresence) {
-        return addListener(onContactPresence);
-    }
-
-    /**
-     * Registers a contacts listener
-     *
-     * @param onContacts the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addContactsListener(OnWhatsappContacts onContacts) {
-        return addListener(onContacts);
-    }
-
-    /**
-     * Registers a message status listener
-     *
-     * @param onMessageStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMessageStatusListener(OnWhatsappMessageStatus onMessageStatus) {
-        return addListener(onMessageStatus);
-    }
-
-    /**
-     * Registers a disconnected listener
-     *
-     * @param onDisconnected the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addDisconnectedListener(OnWhatsappDisconnected onDisconnected) {
-        return addListener(onDisconnected);
-    }
-
-    /**
-     * Registers a features listener
-     *
-     * @param onFeatures the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addFeaturesListener(OnWhatsappFeatures onFeatures) {
-        return addListener(onFeatures);
-    }
-
-    /**
-     * Registers a logged in listener
-     *
-     * @param onLoggedIn the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addLoggedInListener(OnWhatsappLoggedIn onLoggedIn) {
-        return addListener(onLoggedIn);
-    }
-
-    /**
-     * Registers a message deleted listener
-     *
-     * @param onMessageDeleted the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMessageDeletedListener(OnWhatsappMessageDeleted onMessageDeleted) {
-        return addListener(onMessageDeleted);
-    }
-
-    /**
-     * Registers a metadata listener
-     *
-     * @param onMetadata the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMetadataListener(OnWhatsappMetadata onMetadata) {
-        return addListener(onMetadata);
-    }
-
-    /**
-     * Registers a new message listener
-     *
-     * @param onNewMessage the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewChatMessageListener(OnWhatsappNewMessage onNewMessage) {
-        return addListener(onNewMessage);
-    }
-
-    /**
-     * Registers a new status listener
-     *
-     * @param onNewStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewStatusListener(OnWhatsappNewStatus onNewStatus) {
-        return addListener(onNewStatus);
-    }
-
-    /**
-     * Registers a received node listener
-     *
-     * @param onNodeReceived the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNodeReceivedListener(OnWhatsappNodeReceived onNodeReceived) {
-        return addListener(onNodeReceived);
-    }
-
-    /**
-     * Registers a sent node listener
-     *
-     * @param onNodeSent the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNodeSentListener(OnWhatsappNodeSent onNodeSent) {
-        return addListener(onNodeSent);
-    }
-
-    /**
-     * Registers a setting listener
-     *
-     * @param onSetting the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addSettingListener(OnWhatsappSetting onSetting) {
-        return addListener(onSetting);
-    }
-
-    /**
-     * Registers a status listener
-     *
-     * @param onStatus the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMediaStatusListener(OnWhatsappMediaStatus onStatus) {
-        return addListener(onStatus);
-    }
-
-    /**
-     * Registers an event listener
-     *
-     * @param onSocketEvent the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addSocketEventListener(OnWhatsappSocketEvent onSocketEvent) {
-        return addListener(onSocketEvent);
-    }
-
-    /**
-     * Registers a sync progress listener
-     *
-     * @param onSyncProgress the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addHistorySyncProgressListener(OnWhatsappHistorySyncProgress onSyncProgress) {
-        return addListener(onSyncProgress);
-    }
-
-    /**
-     * Registers a message reply listener
-     *
-     * @param onMessageReply the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMessageReplyListener(OnWhatsappMessageReply onMessageReply) {
-        return addListener(onMessageReply);
-    }
-
-    /**
-     * Registers a message reply listener for a specific message
-     *
-     * @param info           the non-null target message
-     * @param onMessageReply the non-null listener
-     */
-    public Whatsapp addMessageReplyListener(ChatMessageInfo info, OnMessageReply onMessageReply) {
-        return addMessageReplyListener(info.id(), onMessageReply);
-    }
-
-    /**
-     * Registers a message reply listener
-     *
-     * @param onMessageReply the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addMessageReplyListener(OnMessageReply onMessageReply) {
-        return addListener(onMessageReply);
-    }
-
-    /**
-     * Registers a message reply listener for a specific message
-     *
-     * @param info           the non-null target message
-     * @param onMessageReply the non-null listener
-     */
-    public Whatsapp addMessageReplyListener(ChatMessageInfo info, OnWhatsappMessageReply onMessageReply) {
-        return addMessageReplyListener(info.id(), onMessageReply);
-    }
-
-    /**
-     * Registers a message reply listener for a specific message
-     *
-     * @param id             the non-null id of the target message
-     * @param onMessageReply the non-null listener
-     */
-    public Whatsapp addMessageReplyListener(String id, OnMessageReply onMessageReply) {
-        return addMessageReplyListener((info, quoted) -> {
-            if (!info.id().equals(id)) {
-                return;
+    public Whatsapp addNodeSentListener(ListenerConsumer.Binary<Whatsapp, Node> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNodeSent(Whatsapp whatsapp, Node outgoing) {
+                consumer.accept(whatsapp, outgoing);
             }
+        });
+        return this;
+    }
 
-            onMessageReply.onMessageReply(info, quoted);
+    public Whatsapp addNodeSentListener(ListenerConsumer.Unary<Node> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNodeSent(Node outgoing) {
+                consumer.accept(outgoing);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNodeReceivedListener(ListenerConsumer.Unary<Node> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNodeReceived(Node incoming) {
+                consumer.accept(incoming);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNodeReceivedListener(ListenerConsumer.Binary<Whatsapp, Node> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNodeReceived(Whatsapp whatsapp, Node incoming) {
+                consumer.accept(whatsapp, incoming);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addLoggedInListener(ListenerConsumer.Empty consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onLoggedIn() {
+                consumer.accept();
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addLoggedInListener(ListenerConsumer.Unary<Whatsapp> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onLoggedIn(Whatsapp whatsapp) {
+                consumer.accept(whatsapp);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMetadataListener(ListenerConsumer.Unary<Map<String, String>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMetadata(Map<String, String> metadata) {
+                consumer.accept(metadata);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMetadataListener(ListenerConsumer.Binary<Whatsapp, Map<String, String>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMetadata(Whatsapp whatsapp, Map<String, String> metadata) {
+                consumer.accept(whatsapp, metadata);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addDisconnectedListener(ListenerConsumer.Unary<DisconnectReason> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onDisconnected(DisconnectReason reason) {
+                consumer.accept(reason);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addDisconnectedListener(ListenerConsumer.Binary<Whatsapp, DisconnectReason> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onDisconnected(Whatsapp whatsapp, DisconnectReason reason) {
+                consumer.accept(whatsapp, reason);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addActionListener(ListenerConsumer.Binary<Action, MessageIndexInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onAction(Action action, MessageIndexInfo messageIndexInfo) {
+                consumer.accept(action, messageIndexInfo);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addActionListener(ListenerConsumer.Ternary<Whatsapp, Action, MessageIndexInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onAction(Whatsapp whatsapp, Action action, MessageIndexInfo messageIndexInfo) {
+                consumer.accept(whatsapp, action, messageIndexInfo);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addSettingListener(ListenerConsumer.Unary<Setting> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onSetting(Setting setting) {
+                consumer.accept(setting);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addSettingListener(ListenerConsumer.Binary<Whatsapp, Setting> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onSetting(Whatsapp whatsapp, Setting setting) {
+                consumer.accept(whatsapp, setting);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addFeaturesListener(ListenerConsumer.Unary<List<String>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onFeatures(List<String> features) {
+                Listener.super.onFeatures(features);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addFeaturesListener(ListenerConsumer.Binary<Whatsapp, List<String>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onFeatures(Whatsapp whatsapp, List<String> features) {
+                consumer.accept(whatsapp, features);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addContactsListener(ListenerConsumer.Unary<Collection<Contact>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onContacts(Collection<Contact> contacts) {
+                consumer.accept(contacts);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addContactsListener(ListenerConsumer.Binary<Whatsapp, Collection<Contact>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onContacts(Whatsapp whatsapp, Collection<Contact> contacts) {
+                consumer.accept(whatsapp, contacts);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addContactPresenceListener(ListenerConsumer.Binary<Chat, JidProvider> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onContactPresence(Chat chat, JidProvider jid) {
+                consumer.accept(chat, jid);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addContactPresenceListener(ListenerConsumer.Ternary<Whatsapp, Chat, JidProvider> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onContactPresence(Whatsapp whatsapp, Chat chat, JidProvider jid) {
+                consumer.accept(whatsapp, chat, jid);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addChatsListener(ListenerConsumer.Unary<Collection<Chat>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onChats(Collection<Chat> chats) {
+                consumer.accept(chats);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addChatsListener(ListenerConsumer.Binary<Whatsapp, Collection<Chat>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onChats(Whatsapp whatsapp, Collection<Chat> chats) {
+                consumer.accept(whatsapp, chats);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewslettersListener(ListenerConsumer.Unary<Collection<Newsletter>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewsletters(Collection<Newsletter> newsletters) {
+                consumer.accept(newsletters);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewslettersListener(ListenerConsumer.Binary<Whatsapp, Collection<Newsletter>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewsletters(Whatsapp whatsapp, Collection<Newsletter> newsletters) {
+                consumer.accept(whatsapp, newsletters);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addChatMessagesSyncListener(ListenerConsumer.Binary<Chat, Boolean> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onChatMessagesSync(Chat chat, boolean last) {
+                consumer.accept(chat, last);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addChatMessagesSyncListener(ListenerConsumer.Ternary<Whatsapp, Chat, Boolean> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onChatMessagesSync(Whatsapp whatsapp, Chat chat, boolean last) {
+                consumer.accept(whatsapp, chat, last);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addHistorySyncProgressListener(ListenerConsumer.Ternary<Whatsapp, Integer, Boolean> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent) {
+                consumer.accept(whatsapp, percentage, recent);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addHistorySyncProgressListener(ListenerConsumer.Binary<Integer, Boolean> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onHistorySyncProgress(int percentage, boolean recent) {
+                consumer.accept(percentage, recent);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewMessageListener(ListenerConsumer.Unary<MessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewMessage(MessageInfo info) {
+                consumer.accept(info);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewChatMessageListener(ListenerConsumer.Unary<ChatMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewMessage(MessageInfo info) {
+                if(info instanceof ChatMessageInfo chatMessageInfo) {
+                    consumer.accept(chatMessageInfo);
+                }
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewNewsletterMessageListener(ListenerConsumer.Unary<NewsletterMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewMessage(MessageInfo info) {
+                if(info instanceof NewsletterMessageInfo newsletterMessageInfo) {
+                    consumer.accept(newsletterMessageInfo);
+                }
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewMessageListener(ListenerConsumer.Binary<Whatsapp, MessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+                consumer.accept(whatsapp, info);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewNewsletterMessageListener(ListenerConsumer.Binary<Whatsapp, NewsletterMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+                if(info instanceof NewsletterMessageInfo newsletterMessageInfo) {
+                    consumer.accept(whatsapp, newsletterMessageInfo);
+                }
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewChatMessageListener(ListenerConsumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+                if(info instanceof ChatMessageInfo chatMessageInfo) {
+                    consumer.accept(whatsapp, chatMessageInfo);
+                }
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMessageDeletedListener(ListenerConsumer.Binary<MessageInfo, Boolean> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMessageDeleted(MessageInfo info, boolean everyone) {
+                consumer.accept(info, everyone);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMessageDeletedListener(ListenerConsumer.Ternary<Whatsapp, MessageInfo, Boolean> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMessageDeleted(Whatsapp whatsapp, MessageInfo info, boolean everyone) {
+                consumer.accept(whatsapp, info, everyone);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMessageStatusListener(ListenerConsumer.Unary<MessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMessageStatus(MessageInfo info) {
+                consumer.accept(info);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMessageStatusListener(ListenerConsumer.Binary<Whatsapp, MessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMessageStatus(Whatsapp whatsapp, MessageInfo info) {
+                consumer.accept(whatsapp, info);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addStatusListener(ListenerConsumer.Unary<Collection<ChatMessageInfo>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onStatus(Collection<ChatMessageInfo> status) {
+                consumer.accept(status);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addStatusListener(ListenerConsumer.Binary<Whatsapp, Collection<ChatMessageInfo>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onStatus(Whatsapp whatsapp, Collection<ChatMessageInfo> status) {
+                consumer.accept(whatsapp, status);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewStatusListener(ListenerConsumer.Unary<ChatMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewStatus(ChatMessageInfo status) {
+                consumer.accept(status);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewStatusListener(ListenerConsumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewStatus(Whatsapp whatsapp, ChatMessageInfo status) {
+                consumer.accept(whatsapp, status);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addSocketEventListener(ListenerConsumer.Unary<SocketEvent> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onSocketEvent(SocketEvent event) {
+                consumer.accept(event);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addSocketEventListener(ListenerConsumer.Binary<Whatsapp, SocketEvent> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onSocketEvent(Whatsapp whatsapp, SocketEvent event) {
+                consumer.accept(whatsapp, event);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMessageReplyListener(ListenerConsumer.Ternary<Whatsapp, ChatMessageInfo, QuotedMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMessageReply(Whatsapp whatsapp, ChatMessageInfo response, QuotedMessageInfo quoted) {
+                consumer.accept(whatsapp, response, quoted);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMessageReplyListener(ListenerConsumer.Binary<ChatMessageInfo, QuotedMessageInfo> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onMessageReply(ChatMessageInfo response, QuotedMessageInfo quoted) {
+                consumer.accept(response, quoted);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addProfilePictureChangedListener(ListenerConsumer.Unary<Contact> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onProfilePictureChanged(Contact contact) {
+                consumer.accept(contact);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addProfilePictureChangedListener(ListenerConsumer.Binary<Whatsapp, Contact> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onProfilePictureChanged(Whatsapp whatsapp, Contact contact) {
+                consumer.accept(whatsapp, contact);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addGroupPictureChangedListener(ListenerConsumer.Binary<Whatsapp, Chat> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onGroupPictureChanged(Whatsapp whatsapp, Chat group) {
+                consumer.accept(whatsapp, group);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addGroupPictureChangedListener(ListenerConsumer.Unary<Chat> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onGroupPictureChanged(Chat group) {
+                consumer.accept(group);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNameChangedListener(ListenerConsumer.Binary<String, String> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNameChanged(String oldName, String newName) {
+                consumer.accept(oldName, newName);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNameChangedListener(ListenerConsumer.Ternary<Whatsapp, String, String> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNameChanged(Whatsapp whatsapp, String oldName, String newName) {
+                consumer.accept(whatsapp, oldName, newName);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addAboutChangedListener(ListenerConsumer.Ternary<Whatsapp, String, String> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onAboutChanged(Whatsapp whatsapp, String oldAbout, String newAbout) {
+                consumer.accept(whatsapp, oldAbout, newAbout);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addAboutChangedListener(ListenerConsumer.Binary<String, String> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onAboutChanged(String oldAbout, String newAbout) {
+                consumer.accept(oldAbout, newAbout);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addLocaleChangedListener(ListenerConsumer.Ternary<Whatsapp, CountryLocale, CountryLocale> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onLocaleChanged(Whatsapp whatsapp, CountryLocale oldLocale, CountryLocale newLocale) {
+                consumer.accept(whatsapp, oldLocale, newLocale);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addLocaleChangedListener(ListenerConsumer.Binary<CountryLocale, CountryLocale> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onLocaleChanged(CountryLocale oldLocale, CountryLocale newLocale) {
+                consumer.accept(oldLocale, newLocale);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addContactBlockedListener(ListenerConsumer.Binary<Whatsapp, Contact> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onContactBlocked(Whatsapp whatsapp, Contact contact) {
+                consumer.accept(whatsapp, contact);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addContactBlockedListener(ListenerConsumer.Unary<Contact> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onContactBlocked(Contact contact) {
+                consumer.accept(contact);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewContactListener(ListenerConsumer.Unary<Contact> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewContact(Contact contact) {
+                consumer.accept(contact);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addNewContactListener(ListenerConsumer.Binary<Whatsapp, Contact> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onNewContact(Whatsapp whatsapp, Contact contact) {
+                consumer.accept(whatsapp, contact);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addPrivacySettingChangedListener(ListenerConsumer.Binary<PrivacySettingEntry, PrivacySettingEntry> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
+                consumer.accept(oldPrivacyEntry, newPrivacyEntry);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addPrivacySettingChangedListener(ListenerConsumer.Ternary<Whatsapp, PrivacySettingEntry, PrivacySettingEntry> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
+                consumer.accept(whatsapp, oldPrivacyEntry, newPrivacyEntry);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addLinkedDevicesListener(ListenerConsumer.Unary<Collection<Jid>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onLinkedDevices(Collection<Jid> devices) {
+                consumer.accept(devices);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addLinkedDevicesListener(ListenerConsumer.Binary<Whatsapp, Collection<Jid>> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices) {
+                Listener.super.onLinkedDevices(whatsapp, devices);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addRegistrationCodeListener(ListenerConsumer.Binary<Whatsapp, Long> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onRegistrationCode(Whatsapp whatsapp, long code) {
+                consumer.accept(whatsapp, code);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addRegistrationCodeListener(ListenerConsumer.Unary<Long> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onRegistrationCode(long code) {
+                consumer.accept(code);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addCallListener(ListenerConsumer.Unary<Call> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onCall(Call call) {
+                consumer.accept(call);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addCallListener(ListenerConsumer.Binary<Whatsapp, Call> consumer) {
+        addListener(new Listener() {
+            @Override
+            public void onCall(Whatsapp whatsapp, Call call) {
+                consumer.accept(whatsapp, call);
+            }
+        });
+        return this;
+    }
+
+    public Whatsapp addMessageReplyListener(ChatMessageInfo info, Consumer<MessageInfo> onMessageReply) {
+        return addMessageReplyListener(info.id(), onMessageReply);
+    }
+
+    public Whatsapp addMessageReplyListener(ChatMessageInfo info, BiConsumer<Whatsapp, MessageInfo> onMessageReply) {
+        return addMessageReplyListener(info.id(), onMessageReply);
+    }
+
+    public Whatsapp addMessageReplyListener(String id, Consumer<MessageInfo> consumer) {
+        return addListener(new Listener() {
+            @Override
+            public void onNewMessage(MessageInfo info) {
+                if (!info.id().equals(id)) {
+                    return;
+                }
+
+                consumer.accept(info);
+            }
         });
     }
 
-    /**
-     * Registers a message reply listener for a specific message
-     *
-     * @param id             the non-null id of the target message
-     * @param onMessageReply the non-null listener
-     */
-    public Whatsapp addMessageReplyListener(String id, OnWhatsappMessageReply onMessageReply) {
-        return addMessageReplyListener(((whatsapp, info, quoted) -> {
-            if (!info.id().equals(id)) {
-                return;
+    public Whatsapp addMessageReplyListener(String id, BiConsumer<Whatsapp, MessageInfo> consumer) {
+        return addListener(new Listener() {
+            @Override
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+                if (!info.id().equals(id)) {
+                    return;
+                }
+
+                consumer.accept(whatsapp, info);
             }
-
-            onMessageReply.onMessageReply(whatsapp, info, quoted);
-        }));
-    }
-
-    /**
-     * Registers a name change listener
-     *
-     * @param onUserNameChanged the non-null listener
-     */
-    public Whatsapp addNameChangedListener(OnUserNameChanged onUserNameChanged) {
-        return addListener(onUserNameChanged);
-    }
-
-    /**
-     * Registers a name change listener
-     *
-     * @param onNameChange the non-null listener
-     */
-    public Whatsapp addNameChangedListener(OnWhatsappNameChanged onNameChange) {
-        return addListener(onNameChange);
-    }
-
-    /**
-     * Registers a status change listener
-     *
-     * @param onUserAboutChanged the non-null listener
-     */
-    public Whatsapp addAboutChangedListener(OnUserAboutChanged onUserAboutChanged) {
-        return addListener(onUserAboutChanged);
-    }
-
-    /**
-     * Registers a status change listener
-     *
-     * @param onUserStatusChange the non-null listener
-     */
-    public Whatsapp addAboutChangedListener(OnWhatsappAboutChanged onUserStatusChange) {
-        return addListener(onUserStatusChange);
-    }
-
-    /**
-     * Registers a picture change listener
-     *
-     * @param onProfilePictureChanged the non-null listener
-     */
-    public Whatsapp addUserPictureChangedListener(OnProfilePictureChanged onProfilePictureChanged) {
-        return addListener(onProfilePictureChanged);
-    }
-
-    /**
-     * Registers a picture change listener
-     *
-     * @param onUserPictureChange the non-null listener
-     */
-    public Whatsapp addUserPictureChangedListener(OnWhatsappProfilePictureChanged onUserPictureChange) {
-        return addListener(onUserPictureChange);
-    }
-
-    /**
-     * Registers a profile picture listener
-     *
-     * @param onContactPictureChanged the non-null listener
-     */
-    public Whatsapp addContactPictureChangedListener(OnContactPictureChanged onContactPictureChanged) {
-        return addListener(onContactPictureChanged);
-    }
-
-    /**
-     * Registers a profile picture listener
-     *
-     * @param onProfilePictureChange the non-null listener
-     */
-    public Whatsapp addContactPictureChangedListener(OnWhatsappContactPictureChanged onProfilePictureChange) {
-        return addListener(onProfilePictureChange);
-    }
-
-    /**
-     * Registers a group picture listener
-     *
-     * @param onGroupPictureChange the non-null listener
-     */
-    public Whatsapp addGroupPictureChangedListener(OnGroupPictureChange onGroupPictureChange) {
-        return addListener(onGroupPictureChange);
-    }
-
-    /**
-     * Registers a group picture listener
-     *
-     * @param onGroupPictureChange the non-null listener
-     */
-    public Whatsapp addGroupPictureChangedListener(OnWhatsappGroupPictureChange onGroupPictureChange) {
-        return addListener(onGroupPictureChange);
-    }
-
-    /**
-     * Registers a contact blocked listener
-     *
-     * @param onContactBlocked the non-null listener
-     */
-    public Whatsapp addContactBlockedListener(OnContactBlocked onContactBlocked) {
-        return addListener(onContactBlocked);
-    }
-
-    /**
-     * Registers a contact blocked listener
-     *
-     * @param onContactBlocked the non-null listener
-     */
-    public Whatsapp addContactBlockedListener(OnWhatsappContactBlocked onContactBlocked) {
-        return addListener(onContactBlocked);
-    }
-
-    /**
-     * Registers a privacy setting changed listener
-     *
-     * @param onPrivacySettingChanged the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addPrivacySettingChangedListener(OnPrivacySettingChanged onPrivacySettingChanged) {
-        return addListener(onPrivacySettingChanged);
-    }
-
-
-    /**
-     * Registers a privacy setting changed listener
-     *
-     * @param onWhatsappPrivacySettingChanged the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addPrivacySettingChangedListener(OnWhatsappPrivacySettingChanged onWhatsappPrivacySettingChanged) {
-        return addListener(onWhatsappPrivacySettingChanged);
-    }
-
-    /**
-     * Registers a companion devices changed listener
-     *
-     * @param onLinkedDevices the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addLinkedDevicesListener(OnLinkedDevices onLinkedDevices) {
-        return addListener(onLinkedDevices);
-    }
-
-    /**
-     * Registers a companion devices changed listener
-     *
-     * @param onWhatsappLinkedDevices the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addLinkedDevicesListener(OnWhatsappLinkedDevices onWhatsappLinkedDevices) {
-        return addListener(onWhatsappLinkedDevices);
-    }
-
-    /**
-     * Registers a registration code listener for the mobile api
-     *
-     * @param onRegistrationCode the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addRegistrationCodeListener(OnRegistrationCode onRegistrationCode) {
-        return addListener(onRegistrationCode);
-    }
-
-    /**
-     * Registers a registration code listener for the mobile api
-     *
-     * @param onWhatsappRegistrationCode the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addRegistrationCodeListener(OnWhatsappRegistrationCode onWhatsappRegistrationCode) {
-        return addListener(onWhatsappRegistrationCode);
-    }
-
-    /**
-     * Registers a call listener
-     *
-     * @param onCall the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addCallListener(OnCall onCall) {
-        return addListener(onCall);
-    }
-
-    /**
-     * Registers a call listener
-     *
-     * @param onWhatsappCall the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addCallListener(OnWhatsappCall onWhatsappCall) {
-        return addListener(onWhatsappCall);
+        });
     }
 
     private Jid jidOrThrowError() {

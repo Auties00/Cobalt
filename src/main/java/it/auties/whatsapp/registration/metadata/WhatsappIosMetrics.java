@@ -7,15 +7,15 @@ import java.util.List;
 public record WhatsappIosMetrics(List<String> exposure, Metrics metrics) {
     public record Metrics(
             @JsonProperty("expid_c")
-            boolean expId,
+            Boolean expId,
             @JsonProperty("fdid_c")
-            boolean fdid,
+            Boolean fdid,
             @JsonProperty("rc_c")
-            boolean rc,
+            Boolean rc,
             @JsonProperty("expid_md")
-            long expIdMd,
+            Long expIdMd,
             @JsonProperty("expid_cd")
-            long expIdCd
+            Long expIdCd
     ) {
 
     }

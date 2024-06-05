@@ -218,7 +218,7 @@
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
                             <annotationProcessors>
-                                <annotationProcessor>it.auties.whatsapp.listener.processor.RegisterListenerProcessor</annotationProcessor>
+                                <annotationProcessor>it.auties.whatsapp.listener.RegisterListenerProcessor</annotationProcessor>
                             </annotationProcessors>
                         </configuration>
                     </execution>

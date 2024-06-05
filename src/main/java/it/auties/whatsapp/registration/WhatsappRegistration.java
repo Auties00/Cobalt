@@ -48,9 +48,9 @@ public final class WhatsappRegistration {
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
     private static final List<String> MOBILE_IOS_OFFLINE_AB_EXPOSURES = List.of(
             "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control",
-            "ios_rollout_quebec_tos_reg_universe|ios_rollout_ca_tos_reg_experiment|control",
+            "ios_rollout_quebec_tos_reg_universe|ios_rollout_ca_tos_reg_experiment|test",
             "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test",
-            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|control"
+            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|test"
     );
     private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
     private static final String DEFAULT_GCM_CODE = "36dimLEhnzs=";
@@ -328,8 +328,8 @@ public final class WhatsappRegistration {
                 var offlineAb = new WhatsappIosMetrics(
                         MOBILE_IOS_OFFLINE_AB_EXPOSURES,
                         new WhatsappIosMetrics.Metrics(
-                                true,
-                                true,
+                                null,
+                                null,
                                 true,
                                 installationTime,
                                 installationTime

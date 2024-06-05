@@ -787,10 +787,11 @@ public class SocketHandler implements SocketListener {
             contact.get().setLastSeen(ZonedDateTime.now());
         }
 
+        var provider = contact.isPresent() ? contact.get() : jid;
         chat.presences().put(jid, status);
         callListenersAsync(listener -> {
-            listener.onContactPresence(whatsapp, chat, jid, status);
-            listener.onContactPresence(chat, jid, status);
+            listener.onContactPresence(whatsapp, chat, provider);
+            listener.onContactPresence(chat, provider);
         });
     }
 
@@ -958,8 +959,12 @@ public class SocketHandler implements SocketListener {
 
     public void onUserPictureChanged(URI newPicture, URI oldPicture) {
         callListenersAsync(listener -> {
-            listener.onProfilePictureChanged(whatsapp, oldPicture, newPicture);
-            listener.onProfilePictureChanged(oldPicture, newPicture);
+            store().jid()
+                    .flatMap(store()::findContactByJid)
+                    .ifPresent(selfJid -> {
+                        listener.onProfilePictureChanged(whatsapp, selfJid);
+                        listener.onProfilePictureChanged(selfJid);
+                    });
         });
     }
 
