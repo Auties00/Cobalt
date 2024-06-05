@@ -38,8 +38,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
-    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.10.79");
-    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.10.79");
+    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.11.80");
+    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.11.80");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
     private static final URI WEB_UPDATE_URL = URI.create("https://web.whatsapp.com/check-update?version=2.2245.9&platform=web");
