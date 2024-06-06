@@ -3,19 +3,19 @@ package it.auties.whatsapp.util;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implements Deque<E> {
-    private final AtomicReference<Node<E>> head;
-    private final AtomicReference<Node<E>> tail;
+    private Node<E> head;
+    private Node<E> tail;
+    private final ReentrantLock lock;
     private final Set<Integer> hashes;
 
     public ConcurrentLinkedHashedDequeue() {
-        this.head = new AtomicReference<>(null);
-        this.tail = new AtomicReference<>(null);
         this.hashes = ConcurrentHashMap.newKeySet();
+        this.lock = new ReentrantLock(true);
     }
 
     @Override
@@ -40,22 +40,26 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     @Override
     public boolean add(E e) {
-        var hash = Objects.hashCode(e);
-        if (hashes.contains(hash)) {
-            return false;
-        }
+        try {
+            lock.lock();
+            var hash = Objects.hashCode(e);
+            if (hashes.contains(hash)) {
+                return false;
+            }
 
-        var newNode = new Node<>(e);
-        var oldTail = tail.getAndSet(newNode);
-        if (oldTail == null) {
-            head.set(newNode);
-        } else {
-            oldTail.next = newNode;
-            newNode.prev = oldTail;
+            var newNode = new Node<>(e);
+            if (tail == null) {
+                head = newNode;
+            } else {
+                tail.next = newNode;
+                newNode.prev = tail;
+            }
+            tail = newNode;
+            hashes.add(hash);
+            return true;
+        }finally {
+            lock.unlock();
         }
-
-        hashes.add(hash);
-        return true;
     }
 
     @Override
@@ -66,21 +70,25 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     @Override
     public void addFirst(E message) {
-        var hash = Objects.hashCode(message);
-        if (hashes.contains(hash)) {
-            return;
-        }
+        try {
+            lock.lock();
+            var hash = Objects.hashCode(message);
+            if (hashes.contains(hash)) {
+                return;
+            }
 
-        var newNode = new Node<>(message);
-        var oldHead = head.getAndSet(newNode);
-        if (oldHead == null) {
-            tail.set(newNode);
-        } else {
-            oldHead.prev = newNode;
-            newNode.next = oldHead;
+            var newNode = new Node<>(message);
+            if (head == null) {
+                tail = newNode;
+            } else {
+                head.prev = newNode;
+                newNode.next = head;
+            }
+            head = newNode;
+            hashes.add(hash);
+        }finally {
+            lock.unlock();
         }
-
-        hashes.add(hash);
     }
 
     @Override
@@ -90,39 +98,109 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     @Override
     public boolean remove(Object o) {
-        var hash = Objects.hashCode(o);
-        if (!hashes.contains(hash)) {
-            return false;
-        }
-
-        var node = head.get();
-        while (node != null) {
-            if (node.item.equals(o)) {
-                removeNode(node, hash);
-                return true;
+        try {
+            lock.lock();
+            var hash = Objects.hashCode(o);
+            if (!hashes.contains(hash)) {
+                return false;
             }
-            node = node.next;
-        }
 
-        return false;
+            var node = head;
+            while (node != null) {
+                if (node.item.equals(o)) {
+                    removeNode(node, hash);
+                    return true;
+                }
+                node = node.next;
+            }
+
+            return false;
+        }finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public boolean removeAll(Collection<?> collection) {
-        var hashCodes = collection.stream()
-                .map(Objects::hashCode)
-                .collect(Collectors.toUnmodifiableSet());
-        var node = head.get();
+        try {
+            if(collection.isEmpty()) {
+                return true;
+            }
+            
+            lock.lock();
+            var hashCodes = collection.stream()
+                    .map(Objects::hashCode)
+                    .collect(Collectors.toSet());
+            var node = head;
+            while (node != null && !hashCodes.isEmpty()) {
+                var hash = Objects.hashCode(node.item);
+                if (hashCodes.remove(hash)) {
+                    removeNode(node, hash);
+                }
+                node = node.next;
+            }
+            return hashCodes.isEmpty();
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public boolean removeFirstOccurrence(Object o) {
+        try {
+            lock.lock();
+            var node = head;
+            while (node != null) {
+                if (node.item.equals(o)) {
+                    var hash = Objects.hashCode(node.item);
+                    removeNode(node, hash);
+                    return true;
+                }
+                node = node.next;
+            }
+            return false;
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public boolean removeIf(Predicate<? super E> filter) {
+        try {
+            lock.lock();
+        var node = tail;
         while (node != null) {
-            var hash = Objects.hashCode(node.item);
-            if (hashCodes.contains(hash)) {
+            if (filter.test(node.item)) {
+                var hash = Objects.hashCode(node.item);
                 removeNode(node, hash);
                 return true;
             }
-            node = node.next;
+            node = node.prev;
         }
 
         return false;
+    }finally {
+        lock.unlock();
+    }
+    }
+
+    @Override
+    public boolean removeLastOccurrence(Object o) {
+        try {
+            lock.lock();
+            var node = tail;
+            while (node != null) {
+                if (node.item.equals(o)) {
+                    var hash = Objects.hashCode(node.item);
+                    removeNode(node, hash);
+                    return true;
+                }
+                node = node.prev;
+            }
+            return false;
+        }finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -137,36 +215,44 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     @Override
     public E remove() {
-        var tailItem = tail.get();
-        if (tailItem == null) {
-            return null;
-        }
+        try {
+            lock.lock();
+            var tailItem = tail;
+            if (tailItem == null) {
+                return null;
+            }
 
-        var node = tail.getAndSet(tailItem.prev);
-        if (node == head.get()) {
-            head.compareAndSet(node, tailItem.prev);
-        }
+            if (head == tail) {
+                head = tailItem.prev;
+            }
 
-        hashes.remove(Objects.hashCode(node.item));
-        return node.item;
+            var result = tail.item;
+            hashes.remove(Objects.hashCode(result));
+            tail = tailItem.prev;
+            return result;
+        }finally {
+            lock.unlock();
+        }
     }
 
     private void removeNode(Node<E> node, int hash) {
-        if (node == head.get()) {
-            var removed = head.getAndSet(head.get().next);
-            if (removed == tail.get()) {
-                tail.compareAndSet(removed, removed.prev);
+        try {
+            lock.lock();
+            if (node == head) {
+                if (head == tail) {
+                    tail = head.prev;
+                }
+                head = head.next;
+            } else if (node == tail) {
+                tail = tail.next;
+            } else {
+                node.prev.next = node.next;
+                node.next.prev = node.prev;
             }
-        } else if (node == tail.get()) {
-            var removed = tail.getAndSet(tail.get().prev);
-            if (removed == head.get()) {
-                head.compareAndSet(removed, tail.get().prev);
-            }
-        } else {
-            node.prev.next = node.next;
-            node.next.prev = node.prev;
+            hashes.remove(hash);
+        }finally {
+            lock.unlock();
         }
-        hashes.remove(hash);
     }
 
     @Override
@@ -181,11 +267,19 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     @Override
     public E removeFirst() {
-        var node = head.getAndSet(head.get().next);
-        if (node == tail.get()) {
-            tail.compareAndSet(node, node.prev);
+        try {
+            lock.lock();
+            if (head == tail) {
+                tail = head.prev;
+            }
+
+            var result = head.item;
+            hashes.remove(Objects.hashCode(result));
+            head = head.next;
+            return result;
+        }finally {
+            lock.unlock();
         }
-        return node.item;
     }
 
     @Override
@@ -195,7 +289,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     @Override
     public boolean isEmpty() {
-        return head.get() == null;
+        return head == null;
     }
 
     @Override
@@ -206,7 +300,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
     @Override
     public Iterator<E> iterator() {
         return new Iterator<>() {
-            private Node<E> nextNode = head.get();
+            private Node<E> nextNode = head;
 
             @Override
             public boolean hasNext() {
@@ -228,7 +322,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     public Iterator<E> descendingIterator() {
         return new Iterator<>() {
-            private Node<E> previousNode = tail.get();
+            private Node<E> previousNode = tail;
 
             @Override
             public boolean hasNext() {
@@ -261,85 +355,58 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
 
     @Override
     public E peek() {
-        var headItem = head.get();
-        if (headItem == null) {
-            return null;
+        try {
+            lock.lock();
+            if(head == null) {
+                return null;
+            }
+            
+            return head.item;
+        }finally {
+            lock.unlock();  
         }
-
-        return headItem.item;
     }
 
     @Override
     public E peekLast() {
-        var tailItem = tail.get();
-        if (tailItem == null) {
-            return null;
-        }
+        try {
+            lock.lock();
+            if(tail == null) {
+                return null;
+            }
 
-        return tailItem.item;
+            return tail.item;
+        }finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public E getFirst() {
-        var headItem = head.get();
-        if (headItem == null) {
-           throw new NoSuchElementException();
-        }
+        try {
+            lock.lock();
+            if(head == null) {
+                throw new NoSuchElementException();
+            }
 
-        return headItem.item;
+            return head.item;
+        }finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public E getLast() {
-        var tailItem = tail.get();
-        if (tailItem == null) {
-            throw new NoSuchElementException();
-        }
-
-        return tailItem.item;
-    }
-
-    @Override
-    public boolean removeFirstOccurrence(Object o) {
-        var node = head.get();
-        while (node != null) {
-            if (node.item.equals(o)) {
-                var hash = Objects.hashCode(node.item);
-                removeNode(node, hash);
-                return true;
+        try {
+            lock.lock();
+            if(tail == null) {
+                throw new NoSuchElementException();
             }
-            node = node.next;
-        }
-        return false;
-    }
 
-    @Override
-    public boolean removeIf(Predicate<? super E> filter) {
-        var node = tail.get();
-        while (node != null) {
-            if (filter.test(node.item)) {
-                var hash = Objects.hashCode(node.item);
-                removeNode(node, hash);
-                return true;
-            }
-            node = node.prev;
+            return tail.item;
+        }finally {
+            lock.unlock();
         }
-
-        return false;
-    }
-
-    @Override
-    public boolean removeLastOccurrence(Object o) {
-        var node = tail.get();
-        while (node != null) {
-            if (node.item.equals(o)) {
-                var hash = Objects.hashCode(node.item);
-                removeNode(node, hash);
-                return true;
-            }
-            node = node.prev;
-        }
-        return false;
     }
 
     private static class Node<E> {

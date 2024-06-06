@@ -58,7 +58,7 @@ class AuthHandler {
         try {
             var handshakeMessage = HandshakeMessageSpec.decode(message);
             return Optional.ofNullable(handshakeMessage.serverHello());
-        } catch (ProtobufDeserializationException exception) {
+        } catch (Throwable throwable) {
             return Optional.empty();
         }
     }
