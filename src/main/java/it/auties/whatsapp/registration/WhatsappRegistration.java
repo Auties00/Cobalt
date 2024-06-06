@@ -47,12 +47,10 @@ public final class WhatsappRegistration {
     private static final int MAX_REGISTRATION_RETRIES = 3;
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
     private static final List<String> MOBILE_IOS_OFFLINE_AB_EXPOSURES = List.of(
-            "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control",
-            "ios_rollout_quebec_tos_reg_universe|ios_rollout_ca_tos_reg_experiment|test",
-            "ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test",
-            "wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|test"
+            "hide_link_device_button_release_rollout_universe|hide_link_device_button_release_rollout_experiment|control","ios_rollout_quebec_tos_reg_universe|ios_rollout_ca_tos_reg_experiment|test","ios_confluence_tos_pp_link_update_universe|iphone_confluence_tos_pp_link_update_exp|test","wfs_offline_cache_prod_universe_ios|wfs_offline_cache_prod_experiment_ios|test"
     );
     private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
+    private static final String DEFAULT_APNS_TOKEN = "e922c81c02389f01914bf069f080dad788ff2c783261821a52b8ad7be53d18b8";
     private static final String DEFAULT_GCM_CODE = "36dimLEhnzs=";
     private static final int CLOUD_TIMEOUT = 10;
 
@@ -112,7 +110,7 @@ public final class WhatsappRegistration {
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
         var originalDevice = store.device();
-        store.setDevice(originalDevice.toBusiness());
+        // store.setDevice(originalDevice.toBusiness());
 
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
@@ -240,6 +238,10 @@ public final class WhatsappRegistration {
             return gcmClient.getPushToken();
         }
 
+        if(store.device().platform().isIOS()) {
+            return CompletableFuture.completedFuture(DEFAULT_APNS_TOKEN);
+        }
+
         return CompletableFuture.completedFuture(null);
     }
 
@@ -328,8 +330,8 @@ public final class WhatsappRegistration {
                 var offlineAb = new WhatsappIosMetrics(
                         MOBILE_IOS_OFFLINE_AB_EXPOSURES,
                         new WhatsappIosMetrics.Metrics(
-                                null,
-                                null,
+                                true,
+                                true,
                                 true,
                                 installationTime,
                                 installationTime
@@ -384,7 +386,11 @@ public final class WhatsappRegistration {
                     });
         }
 
-        return CompletableFuture.completedFuture(null);
+        if(store.device().platform().isIOS()) {
+            return CompletableFuture.completedFuture(DEFAULT_APNS_CODE);
+        }
+
+        return null;
     }
 
     private String readIOSPushCode(ApnsPacket packet) {
@@ -617,9 +623,9 @@ public final class WhatsappRegistration {
                         .put("Content-Type", "application/x-www-form-urlencoded")
                         .put("Connection", "Close")
                         .toMap();
-                var body = "ENC=%s&H=%s".formatted(
+                var body = "ENC=%s%s".formatted(
                         encBase64,
-                        iosTokens != null ? iosTokens.signature() : "eyJlcnJvckNvZGUiOjEwMDF9"
+                        iosTokens != null ? "&H=" + iosTokens.signature() : ""
                 );
                 if (printRequests && iosTokens != null) {
                     System.out.println("Using attestation: " + iosTokens.authorization());
