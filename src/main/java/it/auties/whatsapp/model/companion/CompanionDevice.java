@@ -19,23 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class CompanionDevice implements ProtobufMessage {
     private static final List<Entry<String, String>> IPHONES = List.of(
-            Map.entry("iPhone_11", "iPhone12,1"),
-            Map.entry("iPhone_11_Pro", "iPhone12,3"),
-            Map.entry("iPhone_11_Pro_Max", "iPhone12,5"),
-            Map.entry("iPhone_12", "iPhone13,2"),
-            Map.entry("iPhone_12_Pro", "iPhone13,3"),
-            Map.entry("iPhone_12_Pro_Max", "iPhone13,4"),
-            Map.entry("iPhone_13", "iPhone14,5"),
-            Map.entry("iPhone_13_Pro", "iPhone14,2"),
-            Map.entry("iPhone_13_Pro_Max", "iPhone14,3"),
-            Map.entry("iPhone_14", "iPhone14,7"),
-            Map.entry("iPhone_14_Plus", "iPhone14,8"),
-            Map.entry("iPhone_14_Pro", "iPhone15,2"),
-            Map.entry("iPhone_14_Pro_Max", "iPhone15,3"),
-            Map.entry("iPhone_15", "iPhone15,4"),
-            Map.entry("iPhone_15_Plus", "iPhone15,5"),
-            Map.entry("iPhone_15_Pro", "iPhone16,1"),
-            Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
+            Map.entry("iPhone_X", "iPhone12,1")
     );
     private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
     private static final int MIDDLEWARE_PERSONAL_PORT = 1119;
@@ -148,7 +132,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 appVersion,
-                Version.of("17.4.1"),
+                Version.of("16.7.4"),
                 "20H320",
                 address
         );
