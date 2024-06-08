@@ -29,6 +29,7 @@ open module it.auties.cobalt {
 
     // Mobile api
     requires libphonenumber;
+    requires net.dongliu.apkparser;
 
     // Unsafe reflection
     requires jdk.unsupported;

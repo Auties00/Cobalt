@@ -138,6 +138,10 @@ public final class CompanionDevice implements ProtobufMessage {
         );
     }
 
+    public static CompanionDevice android(boolean business) {
+        return android(null, business, null);
+    }
+
     public static CompanionDevice android(boolean business, String address) {
         return android(null, business, address == null ? null : List.of(address));
     }

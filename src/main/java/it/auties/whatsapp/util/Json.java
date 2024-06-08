@@ -18,6 +18,7 @@ import java.util.Optional;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
@@ -42,6 +43,7 @@ public final class Json {
                     .disable(FAIL_ON_UNKNOWN_PROPERTIES)
                     .setVisibility(ALL, ANY)
                     .setVisibility(GETTER, NONE)
+                    .setSerializationInclusion(NON_NULL)
                     .setVisibility(IS_GETTER, NONE);
             prettyWriter = json.copy()
                     .setSerializationInclusion(NON_DEFAULT)

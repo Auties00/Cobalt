@@ -390,7 +390,7 @@ public final class WhatsappRegistration {
             return CompletableFuture.completedFuture(DEFAULT_APNS_CODE);
         }
 
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     private String readIOSPushCode(ApnsPacket packet) {

@@ -193,6 +193,7 @@
         <ffmpeg.version>2023.09.10</ffmpeg.version>
         <http.version>5.3</http.version>
         <sl4j.version>2.0.13</sl4j.version>
+        <apk.parser.version>2.6.10</apk.parser.version>
     </properties>
 
     <build>
@@ -318,6 +319,13 @@
             <groupId>com.googlecode.plist</groupId>
             <artifactId>dd-plist</artifactId>
             <version>${plist.version}</version>
+        </dependency>
+
+        <!-- Parse Android APK for token generation (Mobile API) -->
+        <dependency>
+            <groupId>net.dongliu</groupId>
+            <artifactId>apk-parser</artifactId>
+            <version>${apk.parser.version}</version>
         </dependency>
 
         <!-- HTTP Client -->

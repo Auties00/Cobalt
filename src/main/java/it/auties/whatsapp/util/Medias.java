@@ -78,7 +78,7 @@ public final class Medias {
             var safeHeaders = Attributes.of(headers)
                     .put("User-Agent", userAgent, Objects::nonNull)
                     .toMap();
-            return httpClient.getRaw(uri, safeHeaders);
+            return getOrCreateClient().getRaw(uri, safeHeaders);
         } catch (Throwable exception) {
             return CompletableFuture.failedFuture(exception);
         }
