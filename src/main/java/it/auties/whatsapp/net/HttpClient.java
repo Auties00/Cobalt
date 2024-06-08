@@ -163,7 +163,7 @@ public class HttpClient implements AutoCloseable {
         @Override
         public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return SocketFactory.of(derivedProxy);
+            return AsyncSocket.of(derivedProxy);
         }
 
         @Override
@@ -241,7 +241,7 @@ public class HttpClient implements AutoCloseable {
         @Override
         public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return SocketFactory.of(derivedProxy);
+            return AsyncSocket.of(derivedProxy);
         }
 
         @Override

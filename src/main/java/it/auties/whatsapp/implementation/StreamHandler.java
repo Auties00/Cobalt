@@ -63,7 +63,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -78,7 +77,7 @@ class StreamHandler {
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
     private static final int MOBILE_PRE_KEYS_UPLOAD_CHUNK = 811;
-    private static final int PING_INTERVAL = 30;
+    private static final int PING_INTERVAL = 15;
     private static final int MAX_ATTEMPTS = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
     private static final byte[][] CALL_RELAY = new byte[][]{
@@ -94,8 +93,6 @@ class StreamHandler {
     private final WebVerificationHandler webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
-    private volatile ScheduledFuture<?> pingFuture;
-    private volatile ScheduledFuture<?> mediaConnectionFuture;
 
     protected StreamHandler(SocketHandler socketHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = socketHandler;
@@ -1187,7 +1184,6 @@ class StreamHandler {
         return checkBusinessStatus()
                 .thenCompose(ignored -> socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", ""))))
                 .thenAcceptAsync(this::parseProps)
-                .thenComposeAsync(ignored -> queryAbProps())
                 .thenRunAsync(() -> {
                     socketHandler.sendQuery("get", "w:b", Node.of("lists"))
                             .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
@@ -1204,13 +1200,7 @@ class StreamHandler {
     private CompletableFuture<Void> queryRequiredWebInfo() {
         return socketHandler.sendQuery("get", "w", Node.of("props"))
                 .thenAcceptAsync(this::parseProps)
-                .thenComposeAsync(ignored -> queryAbProps())
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-    }
-
-    private CompletableFuture<Void> queryAbProps() {
-        return socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", "1")))
-                .thenAcceptAsync(result -> { /* TODO: Handle AB props */ });
     }
 
     private CompletableFuture<Void> checkBusinessStatus() {
@@ -1349,12 +1339,12 @@ class StreamHandler {
             return;
         }
 
-        this.pingFuture = socketHandler.scheduleAtFixedInterval(() -> {
+        socketHandler.scheduleAtFixedInterval(() -> {
             socketHandler.sendPing();
             socketHandler.store().serialize(true);
             socketHandler.store().serializer().linkMetadata(socketHandler.store());
             socketHandler.keys().serialize(true);
-        }, PING_INTERVAL, PING_INTERVAL);
+        }, PING_INTERVAL / 2, PING_INTERVAL);
     }
 
     private CompletableFuture<Void> scheduleMediaConnectionUpdate(int tries, Throwable error) {
@@ -1391,7 +1381,7 @@ class StreamHandler {
             return;
         }
 
-       this.mediaConnectionFuture = socketHandler.scheduleAtFixedInterval(() -> scheduleMediaConnectionUpdate(0, null), result.ttl(), result.ttl());
+       socketHandler.scheduleAtFixedInterval(() -> scheduleMediaConnectionUpdate(0, null), result.ttl(), result.ttl());
     }
 
     private void digestIq(Node node) {
@@ -1569,18 +1559,6 @@ class StreamHandler {
     }
 
     protected void dispose() {
-        if(mediaConnectionFuture != null && !mediaConnectionFuture.isDone()) {
-            mediaConnectionFuture.cancel(true);
-        }
-
-        if(pingFuture != null) {
-            pingFuture.cancel(true);
-        }
-
-        if(mediaConnectionFuture != null) {
-            mediaConnectionFuture.cancel(true);
-        }
-
         retries.clear();
         lastLinkCodeKey.set(null);
     }

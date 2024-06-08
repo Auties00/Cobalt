@@ -38,6 +38,7 @@ import it.auties.whatsapp.model.signal.auth.HandshakeMessageSpec;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Exceptions;
 
@@ -80,6 +81,7 @@ public class SocketHandler implements SocketListener {
 
     private final AtomicLong requestsCounter;
     private final ScheduledExecutorService scheduler;
+    private final List<ScheduledFuture<?>> scheduledTasks;
     private final Semaphore writeSemaphore;
 
     private volatile SocketState state;
@@ -116,6 +118,7 @@ public class SocketHandler implements SocketListener {
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
         this.requestsCounter = new AtomicLong();
         this.scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
+        this.scheduledTasks = new CopyOnWriteArrayList<>();
         this.writeSemaphore = new Semaphore(1, true);
     }
 
@@ -124,9 +127,18 @@ public class SocketHandler implements SocketListener {
             keys.dispose();
             store.dispose();
         }
+
+        killScheduledTasks();
         if (!reconnect) {
             dispose();
         }
+    }
+
+    private void killScheduledTasks() {
+        for(var scheduledTask : scheduledTasks) {
+            scheduledTask.cancel(true);
+        }
+        scheduledTasks.clear();
     }
 
     protected void onSocketEvent(SocketEvent event) {
@@ -259,7 +271,7 @@ public class SocketHandler implements SocketListener {
 
     public CompletableFuture<Node> sendNode(Node node, Function<Node, Boolean> filter) {
         if (node.id() == null) {
-            node.attributes().put("id", store.initializationTimeStamp() + "-" + requestsCounter.incrementAndGet());
+            node.attributes().put("id", HexFormat.of().formatHex(Bytes.random(6)));
         }
 
         return sendRequest(SocketRequest.of(node, filter), false, true);
@@ -413,9 +425,11 @@ public class SocketHandler implements SocketListener {
     }
 
     private CompletableFuture<Void> handleReconnection() {
+        store.resolveAllPendingRequests();
         if (session != null) {
             session.disconnect();
         }
+
         return connect();
     }
 
@@ -1056,6 +1070,7 @@ public class SocketHandler implements SocketListener {
         messageHandler.dispose();
         appStateHandler.dispose();
         scheduler.shutdownNow();
+        confirmConnection();
     }
 
     protected <T> T handleFailure(Location location, Throwable throwable) {
@@ -1125,13 +1140,24 @@ public class SocketHandler implements SocketListener {
         loginFuture.complete(null);
     }
 
-    protected ScheduledFuture<?> scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
-        return scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
+    protected void scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
+        var result = scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
+        scheduledTasks.add(result);
+    }
+
+    protected ScheduledFuture<?> scheduleDelayed(Runnable command, long delay) {
+        var result = scheduler.schedule(command, delay, TimeUnit.SECONDS);
+        scheduledTasks.add(result);
+        return result;
     }
 
     protected void sendPing() {
         sendQuery("get", "w:p", Node.of("ping"))
                 .thenRunAsync(() -> onSocketEvent(SocketEvent.PING))
-                .exceptionallyAsync(throwable -> handleFailure(STREAM, throwable));
+                .exceptionallyAsync(throwable -> {
+                    // If a ping fails something went wrong
+                    disconnect(DisconnectReason.RECONNECTING);
+                    return null;
+                });
     }
 }

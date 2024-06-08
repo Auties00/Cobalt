@@ -1,24 +1,29 @@
 package it.auties.whatsapp.implementation;
 
-import it.auties.whatsapp.net.SocketFactory;
+import it.auties.whatsapp.net.AsyncSocket;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Proxies;
 import it.auties.whatsapp.util.Validate;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.*;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
+import java.nio.channels.CompletionHandler;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
-    private static final URI MOBILE_SOCKET_ENDPOINT = URI.create("http://g.whatsapp.net:443");
+    private static final String MOBILE_SOCKET_ENDPOINT = "g.whatsapp.net";
+    private static final int MOBILE_SOCKET_PORT = 443;
     private static final int MESSAGE_LENGTH = 3;
 
     final URI proxy;
@@ -160,10 +165,14 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     static final class RawSocketSession extends SocketSession {
-        private Socket socket;
+        private volatile AsyncSocket socket;
+        private final AtomicBoolean paused;
+        private final AtomicInteger counter;
 
         RawSocketSession(URI proxy) {
             super(proxy);
+            this.paused = new AtomicBoolean(false);
+            this.counter = new AtomicInteger();
         }
 
         @Override
@@ -173,70 +182,95 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             super.connect(listener);
-            return CompletableFuture.runAsync(() -> createConnection(listener));
-        }
-
-        private void createConnection(SocketListener listener) {
             try {
-                this.socket = SocketFactory.of(proxy);
-                socket.setKeepAlive(true);
-                socket.connect(proxy != null ? InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT.getHost(), MOBILE_SOCKET_ENDPOINT.getPort()) : new InetSocketAddress(MOBILE_SOCKET_ENDPOINT.getHost(), MOBILE_SOCKET_ENDPOINT.getPort()));
-                listener.onOpen(RawSocketSession.this);
-                readMessages();
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
+                this.socket = AsyncSocket.of(proxy);
+                var address = proxy != null ? InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT, MOBILE_SOCKET_PORT) : new InetSocketAddress(MOBILE_SOCKET_ENDPOINT, MOBILE_SOCKET_PORT);
+                return socket.connectAsync(address).thenRunAsync(() -> {
+                    listener.onOpen(RawSocketSession.this);
+                    notifyNextMessage();
+                });
+            }catch (IOException exception) {
+                return CompletableFuture.failedFuture(exception);
             }
         }
 
-        private void readMessages() {
-            Thread.ofPlatform().start(() -> {
-                var lengthBytes = new byte[MESSAGE_LENGTH];
-                int length;
-                while (isOpen()) {
-                    try {
-                        var lengthResult = readBytes(lengthBytes);
-                        if(!lengthResult) {
-                            break;
+        private void notifyNextMessage() {
+            if(socket == null) {
+                return;
+            }
+
+            var lengthBuffer = ByteBuffer.allocate(MESSAGE_LENGTH);
+            var counter = this.counter.getAndIncrement();
+            System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Reading message length in buffer " + lengthBuffer);
+            socket.channel().read(lengthBuffer, null, new CompletionHandler<>() {
+                @Override
+                public void completed(Integer result, Object attachment) {
+                    if(result == -1) {
+                        if(isOpen()) {
+                            System.out.println("[" + (System.currentTimeMillis() / 1000) + "]" + "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Paused reading");
+                            paused.set(true);
+                        }else {
+                            System.out.println("[" + (System.currentTimeMillis() / 1000) + "]" + "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Triggered disconnect");
+                            disconnect();
                         }
 
-                        length = (lengthBytes[0] << 16) | ((lengthBytes[1] & 0xFF) << 8) | (lengthBytes[2] & 0xFF);
-                        if (length < 0) {
-                            break;
-                        }
-
-                        var messageBytes = new byte[length];
-                        var messageResult = readBytes(messageBytes);
-                        if(!messageResult) {
-                            break;
-                        }
-
-                        listener.onMessage(messageBytes);
-                    } catch (Throwable throwable) {
-                        listener.onError(throwable);
+                        return;
                     }
+
+                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Read message length in buffer with length " + result);
+                    lengthBuffer.flip();
+                    var messageLength = (lengthBuffer.get() << 16) | ((lengthBuffer.get() & 0xFF) << 8) | (lengthBuffer.get() & 0xFF);
+                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Read message length: " + messageLength);
+                    if(messageLength < 0) {
+                        disconnect();
+                        return;
+                    }
+
+                    var messageBuffer = ByteBuffer.allocate(messageLength);
+                    notifyNextMessage(counter, messageBuffer);
                 }
 
-                disconnect();
+                @Override
+                public void failed(Throwable exc, Object attachment) {
+                    listener.onError(exc);
+                    disconnect();
+                }
             });
         }
 
-        private boolean readBytes(byte[] data) {
-            try {
-                var read = 0;
-                while (read != data.length) {
-                    var chunk = socket.getInputStream().read(data, read, data.length - read);
-                    if (chunk < 0) {
-                        return false;
+        private void notifyNextMessage(int counter, ByteBuffer messageBuffer) {
+            if(socket == null) {
+                return;
+            }
+
+            System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Reading message in buffer " + messageBuffer);
+            socket.channel().read(messageBuffer, null, new CompletionHandler<>() {
+                @Override
+                public void completed(Integer result, Object attachment) {
+                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Read " + result + " bytes into incoming message: " + result + "/" + messageBuffer.limit());
+                    if(result == -1 || messageBuffer.hasRemaining()) {
+                        System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Message is not complete");
+                        notifyNextMessage(counter, messageBuffer);
+                        return;
                     }
 
-                    read += chunk;
+                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Message is ready");
+                    try {
+                        listener.onMessage(messageBuffer.array());
+                    }catch (Throwable throwable) {
+                        listener.onError(throwable);
+                    }finally {
+                        System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Handled message");
+                        notifyNextMessage();
+                    }
                 }
-                return true;
-            }catch (SocketException exception) {
-                return false;
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
-            }
+
+                @Override
+                public void failed(Throwable exc, Object attachment) {
+                    listener.onError(exc);
+                    disconnect();
+                }
+            });
         }
 
         @Override
@@ -264,12 +298,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return CompletableFuture.completedFuture(null);
             }
 
-            return CompletableFuture.runAsync(() -> {
-                try {
-                    socket.getOutputStream().write(bytes);
-                    socket.getOutputStream().flush();
-                } catch (Throwable throwable) {
-                    throw new RuntimeException(throwable);
+            return socket.sendAsync(bytes).thenRunAsync(() -> {
+                if(paused.get()) {
+                    paused.set(false);
+                    notifyNextMessage();
                 }
             });
         }

@@ -54,10 +54,7 @@ import it.auties.whatsapp.util.Validate;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,7 +71,7 @@ class MessageHandler {
     private final Set<Jid> historyCache;
     private final EnumSet<Type> historySyncTypes;
     private final ReentrantLock lock;
-    private CompletableFuture<?> historySyncTask;
+    private ScheduledFuture<?> historySyncTask;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -1294,12 +1291,11 @@ class MessageHandler {
     }
 
     private void scheduleHistorySyncTimeout() {
-        var executor = CompletableFuture.delayedExecutor(HISTORY_SYNC_TIMEOUT, TimeUnit.SECONDS, Thread::startVirtualThread);
         if (historySyncTask != null && !historySyncTask.isDone()) {
             historySyncTask.cancel(true);
         }
 
-        this.historySyncTask = CompletableFuture.runAsync(this::onForcedHistorySyncCompletion, executor);
+        this.historySyncTask = socketHandler.scheduleDelayed(this::onForcedHistorySyncCompletion, HISTORY_SYNC_TIMEOUT);
     }
 
     private void onForcedHistorySyncCompletion() {

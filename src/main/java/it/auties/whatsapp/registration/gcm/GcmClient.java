@@ -3,7 +3,7 @@ package it.auties.whatsapp.registration.gcm;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.crypto.HttpEce;
 import it.auties.whatsapp.net.HttpClient;
-import it.auties.whatsapp.net.SocketFactory;
+import it.auties.whatsapp.net.AsyncSocket;
 import it.auties.whatsapp.registration.gcm.McsExchange.AppData;
 import it.auties.whatsapp.registration.gcm.McsExchange.DataMessageStanza;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
@@ -147,7 +147,7 @@ public class GcmClient {
         return CompletableFuture.runAsync(() -> {
             try {
                 var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                var underlyingSocket = SocketFactory.of(proxy);
+                var underlyingSocket = AsyncSocket.of(proxy);
                 underlyingSocket.connect(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
                 this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, TALK_SERVER_HOST, TALK_SERVER_PORT, true);
                 socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
