@@ -76,7 +76,6 @@ class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
-    private static final int MOBILE_PRE_KEYS_UPLOAD_CHUNK = 811;
     private static final int PING_INTERVAL = 15;
     private static final int MAX_ATTEMPTS = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
@@ -1398,8 +1397,7 @@ class StreamHandler {
 
     private void sendPreKeys() {
         var startId = socketHandler.keys().lastPreKeyId() + 1;
-        var toUpload = socketHandler.store().clientType() == ClientType.MOBILE ? MOBILE_PRE_KEYS_UPLOAD_CHUNK : WEB_PRE_KEYS_UPLOAD_CHUNK;
-        var preKeys = IntStream.range(startId, startId + toUpload)
+        var preKeys = IntStream.range(startId, startId + WEB_PRE_KEYS_UPLOAD_CHUNK)
                 .mapToObj(SignalPreKeyPair::random)
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
