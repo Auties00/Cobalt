@@ -5,7 +5,6 @@ import it.auties.whatsapp.util.Proxies;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
@@ -63,11 +62,11 @@ public sealed abstract class AsyncSocket extends Socket {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         try {
             delegate.close();
         }catch (Throwable ignored) {
-            // Acceptable
+            // Ignore
         }
     }
 

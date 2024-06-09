@@ -232,7 +232,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
-                    listener.onError(exc);
                     disconnect();
                 }
             });
@@ -267,7 +266,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
-                    listener.onError(exc);
                     disconnect();
                 }
             });

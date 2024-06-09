@@ -1155,7 +1155,6 @@ public class SocketHandler implements SocketListener {
         sendQuery("get", "w:p", Node.of("ping"))
                 .thenRunAsync(() -> onSocketEvent(SocketEvent.PING))
                 .exceptionallyAsync(throwable -> {
-                    // If a ping fails something went wrong
                     disconnect(DisconnectReason.RECONNECTING);
                     return null;
                 });
