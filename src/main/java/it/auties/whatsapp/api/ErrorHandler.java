@@ -70,11 +70,6 @@ public interface ErrorHandler {
                     .jid()
                     .map(Jid::user)
                     .orElse("UNKNOWN");
-            if(location == LOGIN) {
-                logger.log(WARNING, "[{0}] Cannot login", jid);
-                return Result.DISCONNECT;
-            }
-
             if(location == RECONNECT) {
                 logger.log(WARNING, "[{0}] Cannot reconnect: retrying on next timeout", jid);
                 return Result.DISCARD;
@@ -83,6 +78,11 @@ public interface ErrorHandler {
             logger.log(ERROR, "[{0}] Socket failure at {1}", jid, location);
             if (printer != null) {
                 printer.accept(whatsapp, throwable);
+            }
+
+            if(location == LOGIN) {
+                logger.log(WARNING, "[{0}] Cannot login", jid);
+                return Result.DISCONNECT;
             }
 
             if (location == CRYPTOGRAPHY && whatsapp.store().clientType() == ClientType.MOBILE) {
