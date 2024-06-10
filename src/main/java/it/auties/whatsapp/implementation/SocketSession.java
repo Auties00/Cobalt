@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
@@ -68,7 +67,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
             super.connect(listener);
             var builder = HttpClient.newBuilder();
-            builder.executor(Thread.ofPlatform()::start);
             if(proxy != null) {
                 Validate.isTrue(Objects.equals(proxy.getScheme(), "http") || Objects.equals(proxy.getScheme(), "https"),
                         "Only HTTP(S) proxies are supported on the web api");
@@ -167,12 +165,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     static final class RawSocketSession extends SocketSession {
         private volatile AsyncSocket socket;
         private final AtomicBoolean paused;
-        private final AtomicInteger counter;
 
         RawSocketSession(URI proxy) {
             super(proxy);
             this.paused = new AtomicBoolean(false);
-            this.counter = new AtomicInteger();
         }
 
         @Override
@@ -200,34 +196,28 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             var lengthBuffer = ByteBuffer.allocate(MESSAGE_LENGTH);
-            var counter = this.counter.getAndIncrement();
-            System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Reading message length in buffer " + lengthBuffer);
             socket.channel().read(lengthBuffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer result, Object attachment) {
                     if(result == -1) {
                         if(isOpen()) {
-                            System.out.println("[" + (System.currentTimeMillis() / 1000) + "]" + "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Paused reading");
                             paused.set(true);
                         }else {
-                            System.out.println("[" + (System.currentTimeMillis() / 1000) + "]" + "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Triggered disconnect");
                             disconnect();
                         }
 
                         return;
                     }
 
-                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Read message length in buffer with length " + result);
                     lengthBuffer.flip();
                     var messageLength = (lengthBuffer.get() << 16) | ((lengthBuffer.get() & 0xFF) << 8) | (lengthBuffer.get() & 0xFF);
-                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Read message length: " + messageLength);
                     if(messageLength < 0) {
                         disconnect();
                         return;
                     }
 
                     var messageBuffer = ByteBuffer.allocate(messageLength);
-                    notifyNextMessage(counter, messageBuffer);
+                    notifyNextMessage(messageBuffer);
                 }
 
                 @Override
@@ -237,29 +227,24 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             });
         }
 
-        private void notifyNextMessage(int counter, ByteBuffer messageBuffer) {
+        private void notifyNextMessage(ByteBuffer messageBuffer) {
             if(socket == null) {
                 return;
             }
 
-            System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Reading message in buffer " + messageBuffer);
             socket.channel().read(messageBuffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer result, Object attachment) {
-                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Read " + result + " bytes into incoming message: " + result + "/" + messageBuffer.limit());
                     if(result == -1 || messageBuffer.hasRemaining()) {
-                        System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Message is not complete");
-                        notifyNextMessage(counter, messageBuffer);
+                        notifyNextMessage(messageBuffer);
                         return;
                     }
 
-                    System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Message is ready");
                     try {
                         listener.onMessage(messageBuffer.array());
                     }catch (Throwable throwable) {
                         listener.onError(throwable);
                     }finally {
-                        System.out.println("[" +(System.currentTimeMillis() / 1000)+ "]" +  "[" + Objects.hashCode(RawSocketSession.this) + "]" + "[" + counter + "]" + "Handled message");
                         notifyNextMessage();
                     }
                 }

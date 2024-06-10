@@ -1,7 +1,6 @@
 package it.auties.whatsapp.implementation;
 
 import it.auties.curve25519.Curve25519;
-import it.auties.protobuf.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;

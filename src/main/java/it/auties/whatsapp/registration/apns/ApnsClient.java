@@ -2,8 +2,8 @@ package it.auties.whatsapp.registration.apns;
 
 import com.dd.plist.NSDictionary;
 import it.auties.whatsapp.crypto.Sha1;
-import it.auties.whatsapp.net.HttpClient;
 import it.auties.whatsapp.net.AsyncSocket;
+import it.auties.whatsapp.net.HttpClient;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
