@@ -35,13 +35,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
-    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.11.83");
-    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.11.83");
+    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.11.85");
+    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.11.85");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
     private static final URI WEB_UPDATE_URL = URI.create("https://web.whatsapp.com/check-update?version=2.2245.9&platform=web");
@@ -254,7 +253,7 @@ public final class WhatsappMetadata {
 
             var now = Instant.now();
             var fileTime = Files.getLastModifiedTime(localCache);
-            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) > 7) {
+            if (fileTime.toInstant().until(now, ChronoUnit.HOURS) > 12) {
                 return Optional.empty();
             }
 
@@ -316,40 +315,36 @@ public final class WhatsappMetadata {
 
     private static CompletableFuture<WhatsappKaiOsApp> downloadKaiOsData() {
         return Medias.downloadAsync(MOBILE_KAIOS_URL, MOBILE_KAIOS_USER_AGENT, Map.entry("Content-Type", "application/json")).thenComposeAsync(catalogResponse -> {
-            try (var compressedStream = new GZIPInputStream(new ByteArrayInputStream(catalogResponse))) {
-                var catalog = Json.readValue(compressedStream.readAllBytes(), KaiOsCatalogResponse.class);
-                var app = catalog.apps()
-                        .stream()
-                        .filter(entry -> Objects.equals(entry.name(), "whatsapp"))
-                        .findFirst()
-                        .orElseThrow(() -> new NoSuchElementException("Missing whatsapp from catalog"));
-                return Medias.downloadAsync(app.uri(), MOBILE_KAIOS_USER_AGENT).thenApplyAsync(appArchiveResponse -> {
-                    try (var zipArchive = new ZipInputStream(new ByteArrayInputStream(appArchiveResponse))) {
-                        byte[] indexHtml = null;
-                        byte[] backendJs = null;
-                        ZipEntry entry;
+            var catalog = Json.readValue(catalogResponse, KaiOsCatalogResponse.class);
+            var app = catalog.apps()
+                    .stream()
+                    .filter(entry -> Objects.equals(entry.name(), "whatsapp"))
+                    .findFirst()
+                    .orElseThrow(() -> new NoSuchElementException("Missing whatsapp from catalog"));
+            return Medias.downloadAsync(app.uri(), MOBILE_KAIOS_USER_AGENT).thenApplyAsync(appArchiveResponse -> {
+                try (var zipArchive = new ZipInputStream(new ByteArrayInputStream(appArchiveResponse))) {
+                    byte[] indexHtml = null;
+                    byte[] backendJs = null;
+                    ZipEntry entry;
 
-                        while ((entry = zipArchive.getNextEntry()) != null) {
-                            switch (entry.getName()) {
-                                case "index.html" -> indexHtml = zipArchive.readAllBytes();
-                                case "backendRoot.js" -> backendJs = zipArchive.readAllBytes();
-                            }
+                    while ((entry = zipArchive.getNextEntry()) != null) {
+                        switch (entry.getName()) {
+                            case "index.html" -> indexHtml = zipArchive.readAllBytes();
+                            case "backendRoot.js" -> backendJs = zipArchive.readAllBytes();
                         }
-
-                        var result = new WhatsappKaiOsApp(
-                                new Version(app.version().primary(), app.version().secondary(), app.version().tertiary()),
-                                Objects.requireNonNull(indexHtml, "Missing index.html"),
-                                Objects.requireNonNull(backendJs, "Missing backendRoot.js")
-                        );
-                        cacheKaiOsData(result);
-                        return result;
-                    } catch (IOException exception) {
-                        throw new RuntimeException("Cannot extract kaios metadata", exception);
                     }
-                });
-            } catch (IOException exception) {
-                throw new RuntimeException("Cannot download kaios app", exception);
-            }
+
+                    var result = new WhatsappKaiOsApp(
+                            new Version(app.version().primary(), app.version().secondary(), app.version().tertiary()),
+                            Objects.requireNonNull(indexHtml, "Missing index.html"),
+                            Objects.requireNonNull(backendJs, "Missing backendRoot.js")
+                    );
+                    cacheKaiOsData(result);
+                    return result;
+                } catch (IOException exception) {
+                    throw new RuntimeException("Cannot extract kaios metadata", exception);
+                }
+            });
         });
     }
 

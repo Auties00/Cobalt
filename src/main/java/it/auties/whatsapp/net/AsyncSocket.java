@@ -467,6 +467,45 @@ public sealed abstract class AsyncSocket extends Socket {
         return future;
     }
 
+    public CompletableFuture<ByteBuffer> readFullyAsync(int length) {
+        if (length < 0) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Cannot read %s bytes from socket".formatted(length)));
+        }
+
+        var buffer = ByteBuffer.allocate(length);
+        return readFullyAsync(buffer);
+    }
+
+    public CompletableFuture<ByteBuffer> readFullyAsync(ByteBuffer buffer) {
+        var future = new CompletableFuture<ByteBuffer>();
+        readFully(buffer, future);
+        return future;
+    }
+
+    private void readFully(ByteBuffer buffer, CompletableFuture<ByteBuffer> future) {
+        try {
+            delegate.read(buffer, null, new CompletionHandler<>() {
+                @Override
+                public void completed(Integer result, Object attachment) {
+                    if(result == -1 || !buffer.hasRemaining()) {
+                        buffer.flip();
+                        future.complete(buffer);
+                        return;
+                    }
+
+                    readFully(buffer, future);
+                }
+
+                @Override
+                public void failed(Throwable exc, Object attachment) {
+                    future.completeExceptionally(exc);
+                }
+            });
+        }catch (Throwable throwable) {
+            future.completeExceptionally(throwable);
+        }
+    }
+
     public AsynchronousSocketChannel channel() {
         return delegate;
     }
@@ -509,7 +548,7 @@ public sealed abstract class AsyncSocket extends Socket {
         }
 
         private CompletableFuture<String> readHandshakeResponse() {
-            return readAsync(readReceiveBufferSize())
+            return readFullyAsync(readReceiveBufferSize())
                     .thenApplyAsync(this::readResponse);
         }
 
@@ -582,7 +621,7 @@ public sealed abstract class AsyncSocket extends Socket {
         public CompletableFuture<Void> connectAsync(InetSocketAddress address) {
             return super.connectAsync(new InetSocketAddress(proxy.getHost(), proxy.getPort()))
                     .thenComposeAsync(openResult -> sendAsync(getHandshakePayload()))
-                    .thenComposeAsync(connectionResult -> readAsync(2))
+                    .thenComposeAsync(connectionResult -> readFullyAsync(2))
                     .thenComposeAsync(response -> onConnected(address, response));
         }
 
@@ -630,7 +669,7 @@ public sealed abstract class AsyncSocket extends Socket {
                 outputStream.write(0);
             }
             return sendAsync(outputStream.toByteArray())
-                    .thenComposeAsync(connectionResult -> readAsync(2))
+                    .thenComposeAsync(connectionResult -> readFullyAsync(2))
                     .thenComposeAsync(connectionResponse -> onAuthentication(address, connectionResponse));
         }
 
@@ -649,11 +688,15 @@ public sealed abstract class AsyncSocket extends Socket {
             outputStream.write((address.getPort() >> 8) & 0xff);
             outputStream.write((address.getPort()) & 0xff);
             return sendAsync(outputStream.toByteArray())
-                    .thenComposeAsync(authenticationResult -> readAsync(4))
+                    .thenComposeAsync(authenticationResult -> readFullyAsync(4))
                     .thenComposeAsync(this::onConnected);
         }
 
         private CompletableFuture<Void> onConnected(ByteBuffer authenticationResponse) {
+            if(authenticationResponse.limit() < 2) {
+                return CompletableFuture.failedFuture(new SocketException("SOCKS malformed response"));
+            }
+
             return switch (authenticationResponse.get(1)) {
                 case REQUEST_OK -> onConnected(authenticationResponse.get(3));
                 case GENERAL_FAILURE -> CompletableFuture.failedFuture(new SocketException("SOCKS server general failure"));
@@ -671,7 +714,7 @@ public sealed abstract class AsyncSocket extends Socket {
         private CompletableFuture<Void> onConnected(byte authenticationType) {
             return switch (authenticationType) {
                 case IPV4 -> CompletableFuture.allOf(readOrThrow(4, "Cannot read IPV4 address"), readOrThrow(2, "Cannot read IPV4 port"));
-                case DOMAIN_NAME -> readAsync(1)
+                case DOMAIN_NAME -> readFullyAsync(1)
                         .exceptionallyCompose(ignored -> CompletableFuture.failedFuture(new SocketException("Cannot read domain name")))
                         .thenComposeAsync(domainLengthBuffer -> {
                             var domainLength = Byte.toUnsignedInt(domainLengthBuffer.get());
@@ -684,7 +727,7 @@ public sealed abstract class AsyncSocket extends Socket {
         }
 
         private CompletableFuture<?> readOrThrow(int length, String message) {
-            return readAsync(length)
+            return readFullyAsync(length)
                     .exceptionallyCompose(error -> CompletableFuture.failedFuture(new SocketException(message)));
         }
     }
