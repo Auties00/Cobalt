@@ -110,7 +110,7 @@ public final class WhatsappRegistration {
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
         var originalDevice = store.device();
-        store.setDevice(originalDevice.toPersonal());
+        // store.setDevice(originalDevice.toPersonal());
 
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
@@ -461,7 +461,7 @@ public final class WhatsappRegistration {
     private Entry<String, Object>[] getKaiOsRequestParameters(CountryCode countryCode) {
         return Attributes.of()
                 .put("mcc", countryCode.mcc())
-                .put("mnc", "000")
+                .put("mnc", countryCode.mcc())
                 .put("method", method.data())
                 .toEntries();
     }
@@ -677,12 +677,18 @@ public final class WhatsappRegistration {
                 if (printRequests) {
                     System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 }
-                var uri = URI.create("%s%s?%s".formatted(MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams));
-                yield httpClient.getString(uri, Map.of("User-Agent", userAgent)).thenApplyAsync(result -> {
+                var uri = URI.create("%s%s".formatted(MOBILE_KAIOS_REGISTRATION_ENDPOINT, path));
+                var headers = Map.of(
+                        "User-Agent", userAgent,
+                        "Content-Type", "application/x-www-form-urlencoded"
+                );
+                var body = "ENC=" + encBase64;
+                yield httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
+                    var resultAsString = new String(result);
                     if (printRequests) {
-                        System.out.println("Received response " + path + " " + result);
+                        System.out.println("Received response " + path + " " + resultAsString);
                     }
-                    return result;
+                    return resultAsString;
                 });
             }
             default -> throw new IllegalStateException("Unsupported mobile os");
@@ -732,7 +738,7 @@ public final class WhatsappRegistration {
     }
 
     private String encodeBase64(byte[] data) {
-        if (store.device().platform().isIOS()) {
+        if (!store.device().platform().isAndroid()) {
             return Base64.getUrlEncoder().encodeToString(data);
         }
 

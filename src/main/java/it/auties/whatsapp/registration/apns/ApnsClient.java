@@ -2,8 +2,8 @@ package it.auties.whatsapp.registration.apns;
 
 import com.dd.plist.NSDictionary;
 import it.auties.whatsapp.crypto.Sha1;
+import it.auties.whatsapp.net.AsyncSocket;
 import it.auties.whatsapp.net.HttpClient;
-import it.auties.whatsapp.net.SocketFactory;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -185,7 +185,7 @@ public class ApnsClient {
             var sslParameters = sslContext.getDefaultSSLParameters();
             sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
             var sslSocketFactory = sslContext.getSocketFactory();
-            var underlyingSocket = SocketFactory.of(proxy);
+            var underlyingSocket = AsyncSocket.of(proxy);
             var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
             underlyingSocket.connect(proxy == null ? new InetSocketAddress(endpoint, PORT) : InetSocketAddress.createUnresolved(endpoint, PORT));
             this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);

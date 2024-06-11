@@ -15,16 +15,16 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public record SocketRequest(String id, Object body, CompletableFuture<Node> future, Function<Node, Boolean> filter) {
     private static final int TIMEOUT = 60;
-    private static final int PING_TIMEOUT = 5;
+    private static final int PING_TIMEOUT = 15;
 
     private SocketRequest(String id, Function<Node, Boolean> filter, Object body) {
         this(id, body, futureOrTimeout(body), filter);
     }
 
     private static CompletableFuture<Node> futureOrTimeout(Object body) {
-        var stacktraceProvider = Exceptions.current("Node timed out");
+        var stacktraceProvider = Exceptions.current();
         return new CompletableFuture<Node>().orTimeout(calculateTimeout(body), SECONDS).exceptionally(throwable -> {
-            var error = new RequestException(throwable.getMessage());
+            var error = new RequestException("Node timed out: " + body);
             error.setStackTrace(stacktraceProvider.getStackTrace());
             error.addSuppressed(throwable);
             throw error;
