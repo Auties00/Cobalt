@@ -110,7 +110,7 @@ public final class WhatsappRegistration {
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
         var originalDevice = store.device();
-        // store.setDevice(originalDevice.toPersonal());
+        store.setDevice(originalDevice.toBusiness());
 
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
@@ -551,29 +551,29 @@ public final class WhatsappRegistration {
                     }
 
                     if (response.errorReason() == VerificationCodeError.SECURITY_CODE || response.errorReason() == VerificationCodeError.DEVICE_CONFIRM_OR_SECOND_CODE) {
-                        return reset2fa(response);
+                        return reset2fa(response, result);
                     }
 
                     throw new RegistrationException(response, result);
                 });
     }
 
-    private CompletableFuture<RegistrationResponse> reset2fa(RegistrationResponse registrationResponse) {
+    private CompletableFuture<RegistrationResponse> reset2fa(RegistrationResponse registrationResponse, String result) {
         var wipeToken = registrationResponse.wipeToken();
         if (wipeToken == null) {
-            throw new RegistrationException(registrationResponse, "Missing wipe_token");
+            throw new RegistrationException(registrationResponse, result);
         }
 
         return getRegistrationOptions(store, keys, false, Map.entry("reset", "wipe"), Map.entry("wipe_token", wipeToken))
                 .thenComposeAsync(attrs -> sendRequest("/security", attrs))
-                .thenComposeAsync(result -> {
-                    var response = Json.readValue(result, RegistrationResponse.class);
-                    if (response.status() == VerificationCodeStatus.SUCCESS) {
+                .thenComposeAsync(resetResult -> {
+                    var resetResponse = Json.readValue(resetResult, RegistrationResponse.class);
+                    if (resetResponse.status() == VerificationCodeStatus.SUCCESS) {
                         saveRegistrationStatus(store, keys, true);
-                        return CompletableFuture.completedFuture(response);
+                        return CompletableFuture.completedFuture(resetResponse);
                     }
 
-                    throw new RegistrationException(response, result);
+                    throw new RegistrationException(resetResponse, resetResult);
                 });
     }
 
