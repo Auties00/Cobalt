@@ -196,6 +196,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             var lengthBuffer = ByteBuffer.allocate(MESSAGE_LENGTH);
+            readNextMessageLength(lengthBuffer);
+        }
+
+        private void readNextMessageLength(ByteBuffer lengthBuffer) {
             socket.channel().read(lengthBuffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer result, Object attachment) {
@@ -205,7 +209,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                         }else {
                             disconnect();
                         }
+                        return;
+                    }
 
+                    if(lengthBuffer.hasRemaining()) {
+                        readNextMessageLength(lengthBuffer);
                         return;
                     }
 
