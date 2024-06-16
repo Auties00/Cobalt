@@ -69,7 +69,7 @@ public final class ChatMessageKey implements ProtobufMessage {
      */
 
     public static String randomIdV2(Jid jid, ClientType... clientType) {
-        var type = Objects.requireNonNullElse(clientType[0], ClientType.WEB);
+        var type = clientType.length == 0 ? ClientType.WEB : clientType[0];
         return switch (type) {
             case ClientType.WEB -> randomWebKeyId(jid);
             case ClientType.MOBILE -> randomMobileKeyId(jid);
