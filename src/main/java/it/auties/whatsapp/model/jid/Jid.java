@@ -17,7 +17,7 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
      */
     public Jid(String user, JidServer server, Integer device, Integer agent) {
         this.user = user != null && user.startsWith("+") ? user.substring(1) : user;
-        this.server = server;
+        this.server = agent != null && agent == 1 ? JidServer.LID : server;
         this.device = device;
         this.agent = agent;
     }
