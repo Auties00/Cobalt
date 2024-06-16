@@ -189,6 +189,10 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
         return new Jid(user(), server, device, agent);
     }
 
+    public Jid withAgent(Integer agent) { 
+        return new Jid(user(), server, device, agent); 
+    }
+
     /**
      * Converts this jid to a user jid
      *
