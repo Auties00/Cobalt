@@ -1337,6 +1337,11 @@ class StreamHandler {
     }
 
     private void digestIq(Node node) {
+        if (node.attributes().hasValue("xmlns", "urn:xmpp:ping")) {
+            socketHandler.sendQueryWithNoResponse("result", null);
+            return;
+        }
+        
         var container = node.findNode().orElse(null);
         if (container == null) {
             return;
