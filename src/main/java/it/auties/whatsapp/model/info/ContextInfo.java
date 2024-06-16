@@ -227,33 +227,21 @@ public final class ContextInfo implements Info, ProtobufMessage {
     }
 
     public static ContextInfo of(ContextInfo contextInfo, MessageInfo quotedMessage) {
-        return new ContextInfoBuilder()
-                .quotedMessageId(quotedMessage.id())
-                .quotedMessage(quotedMessage.message())
-                .quotedMessageChatJid(quotedMessage.parentJid())
-                .quotedMessageSenderJid(quotedMessage.senderJid())
-                .actionLink(contextInfo.actionLink().orElse(null))
-                .conversionData(contextInfo.conversionData().orElse(null))
-                .conversionSource(contextInfo.conversionSource().orElse(null))
-                .conversionDelaySeconds(contextInfo.conversionDelaySeconds())
-                .entryPointConversionApp(contextInfo.entryPointConversionApp().orElse(null))
-                .entryPointConversionSource(contextInfo.entryPointConversionSource().orElse(null))
-                .entryPointConversionDelaySeconds(contextInfo.entryPointConversionDelaySeconds())
-                .disappearingMode(contextInfo.disappearingMode().orElse(null))
-                .ephemeralExpiration(contextInfo.ephemeralExpiration())
-                .ephemeralSettingTimestamp(contextInfo.ephemeralSettingTimestamp())
-                .externalAdReply(contextInfo.externalAdReply().orElse(null))
-                .forwarded(contextInfo.forwarded())
-                .forwardingScore(contextInfo.forwardingScore())
-                .groupSubject(contextInfo.groupSubject().orElse(null))
-                .ephemeralSharedSecret(contextInfo.ephemeralSharedSecret().orElse(null))
-                .parentGroup(contextInfo.parentGroup().orElse(null))
-                .placeholderKey(contextInfo.placeholderKey().orElse(null))
-                .quotedAd(contextInfo.quotedAd().orElse(null))
-                .trustBannerAction(contextInfo.trustBannerAction())
-                .trustBannerType(contextInfo.trustBannerType().orElse(null))
-                .mentions(contextInfo.mentions())
-                .build();
+        var newContext = of(quotedMessage);
+        var fields = contextInfo.getClass().getFields();
+        try {
+            for (var field : fields) {
+                field.setAccessible(true);
+                var value = field.get(contextInfo);
+                if (value != null) {
+                    field.set(newContext, value);
+                }
+            }
+            return newContext;
+        } catch (IllegalAccessException e) {
+            System.err.println("Failed to merge context info");
+            return ContextInfo.of(quotedMessage);
+        }
     }
 
     public static ContextInfo empty() {
