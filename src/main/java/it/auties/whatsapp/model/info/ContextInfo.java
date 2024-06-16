@@ -226,6 +226,24 @@ public final class ContextInfo implements Info, ProtobufMessage {
                 .build();
     }
 
+    public static ContextInfo of(ContextInfo contextInfo, MessageInfo quotedMessage) {
+        var newContext = of(quotedMessage);
+        var fields = contextInfo.getClass().getFields();
+        try {
+            for (var field : fields) {
+                field.setAccessible(true);
+                var value = field.get(contextInfo);
+                if (value != null) {
+                    field.set(newContext, value);
+                }
+            }
+            return newContext;
+        } catch (IllegalAccessException e) {
+            System.err.println("Failed to merge context info");
+            return ContextInfo.of(quotedMessage);
+        }
+    }
+
     public static ContextInfo empty() {
         return new ContextInfoBuilder()
                 .mentions(new ArrayList<>())
