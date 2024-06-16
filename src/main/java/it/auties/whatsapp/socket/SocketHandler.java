@@ -715,12 +715,9 @@ public class SocketHandler implements SocketListener {
         if (messages.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
-        if (jid.hasServer(JidServer.LID)) {
-            jid = jid.toSimpleJid();
-        }
-        if (participant.hasServer(JidServer.LID)) {
-            participant = participant.toSimpleJid();
-        }
+        
+        jid = jid.withAgent(null);
+        participant = participant.withAgent(null);
 
         var attributes = Attributes.of()
                 .put("id", messages.getFirst())
