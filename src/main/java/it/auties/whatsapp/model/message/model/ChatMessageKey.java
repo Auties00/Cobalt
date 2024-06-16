@@ -10,10 +10,11 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Bytes;
 
-import java.util.HexFormat;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.*;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in
@@ -37,7 +38,7 @@ public final class ChatMessageKey implements ProtobufMessage {
     public ChatMessageKey(Jid chatJid, boolean fromMe, String id, Jid senderJid) {
         this.chatJid = chatJid;
         this.fromMe = fromMe;
-        this.id = Objects.requireNonNullElseGet(id, ChatMessageKey::randomId);
+        this.id = Objects.requireNonNullElse(id, randomIdV2(senderJid));
         this.senderJid = senderJid;
     }
 
@@ -46,7 +47,7 @@ public final class ChatMessageKey implements ProtobufMessage {
     }
 
     public ChatMessageKey(Jid chatJid, boolean fromMe, Jid senderJid) {
-        this(chatJid, fromMe, randomId(), senderJid);
+        this(chatJid, fromMe, randomIdV2(senderJid), senderJid);
     }
 
     /**

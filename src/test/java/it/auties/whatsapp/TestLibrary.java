@@ -756,7 +756,7 @@ public class TestLibrary implements Listener  {
                 .jid()
                 .orElseThrow();
         var keyInfo = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(jid, api.store().clientType()))
                 .chatJid(contact)
                 .senderJid(jid)
                 .fromMe(true)
