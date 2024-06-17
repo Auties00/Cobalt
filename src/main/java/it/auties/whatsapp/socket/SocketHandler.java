@@ -455,7 +455,7 @@ public class SocketHandler implements SocketListener {
         var jid = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(jid, store.clientType()))
                 .chatJid(companion)
                 .fromMe(true)
                 .senderJid(jid)
