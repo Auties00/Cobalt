@@ -91,7 +91,7 @@ public final class ChatMessageKey implements ProtobufMessage {
             byte[] hash = digest.digest(buffer.array());
             byte[] truncatedHash = new byte[9];
             System.arraycopy(hash, 0, truncatedHash, 0, 9);
-            return "3EB0" + HexFormat.of().formatHex(truncatedHash);
+            return "3EB0" + HexFormat.of().formatHex(truncatedHash).toUpperCase();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
