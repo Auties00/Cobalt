@@ -8,6 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.util.Bytes;
 
 import java.nio.ByteBuffer;
@@ -79,7 +80,8 @@ public final class ChatMessageKey implements ProtobufMessage {
     private static String randomWebKeyId(Jid jid) {
         try {
             var random = new Random();
-            var meUser = "%s@%s".formatted(jid.user(), "@c.us");
+            var meJid = Objects.requireNonNullElse(jid, Jid.ofServer(JidServer.WHATSAPP));
+            var meUser = "%s@%s".formatted(meJid.user(), "@c.us");
             long timeSeconds = Instant.now().getEpochSecond();
             byte[] randomBytes = new byte[16];
             random.nextBytes(randomBytes);
@@ -93,15 +95,16 @@ public final class ChatMessageKey implements ProtobufMessage {
             System.arraycopy(hash, 0, truncatedHash, 0, 9);
             return "3EB0" + HexFormat.of().formatHex(truncatedHash).toUpperCase();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            return randomId();
         }
     }
 
     private static String randomMobileKeyId(Jid jid) {
         try {
             var random = new Random();
+            var meJid = Objects.requireNonNullElse(jid, Jid.ofServer(JidServer.WHATSAPP));
+            var meUser = meJid.toSimpleJid().toString().getBytes();
             var messageDigest = MessageDigest.getInstance("MD5");
-            var meUser = jid.toSimpleJid().toString().getBytes();
             long timeMillis = System.currentTimeMillis();
             byte[] bArr = new byte[8];
             for (int i = 7; i >= 0; i--) {
@@ -126,7 +129,7 @@ public final class ChatMessageKey implements ProtobufMessage {
             }
             return new String(cArr2);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            return randomId();
         }
     }
 
