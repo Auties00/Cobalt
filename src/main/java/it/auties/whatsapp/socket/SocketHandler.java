@@ -716,8 +716,12 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
         
-        jid = jid.withAgent(null);
-        participant = participant.withAgent(null);
+        if (jid != null) {
+            jid = jid.withAgent(null);
+        }
+        if (participant != null) {
+            participant = participant.withAgent(null);
+        }
 
         var attributes = Attributes.of()
                 .put("id", messages.getFirst())
