@@ -716,9 +716,7 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(null);
         }
         
-        if (jid != null) {
-            jid = jid.withAgent(null);
-        }
+        jid = jid.withAgent(null);
         if (participant != null) {
             participant = participant.withAgent(null);
         }
