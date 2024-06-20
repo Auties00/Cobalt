@@ -399,7 +399,7 @@ class AppStateHandler {
             }
             case PushNameSettings pushNameSettings -> {
                 var oldName = socketHandler.store().name();
-                socketHandler.updateUserName(pushNameSettings.name(), oldName);
+                socketHandler.onUserChanged(pushNameSettings.name(), oldName);
             }
             case UnarchiveChatsSettings unarchiveChatsSettings -> {
                 var settingValue = unarchiveChatsSettings.unarchiveChats();
