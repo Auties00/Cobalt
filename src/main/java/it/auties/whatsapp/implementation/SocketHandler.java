@@ -42,8 +42,6 @@ import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Exceptions;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketException;
@@ -232,10 +230,15 @@ public class SocketHandler implements SocketListener {
     }
 
 
-    private void onNodeReceived(Node deciphered) {
+    private void onNodeReceived(Node node) {
+        var caller = store.findPendingRequest(node.id());
+        if(caller.isPresent() && caller.get().body() instanceof Node callerNode && callerNode.hasNode("ping")) {
+            return;
+        }
+
         callListenersAsync(listener -> {
-            listener.onNodeReceived(whatsapp, deciphered);
-            listener.onNodeReceived(deciphered);
+            listener.onNodeReceived(whatsapp, node);
+            listener.onNodeReceived(node);
         });
     }
 
@@ -292,17 +295,19 @@ public class SocketHandler implements SocketListener {
             return CompletableFuture.completedFuture(Node.of("error", Map.of("closed", true)));
         }
 
-        var byteArrayOutputStream = new ByteArrayOutputStream();
-        try(var dataOutputStream = new DataOutputStream(byteArrayOutputStream)) {
+        var scheduledRelease = false;
+        try {
             writeSemaphore.acquire();
             var ciphered = encryptRequest(request);
-            if(prologue) {
-                dataOutputStream.write(SocketHandshake.getPrologue(store.clientType()));
-            }
-            dataOutputStream.writeInt(ciphered.length >> 16);
-            dataOutputStream.writeShort(65535 & ciphered.length);
-            dataOutputStream.write(ciphered);
-            session.sendBinary(byteArrayOutputStream.toByteArray()).whenComplete((result, error) -> {
+            var message = Bytes.concat(
+                    prologue ? SocketHandshake.getPrologue(store.clientType()) : null,
+                    Bytes.intToBytes(ciphered.length >> 16, 4),
+                    Bytes.intToBytes(65535 & ciphered.length, 2),
+                    ciphered
+            );
+            var future = session.sendBinary(message);
+            scheduledRelease = true;
+            future.whenCompleteAsync((result, error) -> {
                 writeSemaphore.release();
                 if(request.body() instanceof Node body) {
                     onNodeSent(body);
@@ -325,6 +330,10 @@ public class SocketHandler implements SocketListener {
             });
             return request.future();
         }catch (Throwable throwable) {
+            if(!scheduledRelease) {
+                writeSemaphore.release();
+            }
+
             return CompletableFuture.failedFuture(throwable);
         }
     }
@@ -515,6 +524,10 @@ public class SocketHandler implements SocketListener {
     }
 
     private void onNodeSent(Node node) {
+        if (node.hasNode("ping")) {
+            return;
+        }
+
         callListenersAsync(listener -> {
             listener.onNodeSent(whatsapp, node);
             listener.onNodeSent(node);
