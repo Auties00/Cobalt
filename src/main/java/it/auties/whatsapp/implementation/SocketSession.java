@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
@@ -164,11 +163,9 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
     static final class RawSocketSession extends SocketSession {
         private volatile AsyncSocket socket;
-        private final AtomicBoolean paused;
 
         RawSocketSession(URI proxy) {
             super(proxy);
-            this.paused = new AtomicBoolean(false);
         }
 
         @Override
@@ -196,16 +193,23 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             var lengthBuffer = ByteBuffer.allocate(MESSAGE_LENGTH);
+            readNextMessageLength(lengthBuffer);
+        }
+
+        private void readNextMessageLength(ByteBuffer lengthBuffer) {
+            if(socket == null) {
+                return;
+            }
+
             socket.channel().read(lengthBuffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer result, Object attachment) {
                     if(result == -1) {
-                        if(isOpen()) {
-                            paused.set(true);
-                        }else {
-                            disconnect();
-                        }
+                        return;
+                    }
 
+                    if(lengthBuffer.hasRemaining()) {
+                        readNextMessageLength(lengthBuffer);
                         return;
                     }
 
@@ -235,7 +239,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             socket.channel().read(messageBuffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer result, Object attachment) {
-                    if(result == -1 || messageBuffer.hasRemaining()) {
+                    if(result == -1) {
+                        return;
+                    }
+
+                    if(messageBuffer.hasRemaining()) {
                         notifyNextMessage(messageBuffer);
                         return;
                     }
@@ -281,12 +289,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return CompletableFuture.completedFuture(null);
             }
 
-            return socket.sendAsync(bytes).thenRunAsync(() -> {
-                if(paused.get()) {
-                    paused.set(false);
-                    notifyNextMessage();
-                }
-            });
+            return socket.sendAsync(bytes);
         }
     }
 }

@@ -12,8 +12,11 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public sealed abstract class AsyncSocket extends Socket {
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 30;
+
     public static AsyncSocket of(URI proxy) throws IOException {
         return switch (Proxies.toProxy(proxy).type()) {
             case DIRECT -> new Direct();
@@ -32,7 +35,7 @@ public sealed abstract class AsyncSocket extends Socket {
 
     @Override
     public void connect(SocketAddress endpoint) throws IOException {
-        connect(endpoint, -1);
+        connect(endpoint, DEFAULT_CONNECTION_TIMEOUT);
     }
 
     @Override
@@ -41,11 +44,15 @@ public sealed abstract class AsyncSocket extends Socket {
             throw new IllegalArgumentException("Unsupported address type");
         }
 
-        var future = connectAsync(inetSocketAddress);
+        var future = connectAsync(inetSocketAddress, timeout);
         future.join();
     }
 
     public CompletableFuture<Void> connectAsync(InetSocketAddress address) {
+        return connectAsync(address, DEFAULT_CONNECTION_TIMEOUT);
+    }
+
+    public CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {
         var future = new CompletableFuture<Void>();
         delegate.connect(address, null, new CompletionHandler<>() {
             @Override
@@ -58,7 +65,7 @@ public sealed abstract class AsyncSocket extends Socket {
                 future.completeExceptionally(exc);
             }
         });
-        return future;
+        return future.orTimeout(timeout, TimeUnit.SECONDS);
     }
 
     @Override
@@ -525,11 +532,12 @@ public sealed abstract class AsyncSocket extends Socket {
         }
 
         @Override
-        public CompletableFuture<Void> connectAsync(InetSocketAddress address) {
-            return super.connectAsync(new InetSocketAddress(proxy.getHost(), proxy.getPort()))
+        public CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {
+            return super.connectAsync(new InetSocketAddress(proxy.getHost(), proxy.getPort()), timeout)
                     .thenComposeAsync(openResult -> sendHandshake(address))
                     .thenComposeAsync(connectionResult -> readHandshakeResponse())
-                    .thenComposeAsync(this::handleHandshake);
+                    .thenComposeAsync(this::handleHandshake)
+                    .orTimeout(timeout, TimeUnit.SECONDS);
         }
 
         private CompletableFuture<Void> handleHandshake(String response) {
@@ -548,7 +556,7 @@ public sealed abstract class AsyncSocket extends Socket {
         }
 
         private CompletableFuture<String> readHandshakeResponse() {
-            return readFullyAsync(readReceiveBufferSize())
+            return readAsync(readReceiveBufferSize())
                     .thenApplyAsync(this::readResponse);
         }
 
@@ -618,8 +626,8 @@ public sealed abstract class AsyncSocket extends Socket {
         }
 
         @Override
-        public CompletableFuture<Void> connectAsync(InetSocketAddress address) {
-            return super.connectAsync(new InetSocketAddress(proxy.getHost(), proxy.getPort()))
+        public CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {
+            return super.connectAsync(new InetSocketAddress(proxy.getHost(), proxy.getPort()), timeout)
                     .thenComposeAsync(openResult -> sendAsync(getHandshakePayload()))
                     .thenComposeAsync(connectionResult -> readFullyAsync(2))
                     .thenComposeAsync(response -> onConnected(address, response));

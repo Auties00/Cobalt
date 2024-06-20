@@ -76,7 +76,7 @@ class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
-    private static final int PING_INTERVAL = 15;
+    private static final int PING_INTERVAL = 5;
     private static final int MAX_ATTEMPTS = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
     private static final byte[][] CALL_RELAY = new byte[][]{
@@ -1343,7 +1343,7 @@ class StreamHandler {
             socketHandler.store().serialize(true);
             socketHandler.store().serializer().linkMetadata(socketHandler.store());
             socketHandler.keys().serialize(true);
-        }, PING_INTERVAL / 2, PING_INTERVAL);
+        }, PING_INTERVAL, PING_INTERVAL);
     }
 
     private CompletableFuture<Void> scheduleMediaConnectionUpdate(int tries, Throwable error) {

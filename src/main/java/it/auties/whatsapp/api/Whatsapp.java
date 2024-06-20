@@ -397,8 +397,8 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> changeName(String newName) {
         var oldName = store().name();
-        return socketHandler.sendNode(Node.of("presence", Map.of("name", newName)))
-                .thenRun(() -> socketHandler.updateUserName(newName, oldName));
+        return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")))
+                .thenRunAsync(() -> socketHandler.onUserChanged(newName, oldName));
     }
 
     /**
