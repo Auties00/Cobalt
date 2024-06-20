@@ -982,16 +982,11 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public void updateUserName(String newName, String oldName) {
+    public void onUserChanged(String newName, String oldName) {
         if (oldName != null && !Objects.equals(newName, oldName)) {
-            var wasOnline = store().online();
-            sendNodeWithNoResponse(Node.of("presence", Map.of("name", oldName, "type", "unavailable")));
-            sendNodeWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")));
-            if(!wasOnline) {
-                sendNodeWithNoResponse(Node.of("presence", Map.of("name", oldName, "type", "unavailable")));
-            }
             onUserNameChanged(newName, oldName);
         }
+
         var self = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
                 .toSimpleJid();
