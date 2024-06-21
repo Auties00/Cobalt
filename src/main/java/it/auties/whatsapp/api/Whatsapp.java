@@ -113,8 +113,6 @@ public class Whatsapp {
         instances.remove(uuid);
     }
 
-    private final SocketHandler socketHandler;
-
     /**
      * Checks if a connection exists
      *
@@ -176,8 +174,11 @@ public class Whatsapp {
         return service.exists();
     }
 
+    private final SocketHandler socketHandler;
+    private final Set<Jid> readyContacts;
     protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
+        this.readyContacts = ConcurrentHashMap.newKeySet();
         handleDisconnections(store);
         registerListenersAutomatically(store);
     }
@@ -396,6 +397,14 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Void> changeName(String newName) {
+        Validate.isTrue(store().clientType() != ClientType.WEB || !store().device().platform().isBusiness(),
+                "The business name cannot be changed using the web api");
+        if(store().clientType() == ClientType.MOBILE && store().device().platform().isBusiness()) {
+            var oldName = store().name();
+            return socketHandler.updateBusinessCertificate(newName)
+                    .thenRunAsync(() -> socketHandler.onUserChanged(newName, oldName));
+        }
+
         var oldName = store().name();
         return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")))
                 .thenRunAsync(() -> socketHandler.onUserChanged(newName, oldName));
@@ -699,11 +708,11 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(true);
         }
 
-        if (store().findContactByJid(recipient.toJid()).isPresent()) {
+        if (readyContacts.contains(recipient.toJid())) {
             return CompletableFuture.completedFuture(true);
         }
 
-        return getContactData(recipient).thenCompose(results -> {
+        return getContactData(recipient).thenComposeAsync(results -> {
             var out = results.stream().anyMatch(entry -> entry.hasDescription("out"));
             if (out) {
                 return CompletableFuture.completedFuture(false);
@@ -721,6 +730,7 @@ public class Whatsapp {
             var secondList = List.of(Node.of("user", Map.of("jid", recipient.toJid())));
             return addContacts(recipient)
                     .thenComposeAsync(firstResult -> {
+                        readyContacts.add(recipient.toJid());
                         if(!firstResult.contains(recipient.toJid())) {
                             return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of());
                         }

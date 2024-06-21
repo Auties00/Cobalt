@@ -162,6 +162,14 @@ public final class Bytes {
         return result;
     }
 
+    public static int bytesToInt(ByteBuffer buffer, int length) {
+        var result = 0;
+        for (var i = 0; i < length; i++) {
+            result = 256 * result + Byte.toUnsignedInt(buffer.get());
+        }
+        return result;
+    }
+
     public static String bytesToCrockford(byte[] bytes) {
         var buffer = ByteBuffer.wrap(bytes);
         var value = 0;

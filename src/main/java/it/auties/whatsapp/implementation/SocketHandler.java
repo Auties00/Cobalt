@@ -748,11 +748,11 @@ public class SocketHandler implements SocketListener {
         var attributes = Attributes.of()
                 .put("id", messages.getFirst())
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
-                .put("to", jid)
+                .put("to", jid.withAgent(null))
                 .put("type", type, Objects::nonNull);
         if (Objects.equals(type, "sender") && jid.hasServer(JidServer.WHATSAPP)) {
-            attributes.put("recipient", jid);
-            attributes.put("to", participant);
+            attributes.put("recipient", jid.withAgent(null));
+            attributes.put("to", participant.withAgent(null));
         }
 
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
@@ -1166,5 +1166,9 @@ public class SocketHandler implements SocketListener {
                     disconnect(DisconnectReason.RECONNECTING);
                     return null;
                 });
+    }
+
+    public CompletableFuture<Void> updateBusinessCertificate(String newName) {
+        return streamHandler.updateBusinessCertificate(newName);
     }
 }

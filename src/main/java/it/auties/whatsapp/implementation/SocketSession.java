@@ -1,6 +1,6 @@
 package it.auties.whatsapp.implementation;
 
-import it.auties.whatsapp.net.AsyncSocket;
+import it.auties.whatsapp.net.Socket;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Proxies;
 import it.auties.whatsapp.util.Validate;
@@ -12,7 +12,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.nio.channels.CompletionHandler;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -162,7 +161,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
     }
 
     static final class RawSocketSession extends SocketSession {
-        private volatile AsyncSocket socket;
+        private volatile Socket socket;
 
         RawSocketSession(URI proxy) {
             super(proxy);
@@ -176,7 +175,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
             super.connect(listener);
             try {
-                this.socket = AsyncSocket.of(proxy);
+                this.socket = Socket.newPlainClient(proxy);
                 var address = proxy != null ? InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT, MOBILE_SOCKET_PORT) : new InetSocketAddress(MOBILE_SOCKET_ENDPOINT, MOBILE_SOCKET_PORT);
                 return socket.connectAsync(address).thenRunAsync(() -> {
                     listener.onOpen(RawSocketSession.this);
@@ -192,76 +191,35 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return;
             }
 
-            var lengthBuffer = ByteBuffer.allocate(MESSAGE_LENGTH);
-            readNextMessageLength(lengthBuffer);
+            socket.readFullyAsync(
+                    MESSAGE_LENGTH,
+                    this::readNextMessageLength,
+                    (error) -> disconnect()
+            );
         }
 
         private void readNextMessageLength(ByteBuffer lengthBuffer) {
-            if(socket == null) {
+            var messageLength = (lengthBuffer.get() << 16) | ((lengthBuffer.get() & 0xFF) << 8) | (lengthBuffer.get() & 0xFF);
+            if(messageLength < 0) {
+                disconnect();
                 return;
             }
 
-            socket.channel().read(lengthBuffer, null, new CompletionHandler<>() {
-                @Override
-                public void completed(Integer result, Object attachment) {
-                    if(result == -1) {
-                        return;
-                    }
-
-                    if(lengthBuffer.hasRemaining()) {
-                        readNextMessageLength(lengthBuffer);
-                        return;
-                    }
-
-                    lengthBuffer.flip();
-                    var messageLength = (lengthBuffer.get() << 16) | ((lengthBuffer.get() & 0xFF) << 8) | (lengthBuffer.get() & 0xFF);
-                    if(messageLength < 0) {
-                        disconnect();
-                        return;
-                    }
-
-                    var messageBuffer = ByteBuffer.allocate(messageLength);
-                    notifyNextMessage(messageBuffer);
-                }
-
-                @Override
-                public void failed(Throwable exc, Object attachment) {
-                    disconnect();
-                }
-            });
+            socket.readFullyAsync(
+                    messageLength,
+                    this::notifyNextMessage,
+                    (error) -> disconnect()
+            );
         }
 
         private void notifyNextMessage(ByteBuffer messageBuffer) {
-            if(socket == null) {
-                return;
+            try {
+                listener.onMessage(messageBuffer.array());
+            }catch (Throwable throwable) {
+                listener.onError(throwable);
+            }finally {
+                notifyNextMessage();
             }
-
-            socket.channel().read(messageBuffer, null, new CompletionHandler<>() {
-                @Override
-                public void completed(Integer result, Object attachment) {
-                    if(result == -1) {
-                        return;
-                    }
-
-                    if(messageBuffer.hasRemaining()) {
-                        notifyNextMessage(messageBuffer);
-                        return;
-                    }
-
-                    try {
-                        listener.onMessage(messageBuffer.array());
-                    }catch (Throwable throwable) {
-                        listener.onError(throwable);
-                    }finally {
-                        notifyNextMessage();
-                    }
-                }
-
-                @Override
-                public void failed(Throwable exc, Object attachment) {
-                    disconnect();
-                }
-            });
         }
 
         @Override
@@ -289,7 +247,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return CompletableFuture.completedFuture(null);
             }
 
-            return socket.sendAsync(bytes);
+            return socket.writeAsync(bytes);
         }
     }
 }

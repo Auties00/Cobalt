@@ -156,18 +156,18 @@ public class HttpClient implements AutoCloseable {
 
     private static class HttpConnectionFactory extends PlainConnectionSocketFactory {
         @Override
-        public Socket createSocket(final HttpContext context) throws IOException {
+        public java.net.Socket createSocket(final HttpContext context) throws IOException {
             return createSocket(null, context);
         }
 
         @Override
-        public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
+        public java.net.Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return AsyncSocket.of(derivedProxy);
+            return Socket.newPlainClient(derivedProxy);
         }
 
         @Override
-        public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
+        public java.net.Socket connectSocket(TimeValue connectTimeout, java.net.Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
             return super.connectSocket(
                     connectTimeout,
                     socket,
@@ -179,7 +179,7 @@ public class HttpClient implements AutoCloseable {
         }
 
         @Override
-        public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
+        public java.net.Socket connectSocket(java.net.Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
             return super.connectSocket(
                     socket,
                     host,
@@ -234,18 +234,18 @@ public class HttpClient implements AutoCloseable {
         }
 
         @Override
-        public Socket createSocket(final HttpContext context) throws IOException {
+        public java.net.Socket createSocket(final HttpContext context) throws IOException {
             return createSocket(null, context);
         }
 
         @Override
-        public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
+        public java.net.Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return AsyncSocket.of(derivedProxy);
+            return Socket.newPlainClient(derivedProxy);
         }
 
         @Override
-        public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
+        public java.net.Socket connectSocket(TimeValue connectTimeout, java.net.Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
             socket.connect(
                     context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
                     connectTimeout.toMillisecondsIntBound()
@@ -254,7 +254,7 @@ public class HttpClient implements AutoCloseable {
         }
 
         @Override
-        public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
+        public java.net.Socket connectSocket(java.net.Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
             socket.connect(
                     context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
                     connectTimeout.toMillisecondsIntBound()
@@ -263,12 +263,12 @@ public class HttpClient implements AutoCloseable {
         }
 
         @Override
-        public Socket createLayeredSocket(Socket socket, String target, int port, HttpContext context) throws IOException {
+        public java.net.Socket createLayeredSocket(java.net.Socket socket, String target, int port, HttpContext context) throws IOException {
             return createLayeredSocket(socket, target, port, null, context);
         }
 
         @Override
-        public Socket createLayeredSocket(Socket socket, String target, int port, Object attachment, HttpContext context) throws IOException {
+        public java.net.Socket createLayeredSocket(java.net.Socket socket, String target, int port, Object attachment, HttpContext context) throws IOException {
             var sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket(
                     socket,
                     target,

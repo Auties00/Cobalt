@@ -2,13 +2,16 @@ package it.auties.whatsapp.registration.apns;
 
 import com.dd.plist.NSDictionary;
 import it.auties.whatsapp.crypto.Sha1;
-import it.auties.whatsapp.net.AsyncSocket;
 import it.auties.whatsapp.net.HttpClient;
+import it.auties.whatsapp.net.Socket;
+import it.auties.whatsapp.util.Bytes;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URI;
@@ -19,7 +22,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -44,9 +46,9 @@ public class ApnsClient {
     private final KeyPair keyPair;
     private final Set<ApnsListener> listeners;
     private final List<ApnsPacket> unhandledPackets;
-    private final CompletableFuture<Void> loginFuture;
+    public final CompletableFuture<Void> loginFuture;
     private final ScheduledExecutorService pingExecutor;
-    private SSLSocket socket;
+    private Socket socket;
     private byte[] certificate;
     private byte[] authToken;
     private boolean disconnected;
@@ -139,25 +141,26 @@ public class ApnsClient {
     private CompletableFuture<Void> authenticate(ApnsBag bag) {
         var nonce = ApnsCrypto.createNonce();
         var signature = ApnsCrypto.createNonceSignature(keyPair, nonce);
-        createSocketConnection(bag);
-        var certificateBytes = ApnsCrypto.getCertificateBytes(certificate);
-        readIncomingMessages();
-        send(ApnsPayloadTag.CONNECT, Map.of(
-                0x2, new byte[]{0x01},
-                0x5, new byte[]{0, 0, 0, 65},
-                0xc, certificateBytes,
-                0xd, nonce,
-                0xe, signature
-        ));
-        return waitForPacketDirect(packet -> packet.tag() == ApnsPayloadTag.READY).thenAccept(packet -> {
-            var statusBuffer = ByteBuffer.wrap(packet.fields().get(0x1));
-            var statusCode = Byte.toUnsignedInt(statusBuffer.get());
-            if(statusCode != 0) {
-                throw new IllegalStateException("Connection failed: " + statusCode);
-            }
+        return createSocketConnection(bag).thenComposeAsync(result -> {
+            var certificateBytes = ApnsCrypto.getCertificateBytes(certificate);
+            readNextMessage();
+            send(ApnsPayloadTag.CONNECT, Map.of(
+                    0x2, new byte[]{0x01},
+                    0x5, new byte[]{0, 0, 0, 65},
+                    0xc, certificateBytes,
+                    0xd, nonce,
+                    0xe, signature
+            ));
+            return waitForPacketDirect(packet -> packet.tag() == ApnsPayloadTag.READY).thenAccept(packet -> {
+                var statusBuffer = ByteBuffer.wrap(packet.fields().get(0x1));
+                var statusCode = Byte.toUnsignedInt(statusBuffer.get());
+                if(statusCode != 0) {
+                    throw new IllegalStateException("Connection failed: " + statusCode);
+                }
 
-            onLoggedIn(packet);
-            schedulePing();
+                onLoggedIn(packet);
+                schedulePing();
+            });
         });
     }
 
@@ -178,20 +181,18 @@ public class ApnsClient {
         );
     }
 
-    private void createSocketConnection(ApnsBag bag) {
+    private CompletableFuture<Void> createSocketConnection(ApnsBag bag) {
         try {
             var sslContext = SSLContext.getInstance("TLSv1.3");
             sslContext.init(null, new TrustManager[]{new AppleTrustManager()}, null);
             var sslParameters = sslContext.getDefaultSSLParameters();
             sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
-            var sslSocketFactory = sslContext.getSocketFactory();
-            var underlyingSocket = AsyncSocket.of(proxy);
+            var sslEngine = sslContext.createSSLEngine();
+            sslEngine.setSSLParameters(sslParameters);
+            sslEngine.setUseClientMode(true);
+            this.socket = Socket.newSSLClient(sslEngine, proxy);
             var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
-            underlyingSocket.connect(proxy == null ? new InetSocketAddress(endpoint, PORT) : InetSocketAddress.createUnresolved(endpoint, PORT));
-            this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, endpoint, PORT, true);
-            socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
-            socket.setSSLParameters(sslParameters);
-            socket.startHandshake();
+            return socket.connectAsync(proxy == null ? new InetSocketAddress(endpoint, PORT) : InetSocketAddress.createUnresolved(endpoint, PORT));
         }catch (IOException exception) {
             throw new UncheckedIOException(exception);
         } catch (GeneralSecurityException exception) {
@@ -292,40 +293,60 @@ public class ApnsClient {
         };
     }
 
-    private void readIncomingMessages() {
-        Thread.ofPlatform().start(() -> {
-            try(var dataInputStream = new DataInputStream(socket.getInputStream())) {
-                while (socket.isConnected()) {
-                    var id = dataInputStream.readUnsignedByte();
-                    var length = dataInputStream.readInt();
-                    if (length <= 0) {
-                        continue;
-                    }
+    private void readNextMessage() {
+        socket.readFullyAsync(
+                1,
+                (idBuffer) -> {
+                    var id = Byte.toUnsignedInt(idBuffer.get());
+                    readNextMessage(id);
+                },
+                this::disconnect
+        );
+    }
 
-                    var payload = new byte[length];
-                    dataInputStream.readFully(payload);
-                    var fields = readFields(payload);
-                    var packetType = ApnsPayloadTag.of(id);
-                    if(packetType == ApnsPayloadTag.NOTIFICATION) {
-                        sendAck(fields);
-                    }
+    private void readNextMessage(int id) {
+        socket.readFullyAsync(
+                4,
+                (lengthBuffer) -> {
+                    var length = Bytes.bytesToInt(lengthBuffer, 4);
+                    readNextMessage(id, length);
+                },
+                this::disconnect);
+    }
 
-                    var packet = new ApnsPacket(packetType, fields);
-                    onPacket(packet);
-                }
-            }catch (IOException exception) {
-                if(!socket.isClosed()) {
-                    throw new UncheckedIOException(exception);
-                }
-            }finally {
-                this.disconnected = true;
-                var apnsConnectionLost = new RuntimeException("APNS connection lost");
-                listeners.forEach(listener -> listener.future().completeExceptionally(apnsConnectionLost));
-                if(!loginFuture.isDone()) {
-                    loginFuture.completeExceptionally(apnsConnectionLost);
-                }
-            }
-        });
+    private void readNextMessage(int id, int length) {
+        if (length <= 0) {
+            disconnect(null);
+            return;
+        }
+
+        socket.readFullyAsync(
+                length,
+                (messageBuffer) -> handleMessage(id, messageBuffer),
+                this::disconnect
+        );
+    }
+
+    private void handleMessage(int id, ByteBuffer messageBuffer) {
+        var fields = readFields(messageBuffer);
+        var packetType = ApnsPayloadTag.of(id);
+        if (packetType == ApnsPayloadTag.NOTIFICATION) {
+            sendAck(fields);
+        }
+
+        var packet = new ApnsPacket(packetType, fields);
+        System.out.println(packet);
+        onPacket(packet);
+        readNextMessage();
+    }
+
+    private void disconnect(Throwable cause) {
+        this.disconnected = true;
+        var apnsConnectionLost = new RuntimeException("APNS connection lost", cause);
+        listeners.forEach(listener -> listener.future().completeExceptionally(apnsConnectionLost));
+        if(!loginFuture.isDone()) {
+            loginFuture.completeExceptionally(apnsConnectionLost);
+        }
     }
 
     private void onPacket(ApnsPacket packet) {
@@ -352,16 +373,14 @@ public class ApnsClient {
         ));
     }
 
-    private static HashMap<Integer, byte[]> readFields(byte[] payload) throws IOException {
+    private static HashMap<Integer, byte[]> readFields(ByteBuffer buffer) {
         var fields = new HashMap<Integer, byte[]>();
-        try(var payloadDataInputStream = new DataInputStream(new ByteArrayInputStream(payload))) {
-            int fieldId;
-            while ((fieldId = payloadDataInputStream.read()) >= 0) {
-                var fieldLength = payloadDataInputStream.readUnsignedShort();
-                var value = new byte[fieldLength];
-                payloadDataInputStream.readFully(value);
-                fields.put(fieldId, value);
-            }
+        while (buffer.remaining() >= 3) {
+            var fieldId = Byte.toUnsignedInt(buffer.get());
+            var fieldLength = Short.toUnsignedInt(buffer.getShort());
+            var value = new byte[fieldLength];
+            buffer.get(value);
+            fields.put(fieldId, value);
         }
         return fields;
     }

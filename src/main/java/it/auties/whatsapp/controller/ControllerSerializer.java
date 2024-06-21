@@ -1,6 +1,9 @@
 package it.auties.whatsapp.controller;
 
 import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.controller.builtin.DiscardingControllerSerializer;
+import it.auties.whatsapp.controller.builtin.JsonControllerSerializer;
+import it.auties.whatsapp.controller.builtin.ProtobufControllerSerializer;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 
 import java.nio.file.Path;

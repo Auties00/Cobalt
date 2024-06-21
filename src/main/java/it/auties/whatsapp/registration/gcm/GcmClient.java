@@ -2,8 +2,8 @@ package it.auties.whatsapp.registration.gcm;
 
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.crypto.HttpEce;
-import it.auties.whatsapp.net.AsyncSocket;
 import it.auties.whatsapp.net.HttpClient;
+import it.auties.whatsapp.net.Socket;
 import it.auties.whatsapp.registration.gcm.McsExchange.AppData;
 import it.auties.whatsapp.registration.gcm.McsExchange.DataMessageStanza;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
@@ -12,8 +12,7 @@ import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLContext;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -21,7 +20,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -49,7 +47,7 @@ public class GcmClient {
     private final String appId;
     private final CompletableFuture<String> loginFuture;
     private final CompletableFuture<String> dataFuture;
-    private SSLSocket socket;
+    private Socket socket;
     private long androidId;
     private long securityToken;
     private String token;
@@ -144,20 +142,22 @@ public class GcmClient {
     }
 
     private CompletableFuture<Void> openConnection() {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                var sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                var underlyingSocket = AsyncSocket.of(proxy);
-                underlyingSocket.connect(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT));
-                this.socket = (SSLSocket) sslSocketFactory.createSocket(underlyingSocket, TALK_SERVER_HOST, TALK_SERVER_PORT, true);
-                socket.setSoTimeout((int) Duration.ofMinutes(5).toMillis());
-                socket.startHandshake();
-                readMessages();
-                sendLoginPacket();
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
-            }
-        });
+        try {
+            var sslContext = SSLContext.getInstance("TLSv1.3");
+            sslContext.init(null, null, null);
+            var sslEngine = sslContext.createSSLEngine();
+            sslEngine.setUseClientMode(true);
+            this.socket = Socket.newSSLClient(sslEngine, proxy);
+            return socket.connectAsync(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT))
+                    .thenRunAsync(this::onLoggedIn);
+        } catch (Throwable throwable) {
+            return CompletableFuture.failedFuture(throwable);
+        }
+    }
+
+    private void onLoggedIn() {
+        readMessages();
+        sendLoginPacket();
     }
 
     private void readMessages() {

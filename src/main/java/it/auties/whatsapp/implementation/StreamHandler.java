@@ -64,6 +64,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -76,7 +77,7 @@ class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
-    private static final int PING_INTERVAL = 5;
+    private static final int PING_INTERVAL = 20;
     private static final int MAX_ATTEMPTS = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
     private static final byte[][] CALL_RELAY = new byte[][]{
@@ -92,12 +93,14 @@ class StreamHandler {
     private final WebVerificationHandler webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
+    private final AtomicBoolean retryConnection;
 
     protected StreamHandler(SocketHandler socketHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = socketHandler;
         this.webVerificationHandler = webVerificationHandler;
         this.retries = new ConcurrentHashMap<>();
         this.lastLinkCodeKey = new AtomicReference<>();
+        this.retryConnection = new AtomicBoolean(false);
     }
 
     protected void digest(Node node) {
@@ -856,7 +859,7 @@ class StreamHandler {
 
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
-            case 403, 503 -> socketHandler.disconnect(socketHandler.store().clientType() == ClientType.WEB ? DisconnectReason.RECONNECTING : DisconnectReason.BANNED);
+            case 403, 503 -> socketHandler.disconnect(retryConnection.getAndSet(true) ? DisconnectReason.BANNED : DisconnectReason.RECONNECTING);
             case 500 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             case 401 -> handleStreamError(node);
             default -> node.children().forEach(error -> socketHandler.store().resolvePendingRequest(error, true));
@@ -1126,6 +1129,25 @@ class StreamHandler {
         });
     }
 
+    protected CompletableFuture<Void> updateBusinessCertificate(String name) {
+        var details = new BusinessVerifiedNameDetailsBuilder()
+                .name(Objects.requireNonNullElse(name, socketHandler.store().name()))
+                .issuer("smb:wa")
+                .serial(Math.abs(ThreadLocalRandom.current().nextLong()))
+                .build();
+        var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
+        var certificate = new BusinessVerifiedNameCertificateBuilder()
+                .encodedDetails(encodedDetails)
+                .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails, true))
+                .build();
+        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate))).thenAccept(result -> {
+            var verifiedName = result.findNode("verified_name")
+                    .map(node -> node.attributes().getString("id"))
+                    .orElse("");
+            socketHandler.store().setVerifiedName(verifiedName);
+        });
+    }
+
     private CompletableFuture<Node> setBusinessProfile() {
         var version = socketHandler.store().properties().getOrDefault("biz_profile_options", "2");
         var body = new ArrayList<Node>();
@@ -1164,6 +1186,7 @@ class StreamHandler {
     private void onInitialInfo() {
         socketHandler.keys().setRegistered(true);
         schedulePing();
+        retryConnection.set(false);
         socketHandler.onLoggedIn();
         if (!socketHandler.keys().initialAppSync()) {
             return;
@@ -1343,7 +1366,7 @@ class StreamHandler {
             socketHandler.store().serialize(true);
             socketHandler.store().serializer().linkMetadata(socketHandler.store());
             socketHandler.keys().serialize(true);
-        }, PING_INTERVAL, PING_INTERVAL);
+        }, PING_INTERVAL / 2, PING_INTERVAL);
     }
 
     private CompletableFuture<Void> scheduleMediaConnectionUpdate(int tries, Throwable error) {
