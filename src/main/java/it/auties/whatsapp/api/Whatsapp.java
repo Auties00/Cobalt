@@ -396,6 +396,14 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Void> changeName(String newName) {
+        Validate.isTrue(store().clientType() != ClientType.WEB || !store().device().platform().isBusiness(),
+                "The business name cannot be changed using the web api");
+        if(store().clientType() == ClientType.MOBILE && store().device().platform().isBusiness()) {
+            var oldName = store().name();
+            return socketHandler.updateBusinessCertificate(newName)
+                    .thenRunAsync(() -> socketHandler.onUserChanged(newName, oldName));
+        }
+
         var oldName = store().name();
         return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("name", newName, "type", "available")))
                 .thenRunAsync(() -> socketHandler.onUserChanged(newName, oldName));

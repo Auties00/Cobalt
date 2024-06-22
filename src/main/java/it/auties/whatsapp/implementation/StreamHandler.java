@@ -1107,9 +1107,9 @@ class StreamHandler {
                 .forEach(socketHandler::handleGroupMetadata);
     }
 
-    private CompletableFuture<Void> setBusinessCertificate() {
+    protected CompletableFuture<Void> updateBusinessCertificate(String name) {
         var details = new BusinessVerifiedNameDetailsBuilder()
-                .name("")
+                .name(Objects.requireNonNullElse(name, socketHandler.store().name()))
                 .issuer("smb:wa")
                 .serial(Math.abs(ThreadLocalRandom.current().nextLong()))
                 .build();
@@ -1207,7 +1207,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        return CompletableFuture.allOf(setBusinessCertificate(), setBusinessProfile())
+        return CompletableFuture.allOf(updateBusinessCertificate(null), setBusinessProfile())
                 .thenRunAsync(() -> socketHandler.keys().setBusinessCertificate(true));
     }
 
@@ -1530,7 +1530,23 @@ class StreamHandler {
                 )
         );
         socketHandler.keys().companionIdentity(result);
+        var device = socketHandler.store().device();
+        var platform = getWebPlatform(node);
+        socketHandler.store().setDevice(device.withPlatform(platform));
         sendConfirmNode(node, devicePairNode);
+    }
+
+    private UserAgent.PlatformType getWebPlatform(Node node) {
+        var name = node.findNode("platform")
+                .flatMap(entry -> entry.attributes().getOptionalString("name"))
+                .orElse(null);
+        return switch (name) {
+            case "smbi" -> UserAgent.PlatformType.IOS_BUSINESS;
+            case "smba" -> UserAgent.PlatformType.ANDROID_BUSINESS;
+            case "android" -> UserAgent.PlatformType.ANDROID;
+            case "ios" -> UserAgent.PlatformType.IOS;
+            case null, default -> null;
+        };
     }
 
     private void sendConfirmNode(Node node, Node content) {

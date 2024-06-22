@@ -63,8 +63,12 @@ public final class WhatsappMetadata {
     private static final Path kaiOsCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
 
     public static CompletableFuture<Version> getVersion(CompanionDevice companion) {
+        if(companion.isWeb()) {
+            return getWebVersion();
+        }
+
         return switch (companion.platform()) {
-            case WEB, WINDOWS, MACOS ->
+            case WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID, ANDROID_BUSINESS ->
                     getAndroidData(companion)

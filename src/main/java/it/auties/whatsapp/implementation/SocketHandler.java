@@ -1167,4 +1167,8 @@ public class SocketHandler implements SocketListener {
                     return null;
                 });
     }
+
+    public CompletableFuture<Void> updateBusinessCertificate(String newName) {
+        return streamHandler.updateBusinessCertificate(newName);
+    }
 }
