@@ -35,8 +35,7 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
         KAIOS(11),
         IOS_BUSINESS(12),
         WINDOWS(13),
-        MACOS(24),
-        WEB(14);
+        MACOS(24);
 
         PlatformType(@ProtobufEnumIndex int index) {
             this.index = index;
@@ -46,10 +45,6 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
 
         public int index() {
             return this.index;
-        }
-
-        public boolean isWeb() {
-            return this == WEB;
         }
 
         public boolean isAndroid() {
