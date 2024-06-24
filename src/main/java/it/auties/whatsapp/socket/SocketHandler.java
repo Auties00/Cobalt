@@ -751,6 +751,9 @@ public class SocketHandler implements SocketListener {
 
     protected CompletableFuture<Void> sendMessageAck(Jid from, Node node) {
         var attrs = node.attributes();
+        var to = from.withAgent(null);
+        var participant = attrs.getNullableString("participant");
+        var recipient = attrs.getNullableString("recipient");
         var type = attrs.getOptionalString("type")
                 .filter(entry -> !Objects.equals(entry, "message"))
                 .orElse(null);
@@ -758,8 +761,8 @@ public class SocketHandler implements SocketListener {
                 .put("id", node.id())
                 .put("to", from)
                 .put("class", node.description())
-                .put("participant", attrs.getNullableString("participant"), Objects::nonNull)
-                .put("recipient", attrs.getNullableString("recipient"), Objects::nonNull)
+                .put("participant", Jid.of(participant).withAgent(null), Objects.nonNull(participant))
+                .put("recipient", Jid.of(recipient).withAgent(null), Objects.nonNull(recipient))
                 .put("type", type, Objects::nonNull)
                 .toMap();
         return sendNodeWithNoResponse(Node.of("ack", attributes));
