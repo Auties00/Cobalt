@@ -1354,6 +1354,7 @@ public class Whatsapp {
     private GroupMetadata addNewGroup(GroupMetadata result) {
         var chatBuilder = new ChatBuilder()
                 .jid(result.jid())
+                .name(result.subject())
                 .description(result.description().orElse(null))
                 .participants(new ArrayList<>(result.participants()))
                 .founder(result.founder().orElse(null));
