@@ -649,6 +649,7 @@ public class SocketHandler implements SocketListener {
             metadata.foundationTimestamp().ifPresent(timestamp -> chat.setFoundationTimestampSeconds(timestamp.toEpochSecond()));
             metadata.founder().ifPresent(chat::setFounder);
             metadata.description().ifPresent(chat::setDescription);
+            chat.setName(metadata.subject());
             chat.addParticipants(metadata.participants());
         }
 
