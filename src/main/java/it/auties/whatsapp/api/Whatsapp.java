@@ -711,6 +711,44 @@ public class Whatsapp {
         var request = new MessageSendRequest.Chat(pinInfo, null, false, false, attrs);
         return socketHandler.sendMessage(request);
     }
+
+    /**
+     * Pin a message
+     *
+     * @param messageKey non-null message key to pin
+     * @param pinTimer    the default timer that message will be pinned
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Void> pinMessage(ChatMessageKey messageKey, ChatMessagePinTimer pinTimer) {
+        if (messageKey.fromMe()) {
+            messageKey.setSenderJid(null);
+        }
+        var message = new PinInChatMessageBuilder()
+                .key(messageKey)
+                .pinType(PinInChatMessage.Type.PIN_FOR_ALL)
+                .senderTimestampMilliseconds(Clock.nowMilliseconds())
+                .build();
+        var deviceInfo = new DeviceContextInfoBuilder()
+                .messageAddOnDurationInSecs(pinTimer.periodSeconds())
+                .build();
+        var sender = messageKey.chatJid().hasServer(JidServer.GROUP) ? jidOrThrowError() : null;
+        var key = new ChatMessageKeyBuilder()
+                .id(ChatMessageKey.randomIdV2(sender, store().clientType()))
+                .chatJid(messageKey.chatJid())
+                .fromMe(true)
+                .senderJid(sender)
+                .build();
+        var pinInfo = new ChatMessageInfoBuilder()
+                .status(MessageStatus.PENDING)
+                .senderJid(sender)
+                .key(key)
+                .message(MessageContainer.of(message).withDeviceInfo(deviceInfo))
+                .timestampSeconds(Clock.nowSeconds())
+                .build();
+        var attrs = Map.of("edit", 2);
+        var request = new MessageSendRequest.Chat(pinInfo, null, false, false, attrs);
+        return socketHandler.sendMessage(request);
+    }
     
     public CompletableFuture<ChatMessageInfo> sendStatus(String message) {
         return sendStatus(MessageContainer.of(message));
