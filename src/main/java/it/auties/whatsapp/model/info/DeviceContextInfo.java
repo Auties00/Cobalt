@@ -27,7 +27,7 @@ public final class DeviceContextInfo implements Info, ProtobufMessage {
     private final int messageAddOnDurationInSecs;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public DeviceContextInfo(DeviceListMetadata deviceListMetadata, int deviceListMetadataVersion, byte[] messageSecret, byte[] paddingBytes) {
+    public DeviceContextInfo(DeviceListMetadata deviceListMetadata, int deviceListMetadataVersion, byte[] messageSecret, byte[] paddingBytes, int messageAddOnDurationInSecs) {
         this.deviceListMetadata = deviceListMetadata;
         this.deviceListMetadataVersion = deviceListMetadataVersion;
         this.messageSecret = messageSecret;
@@ -55,7 +55,7 @@ public final class DeviceContextInfo implements Info, ProtobufMessage {
         return Optional.ofNullable(paddingBytes);
     }
 
-    public int messageAddOnDurationInSecs() { 
-        return messageAddOnDurationInSecs; 
+    public int messageAddOnDurationInSecs() {
+        return messageAddOnDurationInSecs;
     }
 }

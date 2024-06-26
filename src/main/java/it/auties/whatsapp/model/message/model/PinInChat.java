@@ -6,8 +6,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.info.MessageAddOnContextInfo;
-import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
@@ -28,7 +27,7 @@ public record PinInChat(
         @ProtobufProperty(index = 4, type = ProtobufType.INT64)
         long serverTimestampMilliseconds,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        MessageAddOnContextInfo messageAddOnContextInfo
+        DeviceContextInfo messageAddOnContextInfo
 ) implements ProtobufMessage {
     public Optional<ZonedDateTime> serverTimestamp() { return Clock.parseMilliseconds(serverTimestampMilliseconds); }
 
