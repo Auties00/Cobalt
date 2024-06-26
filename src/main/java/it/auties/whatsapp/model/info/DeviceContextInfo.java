@@ -23,12 +23,16 @@ public final class DeviceContextInfo implements Info, ProtobufMessage {
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private final byte[] paddingBytes;
 
+    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
+    private final int messageAddOnDurationInSecs;
+
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public DeviceContextInfo(DeviceListMetadata deviceListMetadata, int deviceListMetadataVersion, byte[] messageSecret, byte[] paddingBytes) {
+    public DeviceContextInfo(DeviceListMetadata deviceListMetadata, int deviceListMetadataVersion, byte[] messageSecret, byte[] paddingBytes, int messageAddOnDurationInSecs) {
         this.deviceListMetadata = deviceListMetadata;
         this.deviceListMetadataVersion = deviceListMetadataVersion;
         this.messageSecret = messageSecret;
         this.paddingBytes = paddingBytes;
+        this.messageAddOnDurationInSecs = messageAddOnDurationInSecs;
     }
 
     public Optional<DeviceListMetadata> deviceListMetadata() {
@@ -49,5 +53,9 @@ public final class DeviceContextInfo implements Info, ProtobufMessage {
 
     public Optional<byte[]> paddingBytes() {
         return Optional.ofNullable(paddingBytes);
+    }
+
+    public int messageAddOnDurationInSecs() {
+        return messageAddOnDurationInSecs;
     }
 }
