@@ -186,6 +186,10 @@ public enum MessageType {
      */
     EDITED,
     /**
+     * Pin in chat
+     */
+    PIN_IN_CHAT,
+    /**
      * Newsletter admin invite
      */
     NEWSLETTER_ADMIN_INVITE
