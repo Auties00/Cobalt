@@ -126,6 +126,8 @@ public record MessageContainer(
         Optional<FutureMessageContainer> editedMessage,
         @ProtobufProperty(index = 59, type = ProtobufType.OBJECT)
         Optional<FutureMessageContainer> viewOnceV2ExtensionMessage,
+        @ProtobufProperty(index = 63, type = ProtobufType.OBJECT)
+        Optional<PinInChatMessage> pinInChatMessage,
         @ProtobufProperty(index = 78, type = ProtobufType.OBJECT)
         Optional<NewsletterAdminInviteMessage> newsletterAdminInviteMessage,
         @ProtobufProperty(index = 35, type = ProtobufType.OBJECT)
@@ -210,6 +212,7 @@ public record MessageContainer(
                     builder.pollCreationMessage(Optional.of(pollCreationMessage));
             case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(Optional.of(pollUpdateMessage));
             case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(Optional.of(keepInChatMessage));
+            case PinInChatMessage pinInChatMessage -> builder.pinInChatMessage(Optional.of(pinInChatMessage));
             case RequestPhoneNumberMessage requestPhoneNumberMessage ->
                     builder.requestPhoneNumberMessage(Optional.of(requestPhoneNumberMessage));
             case EncryptedReactionMessage encReactionMessage ->
@@ -419,6 +422,9 @@ public record MessageContainer(
         }
         if (keepInChatMessage.isPresent()) {
             return keepInChatMessage.get();
+        }
+        if (pinInChatMessage.isPresent()) {
+            return pinInChatMessage.get();
         }
         if (documentWithCaptionMessage.isPresent()) {
             return documentWithCaptionMessage.get().unbox();
