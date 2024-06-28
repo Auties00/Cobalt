@@ -14,7 +14,7 @@ public class DiscardingControllerSerializer implements ControllerSerializer {
     private static final LinkedList<UUID> EMPTY_IDS = new LinkedList<>();
     private static final LinkedList<PhoneNumber> EMPTY_PHONE_NUMBERS = new LinkedList<>();
 
-    public static ControllerSerializer singleton() {
+    public static ControllerSerializer of() {
         return SINGLETON;
     }
 

@@ -24,6 +24,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+// TODO: Rewrite socket implementation for this class
+// Also read message length in a better way
 public class GcmClient {
     private static final long DEFAULT_GCM_SENDER_ID = 293955441834L;
     private static final int AUTH_SECRET_LENGTH = 16;
@@ -145,7 +147,7 @@ public class GcmClient {
         try {
             var sslContext = SSLContext.getInstance("TLSv1.3");
             sslContext.init(null, null, null);
-            var sslEngine = sslContext.createSSLEngine();
+            var sslEngine = sslContext.createSSLEngine(TALK_SERVER_HOST, TALK_SERVER_PORT);
             sslEngine.setUseClientMode(true);
             this.socket = Socket.newSSLClient(sslEngine, proxy);
             return socket.connectAsync(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT))

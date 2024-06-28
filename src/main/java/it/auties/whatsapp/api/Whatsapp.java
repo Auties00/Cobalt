@@ -1205,15 +1205,6 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> changePresence(JidProvider chatJid, ContactStatus presence) {
-        var knownPresence = store().findChatByJid(chatJid)
-                .map(Chat::presences)
-                .map(entry -> entry.get(jidOrThrowError().toSimpleJid()))
-                .orElse(null);
-        if (knownPresence == COMPOSING || knownPresence == RECORDING) {
-            var node = Node.of("chatstate", Map.of("to", chatJid.toJid()), Node.of("paused"));
-            return socketHandler.sendNodeWithNoResponse(node);
-        }
-
         if (presence == COMPOSING || presence == RECORDING) {
             var tag = presence == RECORDING ? COMPOSING : presence;
             var node = Node.of("chatstate",

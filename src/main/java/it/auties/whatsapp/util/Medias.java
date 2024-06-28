@@ -115,7 +115,7 @@ public final class Medias {
                 "Origin", WEB_ORIGIN
         );
         var body = Objects.requireNonNullElse(mediaFile.encryptedFile(), file);
-        return getOrCreateClient().postRaw(uri, headers, body).thenApplyAsync(response -> {
+        return getOrCreateClient().postRawWithoutSslParams(uri, headers, body).thenApplyAsync(response -> {
             var upload = Json.readValue(response, MediaUpload.class);
             return new MediaFile(
                     mediaFile.encryptedFile(),

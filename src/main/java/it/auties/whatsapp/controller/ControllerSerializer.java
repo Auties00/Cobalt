@@ -25,7 +25,7 @@ public interface ControllerSerializer {
      * @return a serializer
      */
     static ControllerSerializer discarding() {
-        return DiscardingControllerSerializer.singleton();
+        return DiscardingControllerSerializer.of();
     }
 
     /**

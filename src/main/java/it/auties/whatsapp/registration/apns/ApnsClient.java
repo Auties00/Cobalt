@@ -187,11 +187,11 @@ public class ApnsClient {
             sslContext.init(null, new TrustManager[]{new AppleTrustManager()}, null);
             var sslParameters = sslContext.getDefaultSSLParameters();
             sslParameters.setApplicationProtocols(new String[]{"apns-security-v3"});
-            var sslEngine = sslContext.createSSLEngine();
+            var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
+            var sslEngine = sslContext.createSSLEngine(endpoint, PORT);
             sslEngine.setSSLParameters(sslParameters);
             sslEngine.setUseClientMode(true);
             this.socket = Socket.newSSLClient(sslEngine, proxy);
-            var endpoint = ThreadLocalRandom.current().nextInt(1, bag.hostCount()) + "-" + bag.hostname();
             return socket.connectAsync(proxy == null ? new InetSocketAddress(endpoint, PORT) : InetSocketAddress.createUnresolved(endpoint, PORT));
         }catch (IOException exception) {
             throw new UncheckedIOException(exception);
@@ -296,25 +296,21 @@ public class ApnsClient {
     private void readNextMessage() {
         socket.readFullyAsync(
                 1,
-                (idBuffer) -> {
-                    var id = Byte.toUnsignedInt(idBuffer.get());
-                    readNextMessage(id);
-                },
+                this::readNextMessage,
                 this::disconnect
         );
     }
 
-    private void readNextMessage(int id) {
+    private void readNextMessage(ByteBuffer idBuffer) {
+        var id = Byte.toUnsignedInt(idBuffer.get());
         socket.readFullyAsync(
                 4,
-                (lengthBuffer) -> {
-                    var length = Bytes.bytesToInt(lengthBuffer, 4);
-                    readNextMessage(id, length);
-                },
+                lengthBuffer -> readNextMessage(id, lengthBuffer),
                 this::disconnect);
     }
 
-    private void readNextMessage(int id, int length) {
+    private void readNextMessage(int id, ByteBuffer lengthBuffer) {
+        var length = Bytes.bytesToInt(lengthBuffer, 4);
         if (length <= 0) {
             disconnect(null);
             return;
@@ -328,7 +324,15 @@ public class ApnsClient {
     }
 
     private void handleMessage(int id, ByteBuffer messageBuffer) {
-        var fields = readFields(messageBuffer);
+        var fields = new HashMap<Integer, byte[]>();
+        while (messageBuffer.remaining() >= 3) {
+            var fieldId = Byte.toUnsignedInt(messageBuffer.get());
+            var fieldLength = Short.toUnsignedInt(messageBuffer.getShort());
+            var value = new byte[fieldLength];
+            messageBuffer.get(value);
+            fields.put(fieldId, value);
+        }
+
         var packetType = ApnsPayloadTag.of(id);
         if (packetType == ApnsPayloadTag.NOTIFICATION) {
             sendAck(fields);
@@ -371,18 +375,6 @@ public class ApnsClient {
                 4, fields.get(0x4),
                 8, new byte[]{0x00}
         ));
-    }
-
-    private static HashMap<Integer, byte[]> readFields(ByteBuffer buffer) {
-        var fields = new HashMap<Integer, byte[]>();
-        while (buffer.remaining() >= 3) {
-            var fieldId = Byte.toUnsignedInt(buffer.get());
-            var fieldLength = Short.toUnsignedInt(buffer.getShort());
-            var value = new byte[fieldLength];
-            buffer.get(value);
-            fields.put(fieldId, value);
-        }
-        return fields;
     }
 
     public void close() {

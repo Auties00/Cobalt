@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -42,22 +43,26 @@ public sealed abstract class Socket extends java.net.Socket {
 
     final AsynchronousSocketChannel delegate;
     final URI proxy;
-    final SSLEngine sslEngine;
-    final ByteBuffer sslReadBuffer;
-    final ByteBuffer sslWriteBuffer;
-    final ByteBuffer sslOutputBuffer;
-    final InputStream inputStream;
-    final OutputStream outputStream;
-    final AtomicBoolean sslHandshakeCompled;
+    final AtomicBoolean sslHandshakeCompleted;
+    SSLEngine sslEngine;
+    ByteBuffer sslReadBuffer;
+    ByteBuffer sslWriteBuffer;
+    ByteBuffer sslOutputBuffer;
     int sslOutputBufferReadPosition;
+    CompletableFuture<Void> sslHandshake;
+    final Object sslHandshakeLock;
     Socket(SSLEngine sslEngine, URI proxy) throws IOException {
         this.delegate = AsynchronousSocketChannel.open();
         delegate.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
         this.proxy = proxy;
+        this.sslHandshakeCompleted = new AtomicBoolean();
+        this.sslHandshakeLock = new Object();
+        initSslEngine(sslEngine);
+    }
+
+    private void initSslEngine(SSLEngine sslEngine) {
+        sslHandshakeCompleted.set(sslEngine == null);
         this.sslEngine = sslEngine;
-        this.inputStream = new BlockingSocketInputStream();
-        this.outputStream = new BlockingSocketOutputStream();
-        this.sslHandshakeCompled = new AtomicBoolean(sslEngine == null);
         if(sslEngine != null) {
             var bufferSize = sslEngine.getSession().getPacketBufferSize();
             this.sslReadBuffer = ByteBuffer.allocate(bufferSize);
@@ -68,6 +73,19 @@ public sealed abstract class Socket extends java.net.Socket {
             this.sslWriteBuffer = null;
             this.sslOutputBuffer = null;
         }
+    }
+
+    public CompletableFuture<Void> upgradeToSsl(SSLEngine sslEngine) {
+        if(!isConnected()) {
+            throw new IllegalArgumentException("The socket is not connected");
+        }
+
+        if(this.sslEngine != null) {
+            throw new IllegalStateException("This socket is already using a secure connection");
+        }
+
+        initSslEngine(sslEngine);
+        return beginSslHandshake();
     }
 
     @Override
@@ -111,79 +129,94 @@ public sealed abstract class Socket extends java.net.Socket {
                 return CompletableFuture.completedFuture(null);
             }
 
-            if(sslHandshakeCompled.get()) {
+            if(sslHandshakeCompleted.get()) {
                 return CompletableFuture.completedFuture(null);
             }
 
-            var future = new CompletableFuture<Void>();
-            sslEngine.beginHandshake();
-            sslReadBuffer.position(sslReadBuffer.limit());
-            handleSslHandshakeStatus(null, future);
-            return future;
+            if(sslHandshake != null) {
+                return sslHandshake;
+            }
+
+            synchronized (sslHandshakeLock) {
+                if(sslHandshake != null) {
+                    return sslHandshake;
+                }
+
+                this.sslHandshake = new CompletableFuture<>();
+                sslEngine.beginHandshake();
+                sslReadBuffer.position(sslReadBuffer.limit());
+                handleSslHandshakeStatus(null);
+                return sslHandshake;
+            }
         } catch (Throwable throwable) {
             return CompletableFuture.failedFuture(throwable);
         }
     }
 
-    private void handleSslHandshakeStatus(Status status, CompletableFuture<Void> future){
+    private void handleSslHandshakeStatus(Status status){
         switch (sslEngine.getHandshakeStatus()) {
-            case NEED_WRAP -> doSslHandshakeWrap(future);
-            case NEED_UNWRAP, NEED_UNWRAP_AGAIN -> doSslHandshakeUnwrap(future, status == Status.BUFFER_UNDERFLOW);
-            case NEED_TASK -> doSslHandshakeTasks(future);
-            case FINISHED -> finishSslHandshake(future);
-            case NOT_HANDSHAKING -> future.completeExceptionally(new IOException("Cannot complete handshake"));
+            case NEED_WRAP -> doSslHandshakeWrap();
+            case NEED_UNWRAP, NEED_UNWRAP_AGAIN -> doSslHandshakeUnwrap(status == Status.BUFFER_UNDERFLOW);
+            case NEED_TASK -> doSslHandshakeTasks();
+            case FINISHED -> finishSslHandshake();
+            case NOT_HANDSHAKING -> sslHandshake.completeExceptionally(new IOException("Cannot complete handshake"));
         }
     }
 
-    private void finishSslHandshake(CompletableFuture<Void> future) {
-        future.complete(null);
-        sslHandshakeCompled.set(true);
+    private void finishSslHandshake() {
+        sslHandshake.complete(null);
+        sslHandshakeCompleted.set(true);
     }
 
-    private void doSslHandshakeTasks(CompletableFuture<Void> future) {
+    private void doSslHandshakeTasks() {
         Runnable runnable;
         while ((runnable = sslEngine.getDelegatedTask()) != null) {
             runnable.run();
         }
 
-        handleSslHandshakeStatus(null, future);
+        handleSslHandshakeStatus(null);
     }
 
-    private void doSslHandshakeUnwrap(CompletableFuture<Void> future, boolean forceRead) {
+    private void doSslHandshakeUnwrap(boolean forceRead) {
         sslReadBuffer.compact();
         if (!forceRead && sslReadBuffer.position() != 0) {
-            doSSlHandshakeUnwrapOperation(future);
+            doSSlHandshakeUnwrapOperation();
             return;
         }
 
         delegate.read(sslReadBuffer, null, new CompletionHandler<>() {
             @Override
             public void completed(Integer result, Object attachment) {
-                doSSlHandshakeUnwrapOperation(future);
+                if(result == -1) {
+                    sslHandshake.completeExceptionally(new EOFException());
+                    return;
+                }
+
+                doSSlHandshakeUnwrapOperation();
             }
 
             @Override
             public void failed(Throwable exc, Object attachment) {
-                future.completeExceptionally(exc);
+                sslHandshake.completeExceptionally(exc);
             }
         });
     }
 
-    private void doSSlHandshakeUnwrapOperation(CompletableFuture<Void> future) {
+    private void doSSlHandshakeUnwrapOperation() {
         try {
             sslReadBuffer.flip();
             var result = sslEngine.unwrap(sslReadBuffer, sslOutputBuffer);
             if(isHandshakeFinished(result, false)) {
-                finishSslHandshake(future);
+                finishSslHandshake();
             }else {
-                handleSslHandshakeStatus(result.getStatus(), future);
+                handleSslHandshakeStatus(result.getStatus());
             }
         }catch(Throwable throwable) {
-            future.completeExceptionally(throwable);
+            sslHandshake.completeExceptionally(throwable);
         }
     }
 
-    private void doSslHandshakeWrap(CompletableFuture<Void> future) {
+    private void doSslHandshakeWrap() {
         try {
             sslWriteBuffer.clear();
             var result = sslEngine.wrap(sslOutputBuffer, sslWriteBuffer);
@@ -192,20 +225,25 @@ public sealed abstract class Socket extends java.net.Socket {
             delegate.write(sslWriteBuffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer result, Object attachment) {
+                    if(result == -1) {
+                        sslHandshake.completeExceptionally(new EOFException());
+                        return;
+                    }
+
                     if(isHandshakeFinished) {
-                        finishSslHandshake(future);
+                        finishSslHandshake();
                     }else {
-                        handleSslHandshakeStatus(null, future);
+                        handleSslHandshakeStatus(null);
                     }
                 }
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
-                    future.completeExceptionally(exc);
+                    sslHandshake.completeExceptionally(exc);
                 }
             });
         }catch (Throwable throwable) {
-            future.completeExceptionally(throwable);
+            sslHandshake.completeExceptionally(throwable);
         }
     }
 
@@ -233,7 +271,38 @@ public sealed abstract class Socket extends java.net.Socket {
             throw new IOException("Connection is closed");
         }
 
-        return inputStream;
+        return new InputStream() {
+            @Override
+            public int read() throws EOFException {
+                var data = new byte[1];
+                var result = read(data);
+                if(result == -1) {
+                    throw new EOFException();
+                }
+
+                return Byte.toUnsignedInt(data[0]);
+            }
+
+            @Override
+            public int read(byte[] b) {
+                return read(b, 0, b.length);
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) {
+                if(len == 0) {
+                    return 0;
+                }
+
+                return readAsync(ByteBuffer.wrap(b, off, len))
+                        .join();
+            }
+
+            @Override
+            public void close() throws IOException {
+                Socket.this.close();
+            }
+        };
     }
 
     @Override
@@ -242,7 +311,22 @@ public sealed abstract class Socket extends java.net.Socket {
             throw new IOException("Connection is closed");
         }
 
-        return outputStream;
+        return new OutputStream() {
+            @Override
+            public void write(int b) {
+                write(new byte[]{(byte) b}, 0, 1);
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) {
+                writeAsync(b, off, len).join();
+            }
+
+            @Override
+            public void close() throws IOException {
+                Socket.this.close();
+            }
+        };
     }
 
     @Override
@@ -556,7 +640,7 @@ public sealed abstract class Socket extends java.net.Socket {
     private CompletableFuture<Void> writeAsync(ByteBuffer buffer) {
         var future = new CompletableFuture<Void>();
         try {
-            if(sslEngine == null || !sslHandshakeCompled.get()) {
+            if(sslEngine == null || !sslHandshakeCompleted.get()) {
                 doPlainWrite(buffer, future);
             }else {
                 doSecureWrite(buffer, future);
@@ -571,6 +655,16 @@ public sealed abstract class Socket extends java.net.Socket {
         delegate.write(buffer, null, new CompletionHandler<>() {
             @Override
             public void completed(Integer result, Object attachment) {
+                if(result == -1) {
+                    future.completeExceptionally(new SocketException());
+                    return;
+                }
+
+                if(buffer.hasRemaining()) {
+                    doPlainWrite(buffer, future);
+                    return;
+                }
+
                 future.complete(null);
             }
 
@@ -582,15 +676,72 @@ public sealed abstract class Socket extends java.net.Socket {
     }
 
     private void doSecureWrite(ByteBuffer buffer, CompletableFuture<Void> future) throws SSLException {
-        sslWriteBuffer.clear();
-        var result = sslEngine.wrap(buffer, sslWriteBuffer);
-        var status = result.getStatus();
-        if (status != Status.OK && status != Status.BUFFER_OVERFLOW) {
-            throw new IllegalStateException("SSL wrap failed with status: " + status);
+        if(!buffer.hasRemaining()) {
+            future.complete(null);
+            return;
         }
 
-        sslWriteBuffer.flip();
-        doPlainWrite(sslWriteBuffer, future);
+        var out = new ByteBufferOutputStream();
+        while (buffer.hasRemaining()) {
+            sslWriteBuffer.clear();
+            var result = sslEngine.wrap(buffer, sslWriteBuffer);
+            var status = result.getStatus();
+            if (status != Status.OK && status != Status.BUFFER_OVERFLOW) {
+                throw new IllegalStateException("SSL wrap failed with status: " + status);
+            }
+
+            sslWriteBuffer.flip();
+            out.writeBuffer(sslWriteBuffer, result.bytesProduced());
+        }
+
+        doPlainWrite(out.toByteBuffer(), future);
+    }
+
+    private static final class ByteBufferOutputStream {
+        private static final int SOFT_MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8;
+
+        private byte[] buf;
+        private int count;
+        private ByteBufferOutputStream() {
+            this.buf = new byte[32];
+        }
+
+        private void writeBuffer(ByteBuffer buffer, int length) {
+            ensureCapacity(count + length);
+            for(var i = 0; i < length; i++) {
+                buf[count++] = buffer.get();
+            }
+        }
+
+        private void ensureCapacity(int minCapacity) {
+            var oldCapacity = buf.length;
+            var minGrowth = minCapacity - oldCapacity;
+            if (minGrowth > 0) {
+                buf = Arrays.copyOf(buf, newLength(oldCapacity, minGrowth, oldCapacity));
+            }
+        }
+
+        private int newLength(int oldLength, int minGrowth, int prefGrowth) {
+            var prefLength = oldLength + Math.max(minGrowth, prefGrowth);
+            if (0 < prefLength && prefLength <= SOFT_MAX_ARRAY_LENGTH) {
+                return prefLength;
+            } else {
+                return hugeLength(oldLength, minGrowth);
+            }
+        }
+
+        private int hugeLength(int oldLength, int minGrowth) {
+            var minLength = oldLength + minGrowth;
+            if (minLength < 0) {
+                throw new OutOfMemoryError("Required array length " + oldLength + " + " + minGrowth + " is too large");
+            }
+
+            return Math.max(minLength, SOFT_MAX_ARRAY_LENGTH);
+        }
+
+        private ByteBuffer toByteBuffer() {
+            return ByteBuffer.wrap(buf, 0, count);
+        }
     }
 
     public void readFullyAsync(int length, Consumer<ByteBuffer> callback, Consumer<Throwable> errorHandler) {
@@ -628,7 +779,7 @@ public sealed abstract class Socket extends java.net.Socket {
                             }
                             return;
                         }
-                        
+
                         if (buffer.hasRemaining()) {
                             readFullyAsync(buffer, future, callback, errorHandler);
                             return;
@@ -673,14 +824,14 @@ public sealed abstract class Socket extends java.net.Socket {
     }
 
     private void readAsync(ByteBuffer buffer, boolean lastRead, CompletableFuture<Integer> future, IntConsumer callback, Consumer<Throwable> errorHandler) {
-        if(sslEngine == null || !sslHandshakeCompled.get()) {
+        if(sslEngine == null || !sslHandshakeCompleted.get()) {
             doPlainRead(buffer, lastRead, future, callback, errorHandler);
         }else {
-            doSecureRead(buffer, lastRead, 0, !sslReadBuffer.hasRemaining(), future, callback, errorHandler);
+            doSecureRead(buffer, lastRead, 0, future, callback, errorHandler);
         }
     }
 
-    private void doSecureRead(ByteBuffer buffer, boolean lastRead, int bytesRead, boolean forceRead, CompletableFuture<Integer> future, IntConsumer callback, Consumer<Throwable> errorHandler) {
+    private void doSecureRead(ByteBuffer buffer, boolean lastRead, int bytesRead, CompletableFuture<Integer> future, IntConsumer callback, Consumer<Throwable> errorHandler) {
         var oldLimit = sslOutputBuffer.limit();
         var oldPosition = sslOutputBuffer.position();
         sslOutputBuffer.position(sslOutputBufferReadPosition);
@@ -699,7 +850,7 @@ public sealed abstract class Socket extends java.net.Socket {
             sslOutputBuffer.position(oldPosition);
         }
 
-        if(!buffer.hasRemaining()) {
+        if(bytesRead != 0) {
             if(callback != null) {
                 callback.accept(bytesRead);
             }else {
@@ -708,19 +859,19 @@ public sealed abstract class Socket extends java.net.Socket {
             return;
         }
 
-        sslReadBuffer.compact();
-        if (!forceRead) {
-            doSecureRead(buffer, lastRead, bytesRead, future, callback, errorHandler);
+        if (sslReadBuffer.hasRemaining()) {
+            unwrapSecureRead(buffer, lastRead, bytesRead, future, callback, errorHandler);
             return;
         }
 
+        sslReadBuffer.compact();
         var finalBytesRead = bytesRead;
         delegate.read(sslReadBuffer, null, new CompletionHandler<>() {
             @Override
             public void completed(Integer result, Object attachment) {
                 if (result != -1) {
                     sslReadBuffer.flip();
-                    doSecureRead(buffer, lastRead, finalBytesRead, future, callback, errorHandler);
+                    unwrapSecureRead(buffer, lastRead, finalBytesRead, future, callback, errorHandler);
                     return;
                 }
 
@@ -742,13 +893,8 @@ public sealed abstract class Socket extends java.net.Socket {
         });
     }
 
-    private void doSecureRead(ByteBuffer buffer, boolean lastRead, int read, CompletableFuture<Integer> future, IntConsumer callback, Consumer<Throwable> errorHandler) {
+    private void unwrapSecureRead(ByteBuffer buffer, boolean lastRead, int read, CompletableFuture<Integer> future, IntConsumer callback, Consumer<Throwable> errorHandler) {
         try {
-            if (!sslReadBuffer.hasRemaining()) {
-                doSecureRead(buffer, lastRead, read, true, future, callback, errorHandler);
-                return;
-            }
-
             var result = sslEngine.unwrap(sslReadBuffer, sslOutputBuffer);
             if (result.getStatus() != Status.OK && result.getStatus() != Status.BUFFER_UNDERFLOW) {
                 var error = new IllegalStateException("SSL read operation failed with status: " + result.getStatus());
@@ -760,7 +906,7 @@ public sealed abstract class Socket extends java.net.Socket {
                 return;
             }
 
-            doSecureRead(buffer, lastRead, read, result.bytesProduced() == 0, future, callback, errorHandler);
+            doSecureRead(buffer, lastRead, read, future, callback, errorHandler);
         }catch (Throwable throwable) {
             if(future != null) {
                 future.completeExceptionally(throwable);
@@ -796,51 +942,6 @@ public sealed abstract class Socket extends java.net.Socket {
         });
     }
 
-    private class BlockingSocketInputStream extends InputStream {
-        @Override
-        public int read() throws EOFException {
-            var data = new byte[1];
-            var result = read(data);
-            if(result == -1) {
-                throw new EOFException();
-            }
-
-            return Byte.toUnsignedInt(data[0]);
-        }
-
-        @Override
-        public int read(byte[] b) {
-            return read(b, 0, b.length);
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) {
-            if(len == 0) {
-                return 0;
-            }
-
-            return readAsync(ByteBuffer.wrap(b, off, len))
-                    .join();
-        }
-    }
-
-    private class BlockingSocketOutputStream extends OutputStream {
-        @Override
-        public void write(int b) {
-            write(new byte[]{(byte) b});
-        }
-
-        @Override
-        public void write(byte[] b) {
-            write(b, 0, b.length);
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) {
-            writeAsync(b, off, len).join();
-        }
-    }
-
     private static final class Direct extends Socket {
         Direct(SSLEngine engine) throws IOException {
             super(engine, null);
@@ -873,7 +974,11 @@ public sealed abstract class Socket extends java.net.Socket {
 
         private CompletableFuture<Void> handleAuthentication(String response) {
             var responseParts = response.split(" ");
-            var statusCodePart = responseParts.length < 2 ? null : responseParts[1];
+            if(responseParts.length < 2) {
+                return CompletableFuture.failedFuture(new SocketException("HTTP : Cannot connect to proxy, malformed response: " + response));
+            }
+
+            var statusCodePart = responseParts[1];
             try {
                 var statusCode = statusCodePart == null ? -1 : Integer.parseUnsignedInt(statusCodePart);
                 if(statusCode != OK_STATUS_CODE) {
