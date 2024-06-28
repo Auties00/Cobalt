@@ -5,11 +5,6 @@ import java.util.Objects;
 import java.util.OptionalInt;
 
 public final class Proxies {
-    public static void allowBasicAuth() {
-        System.setProperty("jdk.http.auth.proxying.disabledSchemes", "");
-        System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
-    }
-
     public static ProxySelector toProxySelector(URI uri) {
         if (uri == null) {
             return null;

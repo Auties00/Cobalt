@@ -46,7 +46,7 @@ public class ApnsClient {
     private final KeyPair keyPair;
     private final Set<ApnsListener> listeners;
     private final List<ApnsPacket> unhandledPackets;
-    public final CompletableFuture<Void> loginFuture;
+    private final CompletableFuture<Void> loginFuture;
     private final ScheduledExecutorService pingExecutor;
     private Socket socket;
     private byte[] certificate;

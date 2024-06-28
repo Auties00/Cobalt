@@ -253,12 +253,12 @@ public class HttpClient implements AutoCloseable {
         }
 
         @Override
-        public java.net.Socket createLayeredSocket(java.net.Socket socket, String target, int port, HttpContext context) throws IOException {
+        public java.net.Socket createLayeredSocket(java.net.Socket socket, String target, int port, HttpContext context) {
             return createLayeredSocket(socket, target, port, null, context);
         }
 
         @Override
-        public java.net.Socket createLayeredSocket(java.net.Socket socket, String target, int port, Object attachment, HttpContext context) throws IOException {
+        public java.net.Socket createLayeredSocket(java.net.Socket socket, String target, int port, Object attachment, HttpContext context) {
             var asyncSocket = (Socket) socket;
             var useSslParams = (boolean) context.getAttribute(SSL_PARAMS_KEY);
             var sslEngine = sslContext.createSSLEngine(target, port);
@@ -266,14 +266,15 @@ public class HttpClient implements AutoCloseable {
                 sslEngine.setSSLParameters(sslParameters);
             }
             sslEngine.setUseClientMode(true);
-            asyncSocket.upgradeToSsl(sslEngine).join();
+            asyncSocket.upgradeToSsl(sslEngine)
+                    .join(); // Await async handshake
             return asyncSocket;
         }
     }
 
     private static class DummyDnsResolver implements DnsResolver {
         private static final DummyDnsResolver INSTANCE = new DummyDnsResolver();
-        public static DummyDnsResolver instance() {
+        private static DummyDnsResolver instance() {
             return INSTANCE;
         }
 
