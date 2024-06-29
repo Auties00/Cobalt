@@ -715,15 +715,22 @@ public class SocketHandler implements SocketListener {
         if (messages.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
+        
+        jid = jid.withAgent(null);
+        if (participant != null) {
+            participant = participant.withAgent(null);
+        }
 
         var attributes = Attributes.of()
                 .put("id", messages.getFirst())
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
                 .put("to", jid)
                 .put("type", type, Objects::nonNull);
-        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.WHATSAPP)) {
-            attributes.put("recipient", jid);
+        if (jid.hasServer(JidServer.WHATSAPP))  {
             attributes.put("to", participant);
+            attributes.put("recipient", jid, Objects.equals(type, "sender"));
+        } else if (jid.hasServer(JidServer.GROUP)) {
+            attributes.put("participant", participant);
         }
 
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
@@ -742,6 +749,9 @@ public class SocketHandler implements SocketListener {
 
     protected CompletableFuture<Void> sendMessageAck(Jid from, Node node) {
         var attrs = node.attributes();
+        var to = from.withAgent(null);
+        var participant = attrs.getNullableString("participant");
+        var recipient = attrs.getNullableString("recipient");
         var type = attrs.getOptionalString("type")
                 .filter(entry -> !Objects.equals(entry, "message"))
                 .orElse(null);
@@ -749,8 +759,8 @@ public class SocketHandler implements SocketListener {
                 .put("id", node.id())
                 .put("to", from)
                 .put("class", node.description())
-                .put("participant", attrs.getNullableString("participant"), Objects::nonNull)
-                .put("recipient", attrs.getNullableString("recipient"), Objects::nonNull)
+                .put("participant", Jid.of(participant).withAgent(null), Objects.nonNull(participant))
+                .put("recipient", Jid.of(recipient).withAgent(null), Objects.nonNull(recipient))
                 .put("type", type, Objects::nonNull)
                 .toMap();
         return sendNodeWithNoResponse(Node.of("ack", attributes));
