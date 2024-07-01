@@ -293,17 +293,6 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     /**
      * Queries the trusted key that matches {@code id}
      *
-     * @param id the id to search
-     * @return a non-null signed key pair
-     * @throws IllegalArgumentException if no element can be found
-     */
-    public Optional<SignalSignedKeyPair> findSignedKeyPairById(int id) {
-        return id == signedKeyPair.id() ? Optional.of(signedKeyPair) : Optional.empty();
-    }
-
-    /**
-     * Queries the trusted key that matches {@code id}
-     *
      * @param id the non-null id to search
      * @return a non-null pre key
      */

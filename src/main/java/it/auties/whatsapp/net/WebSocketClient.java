@@ -859,7 +859,7 @@ public class WebSocketClient implements AutoCloseable {
             dst.position(j);
         }
 
-        MessageEncoder fin(boolean value) {
+        private MessageEncoder fin(boolean value) {
             if (value) {
                 firstChar |= 0b10000000_00000000;
             } else {
@@ -872,7 +872,7 @@ public class WebSocketClient implements AutoCloseable {
             return this;
         }
 
-        MessageEncoder rsv1(boolean value) {
+        private  MessageEncoder rsv1(boolean value) {
             if (value) {
                 firstChar |= 0b01000000_00000000;
             } else {
@@ -882,7 +882,7 @@ public class WebSocketClient implements AutoCloseable {
             return this;
         }
 
-        MessageEncoder rsv2(boolean value) {
+        private MessageEncoder rsv2(boolean value) {
             if (value) {
                 firstChar |= 0b00100000_00000000;
             } else {
@@ -892,7 +892,7 @@ public class WebSocketClient implements AutoCloseable {
             return this;
         }
 
-        MessageEncoder rsv3(boolean value) {
+        private MessageEncoder rsv3(boolean value) {
             if (value) {
                 firstChar |= 0b00010000_00000000;
             } else {
@@ -902,12 +902,12 @@ public class WebSocketClient implements AutoCloseable {
             return this;
         }
 
-        MessageEncoder opcode(MessageOpcode value) {
+        private MessageEncoder opcode(MessageOpcode value) {
             firstChar = (char) ((firstChar & 0xF0FF) | (value.code << 8));
             return this;
         }
 
-        MessageEncoder payloadLen(long value) {
+        private MessageEncoder payloadLen(long value) {
             if (value < 0) {
                 throw new IllegalArgumentException("Negative: " + value);
             }
@@ -923,14 +923,14 @@ public class WebSocketClient implements AutoCloseable {
             return this;
         }
 
-        MessageEncoder mask(int value) {
+        private MessageEncoder mask(int value) {
             firstChar |= 0b00000000_10000000;
             maskingKey = value;
             mask = true;
             return this;
         }
 
-        MessageEncoder noMask() {
+        private MessageEncoder noMask() {
             firstChar &= (char) ~0b00000000_10000000;
             mask = false;
             return this;

@@ -9,7 +9,6 @@ import javax.net.ssl.SSLException;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +40,7 @@ public class SocketClient extends Socket implements AutoCloseable {
     final AsynchronousSocketChannel channel;
     final SocketConnection socketConnection;
     SocketTransport socketTransport;
-    SocketClient(AsynchronousSocketChannel channel, SocketConnection socketConnection, SocketTransport socketTransport) throws IOException {
+    private SocketClient(AsynchronousSocketChannel channel, SocketConnection socketConnection, SocketTransport socketTransport) throws IOException {
         this.channel = channel;
         this.socketConnection = socketConnection;
         this.socketTransport = socketTransport;
@@ -83,7 +82,18 @@ public class SocketClient extends Socket implements AutoCloseable {
     public CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {
         return socketConnection.connectAsync(address, timeout)
                 .thenComposeAsync(ignored -> socketTransport.handshake())
-                .orTimeout(timeout, TimeUnit.SECONDS);
+                .orTimeout(timeout, TimeUnit.SECONDS)
+                .exceptionallyComposeAsync(this::closeSocketOnError);
+    }
+
+    private CompletableFuture<Void> closeSocketOnError(Throwable error) {
+        try {
+            close();
+        }catch (Throwable ignored) {
+
+        }
+
+        return CompletableFuture.failedFuture(error);
     }
 
     @Override
@@ -94,10 +104,11 @@ public class SocketClient extends Socket implements AutoCloseable {
 
         return new InputStream() {
             @Override
-            public int read() throws EOFException {
+            public int read() throws IOException {
                 var data = new byte[1];
                 var result = read(data);
                 if(result == -1) {
+                    close();
                     throw new EOFException();
                 }
 
@@ -152,7 +163,7 @@ public class SocketClient extends Socket implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        socketTransport.close();
+        channel.close();
     }
 
     @Override
@@ -593,14 +604,6 @@ public class SocketClient extends Socket implements AutoCloseable {
             });
         }
 
-        public void close() throws IOException {
-            try {
-                channel.close();
-            }catch (AsynchronousCloseException ignored) {
-
-            }
-        }
-
         private static final class Plain extends SocketTransport {
             private Plain(AsynchronousSocketChannel channel) {
                 super(channel);
@@ -816,7 +819,6 @@ public class SocketClient extends Socket implements AutoCloseable {
                     }
 
                     if(bytesRead != 0) {
-                        System.out.println("READ SAFE " + bytesRead);
                         if(lastRead) {
                             buffer.flip();
                         }
@@ -859,8 +861,8 @@ public class SocketClient extends Socket implements AutoCloseable {
                     }
 
                     if(unwrapResult.getStatus() == Status.CLOSED) {
-                        close();
                         result.completeExceptionally(new EOFException());
+                        channel.close();
                         return;
                     }
 
@@ -946,7 +948,7 @@ public class SocketClient extends Socket implements AutoCloseable {
                     future.completeExceptionally(exc);
                 }
             });
-            return future.orTimeout(timeout, TimeUnit.SECONDS);
+            return future;
         }
 
         private static final class NoProxy extends SocketConnection {
@@ -978,10 +980,6 @@ public class SocketClient extends Socket implements AutoCloseable {
             }
 
             private CompletableFuture<Void> handleAuthentication(String response) {
-                if(response.isEmpty()) {
-                    return CompletableFuture.completedFuture(null); // Assume to be 200 status code, if it's not we can fail later
-                }
-
                 var responseParts = response.split(" ");
                 if(responseParts.length < 2) {
                     return CompletableFuture.failedFuture(new SocketException("HTTP : Cannot connect to proxy, malformed response: " + response));
@@ -1009,7 +1007,6 @@ public class SocketClient extends Socket implements AutoCloseable {
                         return;
                     }
 
-                    buffer.flip();
                     var data = new byte[buffer.limit()];
                     buffer.get(data);
                     future.complete(new String(data));
