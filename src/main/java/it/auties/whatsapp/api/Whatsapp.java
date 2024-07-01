@@ -70,6 +70,7 @@ import it.auties.whatsapp.util.*;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -104,6 +105,16 @@ public class Whatsapp {
     // The instances are added and removed when the client connects/disconnects
     // This is to make sure that the instances remain in memory only as long as it's needed
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
+    private static final Method registerListenersMethod = getRegisterListenersMethod();
+
+    private static Method getRegisterListenersMethod() {
+        try {
+            var clazz = Class.forName(RegisterListenerProcessor.qualifiedClassName());
+            return clazz.getMethod(RegisterListenerProcessor.methodName(), Whatsapp.class);
+        }catch (ReflectiveOperationException exception) {
+            return null;
+        }
+    }
 
     static Optional<Whatsapp> getInstanceByUuid(UUID uuid) {
         return Optional.ofNullable(instances.get(uuid));
@@ -192,17 +203,13 @@ public class Whatsapp {
     }
 
     private void registerListenersAutomatically(Store store) {
-        if (!store.autodetectListeners()) {
+        if (!store.autodetectListeners() || registerListenersMethod == null) {
             return;
         }
 
         try {
-            var clazz = Class.forName(RegisterListenerProcessor.qualifiedClassName());
-            var method = clazz.getMethod(RegisterListenerProcessor.methodName(), Whatsapp.class);
-            method.invoke(null, this);
-        }catch (ClassNotFoundException exception) {
-            // Ignored, this can happen if the compilation environment didn't register the processor
-        }catch (ReflectiveOperationException exception) {
+            registerListenersMethod.invoke(null, this);
+        } catch (ReflectiveOperationException exception) {
             throw new RuntimeException("Cannot register listeners automatically", exception);
         }
     }
