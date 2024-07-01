@@ -1,7 +1,7 @@
 package it.auties.whatsapp.implementation;
 
-import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.exception.RequestException;
+import it.auties.whatsapp.io.BinaryEncoder;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Exceptions;
 

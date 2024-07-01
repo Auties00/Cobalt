@@ -3,7 +3,7 @@ package it.auties.whatsapp.registration.apns;
 import com.dd.plist.NSDictionary;
 import it.auties.whatsapp.crypto.Sha1;
 import it.auties.whatsapp.net.HttpClient;
-import it.auties.whatsapp.net.Socket;
+import it.auties.whatsapp.net.SocketClient;
 import it.auties.whatsapp.util.Bytes;
 
 import javax.net.ssl.SSLContext;
@@ -46,9 +46,9 @@ public class ApnsClient {
     private final KeyPair keyPair;
     private final Set<ApnsListener> listeners;
     private final List<ApnsPacket> unhandledPackets;
-    private final CompletableFuture<Void> loginFuture;
+    public final CompletableFuture<Void> loginFuture;
     private final ScheduledExecutorService pingExecutor;
-    private Socket socket;
+    private SocketClient socket;
     private byte[] certificate;
     private byte[] authToken;
     private boolean disconnected;
@@ -191,7 +191,7 @@ public class ApnsClient {
             var sslEngine = sslContext.createSSLEngine(endpoint, PORT);
             sslEngine.setSSLParameters(sslParameters);
             sslEngine.setUseClientMode(true);
-            this.socket = Socket.newSSLClient(sslEngine, proxy);
+            this.socket = SocketClient.newSecureClient(sslEngine, proxy);
             return socket.connectAsync(proxy == null ? new InetSocketAddress(endpoint, PORT) : InetSocketAddress.createUnresolved(endpoint, PORT));
         }catch (IOException exception) {
             throw new UncheckedIOException(exception);
@@ -296,20 +296,29 @@ public class ApnsClient {
     private void readNextMessage() {
         socket.readFullyAsync(
                 1,
-                this::readNextMessage,
-                this::disconnect
+                this::readNextMessage
         );
     }
 
-    private void readNextMessage(ByteBuffer idBuffer) {
+    private void readNextMessage(ByteBuffer idBuffer, Throwable error) {
+        if(error != null) {
+            disconnect(error);
+            return;
+        }
+
         var id = Byte.toUnsignedInt(idBuffer.get());
         socket.readFullyAsync(
                 4,
-                lengthBuffer -> readNextMessage(id, lengthBuffer),
-                this::disconnect);
+                (lengthBuffer, lengthError) -> readNextMessage(id, lengthBuffer, lengthError)
+        );
     }
 
-    private void readNextMessage(int id, ByteBuffer lengthBuffer) {
+    private void readNextMessage(int id, ByteBuffer lengthBuffer, Throwable error) {
+        if(error != null) {
+            disconnect(error);
+            return;
+        }
+
         var length = Bytes.bytesToInt(lengthBuffer, 4);
         if (length <= 0) {
             disconnect(null);
@@ -318,12 +327,16 @@ public class ApnsClient {
 
         socket.readFullyAsync(
                 length,
-                (messageBuffer) -> handleMessage(id, messageBuffer),
-                this::disconnect
+                (messageBuffer, messageError) -> handleMessage(id, messageBuffer, messageError)
         );
     }
 
-    private void handleMessage(int id, ByteBuffer messageBuffer) {
+    private void handleMessage(int id, ByteBuffer messageBuffer, Throwable error) {
+        if(error != null) {
+            disconnect(error);
+            return;
+        }
+
         var fields = new HashMap<Integer, byte[]>();
         while (messageBuffer.remaining() >= 3) {
             var fieldId = Byte.toUnsignedInt(messageBuffer.get());

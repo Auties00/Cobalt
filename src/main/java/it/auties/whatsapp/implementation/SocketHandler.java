@@ -2,11 +2,11 @@ package it.auties.whatsapp.implementation;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.binary.BinaryDecoder;
-import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
+import it.auties.whatsapp.io.BinaryDecoder;
+import it.auties.whatsapp.io.BinaryEncoder;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
@@ -188,8 +188,8 @@ public class SocketHandler implements SocketListener {
     public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
             authHandler.login(message)
-                    .thenAcceptAsync(this::onConnectionCreated)
-                    .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
+                    .exceptionallyAsync(throwable -> { handleFailure(LOGIN, throwable); return false; })
+                    .thenAcceptAsync(this::onConnectionCreated);
             return;
         }
 
@@ -198,11 +198,7 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        var decipheredMessage = decipherMessage(message, readKey.get());
-        if(decipheredMessage == null) {
-            return;
-        }
-
+        var decipheredMessage = AesGcm.decrypt(keys.nextReadCounter(true), message, readKey.get());
         try(var decoder = new BinaryDecoder(decipheredMessage)) {
             var node = decoder.decode();
             onNodeReceived(node);
@@ -213,20 +209,13 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-    private void onConnectionCreated(Boolean result) {
-        if (result == null || !result) {
+    private void onConnectionCreated(boolean result) {
+        if (!result) {
+            handleFailure(LOGIN, new RuntimeException("Unknown error"));
             return;
         }
 
         setState(SocketState.CONNECTED);
-    }
-
-    private byte[] decipherMessage(byte[] message, byte[] readKey) {
-        try {
-            return AesGcm.decrypt(keys.nextReadCounter(true), message, readKey);
-        }  catch (Throwable throwable) {
-            return null;
-        }
     }
 
 
@@ -314,10 +303,7 @@ public class SocketHandler implements SocketListener {
                 }
 
                 if(error != null) {
-                    if(response) {
-                        request.future().complete(Node.of("error", Map.of("closed", true))); // Prevent NPEs all over the place
-                    }
-
+                    request.future().completeExceptionally(error);
                     return;
                 }
 

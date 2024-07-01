@@ -3,7 +3,7 @@ package it.auties.whatsapp.registration.gcm;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.crypto.HttpEce;
 import it.auties.whatsapp.net.HttpClient;
-import it.auties.whatsapp.net.Socket;
+import it.auties.whatsapp.net.SocketClient;
 import it.auties.whatsapp.registration.gcm.McsExchange.AppData;
 import it.auties.whatsapp.registration.gcm.McsExchange.DataMessageStanza;
 import it.auties.whatsapp.registration.gcm.McsExchange.LoginRequest.AuthService;
@@ -49,7 +49,7 @@ public class GcmClient {
     private final String appId;
     private final CompletableFuture<String> loginFuture;
     private final CompletableFuture<String> dataFuture;
-    private Socket socket;
+    private SocketClient socket;
     private long androidId;
     private long securityToken;
     private String token;
@@ -149,7 +149,7 @@ public class GcmClient {
             sslContext.init(null, null, null);
             var sslEngine = sslContext.createSSLEngine(TALK_SERVER_HOST, TALK_SERVER_PORT);
             sslEngine.setUseClientMode(true);
-            this.socket = Socket.newSSLClient(sslEngine, proxy);
+            this.socket = SocketClient.newSecureClient(sslEngine, proxy);
             return socket.connectAsync(proxy == null ? new InetSocketAddress(TALK_SERVER_HOST, TALK_SERVER_PORT) : InetSocketAddress.createUnresolved(TALK_SERVER_HOST, TALK_SERVER_PORT))
                     .thenRunAsync(this::onLoggedIn);
         } catch (Throwable throwable) {

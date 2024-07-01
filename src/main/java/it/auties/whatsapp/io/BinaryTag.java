@@ -1,4 +1,4 @@
-package it.auties.whatsapp.binary;
+package it.auties.whatsapp.io;
 
 import java.util.Arrays;
 

@@ -1,25 +1,20 @@
 package it.auties.whatsapp.implementation;
 
-import it.auties.whatsapp.net.Socket;
-import it.auties.whatsapp.util.Exceptions;
-import it.auties.whatsapp.util.Proxies;
-import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.net.SocketClient;
+import it.auties.whatsapp.net.WebSocketClient;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
-    public static final URI WEB_SOCKET_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
-    private static final String MOBILE_SOCKET_ENDPOINT = "g.whatsapp.net";
+    private static final String WEB_SOCKET_HOST = "web.whatsapp.com";
+    private static final int WEB_SOCKET_PORT = 443;
+    private static final String WEB_SOCKET_PATH = "/ws/chat";
+    private static final String MOBILE_SOCKET_HOST = "g.whatsapp.net";
     private static final int MOBILE_SOCKET_PORT = 443;
     private static final int MESSAGE_LENGTH = 3;
 
@@ -47,121 +42,78 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         return new RawSocketSession(proxy);
     }
 
-    public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
-        private WebSocket session;
-        private byte[] message;
-        private int messageOffset;
+    public static final class WebSocketSession extends SocketSession implements WebSocketClient.Listener {
+        private WebSocketClient webSocket;
 
         WebSocketSession(URI proxy) {
             super(proxy);
         }
 
-        @SuppressWarnings("resource") // Not needed
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
-            if (session != null) {
+            if (webSocket != null) {
                 return CompletableFuture.completedFuture(null);
             }
 
             super.connect(listener);
-            var builder = HttpClient.newBuilder();
-            if(proxy != null) {
-                Validate.isTrue(Objects.equals(proxy.getScheme(), "http") || Objects.equals(proxy.getScheme(), "https"),
-                        "Only HTTP(S) proxies are supported on the web api");
-                builder.proxy(Proxies.toProxySelector(proxy));
-                builder.authenticator(Proxies.toAuthenticator(proxy));
+            try {
+                var sslContext = SSLContext.getInstance("TLSv1.3");
+                sslContext.init(null, null, null);
+                var sslEngine = sslContext.createSSLEngine(WEB_SOCKET_HOST, WEB_SOCKET_PORT);
+                sslEngine.setUseClientMode(true);
+                this.webSocket = WebSocketClient.newSecureClient(sslEngine, proxy);
+                var endpoint = proxy != null ? InetSocketAddress.createUnresolved(WEB_SOCKET_HOST, WEB_SOCKET_PORT) : new InetSocketAddress(WEB_SOCKET_HOST, WEB_SOCKET_PORT);
+                return webSocket.connectAsync(endpoint, WEB_SOCKET_PATH).thenRunAsync(() -> {
+                    webSocket.listen(this);
+                    listener.onOpen(this);
+                });
+            }catch (Throwable throwable) {
+                return CompletableFuture.failedFuture(throwable);
             }
-            return builder.build()
-                    .newWebSocketBuilder()
-                    .buildAsync(WEB_SOCKET_ENDPOINT, this)
-                    .thenAcceptAsync(webSocket -> {
-                        this.session = webSocket;
-                        listener.onOpen(this);
-                    })
-                    .exceptionallyAsync(throwable -> {
-                        if(throwable instanceof CompletionException && throwable.getCause() instanceof ConnectException) {
-                            throw new RuntimeException("Cannot connect to Whatsapp: check your connection and whether it's available in your country");
-                        }
-
-                        Exceptions.rethrow(throwable);
-                        return null;
-                    });
         }
 
         @Override
         void disconnect() {
-            if (session == null) {
+            if (webSocket == null) {
                 return;
             }
 
-            session.sendClose(WebSocket.NORMAL_CLOSURE, "");
+            try {
+                webSocket.close();
+            }catch (IOException exception) {
+                listener.onError(exception);
+            }
         }
 
         @Override
         public CompletableFuture<?> sendBinary(byte[] bytes) {
-            if (session == null) {
+            if (webSocket == null) {
                 return CompletableFuture.completedFuture(null);
             }
 
-            return session.sendBinary(ByteBuffer.wrap(bytes), true);
+            return webSocket.sendBinary(ByteBuffer.wrap(bytes));
         }
 
         @Override
-        public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-            message = null;
+        public void onClose(int statusCode, String reason) {
             listener.onClose();
-            session = null;
-            return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+            this.webSocket = null;
         }
 
         @Override
-        public void onError(WebSocket webSocket, Throwable error) {
-            listener.onError(error);
-        }
-
-        @Override
-        public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
-            if (message == null) {
-                var length = (data.get() << 16) | Short.toUnsignedInt(data.getShort());
-                if(length < 0) {
-                    return WebSocket.Listener.super.onBinary(webSocket, data, last);
-                }
-
-                this.message = new byte[length];
-                this.messageOffset = 0;
-            }
-
-            var currentDataLength = data.remaining();
-            var remainingDataLength = message.length - messageOffset;
-            var actualDataLength = Math.min(currentDataLength, remainingDataLength);
-            data.get(message, messageOffset, actualDataLength);
-            messageOffset += actualDataLength;
-            if (messageOffset != message.length) {
-                return WebSocket.Listener.super.onBinary(webSocket, data, last);
-            }
-
-            notifyMessage();
-            if(remainingDataLength - currentDataLength != 0) {
-                return onBinary(webSocket, data, true);
-            }
-
-
-            return WebSocket.Listener.super.onBinary(webSocket, data, last);
-        }
-
-        private void notifyMessage() {
+        public void onBinary(ByteBuffer data) {
             try {
+                var message = new byte[data.remaining()];
+                data.get(message);
                 listener.onMessage(message);
             } catch (Throwable throwable) {
                 listener.onError(throwable);
-            }finally {
-                this.message = null;
             }
         }
     }
 
     static final class RawSocketSession extends SocketSession {
-        private volatile Socket socket;
+        private volatile SocketClient socket;
 
         RawSocketSession(URI proxy) {
             super(proxy);
@@ -175,8 +127,8 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
             super.connect(listener);
             try {
-                this.socket = Socket.newPlainClient(proxy);
-                var address = proxy != null ? InetSocketAddress.createUnresolved(MOBILE_SOCKET_ENDPOINT, MOBILE_SOCKET_PORT) : new InetSocketAddress(MOBILE_SOCKET_ENDPOINT, MOBILE_SOCKET_PORT);
+                this.socket = SocketClient.newPlainClient(proxy);
+                var address = proxy != null ? InetSocketAddress.createUnresolved(MOBILE_SOCKET_HOST, MOBILE_SOCKET_PORT) : new InetSocketAddress(MOBILE_SOCKET_HOST, MOBILE_SOCKET_PORT);
                 return socket.connectAsync(address).thenRunAsync(() -> {
                     listener.onOpen(RawSocketSession.this);
                     notifyNextMessage();
@@ -193,12 +145,16 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
             socket.readFullyAsync(
                     MESSAGE_LENGTH,
-                    this::readNextMessageLength,
-                    (error) -> disconnect()
+                    this::readNextMessageLength
             );
         }
 
-        private void readNextMessageLength(ByteBuffer lengthBuffer) {
+        private void readNextMessageLength(ByteBuffer lengthBuffer, Throwable error) {
+            if(error != null) {
+                disconnect();
+                return;
+            }
+
             var messageLength = (lengthBuffer.get() << 16) | ((lengthBuffer.get() & 0xFF) << 8) | (lengthBuffer.get() & 0xFF);
             if(messageLength < 0) {
                 disconnect();
@@ -207,12 +163,16 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
             socket.readFullyAsync(
                     messageLength,
-                    this::notifyNextMessage,
-                    (error) -> disconnect()
+                    this::notifyNextMessage
             );
         }
 
-        private void notifyNextMessage(ByteBuffer messageBuffer) {
+        private void notifyNextMessage(ByteBuffer messageBuffer, Throwable error) {
+            if(error != null) {
+                disconnect();
+                return;
+            }
+
             try {
                 listener.onMessage(messageBuffer.array());
             }catch (Throwable throwable) {

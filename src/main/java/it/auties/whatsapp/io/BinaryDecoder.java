@@ -1,4 +1,4 @@
-package it.auties.whatsapp.binary;
+package it.auties.whatsapp.io;
 
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidServer;
@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static it.auties.whatsapp.binary.BinaryTag.*;
+import static it.auties.whatsapp.io.BinaryTag.*;
 
 public final class BinaryDecoder implements AutoCloseable {
     private final DataInputStream dataInputStream;

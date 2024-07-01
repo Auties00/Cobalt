@@ -1,11 +1,11 @@
 package it.auties.whatsapp.implementation;
 
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.binary.BinaryTokens;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Sha256;
+import it.auties.whatsapp.io.BinaryTokens;
 import it.auties.whatsapp.util.Bytes;
 
 import java.nio.charset.StandardCharsets;
