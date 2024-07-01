@@ -13,6 +13,7 @@ import it.auties.whatsapp.util.Validate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -112,11 +113,13 @@ public record SessionBuilder(SessionAddress address, Keys keys) {
         }
         var preKeyPair = keys.findPreKeyById(message.preKeyId())
                 .orElse(null);
+        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
+                .orElseThrow(() -> new NoSuchElementException("Cannot find signed pre key with id %s".formatted(message.signedPreKeyId())));
         session.closeCurrentState();
         var nextState = createState(
                 false,
                 preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
-                keys.signedKeyPair().toGenericKeyPair(),
+                signedPreKeyPair.toGenericKeyPair(),
                 message.identityKey(),
                 message.baseKey(),
                 null,

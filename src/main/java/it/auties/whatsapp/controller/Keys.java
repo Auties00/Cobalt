@@ -196,7 +196,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
-        this.registrationId = Objects.requireNonNullElseGet(registrationId, Keys::randomRegistrationId);
+        this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
         this.ephemeralKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalKeyPair::random);
         this.identityKeyPair = Objects.requireNonNull(identityKeyPair, "Missing identity keypair");
@@ -233,10 +233,6 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
                 .identityKeyPair(SignalKeyPair.random())
                 .identityId(Bytes.random(16))
                 .build();
-    }
-
-    public static int randomRegistrationId() {
-        return ThreadLocalRandom.current().nextInt(16380) + 1;
     }
 
     /**
@@ -288,6 +284,17 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      */
     public Optional<Session> findSessionByAddress(SessionAddress address) {
         return Optional.ofNullable(sessions.get(address));
+    }
+
+    /**
+     * Queries the trusted key that matches {@code id}
+     *
+     * @param id the id to search
+     * @return a non-null signed key pair
+     * @throws IllegalArgumentException if no element can be found
+     */
+    public Optional<SignalSignedKeyPair> findSignedKeyPairById(int id) {
+        return id == signedKeyPair.id() ? Optional.of(signedKeyPair) : Optional.empty();
     }
 
     /**

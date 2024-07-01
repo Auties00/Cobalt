@@ -102,7 +102,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
         }
 
         var uuid = UUID.randomUUID();
-        var registrationId = Keys.randomRegistrationId();
+        var registrationId = sixParts.registrationId();
         var identityKeyPair = sixParts.identityKeyPair();
         var signature = Curve25519.sign(identityKeyPair.privateKey(), identityKeyPair.publicKey(), true);
         var signedKeyPair = new SignalSignedKeyPair(registrationId, identityKeyPair, signature);
