@@ -113,13 +113,13 @@ public record SessionBuilder(SessionAddress address, Keys keys) {
         }
         var preKeyPair = keys.findPreKeyById(message.preKeyId())
                 .orElse(null);
-        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
-                .orElseThrow(() -> new NoSuchElementException("Cannot find signed pre key with id %s".formatted(message.signedPreKeyId())));
+        var signedKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
+                .orElseThrow(() -> new NoSuchElementException("Cannot find signed key with id %s".formatted(message.signedPreKeyId())));
         session.closeCurrentState();
         var nextState = createState(
                 false,
                 preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
-                signedPreKeyPair.toGenericKeyPair(),
+                signedKeyPair.toGenericKeyPair(),
                 message.identityKey(),
                 message.baseKey(),
                 null,

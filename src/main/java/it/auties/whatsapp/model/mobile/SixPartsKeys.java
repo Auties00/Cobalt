@@ -9,8 +9,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, SignalKeyPair identityKeyPair, byte[] identityId) {
-    private static final int REGISTRATION_ID = 8191;
-
     public static SixPartsKeys of(String sixParts) {
         Objects.requireNonNull(sixParts, "Invalid six parts");
         var parts = sixParts.trim().split(",", 6);
@@ -24,10 +22,6 @@ public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, 
         var noiseKeyPair = new SignalKeyPair(noisePublicKey, noisePrivateKey);
         var identityKeyPair = new SignalKeyPair(identityPublicKey, identityPrivateKey);
         return new SixPartsKeys(phoneNumber, noiseKeyPair, identityKeyPair, identityId);
-    }
-
-    public int registrationId() {
-        return REGISTRATION_ID;
     }
 
     @Override

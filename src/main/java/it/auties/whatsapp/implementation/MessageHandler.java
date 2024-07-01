@@ -67,10 +67,12 @@ import static it.auties.whatsapp.util.SignalConstants.*;
 
 class MessageHandler {
     private static final int HISTORY_SYNC_TIMEOUT = 25;
+    private static final int MAX_MESSAGE_RETRIES = 5;
 
     private final SocketHandler socketHandler;
     private final Map<Jid, List<GroupPastParticipant>> pastParticipantsQueue;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
+    private final Map<String, Integer> retries;
     private final Set<Jid> historyCache;
     private final EnumSet<Type> historySyncTypes;
     private final ReentrantLock lock;
@@ -83,6 +85,7 @@ class MessageHandler {
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.historySyncTypes = EnumSet.noneOf(Type.class);
         this.lock = new ReentrantLock(true);
+        this.retries = new ConcurrentHashMap<>();
     }
 
     protected CompletableFuture<Void> encode(MessageSendRequest request) {
@@ -850,7 +853,7 @@ class MessageHandler {
 
             newsletter.get().addMessage(result.get());
             if(notify) {
-                socketHandler.onNewsletterMessage(result.get());
+                socketHandler.onNewMessage(result.get());
             }
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
@@ -948,57 +951,68 @@ class MessageHandler {
             }
             var key = keyBuilder.id(id).build();
             if (Objects.equals(key.senderJid().orElse(null), socketHandler.store().jid().orElse(null))) {
-                sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+                sendEncMessageSuccessReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
                 return;
             }
 
-            var messageContainer = decodeChatMessageContainer(infoNode, messageNode, key, id, from, participant);
+            var messageContainer = decodeChatMessageContainer(messageNode, from, participant);
+            if(messageContainer.hasError()) {
+                sendEncMessageRetryReceipt(infoNode, key, timestamp, messageContainer.error());
+                return;
+            }
+
             var info = messageBuilder.key(key)
                     .broadcast(key.chatJid().hasServer(JidServer.BROADCAST))
                     .pushName(pushName)
                     .status(MessageStatus.DELIVERED)
                     .businessVerifiedName(businessName)
                     .timestampSeconds(timestamp)
-                    .message(messageContainer)
+                    .message(messageContainer.message())
                     .build();
             attributeMessageReceipt(info);
             attributeChatMessage(info);
             saveMessage(info, notify);
             socketHandler.onReply(info);
-            sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
+            sendEncMessageSuccessReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
-        } finally {
+        }finally {
             lock.unlock();
         }
     }
 
-    private MessageContainer decodeChatMessageContainer(Node infoNode, Node messageNode, ChatMessageKey key, String id, Jid from, Jid participant) {
-        if(messageNode == null) {
-            return MessageContainer.empty();
+    private void sendEncMessageRetryReceipt(Node infoNode, ChatMessageKey key, long timestamp, Throwable error) {
+        socketHandler.sendMessageAck(key.chatJid(), infoNode).thenComposeAsync(ignored -> {
+            var counter = retries.getOrDefault(key.id(), 0);
+            if(counter >= MAX_MESSAGE_RETRIES) {
+                socketHandler.handleFailure(MESSAGE, error);
+                return CompletableFuture.completedFuture(null);
+            }
+
+            retries.put(key.id(), counter + 1);
+            return socketHandler.sendRetryReceipt(timestamp, key.chatJid(), key.id(), 1);
+        });
+    }
+
+    private MessageDecodeResult decodeChatMessageContainer(Node messageNode, Jid from, Jid participant) {
+        if (messageNode == null) {
+            return new MessageDecodeResult(null, new RuntimeException("Message is not available"));
         }
 
         var type = messageNode.attributes().getRequiredString("type");
         var encodedMessage = messageNode.contentAsBytes().orElse(null);
-        var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
-        if (decodedMessage.hasError()) {
-            socketHandler.handleFailure(MESSAGE, new RuntimeException("Cannot decode message(id: %s, from: %s): %s".formatted(id, from, decodedMessage.error().getMessage())));
-            sendEncMessageReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
-            return MessageContainer.empty();
-        }
-
-        return Bytes.bytesToMessage(decodedMessage.message()).unbox();
+        return decodeMessageBytes(type, encodedMessage, from, participant);
     }
 
-    private void sendEncMessageReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {
-        var participant = fromMe && senderJid == null ? chatJid : senderJid;
-        var category = infoNode.attributes().getString("category");
-        var receiptType = getReceiptType(category, fromMe);
+    private void sendEncMessageSuccessReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {
         socketHandler.sendMessageAck(chatJid, infoNode).thenComposeAsync(ignored -> {
             if(!socketHandler.store().automaticMessageReceipts()) {
                 return CompletableFuture.completedFuture(null);
             }
 
+            var participant = fromMe && senderJid == null ? chatJid : senderJid;
+            var category = infoNode.attributes().getString("category");
+            var receiptType = getReceiptType(category, fromMe);
             return socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType);
         });
     }
@@ -1047,7 +1061,9 @@ class MessageHandler {
                 }
                 default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
             };
-            return new MessageDecodeResult(result, null);
+            var message = Bytes.bytesToMessage(result)
+                    .unbox();
+            return new MessageDecodeResult(message, null);
         } catch (Throwable throwable) {
             return new MessageDecodeResult(null, throwable);
         }
@@ -1482,7 +1498,7 @@ class MessageHandler {
         historySyncTypes.clear();
     }
 
-    private record MessageDecodeResult(byte[] message, Throwable error) {
+    private record MessageDecodeResult(MessageContainer message, Throwable error) {
         public boolean hasError() {
             return error != null;
         }

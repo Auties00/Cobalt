@@ -14,7 +14,10 @@ import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.*;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
+import it.auties.whatsapp.model.info.MessageIndexInfo;
+import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
@@ -726,6 +729,24 @@ public class SocketHandler implements SocketListener {
         return sendQuery(null, to, method, category, null, body);
     }
 
+    public CompletableFuture<Void> sendRetryReceipt(long nodeTimestamp, Jid sender, String messageId, int retryCount) {
+        var retryAttributes = Attributes.of()
+                .put("count", 1)
+                .put("id", messageId)
+                .put("t", nodeTimestamp)
+                .put("v", 1)
+                .toMap();
+        var retryNode = Node.of("retry", retryAttributes);
+        var registrationNode = Node.of("registration", keys.encodedRegistrationId());
+        var receiptAttributes = Attributes.of()
+                .put("id", messageId)
+                .put("type", "retry")
+                .put("to", sender.withAgent(null))
+                .toMap();
+        var receipt = Node.of("receipt", receiptAttributes, retryNode, registrationNode);
+        return sendNodeWithNoResponse(receipt);
+    }
+
     public CompletableFuture<Void> sendReceipt(Jid jid, Jid participant, List<String> messages, String type) {
         if (messages.isEmpty()) {
             return CompletableFuture.completedFuture(null);
@@ -785,7 +806,6 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-
     protected void onMessageStatus(MessageInfo message) {
         callListenersAsync(listener -> {
             listener.onMessageStatus(whatsapp, message);
@@ -808,7 +828,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onNewMessage(ChatMessageInfo info) {
+    protected void onNewMessage(MessageInfo info) {
         callListenersAsync(listener -> {
             listener.onNewMessage(whatsapp, info);
             listener.onNewMessage(info);
@@ -909,13 +929,6 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onNewsletterMessage(NewsletterMessageInfo messageInfo) {
-        callListenersAsync(listener -> {
-            listener.onNewMessage(whatsapp, messageInfo);
-            listener.onNewMessage(messageInfo);
-        });
-    }
-
     protected void onStatus() {
         callListenersAsync(listener -> {
             listener.onStatus(whatsapp, store().status());
@@ -971,14 +984,12 @@ public class SocketHandler implements SocketListener {
     }
 
     public void onUserPictureChanged(URI newPicture, URI oldPicture) {
-        callListenersAsync(listener -> {
-            store().jid()
-                    .flatMap(store()::findContactByJid)
-                    .ifPresent(selfJid -> {
-                        listener.onProfilePictureChanged(whatsapp, selfJid);
-                        listener.onProfilePictureChanged(selfJid);
-                    });
-        });
+        callListenersAsync(listener -> store().jid()
+                .flatMap(store()::findContactByJid)
+                .ifPresent(selfJid -> {
+                    listener.onProfilePictureChanged(whatsapp, selfJid);
+                    listener.onProfilePictureChanged(selfJid);
+                }));
     }
 
     public void onUserChanged(String newName, String oldName) {
@@ -1054,8 +1065,8 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void querySessionsForcefully(Jid jid) {
-        messageHandler.querySessions(List.of(jid), true);
+    protected CompletableFuture<Void> querySessionsForcefully(Jid jid) {
+        return messageHandler.querySessions(List.of(jid), true);
     }
 
     private void dispose() {

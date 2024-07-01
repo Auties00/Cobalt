@@ -1,10 +1,11 @@
 package it.auties.whatsapp.api;
 
-import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.controller.*;
+import it.auties.whatsapp.controller.ControllerSerializer;
+import it.auties.whatsapp.controller.KeysBuilder;
+import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.controller.StoreKeysPair;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
-import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 
 import java.util.List;
 import java.util.Objects;
@@ -102,17 +103,11 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
         }
 
         var uuid = UUID.randomUUID();
-        var registrationId = sixParts.registrationId();
-        var identityKeyPair = sixParts.identityKeyPair();
-        var signature = Curve25519.sign(identityKeyPair.privateKey(), identityKeyPair.publicKey(), true);
-        var signedKeyPair = new SignalSignedKeyPair(registrationId, identityKeyPair, signature);
         var keys = new KeysBuilder()
                 .uuid(uuid)
                 .phoneNumber(sixParts.phoneNumber())
-                .registrationId(registrationId)
                 .noiseKeyPair(sixParts.noiseKeyPair())
-                .identityKeyPair(identityKeyPair)
-                .signedKeyPair(signedKeyPair)
+                .identityKeyPair(sixParts.identityKeyPair())
                 .identityId(sixParts.identityId())
                 .registered(true)
                 .clientType(ClientType.MOBILE)

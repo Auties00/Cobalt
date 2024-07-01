@@ -78,7 +78,7 @@ class StreamHandler {
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
     private static final int PING_INTERVAL = 20;
-    private static final int MAX_ATTEMPTS = 5;
+    private static final int MAX_MESSAGE_RETRIES = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
     private static final byte[][] CALL_RELAY = new byte[][]{
             new byte[]{-105, 99, -47, -29, 13, -106},
@@ -213,31 +213,31 @@ class StreamHandler {
         });
 
         message.setStatus(status);
-        if (Objects.equals(type.orElse(null), "retry")) {
-            sendMessageRetry(message);
+        if (!Objects.equals(type.orElse(null), "retry")) {
+            return;
         }
+
+        acceptMessageRetry(message);
     }
 
-    private void sendMessageRetry(ChatMessageInfo message) {
+    private void acceptMessageRetry(ChatMessageInfo message) {
         if (!message.fromMe()) {
             return;
         }
 
         var attempts = retries.getOrDefault(message.id(), 0);
-        if (attempts > MAX_ATTEMPTS) {
+        if (attempts > MAX_MESSAGE_RETRIES) {
             return;
         }
 
-        try {
+        socketHandler.querySessionsForcefully(message.senderJid()).whenCompleteAsync((result, error) -> {
             var all = message.senderJid().device() == 0;
-            socketHandler.querySessionsForcefully(message.senderJid());
             message.chat().ifPresent(Chat::clearParticipantsPreKeys);
             var recipients = all ? null : Set.of(message.senderJid());
             var request = new MessageSendRequest.Chat(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
-        } finally {
             retries.put(message.id(), attempts + 1);
-        }
+        });
     }
 
     private void updateReceipt(MessageStatus status, Chat chat, Contact participant, ChatMessageInfo message) {
@@ -1374,7 +1374,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
 
-        if (tries >= MAX_ATTEMPTS) {
+        if (tries >= MAX_MESSAGE_RETRIES) {
             socketHandler.store().setMediaConnection(null);
             socketHandler.handleFailure(MEDIA_CONNECTION, error);
             return CompletableFuture.completedFuture(null);
@@ -1431,7 +1431,8 @@ class StreamHandler {
                 Node.of("registration", socketHandler.keys().encodedRegistrationId()),
                 Node.of("type", KEY_BUNDLE_TYPE),
                 Node.of("identity", socketHandler.keys().identityKeyPair().publicKey()),
-                Node.of("list", preKeys), socketHandler.keys().signedKeyPair().toNode()
+                Node.of("list", preKeys),
+                socketHandler.keys().signedKeyPair().toNode()
         );
     }
 
@@ -1521,6 +1522,7 @@ class StreamHandler {
             return;
         }
         var account = SignedDeviceIdentitySpec.decode(advIdentity.details());
+        socketHandler.keys().setCompanionIdentity(account);
         var message = Bytes.concat(
                 ACCOUNT_SIGNATURE_HEADER,
                 account.details(),

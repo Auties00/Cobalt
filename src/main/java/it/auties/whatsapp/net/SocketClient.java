@@ -547,11 +547,26 @@ public class SocketClient extends Socket implements AutoCloseable {
             channel.read(buffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer bytesRead, Object attachment) {
+                    if(bytesRead == -1) {
+                        notifyClose();
+                        return;
+                    }
+
                     if(lastRead) {
                         buffer.flip();
                     }
 
                     result.complete(bytesRead);
+                }
+
+                private void notifyClose() {
+                    try {
+                        channel.close();
+                    } catch (IOException ignored) {
+
+                    }finally {
+                        result.completeExceptionally(new EOFException());
+                    }
                 }
 
                 @Override
@@ -1002,6 +1017,7 @@ public class SocketClient extends Socket implements AutoCloseable {
                 var future = new CompletableFuture<String>();
                 var buffer = ByteBuffer.allocate(readReceiveBufferSize());
                 socketTransport.read(buffer, true, 0, (Response.Callback<Integer>) (result, error) -> {
+                    System.out.println(result);
                     if (error != null) {
                         future.completeExceptionally(error);
                         return;

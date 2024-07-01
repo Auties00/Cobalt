@@ -183,12 +183,12 @@ public record SessionCipher(SessionAddress address, Keys keys) {
     }
 
     private Session loadSession() {
-        return loadSession(() -> keys.findSessionByAddress(new SessionAddress(address.name(), 0)));
+        return loadSession(null);
     }
 
     private Session loadSession(Supplier<Optional<Session>> defaultSupplier) {
         return keys.findSessionByAddress(address)
-                .or(defaultSupplier)
+                .or(defaultSupplier == null ? Optional::empty : defaultSupplier)
                 .orElseThrow(() -> new NoSuchElementException("Missing session for: %s".formatted(address)));
     }
 }
