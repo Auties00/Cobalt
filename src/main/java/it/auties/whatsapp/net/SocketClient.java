@@ -529,7 +529,7 @@ public class SocketClient extends Socket implements AutoCloseable {
         socketTransport.read(buffer, true, callback);
     }
 
-    static sealed abstract class SocketTransport {
+    private static sealed abstract class SocketTransport {
         final AsynchronousSocketChannel channel;
         private SocketTransport(AsynchronousSocketChannel channel) {
             this.channel = channel;
@@ -638,24 +638,15 @@ public class SocketClient extends Socket implements AutoCloseable {
         private static final class Secure extends SocketTransport {
             private final AtomicBoolean sslHandshakeCompleted;
             private final Object sslHandshakeLock;
-            private SSLEngine sslEngine;
-            private ByteBuffer sslReadBuffer;
-            private ByteBuffer sslWriteBuffer;
-            private ByteBuffer sslOutputBuffer;
+            private final SSLEngine sslEngine;
+            private final ByteBuffer sslReadBuffer;
+            private final ByteBuffer sslWriteBuffer;
+            private final ByteBuffer sslOutputBuffer;
             private Response.Future<Void> sslHandshake;
             private Secure(AsynchronousSocketChannel channel, SSLEngine sslEngine) {
                 super(channel);
                 this.sslHandshakeCompleted = new AtomicBoolean();
                 this.sslHandshakeLock = new Object();
-                initSslEngine(sslEngine);
-            }
-
-            @Override
-            boolean isSecure() {
-                return true;
-            }
-
-            private void initSslEngine(SSLEngine sslEngine) {
                 sslHandshakeCompleted.set(sslEngine == null);
                 this.sslEngine = sslEngine;
                 if(sslEngine != null) {
@@ -668,6 +659,11 @@ public class SocketClient extends Socket implements AutoCloseable {
                     this.sslWriteBuffer = null;
                     this.sslOutputBuffer = null;
                 }
+            }
+
+            @Override
+            boolean isSecure() {
+                return true;
             }
 
             @Override
@@ -712,8 +708,9 @@ public class SocketClient extends Socket implements AutoCloseable {
             }
 
             private void finishSslHandshake() {
-                sslHandshake.complete(null);
                 sslHandshakeCompleted.set(true);
+                sslOutputBuffer.clear();
+                sslHandshake.complete(null);
             }
 
             private void doSslHandshakeTasks() {
@@ -804,10 +801,17 @@ public class SocketClient extends Socket implements AutoCloseable {
                         return readPlain(buffer, lastRead, result);
                     }
 
-                    if (sslReadBuffer.hasRemaining()) {
-                        decodeSecureMessage(buffer, lastRead, false, result);
+                    var bytesCopied = readFromBufferedOutput(buffer);
+                    if(bytesCopied != 0) {
+                        if(lastRead) {
+                            buffer.flip();
+                        }
+
+                        result.complete(bytesCopied);
+                    }else if (sslReadBuffer.hasRemaining()) {
+                        decodeSslBuffer(buffer, lastRead, false, result);
                     }else {
-                        readSocket(buffer, lastRead, result);
+                        fillSslBuffer(buffer, lastRead, result);
                     }
 
                     return result;
@@ -817,7 +821,7 @@ public class SocketClient extends Socket implements AutoCloseable {
                 }
             }
 
-            private <R extends Response<Integer>> void readSocket(ByteBuffer buffer, boolean lastRead, R result) {
+            private <R extends Response<Integer>> void fillSslBuffer(ByteBuffer buffer, boolean lastRead, R result) {
                 sslReadBuffer.compact();
                 readPlain(sslReadBuffer, true, (Response.Callback<Integer>) (ignored, error) -> {
                     if (error != null) {
@@ -825,11 +829,11 @@ public class SocketClient extends Socket implements AutoCloseable {
                         return;
                     }
 
-                    decodeSecureMessage(buffer, lastRead, false, result);
+                    decodeSslBuffer(buffer, lastRead, false, result);
                 });
             }
 
-            private void decodeSecureMessage(ByteBuffer buffer, boolean lastRead, boolean throwOnOverflow, Response<Integer> result) {
+            private void decodeSslBuffer(ByteBuffer buffer, boolean lastRead, boolean throwOnOverflow, Response<Integer> result) {
                 try {
                     var unwrapResult = sslEngine.unwrap(sslReadBuffer, buffer);
                     switch (unwrapResult.getStatus()) {
@@ -844,38 +848,54 @@ public class SocketClient extends Socket implements AutoCloseable {
                                 read(buffer, lastRead , result);
                             }
                         }
-                        case BUFFER_UNDERFLOW -> readSocket(buffer, lastRead, result);
                         case BUFFER_OVERFLOW -> {
                             if(throwOnOverflow) {
                                 result.completeExceptionally(new IllegalStateException("SSL output buffer overflow"));
                                 return;
                             }
 
-                            sslOutputBuffer.clear();
-                            decodeSecureMessage(sslOutputBuffer, lastRead, true, (Response.Callback<Integer>) (bytesRead, error) -> {
+                            sslOutputBuffer.mark();
+                            decodeSslBuffer(sslOutputBuffer, lastRead, true, (Response.Callback<Integer>) (bytesRead, error) -> {
                                 if(error != null) {
                                     result.completeExceptionally(error);
                                     return;
                                 }
 
-                                var remaining = 0;
-                                while (buffer.hasRemaining() && sslOutputBuffer.hasRemaining()) {
-                                    buffer.put(sslOutputBuffer.get());
-                                    remaining++;
-                                }
-
+                                var bytesCopied = readFromBufferedOutput(buffer);
                                 if(lastRead) {
                                     buffer.flip();
                                 }
 
-                                result.complete(remaining);
+                                result.complete(bytesCopied);
                             });
                         }
+                        case BUFFER_UNDERFLOW -> fillSslBuffer(buffer, lastRead, result);
                         case CLOSED -> result.completeExceptionally(new EOFException());
                     }
                 }catch (Throwable throwable) {
                     result.completeExceptionally(throwable);
                 }
+            }
+
+            private int readFromBufferedOutput(ByteBuffer buffer) {
+                var writePosition = sslOutputBuffer.position();
+                if(writePosition == 0) {
+                    return 0;
+                }
+
+                var bytesRead = 0;
+                var writeLimit = sslOutputBuffer.limit();
+                sslOutputBuffer.limit(writePosition);
+                sslOutputBuffer.reset(); // Go back to last read position
+                while (buffer.hasRemaining() && sslOutputBuffer.hasRemaining()) {
+                    buffer.put(sslOutputBuffer.get());
+                    bytesRead++;
+                }
+
+                sslOutputBuffer.limit(writeLimit);
+                sslOutputBuffer.mark();
+                sslOutputBuffer.position(writePosition);
+                return bytesRead;
             }
 
             @Override
@@ -918,7 +938,7 @@ public class SocketClient extends Socket implements AutoCloseable {
         }
     }
 
-    sealed static abstract class SocketConnection {
+    private sealed static abstract class SocketConnection {
         final AsynchronousSocketChannel channel;
         final SocketTransport socketTransport;
         final URI proxy;

@@ -9,7 +9,7 @@ public sealed interface Response<V> {
                 try {
                     callback.onResult(result, null);
                 }catch (Throwable throwable) {
-                    // Do not propagate
+                    callback.onResult(null, throwable);
                 }
             }
             case Future<V> future -> future.complete(result);
