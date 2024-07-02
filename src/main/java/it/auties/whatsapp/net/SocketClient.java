@@ -801,15 +801,11 @@ public class SocketClient extends Socket implements AutoCloseable {
                         return readPlain(buffer, lastRead, result);
                     }
 
-                    var bytesCopied = readFromBufferedOutput(buffer);
+                    var bytesCopied = readFromBufferedOutput(buffer, lastRead);
                     if(bytesCopied != 0) {
-                        if(lastRead) {
-                            buffer.flip();
-                        }
-
                         result.complete(bytesCopied);
                     }else if (sslReadBuffer.hasRemaining()) {
-                        decodeSslBuffer(buffer, lastRead, false, result);
+                        decodeSslBuffer(buffer, lastRead, result);
                     }else {
                         fillSslBuffer(buffer, lastRead, result);
                     }
@@ -829,47 +825,25 @@ public class SocketClient extends Socket implements AutoCloseable {
                         return;
                     }
 
-                    decodeSslBuffer(buffer, lastRead, false, result);
+                    decodeSslBuffer(buffer, lastRead, result);
                 });
             }
 
-            private void decodeSslBuffer(ByteBuffer buffer, boolean lastRead, boolean throwOnOverflow, Response<Integer> result) {
+            private void decodeSslBuffer(ByteBuffer buffer, boolean lastRead, Response<Integer> result) {
                 try {
-                    var unwrapResult = sslEngine.unwrap(sslReadBuffer, buffer);
+                    var unwrapResult = sslEngine.unwrap(sslReadBuffer, sslOutputBuffer);
                     switch (unwrapResult.getStatus()) {
                         case OK -> {
-                            if(unwrapResult.bytesProduced() != 0) {
-                                if(lastRead) {
-                                    buffer.flip();
-                                }
-
-                                result.complete(unwrapResult.bytesProduced());
-                            }else {
+                            if (unwrapResult.bytesProduced() == 0) {
+                                sslOutputBuffer.mark();
                                 read(buffer, lastRead , result);
-                            }
-                        }
-                        case BUFFER_OVERFLOW -> {
-                            if(throwOnOverflow) {
-                                result.completeExceptionally(new IllegalStateException("SSL output buffer overflow"));
-                                return;
-                            }
-
-                            sslOutputBuffer.mark();
-                            decodeSslBuffer(sslOutputBuffer, lastRead, true, (Response.Callback<Integer>) (bytesRead, error) -> {
-                                if(error != null) {
-                                    result.completeExceptionally(error);
-                                    return;
-                                }
-
-                                var bytesCopied = readFromBufferedOutput(buffer);
-                                if(lastRead) {
-                                    buffer.flip();
-                                }
-
+                            } else {
+                                var bytesCopied = readFromBufferedOutput(buffer, lastRead);
                                 result.complete(bytesCopied);
-                            });
+                            }
                         }
                         case BUFFER_UNDERFLOW -> fillSslBuffer(buffer, lastRead, result);
+                        case BUFFER_OVERFLOW -> result.completeExceptionally(new IllegalStateException("SSL output buffer overflow"));
                         case CLOSED -> result.completeExceptionally(new EOFException());
                     }
                 }catch (Throwable throwable) {
@@ -877,7 +851,7 @@ public class SocketClient extends Socket implements AutoCloseable {
                 }
             }
 
-            private int readFromBufferedOutput(ByteBuffer buffer) {
+            private int readFromBufferedOutput(ByteBuffer buffer, boolean lastRead) {
                 var writePosition = sslOutputBuffer.position();
                 if(writePosition == 0) {
                     return 0;
@@ -892,9 +866,19 @@ public class SocketClient extends Socket implements AutoCloseable {
                     bytesRead++;
                 }
 
-                sslOutputBuffer.limit(writeLimit);
-                sslOutputBuffer.mark();
-                sslOutputBuffer.position(writePosition);
+                if(!sslOutputBuffer.hasRemaining()) {
+                    sslOutputBuffer.clear();
+                    sslOutputBuffer.mark();
+                }else {
+                    sslOutputBuffer.limit(writeLimit);
+                    sslOutputBuffer.mark();
+                    sslOutputBuffer.position(writePosition);
+                }
+
+                if(lastRead) {
+                    buffer.flip();
+                }
+
                 return bytesRead;
             }
 
