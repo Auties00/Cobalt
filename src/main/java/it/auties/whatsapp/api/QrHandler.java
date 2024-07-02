@@ -22,7 +22,6 @@ import static java.nio.file.Files.createTempFile;
 /**
  * This interface allows to consume a qr code and provides default common implementations to do so
  */
-@FunctionalInterface
 @SuppressWarnings("unused")
 public non-sealed interface QrHandler extends Consumer<String>, WebVerificationHandler {
     /**

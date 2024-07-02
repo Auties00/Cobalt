@@ -190,6 +190,26 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
     }
 
     /**
+     * Returns a new jid using with a different agent
+     *
+     * @param agent the new agent
+     * @return a non-null jid
+     */
+    public Jid withAgent(Integer agent) {
+        return new Jid(user(), server, device, agent);
+    }
+
+    /**
+     * Returns a new jid using with a different device
+     *
+     * @param device the new device
+     * @return a non-null jid
+     */
+    public Jid withDevice(Integer device) {
+        return new Jid(user(), server, device, agent);
+    }
+
+    /**
      * Converts this jid to a user jid
      *
      * @return a non-null jid

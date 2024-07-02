@@ -39,9 +39,6 @@ open module it.auties.cobalt {
     requires org.apache.httpcomponents.core5.httpcore5;
     requires org.apache.httpcomponents.core5.httpcore5.h2;
 
-    // Temporary web socket client
-    requires java.net.http;
-
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
     exports it.auties.whatsapp.model.action;

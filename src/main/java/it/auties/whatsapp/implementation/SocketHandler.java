@@ -2,11 +2,11 @@ package it.auties.whatsapp.implementation;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.binary.BinaryDecoder;
-import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
+import it.auties.whatsapp.io.BinaryDecoder;
+import it.auties.whatsapp.io.BinaryEncoder;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
@@ -14,7 +14,10 @@ import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.model.info.*;
+import it.auties.whatsapp.model.info.ChatMessageInfo;
+import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
+import it.auties.whatsapp.model.info.MessageIndexInfo;
+import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
@@ -188,8 +191,8 @@ public class SocketHandler implements SocketListener {
     public void onMessage(byte[] message) {
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
             authHandler.login(message)
-                    .thenAcceptAsync(this::onConnectionCreated)
-                    .exceptionallyAsync(throwable -> handleFailure(LOGIN, throwable));
+                    .exceptionallyAsync(throwable -> { handleFailure(LOGIN, throwable); return false; })
+                    .thenAcceptAsync(this::onConnectionCreated);
             return;
         }
 
@@ -198,11 +201,7 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        var decipheredMessage = decipherMessage(message, readKey.get());
-        if(decipheredMessage == null) {
-            return;
-        }
-
+        var decipheredMessage = AesGcm.decrypt(keys.nextReadCounter(true), message, readKey.get());
         try(var decoder = new BinaryDecoder(decipheredMessage)) {
             var node = decoder.decode();
             onNodeReceived(node);
@@ -213,20 +212,17 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-    private void onConnectionCreated(Boolean result) {
-        if (result == null || !result) {
+    private void onConnectionCreated(boolean result) {
+        if (result) {
+            setState(SocketState.CONNECTED);
             return;
         }
 
-        setState(SocketState.CONNECTED);
-    }
-
-    private byte[] decipherMessage(byte[] message, byte[] readKey) {
-        try {
-            return AesGcm.decrypt(keys.nextReadCounter(true), message, readKey);
-        }  catch (Throwable throwable) {
-            return null;
+        if (state == SocketState.RECONNECTING) {
+            return;
         }
+
+        handleFailure(LOGIN, new RuntimeException("Unknown error"));
     }
 
 
@@ -314,10 +310,7 @@ public class SocketHandler implements SocketListener {
                 }
 
                 if(error != null) {
-                    if(response) {
-                        request.future().complete(Node.of("error", Map.of("closed", true))); // Prevent NPEs all over the place
-                    }
-
+                    request.future().completeExceptionally(error);
                     return;
                 }
 
@@ -740,6 +733,24 @@ public class SocketHandler implements SocketListener {
         return sendQuery(null, to, method, category, null, body);
     }
 
+    public CompletableFuture<Void> sendRetryReceipt(long nodeTimestamp, Jid sender, String messageId, int retryCount) {
+        var retryAttributes = Attributes.of()
+                .put("count", 1)
+                .put("id", messageId)
+                .put("t", nodeTimestamp)
+                .put("v", 1)
+                .toMap();
+        var retryNode = Node.of("retry", retryAttributes);
+        var registrationNode = Node.of("registration", keys.encodedRegistrationId());
+        var receiptAttributes = Attributes.of()
+                .put("id", messageId)
+                .put("type", "retry")
+                .put("to", sender.withAgent(null))
+                .toMap();
+        var receipt = Node.of("receipt", receiptAttributes, retryNode, registrationNode);
+        return sendNodeWithNoResponse(receipt);
+    }
+
     public CompletableFuture<Void> sendReceipt(Jid jid, Jid participant, List<String> messages, String type) {
         if (messages.isEmpty()) {
             return CompletableFuture.completedFuture(null);
@@ -748,11 +759,11 @@ public class SocketHandler implements SocketListener {
         var attributes = Attributes.of()
                 .put("id", messages.getFirst())
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
-                .put("to", jid)
+                .put("to", jid.withAgent(null))
                 .put("type", type, Objects::nonNull);
         if (Objects.equals(type, "sender") && jid.hasServer(JidServer.WHATSAPP)) {
-            attributes.put("recipient", jid);
-            attributes.put("to", participant);
+            attributes.put("recipient", jid.withAgent(null));
+            attributes.put("to", participant.withAgent(null));
         }
 
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
@@ -799,7 +810,6 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-
     protected void onMessageStatus(MessageInfo message) {
         callListenersAsync(listener -> {
             listener.onMessageStatus(whatsapp, message);
@@ -822,7 +832,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onNewMessage(ChatMessageInfo info) {
+    protected void onNewMessage(MessageInfo info) {
         callListenersAsync(listener -> {
             listener.onNewMessage(whatsapp, info);
             listener.onNewMessage(info);
@@ -923,13 +933,6 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onNewsletterMessage(NewsletterMessageInfo messageInfo) {
-        callListenersAsync(listener -> {
-            listener.onNewMessage(whatsapp, messageInfo);
-            listener.onNewMessage(messageInfo);
-        });
-    }
-
     protected void onStatus() {
         callListenersAsync(listener -> {
             listener.onStatus(whatsapp, store().status());
@@ -985,14 +988,12 @@ public class SocketHandler implements SocketListener {
     }
 
     public void onUserPictureChanged(URI newPicture, URI oldPicture) {
-        callListenersAsync(listener -> {
-            store().jid()
-                    .flatMap(store()::findContactByJid)
-                    .ifPresent(selfJid -> {
-                        listener.onProfilePictureChanged(whatsapp, selfJid);
-                        listener.onProfilePictureChanged(selfJid);
-                    });
-        });
+        callListenersAsync(listener -> store().jid()
+                .flatMap(store()::findContactByJid)
+                .ifPresent(selfJid -> {
+                    listener.onProfilePictureChanged(whatsapp, selfJid);
+                    listener.onProfilePictureChanged(selfJid);
+                }));
     }
 
     public void onUserChanged(String newName, String oldName) {
@@ -1068,8 +1069,8 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void querySessionsForcefully(Jid jid) {
-        messageHandler.querySessions(List.of(jid), true);
+    protected CompletableFuture<Void> querySessionsForcefully(Jid jid) {
+        return messageHandler.querySessions(List.of(jid), true);
     }
 
     private void dispose() {

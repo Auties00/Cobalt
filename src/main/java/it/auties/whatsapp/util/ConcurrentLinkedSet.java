@@ -7,13 +7,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implements Deque<E> {
+public class ConcurrentLinkedSet<E> extends AbstractCollection<E> implements Set<E>, Deque<E> {
     private Node<E> head;
     private Node<E> tail;
     private final ReentrantLock lock;
     private final Set<Integer> hashes;
 
-    public ConcurrentLinkedHashedDequeue() {
+    public ConcurrentLinkedSet() {
         this.hashes = ConcurrentHashMap.newKeySet();
         this.lock = new ReentrantLock(true);
     }
@@ -57,7 +57,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
             tail = newNode;
             hashes.add(hash);
             return true;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -86,7 +86,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
             }
             head = newNode;
             hashes.add(hash);
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -115,7 +115,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
             }
 
             return false;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -123,10 +123,10 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
     @Override
     public boolean removeAll(Collection<?> collection) {
         try {
-            if(collection.isEmpty()) {
+            if (collection.isEmpty()) {
                 return true;
             }
-            
+
             lock.lock();
             var hashCodes = collection.stream()
                     .map(Objects::hashCode)
@@ -140,7 +140,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
                 node = node.next;
             }
             return hashCodes.isEmpty();
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -159,7 +159,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
                 node = node.next;
             }
             return false;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -168,20 +168,20 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
     public boolean removeIf(Predicate<? super E> filter) {
         try {
             lock.lock();
-        var node = tail;
-        while (node != null) {
-            if (filter.test(node.item)) {
-                var hash = Objects.hashCode(node.item);
-                removeNode(node, hash);
-                return true;
+            var node = tail;
+            while (node != null) {
+                if (filter.test(node.item)) {
+                    var hash = Objects.hashCode(node.item);
+                    removeNode(node, hash);
+                    return true;
+                }
+                node = node.prev;
             }
-            node = node.prev;
-        }
 
-        return false;
-    }finally {
-        lock.unlock();
-    }
+            return false;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -198,7 +198,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
                 node = node.prev;
             }
             return false;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -230,7 +230,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
             hashes.remove(Objects.hashCode(result));
             tail = tailItem.prev;
             return result;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -250,7 +250,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
                 node.next.prev = node.prev;
             }
             hashes.remove(hash);
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -277,7 +277,7 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
             hashes.remove(Objects.hashCode(result));
             head = head.next;
             return result;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -357,13 +357,13 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
     public E peek() {
         try {
             lock.lock();
-            if(head == null) {
+            if (head == null) {
                 return null;
             }
-            
+
             return head.item;
-        }finally {
-            lock.unlock();  
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -371,12 +371,12 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
     public E peekLast() {
         try {
             lock.lock();
-            if(tail == null) {
+            if (tail == null) {
                 return null;
             }
 
             return tail.item;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -385,12 +385,12 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
     public E getFirst() {
         try {
             lock.lock();
-            if(head == null) {
+            if (head == null) {
                 throw new NoSuchElementException();
             }
 
             return head.item;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -399,12 +399,12 @@ public class ConcurrentLinkedHashedDequeue<E> extends AbstractQueue<E> implement
     public E getLast() {
         try {
             lock.lock();
-            if(tail == null) {
+            if (tail == null) {
                 throw new NoSuchElementException();
             }
 
             return tail.item;
-        }finally {
+        } finally {
             lock.unlock();
         }
     }

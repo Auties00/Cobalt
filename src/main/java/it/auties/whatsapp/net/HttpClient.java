@@ -9,6 +9,7 @@ import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.URIScheme;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
@@ -20,9 +21,7 @@ import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.*;
@@ -44,7 +43,6 @@ public class HttpClient implements AutoCloseable {
     private static final String SSL_PARAMS_KEY = "ssl.params";
 
     final CloseableHttpClient httpClient;
-    final HttpsConnectionFactory httpsConnectionFactory;
     final URI proxy;
     public HttpClient() {
         this(null);
@@ -52,13 +50,12 @@ public class HttpClient implements AutoCloseable {
 
     public HttpClient(URI proxy) {
         this.proxy = proxy;
-        this.httpsConnectionFactory = new HttpsConnectionFactory();
         var socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register("http", new HttpConnectionFactory())
-                .register("https", httpsConnectionFactory)
+                .register(URIScheme.HTTP.id, new HttpConnectionFactory())
+                .register(URIScheme.HTTPS.id, new HttpsConnectionFactory())
                 .build();
         var connectionManager = new PoolingHttpClientConnectionManager(
-                socketFactoryRegistry,
+               socketFactoryRegistry,
                 PoolConcurrencyPolicy.STRICT,
                 PoolReusePolicy.LIFO,
                 TimeValue.NEG_ONE_MILLISECOND,
@@ -129,15 +126,12 @@ public class HttpClient implements AutoCloseable {
                     var contentType = Objects.requireNonNull(headers == null ? null : headers.get("Content-Type"), "Missing Content-Type header");
                     request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
                 }
+
                 var context = HttpCoreContext.create();
                 context.setAttribute(SSL_PARAMS_KEY, useSslParams);
                 context.setAttribute(PROXY_KEY, proxy);
                 return httpClient.execute(request, context, data -> data.getEntity().getContent().readAllBytes());
             }catch (Throwable throwable) {
-                if(throwable instanceof SSLHandshakeException && useSslParams) {
-                    httpsConnectionFactory.rotateSSL();
-                }
-
                 lastError = throwable;
             }
         }
@@ -163,7 +157,7 @@ public class HttpClient implements AutoCloseable {
         @Override
         public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return AsyncSocket.of(derivedProxy);
+            return SocketClient.newPlainClient(derivedProxy);
         }
 
         @Override
@@ -214,13 +208,9 @@ public class HttpClient implements AutoCloseable {
                 "TLS_EMPTY_RENEGOTIATION_INFO_SCSV"
         };
 
-        private SSLContext sslContext;
-        private SSLParameters sslParameters;
+        private final SSLContext sslContext;
+        private final SSLParameters sslParameters;
         private HttpsConnectionFactory() {
-            rotateSSL();
-        }
-
-        private void rotateSSL() {
             try {
                 var sslContext = SSLContext.getInstance("TLSv1.3");
                 sslContext.init(null, null, new SecureRandom());
@@ -241,7 +231,7 @@ public class HttpClient implements AutoCloseable {
         @Override
         public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
             var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return AsyncSocket.of(derivedProxy);
+            return SocketClient.newPlainClient(derivedProxy);
         }
 
         @Override
@@ -263,32 +253,28 @@ public class HttpClient implements AutoCloseable {
         }
 
         @Override
-        public Socket createLayeredSocket(Socket socket, String target, int port, HttpContext context) throws IOException {
+        public Socket createLayeredSocket(Socket socket, String target, int port, HttpContext context) {
             return createLayeredSocket(socket, target, port, null, context);
         }
 
         @Override
-        public Socket createLayeredSocket(Socket socket, String target, int port, Object attachment, HttpContext context) throws IOException {
-            var sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket(
-                    socket,
-                    target,
-                    port,
-                    true
-            );
+        public Socket createLayeredSocket(Socket socket, String target, int port, Object attachment, HttpContext context) {
+            var asyncSocket = (SocketClient) socket;
             var useSslParams = (boolean) context.getAttribute(SSL_PARAMS_KEY);
+            var sslEngine = sslContext.createSSLEngine(target, port);
             if(useSslParams) {
-                sslSocket.setSSLParameters(sslParameters);
+                sslEngine.setSSLParameters(sslParameters);
             }
-            sslSocket.setReuseAddress(false);
-            sslSocket.setKeepAlive(true);
-            sslSocket.startHandshake();
-            return sslSocket;
+            sslEngine.setUseClientMode(true);
+            asyncSocket.upgradeToSsl(sslEngine)
+                    .join(); // Await async handshake
+            return asyncSocket;
         }
     }
 
     private static class DummyDnsResolver implements DnsResolver {
         private static final DummyDnsResolver INSTANCE = new DummyDnsResolver();
-        public static DummyDnsResolver instance() {
+        private static DummyDnsResolver instance() {
             return INSTANCE;
         }
 

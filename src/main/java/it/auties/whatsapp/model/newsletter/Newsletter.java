@@ -8,7 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
-import it.auties.whatsapp.util.ConcurrentLinkedHashedDequeue;
+import it.auties.whatsapp.util.ConcurrentLinkedSet;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +25,7 @@ public final class Newsletter implements JidProvider, ProtobufMessage {
     @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
     private final NewsletterViewerMetadata viewerMetadata;
     @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-    private final ConcurrentLinkedHashedDequeue<NewsletterMessageInfo> messages;
+    private final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     Newsletter(
@@ -38,13 +38,13 @@ public final class Newsletter implements JidProvider, ProtobufMessage {
             @JsonProperty("viewer_metadata")
             NewsletterViewerMetadata viewerMetadata,
             @JsonProperty("messages")
-            ConcurrentLinkedHashedDequeue<NewsletterMessageInfo> messages
+            ConcurrentLinkedSet<NewsletterMessageInfo> messages
     ) {
         this.jid = jid;
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedHashedDequeue::new);
+        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedSet::new);
     }
 
     public Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata) {
@@ -52,7 +52,7 @@ public final class Newsletter implements JidProvider, ProtobufMessage {
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = new ConcurrentLinkedHashedDequeue<>();
+        this.messages = new ConcurrentLinkedSet<>();
     }
 
     public void addMessage(NewsletterMessageInfo message) {

@@ -70,6 +70,7 @@ import it.auties.whatsapp.util.*;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -104,6 +105,16 @@ public class Whatsapp {
     // The instances are added and removed when the client connects/disconnects
     // This is to make sure that the instances remain in memory only as long as it's needed
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
+    private static final Method registerListenersMethod = getRegisterListenersMethod();
+
+    private static Method getRegisterListenersMethod() {
+        try {
+            var clazz = Class.forName(RegisterListenerProcessor.qualifiedClassName());
+            return clazz.getMethod(RegisterListenerProcessor.methodName(), Whatsapp.class);
+        }catch (ReflectiveOperationException exception) {
+            return null;
+        }
+    }
 
     static Optional<Whatsapp> getInstanceByUuid(UUID uuid) {
         return Optional.ofNullable(instances.get(uuid));
@@ -112,8 +123,6 @@ public class Whatsapp {
     static void removeInstanceByUuid(UUID uuid) {
         instances.remove(uuid);
     }
-
-    private final SocketHandler socketHandler;
 
     /**
      * Checks if a connection exists
@@ -176,8 +185,11 @@ public class Whatsapp {
         return service.exists();
     }
 
+    private final SocketHandler socketHandler;
+    private final Set<Jid> readyContacts;
     protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
+        this.readyContacts = ConcurrentHashMap.newKeySet();
         handleDisconnections(store);
         registerListenersAutomatically(store);
     }
@@ -191,17 +203,13 @@ public class Whatsapp {
     }
 
     private void registerListenersAutomatically(Store store) {
-        if (!store.autodetectListeners()) {
+        if (!store.autodetectListeners() || registerListenersMethod == null) {
             return;
         }
 
         try {
-            var clazz = Class.forName(RegisterListenerProcessor.qualifiedClassName());
-            var method = clazz.getMethod(RegisterListenerProcessor.methodName(), Whatsapp.class);
-            method.invoke(null, this);
-        }catch (ClassNotFoundException exception) {
-            // Ignored, this can happen if the compilation environment didn't register the processor
-        }catch (ReflectiveOperationException exception) {
+            registerListenersMethod.invoke(null, this);
+        } catch (ReflectiveOperationException exception) {
             throw new RuntimeException("Cannot register listeners automatically", exception);
         }
     }
@@ -707,11 +715,11 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(true);
         }
 
-        if (store().findContactByJid(recipient.toJid()).isPresent()) {
+        if (readyContacts.contains(recipient.toJid())) {
             return CompletableFuture.completedFuture(true);
         }
 
-        return getContactData(recipient).thenCompose(results -> {
+        return getContactData(recipient).thenComposeAsync(results -> {
             var out = results.stream().anyMatch(entry -> entry.hasDescription("out"));
             if (out) {
                 return CompletableFuture.completedFuture(false);
@@ -729,6 +737,7 @@ public class Whatsapp {
             var secondList = List.of(Node.of("user", Map.of("jid", recipient.toJid())));
             return addContacts(recipient)
                     .thenComposeAsync(firstResult -> {
+                        readyContacts.add(recipient.toJid());
                         if(!firstResult.contains(recipient.toJid())) {
                             return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of());
                         }
@@ -1203,15 +1212,6 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> changePresence(JidProvider chatJid, ContactStatus presence) {
-        var knownPresence = store().findChatByJid(chatJid)
-                .map(Chat::presences)
-                .map(entry -> entry.get(jidOrThrowError().toSimpleJid()))
-                .orElse(null);
-        if (knownPresence == COMPOSING || knownPresence == RECORDING) {
-            var node = Node.of("chatstate", Map.of("to", chatJid.toJid()), Node.of("paused"));
-            return socketHandler.sendNodeWithNoResponse(node);
-        }
-
         if (presence == COMPOSING || presence == RECORDING) {
             var tag = presence == RECORDING ? COMPOSING : presence;
             var node = Node.of("chatstate",

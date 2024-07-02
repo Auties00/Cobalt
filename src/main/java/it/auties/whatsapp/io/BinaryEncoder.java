@@ -1,4 +1,4 @@
-package it.auties.whatsapp.binary;
+package it.auties.whatsapp.io;
 
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.node.Node;
@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import static it.auties.whatsapp.binary.BinaryTag.*;
+import static it.auties.whatsapp.io.BinaryTag.*;
 
 public final class BinaryEncoder implements AutoCloseable {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
