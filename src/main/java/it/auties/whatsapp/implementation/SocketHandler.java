@@ -213,12 +213,16 @@ public class SocketHandler implements SocketListener {
     }
 
     private void onConnectionCreated(boolean result) {
-        if (!result) {
-            handleFailure(LOGIN, new RuntimeException("Unknown error"));
+        if (result) {
+            setState(SocketState.CONNECTED);
             return;
         }
 
-        setState(SocketState.CONNECTED);
+        if (state == SocketState.RECONNECTING) {
+            return;
+        }
+
+        handleFailure(LOGIN, new RuntimeException("Unknown error"));
     }
 
 

@@ -522,11 +522,11 @@ public class SocketClient extends Socket implements AutoCloseable {
 
     public CompletableFuture<Integer> readAsync(ByteBuffer buffer) {
         var future = new Response.Future<Integer>();
-        return socketTransport.read(buffer, true, 0, future);
+        return socketTransport.read(buffer, true, future);
     }
 
     public void readAsync(ByteBuffer buffer, Response.Callback<Integer> callback) {
-        socketTransport.read(buffer, true, 0, callback);
+        socketTransport.read(buffer, true, callback);
     }
 
     static sealed abstract class SocketTransport {
@@ -541,14 +541,14 @@ public class SocketClient extends Socket implements AutoCloseable {
 
         abstract <R extends Response<Void>> R write(ByteBuffer buffer, R result);
 
-        abstract <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, int bytesRead, R result);
+        abstract <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, R result);
 
-        <R extends Response<Integer>> R readPlain(ByteBuffer buffer, boolean lastRead, int bytesRead, R result) {
+        <R extends Response<Integer>> R readPlain(ByteBuffer buffer, boolean lastRead, R result) {
             channel.read(buffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer bytesRead, Object attachment) {
                     if(bytesRead == -1) {
-                        notifyClose();
+                        result.completeExceptionally(new EOFException());
                         return;
                     }
 
@@ -557,16 +557,6 @@ public class SocketClient extends Socket implements AutoCloseable {
                     }
 
                     result.complete(bytesRead);
-                }
-
-                private void notifyClose() {
-                    try {
-                        channel.close();
-                    } catch (IOException ignored) {
-
-                    }finally {
-                        result.completeExceptionally(new EOFException());
-                    }
                 }
 
                 @Override
@@ -603,7 +593,7 @@ public class SocketClient extends Socket implements AutoCloseable {
         }
 
         public void readFully(ByteBuffer buffer, Response<ByteBuffer> result) {
-            read(buffer, false, 0, (Response.Callback<Integer>) (readResult, error) -> {
+            read(buffer, false, (Response.Callback<Integer>) (readResult, error) -> {
                 if (error != null) {
                     result.completeExceptionally(error);
                     return;
@@ -630,8 +620,8 @@ public class SocketClient extends Socket implements AutoCloseable {
             }
 
             @Override
-            <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, int bytesRead, R result) {
-                return readPlain(buffer, lastRead, bytesRead, result);
+            <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, R result) {
+                return readPlain(buffer, lastRead, result);
             }
 
             @Override
@@ -651,8 +641,7 @@ public class SocketClient extends Socket implements AutoCloseable {
             private SSLEngine sslEngine;
             private ByteBuffer sslReadBuffer;
             private ByteBuffer sslWriteBuffer;
-            private  ByteBuffer sslOutputBuffer;
-            private int sslOutputBufferReadPosition;
+            private ByteBuffer sslOutputBuffer;
             private Response.Future<Void> sslHandshake;
             private Secure(AsynchronousSocketChannel channel, SSLEngine sslEngine) {
                 super(channel);
@@ -744,7 +733,7 @@ public class SocketClient extends Socket implements AutoCloseable {
                     return;
                 }
 
-                readPlain(sslReadBuffer, true, 0, (Response.Callback<Integer>) (ignored, error) -> {
+                readPlain(sslReadBuffer, true, (Response.Callback<Integer>) (ignored, error) -> {
                     if(error != null) {
                         sslHandshake.completeExceptionally(error);
                         return;
@@ -809,45 +798,18 @@ public class SocketClient extends Socket implements AutoCloseable {
             }
 
             @Override
-            <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, int bytesRead, R result) {
+            <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, R result) {
                 try {
                     if(!sslHandshakeCompleted.get()) {
-                        return readPlain(buffer, lastRead, bytesRead, result);
-                    }
-                    
-                    var oldLimit = sslOutputBuffer.limit();
-                    var oldPosition = sslOutputBuffer.position();
-                    sslOutputBuffer.position(sslOutputBufferReadPosition);
-                    sslOutputBuffer.limit(oldPosition);
-                    while (buffer.hasRemaining() && sslOutputBuffer.hasRemaining()) {
-                        buffer.put(sslOutputBuffer.get());
-                        bytesRead++;
-                        sslOutputBufferReadPosition++;
-                    }
-                    if(sslOutputBufferReadPosition >= oldLimit) {
-                        sslOutputBuffer.position(0);
-                        sslOutputBuffer.limit(sslOutputBuffer.capacity());
-                        sslOutputBufferReadPosition = 0;
-                    }else {
-                        sslOutputBuffer.limit(oldLimit);
-                        sslOutputBuffer.position(oldPosition);
-                    }
-
-                    if(bytesRead != 0) {
-                        if(lastRead) {
-                            buffer.flip();
-                        }
-
-                        result.complete(bytesRead);
-                        return result;
+                        return readPlain(buffer, lastRead, result);
                     }
 
                     if (sslReadBuffer.hasRemaining()) {
-                        decodeSecureStream(buffer, lastRead, bytesRead, result);
-                        return result;
+                        decodeSecureMessage(buffer, lastRead, false, result);
+                    }else {
+                        readSocket(buffer, lastRead, result);
                     }
 
-                    readSecureStream(buffer, lastRead, bytesRead, result);
                     return result;
                 }catch (Throwable throwable) {
                     result.completeExceptionally(throwable);
@@ -855,38 +817,62 @@ public class SocketClient extends Socket implements AutoCloseable {
                 }
             }
 
-            private <R extends Response<Integer>> void readSecureStream(ByteBuffer buffer, boolean lastRead, int bytesRead, R result) {
+            private <R extends Response<Integer>> void readSocket(ByteBuffer buffer, boolean lastRead, R result) {
                 sslReadBuffer.compact();
-                readPlain(sslReadBuffer, true, 0, (Response.Callback<Integer>) (ignored, error) -> {
+                readPlain(sslReadBuffer, true, (Response.Callback<Integer>) (ignored, error) -> {
                     if (error != null) {
                         result.completeExceptionally(error);
                         return;
                     }
 
-                    decodeSecureStream(buffer, lastRead, bytesRead, result);
+                    decodeSecureMessage(buffer, lastRead, false, result);
                 });
             }
 
-            private void decodeSecureStream(ByteBuffer buffer, boolean lastRead, int read, Response<Integer> result) {
+            private void decodeSecureMessage(ByteBuffer buffer, boolean lastRead, boolean throwOnOverflow, Response<Integer> result) {
                 try {
-                    var unwrapResult = sslEngine.unwrap(sslReadBuffer, sslOutputBuffer);
-                    if(unwrapResult.getStatus() == Status.BUFFER_UNDERFLOW) {
-                        readSecureStream(buffer, lastRead, read, result);
-                        return;
-                    }
+                    var unwrapResult = sslEngine.unwrap(sslReadBuffer, buffer);
+                    switch (unwrapResult.getStatus()) {
+                        case OK -> {
+                            if(unwrapResult.bytesProduced() != 0) {
+                                if(lastRead) {
+                                    buffer.flip();
+                                }
 
-                    if(unwrapResult.getStatus() == Status.CLOSED) {
-                        result.completeExceptionally(new EOFException());
-                        channel.close();
-                        return;
-                    }
+                                result.complete(unwrapResult.bytesProduced());
+                            }else {
+                                read(buffer, lastRead , result);
+                            }
+                        }
+                        case BUFFER_UNDERFLOW -> readSocket(buffer, lastRead, result);
+                        case BUFFER_OVERFLOW -> {
+                            if(throwOnOverflow) {
+                                result.completeExceptionally(new IllegalStateException("SSL output buffer overflow"));
+                                return;
+                            }
 
-                    if (unwrapResult.getStatus() != Status.OK) {
-                        result.completeExceptionally(new IllegalStateException("SSL read operation failed with status: " + unwrapResult.getStatus()));
-                        return;
-                    }
+                            sslOutputBuffer.clear();
+                            decodeSecureMessage(sslOutputBuffer, lastRead, true, (Response.Callback<Integer>) (bytesRead, error) -> {
+                                if(error != null) {
+                                    result.completeExceptionally(error);
+                                    return;
+                                }
 
-                    read(buffer, lastRead, read, result);
+                                var remaining = 0;
+                                while (buffer.hasRemaining() && sslOutputBuffer.hasRemaining()) {
+                                    buffer.put(sslOutputBuffer.get());
+                                    remaining++;
+                                }
+
+                                if(lastRead) {
+                                    buffer.flip();
+                                }
+
+                                result.complete(remaining);
+                            });
+                        }
+                        case CLOSED -> result.completeExceptionally(new EOFException());
+                    }
                 }catch (Throwable throwable) {
                     result.completeExceptionally(throwable);
                 }
@@ -1016,14 +1002,13 @@ public class SocketClient extends Socket implements AutoCloseable {
             private CompletableFuture<String> readAuthenticationResponse() {
                 var future = new CompletableFuture<String>();
                 var buffer = ByteBuffer.allocate(readReceiveBufferSize());
-                socketTransport.read(buffer, true, 0, (Response.Callback<Integer>) (result, error) -> {
-                    System.out.println(result);
+                socketTransport.read(buffer, true, (Response.Callback<Integer>) (result, error) -> {
                     if (error != null) {
                         future.completeExceptionally(error);
                         return;
                     }
 
-                    var data = new byte[buffer.limit()];
+                    var data = new byte[result];
                     buffer.get(data);
                     future.complete(new String(data));
                 });

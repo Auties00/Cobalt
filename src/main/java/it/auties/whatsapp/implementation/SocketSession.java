@@ -61,12 +61,10 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 sslContext.init(null, null, null);
                 var sslEngine = sslContext.createSSLEngine(WEB_SOCKET_HOST, WEB_SOCKET_PORT);
                 sslEngine.setUseClientMode(true);
-                this.webSocket = WebSocketClient.newSecureClient(sslEngine, proxy);
+                this.webSocket = WebSocketClient.newSecureClient(sslEngine, proxy, this);
                 var endpoint = proxy != null ? InetSocketAddress.createUnresolved(WEB_SOCKET_HOST, WEB_SOCKET_PORT) : new InetSocketAddress(WEB_SOCKET_HOST, WEB_SOCKET_PORT);
-                return webSocket.connectAsync(endpoint, WEB_SOCKET_PATH).thenRunAsync(() -> {
-                    webSocket.listen(this);
-                    listener.onOpen(this);
-                });
+                return webSocket.connectAsync(endpoint, WEB_SOCKET_PATH)
+                        .thenRunAsync(() -> listener.onOpen(this));
             }catch (Throwable throwable) {
                 return CompletableFuture.failedFuture(throwable);
             }
@@ -78,11 +76,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                 return;
             }
 
-            try {
-                webSocket.close();
-            }catch (IOException exception) {
-                listener.onError(exception);
-            }
+            webSocket.close();
         }
 
         @Override
@@ -96,6 +90,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         public void onClose(int statusCode, String reason) {
+            System.out.println("ON CLOSE: " + statusCode);
             listener.onClose();
             this.webSocket = null;
         }
@@ -103,9 +98,17 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         @Override
         public void onBinary(ByteBuffer data) {
             try {
-                var message = new byte[data.remaining()];
-                data.get(message);
-                listener.onMessage(message);
+                while (data.remaining() >= 3) {
+                    var messageLength = (data.get() << 16) | Short.toUnsignedInt(data.getShort());
+                    if (messageLength < 0) {
+                        disconnect();
+                        return;
+                    }
+
+                    var message = new byte[messageLength];
+                    data.get(message);
+                    listener.onMessage(message);
+                }
             } catch (Throwable throwable) {
                 listener.onError(throwable);
             }

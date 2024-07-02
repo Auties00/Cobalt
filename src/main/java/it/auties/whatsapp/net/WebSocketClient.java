@@ -18,7 +18,6 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -43,26 +42,26 @@ public class WebSocketClient implements AutoCloseable {
     private final String clientKey;
     private final MessageDecoder messageDecoder;
     private final MessageEncoder messageEncoder;
-    private final AtomicBoolean listening;
+    private final Listener listener;
     private String serverKey;
 
-    private WebSocketClient(SocketClient underlyingSocket) {
+    private WebSocketClient(SocketClient underlyingSocket, Listener listener) {
         this.underlyingSocket = underlyingSocket;
         this.clientKey = Base64.getEncoder().encodeToString(Bytes.random(KEY_LENGTH));
         this.messageDecoder = new MessageDecoder();
         this.messageEncoder = new MessageEncoder();
-        this.listening = new AtomicBoolean(false);
+        this.listener = listener;
     }
 
-    public static WebSocketClient newPlainClient(URI proxy) throws IOException {
+    public static WebSocketClient newPlainClient(URI proxy, Listener listener) throws IOException {
         var underlyingSocket = SocketClient.newPlainClient(proxy);
-        return new WebSocketClient(underlyingSocket);
+        return new WebSocketClient(underlyingSocket, listener);
     }
 
 
-    public static WebSocketClient newSecureClient(SSLEngine sslEngine, URI proxy) throws IOException {
+    public static WebSocketClient newSecureClient(SSLEngine sslEngine, URI proxy, Listener listener) throws IOException {
         var underlyingSocket = SocketClient.newSecureClient(sslEngine, proxy);
-        return new WebSocketClient(underlyingSocket);
+        return new WebSocketClient(underlyingSocket, listener);
     }
 
     public CompletableFuture<Void> connectAsync(InetSocketAddress address, String path) {
@@ -72,12 +71,37 @@ public class WebSocketClient implements AutoCloseable {
     public CompletableFuture<Void> connectAsync(InetSocketAddress address, String path, int timeout) {
         return underlyingSocket.connectAsync(address, timeout)
                 .thenComposeAsync(ignored -> handshake(path))
+                .thenRunAsync(this::listen)
                 .orTimeout(timeout, TimeUnit.SECONDS);
     }
 
+    private void listen() {
+        var buffer = ByteBuffer.allocate(readReceiveBufferSize());
+        listen(buffer, listener);
+    }
+
+    private void listen(ByteBuffer buffer, Listener listener) {
+        buffer.clear();
+        buffer.position(0);
+        buffer.limit(buffer.capacity());
+        underlyingSocket.readAsync(buffer, (bytesRead, error) -> {
+            if (error != null) {
+                close();
+                return;
+            }
+
+            try {
+                messageDecoder.readFrame(buffer, listener);
+            }catch (Throwable throwable) {
+                throwable.printStackTrace();
+            }
+            listen(buffer, listener);
+        });
+    }
+
+
     private CompletableFuture<Void> handshake(String path) {
         var payload = generateWebSocketUpgradePayload(path);
-        System.out.println(payload);
         return underlyingSocket.writeAsync(ByteBuffer.wrap(payload.getBytes()))
                 .thenComposeAsync(writeResult -> readWebSocketUpgradeResponse())
                 .thenComposeAsync(this::parseWebSocketUpgradeResponse);
@@ -193,47 +217,34 @@ public class WebSocketClient implements AutoCloseable {
         }
     }
 
-    public void listen(Listener listener) {
-        if (listening.get()) {
-            throw new IllegalStateException("Web socket was already listened");
+    @Override
+    public void close() {
+        if(underlyingSocket.isClosed()) {
+            return;
         }
 
-        listening.set(true);
-        var buffer = ByteBuffer.allocate(readReceiveBufferSize());
-        readAndDecodeFrame(buffer, listener);
+        closeWebSocket();
+        closeUnderlyingSocket();
+        listener.onClose(NORMAL_CLOSURE, "");
     }
 
-    private void readAndDecodeFrame(ByteBuffer buffer, Listener listener) {
-        buffer.clear();
-        buffer.position(0);
-        buffer.limit(buffer.capacity());
-        underlyingSocket.readAsync(buffer, (bytesRead, error) -> {
-            if (error != null) {
-                error.printStackTrace();
-                return;
-            }
-
-            System.out.println("Read buf" + bytesRead);
-            try {
-                messageDecoder.readFrame(buffer, listener);
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-            }
-
-            readAndDecodeFrame(buffer, listener);
-        });
-    }
-
-    @Override
-    public void close() throws IOException {
+    private void closeWebSocket() {
         try {
             var dst = ByteBuffer.allocate(16384);
             messageEncoder.encodeClose(NORMAL_CLOSURE, CharBuffer.allocate(0), dst);
             dst.flip();
             var future = underlyingSocket.writeAsync(dst);
             future.join();
-        } finally {
+        }catch(Throwable ignored) {
+
+        }
+    }
+
+    private void closeUnderlyingSocket() {
+        try {
             underlyingSocket.close();
+        }catch (Throwable ignored1) {
+
         }
     }
 
@@ -304,6 +315,10 @@ public class WebSocketClient implements AutoCloseable {
         }
 
         private boolean handlePayloadData(ByteBuffer input, Listener listener) {
+            if (!input.hasRemaining()) {
+                return true;
+            }
+
             var deliverable = (int) Math.min(remainingPayloadLength, input.remaining());
             var oldLimit = input.limit();
             input.limit(input.position() + deliverable);
@@ -714,52 +729,6 @@ public class WebSocketClient implements AutoCloseable {
             return src.hasRemaining() ? -masked : masked;
         }
 
-        public boolean encodePing(ByteBuffer src, ByteBuffer dst) throws IOException {
-            if (closed) {
-                throw new IOException("Output closed");
-            }
-            if (!started) {
-                expectedLen = src.remaining();
-                if (expectedLen > MAX_CONTROL_FRAME_PAYLOAD_LENGTH) {
-                    throw new IllegalArgumentException("Long message: " + expectedLen);
-                }
-                setupHeader(MessageOpcode.PING, true, expectedLen);
-                started = true;
-            }
-            if (putAvailable(headerBuffer, dst)) {
-                return false;
-            }
-            int count = maskAvailable(src, dst);
-            actualLen += Math.abs(count);
-            if (count >= 0 && actualLen != expectedLen) {
-                throw new IOException("Concurrent message modification");
-            }
-            return count >= 0;
-        }
-
-        public boolean encodePong(ByteBuffer src, ByteBuffer dst) throws IOException {
-            if (closed) {
-                throw new IOException("Output closed");
-            }
-            if (!started) {
-                expectedLen = src.remaining();
-                if (expectedLen > MAX_CONTROL_FRAME_PAYLOAD_LENGTH) {
-                    throw new IllegalArgumentException("Long message: " + expectedLen);
-                }
-                setupHeader(MessageOpcode.PONG, true, expectedLen);
-                started = true;
-            }
-            if (putAvailable(headerBuffer, dst)) {
-                return false;
-            }
-            int count = maskAvailable(src, dst);
-            actualLen += Math.abs(count);
-            if (count >= 0 && actualLen != expectedLen) {
-                throw new IOException("Concurrent message modification");
-            }
-            return count >= 0;
-        }
-
         public boolean encodeClose(int statusCode, CharBuffer reason, ByteBuffer dst) throws IOException {
             if (closed) {
                 throw new IOException("Output closed");
@@ -872,36 +841,6 @@ public class WebSocketClient implements AutoCloseable {
             return this;
         }
 
-        private  MessageEncoder rsv1(boolean value) {
-            if (value) {
-                firstChar |= 0b01000000_00000000;
-            } else {
-                // Explicit cast required - see fin() above
-                firstChar &= (char) ~0b01000000_00000000;
-            }
-            return this;
-        }
-
-        private MessageEncoder rsv2(boolean value) {
-            if (value) {
-                firstChar |= 0b00100000_00000000;
-            } else {
-                // Explicit cast required - see fin() above
-                firstChar &= (char) ~0b00100000_00000000;
-            }
-            return this;
-        }
-
-        private MessageEncoder rsv3(boolean value) {
-            if (value) {
-                firstChar |= 0b00010000_00000000;
-            } else {
-                // Explicit cast required - see fin() above
-                firstChar &= (char) ~0b00010000_00000000;
-            }
-            return this;
-        }
-
         private MessageEncoder opcode(MessageOpcode value) {
             firstChar = (char) ((firstChar & 0xF0FF) | (value.code << 8));
             return this;
@@ -927,12 +866,6 @@ public class WebSocketClient implements AutoCloseable {
             firstChar |= 0b00000000_10000000;
             maskingKey = value;
             mask = true;
-            return this;
-        }
-
-        private MessageEncoder noMask() {
-            firstChar &= (char) ~0b00000000_10000000;
-            mask = false;
             return this;
         }
 
