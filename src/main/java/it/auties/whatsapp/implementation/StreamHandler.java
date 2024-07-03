@@ -920,7 +920,7 @@ class StreamHandler {
 
     private CompletableFuture<Void> initSession() {
         return CompletableFuture.allOf(
-                scheduleMediaConnectionUpdate(0, null),
+                scheduleMediaConnectionUpdate(),
                 updateSelfPresence(),
                 queryInitial2fa(),
                 queryInitialAboutPrivacy(),
@@ -1369,20 +1369,18 @@ class StreamHandler {
         }, PING_INTERVAL / 2, PING_INTERVAL);
     }
 
-    private CompletableFuture<Void> scheduleMediaConnectionUpdate(int tries, Throwable error) {
+    private CompletableFuture<Void> scheduleMediaConnectionUpdate() {
         if (socketHandler.state() != SocketState.CONNECTED) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        if (tries >= MAX_MESSAGE_RETRIES) {
-            socketHandler.store().setMediaConnection(null);
-            socketHandler.handleFailure(MEDIA_CONNECTION, error);
             return CompletableFuture.completedFuture(null);
         }
 
         return socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
                 .thenAcceptAsync(this::onMediaConnection)
-                .exceptionallyCompose(throwable -> scheduleMediaConnectionUpdate(tries + 1, throwable));
+                .exceptionallyAsync(throwable -> {
+                    socketHandler.store().setMediaConnection(null);
+                    socketHandler.handleFailure(MEDIA_CONNECTION, throwable);
+                    return null;
+                });
     }
 
     private void onMediaConnection(Node node) {
@@ -1397,13 +1395,7 @@ class StreamHandler {
                 .map(attributes -> attributes.getString("hostname"))
                 .toList();
         var result = new MediaConnection(auth, ttl, maxBuckets, timestamp, hosts);
-        var alreadyScheduled = socketHandler.store().hasMediaConnection();
-        socketHandler.store().setMediaConnection(result);
-        if(alreadyScheduled) {
-            return;
-        }
-
-       socketHandler.scheduleAtFixedInterval(() -> scheduleMediaConnectionUpdate(0, null), result.ttl(), result.ttl());
+       socketHandler.scheduleDelayed(this::scheduleMediaConnectionUpdate, result.ttl());
     }
 
     private void digestIq(Node node) {

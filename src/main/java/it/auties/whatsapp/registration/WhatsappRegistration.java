@@ -36,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public final class WhatsappRegistration {
@@ -230,11 +229,23 @@ public final class WhatsappRegistration {
 
     private CompletableFuture<String> getPushToken() {
         if (apnsClient != null) {
-            return apnsClient.getAppToken(store.device().platform().isBusiness());
+            return apnsClient.getAppToken(store.device().platform().isBusiness()).exceptionallyAsync((error) -> {
+                if(printRequests) {
+                    System.out.println("Using default apns token");
+                }
+
+                return DEFAULT_APNS_TOKEN;
+            });
         }
 
         if (gcmClient != null) {
-            return gcmClient.getPushToken();
+            return gcmClient.getPushToken().exceptionallyAsync((error) -> {
+                if(printRequests) {
+                    System.out.println("Using default gcm token");
+                }
+
+                return null;
+            });
         }
 
         if(store.device().platform().isIOS()) {
@@ -351,16 +362,11 @@ public final class WhatsappRegistration {
                     .thenApply(this::readIOSPushCode)
                     .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
-                        if (error instanceof TimeoutException) {
-                            if(printRequests) {
-                                System.out.println("Using default apns code");
-                            }
-                            return DEFAULT_APNS_CODE;
+                        if(printRequests) {
+                            System.out.println("Using default apns code");
                         }
 
-                        var exception = new RegistrationException(null, "Apns error");
-                        exception.addSuppressed(error);
-                        throw exception;
+                        return DEFAULT_APNS_CODE;
                     });
         }
 
@@ -368,16 +374,11 @@ public final class WhatsappRegistration {
             return gcmClient.getPushCode()
                     .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
                     .exceptionallyAsync(error -> {
-                        if (error instanceof TimeoutException) {
-                            if(printRequests) {
-                                System.out.println("Using default gcm code");
-                            }
-                            return DEFAULT_GCM_CODE;
+                        if(printRequests) {
+                            System.out.println("Using default gcm code");
                         }
 
-                        var exception = new RegistrationException(null, "Gcm error");
-                        exception.addSuppressed(error);
-                        throw exception;
+                        return DEFAULT_GCM_CODE;
                     });
         }
 
