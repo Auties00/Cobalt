@@ -1129,25 +1129,6 @@ class StreamHandler {
         });
     }
 
-    protected CompletableFuture<Void> updateBusinessCertificate(String name) {
-        var details = new BusinessVerifiedNameDetailsBuilder()
-                .name(Objects.requireNonNullElse(name, socketHandler.store().name()))
-                .issuer("smb:wa")
-                .serial(Math.abs(ThreadLocalRandom.current().nextLong()))
-                .build();
-        var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
-        var certificate = new BusinessVerifiedNameCertificateBuilder()
-                .encodedDetails(encodedDetails)
-                .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails, true))
-                .build();
-        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate))).thenAccept(result -> {
-            var verifiedName = result.findNode("verified_name")
-                    .map(node -> node.attributes().getString("id"))
-                    .orElse("");
-            socketHandler.store().setVerifiedName(verifiedName);
-        });
-    }
-
     private CompletableFuture<Node> setBusinessProfile() {
         var version = socketHandler.store().properties().getOrDefault("biz_profile_options", "2");
         var body = new ArrayList<Node>();
