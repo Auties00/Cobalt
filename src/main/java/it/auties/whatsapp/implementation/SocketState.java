@@ -4,6 +4,7 @@ import it.auties.whatsapp.api.DisconnectReason;
 
 public enum SocketState {
     WAITING,
+    HANDSHAKE,
     CONNECTED,
     DISCONNECTED,
     RECONNECTING,
@@ -24,8 +25,8 @@ public enum SocketState {
 
     DisconnectReason toReason() {
         return switch (this) {
-            case WAITING, CONNECTED, RECONNECTING -> DisconnectReason.RECONNECTING;
-            case DISCONNECTED, PAUSED -> DisconnectReason.DISCONNECTED;
+            case CONNECTED, RECONNECTING -> DisconnectReason.RECONNECTING;
+            case WAITING, HANDSHAKE, DISCONNECTED, PAUSED -> DisconnectReason.DISCONNECTED;
             case LOGGED_OUT -> DisconnectReason.LOGGED_OUT;
             case RESTORE -> DisconnectReason.RESTORE;
             case BANNED -> DisconnectReason.BANNED;

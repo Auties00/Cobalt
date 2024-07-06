@@ -90,7 +90,6 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         public void onClose(int statusCode, String reason) {
-            System.out.println("ON CLOSE: " + statusCode);
             listener.onClose();
             this.webSocket = null;
         }

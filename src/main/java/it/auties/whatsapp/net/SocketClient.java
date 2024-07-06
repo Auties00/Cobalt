@@ -1008,7 +1008,7 @@ public class SocketClient extends Socket implements AutoCloseable {
                 var buffer = ByteBuffer.allocate(readReceiveBufferSize());
                 socketTransport.read(buffer, true, (Response.Callback<Integer>) (result, error) -> {
                     if (error != null) {
-                        future.completeExceptionally(error);
+                        future.completeExceptionally(new SocketException("HTTP : Cannot read authentication response", error));
                         return;
                     }
 
@@ -1179,12 +1179,16 @@ public class SocketClient extends Socket implements AutoCloseable {
 
             private CompletableFuture<Void> onConnected(byte authenticationType) {
                 return switch (authenticationType) {
-                    case IPV4 -> CompletableFuture.allOf(readServerResponse(4, "Cannot read IPV4 address"), readServerResponse(2, "Cannot read IPV4 port"));
-                    case IPV6 -> CompletableFuture.allOf(readServerResponse(16, "Cannot read IPV6 address"), readServerResponse(2, "Cannot read IPV6 port"));
-                    case DOMAIN_NAME -> readServerResponse(1, "Cannot read domain name").thenComposeAsync(domainLengthBuffer -> {
-                        var domainLength = Byte.toUnsignedInt(domainLengthBuffer.get());
-                        return CompletableFuture.allOf(readServerResponse(domainLength, "Cannot read domain"), readServerResponse(2, "Cannot read domain port"));
-                    });
+                    case IPV4 -> readServerResponse(4, "Cannot read IPV4 address")
+                            .thenComposeAsync(ipResult -> readServerResponse(2, "Cannot read IPV4 port"))
+                            .thenRun(() -> {});
+                    case IPV6 -> readServerResponse(16, "Cannot read IPV6 address")
+                            .thenComposeAsync(ipResult -> readServerResponse(2, "Cannot read IPV6 port"))
+                            .thenRun(() -> {});
+                    case DOMAIN_NAME -> readServerResponse(1, "Cannot read domain name")
+                            .thenComposeAsync(domainLengthBuffer -> readServerResponse(Byte.toUnsignedInt(domainLengthBuffer.get()), "Cannot read domain hostname"))
+                            .thenComposeAsync(ipResult -> readServerResponse(2, "Cannot read domain port"))
+                            .thenRun(() -> {});
                     default -> CompletableFuture.failedFuture(new SocketException("Reply from SOCKS server contains wrong code"));
                 };
             }

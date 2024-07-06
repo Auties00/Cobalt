@@ -39,8 +39,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public final class WhatsappMetadata {
-    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.13.78");
-    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.13.78");
+    private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.24.13.79");
+    private static final Version MOBILE_PERSONAL_IOS_VERSION = Version.of("2.24.13.79");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
     private static final URI WEB_UPDATE_URL = URI.create("https://web.whatsapp.com/check-update?version=2.2245.9&platform=web");
@@ -63,23 +63,22 @@ public final class WhatsappMetadata {
     private static final Path kaiOsCache = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
 
     public static CompletableFuture<Version> getVersion(CompanionDevice companion) {
-        if(companion.isWeb()) {
-            return getWebVersion();
-        }
-
-        return switch (companion.platform()) {
-            case WINDOWS, MACOS ->
-                    getWebVersion();
-            case ANDROID, ANDROID_BUSINESS ->
-                    getAndroidData(companion)
-                            .thenApply(WhatsappAndroidApp::version);
-            case IOS ->
-                    getIosVersion(false);
-            case IOS_BUSINESS ->
-                    getIosVersion(true);
-            case KAIOS ->
-                    getKaiOsData().thenApply(WhatsappKaiOsApp::version);
-            default -> throw new IllegalStateException("Unsupported mobile os: " + companion.platform());
+        return switch (companion.clientType()) {
+            case WEB -> getWebVersion();
+            case MOBILE -> switch (companion.platform()) {
+                case WINDOWS, MACOS ->
+                        getWebVersion();
+                case ANDROID, ANDROID_BUSINESS ->
+                        getAndroidData(companion)
+                                .thenApply(WhatsappAndroidApp::version);
+                case IOS ->
+                        getIosVersion(false);
+                case IOS_BUSINESS ->
+                        getIosVersion(true);
+                case KAIOS ->
+                        getKaiOsData().thenApply(WhatsappKaiOsApp::version);
+                default -> throw new IllegalStateException("Unsupported mobile os: " + companion.platform());
+            };
         };
     }
 

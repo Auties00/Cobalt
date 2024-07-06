@@ -35,7 +35,8 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
         KAIOS(11),
         IOS_BUSINESS(12),
         WINDOWS(13),
-        MACOS(24);
+        MACOS(24),
+        WEB(14);
 
         PlatformType(@ProtobufEnumIndex int index) {
             this.index = index;

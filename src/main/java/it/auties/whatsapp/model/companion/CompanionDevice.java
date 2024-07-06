@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.companion;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
@@ -35,25 +36,20 @@ public final class CompanionDevice implements ProtobufMessage {
             Map.entry("iPhone_15", "iPhone15,4"),
             Map.entry("iPhone_15_Plus", "iPhone15,5"),
             Map.entry("iPhone_15_Pro", "iPhone16,1"),
-            Map.entry("iPhone_15_Pro_Max", "iPhone16,2"),
-            Map.entry("iPhone_X", "iPhone12,1")
+            Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
     );
-    private static final List<String> IOS_VERSION = List.of(
-            "17.0",
-            "17.0.1",
-            "17.0.2",
-            "17.0.3",
-            "17.1",
-            "17.1.1",
-            "17.1.2",
-            "17.2",
-            "17.2.1",
-            "17.3",
-            "17.3.1",
-            "17.4",
-            "17.4.1",
-            "17.5",
-            "17.5.1"
+    private static final List<Entry<String, String>> IOS_VERSION = List.of(
+            Map.entry("17.1", "21B74"),
+            Map.entry("17.1.1", "21B91"),
+            Map.entry("17.1.2", "21B101"),
+            Map.entry("17.2", "21C62"),
+            Map.entry("17.2.1", "21C66"),
+            Map.entry("17.3", "21D50"),
+            Map.entry("17.3.1", "21D61"),
+            Map.entry("17.4", "21E219"),
+            Map.entry("17.4.1", "21E237"),
+            Map.entry("17.5.1", "21F84"),
+            Map.entry("17.5.1", "21F91")
     );
     private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
     private static final int MIDDLEWARE_PERSONAL_PORT = 1119;
@@ -82,8 +78,8 @@ public final class CompanionDevice implements ProtobufMessage {
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
     private final String modelId;
 
-    @ProtobufProperty(index = 9, type = ProtobufType.BOOL)
-    private final boolean isWeb;
+    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    private final ClientType clientType;
 
     private CompanionDevice(
             String model,
@@ -94,7 +90,7 @@ public final class CompanionDevice implements ProtobufMessage {
             String osBuildNumber,
             List<String> addresses,
             String modelId,
-            boolean isWeb
+            ClientType clientType
     ) {
         this(
                 model,
@@ -105,7 +101,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 osBuildNumber,
                 addresses == null || addresses.isEmpty() ? null : addresses.get(ThreadLocalRandom.current().nextInt(0, addresses.size())),
                 modelId,
-                isWeb
+                clientType
         );
     }
     
@@ -118,7 +114,7 @@ public final class CompanionDevice implements ProtobufMessage {
             String osBuildNumber,
             String address,
             String modelId,
-            boolean isWeb
+            ClientType clientType
     ) {
         this.model = model;
         this.modelId = modelId;
@@ -133,7 +129,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 Objects.requireNonNull(uri.getHost(), "Missing hostname"),
                 uri.getPort() != -1 ? uri.getPort() : (platform.isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT)
         );
-        this.isWeb = isWeb;
+        this.clientType = clientType;
     }
 
     public static CompanionDevice web() {
@@ -144,13 +140,13 @@ public final class CompanionDevice implements ProtobufMessage {
         return new CompanionDevice(
                 "Chrome",
                 "Google",
-                PlatformType.UNKNOWN,
+                PlatformType.WEB,
                 appVersion,
                 Version.of("1.0"),
                 null,
                 List.of(),
                 null,
-                true
+                ClientType.WEB
         );
     }
 
@@ -174,11 +170,11 @@ public final class CompanionDevice implements ProtobufMessage {
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
                 appVersion,
-                Version.of(version),
-                "20H320",
+                Version.of(version.getKey()),
+                version.getValue(),
                 address,
                 model.getValue(),
-                false
+                ClientType.MOBILE
         );
     }
 
@@ -204,7 +200,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 null,
                 address,
                 "Pixel_2",
-                false
+                ClientType.MOBILE
         );
     }
 
@@ -222,7 +218,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 null,
                 List.of(),
                 "8110",
-                false
+                ClientType.MOBILE
         );
     }
 
@@ -265,7 +261,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 osBuildNumber,
                 address,
                 modelId,
-                isWeb
+                clientType
         );
     }
 
@@ -321,30 +317,22 @@ public final class CompanionDevice implements ProtobufMessage {
         return Optional.ofNullable(address);
     }
 
-    public boolean isWeb() {
-        return isWeb;
+    public ClientType clientType() {
+        return clientType;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (CompanionDevice) obj;
-        return Objects.equals(this.model, that.model) &&
-                Objects.equals(this.modelId, that.modelId) &&
-                Objects.equals(this.manufacturer, that.manufacturer) &&
-                Objects.equals(this.platform, that.platform) &&
-                Objects.equals(this.appVersion, that.appVersion) &&
-                Objects.equals(this.osVersion, that.osVersion) &&
-                Objects.equals(this.osBuildNumber, that.osBuildNumber) &&
-                Objects.equals(this.address, that.address);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CompanionDevice that = (CompanionDevice) o;
+        return Objects.equals(model, that.model) && Objects.equals(manufacturer, that.manufacturer) && platform == that.platform && Objects.equals(appVersion, that.appVersion) && Objects.equals(osVersion, that.osVersion) && Objects.equals(osBuildNumber, that.osBuildNumber) && Objects.equals(address, that.address) && Objects.equals(modelId, that.modelId) && clientType == that.clientType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(model, modelId, manufacturer, platform, appVersion, osVersion, osBuildNumber, address);
+        return Objects.hash(model, manufacturer, platform, appVersion, osVersion, osBuildNumber, address, modelId, clientType);
     }
-
 
     @Override
     public String toString() {
@@ -357,7 +345,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 ", osBuildNumber='" + osBuildNumber + '\'' +
                 ", address='" + address + '\'' +
                 ", modelId='" + modelId + '\'' +
-                ", web=" + isWeb +
+                ", clientType=" + clientType +
                 '}';
     }
 }

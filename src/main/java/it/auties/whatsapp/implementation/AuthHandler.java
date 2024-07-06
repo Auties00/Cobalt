@@ -10,7 +10,6 @@ import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.SignalConstants;
 
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -22,55 +21,35 @@ class AuthHandler {
         this.socketHandler = socketHandler;
     }
 
-    protected CompletableFuture<Boolean> login(byte[] message) {
+    protected CompletableFuture<Void> login(byte[] message) {
         try {
-            var serverHello = readHandshake(message);
-            if (serverHello.isEmpty()) {
-                return CompletableFuture.completedFuture(false);
-            }
-
+            var serverHandshake = HandshakeMessageSpec.decode(message);
+            var serverHello = serverHandshake.serverHello();
             var handshake = new SocketHandshake(socketHandler.keys(), SocketHandshake.getPrologue(socketHandler.store().clientType()));
             handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
-            handshake.updateHash(serverHello.get().ephemeral());
-            var sharedEphemeral = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys().ephemeralKeyPair().privateKey());
+            handshake.updateHash(serverHello.ephemeral());
+            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys().ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedEphemeral);
-            var decodedStaticText = handshake.cipher(serverHello.get().staticText(), false);
+            var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
             var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys().ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedStatic);
-            handshake.cipher(serverHello.get().payload(), false);
+            handshake.cipher(serverHello.payload(), false);
             var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
-            var sharedPrivate = Curve25519.sharedKey(serverHello.get().ephemeral(), socketHandler.keys().noiseKeyPair().privateKey());
+            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys().noiseKeyPair().privateKey());
             handshake.mixIntoKey(sharedPrivate);
             var payload = createUserClientPayload();
             var encodedPayload = handshake.cipher(ClientPayloadSpec.encode(payload), true);
             var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-            var handshakeMessage = new HandshakeMessageBuilder()
+            var clientHandshake = new HandshakeMessageBuilder()
                     .clientFinish(clientFinish)
                     .build();
-            return sendHandshake(handshake, handshakeMessage);
+            return socketHandler.sendBinaryWithNoResponse(HandshakeMessageSpec.encode(clientHandshake), false).thenRunAsync(() -> {
+                socketHandler.keys().clearReadWriteKey();
+                handshake.finish();
+            });
         } catch (Throwable throwable) {
             return CompletableFuture.failedFuture(throwable);
         }
-    }
-
-    private Optional<ServerHello> readHandshake(byte[] message) {
-        try {
-            var handshakeMessage = HandshakeMessageSpec.decode(message);
-            return Optional.ofNullable(handshakeMessage.serverHello());
-        } catch (Throwable throwable) {
-            return Optional.empty();
-        }
-    }
-
-    private CompletableFuture<Boolean> sendHandshake(SocketHandshake handshake, HandshakeMessage handshakeMessage) {
-        return socketHandler.sendBinaryWithNoResponse(HandshakeMessageSpec.encode(handshakeMessage), false)
-                .thenApplyAsync(result -> onHandshakeSent(handshake));
-    }
-
-    private boolean onHandshakeSent(SocketHandshake handshake) {
-        socketHandler.keys().clearReadWriteKey();
-        handshake.finish();
-        return true;
     }
 
     private WebInfo createWebInfo() {

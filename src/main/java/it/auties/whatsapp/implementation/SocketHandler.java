@@ -66,35 +66,6 @@ public class SocketHandler implements SocketListener {
     private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
     private static final Set<String> connectedAlias = ConcurrentHashMap.newKeySet();
 
-    private SocketSession session;
-
-    private final Whatsapp whatsapp;
-
-    private final AuthHandler authHandler;
-
-    private final StreamHandler streamHandler;
-
-    private final MessageHandler messageHandler;
-
-    private final AppStateHandler appStateHandler;
-
-    private final ErrorHandler errorHandler;
-
-    private final AtomicLong requestsCounter;
-    private final ScheduledExecutorService scheduler;
-    private final List<ScheduledFuture<?>> scheduledTasks;
-    private final Semaphore writeSemaphore;
-
-    private volatile SocketState state;
-
-    private volatile CompletableFuture<Void> loginFuture;
-
-    private Keys keys;
-
-    private Store store;
-
-    private Thread shutdownHook;
-
     public static boolean isConnected(UUID uuid) {
         return connectedUuids.contains(uuid);
     }
@@ -107,6 +78,22 @@ public class SocketHandler implements SocketListener {
         return connectedAlias.contains(id);
     }
 
+    private SocketSession session;
+    private final Whatsapp whatsapp;
+    private final AuthHandler authHandler;
+    private final StreamHandler streamHandler;
+    private final MessageHandler messageHandler;
+    private final AppStateHandler appStateHandler;
+    private final ErrorHandler errorHandler;
+    private final AtomicLong requestsCounter;
+    private final ScheduledExecutorService scheduler;
+    private final List<ScheduledFuture<?>> scheduledTasks;
+    private final Semaphore writeSemaphore;
+    private volatile SocketState state;
+    private volatile CompletableFuture<Void> loginFuture;
+    private Keys keys;
+    private Store store;
+    private Thread shutdownHook;
     public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.whatsapp = whatsapp;
         this.store = store;
@@ -189,11 +176,13 @@ public class SocketHandler implements SocketListener {
 
     @Override
     public void onMessage(byte[] message) {
-        if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
-            authHandler.login(message)
-                    .exceptionallyAsync(throwable -> { handleFailure(LOGIN, throwable); return false; })
-                    .thenAcceptAsync(this::onConnectionCreated);
+        if (state == SocketState.WAITING || state == SocketState.RECONNECTING || state == SocketState.PAUSED) {
+            handshake(message);
             return;
+        }
+
+        if(state == SocketState.HANDSHAKE) {
+            setState(SocketState.CONNECTED);
         }
 
         var readKey = keys.readKey();
@@ -212,17 +201,15 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-    private void onConnectionCreated(boolean result) {
-        if (result) {
-            setState(SocketState.CONNECTED);
-            return;
-        }
+    private void handshake(byte[] message) {
+        authHandler.login(message).whenCompleteAsync((result, throwable) -> {
+            if (throwable == null || state == SocketState.RECONNECTING) {
+                setState(SocketState.HANDSHAKE);
+                return;
+            }
 
-        if (state == SocketState.RECONNECTING) {
-            return;
-        }
-
-        handleFailure(LOGIN, new RuntimeException("Unknown error"));
+            handleFailure(LOGIN, throwable);
+        });
     }
 
 
@@ -882,6 +869,11 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void onDisconnected(DisconnectReason reason) {
+        if(state == SocketState.WAITING || state == SocketState.HANDSHAKE) {
+            handleFailure(LOGIN, new RuntimeException("Cannot login: no response from Whatsapp"));
+            return;
+        }
+
         if (reason != DisconnectReason.RECONNECTING) {
             connectedUuids.remove(store.uuid());
             store.phoneNumber()
