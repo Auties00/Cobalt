@@ -1376,6 +1376,7 @@ class StreamHandler {
                 .map(attributes -> attributes.getString("hostname"))
                 .toList();
         var result = new MediaConnection(auth, ttl, maxBuckets, timestamp, hosts);
+        socketHandler.store().setMediaConnection(result);
         socketHandler.scheduleDelayed(this::scheduleMediaConnectionUpdate, result.ttl());
     }
 

@@ -634,7 +634,7 @@ public class Whatsapp {
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message, boolean compose) {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var info = buildChatMessage(recipient, message);
-        var composingFuture = compose ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
+        var composingFuture = compose && message.type() == MessageType.TEXT ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
         return composingFuture.thenComposeAsync(deltaResult -> sendMessage(info));
     }
 
