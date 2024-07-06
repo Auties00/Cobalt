@@ -100,7 +100,11 @@ class MessageHandler {
                 .thenComposeAsync(ignored -> {
                     try {
                         lock.lock();
-                        return request.peer() || isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
+                        if (request.peer() || isConversation(request.info())) {
+                            return encodeConversation(request);
+                        }else {
+                            return encodeGroup(request);
+                        }
                     } finally {
                         lock.unlock();
                     }

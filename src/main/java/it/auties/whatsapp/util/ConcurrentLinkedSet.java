@@ -409,6 +409,17 @@ public class ConcurrentLinkedSet<E> extends AbstractCollection<E> implements Set
         }
     }
 
+    @Override
+    public void clear() {
+        try {
+            lock.lock();
+            head = tail = null;
+            hashes.clear();
+        }finally {
+            lock.unlock();
+        }
+    }
+
     private static class Node<E> {
         final E item;
         Node<E> next;
