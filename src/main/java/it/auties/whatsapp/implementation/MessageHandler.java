@@ -1085,9 +1085,10 @@ class MessageHandler {
     }
 
     private void saveMessage(ChatMessageInfo info, boolean notify) {
-        if (info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
-            handleDistributionMessage(distributionMessage, info.senderJid());
-        }
+        info.message()
+                .senderKeyDistributionMessage()
+                .ifPresent(keyDistributionMessage -> handleDistributionMessage(keyDistributionMessage, info.senderJid()));
+
         if (info.chatJid().type() == JidType.STATUS) {
             socketHandler.store().addStatus(info);
             socketHandler.onNewStatus(info);

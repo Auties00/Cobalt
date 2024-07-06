@@ -17,9 +17,7 @@ import java.util.Optional;
 /**
  * A container for all types of messages known currently to WhatsappWeb.
  * <p>
- * Only one of these properties should be populated, however it's not certain as Whatsapp's Protobuf
- * doesn't use a one of instruction as it would be logical to in said case. This may imply that in
- * some particular and rare cases more than one property can be populated.
+ * Only one of these properties is populated usually, but it is possible to have multiple after a message retry for example
  * <p>
  * There are several categories of messages:
  * <ul>
@@ -303,9 +301,6 @@ public record MessageContainer(
         if (this.textWithNoContextMessage.isPresent()) {
             return TextMessage.of(textWithNoContextMessage.get());
         }
-        if (this.senderKeyDistributionMessage.isPresent()) {
-            return senderKeyDistributionMessage.get();
-        }
         if (this.imageMessage.isPresent()) {
             return imageMessage.get();
         }
@@ -443,6 +438,10 @@ public record MessageContainer(
         }
         if(newsletterAdminInviteMessage.isPresent()) {
             return newsletterAdminInviteMessage.get();
+        }
+        // This needs to be last
+        if (this.senderKeyDistributionMessage.isPresent()) {
+            return senderKeyDistributionMessage.get();
         }
         return EMPTY_MESSAGE;
     }
