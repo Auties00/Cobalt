@@ -173,7 +173,8 @@ class MessageHandler {
         }
 
         return LinkPreview.createPreviewAsync(textMessage.text())
-                .thenComposeAsync(result -> attributeTextMessage(textMessage, result.orElse(null)));
+                .thenComposeAsync(result -> attributeTextMessage(textMessage, result.orElse(null)))
+                .exceptionallyAsync(error -> null);
     }
 
     private CompletableFuture<Void> attributeTextMessage(TextMessage textMessage, LinkPreviewMatch match) {
@@ -957,7 +958,7 @@ class MessageHandler {
 
             var messageContainer = decodeChatMessageContainer(messageNode, from, participant);
             if(messageContainer.hasError()) {
-                sendEncMessageRetryReceipt(infoNode, key, timestamp, messageContainer.error());
+                sendEncMessageRetryReceipt(infoNode, key, participant, timestamp, messageContainer.error());
                 return;
             }
 
@@ -981,7 +982,7 @@ class MessageHandler {
         }
     }
 
-    private void sendEncMessageRetryReceipt(Node infoNode, ChatMessageKey key, long timestamp, Throwable error) {
+    private void sendEncMessageRetryReceipt(Node infoNode, ChatMessageKey key, Jid participant, long timestamp, Throwable error) {
         socketHandler.sendMessageAck(key.chatJid(), infoNode).thenComposeAsync(ignored -> {
             var counter = retries.getOrDefault(key.id(), 0);
             if(counter >= MAX_MESSAGE_RETRIES) {
@@ -990,7 +991,7 @@ class MessageHandler {
             }
 
             retries.put(key.id(), counter + 1);
-            return socketHandler.sendRetryReceipt(timestamp, key.chatJid(), key.id(), 1);
+            return socketHandler.sendRetryReceipt(timestamp, key.chatJid(), participant, key.id(), 1);
         });
     }
 

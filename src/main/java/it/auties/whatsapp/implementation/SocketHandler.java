@@ -720,7 +720,7 @@ public class SocketHandler implements SocketListener {
         return sendQuery(null, to, method, category, null, body);
     }
 
-    public CompletableFuture<Void> sendRetryReceipt(long nodeTimestamp, Jid sender, String messageId, int retryCount) {
+    public CompletableFuture<Void> sendRetryReceipt(long nodeTimestamp, Jid chatJid, Jid participantJid, String messageId, int retryCount) {
         var retryAttributes = Attributes.of()
                 .put("count", 1)
                 .put("id", messageId)
@@ -732,7 +732,8 @@ public class SocketHandler implements SocketListener {
         var receiptAttributes = Attributes.of()
                 .put("id", messageId)
                 .put("type", "retry")
-                .put("to", sender.withAgent(null))
+                .put("to", chatJid.withAgent(null))
+                .put("participant", participantJid == null ? null : participantJid.withAgent(null), participantJid != null)
                 .toMap();
         var receipt = Node.of("receipt", receiptAttributes, retryNode, registrationNode);
         return sendNodeWithNoResponse(receipt);
@@ -1141,6 +1142,7 @@ public class SocketHandler implements SocketListener {
         loginFuture.complete(null);
     }
 
+    @SuppressWarnings("SameParameterValue")
     protected void scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
         var result = scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
         scheduledTasks.add(result);

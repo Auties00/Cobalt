@@ -400,11 +400,11 @@ public final class WhatsappMetadata {
                             token,
                             String.valueOf(androidData.apkSize()),
                             androidData.apkPath(),
-                            -2
+                            token == null ? -2 : 0
                     );
                     var gpia = encryptAndroidToken(gpiaData, authKey);
                     var ggData = new GgData(
-                            -2,
+                            token == null ? -2 : 0,
                             token
                     );
                     var gg = encryptAndroidToken(ggData, authKey);
@@ -417,7 +417,12 @@ public final class WhatsappMetadata {
                             String.valueOf(androidData.apkSize())
                     );
                     var gi = encryptAndroidToken(giData, authKey);
-                    return new WhatsappAndroidTokens(gpia, gg, gi);
+                    var gpData = new GpData(
+                            token == null ? -2 : 0,
+                            token
+                    );
+                    var gp = encryptAndroidToken(gpData, authKey);
+                    return new WhatsappAndroidTokens(gpia, gg, gi, gp);
                 });
     }
 
@@ -491,6 +496,15 @@ public final class WhatsappMetadata {
     }
 
     private record GgData(
+            @JsonProperty("_ic")
+            int code,
+            @JsonProperty("_it")
+            String token
+    ) {
+
+    }
+
+    private record GpData(
             @JsonProperty("_ic")
             int code,
             @JsonProperty("_it")
