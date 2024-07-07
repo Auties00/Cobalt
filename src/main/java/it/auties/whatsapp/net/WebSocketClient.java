@@ -25,6 +25,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 // The message encoding/decoding is a minimal copy from the OpenJDK source
 // No text IO / no partial message output
+// IO is not synchronized as it's assumed that SocketHandler will do that
 public class WebSocketClient implements AutoCloseable {
     private static final int DEFAULT_CONNECTION_TIMEOUT = 30;
     private static final String DEFAULT_PATH = "/";

@@ -681,8 +681,12 @@ public class SocketHandler implements SocketListener {
         var founder = node.attributes()
                 .getOptionalJid("creator");
         var policies = new HashMap<GroupSetting, ChatSettingPolicy>();
-        policies.put(SEND_MESSAGES, ChatSettingPolicy.of(node.hasNode("restrict")));
         policies.put(EDIT_GROUP_INFO, ChatSettingPolicy.of(node.hasNode("announce")));
+        policies.put(SEND_MESSAGES, ChatSettingPolicy.of(node.hasNode("restrict")));
+        var addParticipantsMode = node.findNode("member_add_mode")
+                .flatMap(Node::contentAsString)
+                .orElse(null);
+        policies.put(ADD_PARTICIPANTS, ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
         policies.put(APPROVE_PARTICIPANTS, ChatSettingPolicy.of(node.hasNode("membership_approval_mode")));
         var description = node.findNode("description")
                 .flatMap(parent -> parent.findNode("body"))
