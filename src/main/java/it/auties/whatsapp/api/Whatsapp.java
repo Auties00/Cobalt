@@ -42,6 +42,7 @@ import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
 import it.auties.whatsapp.model.message.standard.NewsletterAdminInviteMessageBuilder;
 import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
 import it.auties.whatsapp.model.message.standard.TextMessage;
+import it.auties.whatsapp.model.mobile.AccountInfo;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
@@ -1094,6 +1095,23 @@ public class Whatsapp {
      */
     public CompletableFuture<GroupMetadata> queryGroupMetadata(JidProvider chat) {
         return socketHandler.queryGroupMetadata(chat.toJid());
+    }
+
+    /**
+     * Queries this account's info
+     *
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<AccountInfo> queryAccountInfo() {
+        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("account")).thenApplyAsync(result -> {
+            var accoutNode = result.findNode("account")
+                    .orElseThrow(() -> new NoSuchElementException("Missing account node: " + result));
+            var lastRegistration = Clock.parseSeconds(accoutNode.attributes().getLong("last_reg"))
+                    .orElseThrow(() -> new NoSuchElementException("Missing account last_reg: " + accoutNode));
+            var creation = Clock.parseSeconds(accoutNode.attributes().getLong("creation"))
+                    .orElseThrow(() -> new NoSuchElementException("Missing account creation: " + accoutNode));
+            return new AccountInfo(lastRegistration, creation);
+        });
     }
 
     /**
