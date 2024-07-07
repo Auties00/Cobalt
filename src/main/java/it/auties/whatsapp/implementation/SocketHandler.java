@@ -175,9 +175,9 @@ public class SocketHandler implements SocketListener {
     }
 
     @Override
-    public void onMessage(byte[] message) {
+    public void onMessage(byte[] message, int length) {
         if (state == SocketState.WAITING || state == SocketState.RECONNECTING || state == SocketState.PAUSED) {
-            handshake(message);
+            handshake(message.length != length ? Arrays.copyOfRange(message, 0, length) : message); // for now copy array
             return;
         }
 
@@ -190,7 +190,8 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        var decipheredMessage = AesGcm.decrypt(keys.nextReadCounter(true), message, readKey.get());
+        var iv = keys.nextReadCounter(true);
+        var decipheredMessage = AesGcm.decrypt(iv, message, 0, length, readKey.get());
         try(var decoder = new BinaryDecoder(decipheredMessage)) {
             var node = decoder.decode();
             onNodeReceived(node);

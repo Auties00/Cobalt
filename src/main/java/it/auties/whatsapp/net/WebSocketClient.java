@@ -7,13 +7,14 @@ import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.*;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -22,12 +23,13 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+// The message encoding/decoding is a minimal copy from the OpenJDK source
+// No text IO / no partial message output
 public class WebSocketClient implements AutoCloseable {
     private static final int DEFAULT_CONNECTION_TIMEOUT = 30;
     private static final String DEFAULT_PATH = "/";
     private static final int KEY_LENGTH = 16;
     private static final int VERSION = 13;
-    private static final int DEFAULT_RCV_BUF = 8192;
     private static final int SWITCHING_PROTOCOLS_CODE = 101;
     private static final String SERVER_KEY_HEADER = "sec-websocket-accept";
     private static final int MAX_HEADER_SIZE_BYTES = 2 + 8 + 4;
@@ -36,7 +38,6 @@ public class WebSocketClient implements AutoCloseable {
     private static final int NO_STATUS_CODE = 1005;
     private static final int CLOSED_ABNORMALLY = 1006;
     private static final String MAGIC_VALUE = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    private static final ByteBuffer EMPTY_BYTEBUFFER = ByteBuffer.allocate(0);
 
     private final SocketClient underlyingSocket;
     private final String clientKey;
@@ -49,7 +50,7 @@ public class WebSocketClient implements AutoCloseable {
         this.underlyingSocket = underlyingSocket;
         this.clientKey = Base64.getEncoder().encodeToString(Bytes.random(KEY_LENGTH));
         this.messageDecoder = new MessageDecoder();
-        this.messageEncoder = new MessageEncoder();
+        this.messageEncoder = new MessageEncoder(underlyingSocket.getSendBufferSize());
         this.listener = listener;
     }
 
@@ -76,25 +77,19 @@ public class WebSocketClient implements AutoCloseable {
     }
 
     private void listen() {
-        var buffer = ByteBuffer.allocate(readReceiveBufferSize());
+        var buffer = ByteBuffer.allocate(underlyingSocket.getReceiveBufferSize());
         listen(buffer, listener);
     }
 
     private void listen(ByteBuffer buffer, Listener listener) {
         buffer.clear();
-        buffer.position(0);
-        buffer.limit(buffer.capacity());
         underlyingSocket.readAsync(buffer, (bytesRead, error) -> {
             if (error != null) {
                 close();
                 return;
             }
 
-            try {
-                messageDecoder.readFrame(buffer, listener);
-            }catch (Throwable throwable) {
-                throwable.printStackTrace();
-            }
+            messageDecoder.readFrame(buffer, listener);
             listen(buffer, listener);
         });
     }
@@ -167,20 +162,12 @@ public class WebSocketClient implements AutoCloseable {
     }
 
     private CompletableFuture<String> readWebSocketUpgradeResponse() {
-        var buffer = ByteBuffer.allocate(readReceiveBufferSize());
+        var buffer = ByteBuffer.allocate(underlyingSocket.getReceiveBufferSize());
         return underlyingSocket.readAsync(buffer).thenApplyAsync(bytesRead -> {
             var data = new byte[buffer.limit()];
             buffer.get(data);
             return new String(data);
         });
-    }
-
-    private int readReceiveBufferSize() {
-        try {
-            return underlyingSocket.getOption(StandardSocketOptions.SO_RCVBUF);
-        } catch (IOException exception) {
-            return DEFAULT_RCV_BUF;
-        }
     }
 
     private InetSocketAddress getSocketAddress() {
@@ -194,23 +181,7 @@ public class WebSocketClient implements AutoCloseable {
 
     public CompletableFuture<Void> sendBinary(ByteBuffer buffer) {
         try {
-            var dst = ByteBuffer.allocate(buffer.remaining() * 2);
-            messageEncoder.encodeBinary(buffer, true, dst);
-            messageEncoder.reset();
-            dst.flip();
-            return underlyingSocket.writeAsync(dst);
-        } catch (IOException exception) {
-            return CompletableFuture.failedFuture(exception);
-        }
-    }
-
-    public CompletableFuture<Void> sendText(String text) {
-        try {
-            var buffer = CharBuffer.wrap(text);
-            var dst = ByteBuffer.allocate(buffer.remaining() * 2);
-            messageEncoder.encodeText(buffer, true, dst);
-            messageEncoder.reset();
-            dst.flip();
+            var dst = messageEncoder.encodeBinary(buffer, true);
             return underlyingSocket.writeAsync(dst);
         } catch (IOException exception) {
             return CompletableFuture.failedFuture(exception);
@@ -230,9 +201,7 @@ public class WebSocketClient implements AutoCloseable {
 
     private void closeWebSocket() {
         try {
-            var dst = ByteBuffer.allocate(16384);
-            messageEncoder.encodeClose(NORMAL_CLOSURE, CharBuffer.allocate(0), dst);
-            dst.flip();
+            var dst = messageEncoder.encodeClose(NORMAL_CLOSURE, CharBuffer.allocate(0));
             var future = underlyingSocket.writeAsync(dst);
             future.join();
         }catch(Throwable ignored) {
@@ -249,11 +218,7 @@ public class WebSocketClient implements AutoCloseable {
     }
 
     public interface Listener {
-        default void onText(CharSequence data) {
-
-        }
-
-        default void onBinary(ByteBuffer data) {
+        default void onMessage(ByteBuffer data, boolean last) {
 
         }
 
@@ -269,9 +234,6 @@ public class WebSocketClient implements AutoCloseable {
         private static final int READING_64_LENGTH = 8;
         private static final int READING_PAYLOAD = 32;
 
-        private final ByteBufferOutputStream binaryOutputStream;
-        private final CharBufferOutputStream textOutputStream;
-        private final CharsetDecoder textDecoder;
         private final ByteBuffer accumulator;
         private boolean fin;
         private MessageOpcode opcode;
@@ -281,17 +243,10 @@ public class WebSocketClient implements AutoCloseable {
         private ByteBuffer binaryData;
         private int state;
         private long remainingPayloadLength;
-        private ByteBuffer textLeftovers;
 
         public MessageDecoder() {
-            this.binaryOutputStream = new ByteBufferOutputStream();
-            this.textOutputStream = new CharBufferOutputStream();
-            this.textDecoder = UTF_8.newDecoder();
-            textDecoder.onMalformedInput(CodingErrorAction.REPORT);
-            textDecoder.onUnmappableCharacter(CodingErrorAction.REPORT);
             this.accumulator = ByteBuffer.allocate(8);
             this.state = AWAITING_FIRST_BYTE;
-            this.textLeftovers = EMPTY_BYTEBUFFER;
         }
 
         public void readFrame(ByteBuffer input, Listener listener) {
@@ -435,6 +390,7 @@ public class WebSocketClient implements AutoCloseable {
             if (!input.hasRemaining()) {
                 return true;
             }
+
             var b = input.get();
             if ((b & 0b10000000) != 0) {
                 throw new IllegalArgumentException("Masked frame received");
@@ -469,7 +425,7 @@ public class WebSocketClient implements AutoCloseable {
 
         private void payloadData(ByteBuffer data, Listener listener) {
             unconsumedPayloadLen -= data.remaining();
-            boolean lastPayloadChunk = unconsumedPayloadLen == 0;
+            var lastPayloadChunk = unconsumedPayloadLen == 0;
             if (opcode.isControl()) {
                 if (binaryData != null) { // An intermediate or the last chunk
                     binaryData.put(data);
@@ -479,30 +435,11 @@ public class WebSocketClient implements AutoCloseable {
                     binaryData = ByteBuffer.allocate(data.remaining()).put(data);
                 }
             } else {
-                boolean last = fin && lastPayloadChunk;
-                boolean text = opcode == MessageOpcode.TEXT || originatingOpcode == MessageOpcode.TEXT;
+                var last = fin && lastPayloadChunk;
+                var text = opcode == MessageOpcode.TEXT || originatingOpcode == MessageOpcode.TEXT;
                 if (!text) {
-                    binaryOutputStream.writeBuffer(data, data.remaining());
-                    if (last) {
-                        listener.onBinary(binaryOutputStream.toByteBuffer());
-                        binaryOutputStream.reset();
-                    }
+                    listener.onMessage(data, last);
                     data.position(data.limit()); // Consume
-                } else {
-                    boolean binaryNonEmpty = data.hasRemaining();
-                    CharBuffer textData;
-                    try {
-                        textData = decode(data, last);
-                    } catch (CharacterCodingException e) {
-                        throw new IllegalArgumentException("Invalid UTF-8 in frame " + opcode, e);
-                    }
-                    if (!(binaryNonEmpty && !textData.hasRemaining())) {
-                        textOutputStream.writeBuffer(textData, textData.remaining());
-                        if (last) {
-                            listener.onText(textOutputStream.toString());
-                            textOutputStream.reset();
-                        }
-                    }
                 }
             }
         }
@@ -513,8 +450,8 @@ public class WebSocketClient implements AutoCloseable {
             }
             switch (opcode) {
                 case CLOSE -> {
-                    char statusCode = NO_STATUS_CODE;
-                    String reason = "";
+                    var statusCode = NO_STATUS_CODE;
+                    var reason = "";
                     if (payloadLen != 0) {
                         statusCode = binaryData.getChar();
                         if (!isLegalToReceiveFromServer(statusCode)) {
@@ -551,225 +488,101 @@ public class WebSocketClient implements AutoCloseable {
 
             return code != NO_STATUS_CODE && code != CLOSED_ABNORMALLY && code != 1015 && code != 1010;
         }
-
-        private CharBuffer decode(ByteBuffer in, boolean endOfInput) throws CharacterCodingException {
-            ByteBuffer b;
-            int rem = textLeftovers.remaining();
-            if (rem != 0) {
-                b = ByteBuffer.allocate(rem + in.remaining());
-                b.put(textLeftovers).put(in).flip();
-            } else {
-                b = in;
-            }
-            CharBuffer out = CharBuffer.allocate(b.remaining());
-            CoderResult r = textDecoder.decode(b, out, endOfInput);
-            if (r.isError()) {
-                r.throwException();
-            }
-            if (b.hasRemaining()) {
-                textLeftovers = ByteBuffer.allocate(b.remaining()).put(b).flip();
-            } else {
-                textLeftovers = EMPTY_BYTEBUFFER;
-            }
-            b.position(b.limit()); // As if we always read to the end
-            if (endOfInput) {
-                r = textDecoder.flush(out);
-                textDecoder.reset();
-                if (r.isOverflow()) {
-                    throw new InternalError("Not yet implemented");
-                }
-            }
-            return out.flip();
-        }
     }
 
     private static final class MessageEncoder {
         private final SecureRandom maskingKeySource;
         private final CharsetEncoder charsetEncoder;
         private final ByteBuffer intermediateBuffer;
+        private final ByteBuffer outputBuffer;
         private final ByteBuffer headerBuffer;
         private final ByteBuffer acc;
         private final int[] maskBytes;
         private int offset;
         private long maskLong;
-        private boolean started;
-        private boolean flushing;
-        private boolean moreText = true;
-        private long headerCount;
         private boolean previousFin = true;
         private boolean previousText;
         private boolean closed;
-        private int actualLen;
-        private int expectedLen;
         private char firstChar;
         private long payloadLen;
         private int maskingKey;
         private boolean mask;
 
-        public MessageEncoder() {
+        public MessageEncoder(int maxPayloadSize) {
             this.maskingKeySource = new SecureRandom();
             this.charsetEncoder = StandardCharsets.UTF_8.newEncoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT);
-            this.intermediateBuffer = ByteBuffer.allocate(16384);
+            this.intermediateBuffer = ByteBuffer.allocate(maxPayloadSize);
+            this.outputBuffer = ByteBuffer.allocate(maxPayloadSize);
             this.headerBuffer = ByteBuffer.allocate(MAX_HEADER_SIZE_BYTES);
             this.acc = ByteBuffer.allocate(8);
             this.maskBytes = new int[4];
         }
 
-        public void reset() {
-            started = false;
-            flushing = false;
-            moreText = true;
-            headerCount = 0;
-            actualLen = 0;
-        }
-
-        public boolean encodeText(CharBuffer src, boolean last, ByteBuffer dst) throws IOException {
+        public ByteBuffer encodeBinary(ByteBuffer src, boolean last) throws IOException {
             if (closed) {
                 throw new IOException("Output closed");
             }
-            if (!started) {
-                if (!previousText && !previousFin) {
-                    // Previous data message was a partial binary message
-                    throw new IllegalStateException("Unexpected text message");
-                }
-                started = true;
-                headerBuffer.position(0).limit(0);
-                intermediateBuffer.position(0).limit(0);
-                charsetEncoder.reset();
-            }
-            while (true) {
-                if (putAvailable(headerBuffer, dst)) {
-                    return false;
-                }
 
-                if (maskAvailable(intermediateBuffer, dst) < 0) {
-                    return false;
-                }
-                if (!moreText) {
-                    previousFin = last;
-                    previousText = true;
-                    return true;
-                }
-                intermediateBuffer.clear();
-                CoderResult r = null;
-                if (!flushing) {
-                    r = charsetEncoder.encode(src, intermediateBuffer, true);
-                    if (r.isUnderflow()) {
-                        flushing = true;
-                    }
-                }
-                if (flushing) {
-                    r = charsetEncoder.flush(intermediateBuffer);
-                    if (r.isUnderflow()) {
-                        moreText = false;
-                    }
-                }
-                if (r.isError()) {
-                    try {
-                        r.throwException();
-                    } catch (CharacterCodingException e) {
-                        throw new IOException("Malformed text message", e);
-                    }
-                }
-                intermediateBuffer.flip();
-                MessageOpcode opcode = previousFin && headerCount == 0 ? MessageOpcode.TEXT : MessageOpcode.CONTINUATION;
-                boolean fin = last && !moreText;
-                setupHeader(opcode, fin, intermediateBuffer.remaining());
-                headerCount++;
+            if (previousText && !previousFin) {
+                throw new IllegalStateException("Unexpected binary message");
             }
+
+            var opcode = previousFin ? MessageOpcode.BINARY : MessageOpcode.CONTINUATION;
+            setupHeader(opcode, last, src.remaining());
+            previousFin = last;
+            previousText = false;
+            outputBuffer.clear();
+            outputBuffer.put(headerBuffer);
+            transferMasking(src, outputBuffer);
+            outputBuffer.flip();
+            return outputBuffer;
         }
 
-        private boolean putAvailable(ByteBuffer src, ByteBuffer dst) {
-            int available = dst.remaining();
-            if (available >= src.remaining()) {
-                dst.put(src);
-                return false;
-            } else {
-                int lim = src.limit();                   // save the limit
-                src.limit(src.position() + available);
-                dst.put(src);
-                src.limit(lim);                          // restore the limit
-                return true;
-            }
-        }
-
-        public boolean encodeBinary(ByteBuffer src, boolean last, ByteBuffer dst) throws IOException {
+        public ByteBuffer encodeClose(int statusCode, CharBuffer reason) throws IOException {
             if (closed) {
                 throw new IOException("Output closed");
             }
-            if (!started) {
-                if (previousText && !previousFin) {
-                    // Previous data message was a partial text message
-                    throw new IllegalStateException("Unexpected binary message");
-                }
-                expectedLen = src.remaining();
-                MessageOpcode opcode = previousFin ? MessageOpcode.BINARY : MessageOpcode.CONTINUATION;
-                setupHeader(opcode, last, expectedLen);
-                previousFin = last;
-                previousText = false;
-                started = true;
-            }
-            if (putAvailable(headerBuffer, dst)) {
-                return false;
-            }
-            int count = maskAvailable(src, dst);
-            actualLen += Math.abs(count);
-            if (count >= 0 && actualLen != expectedLen) {
-                throw new IOException("Concurrent message modification");
-            }
-            return count >= 0;
-        }
 
-        private int maskAvailable(ByteBuffer src, ByteBuffer dst) {
-            int r0 = dst.remaining();
-            transferMasking(src, dst);
-            int masked = r0 - dst.remaining();
-            return src.hasRemaining() ? -masked : masked;
-        }
+            intermediateBuffer.position(0).limit(MAX_CONTROL_FRAME_PAYLOAD_LENGTH);
+            intermediateBuffer.putChar((char) statusCode);
+            var r = charsetEncoder.reset().encode(reason, intermediateBuffer, true);
+            if (r.isUnderflow()) {
+                r = charsetEncoder.flush(intermediateBuffer);
+            }
 
-        public boolean encodeClose(int statusCode, CharBuffer reason, ByteBuffer dst) throws IOException {
-            if (closed) {
-                throw new IOException("Output closed");
-            }
-            if (!started) {
-                intermediateBuffer.position(0).limit(MAX_CONTROL_FRAME_PAYLOAD_LENGTH);
-                intermediateBuffer.putChar((char) statusCode);
-                CoderResult r = charsetEncoder.reset().encode(reason, intermediateBuffer, true);
-                if (r.isUnderflow()) {
-                    r = charsetEncoder.flush(intermediateBuffer);
+            if (r.isError()) {
+                try {
+                    r.throwException();
+                } catch (CharacterCodingException e) {
+                    throw new IOException("Malformed reason", e);
                 }
-                if (r.isError()) {
-                    try {
-                        r.throwException();
-                    } catch (CharacterCodingException e) {
-                        throw new IOException("Malformed reason", e);
-                    }
-                } else if (r.isOverflow()) {
-                    throw new IOException("Long reason");
-                } else if (!r.isUnderflow()) {
-                    throw new InternalError(); // assertion
-                }
-                intermediateBuffer.flip();
-                setupHeader(MessageOpcode.CLOSE, true, intermediateBuffer.remaining());
-                started = true;
-                closed = true;
+            } else if (r.isOverflow()) {
+                throw new IOException("Long reason");
+            } else if (!r.isUnderflow()) {
+                throw new InternalError();
             }
-            if (putAvailable(headerBuffer, dst)) {
-                return false;
-            }
-            return maskAvailable(intermediateBuffer, dst) >= 0;
+
+            intermediateBuffer.flip();
+            setupHeader(MessageOpcode.CLOSE, true, intermediateBuffer.remaining());
+            closed = true;
+            outputBuffer.clear();
+            outputBuffer.put(headerBuffer);
+            transferMasking(intermediateBuffer, outputBuffer);
+            outputBuffer.flip();
+            return outputBuffer;
         }
 
         private void setupHeader(MessageOpcode opcode, boolean fin, long payloadLen) {
             headerBuffer.clear();
-            int mask = maskingKeySource.nextInt();
+            var mask = maskingKeySource.nextInt();
             if (mask == 0) {
                 fin(fin).opcode(opcode).payloadLen(payloadLen).write(headerBuffer);
             } else {
                 fin(fin).opcode(opcode).payloadLen(payloadLen).mask(mask).write(headerBuffer);
             }
+
             headerBuffer.flip();
             acc.clear().putInt(mask).putInt(mask).flip();
             for (int i = 0; i < maskBytes.length; i++) {
@@ -789,8 +602,10 @@ public class WebSocketClient implements AutoCloseable {
             if (offset == 0) {
                 return;
             }
-            int i = src.position(), j = dst.position();
-            final int srcLim = src.limit(), dstLim = dst.limit();
+            var i = src.position();
+            var j = dst.position();
+            var srcLim = src.limit();
+            var dstLim = dst.limit();
             for (; offset < 4 && i < srcLim && j < dstLim; i++, j++, offset++) {
                 dst.put(j, (byte) (src.get(i) ^ maskBytes[offset]));
             }
@@ -800,9 +615,10 @@ public class WebSocketClient implements AutoCloseable {
         }
 
         private void loop(ByteBuffer src, ByteBuffer dst) {
-            int i = src.position();
-            int j = dst.position();
-            final int srcLongLim = src.limit() - 7, dstLongLim = dst.limit() - 7;
+            var i = src.position();
+            var j = dst.position();
+            var srcLongLim = src.limit() - 7;
+            var dstLongLim = dst.limit() - 7;
             for (; i < srcLongLim && j < dstLongLim; i += 8, j += 8) {
                 dst.putLong(j, src.getLong(i) ^ maskLong);
             }
@@ -819,8 +635,10 @@ public class WebSocketClient implements AutoCloseable {
         }
 
         private void end(ByteBuffer src, ByteBuffer dst) {
-            final int srcLim = src.limit(), dstLim = dst.limit();
-            int i = src.position(), j = dst.position();
+            var srcLim = src.limit();
+            var dstLim = dst.limit();
+            var i = src.position();
+            var j = dst.position();
             for (; i < srcLim && j < dstLim; i++, j++, offset = (offset + 1) & 3) {
                 dst.put(j, (byte) (src.get(i) ^ maskBytes[offset]));
             }
@@ -832,10 +650,6 @@ public class WebSocketClient implements AutoCloseable {
             if (value) {
                 firstChar |= 0b10000000_00000000;
             } else {
-                // Explicit cast required:
-                // The negation "~" sets the high order bits
-                // so the value becomes more than 16 bits and the
-                // compiler will emit a warning if not cast
                 firstChar &= (char) ~0b10000000_00000000;
             }
             return this;
@@ -851,7 +665,7 @@ public class WebSocketClient implements AutoCloseable {
                 throw new IllegalArgumentException("Negative: " + value);
             }
             payloadLen = value;
-            firstChar &= 0b11111111_10000000; // Clear previous payload length leftovers
+            firstChar &= 0b11111111_10000000;
             if (payloadLen < 126) {
                 firstChar |= (char) payloadLen;
             } else if (payloadLen < 65536) {
@@ -924,111 +738,6 @@ public class WebSocketClient implements AutoCloseable {
 
         static MessageOpcode ofCode(int code) {
             return opcodes[code & 0xF];
-        }
-    }
-
-    private static final class ByteBufferOutputStream {
-        private static final int SOFT_MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8;
-
-        private byte[] buf;
-        private int count;
-
-        public ByteBufferOutputStream() {
-            this.buf = new byte[32];
-        }
-
-        public void writeBuffer(ByteBuffer buffer, int length) {
-            ensureCapacity(count + length);
-            for (var i = 0; i < length; i++) {
-                buf[count++] = buffer.get();
-            }
-        }
-
-        private void ensureCapacity(int minCapacity) {
-            var oldCapacity = buf.length;
-            var minGrowth = minCapacity - oldCapacity;
-            if (minGrowth > 0) {
-                buf = Arrays.copyOf(buf, newLength(oldCapacity, minGrowth, oldCapacity));
-            }
-        }
-
-        private int newLength(int oldLength, int minGrowth, int prefGrowth) {
-            var prefLength = oldLength + Math.max(minGrowth, prefGrowth);
-            if (0 < prefLength && prefLength <= SOFT_MAX_ARRAY_LENGTH) {
-                return prefLength;
-            } else {
-                return hugeLength(oldLength, minGrowth);
-            }
-        }
-
-        private int hugeLength(int oldLength, int minGrowth) {
-            var minLength = oldLength + minGrowth;
-            if (minLength < 0) {
-                throw new OutOfMemoryError("Required array length " + oldLength + " + " + minGrowth + " is too large");
-            }
-
-            return Math.max(minLength, SOFT_MAX_ARRAY_LENGTH);
-        }
-
-        public ByteBuffer toByteBuffer() {
-            return ByteBuffer.wrap(buf, 0, count);
-        }
-
-        public void reset() {
-            count = 0;
-        }
-    }
-
-    private static final class CharBufferOutputStream {
-        private static final int SOFT_MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8;
-
-        private char[] buf;
-        private int count;
-
-        public CharBufferOutputStream() {
-            this.buf = new char[32];
-        }
-
-        public void writeBuffer(CharBuffer buffer, int length) {
-            ensureCapacity(count + length);
-            for (var i = 0; i < length; i++) {
-                buf[count++] = buffer.get();
-            }
-        }
-
-        private void ensureCapacity(int minCapacity) {
-            var oldCapacity = buf.length;
-            var minGrowth = minCapacity - oldCapacity;
-            if (minGrowth > 0) {
-                buf = Arrays.copyOf(buf, newLength(oldCapacity, minGrowth, oldCapacity));
-            }
-        }
-
-        private int newLength(int oldLength, int minGrowth, int prefGrowth) {
-            var prefLength = oldLength + Math.max(minGrowth, prefGrowth);
-            if (0 < prefLength && prefLength <= SOFT_MAX_ARRAY_LENGTH) {
-                return prefLength;
-            } else {
-                return hugeLength(oldLength, minGrowth);
-            }
-        }
-
-        private int hugeLength(int oldLength, int minGrowth) {
-            var minLength = oldLength + minGrowth;
-            if (minLength < 0) {
-                throw new OutOfMemoryError("Required array length " + oldLength + " + " + minGrowth + " is too large");
-            }
-
-            return Math.max(minLength, SOFT_MAX_ARRAY_LENGTH);
-        }
-
-        @Override
-        public String toString() {
-            return String.valueOf(buf, 0, count);
-        }
-
-        public void reset() {
-            count = 0;
         }
     }
 }

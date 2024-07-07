@@ -44,9 +44,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
     public static final class WebSocketSession extends SocketSession implements WebSocketClient.Listener {
         private WebSocketClient webSocket;
+        private final MessageOutputStream messageOutputStream;
 
         WebSocketSession(URI proxy) {
             super(proxy);
+            this.messageOutputStream = new MessageOutputStream();
         }
 
         @Override
@@ -95,21 +97,67 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
 
         @Override
-        public void onBinary(ByteBuffer data) {
+        public void onMessage(ByteBuffer data, boolean last) {
             try {
-                while (data.remaining() >= 3) {
-                    var messageLength = (data.get() << 16) | Short.toUnsignedInt(data.getShort());
-                    if (messageLength < 0) {
-                        disconnect();
-                        return;
+                while (data.hasRemaining()) {
+                    if(messageOutputStream.isReady()) {
+                        if(data.remaining() < MESSAGE_LENGTH) {
+                            break;
+                        }
+
+                        var messageLength = (data.get() << 16) | Short.toUnsignedInt(data.getShort());
+                        if (messageLength < 0) {
+                            disconnect();
+                            return;
+                        }
+
+                        messageOutputStream.init(messageLength);
                     }
 
-                    var message = new byte[messageLength];
-                    data.get(message);
-                    listener.onMessage(message);
+                    var result = messageOutputStream.write(data);
+                    if(result != null) {
+                        listener.onMessage(result, messageOutputStream.length());
+                    }
                 }
             } catch (Throwable throwable) {
                 listener.onError(throwable);
+            }
+        }
+
+        private final static class MessageOutputStream {
+            private byte[] buffer;
+            private int position;
+            private int limit;
+            public void init(int limit) {
+                if(buffer == null || buffer.length < limit) {
+                    this.buffer = new byte[limit];
+                }
+
+                this.limit = limit;
+            }
+
+            public byte[] write(ByteBuffer input) {
+                if(!input.hasRemaining()) {
+                    return null;
+                }
+
+                var remaining = Math.min(limit - position, input.remaining());
+                input.get(buffer, position, remaining);
+                position += remaining;
+                if (position != limit) {
+                    return null;
+                }
+
+                position = 0;
+                return buffer;
+            }
+
+            public boolean isReady() {
+                return position == 0;
+            }
+
+            public int length() {
+                return limit;
             }
         }
     }
@@ -176,7 +224,8 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
             }
 
             try {
-                listener.onMessage(messageBuffer.array());
+                var message = messageBuffer.array();
+                listener.onMessage(message, message.length);
             }catch (Throwable throwable) {
                 listener.onError(throwable);
             }finally {

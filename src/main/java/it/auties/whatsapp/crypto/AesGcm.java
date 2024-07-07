@@ -11,7 +11,7 @@ import java.io.UncheckedIOException;
 public final class AesGcm {
     private static final int TAG_LENGTH = 128;
 
-    private static byte[] cipher(byte[] iv, byte[] input, byte[] key, byte[] additionalData, boolean encrypt) {
+    private static byte[] cipher(byte[] iv, byte[] input, int offset, int length, byte[] key, byte[] additionalData, boolean encrypt) {
         try {
             var cipher = Cipher.getInstance("AES/GCM/NoPadding");
             var keySpec = new SecretKeySpec(key, "AES");
@@ -20,9 +20,9 @@ public final class AesGcm {
             if(additionalData != null) {
                 cipher.updateAAD(additionalData);
             }
-            var outputLength = cipher.getOutputSize(input.length);
+            var outputLength = cipher.getOutputSize(length);
             var output = new byte[outputLength];
-            var outputOffset = cipher.update(input, 0, input.length, output, 0);
+            var outputOffset = cipher.update(input, offset, length, output, 0);
             cipher.doFinal(output, outputOffset);
             return output;
         } catch (Throwable throwable) {
@@ -47,25 +47,38 @@ public final class AesGcm {
     }
 
     public static byte[] encrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(toIv(iv), input, key, additionalData, true);
+        return cipher(toIv(iv), input, 0, input.length, key, additionalData, true);
     }
 
     public static byte[] encrypt(byte[] iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(iv, input, key, additionalData, true);
+        return cipher(iv, input, 0, input.length, key, additionalData, true);
     }
 
     public static byte[] encrypt(byte[] iv, byte[] input, byte[] key) {
-        return cipher(iv, input, key, null, true);
+        return cipher(iv, input, 0, input.length, key, null, true);
     }
 
     public static byte[] decrypt(long iv, byte[] input, byte[] key) {
-        return decrypt(iv, input, key, null);
+        return decrypt(iv, input, 0, input.length, key);
+    }
+
+    public static byte[] decrypt(long iv, byte[] input, int offset, int length, byte[] key) {
+        return decrypt(iv, input, offset, length, key, null);
     }
 
     public static byte[] decrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(toIv(iv), input, key, additionalData, false);
+        return decrypt(iv, input, 0, input.length, key, additionalData);
     }
+
+    public static byte[] decrypt(long iv, byte[] input, int offset, int length, byte[] key, byte[] additionalData) {
+        return cipher(toIv(iv), input, offset, length, key, additionalData, false);
+    }
+
     public static byte[] decrypt(byte[] iv, byte[] input, byte[] key, byte[] additionalData) {
-        return cipher(iv, input, key, additionalData, false);
+        return decrypt(iv, input, 0, input.length, key, additionalData);
+    }
+
+    public static byte[] decrypt(byte[] iv, byte[] input, int offset, int length, byte[] key, byte[] additionalData) {
+        return cipher(iv, input, offset, length, key, additionalData, false);
     }
 }
