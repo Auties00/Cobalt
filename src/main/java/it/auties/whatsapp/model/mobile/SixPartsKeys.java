@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, SignalKeyPair identityKeyPair, byte[] identityId) {
     public static SixPartsKeys of(String sixParts) {
         Objects.requireNonNull(sixParts, "Invalid six parts");
-        var parts = sixParts.trim().split(",", 6);
+        var parts = sixParts.replaceAll(" ", "").split(",", 6);
         Validate.isTrue(parts.length == 6, "Invalid format");
         var phoneNumber = PhoneNumber.of(parts[0]);
         var noisePublicKey = Base64.getDecoder().decode(parts[1]);
