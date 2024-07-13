@@ -7,7 +7,8 @@ import it.auties.whatsapp.util.Json;
 
 import java.util.Optional;
 
-public record NewsletterStateResponse(@JsonProperty("id") Jid jid, @JsonProperty("is_requestor") boolean isRequestor, NewsletterState state) {
+public record NewsletterStateResponse(@JsonProperty("id") Jid jid, @JsonProperty("is_requestor") boolean isRequestor,
+                                      NewsletterState state) {
     public static Optional<NewsletterStateResponse> ofJson(String json) {
         return Json.readValue(json, JsonResponse.class)
                 .data()

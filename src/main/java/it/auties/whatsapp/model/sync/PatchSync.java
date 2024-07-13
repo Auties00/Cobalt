@@ -1,15 +1,14 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 
-@ProtobufMessageName("SyncdPatch")
-public final class PatchSync implements ProtobufMessage {
+@ProtobufMessage(name = "SyncdPatch")
+public final class PatchSync {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private VersionSync version;
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)

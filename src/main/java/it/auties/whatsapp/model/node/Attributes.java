@@ -401,7 +401,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     }
 
     public Attributes putAll(Collection<? extends Entry<String, ?>> entries) {
-        for(var entry : entries) {
+        for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
 
@@ -410,7 +410,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
 
     @SafeVarargs
     public final Attributes putAll(Entry<String, ?>... entries) {
-        for(var entry : entries) {
+        for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
 

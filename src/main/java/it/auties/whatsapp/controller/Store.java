@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.TextPreviewSetting;
@@ -43,7 +43,6 @@ import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.registration.metadata.WhatsappMetadata;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Protobuf;
 
 import java.net.URI;
 import java.time.Duration;
@@ -62,7 +61,8 @@ import java.util.stream.Stream;
  * This controller holds the user-related data regarding a WhatsappWeb session
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Store extends Controller<Store> implements ProtobufMessage {
+@ProtobufMessage
+public final class Store extends Controller<Store> {
     /**
      * Default push name
      */
@@ -71,13 +71,12 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     /**
      * The version used by this session
      */
-    @ProtobufProperty(index = 5, type = ProtobufType.STRING, mixin = Protobuf.URIMixin.class)
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     URI proxy;
 
     /**
      * The version used by this session
      */
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT, overrideType = Version.class, mixin = Protobuf.FutureMixin.class)
     CompletableFuture<Version> version;
 
     /**
@@ -159,14 +158,14 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
      * The key here is the index of the device's key
      * The value is the device's companion jid
      */
-    @ProtobufProperty(index = 18, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.INT32)
+    @ProtobufProperty(index = 18, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.INT32)
     LinkedHashMap<Jid, Integer> linkedDevicesKeys;
 
     /**
      * The profile picture of the user linked to this account. This field will be null while the user
      * hasn't logged in yet. This field can also be null if no image was set.
      */
-    @ProtobufProperty(index = 19, type = ProtobufType.STRING, mixin = Protobuf.URIMixin.class)
+    @ProtobufProperty(index = 19, type = ProtobufType.STRING)
     URI profilePicture;
 
     /**
@@ -192,7 +191,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     /**
      * The non-null map of properties received by whatsapp
      */
-    @ProtobufProperty(index = 23, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.STRING)
+    @ProtobufProperty(index = 23, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.STRING)
     final ConcurrentHashMap<String, String> properties;
 
     /**
@@ -204,7 +203,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     /**
      * The non-null map of contacts
      */
-    @ProtobufProperty(index = 24, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 24, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final ConcurrentHashMap<Jid, Contact> contacts;
 
     /**
@@ -222,13 +221,13 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
     /**
      * The non-null map of privacy settings
      */
-    @ProtobufProperty(index = 26, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 26, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final ConcurrentHashMap<String, PrivacySettingEntry> privacySettings;
 
     /**
      * The non-null map of calls
      */
-    @ProtobufProperty(index = 27, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 27, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final ConcurrentHashMap<String, Call> calls;
 
     /**
@@ -344,10 +343,9 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
          * All args constructor
          */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, CompletableFuture<Version> version, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.proxy = proxy;
-        this.version = version;
         this.online = online;
         this.locale = locale;
         this.name = Objects.requireNonNullElse(name, DEFAULT_NAME);
@@ -1546,7 +1544,7 @@ public final class Store extends Controller<Store> implements ProtobufMessage {
             }
         }
 
-        @ProtobufConverter
+        @ProtobufSerializer
         @JsonValue
         public Version value() {
             if (future != null) {

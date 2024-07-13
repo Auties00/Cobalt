@@ -1,12 +1,11 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.message.standard.*;
 
 /**
  * A model interface that represents a message sent by a contact or by Whatsapp.
  */
-public sealed interface Message extends ProtobufMessage permits ButtonMessage, ContextualMessage, PaymentMessage, ServerMessage, CallMessage, EmptyMessage, KeepInChatMessage, NewsletterAdminInviteMessage, PollUpdateMessage, ReactionMessage {
+public sealed interface Message permits ButtonMessage, ContextualMessage, PaymentMessage, ServerMessage, CallMessage, EmptyMessage, KeepInChatMessage, NewsletterAdminInviteMessage, PollUpdateMessage, ReactionMessage {
     /**
      * Return message type
      *

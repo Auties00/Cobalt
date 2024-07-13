@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufDeserializer;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 
 /**
  * A model class that represents a hydrated four row template
@@ -8,12 +9,12 @@ import it.auties.protobuf.annotation.ProtobufConverter;
 public record HydratedFourRowTemplateTextTitle(
         String text
 ) implements HydratedFourRowTemplateTitle {
-    @ProtobufConverter
+    @ProtobufDeserializer
     public static HydratedFourRowTemplateTextTitle of(String text) {
         return new HydratedFourRowTemplateTextTitle(text);
     }
 
-    @ProtobufConverter
+    @ProtobufSerializer
     public String text() {
         return text;
     }

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
@@ -11,6 +12,7 @@ import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+@ProtobufMessage
 public record NewsletterAdminInviteMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid newsletterJid,

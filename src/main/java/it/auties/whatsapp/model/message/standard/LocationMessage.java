@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a location inside
  */
-@ProtobufMessageName("Message.LocationMessage")
+@ProtobufMessage(name = "Message.LocationMessage")
 public final class LocationMessage implements ContextualMessage<LocationMessage>, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.DOUBLE)
     private final double latitude;

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.button.interactive;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
@@ -16,7 +16,8 @@ public sealed interface InteractiveHeaderAttachment permits DocumentMessage, Ima
      * The constants of this enumerated type describe the various types of attachment that a product
      * header can have
      */
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * No attachment
          */

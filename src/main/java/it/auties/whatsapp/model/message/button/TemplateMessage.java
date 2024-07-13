@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
@@ -21,7 +21,7 @@ import java.util.Optional;
  * A model class that represents a message sent in a WhatsappBusiness chat that provides a list of
  * buttons to choose from.
  */
-@ProtobufMessageName("Message.TemplateMessage")
+@ProtobufMessage(name = "Message.TemplateMessage")
 public final class TemplateMessage implements ContextualMessage<TemplateMessage>, ButtonMessage {
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
     private final String id;

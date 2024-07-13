@@ -1,13 +1,12 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Protobuf;
 
 import java.util.*;
 
@@ -16,11 +15,12 @@ import java.util.*;
  * way to store IDs and serialize said class.
  */
 @SuppressWarnings("unused")
-public abstract sealed class Controller<T extends Controller<T>> implements ProtobufMessage permits Store, Keys {
+@ProtobufMessage
+public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
     /**
      * The id of this controller
      */
-    @ProtobufProperty(index = 1, type = ProtobufType.STRING, mixin = Protobuf.UUIDMixin.class)
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     protected final UUID uuid;
 
     /**

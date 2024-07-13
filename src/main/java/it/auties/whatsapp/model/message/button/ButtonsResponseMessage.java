@@ -1,15 +1,16 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonBody;
 import it.auties.whatsapp.model.button.base.ButtonText;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.message.button.ButtonsResponseMessage.ResponseType;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 
@@ -19,7 +20,7 @@ import java.util.Optional;
  * A model class that represents a message that contains a newsletters to a previous
  * {@link ButtonsMessage}
  */
-@ProtobufMessageName("Message.ButtonsResponseMessage")
+@ProtobufMessage(name = "Message.ButtonsResponseMessage")
 public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsResponseMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String buttonId;
@@ -84,7 +85,8 @@ public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsR
     }
 
 
-    public enum ResponseType implements ProtobufEnum {
+    @ProtobufEnum
+    public enum ResponseType {
         UNKNOWN(0),
         SELECTED_DISPLAY_TEXT(1);
 

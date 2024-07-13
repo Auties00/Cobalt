@@ -2,38 +2,34 @@ package it.auties.whatsapp.registration.gcm;
 
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 import java.util.Optional;
 
-final class McsExchange {
-    static final byte TAG_HEARTBEAT_PING = 0;
-    static final byte TAG_HEARTBEAT_ACK = 1;
-    static final byte TAG_LOGIN_REQUEST = 2;
-    static final byte TAG_LOGIN_RESPONSE = 3;
-    static final byte TAG_CLOSE = 4;
-    static final byte TAG_MESSAGE_STANZA = 5;
-    static final byte TAG_PRESENCE_STANZA = 6;
-    static final byte TAG_IQ_STANZA = 7;
-    static final byte TAG_DATA_MESSAGE_STANZA = 8;
-    static final byte TAG_BATCH_PRESENCE_STANZA = 9;
-    static final byte TAG_STREAM_ERROR_STANZA = 10;
-    static final byte TAG_HTTP_REQUEST = 11;
-    static final byte TAG_HTTP_RESPONSE = 12;
-    static final byte TAG_BIND_ACCOUNT_REQUEST = 13;
-    static final byte TAG_BIND_ACCOUNT_RESPONSE = 14;
-    static final byte TAG_TALK_METADATA = 15;
-    static final byte TAG_NUM_PROTO_TYPES = 16;
+@SuppressWarnings("unused")
+sealed interface McsExchange {
+    byte TAG_HEARTBEAT_PING = 0;
+    byte TAG_HEARTBEAT_ACK = 1;
+    byte TAG_LOGIN_REQUEST = 2;
+    byte TAG_LOGIN_RESPONSE = 3;
+    byte TAG_CLOSE = 4;
+    byte TAG_MESSAGE_STANZA = 5;
+    byte TAG_PRESENCE_STANZA = 6;
+    byte TAG_IQ_STANZA = 7;
+    byte TAG_DATA_MESSAGE_STANZA = 8;
+    byte TAG_BATCH_PRESENCE_STANZA = 9;
+    byte TAG_STREAM_ERROR_STANZA = 10;
+    byte TAG_HTTP_REQUEST = 11;
+    byte TAG_HTTP_RESPONSE = 12;
+    byte TAG_BIND_ACCOUNT_REQUEST = 13;
+    byte TAG_BIND_ACCOUNT_RESPONSE = 14;
+    byte TAG_TALK_METADATA = 15;
+    byte TAG_NUM_PROTO_TYPES = 16;
 
-            
-    private McsExchange() {
-
-    }
-
-    static Optional<ProtobufMessage> readMessage(byte tag, byte[] message) {
+    static Optional<McsExchange> readMessage(byte tag, byte[] message) {
         return Optional.ofNullable(switch (tag) {
             case TAG_HEARTBEAT_PING -> McsExchangeHeartbeatPingSpec.decode(message);
             case TAG_HEARTBEAT_ACK -> McsExchangeHeartbeatAckSpec.decode(message);
@@ -46,7 +42,8 @@ final class McsExchange {
             default -> null;
         });
     }
-    
+
+    @ProtobufMessage
     record HeartbeatPing(
             @ProtobufProperty(index = 1, type = ProtobufType.INT32)
             int streamId,
@@ -54,10 +51,11 @@ final class McsExchange {
             int lastStreamIdReceived,
             @ProtobufProperty(index = 3, type = ProtobufType.INT64)
             long status
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record HeartbeatAck(
             @ProtobufProperty(index = 1, type = ProtobufType.INT32)
             int streamId,
@@ -65,10 +63,11 @@ final class McsExchange {
             int lastStreamIdReceived,
             @ProtobufProperty(index = 3, type = ProtobufType.INT64)
             long status
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record ErrorInfo(
             @ProtobufProperty(index = 1, type = ProtobufType.INT32)
             int code,
@@ -78,19 +77,21 @@ final class McsExchange {
             String type,
             @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
             Extension extension
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record Setting(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String name,
             @ProtobufProperty(index = 2, type = ProtobufType.STRING)
             String value
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record HeartbeatStat(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String ip,
@@ -98,10 +99,11 @@ final class McsExchange {
             boolean timeout,
             @ProtobufProperty(index = 3, type = ProtobufType.INT32)
             int intervalMs
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record HeartbeatConfig(
             @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
             boolean uploadStat,
@@ -109,10 +111,11 @@ final class McsExchange {
             String ip,
             @ProtobufProperty(index = 3, type = ProtobufType.INT32)
             int intervalMs
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record ClientEvent(
             @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
             Type type,
@@ -128,8 +131,9 @@ final class McsExchange {
             int errorCode,
             @ProtobufProperty(index = 300, type = ProtobufType.UINT64)
             long timeConnectionEstablishedMs
-    ) implements ProtobufMessage {
-        enum Type implements ProtobufEnum {
+    ) implements McsExchange {
+        @ProtobufEnum
+        enum Type {
             UNKNOWN(0),
             DISCARDED_EVENTS(1),
             FAILED_CONNECTION(2),
@@ -143,6 +147,7 @@ final class McsExchange {
         }
     }
 
+    @ProtobufMessage
     record LoginRequest(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String id,
@@ -178,8 +183,9 @@ final class McsExchange {
             Long status,
             @ProtobufProperty(index = 22, type = ProtobufType.OBJECT)
             List<ClientEvent> clientEvent
-    ) implements ProtobufMessage {
-        enum AuthService implements ProtobufEnum {
+    ) implements McsExchange {
+        @ProtobufEnum
+        enum AuthService {
             ANDROID_ID(2);
 
             final int index;
@@ -190,6 +196,7 @@ final class McsExchange {
         }
     }
 
+    @ProtobufMessage
     record LoginResponse(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String id,
@@ -207,32 +214,36 @@ final class McsExchange {
             HeartbeatConfig heartbeatConfig,
             @ProtobufProperty(index = 8, type = ProtobufType.INT64)
             long serverTimestamp
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record StreamErrorStanza(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String type,
             @ProtobufProperty(index = 2, type = ProtobufType.STRING)
             String text
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
-    record Close() implements ProtobufMessage {
+    @ProtobufMessage
+    record Close() implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record Extension(
             @ProtobufProperty(index = 1, type = ProtobufType.INT32)
             int id,
             @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
             byte[] data
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record IqStanza(
             @ProtobufProperty(index = 1, type = ProtobufType.INT64)
             long rmqId,
@@ -258,8 +269,9 @@ final class McsExchange {
             long accountId,
             @ProtobufProperty(index = 12, type = ProtobufType.INT64)
             long status
-    ) implements ProtobufMessage {
-        enum IqType implements ProtobufEnum {
+    ) implements McsExchange {
+        @ProtobufEnum
+        enum IqType {
             GET(0),
             SET(1),
             RESULT(2),
@@ -273,15 +285,17 @@ final class McsExchange {
         }
     }
 
+    @ProtobufMessage
     record AppData(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String key,
             @ProtobufProperty(index = 2, type = ProtobufType.STRING)
             String value
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record DataMessageStanza(
             @ProtobufProperty(index = 2, type = ProtobufType.STRING)
             String id,
@@ -315,18 +329,20 @@ final class McsExchange {
             byte[] rawData,
             @ProtobufProperty(index = 24, type = ProtobufType.BOOL)
             boolean immediateAck
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 
-    record StreamAck() implements ProtobufMessage {
+    @ProtobufMessage
+    record StreamAck() implements McsExchange {
 
     }
 
+    @ProtobufMessage
     record SelectiveAck(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             List<String> id
-    ) implements ProtobufMessage {
+    ) implements McsExchange {
 
     }
 }

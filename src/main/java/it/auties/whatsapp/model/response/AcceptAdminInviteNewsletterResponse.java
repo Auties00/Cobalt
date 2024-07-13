@@ -24,7 +24,8 @@ public record AcceptAdminInviteNewsletterResponse(@JsonProperty("id") Jid jid) {
 
     }
 
-    private record JsonResponse(@JsonProperty("xwa2_newsletter_admin_invite_accept") AcceptAdminInviteNewsletterResponse response) {
+    private record JsonResponse(
+            @JsonProperty("xwa2_newsletter_admin_invite_accept") AcceptAdminInviteNewsletterResponse response) {
 
     }
 }

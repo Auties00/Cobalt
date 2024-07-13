@@ -1,14 +1,13 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 
 /**
  * A model that represents all types of hydrated buttons
  */
-public sealed interface HighlyStructuredButton extends ProtobufMessage permits HighlyStructuredCallButton, HighlyStructuredQuickReplyButton, HighlyStructuredURLButton {
+public sealed interface HighlyStructuredButton permits HighlyStructuredCallButton, HighlyStructuredQuickReplyButton, HighlyStructuredURLButton {
     /**
      * Returns the text of this button
      *
@@ -27,7 +26,8 @@ public sealed interface HighlyStructuredButton extends ProtobufMessage permits H
      * The constants of this enumerated type describe the various types of buttons that a template can
      * wrap
      */
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * No button
          */

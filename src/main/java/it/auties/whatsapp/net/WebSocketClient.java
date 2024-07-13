@@ -428,11 +428,11 @@ public class WebSocketClient implements AutoCloseable {
             unconsumedPayloadLen -= data.remaining();
             var lastPayloadChunk = unconsumedPayloadLen == 0;
             if (opcode.isControl()) {
-                if (binaryData != null) { // An intermediate or the last chunk
+                if (binaryData != null) {
                     binaryData.put(data);
-                } else if (!lastPayloadChunk) { // The first chunk
+                } else if (!lastPayloadChunk) {
                     binaryData = ByteBuffer.allocate(MAX_CONTROL_FRAME_PAYLOAD_LENGTH).put(data);
-                } else { // The only chunk
+                } else {
                     binaryData = ByteBuffer.allocate(data.remaining()).put(data);
                 }
             } else {
@@ -440,7 +440,7 @@ public class WebSocketClient implements AutoCloseable {
                 var text = opcode == MessageOpcode.TEXT || originatingOpcode == MessageOpcode.TEXT;
                 if (!text) {
                     listener.onMessage(data, last);
-                    data.position(data.limit()); // Consume
+                    data.position(data.limit());
                 }
             }
         }

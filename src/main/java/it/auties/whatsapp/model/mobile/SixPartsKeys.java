@@ -8,7 +8,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, SignalKeyPair identityKeyPair, byte[] identityId) {
+public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, SignalKeyPair identityKeyPair,
+                           byte[] identityId) {
     public static SixPartsKeys of(String sixParts) {
         Objects.requireNonNull(sixParts, "Invalid six parts");
         var parts = sixParts.replaceAll(" ", "").split(",", 6);

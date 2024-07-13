@@ -1,8 +1,7 @@
-package it.auties.whatsapp.model.button.misc;
+package it.auties.whatsapp.model.button.base;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
@@ -14,7 +13,7 @@ import java.util.Optional;
 /**
  * A model class that represents data about a button
  */
-@ProtobufMessageName("MsgOpaqueData")
+@ProtobufMessage(name = "MsgOpaqueData")
 public record ButtonOpaqueData(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String> body,
@@ -66,6 +65,6 @@ public record ButtonOpaqueData(
         Optional<byte[]> encReactionEncPayload,
         @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
         Optional<byte[]> encReactionEncIv
-) implements ProtobufMessage {
+) {
 
 }

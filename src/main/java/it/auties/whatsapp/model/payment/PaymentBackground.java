@@ -1,15 +1,14 @@
 package it.auties.whatsapp.model.payment;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Optional;
 
-@ProtobufMessageName("PaymentBackground")
+@ProtobufMessage(name = "PaymentBackground")
 public record PaymentBackground(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String id,
@@ -31,9 +30,10 @@ public record PaymentBackground(
         Optional<PaymentMediaData> mediaData,
         @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
         PaymentBackgroundType type
-) implements ProtobufMessage {
+) {
 
-    public enum PaymentBackgroundType implements ProtobufEnum {
+    @ProtobufEnum
+    public enum PaymentBackgroundType {
         UNKNOWN(0),
         DEFAULT(1);
 

@@ -21,7 +21,8 @@ public record ContactAboutResponse(Optional<String> about, Optional<ZonedDateTim
     @SuppressWarnings("unchecked")
     public static Optional<ContactAboutResponse> ofJson(String json) {
         try {
-            var parsedJson = Json.readValue(json, new TypeReference<Map<String, Object>>() {});
+            var parsedJson = Json.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
             var data = (Map<String, ?>) parsedJson.get("data");
             var updates = (List<?>) data.get("xwa2_users_updates_since");
             var latestUpdate = (Map<String, ?>) updates.getFirst();

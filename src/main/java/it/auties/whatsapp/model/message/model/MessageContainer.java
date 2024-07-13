@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
@@ -28,7 +27,7 @@ import java.util.Optional;
  * <li>Standard messages</li>
  * </ul>
  */
-@ProtobufMessageName("Message")
+@ProtobufMessage(name = "Message")
 public record MessageContainer(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String> textWithNoContextMessage,
@@ -128,7 +127,7 @@ public record MessageContainer(
         Optional<NewsletterAdminInviteMessage> newsletterAdminInviteMessage,
         @ProtobufProperty(index = 35, type = ProtobufType.OBJECT)
         Optional<DeviceContextInfo> deviceInfo
-) implements ProtobufMessage {
+) {
     /**
      * An empty message
      */
@@ -165,56 +164,58 @@ public record MessageContainer(
         var builder = new MessageContainerBuilder();
         switch (message) {
             case SenderKeyDistributionMessage senderKeyDistribution ->
-                    builder.senderKeyDistributionMessage(Optional.of(senderKeyDistribution));
-            case ImageMessage image -> builder.imageMessage(Optional.of(image));
-            case ContactMessage contact -> builder.contactMessage(Optional.of(contact));
-            case LocationMessage location -> builder.locationMessage(Optional.of(location));
-            case TextMessage text -> builder.textMessage(Optional.of(text));
-            case DocumentMessage document -> builder.documentMessage(Optional.of(document));
-            case AudioMessage audio -> builder.audioMessage(Optional.of(audio));
-            case VideoOrGifMessage video -> builder.videoMessage(Optional.of(video));
-            case ProtocolMessage protocol -> builder.protocolMessage(Optional.of(protocol));
-            case ContactsMessage contactsArray -> builder.contactsArrayMessage(Optional.of(contactsArray));
+                    builder.senderKeyDistributionMessage(senderKeyDistribution);
+            case ImageMessage image -> builder.imageMessage(image);
+            case ContactMessage contact -> builder.contactMessage(contact);
+            case LocationMessage location -> builder.locationMessage(location);
+            case TextMessage text -> builder.textMessage(text);
+            case DocumentMessage document -> builder.documentMessage(document);
+            case AudioMessage audio -> builder.audioMessage(audio);
+            case VideoOrGifMessage video -> builder.videoMessage(video);
+            case ProtocolMessage protocol -> builder.protocolMessage(protocol);
+            case ContactsMessage contactsArray -> builder.contactsArrayMessage(contactsArray);
             case HighlyStructuredMessage highlyStructured ->
-                    builder.highlyStructuredMessage(Optional.of(highlyStructured));
-            case SendPaymentMessage sendPayment -> builder.sendPaymentMessage(Optional.of(sendPayment));
-            case LiveLocationMessage liveLocation -> builder.liveLocationMessage(Optional.of(liveLocation));
-            case RequestPaymentMessage requestPayment -> builder.requestPaymentMessage(Optional.of(requestPayment));
+                    builder.highlyStructuredMessage(highlyStructured);
+            case SendPaymentMessage sendPayment -> builder.sendPaymentMessage(sendPayment);
+            case LiveLocationMessage liveLocation -> builder.liveLocationMessage(liveLocation);
+            case RequestPaymentMessage requestPayment -> builder.requestPaymentMessage(requestPayment);
             case DeclinePaymentRequestMessage declinePaymentRequest ->
-                    builder.declinePaymentRequestMessage(Optional.of(declinePaymentRequest));
+                    builder.declinePaymentRequestMessage(declinePaymentRequest);
             case CancelPaymentRequestMessage cancelPaymentRequest ->
-                    builder.cancelPaymentRequestMessage(Optional.of(cancelPaymentRequest));
-            case TemplateMessage template -> builder.templateMessage(Optional.of(template));
-            case StickerMessage sticker -> builder.stickerMessage(Optional.of(sticker));
-            case GroupInviteMessage groupInvite -> builder.groupInviteMessage(Optional.of(groupInvite));
+                    builder.cancelPaymentRequestMessage(cancelPaymentRequest);
+            case TemplateMessage template -> builder.templateMessage(template);
+            case StickerMessage sticker -> builder.stickerMessage(sticker);
+            case GroupInviteMessage groupInvite -> builder.groupInviteMessage(groupInvite);
             case TemplateReplyMessage templateButtonReply ->
-                    builder.templateReplyMessage(Optional.of(templateButtonReply));
-            case ProductMessage product -> builder.productMessage(Optional.of(product));
-            case DeviceSyncMessage deviceSync -> builder.deviceSyncMessage(Optional.of(deviceSync));
-            case ListMessage buttonsList -> builder.listMessage(Optional.of(buttonsList));
-            case PaymentOrderMessage order -> builder.orderMessage(Optional.of(order));
-            case ListResponseMessage listResponse -> builder.listResponseMessage(Optional.of(listResponse));
-            case PaymentInvoiceMessage invoice -> builder.invoiceMessage(Optional.of(invoice));
-            case ButtonsMessage buttons -> builder.buttonsMessage(Optional.of(buttons));
-            case ButtonsResponseMessage buttonsResponse -> builder.buttonsResponseMessage(Optional.of(buttonsResponse));
-            case PaymentInviteMessage paymentInvite -> builder.paymentInviteMessage(Optional.of(paymentInvite));
-            case InteractiveMessage interactive -> builder.interactiveMessage(Optional.of(interactive));
-            case ReactionMessage reaction -> builder.reactionMessage(Optional.of(reaction));
-            case StickerSyncRMRMessage stickerSync -> builder.stickerSyncMessage(Optional.of(stickerSync));
-            case DeviceSentMessage deviceSent -> builder.deviceSentMessage(Optional.of(deviceSent));
+                    builder.templateReplyMessage(templateButtonReply);
+            case ProductMessage product -> builder.productMessage(product);
+            case DeviceSyncMessage deviceSync -> builder.deviceSyncMessage(deviceSync);
+            case ListMessage buttonsList -> builder.listMessage(buttonsList);
+            case PaymentOrderMessage order -> builder.orderMessage(order);
+            case ListResponseMessage listResponse -> builder.listResponseMessage(listResponse);
+            case PaymentInvoiceMessage invoice -> builder.invoiceMessage(invoice);
+            case ButtonsMessage buttons -> builder.buttonsMessage(buttons);
+            case ButtonsResponseMessage buttonsResponse -> builder.buttonsResponseMessage(buttonsResponse);
+            case PaymentInviteMessage paymentInvite -> builder.paymentInviteMessage(paymentInvite);
+            case InteractiveMessage interactive -> builder.interactiveMessage(interactive);
+            case ReactionMessage reaction -> builder.reactionMessage(reaction);
+            case StickerSyncRMRMessage stickerSync -> builder.stickerSyncMessage(stickerSync);
+            case DeviceSentMessage deviceSent -> builder.deviceSentMessage(deviceSent);
             case InteractiveResponseMessage interactiveResponseMessage ->
-                    builder.interactiveResponseMessage(Optional.of(interactiveResponseMessage));
+                    builder.interactiveResponseMessage(interactiveResponseMessage);
             case PollCreationMessage pollCreationMessage ->
-                    builder.pollCreationMessage(Optional.of(pollCreationMessage));
-            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(Optional.of(pollUpdateMessage));
-            case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(Optional.of(keepInChatMessage));
+                    builder.pollCreationMessage(pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(pollUpdateMessage);
+            case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(keepInChatMessage);
             case RequestPhoneNumberMessage requestPhoneNumberMessage ->
-                    builder.requestPhoneNumberMessage(Optional.of(requestPhoneNumberMessage));
+                    builder.requestPhoneNumberMessage(requestPhoneNumberMessage);
             case EncryptedReactionMessage encReactionMessage ->
-                    builder.encryptedReactionMessage(Optional.of(encReactionMessage));
-            case CallMessage callMessage -> builder.callMessage(Optional.of(callMessage));
-            case NewsletterAdminInviteMessage newsletterAdminInviteMessage -> builder.newsletterAdminInviteMessage(newsletterAdminInviteMessage);
-            default -> {}
+                    builder.encryptedReactionMessage(encReactionMessage);
+            case CallMessage callMessage -> builder.callMessage(callMessage);
+            case NewsletterAdminInviteMessage newsletterAdminInviteMessage ->
+                    builder.newsletterAdminInviteMessage(newsletterAdminInviteMessage);
+            default -> {
+            }
         }
         return builder;
     }
@@ -436,7 +437,7 @@ public record MessageContainer(
         if (callMessage.isPresent()) {
             return callMessage.get();
         }
-        if(newsletterAdminInviteMessage.isPresent()) {
+        if (newsletterAdminInviteMessage.isPresent()) {
             return newsletterAdminInviteMessage.get();
         }
         // This needs to be last
@@ -483,7 +484,7 @@ public record MessageContainer(
      * @return a non-null type
      */
     public MessageType type() {
-        if(textWithNoContextMessage.isPresent()) {
+        if (textWithNoContextMessage.isPresent()) {
             return MessageType.TEXT;
         }
 
@@ -532,7 +533,7 @@ public record MessageContainer(
 
         return new MessageContainerBuilder()
                 .ephemeralMessage(FutureMessageContainer.of(content()))
-                .deviceInfo(deviceInfo)
+                .deviceInfo(deviceInfo.orElse(null))
                 .build();
     }
 
@@ -548,7 +549,7 @@ public record MessageContainer(
 
         return new MessageContainerBuilder()
                 .viewOnceMessage(FutureMessageContainer.of(content()))
-                .deviceInfo(deviceInfo)
+                .deviceInfo(deviceInfo.orElse(null))
                 .build();
     }
 

@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
@@ -10,7 +9,7 @@ import it.auties.whatsapp.util.Clock;
 
 import java.util.Optional;
 
-@ProtobufMessageName("SyncActionValue")
+@ProtobufMessage(name = "SyncActionValue")
 public record ActionValueSync(
         @ProtobufProperty(index = 1, type = ProtobufType.INT64)
         long timestamp,
@@ -78,7 +77,7 @@ public record ActionValueSync(
         Optional<KeyExpiration> keyExpiration,
         @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
         Optional<PrimaryFeature> primaryFeature
-) implements ProtobufMessage {
+) {
     public static ActionValueSync of(Action action) {
         var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
         switch (action) {

@@ -1,12 +1,13 @@
 package it.auties.whatsapp.model.mobile;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
 import java.util.Optional;
 
+@ProtobufMessage
 public record CountryLocale(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String languageValue,
@@ -14,7 +15,7 @@ public record CountryLocale(
         String languageCode,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         String separator
-) implements ProtobufMessage {
+) {
     public static Optional<CountryLocale> of(String encoded) {
         return of(encoded, "-")
                 .or(() -> of(encoded, "_"));

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -17,7 +17,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a product inside
  */
-@ProtobufMessageName("Message.ProductMessage")
+@ProtobufMessage(name = "Message.ProductMessage")
 public final class ProductMessage implements ContextualMessage<ProductMessage>, ButtonMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private final Product product;

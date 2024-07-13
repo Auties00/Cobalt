@@ -2,8 +2,8 @@ package it.auties.whatsapp.model.newsletter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
@@ -15,7 +15,8 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class Newsletter implements JidProvider, ProtobufMessage {
+@ProtobufMessage
+public final class Newsletter implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Jid jid;
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)

@@ -2,9 +2,8 @@ package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonActionLink;
 import it.auties.whatsapp.model.chat.Chat;
@@ -21,8 +20,8 @@ import java.util.Optional;
 /**
  * A model class that holds the information related to a {@link it.auties.whatsapp.model.message.model.ContextualMessage}.
  */
-@ProtobufMessageName("ContextInfo")
-public final class ContextInfo implements Info, ProtobufMessage {
+@ProtobufMessage(name = "ContextInfo")
+public final class ContextInfo implements Info {
     /**
      * The jid of the message that this ContextualMessage quotes
      */
@@ -101,7 +100,6 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     @ProtobufProperty(index = 25, type = ProtobufType.UINT32)
     private int ephemeralExpiration;
-
     /**
      * The timestampSeconds, that is the seconds in seconds since {@link java.time.Instant#EPOCH}, of the
      * last modification to the ephemeral settings for the chat where this ContextualMessage was

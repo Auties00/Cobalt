@@ -1,11 +1,12 @@
 package it.auties.whatsapp.registration.gcm;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 
+@ProtobufMessage
 record AndroidCheckInRequest(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String imei,
@@ -49,6 +50,6 @@ record AndroidCheckInRequest(
         String userName,
         @ProtobufProperty(index = 22, type = ProtobufType.INT32)
         int userSerialNumber
-) implements ProtobufMessage {
+) {
 
 }

@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
@@ -28,73 +29,55 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 /**
  * A model class that represents a message holding a document inside
  */
+@ProtobufMessage
 public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
         implements MediaMessage<DocumentMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     private static final int THUMBNAIL_WIDTH = 480;
     private static final int THUMBNAIL_HEIGHT = 339;
 
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private String mediaUrl;
-
+    String mediaUrl;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String mimetype;
-
+    final String mimetype;
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    private final String title;
-
+    final String title;
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private byte[] mediaSha256;
-
+    byte[] mediaSha256;
     @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
-    private Long mediaSize;
-
+    Long mediaSize;
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-    private final Integer pageCount;
-
+    final Integer pageCount;
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
-    private byte[] mediaKey;
-
+    byte[] mediaKey;
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-    private final String fileName;
-
+    final String fileName;
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
-    private byte[] mediaEncryptedSha256;
-
+    byte[] mediaEncryptedSha256;
     @ProtobufProperty(index = 10, type = ProtobufType.STRING)
-    private String mediaDirectPath;
-
+    String mediaDirectPath;
     @ProtobufProperty(index = 11, type = ProtobufType.UINT64)
-    private Long mediaKeyTimestampSeconds;
-
-    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private final byte[] thumbnail;
-
+    Long mediaKeyTimestampSeconds;
     @ProtobufProperty(index = 12, type = ProtobufType.BOOL)
-    private final boolean contactVcard;
-
+    final boolean contactVcard;
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
-    private final String thumbnailDirectPath;
-
+    final String thumbnailDirectPath;
     @ProtobufProperty(index = 14, type = ProtobufType.BYTES)
-    private final byte[] thumbnailSha256;
-
+    final byte[] thumbnailSha256;
     @ProtobufProperty(index = 15, type = ProtobufType.BYTES)
-    private final byte[] thumbnailEncSha256;
-
+    final byte[] thumbnailEncSha256;
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    final byte[] thumbnail;
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
-    private ContextInfo contextInfo;
-
+    ContextInfo contextInfo;
     @ProtobufProperty(index = 18, type = ProtobufType.UINT32)
-    private final Integer thumbnailHeight;
-
+    final Integer thumbnailHeight;
     @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
-    private final Integer thumbnailWidth;
-
+    final Integer thumbnailWidth;
     @ProtobufProperty(index = 20, type = ProtobufType.STRING)
-    private final String caption;
+    final String caption;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public DocumentMessage(String mediaUrl, String mimetype, String title, byte[] mediaSha256, Long mediaSize, Integer pageCount, byte[] mediaKey, String fileName, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, byte[] thumbnail, boolean contactVcard, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, ContextInfo contextInfo, Integer thumbnailHeight, Integer thumbnailWidth, String caption) {
+    public DocumentMessage(String mediaUrl, String mimetype, String title, byte[] mediaSha256, Long mediaSize, Integer pageCount, byte[] mediaKey, String fileName, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, boolean contactVcard, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, byte[] thumbnail, ContextInfo contextInfo, Integer thumbnailHeight, Integer thumbnailWidth, String caption) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.title = title;
@@ -106,11 +89,11 @@ public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
         this.mediaEncryptedSha256 = mediaEncryptedSha256;
         this.mediaDirectPath = mediaDirectPath;
         this.mediaKeyTimestampSeconds = mediaKeyTimestampSeconds;
-        this.thumbnail = thumbnail;
         this.contactVcard = contactVcard;
         this.thumbnailDirectPath = thumbnailDirectPath;
         this.thumbnailSha256 = thumbnailSha256;
         this.thumbnailEncSha256 = thumbnailEncSha256;
+        this.thumbnail = thumbnail;
         this.contextInfo = contextInfo;
         this.thumbnailHeight = thumbnailHeight;
         this.thumbnailWidth = thumbnailWidth;

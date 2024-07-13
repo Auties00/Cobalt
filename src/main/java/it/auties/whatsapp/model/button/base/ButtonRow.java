@@ -1,8 +1,7 @@
-package it.auties.whatsapp.model.button.misc;
+package it.auties.whatsapp.model.button.base;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Bytes;
 
@@ -11,7 +10,7 @@ import java.util.HexFormat;
 /**
  * A model class that represents a row of buttons
  */
-@ProtobufMessageName("Message.ListMessage.Row")
+@ProtobufMessage(name = "Message.ListMessage.Row")
 public record ButtonRow(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String title,
@@ -19,7 +18,7 @@ public record ButtonRow(
         String description,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         String id
-) implements ProtobufMessage {
+) {
     public static ButtonRow of(String title, String description) {
         return new ButtonRow(title, description, HexFormat.of().formatHex(Bytes.random(5)));
     }

@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.product;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 
@@ -10,7 +9,7 @@ import it.auties.whatsapp.model.message.standard.ImageMessage;
 /**
  * A model class that represents a product
  */
-@ProtobufMessageName("Message.ListMessage.Product")
+@ProtobufMessage(name = "Message.ListMessage.Product")
 public record Product(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         ImageMessage image,
@@ -34,6 +33,6 @@ public record Product(
         String firstImageId,
         @ProtobufProperty(index = 12, type = ProtobufType.INT64)
         long salePriceAmount1000
-) implements ProtobufMessage {
+) {
 
 }

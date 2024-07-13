@@ -8,10 +8,15 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 public class WebQrLoginExample {
     public static void main(String[] args) {
         Whatsapp.webBuilder()
-                .newConnection()
+                .lastConnection()
                 .historyLength(WebHistoryLength.extended())
                 .unregistered(QrHandler.toTerminal())
-                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
+                .addLoggedInListener(api -> {
+                    System.out.printf("Connected: %s%n", api.store().privacySettings());
+                    var chat = api.store().findChatBy(entry -> entry.name().toLowerCase().contains("les camarades"))
+                                    .orElseThrow();
+                    System.out.println("Result: " + api.queryGroupMetadata(chat).join());
+                })
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewChatMessageListener((api, message) -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

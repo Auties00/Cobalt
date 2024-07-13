@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Optional;
@@ -13,7 +12,7 @@ import java.util.Optional;
 /**
  * A model class that holds the information related to an advertisement.
  */
-@ProtobufMessageName("ContextInfo.ExternalAdReplyInfo")
+@ProtobufMessage(name = "ContextInfo.ExternalAdReplyInfo")
 public record ExternalAdReplyInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String> title,
@@ -41,20 +40,22 @@ public record ExternalAdReplyInfo(
         boolean showAdAttribution,
         @ProtobufProperty(index = 13, type = ProtobufType.STRING)
         Optional<String> ctwaClid
-) implements Info, ProtobufMessage {
+) implements Info {
     /**
      * The constants of this enumerated type describe the various types of media that an ad can wrap
      */
-    @ProtobufMessageName("ChatRowOpaqueData.DraftMessage.CtwaContextData.ContextInfoExternalAdReplyInfoMediaType")
-    public enum MediaType implements ProtobufEnum {
+    @ProtobufEnum(name = "ChatRowOpaqueData.DraftMessage.CtwaContextData.ContextInfoExternalAdReplyInfoMediaType")
+    public enum MediaType {
         /**
          * No media
          */
         NONE(0),
+
         /**
          * Image
          */
         IMAGE(1),
+
         /**
          * Video
          */

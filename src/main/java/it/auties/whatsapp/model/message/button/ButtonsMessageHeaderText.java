@@ -1,14 +1,15 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufDeserializer;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 
 public record ButtonsMessageHeaderText(String text) implements ButtonsMessageHeader {
-    @ProtobufConverter
+    @ProtobufDeserializer
     public static ButtonsMessageHeaderText of(String text) {
         return new ButtonsMessageHeaderText(text);
     }
 
-    @ProtobufConverter
+    @ProtobufSerializer
     public String text() {
         return text;
     }

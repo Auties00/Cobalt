@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.companion;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
@@ -18,7 +18,8 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * A model for a mobile companion
  */
-public final class CompanionDevice implements ProtobufMessage {
+@ProtobufMessage
+public final class CompanionDevice {
     private static final List<Entry<String, String>> IPHONES = List.of(
             Map.entry("iPhone_11", "iPhone12,1"),
             Map.entry("iPhone_11_Pro", "iPhone12,3"),
@@ -104,7 +105,7 @@ public final class CompanionDevice implements ProtobufMessage {
                 clientType
         );
     }
-    
+
     CompanionDevice(
             String model,
             String manufacturer,
@@ -244,7 +245,7 @@ public final class CompanionDevice implements ProtobufMessage {
     }
 
     public CompanionDevice toBusiness() {
-        if(platform.isBusiness()) {
+        if (platform.isBusiness()) {
             return this;
         }
 

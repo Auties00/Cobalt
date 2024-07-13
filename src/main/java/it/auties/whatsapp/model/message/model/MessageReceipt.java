@@ -1,9 +1,8 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Clock;
@@ -17,8 +16,8 @@ import java.util.Set;
 /**
  * A model that represents the receipt for a message
  */
-@ProtobufMessageName("UserReceipt")
-public final class MessageReceipt implements ProtobufMessage {
+@ProtobufMessage(name = "UserReceipt")
+public final class MessageReceipt {
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)
     private Long deliveredTimestampSeconds;
     @ProtobufProperty(index = 3, type = ProtobufType.INT64)

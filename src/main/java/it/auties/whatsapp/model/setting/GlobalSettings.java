@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.ChatWallpaper;
 import it.auties.whatsapp.model.media.MediaVisibility;
@@ -12,7 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.Optional;
 
 
-@ProtobufMessageName("GlobalSettings")
+@ProtobufMessage(name = "GlobalSettings")
 public record GlobalSettings(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<ChatWallpaper> lightThemeWallpaper,
@@ -36,7 +35,7 @@ public record GlobalSettings(
         long disappearingModeTimestampSeconds,
         @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
         AvatarUserSettings avatarUserSettings
-) implements ProtobufMessage {
+) {
     /**
      * Returns when the disappearing mode was toggled
      *

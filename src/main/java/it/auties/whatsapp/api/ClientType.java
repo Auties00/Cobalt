@@ -1,13 +1,14 @@
 package it.auties.whatsapp.api;
 
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of API that can be used to make
  * {@link Whatsapp} work
  */
-public enum ClientType implements ProtobufEnum {
+@ProtobufEnum
+public enum ClientType {
     /**
      * A standalone client that requires the QR code to be scanned by its companion on log-in Reversed
      * from <a href="https://web.whatsapp.com">Whatsapp Web Client</a>
@@ -20,6 +21,7 @@ public enum ClientType implements ProtobufEnum {
     MOBILE(1);
 
     final int index;
+
     ClientType(@ProtobufEnumIndex int index) {
         this.index = index;
     }

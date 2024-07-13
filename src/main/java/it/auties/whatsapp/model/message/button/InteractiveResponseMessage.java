@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.interactive.InteractiveBody;
@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.message.model.MessageType;
 
 import java.util.Optional;
 
-@ProtobufMessageName("Message.InteractiveResponseMessage")
+@ProtobufMessage(name = "Message.InteractiveResponseMessage")
 public final class InteractiveResponseMessage implements ContextualMessage<InteractiveResponseMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private final InteractiveBody body;

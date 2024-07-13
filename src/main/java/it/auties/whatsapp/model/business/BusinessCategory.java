@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.business;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
 
@@ -14,12 +14,13 @@ import java.nio.charset.StandardCharsets;
  * @param id   the non-null id
  * @param name the non-null display name
  */
+@ProtobufMessage
 public record BusinessCategory(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String id,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String name
-) implements ProtobufMessage {
+) {
     /**
      * Constructs a category from a node
      *

@@ -371,6 +371,9 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         contextInfo.quotedMessageChatJid()
                 .flatMap(store::findChatByJid)
                 .ifPresent(contextInfo::setQuotedMessageChat);
+        contextInfo.quotedMessageSenderJid()
+                .flatMap(store::findContactByJid)
+                .ifPresent(contextInfo::setQuotedMessageSender);
     }
 
     private CompletableFuture<Void> handleStoreFile(Store store, Path entry) {
@@ -464,6 +467,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
             var chat = decodeChat(input.readAllBytes());
             for (var message : chat.messages()) {
                 message.messageInfo().setChat(chat);
+                store.findContactByJid(message.messageInfo().senderJid())
+                        .ifPresent(message.messageInfo()::setSender);
             }
             store.addChatDirect(chat);
         } catch (IOException exception) {

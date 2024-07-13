@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
 
@@ -14,7 +13,7 @@ import java.util.Optional;
 /**
  * A model class that holds a payload about a business link info.
  */
-@ProtobufMessageName("BizAccountLinkInfo")
+@ProtobufMessage(name = "BizAccountLinkInfo")
 public record BusinessAccountLinkInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
         long businessId,
@@ -26,7 +25,7 @@ public record BusinessAccountLinkInfo(
         HostStorageType hostStorage,
         @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
         AccountType accountType
-) implements ProtobufMessage {
+) {
     /**
      * Returns this object's timestampSeconds
      *
@@ -39,8 +38,8 @@ public record BusinessAccountLinkInfo(
     /**
      * The constants of this enumerated type describe the various types of business accounts
      */
-    @ProtobufMessageName("BizAccountLinkInfo.AccountType")
-    public enum AccountType implements ProtobufEnum {
+    @ProtobufEnum(name = "BizAccountLinkInfo.AccountType")
+    public enum AccountType {
         /**
          * Enterprise
          */
@@ -61,8 +60,9 @@ public record BusinessAccountLinkInfo(
         }
     }
 
-    @ProtobufMessageName("BizAccountLinkInfo.HostStorageType")
-    public enum HostStorageType implements ProtobufEnum {
+    @ProtobufEnum(name = "BizAccountLinkInfo.HostStorageType")
+    public enum HostStorageType {
+
         /**
          * Hosted on a private server ("On-Premise")
          */

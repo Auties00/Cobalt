@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
@@ -14,7 +14,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message to confirm a {@link RequestPaymentMessage}.
  */
-@ProtobufMessageName("Message.SendPaymentMessage")
+@ProtobufMessage(name = "Message.SendPaymentMessage")
 public record SendPaymentMessage(
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
         Optional<MessageContainer> noteMessage,

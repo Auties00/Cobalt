@@ -2,7 +2,8 @@ package it.auties.whatsapp.model.jid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufDeserializer;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 
 import java.util.Objects;
@@ -32,7 +33,7 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
         return of(null, server);
     }
 
-    @ProtobufConverter // Reserved for protobuf
+    @ProtobufDeserializer // Reserved for protobuf
     public static Jid ofProtobuf(String input) {
         return input == null ? null : Jid.of(input);
     }
@@ -233,7 +234,7 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
      * @return a non-null String
      */
     @JsonValue
-    @ProtobufConverter
+    @ProtobufSerializer
     @Override
     public String toString() {
         var user = Objects.requireNonNullElse(user(), "");

@@ -62,7 +62,6 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.mobile;
     exports it.auties.whatsapp.model.button.interactive;
     exports it.auties.whatsapp.model.button.base;
-    exports it.auties.whatsapp.model.button.misc;
     exports it.auties.whatsapp.model.button.template.hydrated;
     exports it.auties.whatsapp.model.button.template.hsm;
     exports it.auties.whatsapp.model.button.template;

@@ -1,11 +1,12 @@
 package it.auties.whatsapp.registration.gcm;
 
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 
+@ProtobufMessage
 record AndroidCheckInResponse(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean statsOk,
@@ -27,13 +28,14 @@ record AndroidCheckInResponse(
         long securityToken,
         @ProtobufProperty(index = 11, type = ProtobufType.STRING)
         String versionInfo
-) implements ProtobufMessage {
+) {
+    @ProtobufMessage
     record Setting(
             @ProtobufProperty(index = 1, type = ProtobufType.STRING)
             String key,
             @ProtobufProperty(index = 2, type = ProtobufType.STRING)
             String value
-    ) implements ProtobufMessage {
+    ) {
 
     }
 }

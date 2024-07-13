@@ -125,13 +125,13 @@ public final class Json {
         public JsonDeserializer<?> createContextual(DeserializationContext context, BeanProperty property) {
             if (property == null) {
                 var optionalType = context.getContextualType();
-                var valueType = optionalType.containedTypeOrUnknown(0);
-                return new OptionalDeserializer(valueType);
+                var mapValueType = optionalType.containedTypeOrUnknown(0);
+                return new OptionalDeserializer(mapValueType);
             }
 
             var optionalType = property.getType();
-            var valueType = optionalType.containedTypeOrUnknown(0);
-            return new OptionalDeserializer(valueType);
+            var mapValueType = optionalType.containedTypeOrUnknown(0);
+            return new OptionalDeserializer(mapValueType);
         }
 
         @Override

@@ -1,11 +1,12 @@
 package it.auties.whatsapp.registration.gcm;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
+@ProtobufMessage
 record ChromeBuild(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Platform platform,
@@ -13,8 +14,9 @@ record ChromeBuild(
         String chromeVersion,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Channel channel
-) implements ProtobufMessage {
-    enum Platform implements ProtobufEnum {
+) {
+    @ProtobufEnum
+    enum Platform {
         PLATFORM_WIN(1),
         PLATFORM_MAC(2),
         PLATFORM_LINUX(3),
@@ -23,12 +25,14 @@ record ChromeBuild(
         PLATFORM_ANDROID(6);
 
         final int index;
+
         Platform(@ProtobufEnumIndex int index) {
             this.index = index;
         }
     }
 
-    enum Channel implements ProtobufEnum {
+    @ProtobufEnum
+    enum Channel {
         CHANNEL_STABLE(1),
         CHANNEL_BETA(2),
         CHANNEL_DEV(3),
@@ -36,6 +40,7 @@ record ChromeBuild(
         CHANNEL_UNKNOWN(5);
 
         final int index;
+
         Channel(@ProtobufEnumIndex int index) {
             this.index = index;
         }

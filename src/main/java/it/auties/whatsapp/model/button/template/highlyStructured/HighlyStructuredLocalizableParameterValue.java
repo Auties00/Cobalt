@@ -1,13 +1,12 @@
 package it.auties.whatsapp.model.button.template.highlyStructured;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 
 /**
  * A model class that represents the value of a localizable parameter
  */
-public sealed interface HighlyStructuredLocalizableParameterValue extends ProtobufMessage permits HighlyStructuredCurrency, HighlyStructuredDateTime {
+public sealed interface HighlyStructuredLocalizableParameterValue permits HighlyStructuredCurrency, HighlyStructuredDateTime {
     /**
      * Returns the type of parameter
      *
@@ -15,7 +14,8 @@ public sealed interface HighlyStructuredLocalizableParameterValue extends Protob
      */
     Type parameterType();
 
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * No parameter
          */

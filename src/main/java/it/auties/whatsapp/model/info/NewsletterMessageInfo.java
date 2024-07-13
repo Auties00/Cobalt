@@ -2,8 +2,8 @@ package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
@@ -15,9 +15,8 @@ import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-public final class NewsletterMessageInfo implements MessageInfo, MessageStatusInfo<NewsletterMessageInfo>, ProtobufMessage {
-    @JsonBackReference
-    private Newsletter newsletter;
+@ProtobufMessage
+public final class NewsletterMessageInfo implements MessageInfo, MessageStatusInfo<NewsletterMessageInfo> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String id;
     @ProtobufProperty(index = 2, type = ProtobufType.INT32)
@@ -26,10 +25,12 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
     private final Long timestampSeconds;
     @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
     private final Long views;
-    @ProtobufProperty(index = 5, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final Map<String, NewsletterReaction> reactions;
     @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
     private final MessageContainer message;
+    @JsonBackReference
+    private Newsletter newsletter;
     @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
     private MessageStatus status;
 
@@ -131,7 +132,7 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
 
     public void decrementReaction(String code) {
         findReaction(code).ifPresent(reaction -> {
-            if(reaction.count() <= 1) {
+            if (reaction.count() <= 1) {
                 removeReaction(reaction.content());
                 return;
             }

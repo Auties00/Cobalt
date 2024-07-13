@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
@@ -17,7 +17,7 @@ import java.util.stream.IntStream;
 /**
  * A model class that represents a hydrated four row template
  */
-@ProtobufMessageName("Message.TemplateMessage.HydratedFourRowTemplate")
+@ProtobufMessage(name = "Message.TemplateMessage.HydratedFourRowTemplate")
 public record HydratedFourRowTemplate(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<DocumentMessage> titleDocument,

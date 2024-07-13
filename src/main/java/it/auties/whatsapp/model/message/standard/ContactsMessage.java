@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -14,7 +14,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a list of contacts inside
  */
-@ProtobufMessageName("Message.ContactsArrayMessage")
+@ProtobufMessage(name = "Message.ContactsArrayMessage")
 public final class ContactsMessage implements ContextualMessage<ContactsMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String name;

@@ -1,12 +1,11 @@
 package it.auties.whatsapp.model.signal.message;
 
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.SignalConstants;
 
-public abstract sealed class SignalProtocolMessage<T extends SignalProtocolMessage<T>> implements ProtobufMessage permits SenderKeyMessage, SignalDistributionMessage, SignalMessage, SignalPreKeyMessage {
-    private int version;
+public abstract sealed class SignalProtocolMessage<T extends SignalProtocolMessage<T>> permits SenderKeyMessage, SignalDistributionMessage, SignalMessage, SignalPreKeyMessage {
     protected byte[] serialized;
+    private int version;
 
     public SignalProtocolMessage() {
         this.version = SignalConstants.CURRENT_VERSION;

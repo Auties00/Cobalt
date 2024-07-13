@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
@@ -18,7 +17,7 @@ import java.util.Optional;
 /**
  * A model class that holds the information related to a payment.
  */
-@ProtobufMessageName("PaymentInfo")
+@ProtobufMessage(name = "PaymentInfo")
 public record PaymentInfo(
         @Deprecated
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
@@ -47,7 +46,7 @@ public record PaymentInfo(
         PaymentMoney primaryAmount,
         @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
         PaymentMoney exchangeAmount
-) implements Info, ProtobufMessage {
+) implements Info {
     /**
      * Returns when the transaction happened
      *
@@ -70,8 +69,8 @@ public record PaymentInfo(
      * The constants of this enumerated type describe the status of a payment described by a
      * {@link PaymentInfo}
      */
-    @ProtobufMessageName("PaymentInfo.Status")
-    public enum Status implements ProtobufEnum {
+    @ProtobufEnum(name = "PaymentInfo.Status")
+    public enum Status {
         /**
          * Unknown status
          */
@@ -136,8 +135,8 @@ public record PaymentInfo(
      * The constants of this enumerated type describe the currencies supported for a transaction
      * described by a {@link PaymentInfo}
      */
-    @ProtobufMessageName("PaymentInfo.Currency")
-    public enum Currency implements ProtobufEnum {
+    @ProtobufEnum(name = "PaymentInfo.Currency")
+    public enum Currency {
         /**
          * Unknown currency
          */
@@ -158,8 +157,8 @@ public record PaymentInfo(
         }
     }
 
-    @ProtobufMessageName("PaymentInfo.TxnStatus")
-    public enum TransactionStatus implements ProtobufEnum {
+    @ProtobufEnum(name = "PaymentInfo.TxnStatus")
+    public enum TransactionStatus {
         UNKNOWN(0),
         PENDING_SETUP(1),
         PENDING_RECEIVER_SETUP(2),

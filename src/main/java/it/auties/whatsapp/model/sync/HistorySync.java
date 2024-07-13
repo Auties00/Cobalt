@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.sync;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupPastParticipants;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -15,7 +14,7 @@ import java.util.Objects;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
-@ProtobufMessageName("HistorySync")
+@ProtobufMessage(name = "HistorySync")
 public record HistorySync(@ProtobufProperty(index = 1, type = OBJECT, required = true) Type syncType,
                           @ProtobufProperty(index = 2, type = OBJECT) List<Chat> conversations,
                           @ProtobufProperty(index = 3, type = OBJECT) List<ChatMessageInfo> statusV3Messages,
@@ -28,14 +27,13 @@ public record HistorySync(@ProtobufProperty(index = 1, type = OBJECT, required =
                           @ProtobufProperty(index = 11, type = OBJECT)
                           List<StickerMetadata> recentStickers,
                           @ProtobufProperty(index = 12, type = OBJECT)
-                          List<GroupPastParticipants> pastParticipants) implements ProtobufMessage {
+                          List<GroupPastParticipants> pastParticipants) {
     public HistorySync {
         Objects.requireNonNull(syncType, "Missing mandatory field: syncType");
     }
 
-    @ProtobufMessageName("HistorySync.HistorySyncType")
-    public enum Type implements ProtobufEnum {
-
+    @ProtobufEnum(name = "HistorySync.HistorySyncType")
+    public enum Type {
         INITIAL_BOOTSTRAP(0),
         INITIAL_STATUS_V3(1),
         FULL(2),

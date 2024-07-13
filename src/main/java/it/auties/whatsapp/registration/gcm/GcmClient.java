@@ -1,6 +1,5 @@
 package it.auties.whatsapp.registration.gcm;
 
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.crypto.HttpEce;
 import it.auties.whatsapp.net.HttpClient;
 import it.auties.whatsapp.net.SocketClient;
@@ -226,7 +225,7 @@ public class GcmClient {
         return ("0".repeat(8 - result.length()) + result).substring(1);
     }
 
-    private void handleMessage(ProtobufMessage payload) {
+    private void handleMessage(McsExchange payload) {
         switch (payload) {
             case LoginResponse ignored -> onLogin();
             case DataMessageStanza dataMessageStanza -> onStanza(dataMessageStanza);

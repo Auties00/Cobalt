@@ -1,9 +1,10 @@
 package it.auties.whatsapp.model.call;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
 
-public enum CallStatus implements ProtobufEnum {
+@ProtobufEnum
+public enum CallStatus {
     RINGING(0),
     ACCEPTED(1),
     REJECTED(2),

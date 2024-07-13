@@ -1,14 +1,13 @@
 package it.auties.whatsapp.model.button.interactive;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 /**
  * This model class describes a Point in space
  */
-@ProtobufMessageName("Point")
+@ProtobufMessage(name = "Point")
 public record InteractivePoint(
         @ProtobufProperty(index = 1, type = ProtobufType.INT32)
         @Deprecated
@@ -20,6 +19,6 @@ public record InteractivePoint(
         double x,
         @ProtobufProperty(index = 4, type = ProtobufType.DOUBLE)
         double y
-) implements ProtobufMessage {
+) {
 
 }

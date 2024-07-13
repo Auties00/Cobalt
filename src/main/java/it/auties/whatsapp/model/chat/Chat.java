@@ -1,11 +1,10 @@
 package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactStatus;
@@ -31,137 +30,96 @@ import java.util.function.Predicate;
  * or a group. This class is only a model, this means that changing its values will have no real
  * effect on WhatsappWeb's servers
  */
-@ProtobufMessageName("Conversation")
-public final class Chat implements ProtobufMessage, JidProvider {
+@ProtobufMessage(name = "Conversation")
+public final class Chat implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
-
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
     final ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages;
-
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     final Jid newJid;
-
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     final Jid oldJid;
-
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
     int unreadMessagesCount;
-
     @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
     boolean readOnly;
-
     @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
     boolean endOfHistoryTransfer;
-
     @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
     ChatEphemeralTimer ephemeralMessageDuration;
-
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
     long ephemeralMessagesToggleTimeSeconds;
-
     @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
     EndOfHistoryTransferType endOfHistoryTransferType;
-
     @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
     long timestampSeconds;
-
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
     String name;
-
     @ProtobufProperty(index = 15, type = ProtobufType.BOOL)
     boolean notSpam;
-
     @ProtobufProperty(index = 16, type = ProtobufType.BOOL)
     boolean archived;
-
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
     ChatDisappear disappearInitiator;
-
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
     boolean markedAsUnread;
-
     @ProtobufProperty(index = 20, type = ProtobufType.OBJECT)
     final List<GroupParticipant> participants;
-
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
     byte[] token;
-
     @ProtobufProperty(index = 22, type = ProtobufType.UINT64)
     long tokenTimestampSeconds;
-
     @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
     byte[] identityKey;
-    
     @ProtobufProperty(index = 24, type = ProtobufType.UINT32)
     int pinnedTimestampSeconds;
-
     @ProtobufProperty(index = 25, type = ProtobufType.UINT64)
     ChatMute mute;
-
     @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
     ChatWallpaper wallpaper;
-
     @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
     MediaVisibility mediaVisibility;
-
     @ProtobufProperty(index = 28, type = ProtobufType.UINT64)
     long tokenSenderTimestampSeconds;
-
     @ProtobufProperty(index = 29, type = ProtobufType.BOOL)
     boolean suspended;
-
     @ProtobufProperty(index = 30, type = ProtobufType.BOOL)
     boolean terminated;
-
     @ProtobufProperty(index = 31, type = ProtobufType.UINT64)
     long foundationTimestampSeconds;
-
     @ProtobufProperty(index = 32, type = ProtobufType.STRING)
     Jid founder;
     @ProtobufProperty(index = 33, type = ProtobufType.STRING)
     String description;
-
     @ProtobufProperty(index = 34, type = ProtobufType.BOOL)
     boolean support;
-
     @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
     boolean parentGroup;
-
     @ProtobufProperty(index = 36, type = ProtobufType.BOOL)
     boolean defaultSubGroup;
-
     @ProtobufProperty(index = 37, type = ProtobufType.STRING)
     final Jid parentGroupJid;
-
     @ProtobufProperty(index = 38, type = ProtobufType.STRING)
     String displayName;
-
     @ProtobufProperty(index = 39, type = ProtobufType.STRING)
     Jid phoneJid;
-    
     @ProtobufProperty(index = 40, type = ProtobufType.BOOL)
     boolean shareOwnPhoneNumber;
-    
     @ProtobufProperty(index = 41, type = ProtobufType.BOOL)
     boolean pnhDuplicateLidThread;
-    
     @ProtobufProperty(index = 42, type = ProtobufType.STRING)
     Jid lidJid;
-    
-    @ProtobufProperty(index = 999, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final ConcurrentHashMap<Jid, ContactStatus> presences;
-    
     @ProtobufProperty(index = 1000, type = ProtobufType.STRING)
     final Set<Jid> participantsPreKeys;
-    
     @ProtobufProperty(index = 1001, type = ProtobufType.OBJECT)
     final Set<GroupPastParticipant> pastParticipants;
-
     private boolean update;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
+    Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -205,7 +163,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
         this.participantsPreKeys = participantsPreKeys;
         this.pastParticipants = pastParticipants;
     }
-    
+
     /**
      * Returns the name of this chat
      *
@@ -535,7 +493,7 @@ public final class Chat implements ProtobufMessage, JidProvider {
     }
 
     private void updateChatTimestamp(ChatMessageInfo info) {
-        if(info.timestampSeconds().isEmpty()) {
+        if (info.timestampSeconds().isEmpty()) {
             return;
         }
 
@@ -1113,8 +1071,8 @@ public final class Chat implements ProtobufMessage, JidProvider {
      * The constants of this enumerated type describe the various types of transfers that can regard a
      * chat history sync
      */
-    @ProtobufMessageName("Conversation.EndOfHistoryTransferType")
-    public enum EndOfHistoryTransferType implements ProtobufEnum {
+    @ProtobufEnum(name = "Conversation.EndOfHistoryTransferType")
+    public enum EndOfHistoryTransferType {
         /**
          * Complete, but more messages remain on the phone
          */

@@ -1,11 +1,12 @@
 package it.auties.whatsapp.registration.gcm;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
+@ProtobufMessage
 record AndroidCheckInData(
         @ProtobufProperty(index = 2, type = ProtobufType.INT64)
         long lastCheckInMs,
@@ -21,8 +22,9 @@ record AndroidCheckInData(
         DeviceType type,
         @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
         ChromeBuild chromeBuild
-) implements ProtobufMessage {
-    enum DeviceType implements ProtobufEnum {
+) {
+    @ProtobufEnum
+enum DeviceType {
         DEVICE_ANDROID_OS(1),
         DEVICE_IOS_OS(2),
         DEVICE_CHROME_BROWSER(3),

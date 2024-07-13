@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.server;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
@@ -14,7 +14,7 @@ import java.util.Optional;
  * A model class that represents a message that refers to a message sent by the device paired with
  * the active WhatsappWeb session.
  */
-@ProtobufMessageName("Message.DeviceSentMessage")
+@ProtobufMessage(name = "Message.DeviceSentMessage")
 public record DeviceSentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid destinationJid,
