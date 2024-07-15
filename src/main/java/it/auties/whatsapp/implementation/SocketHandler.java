@@ -696,7 +696,7 @@ public class SocketHandler implements SocketListener {
                 .flatMap(attributes -> attributes.getOptionalString("id"));
         var community = node.findNode("parent")
                 .isPresent();
-        var openCommunity = node.findNode("parent")
+        var openCommunity = community && node.findNode("parent")
                 .filter(entry -> entry.attributes().hasValue("default_membership_approval_mode", "request_required"))
                 .isEmpty();
         var ephemeral = node.findNode("ephemeral")
