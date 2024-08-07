@@ -1229,6 +1229,34 @@ public class Whatsapp {
     }
 
     /**
+     * Changes the approval request status of an array of participants for a group
+     *
+     * @param chat the target group
+     * @param approve whether the participants should be accepted into the group
+     * @param participants the target participants
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<Jid>> changeGroupParticipantPendingApprovalStatus(JidProvider chat, boolean approve, JidProvider... participants) {
+        var participantsNodes = Arrays.stream(participants)
+                .map(participantJid -> Node.of("participant", Map.of("jid", participantJid)))
+                .toList();
+        var action = approve ? "approve" : "reject";
+        return socketHandler.sendQuery(chat.toJid(), "set", "w:g2", Node.of("membership_requests_action", Node.of(action, participantsNodes)))
+                .thenApplyAsync(result -> parseParticipantsPendingApprovalChange(result, action));
+    }
+
+    private List<Jid> parseParticipantsPendingApprovalChange(Node node, String action) {
+        return node.findNode("membership_requests_action")
+                .flatMap(response -> response.findNode(action))
+                .map(requests -> requests.findNodes("participant"))
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(participant -> !participant.attributes().hasKey("error"))
+                .map(participant -> participant.attributes().getRequiredJid("jid"))
+                .toList();
+    }
+
+    /**
      * Revokes the invite code of a group
      *
      * @param chat the target group
