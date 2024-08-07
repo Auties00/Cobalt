@@ -72,7 +72,7 @@ public final class WhatsappRegistration {
         var ios = store.device().platform().isIOS();
         var android = store.device().platform().isAndroid();
         var requiresVerification = method != VerificationCodeMethod.NONE;
-        this.httpClient = new HttpClient(store.proxy().orElse(null));
+        this.httpClient = new HttpClient(ios ? HttpClient.Platform.IOS : HttpClient.Platform.ANDROID, store.proxy().orElse(null));
         this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient(httpClient, store.proxy().orElse(null)) : null;
         this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, store.proxy().orElse(null)) : null;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();

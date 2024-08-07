@@ -22,11 +22,15 @@ import org.apache.hc.core5.util.Timeout;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.*;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -43,16 +47,18 @@ public class HttpClient implements AutoCloseable {
     private static final String SSL_PARAMS_KEY = "ssl.params";
 
     final CloseableHttpClient httpClient;
+    final Platform platform;
     final URI proxy;
-    public HttpClient() {
-        this(null);
+    public HttpClient(Platform platform) {
+        this(platform, null);
     }
 
-    public HttpClient(URI proxy) {
+    public HttpClient(Platform platform, URI proxy) {
+        this.platform = platform;
         this.proxy = proxy;
         var socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
                 .register(URIScheme.HTTP.id, new HttpConnectionFactory())
-                .register(URIScheme.HTTPS.id, new HttpsConnectionFactory())
+                .register(URIScheme.HTTPS.id, new HttpsConnectionFactory(platform))
                 .build();
         var connectionManager = new PoolingHttpClientConnectionManager(
                socketFactoryRegistry,
@@ -207,17 +213,33 @@ public class HttpClient implements AutoCloseable {
                 "TLS_RSA_WITH_AES_256_CBC_SHA",
                 "TLS_EMPTY_RENEGOTIATION_INFO_SCSV"
         };
+        private static final String[] ANDROID_CIPHERS = {
+                "TLS_AES_128_GCM_SHA256"
+                //,"use default"
+        };
 
         private final SSLContext sslContext;
         private final SSLParameters sslParameters;
-        private HttpsConnectionFactory() {
+        private HttpsConnectionFactory(Platform platform) {
             try {
-                var sslContext = SSLContext.getInstance("TLSv1.3");
-                sslContext.init(null, null, new SecureRandom());
-                this.sslParameters = sslContext.getDefaultSSLParameters();
-                sslParameters.setCipherSuites(IOS_CIPHERS);
-                sslParameters.setUseCipherSuitesOrder(true);
-                this.sslContext = sslContext;
+                switch (platform) {
+                    case IOS -> {
+                        var sslContext = SSLContext.getInstance("TLSv1.3");
+                        sslContext.init(null, null, new SecureRandom());
+                        this.sslParameters = sslContext.getDefaultSSLParameters();
+                        sslParameters.setCipherSuites(IOS_CIPHERS);
+                        sslParameters.setUseCipherSuitesOrder(true);
+                        this.sslContext = sslContext;
+                    }
+                    case ANDROID -> {
+                        var sslContext = SSLContext.getInstance("TLSv1.3");
+                        sslContext.init(null, new TrustManager[]{new AndroidTrustManager()}, new SecureRandom());
+                        this.sslParameters = sslContext.getDefaultSSLParameters();
+                        sslParameters.setCipherSuites(ANDROID_CIPHERS);
+                        this.sslContext = sslContext;
+                    }
+                    default -> throw new IllegalStateException("Unexpected value: " + platform);
+                }
             }catch (GeneralSecurityException exception) {
                 throw new RuntimeException(exception);
             }
@@ -289,5 +311,40 @@ public class HttpClient implements AutoCloseable {
         public String resolveCanonicalHostname(String host) {
             return null;
         }
+    }
+
+    private static final class AndroidTrustManager implements X509TrustManager {
+        private static final X509Certificate[] CERTIFICATES;
+        static {
+            try {
+                CERTIFICATES = CertificateFactory.getInstance("X.509")
+                        .generateCertificates(ClassLoader.getSystemResourceAsStream("android.certs"))
+                        .stream()
+                        .map(entry -> (X509Certificate) entry)
+                        .toArray(X509Certificate[]::new);
+            }catch (Throwable throwable) {
+                throw new RuntimeException("Cannot initialize android certificates", throwable);
+            }
+        }
+
+        @Override
+            public void checkClientTrusted(X509Certificate[] chain, String authType) {
+
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] chain, String authType) {
+
+            }
+
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return CERTIFICATES;
+            }
+        }
+
+    public enum Platform {
+        IOS,
+        ANDROID
     }
 }

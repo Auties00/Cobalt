@@ -182,15 +182,16 @@ public final class CompanionDevice {
     }
 
     public static CompanionDevice android(Version appVersion, boolean business, List<String> address) {
+        var model = "Pixel_" + ThreadLocalRandom.current().nextInt(2, 9);
         return new CompanionDevice(
-                "Pixel_2",
+                model,
                 "Google",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
                 appVersion,
-                Version.of("11"),
+                Version.of(String.valueOf(ThreadLocalRandom.current().nextInt(11, 16))),
                 null,
                 address,
-                "Pixel_2",
+                model,
                 ClientType.MOBILE
         );
     }
