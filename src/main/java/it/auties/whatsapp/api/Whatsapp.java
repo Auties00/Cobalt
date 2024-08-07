@@ -1209,6 +1209,26 @@ public class Whatsapp {
     }
 
     /**
+     * Queries the lists of participants currently waiting to be accepted into the group
+     *
+     * @param chat the target group
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<Jid>> queryGroupParticipantsPendingApproval(JidProvider chat) {
+        return socketHandler.sendQuery(chat.toJid(), "get", "w:g2", Node.of("membership_approval_requests"))
+                .thenApplyAsync(this::parseParticipantsPendingApproval);
+    }
+
+    private List<Jid> parseParticipantsPendingApproval(Node node) {
+        return node.findNode("membership_approval_requests")
+                .stream()
+                .map(requests -> requests.findNodes("membership_approval_request"))
+                .flatMap(Collection::stream)
+                .map(participant -> participant.attributes().getRequiredJid("user"))
+                .toList();
+    }
+
+    /**
      * Revokes the invite code of a group
      *
      * @param chat the target group

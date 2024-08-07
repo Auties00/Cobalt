@@ -598,7 +598,27 @@ class StreamHandler {
             return;
         }
 
+        // TODO: Handle all cases
+        if (stubType.get() == ChatMessageInfo.StubType.GROUP_CHANGE_SUBJECT) {
+            onGroupSubjectChange(node);
+        }
+
         handleGroupStubNotification(node, stubType.get());
+    }
+
+    private void onGroupSubjectChange(Node node) {
+        var subject = node.findNode("subject")
+                .flatMap(subjectNode -> subjectNode.attributes().getOptionalString("subject"))
+                .orElse(null);
+        if(subject == null) {
+            return;
+        }
+
+        var fromJid = node.attributes()
+                .getRequiredJid("from");
+        socketHandler.store()
+                .findChatByJid(fromJid)
+                .ifPresent(chat -> chat.setName(subject));
     }
 
     private void handleGroupStubNotification(Node node, ChatMessageInfo.StubType stubType) {
