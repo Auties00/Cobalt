@@ -545,6 +545,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
         return this;
     }
 
+
     /**
      * The constants of this enumerated type describe the various types of server message that a {@link ChatMessageInfo} can describe
      */

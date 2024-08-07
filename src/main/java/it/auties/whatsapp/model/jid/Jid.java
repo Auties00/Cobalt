@@ -274,7 +274,7 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
      * @return a boolean
      */
     public boolean hasDevice() {
-        return device != null;
+        return device != null && device != 0;
     }
 
     @Override
@@ -288,7 +288,7 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
      * @return a boolean
      */
     public boolean hasAgent() {
-        return agent != null;
+        return agent != null && agent != 0;
     }
 
     @Override

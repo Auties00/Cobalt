@@ -487,6 +487,46 @@ public class Whatsapp {
     }
 
     /**
+     * Forwards a message to another chat
+     *
+     * @param chat the non-null chat
+     * @param messageInfo the message to forward
+     * @return a future
+     */
+    public CompletableFuture<ChatMessageInfo> forwardChatMessage(JidProvider chat, ChatMessageInfo messageInfo) {
+        var message = messageInfo.message()
+                .contentWithContext()
+                .map(this::createForwardedMessage)
+                .or(() -> createForwardedText(messageInfo))
+                .orElseThrow(() -> new IllegalArgumentException("This message cannot be forwarded: " + messageInfo.message().type()));
+        return sendChatMessage(chat, message);
+    }
+
+    private MessageContainer createForwardedMessage(ContextualMessage<?> messageWithContext) {
+        var forwardingScore = messageWithContext.contextInfo()
+                .map(ContextInfo::forwardingScore)
+                .orElse(0);
+        var contextInfo = new ContextInfoBuilder()
+                .forwardingScore(forwardingScore + 1)
+                .forwarded(true)
+                .build();
+        messageWithContext.setContextInfo(contextInfo);
+        return MessageContainer.of(messageWithContext);
+    }
+
+    private Optional<MessageContainer> createForwardedText(ChatMessageInfo messageInfo) {
+        return messageInfo.message().textWithNoContextMessage().map(rawText -> {
+            var contextInfo = new ContextInfoBuilder()
+                    .forwardingScore(1)
+                    .forwarded(true)
+                    .build();
+            var textMessage = TextMessage.of(rawText);
+            textMessage.setContextInfo(contextInfo);
+            return MessageContainer.of(textMessage);
+        });
+    }
+
+    /**
      * Builds and sends a message from a chat and a message
      *
      * @param chat    the chat where the message should be sent
@@ -597,7 +637,6 @@ public class Whatsapp {
         message.setContextInfo(contextInfo);
         return sendNewsletterMessage(chat, MessageContainer.of(message));
     }
-
 
     /**
      * Builds and sends a message from a chat and a message
@@ -742,7 +781,6 @@ public class Whatsapp {
                     .thenComposeAsync(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
                     .thenComposeAsync(thirdResult -> subscribeToPresence(recipient.toJid()))
                     .thenComposeAsync(fourthResult -> socketHandler.querySessions(List.of(recipient.toJid())))
-                    .thenRunAsync(() -> socketHandler.sendMessage(new MessageSendRequest.Chat(buildChatMessage(recipient, MessageContainer.empty()))))
                     .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient));
         });
     }
