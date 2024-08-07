@@ -1197,17 +1197,15 @@ public class Whatsapp {
                 .getRequiredString("code");
     }
 
-    // Sent Binary Message: Node[description=iq, attributes={xmlns=w:mex, id=8695.6889-221, to=s.whatsapp.net, type=get}, content=[Node[description=query, attributes={query_id=8196480557035370}, content=[123, 34, 118, 97, 114, 105, 97, 98, 108, 101, 115, 34, 58, 123, 34, 105, 100, 34, 58, 34, 49, 50, 48, 51, 54, 51, 48, 52, 51, 55, 53, 51, 57, 52, 56, 55, 48, 49, 64, 103, 46, 117, 115, 34, 44, 34, 113, 117, 101, 114, 121, 95, 99, 111, 110, 116, 101, 120, 116, 34, 58, 34, 73, 78, 86, 73, 84, 69, 95, 67, 79, 68, 69, 34, 125, 125]]]]
-    //Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=8695.6889-221, type=result}, content=[Node[description=result, content=[123, 34, 100, 97, 116, 97, 34, 58, 123, 34, 120, 119, 97, 50, 95, 103, 114, 111, 117, 112, 95, 113, 117, 101, 114, 121, 95, 98, 121, 95, 105, 100, 34, 58, 123, 34, 95, 95, 116, 121, 112, 101, 110, 97, 109, 101, 34, 58, 34, 88, 87, 65, 50, 71, 114, 111, 117, 112, 82, 101, 103, 117, 108, 97, 114, 71, 114, 111, 117, 112, 34, 44, 34, 105, 100, 34, 58, 34, 49, 50, 48, 51, 54, 51, 48, 52, 51, 55, 53, 51, 57, 52, 56, 55, 48, 49, 64, 103, 46, 117, 115, 34, 44, 34, 105, 110, 118, 105, 116, 101, 95, 99, 111, 100, 101, 34, 58, 34, 74, 114, 89, 54, 101, 76, 48, 82, 75, 77, 52, 71, 50, 105, 74, 100, 98, 73, 65, 71, 49, 85, 34, 125, 125, 125]]]
-    /**
+     /**
      * Queries the invite link of a group
      *
      * @param chat the target group
      * @return a CompletableFuture
      */
     public CompletableFuture<String> queryGroupInviteLink(JidProvider chat) {
-        return socketHandler.sendQuery(chat.toJid(), "get", "w:mex", Node.of("invite"))
-                .thenApplyAsync(this::parseInviteCode);
+        return queryGroupInviteCode(chat)
+                .thenApplyAsync("https://chat.whatsapp.com/%s"::formatted);
     }
 
     /**
