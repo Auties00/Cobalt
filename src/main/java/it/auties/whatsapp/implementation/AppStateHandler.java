@@ -79,13 +79,14 @@ class AppStateHandler {
                     .toMap();
             var sync = Node.of("sync", syncAttributes, body);
             return socketHandler.sendQuery("set", "w:sync:app:state", sync)
+                    .thenAcceptAsync(this::parseSyncRequest)
+                    .thenRunAsync(() -> onPush(jid, requests, readPatches))
                     .whenCompleteAsync((result, error) -> {
                         pushSemaphore.release();
                         if(error != null) {
                             Exceptions.rethrow(error);
                         }
-                    })
-                    .thenRunAsync(() -> onPush(jid, requests, readPatches));
+                    });
         }catch (Throwable throwable) {
             return CompletableFuture.failedFuture(throwable);
         }
@@ -340,10 +341,7 @@ class AppStateHandler {
 
     private Optional<SnapshotSyncRecord> parseSync(Node sync) {
         var name = PatchType.of(sync.attributes().getString("name"));
-        var type = sync.attributes().getString("type");
-        if (Objects.equals(type, "error")) {
-            return Optional.empty();
-        }
+        Validate.isTrue(!sync.attributes().hasValue("type", "error"), "App state sync failed");
         var more = sync.attributes().getBoolean("has_more_patches");
         var snapshotSync = sync.findNode("snapshot")
                 .flatMap(this::decodeSnapshot)

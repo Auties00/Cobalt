@@ -7,7 +7,6 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.companion.CompanionHashState;
-import it.auties.whatsapp.model.companion.CompanionPatch;
 import it.auties.whatsapp.model.companion.CompanionSyncKey;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
@@ -151,8 +150,8 @@ public final class Keys extends Controller<Keys> {
     /**
      * Hash state
      */
-    @ProtobufProperty(index = 21, type = ProtobufType.OBJECT)
-    final List<CompanionPatch> hashStates;
+    @ProtobufProperty(index = 21, type = ProtobufType.OBJECT, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    final ConcurrentMap<String, CompanionHashState> hashStates;
 
 
     @ProtobufProperty(index = 22, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
@@ -195,7 +194,7 @@ public final class Keys extends Controller<Keys> {
     byte[] writeKey, readKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
@@ -215,7 +214,7 @@ public final class Keys extends Controller<Keys> {
         this.senderKeys = Objects.requireNonNullElseGet(senderKeys, ConcurrentHashMap::new);
         this.appStateKeys = Objects.requireNonNullElseGet(appStateKeys, ArrayList::new);
         this.sessions = Objects.requireNonNullElseGet(sessions, ConcurrentHashMap::new);
-        this.hashStates = Objects.requireNonNullElseGet(hashStates, ArrayList::new);
+        this.hashStates = Objects.requireNonNullElseGet(hashStates, ConcurrentHashMap::new);
         this.groupsPreKeys = Objects.requireNonNullElseGet(groupsPreKeys, ConcurrentHashMap::new);
         this.registered = registered;
         this.businessCertificate = businessCertificate;
@@ -332,10 +331,7 @@ public final class Keys extends Controller<Keys> {
      * @return a non-null hash state
      */
     public Optional<CompanionHashState> findHashStateByName(Jid device, PatchType patchType) {
-        return hashStates.stream()
-                .filter(hashState -> Objects.equals(hashState.companion(), device) && hashState.state().type() == patchType)
-                .findFirst()
-                .map(CompanionPatch::state);
+        return Optional.ofNullable(hashStates.get("%s_%s".formatted(device, patchType)));
     }
 
     /**
@@ -379,8 +375,7 @@ public final class Keys extends Controller<Keys> {
      * @return this
      */
     public Keys putState(Jid device, CompanionHashState state) {
-        var hashState = new CompanionPatch(device, state);
-        hashStates.add(hashState);
+        hashStates.put("%s_%s".formatted(device, state.type()), state);
         return this;
     }
 
@@ -584,26 +579,6 @@ public final class Keys extends Controller<Keys> {
 
     public byte[] backupToken() {
         return backupToken;
-    }
-
-    public Map<SenderKeyName, SenderKeyRecord> senderKeys() {
-        return this.senderKeys;
-    }
-
-    public List<CompanionSyncKey> appStateKeys() {
-        return appStateKeys;
-    }
-
-    public Map<SessionAddress, Session> sessions() {
-        return this.sessions;
-    }
-
-    public List<CompanionPatch> hashStates() {
-        return hashStates;
-    }
-
-    public Map<Jid, SenderPreKeys> groupsPreKeys() {
-        return this.groupsPreKeys;
     }
 
     public boolean registered() {

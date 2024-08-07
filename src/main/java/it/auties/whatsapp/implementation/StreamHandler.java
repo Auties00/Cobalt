@@ -904,7 +904,6 @@ class StreamHandler {
             configureApi().thenRunAsync(() -> {
                 onRegistration();
                 onInitialInfo();
-                notifyChatsAndNewsletters(true);
             }).exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
         }else {
             loggedInFuture.thenRunAsync(this::onInitialInfo);
