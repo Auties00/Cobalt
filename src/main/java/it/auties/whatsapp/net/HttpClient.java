@@ -22,15 +22,11 @@ import org.apache.hc.core5.util.Timeout;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.*;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -233,7 +229,7 @@ public class HttpClient implements AutoCloseable {
                     }
                     case ANDROID -> {
                         var sslContext = SSLContext.getInstance("TLSv1.3");
-                        sslContext.init(null, new TrustManager[]{new AndroidTrustManager()}, new SecureRandom());
+                        sslContext.init(null, null, new SecureRandom());
                         this.sslParameters = sslContext.getDefaultSSLParameters();
                         sslParameters.setCipherSuites(ANDROID_CIPHERS);
                         this.sslContext = sslContext;
@@ -312,36 +308,6 @@ public class HttpClient implements AutoCloseable {
             return null;
         }
     }
-
-    private static final class AndroidTrustManager implements X509TrustManager {
-        private static final X509Certificate[] CERTIFICATES;
-        static {
-            try {
-                CERTIFICATES = CertificateFactory.getInstance("X.509")
-                        .generateCertificates(ClassLoader.getSystemResourceAsStream("android.certs"))
-                        .stream()
-                        .map(entry -> (X509Certificate) entry)
-                        .toArray(X509Certificate[]::new);
-            }catch (Throwable throwable) {
-                throw new RuntimeException("Cannot initialize android certificates", throwable);
-            }
-        }
-
-        @Override
-            public void checkClientTrusted(X509Certificate[] chain, String authType) {
-
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] chain, String authType) {
-
-            }
-
-            @Override
-            public X509Certificate[] getAcceptedIssuers() {
-                return CERTIFICATES;
-            }
-        }
 
     public enum Platform {
         IOS,

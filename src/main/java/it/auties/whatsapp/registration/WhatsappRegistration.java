@@ -108,7 +108,7 @@ public final class WhatsappRegistration {
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
         var originalDevice = store.device();
-        store.setDevice(originalDevice.toBusiness());
+        store.setDevice(originalDevice.toPersonal());
 
         var future = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
