@@ -77,4 +77,5 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.jid;
     exports it.auties.whatsapp.model.newsletter;
     exports it.auties.whatsapp.exception;
+    exports it.auties.whatsapp.registration.cloudVerification;
 }

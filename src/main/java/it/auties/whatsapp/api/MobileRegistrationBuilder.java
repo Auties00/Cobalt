@@ -7,6 +7,7 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.registration.WhatsappRegistration;
+import it.auties.whatsapp.registration.cloudVerification.CloudVerificationClient;
 
 import java.net.URI;
 import java.util.Objects;
@@ -23,25 +24,25 @@ public sealed class MobileRegistrationBuilder {
     final Keys keys;
     final ErrorHandler errorHandler;
     RegisteredResult result;
+    boolean printRequests;
     AsyncVerificationCodeSupplier verificationCodeSupplier;
 
     MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler) {
         this.store = store;
         this.keys = keys;
         this.errorHandler = errorHandler;
+        this.printRequests = false;
     }
 
     public final static class Unregistered extends MobileRegistrationBuilder {
         private UnverifiedResult unregisteredResult;
         private VerificationCodeMethod verificationCodeMethod;
-        private boolean cloudMessagingVerification;
-        private boolean printRequests;
+        private CloudVerificationClient cloudVerificationClient;
+        private boolean autocloseCloudVerificationClient;
 
         Unregistered(Store store, Keys keys, ErrorHandler errorHandler) {
             super(store, keys, errorHandler);
             this.verificationCodeMethod = VerificationCodeMethod.SMS;
-            this.cloudMessagingVerification = true;
-            this.printRequests = true;
         }
 
         public Unregistered verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
@@ -69,14 +70,14 @@ public sealed class MobileRegistrationBuilder {
             return this;
         }
 
-        public Unregistered cloudMessagingVerification(boolean cloudMessagingVerification) {
-            this.cloudMessagingVerification = cloudMessagingVerification;
-            return this;
-        }
-
         public Unregistered printRequests(boolean printRequests) {
             this.printRequests = printRequests;
             return this;
+        }
+
+        public void cloudVerificationClient(CloudVerificationClient cloudVerificationClient, boolean autoclose) {
+            this.cloudVerificationClient = cloudVerificationClient;
+            this.autocloseCloudVerificationClient = autoclose;
         }
 
         /**
@@ -101,19 +102,25 @@ public sealed class MobileRegistrationBuilder {
                         keys,
                         verificationCodeSupplier,
                         verificationCodeMethod,
-                        cloudMessagingVerification,
+                        cloudVerificationClient,
                         printRequests
                 );
-                return registration.registerPhoneNumber().thenApply(response -> {
-                    var api = Whatsapp.customBuilder()
-                            .store(store)
-                            .keys(keys)
-                            .errorHandler(errorHandler)
-                            .build();
-                    return this.result = new RegisteredResult(api, Optional.ofNullable(response));
-                });
+                return registration.registerPhoneNumber()
+                        .thenApplyAsync(response -> {
+                            var api = Whatsapp.customBuilder()
+                                    .store(store)
+                                    .keys(keys)
+                                    .errorHandler(errorHandler)
+                                    .build();
+                            return this.result = new RegisteredResult(api, Optional.ofNullable(response));
+                        })
+                        .exceptionallyComposeAsync(error -> {
+                            closeCloudVerificationClient();
+                            return CompletableFuture.failedFuture(error);
+                        });
             }
 
+            closeCloudVerificationClient();
             var api = Whatsapp.customBuilder()
                     .store(store)
                     .keys(keys)
@@ -122,6 +129,11 @@ public sealed class MobileRegistrationBuilder {
             return CompletableFuture.completedFuture(result);
         }
 
+        private void closeCloudVerificationClient() {
+            if(autocloseCloudVerificationClient && cloudVerificationClient != null) {
+                cloudVerificationClient.close();
+            }
+        }
 
         /**
          * Asks Whatsapp for a one-time-password to start the registration process
@@ -143,7 +155,7 @@ public sealed class MobileRegistrationBuilder {
                         keys,
                         verificationCodeSupplier,
                         verificationCodeMethod,
-                        cloudMessagingVerification,
+                        cloudVerificationClient,
                         printRequests
                 );
                 return registration.requestVerificationCode().thenApply(response -> {
@@ -158,13 +170,9 @@ public sealed class MobileRegistrationBuilder {
     }
 
     public final static class Unverified extends MobileRegistrationBuilder {
-        private boolean cloudMessagingVerification;
-        private boolean printRequests;
         Unverified(Store store, Keys keys, ErrorHandler errorHandler, AsyncVerificationCodeSupplier verificationCodeSupplier) {
             super(store, keys, errorHandler);
             this.verificationCodeSupplier = verificationCodeSupplier;
-            this.cloudMessagingVerification = true;
-            this.printRequests = true;
         }
 
         public Unverified verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
@@ -184,11 +192,6 @@ public sealed class MobileRegistrationBuilder {
 
         public Unverified proxy(URI proxy) {
             store.setProxy(proxy);
-            return this;
-        }
-
-        public Unverified cloudMessagingVerification(boolean cloudMessagingVerification) {
-            this.cloudMessagingVerification = cloudMessagingVerification;
             return this;
         }
 
@@ -226,7 +229,7 @@ public sealed class MobileRegistrationBuilder {
                     keys,
                     verificationCodeSupplier,
                     VerificationCodeMethod.NONE,
-                    cloudMessagingVerification,
+                    null,
                     printRequests
             );
             return registration.sendVerificationCode().thenApply(response -> {

@@ -1,75 +1,61 @@
 package it.auties.whatsapp.net;
 
-import org.apache.hc.client5.http.DnsResolver;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
-import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
-import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
-import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.URIScheme;
-import org.apache.hc.core5.http.config.RegistryBuilder;
-import org.apache.hc.core5.http.io.entity.HttpEntities;
-import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
-import org.apache.hc.core5.http.protocol.HttpContext;
-import org.apache.hc.core5.http.protocol.HttpCoreContext;
-import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
-import org.apache.hc.core5.pool.PoolReusePolicy;
-import org.apache.hc.core5.util.TimeValue;
-import org.apache.hc.core5.util.Timeout;
+import it.auties.whatsapp.util.Exceptions;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class HttpClient implements AutoCloseable {
-    static {
-        System.setProperty("jdk.tls.client.enableSessionTicketExtension", "false");
-    }
+public class HttpClient {
+    private static final int REQUEST_TIMEOUT = 300;
+    private static final String[] IOS_CIPHERS = {
+            "TLS_AES_128_GCM_SHA256",
+            "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_EMPTY_RENEGOTIATION_INFO_SCSV"
+    };
+    private static final String[] ANDROID_CIPHERS = {
+            "TLS_AES_128_GCM_SHA256"
+            //,"use default"
+    };
 
-    private static final int MAX_TRIES = 5;
-    private static final String PROXY_KEY = "proxy";
-    private static final String SSL_PARAMS_KEY = "ssl.params";
+    private final Platform platform;
+    private final URI proxy;
 
-    final CloseableHttpClient httpClient;
-    final Platform platform;
-    final URI proxy;
     public HttpClient(Platform platform) {
         this(platform, null);
     }
 
     public HttpClient(Platform platform, URI proxy) {
-        this.platform = platform;
         this.proxy = proxy;
-        var socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register(URIScheme.HTTP.id, new HttpConnectionFactory())
-                .register(URIScheme.HTTPS.id, new HttpsConnectionFactory(platform))
-                .build();
-        var connectionManager = new PoolingHttpClientConnectionManager(
-               socketFactoryRegistry,
-                PoolConcurrencyPolicy.STRICT,
-                PoolReusePolicy.LIFO,
-                TimeValue.NEG_ONE_MILLISECOND,
-                null,
-                proxy == null ? null : DummyDnsResolver.instance(),
-                null
-        );
-        this.httpClient = HttpClients.custom()
-                .setConnectionManager(connectionManager)
-                .setConnectionReuseStrategy((request, response, context) -> false)
-                .disableCookieManagement()
-                .build();
+        this.platform = platform;
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -112,205 +98,201 @@ public class HttpClient implements AutoCloseable {
     }
 
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams) {
-        return CompletableFuture.supplyAsync(() -> sendRequestImpl(method, uri, headers, body, useSslParams), Thread::startVirtualThread);
+        var socket = getSocketClient(uri);
+        var builder = createRequestPayload(method, uri, headers, body);
+        return socket.connectAsync(toSocketAddress(uri))
+                .thenComposeAsync(ignored -> socket.writeAsync(builder.toString().getBytes()))
+                .thenComposeAsync(ignored -> socket.readAsync(readReceiveBufferSize(socket)))
+                .thenComposeAsync(responseBuffer -> parseResponsePayload(responseBuffer, socket))
+                .orTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                .whenCompleteAsync((result, error) -> {
+                    closeSocketSilently(socket);
+                    if(error != null) {
+                        Exceptions.rethrow(error);
+                    }
+                });
     }
 
-    private byte[] sendRequestImpl(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams) {
-        Throwable lastError = null;
-        for(var i = 0; i < MAX_TRIES; i++) {
+    private void closeSocketSilently(SocketClient socket) {
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+
+        }
+    }
+
+    private CompletableFuture<byte[]> parseResponsePayload(ByteBuffer responseBuffer, SocketClient socket) {
+        var response = StandardCharsets.UTF_8
+                .decode(responseBuffer)
+                .toString();
+
+        var responseStatusLineEnd = response.indexOf("\n");
+        checkStatusCode(response, responseStatusLineEnd);
+
+        var contentLength = -1;
+        var lastHeaderLineIndex = responseStatusLineEnd;
+        var currentHeaderLineIndex = responseStatusLineEnd;
+        while ((currentHeaderLineIndex = response.indexOf("\n", lastHeaderLineIndex + 1)) != -1) {
+            var responseLine = response.substring(lastHeaderLineIndex + 1, currentHeaderLineIndex).trim();
+            lastHeaderLineIndex = currentHeaderLineIndex;
+            if(responseLine.isEmpty()) {
+                break;
+            }
+
+            var responseLineParts = responseLine.split(": ", 2);
+            if(responseLineParts.length != 2) {
+                throw new IllegalArgumentException("Malformed response header: " + responseLine);
+            }
+
+            if(!responseLineParts[0].equalsIgnoreCase("Content-Length")) {
+                continue;
+            }
+
             try {
-                var request = new BasicClassicHttpRequest(method, uri);
-                if(headers != null) {
-                    headers.forEach(request::setHeader);
-                }
-
-                if(body != null) {
-                    var contentType = Objects.requireNonNull(headers == null ? null : headers.get("Content-Type"), "Missing Content-Type header");
-                    request.setEntity(HttpEntities.create(body, ContentType.parse(String.valueOf(contentType))));
-                }
-
-                var context = HttpCoreContext.create();
-                context.setAttribute(SSL_PARAMS_KEY, useSslParams);
-                context.setAttribute(PROXY_KEY, proxy);
-                return httpClient.execute(request, context, data -> data.getEntity().getContent().readAllBytes());
-            }catch (Throwable throwable) {
-                lastError = throwable;
+                contentLength = Integer.parseUnsignedInt(responseLineParts[1]);
+            }catch (NumberFormatException exception) {
+                throw new IllegalArgumentException("Malformed Content-Length header: " + responseLine);
             }
         }
 
-        throw new RuntimeException("%s request to %s failed(%s)".formatted(method, uri, lastError.getMessage()), lastError);
+        if(contentLength == -1) {
+            return CompletableFuture.completedFuture(new byte[0]);
+        }
+
+        var partialBody = response.length() <= currentHeaderLineIndex + 1 ? new byte[0] : response.substring(currentHeaderLineIndex + 1).getBytes();
+        if(partialBody.length > contentLength) {
+            throw new IllegalArgumentException("Actual content length is bigger than reported in the response(expected: %s, got: %s)".formatted(contentLength, partialBody.length));
+        }
+
+        if(partialBody.length == contentLength) {
+            return CompletableFuture.completedFuture(partialBody);
+        }
+
+        var remainingLength = contentLength - partialBody.length;
+        return socket.readFullyAsync(remainingLength).thenApplyAsync(additionalBody -> {
+            var completeResult = new byte[partialBody.length + additionalBody.remaining()];
+            System.arraycopy(partialBody, 0, completeResult, 0, partialBody.length);
+            additionalBody.get(completeResult, partialBody.length, remainingLength);
+            return completeResult;
+        });
     }
 
-    @Override
-    public void close() {
+    private StringBuilder createRequestPayload(String method, URI uri, Map<String, ?> headers, byte[] body) {
+        var builder = new StringBuilder();
+        builder.append(method)
+                .append(" ")
+                .append(uri.getPath())
+                .append(uri.getQuery() == null || uri.getQuery().isEmpty() ? "" : "?" + uri.getQuery())
+                .append(" HTTP/1.1\r\n");
+        builder.append("Host: ")
+                .append(uri.getHost())
+                .append(uri.getPort() == -1 ? "" : ":" + uri.getPort())
+                .append("\r\n");
+        if(headers != null) {
+            headers.forEach((headerKey, headerValue) -> {
+                builder.append(headerKey)
+                        .append(": ")
+                        .append(headerValue)
+                        .append("\r\n");
+            });
+        }
+        if (body != null) {
+            builder.append("Content-Length: ")
+                    .append(body.length)
+                    .append("\r\n");
+        }
+        builder.append("\r\n");
+        if (body != null) {
+            builder.append(new String(body))
+                    .append("\r\n");
+        }
+        return builder;
+    }
+
+    private void checkStatusCode(String response, int responseStatusLineEnd) {
+        var responseStatusLine = responseStatusLineEnd == -1 ? response : response.substring(0, responseStatusLineEnd);
+        var responseStatusParts = responseStatusLine.split(" ");
+        if (responseStatusParts.length < 2) {
+            throw new IllegalArgumentException("Unexpected response status code: " + response);
+        }
+
+        var statusCode = responseStatusParts[1];
+        if(!statusCode.startsWith("20")) {
+            throw new IllegalArgumentException("Unexpected response status code: " + statusCode);
+        }
+    }
+
+    private InetSocketAddress toSocketAddress(URI uri) {
+        var hostname = uri.getHost();
+        var port = uri.getPort() != -1 ? uri.getPort() : switch (uri.getScheme().toLowerCase()) {
+            case "https" -> 443;
+            case "http" -> 80;
+            default -> throw new IllegalStateException("Unexpected scheme: " + uri.getScheme().toLowerCase());
+        };
+        return proxy == null ? new InetSocketAddress(hostname, port) : InetSocketAddress.createUnresolved(hostname, port);
+    }
+
+    private int readReceiveBufferSize(SocketClient client) {
         try {
-            httpClient.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            return client.getOption(StandardSocketOptions.SO_RCVBUF);
+        }catch (IOException exception) {
+            return 8192;
         }
     }
 
-    private static class HttpConnectionFactory extends PlainConnectionSocketFactory {
-        @Override
-        public Socket createSocket(final HttpContext context) throws IOException {
-            return createSocket(null, context);
-        }
-
-        @Override
-        public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
-            var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return SocketClient.newPlainClient(derivedProxy);
-        }
-
-        @Override
-        public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
-            return super.connectSocket(
-                    connectTimeout,
-                    socket,
-                    host,
-                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
-                    localAddress,
-                    context
-            );
-        }
-
-        @Override
-        public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
-            return super.connectSocket(
-                    socket,
-                    host,
-                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
-                    localAddress,
-                    connectTimeout,
-                    attachment,
-                    context
-            );
+    private SocketClient getSocketClient(URI uri) {
+        try {
+            return switch (uri.getScheme().toLowerCase()) {
+                case "http" -> SocketClient.newPlainClient(proxy);
+                case "https" -> {
+                    var sslEngine = platform.sslData()
+                            .context()
+                            .createSSLEngine(uri.getHost(), uri.getPort() == 1 ? 443 : uri.getPort());
+                    sslEngine.setUseClientMode(true);
+                    sslEngine.setSSLParameters(platform.sslData().parameters());
+                    yield SocketClient.newSecureClient(sslEngine, proxy);
+                }
+                default -> throw new IllegalStateException("Unexpected scheme: " + uri.getScheme().toLowerCase());
+            };
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
         }
     }
 
-    private static class HttpsConnectionFactory implements LayeredConnectionSocketFactory {
-        private static final String[] IOS_CIPHERS = {
-                "TLS_AES_128_GCM_SHA256",
-                "TLS_CHACHA20_POLY1305_SHA256",
-                "TLS_AES_256_GCM_SHA384",
-                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-                "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-                "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-                "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-                "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
-                "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
-                "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-                "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-                "TLS_RSA_WITH_AES_128_GCM_SHA256",
-                "TLS_RSA_WITH_AES_256_GCM_SHA384",
-                "TLS_RSA_WITH_AES_128_CBC_SHA",
-                "TLS_RSA_WITH_AES_256_CBC_SHA",
-                "TLS_EMPTY_RENEGOTIATION_INFO_SCSV"
-        };
-        private static final String[] ANDROID_CIPHERS = {
-                "TLS_AES_128_GCM_SHA256"
-                //,"use default"
-        };
+    public enum Platform {
+        IOS(SSLData.of(true)),
+        ANDROID(SSLData.of(false));
 
-        private final SSLContext sslContext;
-        private final SSLParameters sslParameters;
-        private HttpsConnectionFactory(Platform platform) {
+        private final SSLData sslData;
+        Platform(SSLData sslData) {
+            this.sslData = sslData;
+        }
+
+        private SSLData sslData() {
+            return sslData;
+        }
+    }
+
+    private record SSLData(SSLContext context, SSLParameters parameters) {
+        public static SSLData of(boolean ios) {
             try {
-                switch (platform) {
-                    case IOS -> {
-                        var sslContext = SSLContext.getInstance("TLSv1.3");
-                        sslContext.init(null, null, new SecureRandom());
-                        this.sslParameters = sslContext.getDefaultSSLParameters();
-                        sslParameters.setCipherSuites(IOS_CIPHERS);
-                        sslParameters.setUseCipherSuitesOrder(true);
-                        this.sslContext = sslContext;
-                    }
-                    case ANDROID -> {
-                        var sslContext = SSLContext.getInstance("TLSv1.3");
-                        sslContext.init(null, null, new SecureRandom());
-                        this.sslParameters = sslContext.getDefaultSSLParameters();
-                        sslParameters.setCipherSuites(ANDROID_CIPHERS);
-                        this.sslContext = sslContext;
-                    }
-                    default -> throw new IllegalStateException("Unexpected value: " + platform);
+                if(ios) {
+                    var sslContext = SSLContext.getInstance("TLSv1.3");
+                    sslContext.init(null, null, new SecureRandom());
+                    var sslParameters = sslContext.getDefaultSSLParameters();
+                    sslParameters.setCipherSuites(IOS_CIPHERS);
+                    sslParameters.setUseCipherSuitesOrder(true);
+                    return new SSLData(sslContext, sslParameters);
+                }else {
+                    var sslContext = SSLContext.getInstance("TLSv1.3");
+                    sslContext.init(null, null, new SecureRandom());
+                    var sslParameters = sslContext.getDefaultSSLParameters();
+                    sslParameters.setCipherSuites(ANDROID_CIPHERS);
+                    return new SSLData(sslContext, sslParameters);
                 }
             }catch (GeneralSecurityException exception) {
                 throw new RuntimeException(exception);
             }
         }
-
-        @Override
-        public Socket createSocket(final HttpContext context) throws IOException {
-            return createSocket(null, context);
-        }
-
-        @Override
-        public Socket createSocket(Proxy proxy, HttpContext context) throws IOException {
-            var derivedProxy = (URI) context.getAttribute(PROXY_KEY);
-            return SocketClient.newPlainClient(derivedProxy);
-        }
-
-        @Override
-        public Socket connectSocket(TimeValue connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
-            socket.connect(
-                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
-                    connectTimeout.toMillisecondsIntBound()
-            );
-            return createLayeredSocket(socket, host.getHostName(), host.getPort(), context);
-        }
-
-        @Override
-        public Socket connectSocket(Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, Timeout connectTimeout, Object attachment, HttpContext context) throws IOException {
-            socket.connect(
-                    context.getAttribute(PROXY_KEY) == null ? remoteAddress : InetSocketAddress.createUnresolved(host.getHostName(), host.getPort()),
-                    connectTimeout.toMillisecondsIntBound()
-            );
-            return createLayeredSocket(socket, host.getHostName(), host.getPort(), context);
-        }
-
-        @Override
-        public Socket createLayeredSocket(Socket socket, String target, int port, HttpContext context) {
-            return createLayeredSocket(socket, target, port, null, context);
-        }
-
-        @Override
-        public Socket createLayeredSocket(Socket socket, String target, int port, Object attachment, HttpContext context) {
-            var asyncSocket = (SocketClient) socket;
-            var useSslParams = (boolean) context.getAttribute(SSL_PARAMS_KEY);
-            var sslEngine = sslContext.createSSLEngine(target, port);
-            if(useSslParams) {
-                sslEngine.setSSLParameters(sslParameters);
-            }
-            sslEngine.setUseClientMode(true);
-            asyncSocket.upgradeToSsl(sslEngine)
-                    .join(); // Await async handshake
-            return asyncSocket;
-        }
-    }
-
-    private static class DummyDnsResolver implements DnsResolver {
-        private static final DummyDnsResolver INSTANCE = new DummyDnsResolver();
-        private static DummyDnsResolver instance() {
-            return INSTANCE;
-        }
-
-        @Override
-        public InetAddress[] resolve(String host) throws UnknownHostException {
-            return new InetAddress[] {
-                    InetAddress.getByAddress(new byte[] { 1, 1, 1, 1 })
-            };
-        }
-
-        @Override
-        public String resolveCanonicalHostname(String host) {
-            return null;
-        }
-    }
-
-    public enum Platform {
-        IOS,
-        ANDROID
     }
 }

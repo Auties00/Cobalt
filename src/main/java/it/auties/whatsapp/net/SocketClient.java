@@ -9,6 +9,7 @@ import javax.net.ssl.SSLException;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.InvalidMarkException;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
@@ -16,12 +17,11 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("unused")
 public class SocketClient extends Socket implements AutoCloseable {
-    private static final int DEFAULT_CONNECTION_TIMEOUT = 30;
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 300;
 
     public static SocketClient newPlainClient(URI proxy) throws IOException {
         var channel = AsynchronousSocketChannel.open();
@@ -44,7 +44,6 @@ public class SocketClient extends Socket implements AutoCloseable {
         this.channel = channel;
         this.socketConnection = socketConnection;
         this.socketTransport = socketTransport;
-        channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
     }
 
     public CompletableFuture<Void> upgradeToSsl(SSLEngine sslEngine) {
@@ -82,7 +81,6 @@ public class SocketClient extends Socket implements AutoCloseable {
     public CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {
         return socketConnection.connectAsync(address, timeout)
                 .thenComposeAsync(ignored -> socketTransport.handshake())
-                .orTimeout(timeout, TimeUnit.SECONDS)
                 .exceptionallyComposeAsync(this::closeSocketOnError);
     }
 
@@ -463,7 +461,7 @@ public class SocketClient extends Socket implements AutoCloseable {
     public CompletableFuture<Void> writeAsync(byte[] data) {
         return writeAsync(data, 0, data.length);
     }
-    
+
     public CompletableFuture<Void> writeAsync(byte[] data, int offset, int length) {
         return writeAsync(ByteBuffer.wrap(data, offset, length));
     }
@@ -507,14 +505,14 @@ public class SocketClient extends Socket implements AutoCloseable {
             result.completeExceptionally(new IllegalArgumentException("Cannot read %s bytes from socket".formatted(length)));
             return result;
         }
-        
+
         var buffer = ByteBuffer.allocate(length);
         readAsync(buffer, (bytesRead, error) -> {
             if(error != null) {
                 result.completeExceptionally(error);
                 return;
             }
-            
+
             result.complete(buffer);
         });
         return result;
@@ -860,7 +858,11 @@ public class SocketClient extends Socket implements AutoCloseable {
                 var bytesRead = 0;
                 var writeLimit = sslOutputBuffer.limit();
                 sslOutputBuffer.limit(writePosition);
-                sslOutputBuffer.reset(); // Go back to last read position
+                try {
+                    sslOutputBuffer.reset(); // Go back to last read position
+                }catch (InvalidMarkException exception) {
+                    sslOutputBuffer.flip(); // This can happen if unwrapResult.bytesProduced() != 0 on the first call
+                }
                 while (buffer.hasRemaining() && sslOutputBuffer.hasRemaining()) {
                     buffer.put(sslOutputBuffer.get());
                     bytesRead++;
@@ -945,7 +947,7 @@ public class SocketClient extends Socket implements AutoCloseable {
             channel.connect(address, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Void result, Object attachment) {
-                    future.complete(null);
+                    future.complete(result);
                 }
 
                 @Override
@@ -974,7 +976,6 @@ public class SocketClient extends Socket implements AutoCloseable {
             private HttpProxy(AsynchronousSocketChannel channel, SocketTransport socketTransport, URI proxy) {
                 super(channel, socketTransport, proxy);
             }
-
 
             @Override
             public CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {

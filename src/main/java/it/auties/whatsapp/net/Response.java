@@ -5,13 +5,7 @@ import java.util.concurrent.CompletableFuture;
 public sealed interface Response<V> {
     default boolean complete(V result) {
         switch (this) {
-            case Callback<V> callback -> {
-                try {
-                    callback.onResult(result, null);
-                }catch (Throwable throwable) {
-                    callback.onResult(null, throwable);
-                }
-            }
+            case Callback<V> callback -> callback.onResult(result, null);
             case Future<V> future -> future.complete(result);
         }
 

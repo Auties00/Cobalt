@@ -1,6 +1,5 @@
 package it.auties.whatsapp.registration;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.AsyncVerificationCodeSupplier;
 import it.auties.whatsapp.controller.Keys;
@@ -8,20 +7,14 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.companion.CompanionDevice;
-import it.auties.whatsapp.model.mobile.CountryCode;
-import it.auties.whatsapp.model.mobile.VerificationCodeError;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
+import it.auties.whatsapp.model.mobile.*;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.response.AbPropsResponse;
 import it.auties.whatsapp.model.response.CheckNumberResponse;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.net.HttpClient;
-import it.auties.whatsapp.registration.apns.ApnsClient;
-import it.auties.whatsapp.registration.apns.ApnsPacket;
-import it.auties.whatsapp.registration.apns.ApnsPayloadTag;
-import it.auties.whatsapp.registration.gcm.GcmClient;
+import it.auties.whatsapp.registration.cloudVerification.CloudVerificationClient;
 import it.auties.whatsapp.registration.metadata.WhatsappAndroidTokens;
 import it.auties.whatsapp.registration.metadata.WhatsappIosMetrics;
 import it.auties.whatsapp.registration.metadata.WhatsappIosTokens;
@@ -49,7 +42,6 @@ public final class WhatsappRegistration {
     );
     private static final String DEFAULT_APNS_CODE = "wx9mHoJbWzg=";
     private static final String DEFAULT_APNS_TOKEN = "e922c81c02389f01914bf069f080dad788ff2c783261821a52b8ad7be53d18b8";
-    private static final String DEFAULT_GCM_CODE = "36dimLEhnzs=";
     private static final int CLOUD_TIMEOUT = 10;
 
     private final HttpClient httpClient;
@@ -57,33 +49,29 @@ public final class WhatsappRegistration {
     private final Keys keys;
     private final AsyncVerificationCodeSupplier codeHandler;
     private final VerificationCodeMethod method;
-    private final ApnsClient apnsClient;
-    private final GcmClient gcmClient;
+    private final CloudVerificationClient cloudVerificationClient;
     private final CountryCode countryCode;
     private final boolean printRequests;
     private volatile CompletableFuture<WhatsappAndroidTokens> androidToken;
     private volatile CompletableFuture<WhatsappIosTokens> iosToken;
 
-    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, boolean cloudMessagingVerification, boolean printRequests) {
+    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method, CloudVerificationClient cloudVerificationClient, boolean printRequests) {
         this.store = store;
         this.keys = keys;
         this.codeHandler = codeHandler;
         this.method = method;
         var ios = store.device().platform().isIOS();
-        var android = store.device().platform().isAndroid();
-        var requiresVerification = method != VerificationCodeMethod.NONE;
-        this.httpClient = new HttpClient(ios ? HttpClient.Platform.IOS : HttpClient.Platform.ANDROID, store.proxy().orElse(null));
-        this.apnsClient = ios && requiresVerification && cloudMessagingVerification ? new ApnsClient(httpClient, store.proxy().orElse(null)) : null;
-        this.gcmClient = android && requiresVerification && cloudMessagingVerification ? new GcmClient(httpClient, store.proxy().orElse(null)) : null;
+        var proxy = store.proxy().orElse(null);
+        this.httpClient = new HttpClient(ios ? HttpClient.Platform.IOS : HttpClient.Platform.ANDROID, proxy);
+        this.cloudVerificationClient = cloudVerificationClient;
         this.countryCode = store.phoneNumber().orElseThrow().countryCode();
         this.printRequests = printRequests;
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
-        return requestVerificationCode(false)
-                .thenCompose(ignored -> sendVerificationCode())
-                .whenComplete((result, exception) -> {
-                    dispose();
+        return requestVerificationCode()
+                .thenComposeAsync(ignored -> sendVerificationCode())
+                .whenCompleteAsync((result, exception) -> {
                     if (exception != null) {
                         Exceptions.rethrow(exception);
                     }
@@ -91,19 +79,15 @@ public final class WhatsappRegistration {
     }
 
     public CompletableFuture<RegistrationResponse> requestVerificationCode() {
-        return requestVerificationCode(true);
-    }
-
-    private CompletableFuture<RegistrationResponse> requestVerificationCode(boolean closeResources) {
         if (method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }
 
         // If you want to print the IP
-        // System.out.println(httpClient.getString(URI.create("http://api.ipify.org")).join());
+        // printMessage(httpClient.getString(URI.create("http://api.ipify.org")).join());
 
         // If you want to check the IP
-        // System.out.println(httpClient.getString(URI.create("https://www.cloudflare.com/cdn-cgi/trace/")).join());
+        // printMessage(httpClient.getString(URI.create("https://www.cloudflare.com/cdn-cgi/trace/")).join());
 
         // IMPORTANT: Depending on how Whatsapp decides to manage their risk control,
         // it could be a good idea to enable this
@@ -142,12 +126,8 @@ public final class WhatsappRegistration {
             case KAIOS -> requestVerificationCode(null, null);
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
-        return future.whenComplete((result, exception) -> {
+        return future.whenCompleteAsync((result, exception) -> {
             store.setDevice(originalDevice);
-            if (closeResources) {
-                dispose();
-            }
-
             if (exception != null) {
                 Exceptions.rethrow(exception);
             }
@@ -165,7 +145,6 @@ public final class WhatsappRegistration {
                 })
                 .whenCompleteAsync((result, exception) -> {
                     store.setDevice(originalDevice);
-                    dispose();
                     if (exception != null) {
                         Exceptions.rethrow(exception);
                     }
@@ -183,17 +162,13 @@ public final class WhatsappRegistration {
                 .toMap();
         var body = HttpClient.toFormParams(attributes);
         var userAgent = store.device().toUserAgent(store.version());
-        if (printRequests) {
-            System.out.println("Using user agent " + userAgent);
-            System.out.println("Sending request to /reg_onboard_abprop with parameters " + attributes);
-        }
+        printMessage("Using user agent " + userAgent);
+        printMessage("Sending request to /reg_onboard_abprop with parameters " + attributes);
         var future = switch (store.device().platform()) {
             case ANDROID, ANDROID_BUSINESS -> {
                 var cipheredBody = Base64.getUrlEncoder().encodeToString(cipherRequestPayload(body.getBytes()));
                 var postBody = ("ENC=" + cipheredBody).getBytes();
-                if (printRequests) {
-                    System.out.println("Using body " + cipheredBody);
-                }
+                printMessage("Using body " + cipheredBody);
                 var postEndpoint = URI.create(MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop");
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
@@ -203,7 +178,7 @@ public final class WhatsappRegistration {
                         .put("Accept-Encoding", "gzip")
                         .toMap();
                 yield httpClient.postRaw(postEndpoint, headers, postBody)
-                        .thenApply(String::new);
+                        .thenApplyAsync(String::new);
             }
             case IOS, IOS_BUSINESS -> {
                 var headers = Map.of(
@@ -211,48 +186,35 @@ public final class WhatsappRegistration {
                         "Content-Type", "application/x-www-form-urlencoded",
                         "Connection", "Close"
                 );
-                if (printRequests) {
-                    System.out.println("Using body " + body);
-                }
+                printMessage("Using body " + body);
                 var getEndpoint = URI.create(MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + body);
                 yield httpClient.getString(getEndpoint, headers);
             }
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
         return future.thenApplyAsync(response -> {
-            if (printRequests) {
-                System.out.println("Received response /reg_onboard_abprop " + response);
-            }
+            printMessage("Received response /reg_onboard_abprop " + response);
             return Json.readValue(response, AbPropsResponse.class);
         });
     }
 
     private CompletableFuture<String> getPushToken() {
-        if (apnsClient != null) {
-            return apnsClient.getAppToken(store.device().platform().isBusiness()).exceptionallyAsync((error) -> {
-                if(printRequests) {
-                    System.out.println("Using default apns token");
-                }
-
-                return DEFAULT_APNS_TOKEN;
-            });
+        if (cloudVerificationClient == null) {
+            return CompletableFuture.completedFuture(getDefaultPushToken());
         }
 
-        if (gcmClient != null) {
-            return gcmClient.getPushToken().exceptionallyAsync((error) -> {
-                if(printRequests) {
-                    System.out.println("Using default gcm token");
-                }
+        return cloudVerificationClient.getPushToken(store.device().platform().isBusiness())
+                .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
+                .exceptionallyAsync(error -> getDefaultPushToken());
+    }
 
-                return null;
-            });
-        }
-
+    private String getDefaultPushToken() {
+        printMessage("Using default apns token");
         if(store.device().platform().isIOS()) {
-            return CompletableFuture.completedFuture(DEFAULT_APNS_TOKEN);
+            return DEFAULT_APNS_TOKEN;
         }
 
-        return CompletableFuture.completedFuture(null);
+        return null;
     }
 
     private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, boolean swapDevice, VerificationCodeError lastError) {
@@ -358,43 +320,23 @@ public final class WhatsappRegistration {
     }
 
     private CompletableFuture<String> getPushCode() {
-        if (apnsClient != null) {
-            return apnsClient.waitForPacket(packet -> packet.tag() == ApnsPayloadTag.NOTIFICATION)
-                    .thenApply(this::readIOSPushCode)
-                    .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
-                    .exceptionallyAsync(error -> {
-                        if(printRequests) {
-                            System.out.println("Using default apns code");
-                        }
-
-                        return DEFAULT_APNS_CODE;
-                    });
+        if (cloudVerificationClient == null) {
+            return CompletableFuture.completedFuture(getDefaultPushCode());
         }
 
-        if (gcmClient != null) {
-            return gcmClient.getPushCode()
-                    .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
-                    .exceptionallyAsync(error -> {
-                        if(printRequests) {
-                            System.out.println("Using default gcm code");
-                        }
-
-                        return DEFAULT_GCM_CODE;
-                    });
-        }
-
-        if(store.device().platform().isIOS()) {
-            return CompletableFuture.completedFuture(DEFAULT_APNS_CODE);
-        }
-
-        return CompletableFuture.completedFuture(null);
+        return cloudVerificationClient.getPushCode()
+                .orTimeout(CLOUD_TIMEOUT, TimeUnit.SECONDS)
+                .exceptionallyAsync(error -> getDefaultPushCode());
     }
 
-    private String readIOSPushCode(ApnsPacket packet) {
-        var payload = packet.fields().get(0x3);
-        var json = Json.readValue(payload, new TypeReference<Map<String, Object>>() {
-        });
-        return (String) json.get("regcode");
+    private String getDefaultPushCode() {
+        if(store.device().platform().isIOS()) {
+            printMessage("Using default gcm code");
+            return DEFAULT_APNS_CODE;
+        }else {
+            printMessage("Using default gcm code");
+            return null;
+        }
     }
 
     private String convertBufferToUrlHex(byte[] buffer) {
@@ -413,7 +355,7 @@ public final class WhatsappRegistration {
                 false,
                 attributes
         );
-        options.thenCompose(attrs -> sendRequest("/client_log", attrs));
+        options.thenComposeAsync(attrs -> sendRequest("/client_log", attrs));
     }
 
     private CompletableFuture<RegistrationResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
@@ -601,19 +543,13 @@ public final class WhatsappRegistration {
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
         var encodedParams = HttpClient.toFormParams(params).getBytes();
         var userAgent = store.device().toUserAgent(store.version());
-        if (printRequests) {
-            System.out.println("Using user agent " + userAgent);
-        }
+        printMessage("Using user agent " + userAgent);
         var enc = cipherRequestPayload(encodedParams);
         var encBase64 = encodeBase64(enc);
-        if (printRequests) {
-            System.out.println("Using body: " + encBase64);
-        }
+        printMessage("Using body: " + encBase64);
         return switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> getIosToken().thenComposeAsync(iosTokens -> {
-                if (printRequests) {
-                    System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
-                }
+                printMessage("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 var uri = URI.create("%s%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path));
                 var headers = Attributes.of()
                         .put("User-Agent", userAgent)
@@ -626,14 +562,12 @@ public final class WhatsappRegistration {
                         iosTokens != null ? "&H=" + iosTokens.signature() : ""
                 );
                 if (printRequests && iosTokens != null) {
-                    System.out.println("Using attestation: " + iosTokens.authorization());
-                    System.out.println("Using assertion: " + iosTokens.signature());
+                    printMessage("Using attestation: " + iosTokens.authorization());
+                    printMessage("Using assertion: " + iosTokens.signature());
                 }
                 return httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
-                    if (printRequests) {
-                        System.out.println("Received response " + path + " " + resultAsString);
-                    }
+                    printMessage("Received response " + path + " " + resultAsString);
                     return resultAsString;
                 });
             });
@@ -655,26 +589,20 @@ public final class WhatsappRegistration {
                         encBase64,
                         androidCert == null ? "" : "&H=" + URLEncoder.encode(androidCert.signature(), StandardCharsets.UTF_8)
                 );
-                if (printRequests) {
-                    if (androidCert != null) {
-                        System.out.println("Using certificate: " + androidCert.certificate());
-                        System.out.println("Using signature: " + androidCert.signature());
-                    }
-                    System.out.println("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
+                if (androidCert != null) {
+                    printMessage("Using certificate: " + androidCert.certificate());
+                    printMessage("Using signature: " + androidCert.signature());
                 }
+                printMessage("Sending POST request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 return httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
-                    if (printRequests) {
-                        System.out.println("Received response " + path + " " + resultAsString);
-                    }
+                    printMessage("Received response " + path + " " + resultAsString);
                     return resultAsString;
                 });
             });
 
             case KAIOS -> {
-                if (printRequests) {
-                    System.out.println("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
-                }
+                printMessage("Sending GET request to " + path + " with parameters " + Json.writeValueAsString(params, true));
                 var uri = URI.create("%s%s".formatted(MOBILE_KAIOS_REGISTRATION_ENDPOINT, path));
                 var headers = Map.of(
                         "User-Agent", userAgent,
@@ -683,9 +611,7 @@ public final class WhatsappRegistration {
                 var body = "ENC=" + encBase64;
                 yield httpClient.postRaw(uri, headers, body.getBytes()).thenApplyAsync(result -> {
                     var resultAsString = new String(result);
-                    if (printRequests) {
-                        System.out.println("Received response " + path + " " + resultAsString);
-                    }
+                    printMessage("Received response " + path + " " + resultAsString);
                     return resultAsString;
                 });
             }
@@ -743,17 +669,14 @@ public final class WhatsappRegistration {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
     }
 
-    private void dispose() {
-        if (httpClient != null) {
-            httpClient.close();
+    private void printMessage(String message) {
+        if (!printRequests) {
+            return;
         }
 
-        if (apnsClient != null) {
-            apnsClient.close();
-        }
-
-        if (gcmClient != null) {
-            gcmClient.close();
-        }
+        var caller = store.phoneNumber()
+                .map(PhoneNumber::toString)
+                .orElse("UNKNOWN");
+        System.out.printf("[%s] %s%n", caller, message);
     }
 }
