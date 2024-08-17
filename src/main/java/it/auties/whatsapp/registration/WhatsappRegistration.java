@@ -69,9 +69,10 @@ public final class WhatsappRegistration {
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
-        return requestVerificationCode()
+        return requestVerificationCode(false)
                 .thenComposeAsync(ignored -> sendVerificationCode())
                 .whenCompleteAsync((result, exception) -> {
+                    dispose();
                     if (exception != null) {
                         Exceptions.rethrow(exception);
                     }
@@ -79,6 +80,10 @@ public final class WhatsappRegistration {
     }
 
     public CompletableFuture<RegistrationResponse> requestVerificationCode() {
+        return requestVerificationCode(true);
+    }
+
+    private CompletableFuture<RegistrationResponse> requestVerificationCode(boolean closeResources) {
         if (method == VerificationCodeMethod.NONE) {
             return CompletableFuture.completedFuture(null);
         }
@@ -99,24 +104,25 @@ public final class WhatsappRegistration {
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> exists(originalDevice, true, false, null))
                     .thenComposeAsync(ignored -> getPushCode())
+                    .thenComposeAsync(result -> clientLog(
+                            Map.entry("current_screen", "verify_sms"),
+                            Map.entry("previous_screen", "enter_number"),
+                            Map.entry("action_taken", "continue")
+                    ))
+                    .thenComposeAsync(result -> requestVerificationCode(result, null))
                     .thenComposeAsync(result -> {
-                        clientLog(
-                                Map.entry("current_screen", "verify_sms"),
-                                Map.entry("previous_screen", "enter_number"),
-                                Map.entry("action_taken", "continue")
-                        );
-                        var response = requestVerificationCode(result, null);
-                        if(store.device().platform().isBusiness()) {
-                            clientLog(
-                                    Map.entry("event_name", "smb_client_onboarding_journey"),
-                                    Map.entry("smb_onboarding_step", "20"),
-                                    Map.entry("has_consumer_app", "1"),
-                                    Map.entry("sequence_number", "14"),
-                                    Map.entry("is_logged_in_on_consumer_app", "0"),
-                                    Map.entry("app_install_source", "unknown|unknown")
-                            );
+                        if (!store.device().platform().isBusiness()) {
+                            return CompletableFuture.completedFuture(result);
                         }
-                        return response;
+
+                        return clientLog(
+                                Map.entry("event_name", "smb_client_onboarding_journey"),
+                                Map.entry("smb_onboarding_step", "20"),
+                                Map.entry("has_consumer_app", "1"),
+                                Map.entry("sequence_number", "14"),
+                                Map.entry("is_logged_in_on_consumer_app", "0"),
+                                Map.entry("app_install_source", "unknown|unknown")
+                        ).thenApply(ignored -> result);
                     });
             case ANDROID, ANDROID_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
@@ -127,6 +133,10 @@ public final class WhatsappRegistration {
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
         return future.whenCompleteAsync((result, exception) -> {
+            if (closeResources) {
+                dispose();
+            }
+
             store.setDevice(originalDevice);
             if (exception != null) {
                 Exceptions.rethrow(exception);
@@ -184,7 +194,7 @@ public final class WhatsappRegistration {
                 var headers = Map.of(
                         "User-Agent", userAgent,
                         "Content-Type", "application/x-www-form-urlencoded",
-                        "Connection", "Close"
+                        "Connection", "Keep-Alive"
                 );
                 printMessage("Using body " + body);
                 var getEndpoint = URI.create(MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + body);
@@ -331,7 +341,7 @@ public final class WhatsappRegistration {
 
     private String getDefaultPushCode() {
         if(store.device().platform().isIOS()) {
-            printMessage("Using default gcm code");
+            printMessage("Using default apns code");
             return DEFAULT_APNS_CODE;
         }else {
             printMessage("Using default gcm code");
@@ -348,14 +358,14 @@ public final class WhatsappRegistration {
     }
 
     @SafeVarargs
-    private void clientLog(Entry<String, Object>... attributes) {
+    private CompletableFuture<String> clientLog(Entry<String, Object>... attributes) {
         var options = getRegistrationOptions(
                 store,
                 keys,
                 false,
                 attributes
         );
-        options.thenComposeAsync(attrs -> sendRequest("/client_log", attrs));
+        return options.thenComposeAsync(attrs -> sendRequest("/client_log", attrs));
     }
 
     private CompletableFuture<RegistrationResponse> requestVerificationCode(String pushCode, VerificationCodeError lastError) {
@@ -555,7 +565,7 @@ public final class WhatsappRegistration {
                         .put("User-Agent", userAgent)
                         .put("Authorization", iosTokens == null ? "" : iosTokens.authorization(), iosTokens != null)
                         .put("Content-Type", "application/x-www-form-urlencoded")
-                        .put("Connection", "Close")
+                        .put("Connection", "Keep-Alive")
                         .toMap();
                 var body = "ENC=%s%s".formatted(
                         encBase64,
@@ -678,5 +688,9 @@ public final class WhatsappRegistration {
                 .map(PhoneNumber::toString)
                 .orElse("UNKNOWN");
         System.out.printf("[%s] %s%n", caller, message);
+    }
+
+    private void dispose() {
+        httpClient.close();
     }
 }

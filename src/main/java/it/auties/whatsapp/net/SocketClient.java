@@ -17,11 +17,12 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("unused")
 public class SocketClient extends Socket implements AutoCloseable {
-    private static final int DEFAULT_CONNECTION_TIMEOUT = 300;
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 60;
 
     public static SocketClient newPlainClient(URI proxy) throws IOException {
         var channel = AsynchronousSocketChannel.open();
@@ -40,7 +41,7 @@ public class SocketClient extends Socket implements AutoCloseable {
     final AsynchronousSocketChannel channel;
     final SocketConnection socketConnection;
     SocketTransport socketTransport;
-    private SocketClient(AsynchronousSocketChannel channel, SocketConnection socketConnection, SocketTransport socketTransport) throws IOException {
+    private SocketClient(AsynchronousSocketChannel channel, SocketConnection socketConnection, SocketTransport socketTransport) {
         this.channel = channel;
         this.socketConnection = socketConnection;
         this.socketTransport = socketTransport;
@@ -171,17 +172,21 @@ public class SocketClient extends Socket implements AutoCloseable {
 
     @Override
     public boolean isConnected() {
-        return channel.isOpen();
+        try {
+            return channel.getRemoteAddress() != null;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     @Override
     public boolean isOutputShutdown() {
-        return !channel.isOpen();
+        return !isConnected();
     }
 
     @Override
     public boolean isInputShutdown() {
-        return !channel.isOpen();
+        return !isConnected();
     }
 
     @Override
@@ -943,19 +948,17 @@ public class SocketClient extends Socket implements AutoCloseable {
         }
 
         CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {
-            var future = new CompletableFuture<Void>();
-            channel.connect(address, null, new CompletionHandler<>() {
-                @Override
-                public void completed(Void result, Object attachment) {
-                    future.complete(result);
-                }
+            return CompletableFuture.runAsync(() -> connectSync(address), Thread::startVirtualThread)
+                    .orTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
+        }
 
-                @Override
-                public void failed(Throwable exc, Object attachment) {
-                    future.completeExceptionally(exc);
-                }
-            });
-            return future;
+        private void connectSync(InetSocketAddress address) {
+            var future = channel.connect(address);
+            try {
+                future.get();
+            }catch (Throwable throwable) {
+                throw new RuntimeException("Cannot connect to " + address, throwable);
+            }
         }
 
         private static final class NoProxy extends SocketConnection {

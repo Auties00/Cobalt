@@ -15,11 +15,10 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class HttpClient {
+public class HttpClient implements AutoCloseable {
     private static final int REQUEST_TIMEOUT = 300;
     private static final String[] IOS_CIPHERS = {
             "TLS_AES_128_GCM_SHA256",
@@ -48,7 +47,7 @@ public class HttpClient {
 
     private final Platform platform;
     private final URI proxy;
-
+    private final ConcurrentMap<String, SocketClient> aliveSockets;
     public HttpClient(Platform platform) {
         this(platform, null);
     }
@@ -56,6 +55,7 @@ public class HttpClient {
     public HttpClient(Platform platform, URI proxy) {
         this.proxy = proxy;
         this.platform = platform;
+        this.aliveSockets = new ConcurrentHashMap<>();
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -72,56 +72,68 @@ public class HttpClient {
     }
 
     public CompletableFuture<byte[]> getRaw(URI uri) {
-        return sendRequest("GET", uri, null, null, true);
+        return sendRequest("GET", uri, null, null, true, false);
     }
 
     public CompletableFuture<byte[]> getRaw(URI uri, Map<String, ?> headers) {
-        return sendRequest("GET", uri, headers, null, true);
+        return sendRequest("GET", uri, headers, null, true, false);
     }
 
     public CompletableFuture<String> getString(URI uri) {
-        return sendRequest("GET", uri, null, null, true)
+        return sendRequest("GET", uri, null, null, true, false)
                 .thenApplyAsync(String::new);
     }
 
     public CompletableFuture<String> getString(URI uri, Map<String, ?> headers) {
-        return sendRequest("GET", uri, headers, null, true)
+        return sendRequest("GET", uri, headers, null, true, false)
                 .thenApplyAsync(String::new);
     }
 
     public CompletableFuture<byte[]> postRaw(URI uri, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, headers, body, true);
+        return sendRequest("POST", uri, headers, body, true, false);
     }
 
     public CompletableFuture<byte[]> postRawWithoutSslParams(URI uri, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, headers, body, false);
+        return sendRequest("POST", uri, headers, body, false, false);
     }
 
-    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams) {
-        var socket = getSocketClient(uri);
+    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams, boolean isRetry) {
+        var socket = getLockableSocketClient(uri, useSslParams);
         var builder = createRequestPayload(method, uri, headers, body);
-        return socket.connectAsync(toSocketAddress(uri))
+        return (socket.isConnected() ? CompletableFuture.completedFuture(null) : socket.connectAsync(toSocketAddress(uri)))
                 .thenComposeAsync(ignored -> socket.writeAsync(builder.toString().getBytes()))
                 .thenComposeAsync(ignored -> socket.readAsync(readReceiveBufferSize(socket)))
-                .thenComposeAsync(responseBuffer -> parseResponsePayload(responseBuffer, socket))
+                .thenComposeAsync(responseBuffer -> parseResponsePayload(uri, responseBuffer, socket))
                 .orTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                .whenCompleteAsync((result, error) -> {
-                    closeSocketSilently(socket);
-                    if(error != null) {
-                        Exceptions.rethrow(error);
+                .exceptionallyComposeAsync(error -> {
+                    closeSocketSilently(uri, socket);
+                    if(isRetry) {
+                        return CompletableFuture.failedFuture(error);
                     }
+
+                    var innerCause = error.getCause();
+                    while (innerCause.getCause() != null) {
+                        innerCause = innerCause.getCause();
+                    }
+
+                    if(!(innerCause instanceof TimeoutException)) {
+                        return CompletableFuture.failedFuture(error);
+                    }
+
+                    return sendRequest(method, uri, headers, body, useSslParams, true);
                 });
     }
 
-    private void closeSocketSilently(SocketClient socket) {
+    private void closeSocketSilently(URI uri, SocketClient socket) {
         try {
             socket.close();
-        } catch (IOException ignored) {
+            aliveSockets.remove(uri.getHost() + ":" + uri.getPort(), socket);
+        } catch (Throwable ignored) {
 
         }
     }
 
-    private CompletableFuture<byte[]> parseResponsePayload(ByteBuffer responseBuffer, SocketClient socket) {
+    private CompletableFuture<byte[]> parseResponsePayload(URI uri, ByteBuffer responseBuffer, SocketClient socket) {
         var response = StandardCharsets.UTF_8
                 .decode(responseBuffer)
                 .toString();
@@ -130,6 +142,7 @@ public class HttpClient {
         checkStatusCode(response, responseStatusLineEnd);
 
         var contentLength = -1;
+        var keepAlive = false;
         var lastHeaderLineIndex = responseStatusLineEnd;
         var currentHeaderLineIndex = responseStatusLineEnd;
         while ((currentHeaderLineIndex = response.indexOf("\n", lastHeaderLineIndex + 1)) != -1) {
@@ -144,14 +157,17 @@ public class HttpClient {
                 throw new IllegalArgumentException("Malformed response header: " + responseLine);
             }
 
-            if(!responseLineParts[0].equalsIgnoreCase("Content-Length")) {
-                continue;
-            }
-
-            try {
-                contentLength = Integer.parseUnsignedInt(responseLineParts[1]);
-            }catch (NumberFormatException exception) {
-                throw new IllegalArgumentException("Malformed Content-Length header: " + responseLine);
+            var headerKey = responseLineParts[0];
+            var headerValue = responseLineParts[1];
+            switch (headerKey.toLowerCase()) {
+                case "content-length" -> {
+                    try {
+                        contentLength = Integer.parseUnsignedInt(responseLineParts[1]);
+                    }catch (NumberFormatException exception) {
+                        throw new IllegalArgumentException("Malformed Content-Length header: " + responseLine);
+                    }
+                }
+                case "connection" -> keepAlive = headerValue.equalsIgnoreCase("keep-alive");
             }
         }
 
@@ -165,16 +181,33 @@ public class HttpClient {
         }
 
         if(partialBody.length == contentLength) {
+            if(!keepAlive) {
+                closeSocketSilently(uri, socket);
+            }
+
             return CompletableFuture.completedFuture(partialBody);
         }
 
+        var killSocket = !keepAlive;
         var remainingLength = contentLength - partialBody.length;
-        return socket.readFullyAsync(remainingLength).thenApplyAsync(additionalBody -> {
-            var completeResult = new byte[partialBody.length + additionalBody.remaining()];
-            System.arraycopy(partialBody, 0, completeResult, 0, partialBody.length);
-            additionalBody.get(completeResult, partialBody.length, remainingLength);
-            return completeResult;
-        });
+        return socket.readFullyAsync(remainingLength)
+                .thenApplyAsync(additionalBody -> concatMessage(additionalBody, partialBody, remainingLength))
+                .whenCompleteAsync((result, error) -> {
+                    if(killSocket) {
+                        closeSocketSilently(uri, socket);
+                    }
+
+                    if(error != null) {
+                        Exceptions.rethrow(error);
+                    }
+                });
+    }
+
+    private byte[] concatMessage(ByteBuffer additionalBody, byte[] partialBody, int remainingLength) {
+        var completeResult = new byte[partialBody.length + additionalBody.remaining()];
+        System.arraycopy(partialBody, 0, completeResult, 0, partialBody.length);
+        additionalBody.get(completeResult, partialBody.length, remainingLength);
+        return completeResult;
     }
 
     private StringBuilder createRequestPayload(String method, URI uri, Map<String, ?> headers, byte[] body) {
@@ -240,17 +273,32 @@ public class HttpClient {
         }
     }
 
-    private SocketClient getSocketClient(URI uri) {
+    private SocketClient getLockableSocketClient(URI uri, boolean useSslParams) {
         try {
+            var aliveSocket = aliveSockets.get(uri.getHost() + ":" + uri.getPort());
+            if(aliveSocket != null) {
+                return aliveSocket;
+            }
+
             return switch (uri.getScheme().toLowerCase()) {
-                case "http" -> SocketClient.newPlainClient(proxy);
+                case "http" -> {
+                    var result = SocketClient.newPlainClient(proxy);
+                    result.setKeepAlive(true);
+                    aliveSockets.put(uri.getHost() + ":" + uri.getPort(), result);
+                    yield result;
+                }
                 case "https" -> {
                     var sslEngine = platform.sslData()
                             .context()
                             .createSSLEngine(uri.getHost(), uri.getPort() == 1 ? 443 : uri.getPort());
                     sslEngine.setUseClientMode(true);
-                    sslEngine.setSSLParameters(platform.sslData().parameters());
-                    yield SocketClient.newSecureClient(sslEngine, proxy);
+                    if(useSslParams) {
+                        sslEngine.setSSLParameters(platform.sslData().parameters());
+                    }
+                    var result = SocketClient.newSecureClient(sslEngine, proxy);
+                    result.setKeepAlive(true);
+                    aliveSockets.put(uri.getHost() + ":" + uri.getPort(), result);
+                    yield result;
                 }
                 default -> throw new IllegalStateException("Unexpected scheme: " + uri.getScheme().toLowerCase());
             };
@@ -294,5 +342,16 @@ public class HttpClient {
                 throw new RuntimeException(exception);
             }
         }
+    }
+
+    @Override
+    public void close() {
+        aliveSockets.forEach((key, socket) -> {
+            try {
+                socket.close();
+            } catch (Throwable ignored) {
+
+            }
+        });
     }
 }
