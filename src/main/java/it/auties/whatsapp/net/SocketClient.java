@@ -17,12 +17,13 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("unused")
 public class SocketClient extends Socket implements AutoCloseable {
-    private static final int DEFAULT_CONNECTION_TIMEOUT = 60;
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 300;
 
     public static SocketClient newPlainClient(URI proxy) throws IOException {
         var channel = AsynchronousSocketChannel.open();
@@ -930,6 +931,10 @@ public class SocketClient extends Socket implements AutoCloseable {
     }
 
     private sealed static abstract class SocketConnection {
+        // Necessary because of a bug in the JDK
+        // Need to debug this
+        private static final Semaphore SEMAPHORE = new Semaphore(999, true);
+
         final AsynchronousSocketChannel channel;
         final SocketTransport socketTransport;
         final URI proxy;
@@ -949,15 +954,18 @@ public class SocketClient extends Socket implements AutoCloseable {
 
         CompletableFuture<Void> connectAsync(InetSocketAddress address, int timeout) {
             return CompletableFuture.runAsync(() -> connectSync(address), Thread::startVirtualThread)
-                    .orTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
+                    .orTimeout(timeout > 0 ? timeout : DEFAULT_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
         }
 
         private void connectSync(InetSocketAddress address) {
-            var future = channel.connect(address);
             try {
+                SEMAPHORE.acquire();
+                var future = channel.connect(address);
                 future.get();
             }catch (Throwable throwable) {
                 throw new RuntimeException("Cannot connect to " + address, throwable);
+            }finally {
+                SEMAPHORE.release();
             }
         }
 

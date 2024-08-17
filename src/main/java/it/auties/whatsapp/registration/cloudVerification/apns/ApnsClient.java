@@ -84,10 +84,8 @@ public class ApnsClient implements CloudVerificationClient {
                 .whenCompleteAsync((result, error) -> {
                     if(error != null) {
                         System.out.println("APNS client timed out");
-
                     }else {
                         System.out.println("APNS client logged in");
-
                     }
                 });
     }

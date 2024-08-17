@@ -5,7 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.registration.gcm.*;
 
 import java.util.List;
 import java.util.Optional;

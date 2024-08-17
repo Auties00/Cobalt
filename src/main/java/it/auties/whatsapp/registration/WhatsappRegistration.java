@@ -103,12 +103,12 @@ public final class WhatsappRegistration {
             case IOS, IOS_BUSINESS -> onboard("1", 2155550000L, null)
                     .thenComposeAsync(response -> onboard(null, null, response.abHash()), CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS))
                     .thenComposeAsync(ignored -> exists(originalDevice, true, false, null))
-                    .thenComposeAsync(ignored -> getPushCode())
                     .thenComposeAsync(result -> clientLog(
                             Map.entry("current_screen", "verify_sms"),
                             Map.entry("previous_screen", "enter_number"),
                             Map.entry("action_taken", "continue")
                     ))
+                    .thenComposeAsync(ignored -> getPushCode())
                     .thenComposeAsync(result -> requestVerificationCode(result, null))
                     .thenComposeAsync(result -> {
                         if (!store.device().platform().isBusiness()) {
@@ -219,12 +219,11 @@ public final class WhatsappRegistration {
     }
 
     private String getDefaultPushToken() {
-        printMessage("Using default apns token");
         if(store.device().platform().isIOS()) {
             return DEFAULT_APNS_TOKEN;
+        }else {
+            return null;
         }
-
-        return null;
     }
 
     private CompletableFuture<RegistrationResponse> exists(CompanionDevice originalDevice, boolean throwError, boolean swapDevice, VerificationCodeError lastError) {
@@ -341,10 +340,8 @@ public final class WhatsappRegistration {
 
     private String getDefaultPushCode() {
         if(store.device().platform().isIOS()) {
-            printMessage("Using default apns code");
             return DEFAULT_APNS_CODE;
         }else {
-            printMessage("Using default gcm code");
             return null;
         }
     }

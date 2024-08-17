@@ -72,32 +72,32 @@ public class HttpClient implements AutoCloseable {
     }
 
     public CompletableFuture<byte[]> getRaw(URI uri) {
-        return sendRequest("GET", uri, null, null, true, false);
+        return sendRequest("GET", uri, null, null, true);
     }
 
     public CompletableFuture<byte[]> getRaw(URI uri, Map<String, ?> headers) {
-        return sendRequest("GET", uri, headers, null, true, false);
+        return sendRequest("GET", uri, headers, null, true);
     }
 
     public CompletableFuture<String> getString(URI uri) {
-        return sendRequest("GET", uri, null, null, true, false)
+        return sendRequest("GET", uri, null, null, true)
                 .thenApplyAsync(String::new);
     }
 
     public CompletableFuture<String> getString(URI uri, Map<String, ?> headers) {
-        return sendRequest("GET", uri, headers, null, true, false)
+        return sendRequest("GET", uri, headers, null, true)
                 .thenApplyAsync(String::new);
     }
 
     public CompletableFuture<byte[]> postRaw(URI uri, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, headers, body, true, false);
+        return sendRequest("POST", uri, headers, body, true);
     }
 
     public CompletableFuture<byte[]> postRawWithoutSslParams(URI uri, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, headers, body, false, false);
+        return sendRequest("POST", uri, headers, body, false);
     }
 
-    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams, boolean isRetry) {
+    private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParams) {
         var socket = getLockableSocketClient(uri, useSslParams);
         var builder = createRequestPayload(method, uri, headers, body);
         return (socket.isConnected() ? CompletableFuture.completedFuture(null) : socket.connectAsync(toSocketAddress(uri)))
@@ -107,20 +107,7 @@ public class HttpClient implements AutoCloseable {
                 .orTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                 .exceptionallyComposeAsync(error -> {
                     closeSocketSilently(uri, socket);
-                    if(isRetry) {
-                        return CompletableFuture.failedFuture(error);
-                    }
-
-                    var innerCause = error.getCause();
-                    while (innerCause.getCause() != null) {
-                        innerCause = innerCause.getCause();
-                    }
-
-                    if(!(innerCause instanceof TimeoutException)) {
-                        return CompletableFuture.failedFuture(error);
-                    }
-
-                    return sendRequest(method, uri, headers, body, useSslParams, true);
+                    return CompletableFuture.failedFuture(error);
                 });
     }
 
@@ -236,7 +223,7 @@ public class HttpClient implements AutoCloseable {
         }
         builder.append("\r\n");
         if (body != null) {
-            builder.append(new String(body))
+            builder.append(new String(body, StandardCharsets.ISO_8859_1))
                     .append("\r\n");
         }
         return builder;
