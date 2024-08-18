@@ -933,7 +933,7 @@ public class SocketClient extends Socket implements AutoCloseable {
     private sealed static abstract class SocketConnection {
         // Necessary because of a bug in the JDK
         // Need to debug this
-        private static final Semaphore SEMAPHORE = new Semaphore(999, true);
+        private static final Semaphore CONNECTION_SEMAPHORE = new Semaphore(999, true);
 
         final AsynchronousSocketChannel channel;
         final SocketTransport socketTransport;
@@ -959,13 +959,13 @@ public class SocketClient extends Socket implements AutoCloseable {
 
         private void connectSync(InetSocketAddress address) {
             try {
-                SEMAPHORE.acquire();
+                CONNECTION_SEMAPHORE.acquire();
                 var future = channel.connect(address);
                 future.get();
             }catch (Throwable throwable) {
                 throw new RuntimeException("Cannot connect to " + address, throwable);
             }finally {
-                SEMAPHORE.release();
+                CONNECTION_SEMAPHORE.release();
             }
         }
 
