@@ -333,13 +333,6 @@
             <version>${apk.parser.version}</version>
         </dependency>
 
-        <!-- HTTP Client -->
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>${http.version}</version>
-        </dependency>
-
         <!-- Generate message previews -->
         <dependency>
             <groupId>com.github.auties00</groupId>

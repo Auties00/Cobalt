@@ -34,11 +34,6 @@ open module it.auties.cobalt {
     // Unsafe reflection
     requires jdk.unsupported;
 
-    // HTTP Client
-    requires org.apache.httpcomponents.client5.httpclient5;
-    requires org.apache.httpcomponents.core5.httpcore5;
-    requires org.apache.httpcomponents.core5.httpcore5.h2;
-
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
     exports it.auties.whatsapp.model.action;
