@@ -15,6 +15,7 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,7 @@ public class HttpClient implements AutoCloseable {
             "TLS_AES_128_GCM_SHA256"
             //,"use default"
     };
+    private static final byte[] EMPTY_BUFFER = new byte[0];
 
     private final Platform platform;
     private final URI proxy;
@@ -103,7 +105,7 @@ public class HttpClient implements AutoCloseable {
         return (socket.isConnected() ? CompletableFuture.completedFuture(null) : socket.connectAsync(toSocketAddress(uri)))
                 .thenComposeAsync(ignored -> socket.writeAsync(builder.toString().getBytes()))
                 .thenComposeAsync(ignored -> socket.readAsync(readReceiveBufferSize(socket)))
-                .thenComposeAsync(responseBuffer -> parseResponsePayload(uri, responseBuffer, socket))
+                .thenComposeAsync(responseBuffer -> parseResponsePayload(method, uri, headers, body, useSslParams, responseBuffer, socket))
                 .orTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                 .exceptionallyComposeAsync(error -> {
                     closeSocketSilently(uri, socket);
@@ -120,16 +122,16 @@ public class HttpClient implements AutoCloseable {
         }
     }
 
-    private CompletableFuture<byte[]> parseResponsePayload(URI uri, ByteBuffer responseBuffer, SocketClient socket) {
+    private CompletableFuture<byte[]> parseResponsePayload(String method, URI uri, Map<String, ?> headers, byte[] body, boolean useSslParameters, ByteBuffer responseBuffer, SocketClient socket) {
         var response = StandardCharsets.UTF_8
                 .decode(responseBuffer)
                 .toString();
 
         var responseStatusLineEnd = response.indexOf("\n");
-        checkStatusCode(response, responseStatusLineEnd);
-
+        var redirected = isRedirect(response, responseStatusLineEnd);
         var contentLength = -1;
         var keepAlive = false;
+        String location = null;
         var lastHeaderLineIndex = responseStatusLineEnd;
         var currentHeaderLineIndex = responseStatusLineEnd;
         while ((currentHeaderLineIndex = response.indexOf("\n", lastHeaderLineIndex + 1)) != -1) {
@@ -155,11 +157,17 @@ public class HttpClient implements AutoCloseable {
                     }
                 }
                 case "connection" -> keepAlive = headerValue.equalsIgnoreCase("keep-alive");
+                case "location" -> location = headerValue;
             }
         }
 
+        if(redirected) {
+            Objects.requireNonNull(location, "Missing location for redirect status code");
+            return sendRequest(method, URI.create(location), headers, body, useSslParameters);
+        }
+
         if(contentLength == -1) {
-            return CompletableFuture.completedFuture(new byte[0]);
+            return CompletableFuture.completedFuture(EMPTY_BUFFER);
         }
 
         var partialBody = response.length() <= currentHeaderLineIndex + 1 ? new byte[0] : response.substring(currentHeaderLineIndex + 1).getBytes();
@@ -229,7 +237,7 @@ public class HttpClient implements AutoCloseable {
         return builder;
     }
 
-    private void checkStatusCode(String response, int responseStatusLineEnd) {
+    private boolean isRedirect(String response, int responseStatusLineEnd) {
         var responseStatusLine = responseStatusLineEnd == -1 ? response : response.substring(0, responseStatusLineEnd);
         var responseStatusParts = responseStatusLine.split(" ");
         if (responseStatusParts.length < 2) {
@@ -237,9 +245,15 @@ public class HttpClient implements AutoCloseable {
         }
 
         var statusCode = responseStatusParts[1];
+        if(statusCode.equals("302")) {
+            return true;
+        }
+
         if(!statusCode.startsWith("20")) {
             throw new IllegalArgumentException("Unexpected response status code: " + statusCode);
         }
+
+        return false;
     }
 
     private InetSocketAddress toSocketAddress(URI uri) {
