@@ -90,7 +90,7 @@ public final class Medias {
             synchronized (httpClientLock) {
                 value = httpClient;
                 if (value == null) {
-                    value = new HttpClient(HttpClient.Platform.IOS);
+                    value = new HttpClient(HttpClient.Platform.IOS, false);
                     httpClient = value;
                 }
             }

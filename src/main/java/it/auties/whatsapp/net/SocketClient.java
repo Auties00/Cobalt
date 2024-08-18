@@ -545,11 +545,14 @@ public class SocketClient extends Socket implements AutoCloseable {
         abstract <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, R result);
 
         <R extends Response<Integer>> R readPlain(ByteBuffer buffer, boolean lastRead, R result) {
+            var outerCaller = new RuntimeException();
             channel.read(buffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer bytesRead, Object attachment) {
                     if(bytesRead == -1) {
-                        result.completeExceptionally(new EOFException());
+                        var eof = new EOFException();
+                        eof.addSuppressed(outerCaller);
+                        result.completeExceptionally(eof);
                         return;
                     }
 
@@ -562,6 +565,7 @@ public class SocketClient extends Socket implements AutoCloseable {
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
+                    exc.addSuppressed(outerCaller);
                     result.completeExceptionally(exc);
                 }
             });
@@ -569,6 +573,7 @@ public class SocketClient extends Socket implements AutoCloseable {
         }
 
         <R extends Response<Void>> R writePlain(ByteBuffer buffer, R result) {
+            var outerCaller = new RuntimeException();
             channel.write(buffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer bytesWritten, Object attachment) {
@@ -587,6 +592,7 @@ public class SocketClient extends Socket implements AutoCloseable {
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
+                    exc.addSuppressed(outerCaller);
                     result.completeExceptionally(exc);
                 }
             });
