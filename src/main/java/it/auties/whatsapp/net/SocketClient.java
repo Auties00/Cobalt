@@ -15,10 +15,7 @@ import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("unused")
@@ -932,9 +929,11 @@ public class SocketClient extends Socket implements AutoCloseable {
 
     private sealed static abstract class SocketConnection {
         // Necessary because of a bug in the JDK
-        // Need to debug this
-        private static final Semaphore CONNECTION_SEMAPHORE = new Semaphore(999, true);
-
+        // The number 50 was reached after debugging to find the best possible number to minimize connection time
+        // The problem with this approach is that 50 threads ask for a bad connection, they block other instances
+        // Shouldn't be a problem because the connection would error out immediately, but it should be looked into
+        // Also maybe find a fix, so I can report it to Oracle
+        private static final Semaphore CONNECTION_SEMAPHORE = new Semaphore(50, true);
         final AsynchronousSocketChannel channel;
         final SocketTransport socketTransport;
         final URI proxy;
@@ -960,6 +959,7 @@ public class SocketClient extends Socket implements AutoCloseable {
         private void connectSync(InetSocketAddress address) {
             try {
                 CONNECTION_SEMAPHORE.acquire();
+                var start = System.currentTimeMillis();
                 var future = channel.connect(address);
                 future.get();
             }catch (Throwable throwable) {

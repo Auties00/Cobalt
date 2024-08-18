@@ -54,10 +54,18 @@ public class HttpClient implements AutoCloseable {
         this(platform, null);
     }
 
+    public HttpClient(Platform platform, boolean allowKeepAlive) {
+        this(platform, null, allowKeepAlive);
+    }
+
     public HttpClient(Platform platform, URI proxy) {
+        this(platform, proxy, true);
+    }
+
+    public HttpClient(Platform platform, URI proxy, boolean allowKeepAlive) {
         this.proxy = proxy;
         this.platform = platform;
-        this.aliveSockets = new ConcurrentHashMap<>();
+        this.aliveSockets = allowKeepAlive ? new ConcurrentHashMap<>() : null;
     }
 
     public static String toFormParams(Map<String, ?> values) {
@@ -116,7 +124,9 @@ public class HttpClient implements AutoCloseable {
     private void closeSocketSilently(URI uri, SocketClient socket) {
         try {
             socket.close();
-            aliveSockets.remove(uri.getHost() + ":" + uri.getPort(), socket);
+            if(aliveSockets != null) {
+                aliveSockets.remove(uri.getHost() + ":" + uri.getPort(), socket);
+            }
         } catch (Throwable ignored) {
 
         }
@@ -276,7 +286,7 @@ public class HttpClient implements AutoCloseable {
 
     private SocketClient getLockableSocketClient(URI uri, boolean useSslParams) {
         try {
-            var aliveSocket = aliveSockets.get(uri.getHost() + ":" + uri.getPort());
+            var aliveSocket = aliveSockets == null ? null : aliveSockets.get(uri.getHost() + ":" + uri.getPort());
             if(aliveSocket != null) {
                 return aliveSocket;
             }
@@ -285,7 +295,9 @@ public class HttpClient implements AutoCloseable {
                 case "http" -> {
                     var result = SocketClient.newPlainClient(proxy);
                     result.setKeepAlive(true);
-                    aliveSockets.put(uri.getHost() + ":" + uri.getPort(), result);
+                    if(aliveSockets != null) {
+                        aliveSockets.put(uri.getHost() + ":" + uri.getPort(), result);
+                    }
                     yield result;
                 }
                 case "https" -> {
@@ -298,7 +310,9 @@ public class HttpClient implements AutoCloseable {
                     }
                     var result = SocketClient.newSecureClient(sslEngine, proxy);
                     result.setKeepAlive(true);
-                    aliveSockets.put(uri.getHost() + ":" + uri.getPort(), result);
+                    if(aliveSockets != null) {
+                        aliveSockets.put(uri.getHost() + ":" + uri.getPort(), result);
+                    }
                     yield result;
                 }
                 default -> throw new IllegalStateException("Unexpected scheme: " + uri.getScheme().toLowerCase());
@@ -347,12 +361,17 @@ public class HttpClient implements AutoCloseable {
 
     @Override
     public void close() {
-        aliveSockets.forEach((key, socket) -> {
+        if(aliveSockets == null) {
+            return;
+        }
+
+        for(var socket : aliveSockets.values()) {
             try {
                 socket.close();
-            } catch (Throwable ignored) {
-
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
             }
-        });
+        }
+        aliveSockets.clear();
     }
 }
