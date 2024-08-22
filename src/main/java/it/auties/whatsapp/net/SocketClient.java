@@ -29,9 +29,9 @@ public class SocketClient extends Socket implements AutoCloseable {
         return new SocketClient(channel, proxySupport, layerSupport);
     }
 
-    public static SocketClient newSecureClient(SSLEngine context, URI proxy) throws IOException {
+    public static SocketClient newSecureClient(SSLEngine sslEngine, URI proxy) throws IOException {
         var channel = AsynchronousSocketChannel.open();
-        var layerSupport = new SocketTransport.Secure(channel, context);
+        var layerSupport = new SocketTransport.Secure(channel, sslEngine);
         var proxySupport = SocketConnection.of(channel, layerSupport, proxy);
         return new SocketClient(channel, proxySupport, layerSupport);
     }
@@ -656,16 +656,10 @@ public class SocketClient extends Socket implements AutoCloseable {
                 this.sslHandshakeLock = new Object();
                 sslHandshakeCompleted.set(sslEngine == null);
                 this.sslEngine = sslEngine;
-                if(sslEngine != null) {
-                    var bufferSize = sslEngine.getSession().getPacketBufferSize();
-                    this.sslReadBuffer = ByteBuffer.allocate(bufferSize);
-                    this.sslWriteBuffer = ByteBuffer.allocate(bufferSize);
-                    this.sslOutputBuffer = ByteBuffer.allocate(bufferSize);
-                }else {
-                    this.sslReadBuffer = null;
-                    this.sslWriteBuffer = null;
-                    this.sslOutputBuffer = null;
-                }
+                var bufferSize = sslEngine.getSession().getPacketBufferSize();
+                this.sslReadBuffer = ByteBuffer.allocate(bufferSize);
+                this.sslWriteBuffer = ByteBuffer.allocate(bufferSize);
+                this.sslOutputBuffer = ByteBuffer.allocate(bufferSize);
             }
 
             @Override
