@@ -90,7 +90,7 @@ public final class Medias {
             synchronized (httpClientLock) {
                 value = httpClient;
                 if (value == null) {
-                    value = new HttpClient(HttpClient.Platform.IOS, false);
+                    value = new HttpClient(HttpClient.Platform.DEFAULT, false);
                     httpClient = value;
                 }
             }
@@ -157,7 +157,8 @@ public final class Medias {
                     .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
                     .map(URI::create)
                     .orElseThrow(() -> new NoSuchElementException("Missing url and path from media"));
-            return getOrCreateClient().getRaw(url)
+            return getOrCreateClient()
+                    .getRaw(url)
                     .thenApplyAsync(response -> handleResponse(provider, response));
         } catch (Throwable error) {
             return CompletableFuture.completedFuture(Optional.empty());

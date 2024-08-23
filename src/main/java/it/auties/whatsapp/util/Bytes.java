@@ -41,13 +41,13 @@ public final class Bytes {
 
     public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
-                .filter(Objects::nonNull)
+                .filter(entry -> entry != null && entry.length != 0)
                 .reduce(Bytes::concat)
                 .orElseGet(() -> new byte[0]);
     }
 
     public static byte[] concat(byte first, byte[] second) {
-        if (second == null) {
+        if (second == null || second.length == 0) {
             return new byte[]{first};
         }
 
@@ -58,11 +58,11 @@ public final class Bytes {
     }
 
     public static byte[] concat(byte[] first, byte[] second) {
-        if (first == null) {
+        if (first == null || first.length == 0) {
             return second;
         }
 
-        if (second == null) {
+        if (second == null || second.length == 0) {
             return first;
         }
 
