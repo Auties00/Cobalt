@@ -4,6 +4,7 @@ import it.auties.whatsapp.util.Bytes;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
 @SuppressWarnings("unused")
 public class HttpClient implements AutoCloseable {
@@ -47,6 +49,7 @@ public class HttpClient implements AutoCloseable {
             //,"use default"
     };
     public static final byte[] EMPTY_BUFFER = new byte[0];
+    private static final byte[] HTTP_MESSAGE_END_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
 
     private final Platform platform;
     private final URI proxy;
@@ -157,8 +160,8 @@ public class HttpClient implements AutoCloseable {
         }
 
         if (info.isRedirect()) {
-            var location = Objects.requireNonNull(info.location(), "Missing location for redirect status code");
-            return sendRequest(method, URI.create(location), headers, body);
+            var location = URI.create(Objects.requireNonNull(info.location(), "Missing location for redirect status code"));
+            return sendRequest(method, location.isAbsolute() ? location : uri.resolve(location), headers, body);
         }
 
         if (!String.valueOf(info.statusCode()).startsWith("20")) {
@@ -169,11 +172,33 @@ public class HttpClient implements AutoCloseable {
             return CompletableFuture.completedFuture(EMPTY_BUFFER);
         }
 
-        if (info.contentLength() == -1) {
-            return readChunkedResponse(info, socket);
+        var result = info.contentLength() == -1 ? readChunkedResponse(info, socket) : readFullResponse(uri, info, socket);
+        return result.thenApplyAsync(response -> decodeResponse(info, response));
+    }
+
+    private byte[] decodeResponse(PartialResponseInfo info, byte[] response) {
+        if(info.contentEncoding().isEmpty()) {
+            return response;
         }
 
-        return readFullResponse(uri, info, socket);
+        for (var contentEncoding : info.contentEncoding()) {
+            response = decodeResponse(response, contentEncoding);
+        }
+
+        return response;
+    }
+
+    private byte[] decodeResponse(byte[] response, String contentEncoding) {
+        return switch (contentEncoding.toLowerCase()) {
+            case "gzip" -> {
+                try (var input = new GZIPInputStream(new ByteArrayInputStream(response))) {
+                    yield input.readAllBytes();
+                } catch (IOException exception) {
+                    throw new UncheckedIOException("Cannot decode gzip encoded response", exception);
+                }
+            }
+            default -> throw new IllegalArgumentException("Unsupported content encoding: " + contentEncoding);
+        };
     }
 
     private CompletableFuture<byte[]> readFullResponse(URI uri, PartialResponseInfo info, SocketClient socket) {
@@ -207,6 +232,10 @@ public class HttpClient implements AutoCloseable {
             var responseLine = info.readHeaderLine();
             info.setLastHeaderLineIndex(info.currentHeaderLineIndex());
             if(info.statusCode() == -1) {
+                if(!responseLine.startsWith("HTTP")) {
+                    continue;
+                }
+
                 info.setStatusCode(parseStatusCode(responseLine));
                 continue;
             }
@@ -230,6 +259,7 @@ public class HttpClient implements AutoCloseable {
                 case "connection" -> info.setCloseConnection(headerValue.equalsIgnoreCase("close"));
                 case "location" -> info.setLocation(headerValue);
                 case "transfer-encoding" -> info.transferEncoding().addAll(Arrays.stream(headerValue.split(",")).map(TransferEncoding::of).toList());
+                case "content-encoding" -> info.contentEncoding().addAll(Arrays.stream(headerValue.split(",")).map(String::trim).toList());
             }
         }
         return info.isPartial();
@@ -290,6 +320,7 @@ public class HttpClient implements AutoCloseable {
         private ByteBuffer body;
         private int statusCode;
         private int contentLength;
+        private final List<String> contentEncoding;
         private boolean closeConnection;
         private String location;
         private int lastHeaderLineIndex;
@@ -308,6 +339,7 @@ public class HttpClient implements AutoCloseable {
             this.currentHeaderLineIndex = -1;
             this.partial = true;
             this.transferEncoding = new ArrayList<>();
+            this.contentEncoding = new ArrayList<>();
         }
 
         public boolean isPartial() {
@@ -328,6 +360,10 @@ public class HttpClient implements AutoCloseable {
 
         private int contentLength() {
             return contentLength;
+        }
+
+        public List<String> contentEncoding() {
+            return contentEncoding;
         }
 
         private boolean closeConnection() {
@@ -401,7 +437,6 @@ public class HttpClient implements AutoCloseable {
             }
         }
 
-        private static final byte[] HTTP_MESSAGE_END_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
         private int getMessageContentDivider(ByteBuffer partialResult) {
             var index = -1;
             for (int i = 0; i < partialResult.remaining() - HTTP_MESSAGE_END_BYTES.length; i++) {
