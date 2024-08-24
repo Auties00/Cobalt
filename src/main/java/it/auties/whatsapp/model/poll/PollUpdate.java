@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.poll;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.util.Clock;
@@ -15,7 +14,7 @@ import java.util.Optional;
  * {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage} Not currently used, so it's
  * package private
  */
-@ProtobufMessageName("PollUpdate")
+@ProtobufMessage(name = "PollUpdate")
 public record PollUpdate(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         ChatMessageKey pollUpdateMessageKey,
@@ -23,7 +22,7 @@ public record PollUpdate(
         PollUpdateEncryptedOptions vote,
         @ProtobufProperty(index = 3, type = ProtobufType.INT64)
         long senderTimestampMilliseconds
-) implements ProtobufMessage {
+) {
     /**
      * Returns when the update was sent
      *

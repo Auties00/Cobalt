@@ -1,13 +1,14 @@
 package it.auties.whatsapp.api;
 
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of text preview that can be
  * used
  */
-public enum TextPreviewSetting implements ProtobufEnum {
+@ProtobufEnum
+public enum TextPreviewSetting {
     /**
      * Link previews will be generated. If a message contains an url without a schema(for example
      * wikipedia.com), the message will be autocorrected to include it and a preview will be

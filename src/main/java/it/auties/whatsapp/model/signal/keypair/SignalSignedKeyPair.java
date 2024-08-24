@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.curve25519.Curve25519;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Bytes;
@@ -10,6 +10,7 @@ import it.auties.whatsapp.util.Bytes;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+@ProtobufMessage
 public record SignalSignedKeyPair(
         @ProtobufProperty(index = 1, type = ProtobufType.INT32)
         int id,
@@ -17,7 +18,7 @@ public record SignalSignedKeyPair(
         SignalKeyPair keyPair,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
         byte[] signature
-) implements ISignalKeyPair, ProtobufMessage {
+) implements ISignalKeyPair {
     public static SignalSignedKeyPair of(int id, SignalKeyPair identityKeyPair) {
         var keyPair = SignalKeyPair.random();
         var signature = Curve25519.sign(identityKeyPair.privateKey(), keyPair.signalPublicKey(), true);

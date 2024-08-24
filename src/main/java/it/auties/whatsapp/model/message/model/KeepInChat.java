@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Clock;
@@ -14,7 +13,7 @@ import java.util.Optional;
 /**
  * A model class that represents an ephemeral message that was saved manually by the user in a chat
  */
-@ProtobufMessageName("KeepInChat")
+@ProtobufMessage(name = "KeepInChat")
 public record KeepInChat(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         KeepInChatType keepType,
@@ -28,7 +27,7 @@ public record KeepInChat(
         long clientTimestampInMilliseconds,
         @ProtobufProperty(index = 6, type = ProtobufType.INT64)
         long serverTimestampMilliseconds
-) implements ProtobufMessage {
+) {
     public Optional<ZonedDateTime> serverTimestamp() {
         return Clock.parseSeconds(serverTimestampSeconds);
     }

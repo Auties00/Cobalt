@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
@@ -12,7 +11,7 @@ import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
 /**
  * A model that represents the title of a {@link HighlyStructuredFourRowTemplate}
  */
-public sealed interface HighlyStructuredFourRowTemplateTitle extends ProtobufMessage permits DocumentMessage, HighlyStructuredMessage, ImageMessage, VideoOrGifMessage, LocationMessage {
+public sealed interface HighlyStructuredFourRowTemplateTitle permits DocumentMessage, HighlyStructuredMessage, ImageMessage, VideoOrGifMessage, LocationMessage {
     /**
      * Return the type of this title
      *
@@ -24,7 +23,8 @@ public sealed interface HighlyStructuredFourRowTemplateTitle extends ProtobufMes
      * The constants of this enumerated type describe the various types of title that a template can
      * have
      */
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * No title
          */

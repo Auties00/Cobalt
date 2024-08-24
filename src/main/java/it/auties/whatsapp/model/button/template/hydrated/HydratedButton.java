@@ -1,13 +1,12 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 
 /**
  * A model that represents all types of hydrated buttons
  */
-public sealed interface HydratedButton extends ProtobufMessage permits HydratedCallButton, HydratedQuickReplyButton, HydratedURLButton {
+public sealed interface HydratedButton permits HydratedCallButton, HydratedQuickReplyButton, HydratedURLButton {
     /**
      * Returns the text of this button
      *
@@ -26,7 +25,8 @@ public sealed interface HydratedButton extends ProtobufMessage permits HydratedC
      * The constants of this enumerated type describe the various types of buttons that a template can
      * wrap
      */
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * No button
          */

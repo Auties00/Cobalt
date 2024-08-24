@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.button.base;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonBody.Type;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
@@ -14,7 +13,7 @@ import java.util.Optional;
 /**
  * A model class that represents a button
  */
-@ProtobufMessageName("Message.ButtonsMessage.Button")
+@ProtobufMessage(name = "Message.ButtonsMessage.Button")
 public record Button(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String id,
@@ -24,7 +23,7 @@ public record Button(
         Optional<NativeFlowInfo> bodyNativeFlow,
         @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
         Type bodyType
-) implements ProtobufMessage {
+) {
     /**
      * Constructs a new button
      *

@@ -5,14 +5,14 @@ import it.auties.whatsapp.model.signal.message.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
-import it.auties.whatsapp.util.Specification.Signal;
+import it.auties.whatsapp.util.SignalConstants;
 
 import java.util.NoSuchElementException;
 
 public record GroupCipher(SenderKeyName name, Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
         if (data == null) {
-            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
+            return new CipheredMessageResult(null, SignalConstants.UNAVAILABLE);
         }
 
         var currentState = keys.findSenderKeyByName(name).firstState();
@@ -21,7 +21,7 @@ public record GroupCipher(SenderKeyName name, Keys keys) {
         var senderKeyMessage = new SenderKeyMessage(currentState.id(), messageKey.iteration(), ciphertext, currentState.signingKey().privateKey());
         var next = currentState.chainKey().next();
         currentState.setChainKey(next);
-        return new CipheredMessageResult(senderKeyMessage.serialized(), Signal.SKMSG);
+        return new CipheredMessageResult(senderKeyMessage.serialized(), SignalConstants.SKMSG);
     }
 
     public byte[] decrypt(byte[] data) {

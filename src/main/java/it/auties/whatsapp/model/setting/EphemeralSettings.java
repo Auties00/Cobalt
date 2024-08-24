@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
@@ -8,7 +8,7 @@ import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
-@ProtobufMessageName("AvatarUserSetting")
+@ProtobufMessage(name = "AvatarUserSetting")
 public record EphemeralSettings(
         @ProtobufProperty(index = 1, type = ProtobufType.SFIXED32)
         int duration,

@@ -5,21 +5,24 @@ import ezvcard.VCard;
 import ezvcard.VCardVersion;
 import ezvcard.property.SimpleProperty;
 import ezvcard.property.Telephone;
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufDeserializer;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.util.Specification.Whatsapp.*;
-
 
 /**
  * A model class to represent and build the vcard of a contact
  */
 public sealed interface ContactCard {
-    @ProtobufConverter
+    String BUSINESS_NAME_VCARD_PROPERTY = "X-WA-BIZ-NAME";
+    String PHONE_NUMBER_VCARD_PROPERTY = "WAID";
+    String DEFAULT_NUMBER_VCARD_TYPE = "CELL";
+
+    @ProtobufDeserializer
     static ContactCard ofNullable(String vcard) {
         return vcard == null ? null : of(vcard);
     }
@@ -51,7 +54,7 @@ public sealed interface ContactCard {
     /**
      * Creates a new vcard
      *
-     * @param name the nullable name of the contact
+     * @param name        the nullable name of the contact
      * @param phoneNumber the non-null phone number of the contact
      * @return a vcard
      */
@@ -62,8 +65,8 @@ public sealed interface ContactCard {
     /**
      * Creates a new vcard
      *
-     * @param name the nullable name of the contact
-     * @param phoneNumber the non-null phone number of the contact
+     * @param name         the nullable name of the contact
+     * @param phoneNumber  the non-null phone number of the contact
      * @param businessName the nullable business name of the contact
      * @return a vcard
      */
@@ -92,7 +95,7 @@ public sealed interface ContactCard {
         return Stream.of(first, second).flatMap(Collection::stream).toList();
     }
 
-    @ProtobufConverter
+    @ProtobufSerializer
     String toVcard();
 
     /**
@@ -137,7 +140,7 @@ public sealed interface ContactCard {
          * @return a non-null String
          */
         @Override
-        @ProtobufConverter
+        @ProtobufSerializer
         public String toVcard() {
             var vcard = new VCard();
             vcard.setVersion(VCardVersion.valueOfByStr(version()));
@@ -153,7 +156,7 @@ public sealed interface ContactCard {
      */
     record Raw(String toVcard) implements ContactCard {
         @Override
-        @ProtobufConverter
+        @ProtobufSerializer
         public String toVcard() {
             return toVcard;
         }

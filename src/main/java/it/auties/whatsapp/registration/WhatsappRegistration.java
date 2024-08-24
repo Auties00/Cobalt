@@ -13,14 +13,10 @@ import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.response.AbPropsResponse;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.net.HttpClient;
 import it.auties.whatsapp.util.*;
-import it.auties.whatsapp.util.Specification.Whatsapp;
 
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
@@ -29,9 +25,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 public final class WhatsappRegistration {
-    static {
-        Authenticator.setDefault(ProxyAuthenticator.globalAuthenticator());
-    }
+    public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
+    private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
 
     private final HttpClient httpClient;
     private final Store store;
@@ -44,7 +39,7 @@ public final class WhatsappRegistration {
         this.keys = keys;
         this.codeHandler = codeHandler;
         this.method = method;
-        this.httpClient = createClient();
+        this.httpClient = new HttpClient(store.device().platform().isIOS() ? HttpClient.Platform.IOS : HttpClient.Platform.ANDROID);
     }
 
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
@@ -97,22 +92,12 @@ public final class WhatsappRegistration {
                 .put("rc", store.releaseChannel().index())
                 .put("ab_hash", abHash, abHash != null)
                 .toMap();
-        System.out.println(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes));
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(Whatsapp.MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes)))
-                .GET()
-                .header("User-Agent", store.device().toUserAgent(store.version()))
-                .header("Content-Type","application/x-www-form-urlencoded")
-                .build();
-        return httpClient.sendAsync(request, BodyHandlers.ofString())
-                .thenApply(response -> {
-                    if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                        throw new RegistrationException(null, response.body());
-                    }
-
-                    System.out.println(response.body());
-                    return Json.readValue(response.body(), AbPropsResponse.class);
-                });
+        var headers = Map.of(
+                "User-Agent", store.device().toUserAgent(store.version()),
+                "Content-Type","application/x-www-form-urlencoded"
+        );
+        return httpClient.getString(URI.create(MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes)), headers)
+                .thenApply(response -> Json.readValue(response, AbPropsResponse.class));
     }
 
     private CompletableFuture<RegistrationResponse> exists(VerificationCodeError lastError) {
@@ -124,11 +109,7 @@ public final class WhatsappRegistration {
                 ios ? Map.entry("recovery_token_error", "-25300") : null
         );
         return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
-            if (result.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new RegistrationException(null, result.body());
-            }
-
-            var response = Json.readValue(result.body(), RegistrationResponse.class);
+            var response = Json.readValue(result, RegistrationResponse.class);
             if (response.errorReason() == VerificationCodeError.INCORRECT) {
                 return CompletableFuture.completedFuture(response);
             }
@@ -137,7 +118,7 @@ public final class WhatsappRegistration {
                 return exists(response.errorReason());
             }
 
-            throw new RegistrationException(response, result.body());
+            throw new RegistrationException(response, result);
         });
     }
 
@@ -157,10 +138,8 @@ public final class WhatsappRegistration {
                 false,
                 attributes
         );
-        return options.thenCompose(attrs -> sendRequest("/client_log", attrs)).thenApply(result -> {
-            System.out.println(result.body());
-            return data;
-        });
+        return options.thenCompose(attrs -> sendRequest("/client_log", attrs))
+                .thenApply(result -> data);
     }
 
     private CompletableFuture<RegistrationResponse> requestVerificationCode(RegistrationResponse existsResponse, VerificationCodeError lastError) {
@@ -195,12 +174,8 @@ public final class WhatsappRegistration {
         };
     }
 
-    private CompletionStage<RegistrationResponse> onCodeRequestSent(RegistrationResponse existsResponse, VerificationCodeError lastError, HttpResponse<String> result) {
-        if (result.statusCode() != HttpURLConnection.HTTP_OK) {
-            throw new RegistrationException(null, result.body());
-        }
-
-        var response = Json.readValue(result.body(), RegistrationResponse.class);
+    private CompletionStage<RegistrationResponse> onCodeRequestSent(RegistrationResponse existsResponse, VerificationCodeError lastError, String result) {
+        var response = Json.readValue(result, RegistrationResponse.class);
         if (response.status() == VerificationCodeStatus.SUCCESS) {
             return CompletableFuture.completedFuture(response);
         }
@@ -210,7 +185,7 @@ public final class WhatsappRegistration {
             case NO_ROUTES -> throw new RegistrationException(response, "You can only register numbers that are already on Whatsapp, if you need to register any numbers please contact me on Telegram @Auties00");
             default -> {
                 var newErrorReason = response.errorReason();
-                Validate.isTrue(newErrorReason != lastError, () -> new RegistrationException(response, result.body()));
+                Validate.isTrue(newErrorReason != lastError, () -> new RegistrationException(response, result));
                 yield requestVerificationCode(existsResponse, newErrorReason);
             }
         };
@@ -221,17 +196,13 @@ public final class WhatsappRegistration {
                 .thenComposeAsync(code -> getRegistrationOptions(store, keys, true, Map.entry("code", normalizeCodeResult(code))))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
                 .thenComposeAsync(result -> {
-                    if (result.statusCode() != HttpURLConnection.HTTP_OK) {
-                        throw new RegistrationException(null, result.body());
-                    }
-
-                    var response = Json.readValue(result.body(), RegistrationResponse.class);
+                    var response = Json.readValue(result, RegistrationResponse.class);
                     if (response.status() == VerificationCodeStatus.SUCCESS) {
                         saveRegistrationStatus(store, keys, true);
                         return CompletableFuture.completedFuture(response);
                     }
 
-                    throw new RegistrationException(response, result.body());
+                    throw new RegistrationException(response, result);
                 });
     }
 
@@ -250,54 +221,22 @@ public final class WhatsappRegistration {
         return captcha.replaceAll("-", "").trim();
     }
 
-    private CompletableFuture<HttpResponse<String>> sendRequest(String path, Map<String, Object> params) {
-        var request = createRequest(path, params);
-        return httpClient.sendAsync(request, BodyHandlers.ofString()).thenApply(result -> {
-            System.out.println(path + ": " + result.body());
-            return result;
-        });
-    }
-
-    private HttpRequest createRequest(String path, Map<String, Object> params) {
+    private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
         var encodedParams = toFormParams(params);
         var userAgent = store.device().toUserAgent(store.version());
-        if(store.device().platform().isKaiOs()) {
-            return HttpRequest.newBuilder()
-                    .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_KAIOS_REGISTRATION_ENDPOINT, path, encodedParams)))
-                    .GET()
-                    .header("User-Agent", userAgent)
-                    .build();
-        }
-
         var keypair = SignalKeyPair.random();
-        var key = Curve25519.sharedKey(Whatsapp.REGISTRATION_PUBLIC_KEY, keypair.privateKey());
+        var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
         var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), buffer));
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create("%s%s?ENC=%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
-                .GET()
-                .header("User-Agent", userAgent);
-        if(store.device().platform().isAndroid()) {
-            request.header("Accept", "text/json");
-            request.header("WaMsysRequest", "1");
-            request.header("request_token", UUID.randomUUID().toString());
-            request.header("Content-Type", "application/x-www-form-urlencoded");
-        }
-
-        return request.build();
-    }
-
-    private HttpClient createClient() {
-        try {
-            var clientBuilder = HttpClient.newBuilder();
-            store.proxy().ifPresent(proxy -> {
-                clientBuilder.proxy(ProxySelector.of(new InetSocketAddress(proxy.getHost(), proxy.getPort())));
-                clientBuilder.authenticator(ProxyAuthenticator.globalAuthenticator());
-            });
-            return clientBuilder.build();
-        }catch (Throwable exception) {
-            throw new RuntimeException(exception);
-        }
+        var android = store.device().platform().isAndroid();
+        var headers = Attributes.of()
+                .put("User-Agent", userAgent)
+                .put("Accept", "text/json", android)
+                .put("WaMsysRequest", "1", android)
+                .put("request_token", UUID.randomUUID().toString(), android)
+                .put("Content-Type", "application/x-www-form-urlencoded", android)
+                .toMap();
+        return httpClient.getString(URI.create("%s%s?ENC=%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)), headers);
     }
 
     @SafeVarargs
@@ -313,20 +252,20 @@ public final class WhatsappRegistration {
             var result = Attributes.of()
                     .put("cc", phoneNumber.countryCode().prefix())
                     .put("in", phoneNumber.numberWithoutPrefix())
-                    .put("rc", store.releaseChannel().index(), !store.device().platform().isKaiOs())
+                    .put("rc", store.releaseChannel().index())
                     .put("lg", phoneNumber.countryCode().lg())
                     .put("lc", phoneNumber.countryCode().lc())
                     .put("authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
                     .put("vname", certificate, certificate != null)
                     .put("e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()))
-                    .put("e_keytype", Base64.getUrlEncoder().encodeToString(Specification.Signal.KEY_BUNDLE_TYPE))
+                    .put("e_keytype", Base64.getUrlEncoder().encodeToString(SignalConstants.KEY_BUNDLE_TYPE))
                     .put("e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
                     .put("e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
                     .put("e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
                     .put("e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
                     .put("fdid", keys.fdid().toLowerCase(Locale.ROOT), store.device().platform().isAndroid())
                     .put("fdid", keys.fdid().toUpperCase(Locale.ROOT), store.device().platform().isIOS())
-                    .put("expid", Base64.getUrlEncoder().encodeToString(keys.deviceId()), !store.device().platform().isKaiOs())
+                    .put("expid", Base64.getUrlEncoder().encodeToString(keys.deviceId()))
                     .put("id", convertBufferToUrlHex(keys.identityId()))
                     .put("token", token, useToken)
                     .putAll(requiredAttributes)

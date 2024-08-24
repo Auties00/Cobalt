@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
@@ -15,7 +15,7 @@ import java.util.Optional;
  * A model class that represents a message that contains a newsletters to a previous
  * {@link HighlyStructuredMessage}
  */
-@ProtobufMessageName("Message.TemplateButtonReplyMessage")
+@ProtobufMessage(name = "Message.TemplateButtonReplyMessage")
 public final class TemplateReplyMessage implements ButtonReplyMessage<TemplateReplyMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String id;

@@ -3,11 +3,10 @@ package it.auties.whatsapp.controller;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.companion.CompanionHashState;
-import it.auties.whatsapp.model.companion.CompanionPatch;
 import it.auties.whatsapp.model.companion.CompanionSyncKey;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
@@ -25,10 +24,10 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.ProtobufUuidMixin;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -40,7 +39,8 @@ import static java.util.Objects.requireNonNullElseGet;
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Keys extends Controller<Keys> implements ProtobufMessage {
+@ProtobufMessage
+public final class Keys extends Controller<Keys> {
     /**
      * The client id
      */
@@ -75,7 +75,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * The signed pre key
      */
     @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
-    final SignalSignedKeyPair signedKeyPair;
+    SignalSignedKeyPair signedKeyPair;
 
     /**
      * The signed key of the companion's device
@@ -108,7 +108,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     @ProtobufProperty(index = 15, type = ProtobufType.BYTES)
     final byte[] deviceId;
 
-    @ProtobufProperty(index = 26, type = ProtobufType.STRING, mixin = ProtobufUuidMixin.class)
+    @ProtobufProperty(index = 26, type = ProtobufType.STRING)
     final UUID advertisingId;
 
     /**
@@ -116,6 +116,12 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      */
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     final byte[] identityId;
+
+    /**
+     * The recovery token for the mobile api
+     */
+    @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
+    final byte[] backupToken;
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
@@ -126,7 +132,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     /**
      * Sender keys for signal implementation
      */
-    @ProtobufProperty(index = 18, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 18, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
@@ -138,18 +144,18 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     /**
      * Sessions map
      */
-    @ProtobufProperty(index = 20, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
-    final Map<SessionAddress, Session> sessions;
+    @ProtobufProperty(index = 20, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    final ConcurrentMap<SessionAddress, Session> sessions;
 
     /**
      * Hash state
      */
-    @ProtobufProperty(index = 21, type = ProtobufType.OBJECT)
-    final List<CompanionPatch> hashStates;
+    @ProtobufProperty(index = 21, type = ProtobufType.OBJECT, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    final ConcurrentMap<String, CompanionHashState> hashStates;
 
 
-    @ProtobufProperty(index = 22, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
-    final Map<Jid, SenderPreKeys> groupsPreKeys;
+    @ProtobufProperty(index = 22, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    final ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys;
 
     /**
      * Whether the client was registered
@@ -188,7 +194,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
     byte[] writeKey, readKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, Map<SessionAddress, Session> sessions, List<CompanionPatch> hashStates, Map<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
@@ -203,11 +209,12 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replaceAll("-", "")));
         this.advertisingId = Objects.requireNonNullElseGet(advertisingId, UUID::randomUUID);
         this.identityId = Objects.requireNonNull(identityId, "Missing identity id");
+        this.backupToken = Objects.requireNonNullElseGet(backupToken, () -> Bytes.random(20));
         this.companionIdentity = companionIdentity;
         this.senderKeys = Objects.requireNonNullElseGet(senderKeys, ConcurrentHashMap::new);
         this.appStateKeys = Objects.requireNonNullElseGet(appStateKeys, ArrayList::new);
         this.sessions = Objects.requireNonNullElseGet(sessions, ConcurrentHashMap::new);
-        this.hashStates = Objects.requireNonNullElseGet(hashStates, ArrayList::new);
+        this.hashStates = Objects.requireNonNullElseGet(hashStates, ConcurrentHashMap::new);
         this.groupsPreKeys = Objects.requireNonNullElseGet(groupsPreKeys, ConcurrentHashMap::new);
         this.registered = registered;
         this.businessCertificate = businessCertificate;
@@ -324,10 +331,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * @return a non-null hash state
      */
     public Optional<CompanionHashState> findHashStateByName(Jid device, PatchType patchType) {
-        return hashStates.stream()
-                .filter(hashState -> Objects.equals(hashState.companion(), device) && hashState.state().type() == patchType)
-                .findFirst()
-                .map(CompanionPatch::state);
+        return Optional.ofNullable(hashStates.get("%s_%s".formatted(device, patchType)));
     }
 
     /**
@@ -371,8 +375,7 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
      * @return this
      */
     public Keys putState(Jid device, CompanionHashState state) {
-        var hashState = new CompanionPatch(device, state);
-        hashStates.add(hashState);
+        hashStates.put("%s_%s".formatted(device, state.type()), state);
         return this;
     }
 
@@ -574,24 +577,8 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
         return this.identityId;
     }
 
-    public Map<SenderKeyName, SenderKeyRecord> senderKeys() {
-        return this.senderKeys;
-    }
-
-    public List<CompanionSyncKey> appStateKeys() {
-        return appStateKeys;
-    }
-
-    public Map<SessionAddress, Session> sessions() {
-        return this.sessions;
-    }
-
-    public List<CompanionPatch> hashStates() {
-        return hashStates;
-    }
-
-    public Map<Jid, SenderPreKeys> groupsPreKeys() {
-        return this.groupsPreKeys;
+    public byte[] backupToken() {
+        return backupToken;
     }
 
     public boolean registered() {
@@ -620,6 +607,10 @@ public final class Keys extends Controller<Keys> implements ProtobufMessage {
 
     public Optional<byte[]> readKey() {
         return Optional.ofNullable(this.readKey);
+    }
+
+    public void setSignedKeyPair(SignalSignedKeyPair signedKeyPair) {
+        this.signedKeyPair = signedKeyPair;
     }
 
     public Keys setCompanionKeyPair(SignalKeyPair companionKeyPair) {

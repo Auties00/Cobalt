@@ -1,10 +1,11 @@
 package it.auties.whatsapp.model.call;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 
+@ProtobufMessage
 public record Call(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid chat,
@@ -20,6 +21,6 @@ public record Call(
         CallStatus status,
         @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
         boolean offline
-) implements ProtobufMessage {
+) {
 
 }

@@ -25,7 +25,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
      * @return a new instance of Attributes
      */
     @SafeVarargs
-    public static Attributes of(Entry<String, Object>... entries) {
+    public static Attributes of(Entry<String, ?>... entries) {
         return ofNullable(ofEntries(entries));
     }
 
@@ -37,7 +37,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
      */
     @SafeVarargs
     @JsonCreator
-    public static Attributes ofNullable(Entry<String, Object>... entries) {
+    public static Attributes ofNullable(Entry<String, ?>... entries) {
         return entries == null ? of() : ofNullable(ofEntries(entries));
     }
 
@@ -401,7 +401,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     }
 
     public Attributes putAll(Collection<? extends Entry<String, ?>> entries) {
-        for(var entry : entries) {
+        for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
 
@@ -410,7 +410,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
 
     @SafeVarargs
     public final Attributes putAll(Entry<String, ?>... entries) {
-        for(var entry : entries) {
+        for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
 

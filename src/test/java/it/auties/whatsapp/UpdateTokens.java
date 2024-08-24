@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.auties.whatsapp.util.Specification.Whatsapp;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,6 +30,7 @@ public class UpdateTokens {
     private static final String DICTIONARY_ASSIGNMENT_REGEX = "\\.DICTIONARY_[0-9]_TOKEN=([a-z]);";
     private static final String DICTIONARY_DECLARATION_REGEX = "const %s=\\[\"(.*?)\"]";
     private static final String PROPS_REGEX = "\\.ABPropConfigs=\\{(.*?)]}},";
+    public static final String WEB_ORIGIN = "https://web.whatsapp.com";
 
     public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("Creating tokens class...");
@@ -119,10 +119,10 @@ public class UpdateTokens {
     }
 
     private static String getJavascriptSource() throws IOException, InterruptedException {
-        var whatsappRequest = createRequest(Whatsapp.WEB_ORIGIN);
+        var whatsappRequest = createRequest(WEB_ORIGIN);
         var whatsappResponse = HTTP_CLIENT.send(whatsappRequest, ofString());
         var token = findResult(whatsappResponse.body(), TOKEN_REGEX);
-        var sourceRequest = createRequest("%s/app.%s.js".formatted(Whatsapp.WEB_ORIGIN, token));
+        var sourceRequest = createRequest("%s/app.%s.js".formatted(WEB_ORIGIN, token));
         return HTTP_CLIENT.send(sourceRequest, ofString()).body();
     }
 

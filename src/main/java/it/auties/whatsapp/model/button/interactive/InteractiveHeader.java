@@ -1,9 +1,8 @@
 package it.auties.whatsapp.model.button.interactive;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
@@ -15,7 +14,7 @@ import java.util.Optional;
 /**
  * A model class that represents the header of a product
  */
-@ProtobufMessageName("Message.InteractiveMessage.Header")
+@ProtobufMessage(name = "Message.InteractiveMessage.Header")
 public record InteractiveHeader(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String title,
@@ -31,7 +30,7 @@ public record InteractiveHeader(
         Optional<InteractiveHeaderThumbnail> attachmentThumbnail,
         @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
         Optional<VideoOrGifMessage> attachmentVideo
-) implements ProtobufMessage {
+) {
     @ProtobufBuilder(className = "InteractiveHeaderSimpleBuilder")
     static InteractiveHeader simpleBuilder(String title, String subtitle, InteractiveHeaderAttachment attachment) {
         var builder = new InteractiveHeaderBuilder()

@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Specification.Signal;
+import it.auties.whatsapp.util.SignalConstants;
 import it.auties.whatsapp.util.Validate;
 
 import java.nio.charset.StandardCharsets;
@@ -30,7 +30,7 @@ public record SessionBuilder(SessionAddress address, Keys keys) {
                 preKey == null ? null : preKey.keyPair().signalPublicKey(),
                 signedPreKey.keyPair().signalPublicKey(),
                 id,
-                Signal.CURRENT_VERSION
+                SignalConstants.CURRENT_VERSION
         );
         var pendingPreKey = new SessionPreKey(
                 preKey == null ? null : preKey.id(),
@@ -113,13 +113,13 @@ public record SessionBuilder(SessionAddress address, Keys keys) {
         }
         var preKeyPair = keys.findPreKeyById(message.preKeyId())
                 .orElse(null);
-        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
-                .orElseThrow(() -> new NoSuchElementException("Cannot find signed pre key with id %s".formatted(message.signedPreKeyId())));
+        var signedKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
+                .orElseThrow(() -> new NoSuchElementException("Cannot find signed key with id %s".formatted(message.signedPreKeyId())));
         session.closeCurrentState();
         var nextState = createState(
                 false,
                 preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
-                signedPreKeyPair == null ? null : signedPreKeyPair.toGenericKeyPair(),
+                signedKeyPair.toGenericKeyPair(),
                 message.identityKey(),
                 message.baseKey(),
                 null,

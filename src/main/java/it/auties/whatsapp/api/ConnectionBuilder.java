@@ -6,7 +6,6 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.controller.StoreKeysPair;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
-import it.auties.whatsapp.util.Bytes;
 
 import java.util.List;
 import java.util.Objects;

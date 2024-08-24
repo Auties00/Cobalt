@@ -24,7 +24,8 @@ public record RevokeAdminInviteNewsletterResponse(@JsonProperty("id") Jid jid) {
 
     }
 
-    private record JsonResponse(@JsonProperty("xwa2_newsletter_admin_invite_revoke") RevokeAdminInviteNewsletterResponse response) {
+    private record JsonResponse(
+            @JsonProperty("xwa2_newsletter_admin_invite_revoke") RevokeAdminInviteNewsletterResponse response) {
 
     }
 }

@@ -22,7 +22,6 @@ import static java.nio.file.Files.createTempFile;
 /**
  * This interface allows to consume a qr code and provides default common implementations to do so
  */
-@FunctionalInterface
 @SuppressWarnings("unused")
 public non-sealed interface QrHandler extends Consumer<String>, WebVerificationHandler {
     /**
@@ -134,8 +133,8 @@ public non-sealed interface QrHandler extends Consumer<String>, WebVerificationH
                         return;
                     }
                     Desktop.getDesktop().open(path.toFile());
-                } catch (IOException exception) {
-                    throw new UncheckedIOException("Cannot open file with desktop", exception);
+                } catch (Throwable throwable) {
+                    throw new RuntimeException("Cannot open file with desktop", throwable);
                 }
             };
         }

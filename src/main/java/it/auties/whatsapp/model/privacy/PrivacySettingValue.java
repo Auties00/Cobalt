@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.privacy;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -11,7 +11,8 @@ import java.util.Optional;
  * The constants of this enumerated type describe the various types of preferences that can be
  * toggled for a corresponding setting
  */
-public enum PrivacySettingValue implements ProtobufEnum {
+@ProtobufEnum
+public enum PrivacySettingValue {
     /**
      * Everyone
      */

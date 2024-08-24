@@ -2,16 +2,16 @@ package it.auties.whatsapp.model.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.curve25519.Curve25519;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Bytes;
 
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Specification.Signal.SIGNATURE_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.SIGNATURE_LENGTH;
 
-@ProtobufMessageName("SenderKeyMessage")
+@ProtobufMessage(name = "SenderKeyMessage")
 public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
     private final Integer id;

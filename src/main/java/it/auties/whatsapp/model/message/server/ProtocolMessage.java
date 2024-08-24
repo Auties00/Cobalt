@@ -1,9 +1,9 @@
 package it.auties.whatsapp.model.message.server;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message sent by a WhatsappWeb.
  */
-@ProtobufMessageName("Message.ProtocolMessage")
+@ProtobufMessage(name = "Message.ProtocolMessage")
 public record ProtocolMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         Optional<ChatMessageKey> key,
@@ -54,8 +54,8 @@ public record ProtocolMessage(
      * The constants of this enumerated type describe the various type of data that a
      * {@link ProtocolMessage} can wrap
      */
-    @ProtobufMessageName("Message.ProtocolMessage.Type")
-    public enum Type implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.ProtocolMessage.Type")
+    public enum Type {
         /**
          * A {@link ProtocolMessage} that notifies that a message was deleted for everyone in a chat
          */

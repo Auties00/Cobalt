@@ -16,7 +16,7 @@ public sealed interface ISignalKeyPair permits SignalKeyPair, SignalPreKeyPair, 
                 var result = new byte[33];
                 System.arraycopy(key, 0, result, 1, key.length);
                 result[0] = 5;
-                yield  result;
+                yield result;
             }
             default -> throw new IllegalArgumentException("Invalid key size: %s".formatted(key.length));
         };

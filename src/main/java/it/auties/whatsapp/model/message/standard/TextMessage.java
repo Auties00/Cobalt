@@ -1,10 +1,10 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -20,7 +20,7 @@ import java.util.OptionalLong;
 /**
  * A model class that represents a message holding text inside
  */
-@ProtobufMessageName("Message.TextMessage")
+@ProtobufMessage(name = "Message.TextMessage")
 public final class TextMessage implements ContextualMessage<TextMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String text;
@@ -355,8 +355,8 @@ public final class TextMessage implements ContextualMessage<TextMessage> {
         return this;
     }
 
-    @ProtobufMessageName("Message.TextMessage.InviteLinkGroupType")
-    public enum InviteLinkGroupType implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.TextMessage.InviteLinkGroupType")
+    public enum InviteLinkGroupType {
         DEFAULT(0),
         PARENT(1),
         SUB(2),
@@ -377,8 +377,8 @@ public final class TextMessage implements ContextualMessage<TextMessage> {
      * The constants of this enumerated type describe the various types of fonts that a
      * {@link TextMessage} supports. Not all clients currently display all fonts correctly.
      */
-    @ProtobufMessageName("Message.TextMessage.FontType")
-    public enum FontType implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.TextMessage.FontType")
+    public enum FontType {
         /**
          * Sans Serif
          */
@@ -419,8 +419,8 @@ public final class TextMessage implements ContextualMessage<TextMessage> {
      * The constants of this enumerated type describe the various types of previuew that a
      * {@link TextMessage} can provide.
      */
-    @ProtobufMessageName("Message.TextMessage.PreviewType")
-    public enum PreviewType implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.TextMessage.PreviewType")
+    public enum PreviewType {
         /**
          * No preview
          */

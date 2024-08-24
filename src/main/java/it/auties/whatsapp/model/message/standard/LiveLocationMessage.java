@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a live location inside
  */
-@ProtobufMessageName("Message.LiveLocationMessage")
+@ProtobufMessage(name = "Message.LiveLocationMessage")
 public final class LiveLocationMessage implements ContextualMessage<LiveLocationMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.DOUBLE)
     private final double latitude;

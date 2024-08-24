@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * A model clas that represents an agent
  */
-@ProtobufMessageName("SyncActionValue.AgentAction")
+@ProtobufMessage(name = "SyncActionValue.AgentAction")
 public record AgentAction(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String> name,

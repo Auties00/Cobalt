@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
 
@@ -14,7 +13,7 @@ import java.util.Optional;
 /**
  * A model class that represents a verified name
  */
-@ProtobufMessageName("VerifiedNameCertificate.Details")
+@ProtobufMessage(name = "VerifiedNameCertificate.Details")
 public record BusinessVerifiedNameDetails(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT64)
         long serial,
@@ -26,7 +25,7 @@ public record BusinessVerifiedNameDetails(
         List<BusinessLocalizedName> localizedNames,
         @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
         long issueTimeSeconds
-) implements ProtobufMessage {
+) {
     /**
      * Returns this object's timestampSeconds
      *

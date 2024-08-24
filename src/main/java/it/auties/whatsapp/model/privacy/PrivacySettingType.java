@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.privacy;
 
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
 
 import java.util.*;
 
@@ -10,7 +10,8 @@ import java.util.*;
  * The constants of this enumerated type describe the various types of settings that a user can
  * toggle in his account's preferences
  */
-public enum PrivacySettingType implements ProtobufEnum {
+@ProtobufEnum
+public enum PrivacySettingType {
     /**
      * Refers to whether your last access on Whatsapp should be visible
      */

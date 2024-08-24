@@ -1,13 +1,14 @@
 package it.auties.whatsapp.model.newsletter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
 
-public final class NewsletterState implements ProtobufMessage {
+@ProtobufMessage
+public final class NewsletterState {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String type;
 

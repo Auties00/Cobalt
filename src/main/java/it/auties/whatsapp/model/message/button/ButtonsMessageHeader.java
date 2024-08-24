@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -16,7 +16,8 @@ public sealed interface ButtonsMessageHeader permits ButtonsMessageHeaderText, D
     /**
      * The constants of this enumerated type describe the various types of headers that a {@link ButtonsMessage} can have
      */
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * Unknown
          */

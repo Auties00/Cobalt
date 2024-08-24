@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 /**
  * This interface allows to consume a pairing code sent by WhatsappWeb
  */
-@FunctionalInterface
 @SuppressWarnings("unused")
 public non-sealed interface PairingCodeHandler extends Consumer<String>, WebVerificationHandler {
     /**

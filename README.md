@@ -53,7 +53,7 @@ In short, if you use this library without a malicious intent, you will never get
     <dependency>
         <groupId>com.github.auties00</groupId>
         <artifactId>cobalt</artifactId>
-        <version>0.0.5</version>
+        <version>0.0.6</version>
     </dependency>
     ```
    
@@ -67,7 +67,7 @@ In short, if you use this library without a malicious intent, you will never get
                 <annotationProcessorPath>
                     <groupId>com.github.auties00</groupId>
                     <artifactId>cobalt</artifactId>
-                    <version>0.0.5</version>
+                    <version>0.0.6</version>
                 <annotationProcessorPath>
             <annotationProcessorPaths>
         <configuration>
@@ -79,23 +79,23 @@ In short, if you use this library without a malicious intent, you will never get
 - Groovy DSL
     - Dependency
     ```groovy
-    implementation 'com.github.auties00:cobalt:0.0.5'
+    implementation 'com.github.auties00:cobalt:0.0.6'
     ```
   
     - Annotation processor (required for @RegisterListener)
     ```groovy
-    annotationProcessor 'com.github.auties00:cobalt:0.0.5'
+    annotationProcessor 'com.github.auties00:cobalt:0.0.6'
     ```
 
 - Kotlin DSL
     - Dependency
     ```groovy
-    implementation("com.github.auties00:cobalt:0.0.5")
+    implementation("com.github.auties00:cobalt:0.0.6")
     ```
   
     - Annotation processor (required for @RegisterListener)
     ```groovy
-    annotationProcessor("com.github.auties00:cobalt:0.0.5")
+    annotationProcessor("com.github.auties00:cobalt:0.0.6")
     ```
 
 ### Javadocs & Documentation
@@ -285,6 +285,10 @@ Now you can connect to your session:
   ```
 to connect to Whatsapp.
 Remember to handle the result using, for example, `join` to await the connection's result.
+Finally, if you want to pause the current thread until the connection is closed, use:
+  ```java
+  .awaitDisconnection()
+  ```
 </details>
 
 <details>
@@ -298,7 +302,8 @@ Remember to handle the result using, for example, `join` to await the connection
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
         .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
         .connect() // Connect to Whatsapp asynchronously
-        .join(); // Await the result
+        .join() // Await the result
+        .awaitDisconnection(); // Wait 
   ```
 </details>
 
@@ -316,7 +321,8 @@ Remember to handle the result using, for example, `join` to await the connection
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
         .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
         .connect() // Connect to Whatsapp asynchronously
-        .join(); // Await the result
+        .join() // Await the result
+        .awaitDisconnection(); // Wait 
   ```
 </details>
 
@@ -343,7 +349,8 @@ Remember to handle the result using, for example, `join` to await the connection
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
         .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
         .connect() // Connect to Whatsapp asynchronously
-        .join(); // Await the result
+        .join() // Await the result
+        .awaitDisconnection(); // Wait 
   ```
 </details>
 

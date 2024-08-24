@@ -1,13 +1,12 @@
 package it.auties.whatsapp.model.button.template.highlyStructured;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 
 /**
  * A model class that represents the value of a localizable parameter
  */
-public sealed interface HighlyStructuredDateTimeValue extends ProtobufMessage permits HighlyStructuredDateTimeComponent, HighlyStructuredDateTimeUnixEpoch {
+public sealed interface HighlyStructuredDateTimeValue permits HighlyStructuredDateTimeComponent, HighlyStructuredDateTimeUnixEpoch {
     /**
      * Returns the type of date
      *
@@ -19,7 +18,8 @@ public sealed interface HighlyStructuredDateTimeValue extends ProtobufMessage pe
     /**
      * The constants of this enumerated type describe the various type of date types that a date time can wrap
      */
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * No date
          */

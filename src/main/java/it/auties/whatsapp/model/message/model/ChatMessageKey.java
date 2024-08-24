@@ -1,9 +1,8 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
@@ -18,17 +17,14 @@ import java.util.Optional;
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in
  * {@link ChatMessageInfo}.
  */
-@ProtobufMessageName("MessageKey")
-public final class ChatMessageKey implements ProtobufMessage {
+@ProtobufMessage(name = "MessageKey")
+public final class ChatMessageKey {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private Jid chatJid;
-
     @ProtobufProperty(index = 2, type = ProtobufType.BOOL)
     private final boolean fromMe;
-
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     private final String id;
-
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     private Jid senderJid;
 

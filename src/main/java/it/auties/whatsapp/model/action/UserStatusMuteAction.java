@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.sync.PatchType;
 /**
  * A model clas that represents whether a user was muted
  */
-@ProtobufMessageName("SyncActionValue.UserStatusMuteAction")
+@ProtobufMessage(name = "SyncActionValue.UserStatusMuteAction")
 public record UserStatusMuteAction(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean muted

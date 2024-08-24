@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactCard;
@@ -14,7 +14,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a contact inside
  */
-@ProtobufMessageName("Message.ContactMessage")
+@ProtobufMessage(name = "Message.ContactMessage")
 public final class ContactMessage implements ContextualMessage<ContactMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String name;
@@ -23,14 +23,14 @@ public final class ContactMessage implements ContextualMessage<ContactMessage> {
     @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
     private ContextInfo contextInfo;
 
-    public static ContactMessage of(String name, ContactCard vcard) {
-        return new ContactMessage(name, vcard, null);
-    }
-
     public ContactMessage(String name, ContactCard vcard, ContextInfo contextInfo) {
         this.name = name;
         this.vcard = vcard;
         this.contextInfo = contextInfo;
+    }
+
+    public static ContactMessage of(String name, ContactCard vcard) {
+        return new ContactMessage(name, vcard, null);
     }
 
     @Override

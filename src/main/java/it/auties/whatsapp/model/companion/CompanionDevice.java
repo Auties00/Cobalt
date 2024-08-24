@@ -1,34 +1,71 @@
 package it.auties.whatsapp.model.companion;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * A model for a mobile companion
- *
- * @param model        the non-null model of the device
- * @param manufacturer the non-null manufacturer of the device
- * @param platform     the non-null os of the device
- * @param appVersion   the version of the app, or empty
- * @param osVersion    the non-null os version of the device
  */
-public record CompanionDevice(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        String model,
-        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        String manufacturer,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
-        PlatformType platform,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
-        Optional<Version> appVersion,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
-        Version osVersion
-) implements ProtobufMessage {
+@ProtobufMessage
+public final class CompanionDevice {
+    private static final List<Entry<String, String>> IOS_VERSION = List.of(
+            Map.entry("17.5.1", "21F91")
+    );
+
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    private final String model;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    private final String manufacturer;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    private final PlatformType platform;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    private final Version appVersion;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    private final Version osVersion;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    private final String osBuildNumber;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+    private final String modelId;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    private final ClientType clientType;
+
+    CompanionDevice(
+            String model,
+            String manufacturer,
+            PlatformType platform,
+            Version appVersion,
+            Version osVersion,
+            String osBuildNumber,
+            String modelId,
+            ClientType clientType
+    ) {
+        this.model = model;
+        this.modelId = modelId;
+        this.manufacturer = manufacturer;
+        this.platform = platform;
+        this.appVersion = appVersion;
+        this.osVersion = osVersion;
+        this.osBuildNumber = osBuildNumber;
+        this.clientType = clientType;
+    }
+
     public static CompanionDevice web() {
         return web(null);
     }
@@ -38,8 +75,11 @@ public record CompanionDevice(
                 "Chrome",
                 "Google",
                 PlatformType.WEB,
-                Optional.ofNullable(appVersion),
-                Version.of("1.0")
+                appVersion,
+                Version.of("1.0"),
+                null,
+                null,
+                ClientType.WEB
         );
     }
 
@@ -52,50 +92,80 @@ public record CompanionDevice(
                 "iPhone_15_Pro_Max",
                 "Apple",
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
-                Optional.ofNullable(appVersion),
-                Version.of("17.4.1")
+                appVersion,
+                Version.of("17.2.1"),
+                "",
+                "iPhone16,2",
+                ClientType.MOBILE
         );
+    }
+
+    public static CompanionDevice android(boolean business) {
+        return android(null, business);
+    }
+
+    public static CompanionDevice android(Version appVersion, boolean business) {
+        return new CompanionDevice(
+                "Pixel_4",
+                "Google",
+                business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
+                appVersion,
+                Version.of("12"),
+                null,
+                "Pixel_4",
+                ClientType.MOBILE
+        );
+    }
+
+    public String osBuildNumber() {
+        return Objects.requireNonNullElse(osBuildNumber, osVersion.toString());
     }
 
     public String toUserAgent(Version appVersion) {
         return "WhatsApp/%s %s/%s Device/%s".formatted(
                 appVersion,
                 platformName(),
-                osVersion(),
+                deviceVersion(),
                 deviceName()
         );
     }
 
     public CompanionDevice toPersonal() {
-        if(!platform.isBusiness()) {
+        if (!platform.isBusiness()) {
             return this;
         }
 
-        return new CompanionDevice(
-                model,
-                manufacturer,
-                platform.toPersonal(),
-                appVersion,
-                osVersion
-        );
+        return withPlatform(platform.toPersonal());
     }
 
     public CompanionDevice toBusiness() {
-        if(platform.isBusiness()) {
+        if (platform.isBusiness()) {
             return this;
         }
 
+        return withPlatform(platform.toBusiness());
+    }
+
+    public CompanionDevice withPlatform(PlatformType platform) {
         return new CompanionDevice(
                 model,
                 manufacturer,
-                platform.toBusiness(),
+                Objects.requireNonNullElse(platform, this.platform),
                 appVersion,
-                osVersion
+                osVersion,
+                osBuildNumber,
+                modelId,
+                clientType
         );
+    }
+
+    private String deviceVersion() {
+        return osVersion.toString();
     }
 
     private String deviceName() {
         return switch (platform()) {
+            case ANDROID, ANDROID_BUSINESS -> manufacturer + "-" + model;
             case IOS, IOS_BUSINESS -> model;
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
@@ -103,9 +173,66 @@ public record CompanionDevice(
 
     private String platformName() {
         return switch (platform()) {
+            case ANDROID -> "Android";
+            case ANDROID_BUSINESS -> "SMBA";
             case IOS -> "iOS";
             case IOS_BUSINESS -> "SMB iOS";
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
+    }
+
+    public String model() {
+        return model;
+    }
+
+    public String modelId() {
+        return modelId;
+    }
+
+    public String manufacturer() {
+        return manufacturer;
+    }
+
+    public PlatformType platform() {
+        return platform;
+    }
+
+    public Optional<Version> appVersion() {
+        return Optional.ofNullable(appVersion);
+    }
+
+    public Version osVersion() {
+        return osVersion;
+    }
+
+    public ClientType clientType() {
+        return clientType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CompanionDevice that = (CompanionDevice) o;
+        return Objects.equals(model, that.model) && Objects.equals(manufacturer, that.manufacturer) && platform == that.platform && Objects.equals(appVersion, that.appVersion) && Objects.equals(osVersion, that.osVersion) && Objects.equals(osBuildNumber, that.osBuildNumber) && Objects.equals(modelId, that.modelId) && clientType == that.clientType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(model, manufacturer, platform, appVersion, osVersion, osBuildNumber, modelId, clientType);
+    }
+
+    @Override
+    public String toString() {
+        return "CompanionDevice{" +
+                "model='" + model + '\'' +
+                ", manufacturer='" + manufacturer + '\'' +
+                ", platform=" + platform +
+                ", appVersion=" + appVersion +
+                ", osVersion=" + osVersion +
+                ", osBuildNumber='" + osBuildNumber + '\'' +
+                ", modelId='" + modelId + '\'' +
+                ", clientType=" + clientType +
+                '}';
     }
 }

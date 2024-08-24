@@ -1,9 +1,9 @@
 package it.auties.whatsapp.model.message.standard;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
@@ -20,7 +20,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a whatsapp group invite inside
  */
-@ProtobufMessageName("Message.GroupInviteMessage")
+@ProtobufMessage(name = "Message.GroupInviteMessage")
 public final class GroupInviteMessage implements ContextualMessage<GroupInviteMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Jid group;
@@ -38,7 +38,7 @@ public final class GroupInviteMessage implements ContextualMessage<GroupInviteMe
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
     private final Type groupType;
-    
+
     public GroupInviteMessage(Jid group, String code, long expirationSeconds, String groupName, byte[] thumbnail, String caption, ContextInfo contextInfo, Type groupType) {
         this.group = group;
         this.code = code;
@@ -117,8 +117,8 @@ public final class GroupInviteMessage implements ContextualMessage<GroupInviteMe
     }
 
 
-    @ProtobufMessageName("Message.GroupInviteMessage.GroupType")
-    public enum Type implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.GroupInviteMessage.GroupType")
+    public enum Type {
         DEFAULT(0),
         PARENT(1);
 

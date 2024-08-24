@@ -1,11 +1,11 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.button.misc.SingleSelectReplyButton;
+import it.auties.whatsapp.model.button.base.SingleSelectReplyButton;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -16,25 +16,25 @@ import java.util.Optional;
  * A model class that represents a message that contains a newsletters to a previous
  * {@link ListMessage}
  */
-@ProtobufMessageName("Message.ListResponseMessage")
+@ProtobufMessage(name = "Message.ListResponseMessage")
 public final class ListResponseMessage implements ButtonReplyMessage<ListResponseMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String title;
+    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    private final Type listType;
     @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
     private final SingleSelectReplyButton reply;
     @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     private final String description;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-    private final Type listType;
 
-    public ListResponseMessage(String title, SingleSelectReplyButton reply, ContextInfo contextInfo, String description, Type listType) {
+    public ListResponseMessage(String title, Type listType, SingleSelectReplyButton reply, ContextInfo contextInfo, String description) {
         this.title = title;
+        this.listType = listType;
         this.reply = reply;
         this.contextInfo = contextInfo;
         this.description = description;
-        this.listType = listType;
     }
 
     @Override
@@ -83,8 +83,8 @@ public final class ListResponseMessage implements ButtonReplyMessage<ListRespons
     /**
      * The constants of this enumerated type describe the various types of {@link ListMessage}
      */
-    @ProtobufMessageName("Message.ListResponseMessage.Type")
-    public enum Type implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.ListResponseMessage.Type")
+    public enum Type {
         /**
          * Unknown
          */

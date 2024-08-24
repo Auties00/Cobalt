@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Clock;
@@ -16,7 +15,7 @@ import java.util.Optional;
 /**
  * Class representing a past participant in a chat
  */
-@ProtobufMessageName("PastParticipant")
+@ProtobufMessage(name = "PastParticipant")
 public record GroupPastParticipant(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid jid,
@@ -24,7 +23,7 @@ public record GroupPastParticipant(
         Reason reason,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
         long timestampSeconds
-) implements ProtobufMessage {
+) {
 
     /**
      * Returns when the past participant left the chat
@@ -38,8 +37,8 @@ public record GroupPastParticipant(
     /**
      * Enum representing the errorReason for a past participant leaving the chat.
      */
-    @ProtobufMessageName("PastParticipant.LeaveReason")
-    public enum Reason implements ProtobufEnum {
+    @ProtobufEnum(name = "PastParticipant.LeaveReason")
+    public enum Reason {
         /**
          * The past participant left the chat voluntarily.
          */

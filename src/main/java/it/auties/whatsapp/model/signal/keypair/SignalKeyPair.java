@@ -1,19 +1,20 @@
 package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.curve25519.Curve25519;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
 
 import java.util.Arrays;
 
+@ProtobufMessage
 public record SignalKeyPair(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
         byte[] publicKey,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         byte[] privateKey
-) implements ISignalKeyPair, ProtobufMessage {
+) implements ISignalKeyPair {
     public SignalKeyPair(byte[] publicKey, byte[] privateKey) {
         this.publicKey = ISignalKeyPair.toCurveKey(publicKey);
         this.privateKey = privateKey;

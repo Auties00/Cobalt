@@ -12,7 +12,7 @@ import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Specification.Signal;
+import it.auties.whatsapp.util.SignalConstants;
 import it.auties.whatsapp.util.Validate;
 
 import java.nio.charset.StandardCharsets;
@@ -22,12 +22,12 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
-import static it.auties.whatsapp.util.Specification.Signal.*;
+import static it.auties.whatsapp.util.SignalConstants.*;
 
 public record SessionCipher(SessionAddress address, Keys keys) {
     public CipheredMessageResult encrypt(byte[] data) {
         if (data == null) {
-            return new CipheredMessageResult(null, Signal.UNAVAILABLE);
+            return new CipheredMessageResult(null, SignalConstants.UNAVAILABLE);
         }
         var currentState = loadSession().currentState()
                 .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
@@ -46,7 +46,7 @@ public record SessionCipher(SessionAddress address, Keys keys) {
     }
 
     private String getMessageType(SessionState currentState) {
-        return currentState.hasPreKey() ? Signal.PKMSG : Signal.MSG;
+        return currentState.hasPreKey() ? SignalConstants.PKMSG : SignalConstants.MSG;
     }
 
     private byte[] encrypt(SessionState state, SessionChain chain, byte[] key, byte[] encrypted) {
@@ -183,12 +183,12 @@ public record SessionCipher(SessionAddress address, Keys keys) {
     }
 
     private Session loadSession() {
-        return loadSession(() -> keys.findSessionByAddress(new SessionAddress(address.name(), 0)));
+        return loadSession(null);
     }
 
     private Session loadSession(Supplier<Optional<Session>> defaultSupplier) {
         return keys.findSessionByAddress(address)
-                .or(defaultSupplier)
+                .or(defaultSupplier == null ? Optional::empty : defaultSupplier)
                 .orElseThrow(() -> new NoSuchElementException("Missing session for: %s".formatted(address)));
     }
 }

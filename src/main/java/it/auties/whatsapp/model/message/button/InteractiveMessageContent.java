@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.button.interactive.InteractiveCollection;
 import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlow;
 import it.auties.whatsapp.model.button.interactive.InteractiveShop;
@@ -10,7 +9,7 @@ import it.auties.whatsapp.model.button.interactive.InteractiveShop;
 /**
  * A model class that represents a message that can be used as the content of a {@link it.auties.whatsapp.model.message.button.InteractiveMessage}
  */
-public sealed interface InteractiveMessageContent extends ProtobufMessage permits InteractiveShop, InteractiveCollection, InteractiveNativeFlow {
+public sealed interface InteractiveMessageContent permits InteractiveShop, InteractiveCollection, InteractiveNativeFlow {
     /**
      * Returns the type of this content
      *
@@ -22,7 +21,8 @@ public sealed interface InteractiveMessageContent extends ProtobufMessage permit
      * The constants of this enumerated type describe the various types of content that an interactive
      * message can wrap
      */
-    enum Type implements ProtobufEnum {
+    @ProtobufEnum
+    enum Type {
         /**
          * No content
          */

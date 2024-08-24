@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.companion;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
@@ -15,7 +15,8 @@ import java.util.Objects;
 
 import static it.auties.whatsapp.model.node.Node.of;
 
-public final class CompanionHashState implements ProtobufMessage {
+@ProtobufMessage
+public final class CompanionHashState {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private PatchType type;
 
@@ -25,7 +26,7 @@ public final class CompanionHashState implements ProtobufMessage {
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
     private byte[] hash;
 
-    @ProtobufProperty(index = 4, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.BYTES)
+    @ProtobufProperty(index = 4, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.BYTES)
     private Map<String, byte[]> indexValueMap;
 
     public CompanionHashState(PatchType type) {
@@ -45,6 +46,11 @@ public final class CompanionHashState implements ProtobufMessage {
         this.version = version;
         this.hash = hash;
         this.indexValueMap = indexValueMap;
+    }
+
+    private static boolean checkIndexEntryEquality(CompanionHashState that, String thisKey, byte[] thisValue) {
+        var thatValue = that.indexValueMap().get(thisKey);
+        return thatValue != null && Arrays.equals(thatValue, thisValue);
     }
 
     public Node toNode() {
@@ -67,11 +73,6 @@ public final class CompanionHashState implements ProtobufMessage {
         return indexValueMap().entrySet()
                 .stream()
                 .allMatch(entry -> checkIndexEntryEquality(that, entry.getKey(), entry.getValue()));
-    }
-
-    private static boolean checkIndexEntryEquality(CompanionHashState that, String thisKey, byte[] thisValue) {
-        var thatValue = that.indexValueMap().get(thisKey);
-        return thatValue != null && Arrays.equals(thatValue, thisValue);
     }
 
     public PatchType type() {

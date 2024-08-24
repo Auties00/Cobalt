@@ -4,9 +4,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
 
-import java.net.URI;
 import java.util.Scanner;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class MobileLoginExample {
     public static void main(String[] args) {
@@ -21,7 +19,6 @@ public class MobileLoginExample {
         };
         Whatsapp.mobileBuilder()
                 .newConnection(SixPartsKeys.of(sixParts))
-                .proxy(URI.create("http://wy961882248*4g_%s:999999@proxyus.rola.vip:1000/".formatted(ThreadLocalRandom.current().nextInt())))
                 .device(CompanionDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
                 .registered()
                 .orElseThrow()

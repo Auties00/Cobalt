@@ -1,9 +1,9 @@
 package it.auties.whatsapp.model.message.payment;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message to pay an order.
  */
-@ProtobufMessageName("Message.PaymentOrderMessage")
+@ProtobufMessage(name = "Message.PaymentOrderMessage")
 public final class PaymentOrderMessage implements ContextualMessage<PaymentOrderMessage>, PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String id;
@@ -138,8 +138,8 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     }
 
 
-    @ProtobufMessageName("Message.OrderMessage.OrderStatus")
-    public enum Status implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.OrderMessage.OrderStatus")
+    public enum Status {
         /**
          * Inquiry
          */
@@ -156,8 +156,8 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
         }
     }
 
-    @ProtobufMessageName("Message.OrderMessage.OrderSurface")
-    public enum PaymentOrderSurface implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.OrderMessage.OrderSurface")
+    public enum PaymentOrderSurface {
         /**
          * Catalog
          */

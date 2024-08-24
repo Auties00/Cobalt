@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Bytes;
@@ -9,9 +9,9 @@ import it.auties.whatsapp.util.Bytes;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static it.auties.whatsapp.util.Specification.Signal.MAC_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.MAC_LENGTH;
 
-@ProtobufMessageName("SignalMessage")
+@ProtobufMessage(name = "SignalMessage")
 public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
     private final byte[] ephemeralPublicKey;

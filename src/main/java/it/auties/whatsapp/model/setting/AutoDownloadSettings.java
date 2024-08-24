@@ -1,10 +1,10 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
-@ProtobufMessageName("AutoDownloadSettings")
+@ProtobufMessage(name = "AutoDownloadSettings")
 public record AutoDownloadSettings(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean downloadImages,

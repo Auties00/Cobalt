@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 public class WebLoginExample {
     public static void main(String[] args) {
         Whatsapp.webBuilder()
-                .lastConnection()
+                .newConnection()
                 .historyLength(WebHistoryLength.extended())
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
@@ -21,7 +21,6 @@ public class WebLoginExample {
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addActionListener ((action, info) -> System.out.printf("New action: %s, info: %s%n", action, info))
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
-                .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact, chat.name(), status.name()))
                 .addMessageStatusListener((info) -> System.out.printf("Message status update for %s%n", info.id()))
                 .addChatMessagesSyncListener((api, chat, last) -> System.out.printf("%s now has %s messages: %s(oldest message: %s)%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done", chat.oldestMessage().flatMap(ChatMessageInfo::timestamp).orElse(null)))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))

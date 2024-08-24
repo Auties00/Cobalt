@@ -34,6 +34,7 @@ public sealed class MobileRegistrationBuilder {
     public final static class Unregistered extends MobileRegistrationBuilder {
         private UnverifiedResult unregisteredResult;
         private VerificationCodeMethod verificationCodeMethod;
+        private boolean autocloseCloudVerificationClient;
 
         Unregistered(Store store, Keys keys, ErrorHandler errorHandler) {
             super(store, keys, errorHandler);
@@ -88,14 +89,15 @@ public sealed class MobileRegistrationBuilder {
                         verificationCodeSupplier,
                         verificationCodeMethod
                 );
-                return registration.registerPhoneNumber().thenApply(response -> {
-                    var api = Whatsapp.customBuilder()
-                            .store(store)
-                            .keys(keys)
-                            .errorHandler(errorHandler)
-                            .build();
-                    return this.result = new RegisteredResult(api, Optional.ofNullable(response));
-                });
+                return registration.registerPhoneNumber()
+                        .thenApplyAsync(response -> {
+                            var api = Whatsapp.customBuilder()
+                                    .store(store)
+                                    .keys(keys)
+                                    .errorHandler(errorHandler)
+                                    .build();
+                            return this.result = new RegisteredResult(api, Optional.ofNullable(response));
+                        });
             }
 
             var api = Whatsapp.customBuilder()
@@ -105,7 +107,6 @@ public sealed class MobileRegistrationBuilder {
                     .build();
             return CompletableFuture.completedFuture(result);
         }
-
 
         /**
          * Asks Whatsapp for a one-time-password to start the registration process

@@ -17,7 +17,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
+import static it.auties.whatsapp.util.SignalConstants.CURRENT_VERSION;
 
 public final class Bytes {
     private static final String CROCKFORD_CHARACTERS = "123456789ABCDEFGHJKLMNPQRSTVWXYZ";
@@ -41,13 +41,13 @@ public final class Bytes {
 
     public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
-                .filter(Objects::nonNull)
+                .filter(entry -> entry != null && entry.length != 0)
                 .reduce(Bytes::concat)
                 .orElseGet(() -> new byte[0]);
     }
 
     public static byte[] concat(byte first, byte[] second) {
-        if (second == null) {
+        if (second == null || second.length == 0) {
             return new byte[]{first};
         }
 
@@ -58,11 +58,11 @@ public final class Bytes {
     }
 
     public static byte[] concat(byte[] first, byte[] second) {
-        if (first == null) {
+        if (first == null || first.length == 0) {
             return second;
         }
 
-        if (second == null) {
+        if (second == null || second.length == 0) {
             return first;
         }
 
@@ -158,6 +158,14 @@ public final class Bytes {
         var result = 0;
         for (var i = 0; i < length; i++) {
             result = 256 * result + Byte.toUnsignedInt(bytes[i]);
+        }
+        return result;
+    }
+
+    public static int bytesToInt(ByteBuffer buffer, int length) {
+        var result = 0;
+        for (var i = 0; i < length; i++) {
+            result = 256 * result + Byte.toUnsignedInt(buffer.get());
         }
         return result;
     }

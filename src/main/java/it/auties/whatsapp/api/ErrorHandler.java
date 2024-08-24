@@ -1,11 +1,10 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Exceptions;
 
 import java.nio.file.Path;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
@@ -64,37 +63,41 @@ public interface ErrorHandler {
      * @param printer a consumer that handles the printing of the throwable, can be null
      * @return a non-null error handler
      */
-    static ErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {
+    private static ErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {
         return (whatsapp, location, throwable) -> {
             var logger = System.getLogger("ErrorHandler");
+            var jid = whatsapp.store()
+                    .jid()
+                    .map(Jid::user)
+                    .orElse("UNKNOWN");
             if(location == RECONNECT) {
-                logger.log(WARNING, "Cannot reconnect: retrying on next timeout");
+                logger.log(WARNING, "[{0}] Cannot reconnect: retrying on next timeout", jid);
                 return Result.DISCARD;
             }
 
-            if(throwable instanceof CompletionException && throwable.getCause() instanceof TimeoutException) {
-                logger.log(WARNING, "Detected possible network anomaly: reconnecting");
-                return Result.RECONNECT;
-            }
-
-            logger.log(ERROR, "Socket failure at %s".formatted(location));
+            logger.log(ERROR, "[{0}] Socket failure at {1}", jid, location);
             if (printer != null) {
                 printer.accept(whatsapp, throwable);
             }
 
+            if(location == LOGIN) {
+                logger.log(WARNING, "[{0}] Cannot login", jid);
+                return Result.DISCONNECT;
+            }
+
             if (location == CRYPTOGRAPHY && whatsapp.store().clientType() == ClientType.MOBILE) {
-                logger.log(WARNING, "Reconnecting");
+                logger.log(WARNING, "[{0}] Reconnecting", jid);
                 return Result.RECONNECT;
             }
 
             if (location == INITIAL_APP_STATE_SYNC
                     || location == CRYPTOGRAPHY
                     || (location == MESSAGE && throwable instanceof HmacValidationException)) {
-                logger.log(WARNING, "Restore");
+                logger.log(WARNING, "[{0}] Restore", jid);
                 return Result.RESTORE;
             }
 
-            logger.log(WARNING, "Ignored failure");
+            logger.log(WARNING, "[{0}] Ignored failure", jid);
             return Result.DISCARD;
         };
     }

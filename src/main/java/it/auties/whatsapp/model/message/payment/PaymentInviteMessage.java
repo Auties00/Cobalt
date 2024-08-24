@@ -1,9 +1,9 @@
 package it.auties.whatsapp.model.message.payment;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
@@ -13,7 +13,7 @@ import java.util.OptionalLong;
 /**
  * A model class that represents a message to decline a {@link RequestPaymentMessage}.
  */
-@ProtobufMessageName("Message.PaymentInviteMessage")
+@ProtobufMessage(name = "Message.PaymentInviteMessage")
 public record PaymentInviteMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
         ServiceType serviceType,
@@ -25,8 +25,8 @@ public record PaymentInviteMessage(
         return MessageType.PAYMENT_INVITE;
     }
 
-    @ProtobufMessageName("Message.PaymentInviteMessage.ServiceType")
-    public enum ServiceType implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.PaymentInviteMessage.ServiceType")
+    public enum ServiceType {
         /**
          * Unknown service provider
          */

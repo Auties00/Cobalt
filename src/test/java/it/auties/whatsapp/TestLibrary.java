@@ -5,12 +5,12 @@ import it.auties.whatsapp.api.Emoji;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.button.base.Button;
+import it.auties.whatsapp.model.button.base.ButtonRow;
+import it.auties.whatsapp.model.button.base.ButtonSection;
 import it.auties.whatsapp.model.button.base.ButtonText;
 import it.auties.whatsapp.model.button.interactive.InteractiveButton;
 import it.auties.whatsapp.model.button.interactive.InteractiveHeaderSimpleBuilder;
 import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlowBuilder;
-import it.auties.whatsapp.model.button.misc.ButtonRow;
-import it.auties.whatsapp.model.button.misc.ButtonSection;
 import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.companion.CompanionDevice;
@@ -30,12 +30,16 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.MediaUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +65,8 @@ public class TestLibrary implements Listener  {
 
     @BeforeAll
     public void init() throws IOException, InterruptedException  {
-        loadConfig();
+        contact = Jid.of(393495089819L);
+        account = SixPartsKeys.of("18102213505,s2ow3jfH20bwPwy3hzRlulkqxFdd2U2w9vvFS8iomCM=,6PH+z59udUs38+HhOoq5hVUd2z4QtKh8M8I3/MzYZmY=,BzImQolhr3JvNGHBbURtv6lDsL5j26M+yajF0CFApQk=,iLER4MzKf+teJmia2w54W5mBDWG4UAsMGChU0z2eyUw=,M6y/grjpjAeKkTqnRrvpbw==");
         createApi();
         createLatch();
         latch.await();
@@ -77,22 +82,6 @@ public class TestLibrary implements Listener  {
                 .addListener(this);
         future = api.connect()
                 .exceptionally(Assertions::fail);
-    }
-
-    private void loadConfig() throws IOException  {
-        if (GithubActions.isActionsEnvironment())  {
-            log("Loading environment variables...");
-            contact = Jid.of(System.getenv(GithubActions.CONTACT_NAME));
-            account = SixPartsKeys.of(System.getenv(GithubActions.ACCOUNT));
-            log("Loaded environment variables...");
-            return;
-        }
-
-        log("Loading configuration file...");
-        var props = ConfigUtils.loadConfiguration();
-        contact = Jid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
-        account = SixPartsKeys.of(Objects.requireNonNull(props.getProperty("account", "Missing account property in config")));
-        log("Loaded configuration file");
     }
 
     private void createLatch()  {
@@ -137,10 +126,7 @@ public class TestLibrary implements Listener  {
     }
 
     private Object[] redactParameters(Object... params)  {
-        if (!GithubActions.isActionsEnvironment())  {
-            return params;
-        }
-        return Arrays.stream(params).map(entry -> "***").toArray(String[]::new);
+        return params;
     }
 
     @Test
@@ -673,11 +659,6 @@ public class TestLibrary implements Listener  {
                 .votes(List.of(pollOptionFirst, pollOptionSecond))
                 .build();
         api.sendMessage(contact, secondUpdate).join();
-        var finalUpdate = new PollUpdateMessageSimpleBuilder()
-                .poll(pollInfo)
-                .votes(List.of())
-                .build();
-        api.sendMessage(contact, finalUpdate).join();
         log("Sent poll message");
     }
 
