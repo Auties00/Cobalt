@@ -1106,7 +1106,7 @@ var future = api.stopCall(contact);
 
 > **_IMPORTANT:_** Fully supported, but not documented here. Check the Javadocs.
 
-### Newsletters
+### Newsletters / Channels
 
 > **_IMPORTANT:_** Fully supported, but not documented here. Check the Javadocs.
 
