@@ -1392,15 +1392,12 @@ public class Whatsapp {
     }
 
     private CompletableFuture<List<Jid>> executeActionOnGroupParticipant(JidProvider group, GroupAction action, JidProvider... jids) {
-        var initializer = prepareActionOnGroupParticipant(action, jids);
-        return initializer.thenComposeAsync(ignored -> {
-            var body = Arrays.stream(jids)
+        return prepareActionOnGroupParticipant(action, jids).thenComposeAsync(ignored -> {
+            var participants = Arrays.stream(jids)
                     .map(JidProvider::toJid)
                     .map(jid -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
-                    .map(innerBody -> Node.of(action.data(), innerBody))
                     .toArray(Node[]::new);
-
-            return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
+            return socketHandler.sendQuery(group.toJid(), "set", "w:g2", Node.of(action.data(), participants))
                     .thenApplyAsync(result -> parseGroupActionResponse(result, group, action));
         });
     }
