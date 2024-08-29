@@ -31,8 +31,4 @@ public enum TextPreviewSetting {
     TextPreviewSetting(@ProtobufEnumIndex int index) {
         this.index = index;
     }
-
-    public int index() {
-        return index;
-    }
 }

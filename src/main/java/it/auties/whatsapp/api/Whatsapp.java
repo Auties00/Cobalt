@@ -1299,11 +1299,11 @@ public class Whatsapp {
         var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
         var node = Node.of("presence", Map.of("name", store().name(), "type", presence.toString()));
         return socketHandler.sendNodeWithNoResponse(node)
-                .thenAcceptAsync(socketHandler -> updateSelfPresence(null, presence))
+                .thenAcceptAsync(socketHandler -> updatePresence(null, presence))
                 .thenApplyAsync(ignored -> available);
     }
 
-    private void updateSelfPresence(JidProvider chatJid, ContactStatus presence) {
+    private void updatePresence(JidProvider chatJid, ContactStatus presence) {
         if (chatJid == null) {
             store().setOnline(presence == ContactStatus.AVAILABLE);
         }
@@ -1316,9 +1316,12 @@ public class Whatsapp {
         if (presence == ContactStatus.AVAILABLE || presence == ContactStatus.UNAVAILABLE) {
             self.get().setLastKnownPresence(presence);
         }
+
         if (chatJid != null) {
-            store().findChatByJid(chatJid).ifPresent(chat -> chat.presences().put(self.get().jid(), presence));
+            store().findChatByJid(chatJid)
+                    .ifPresent(chat -> chat.presences().put(self.get().jid(), presence));
         }
+
         self.get().setLastSeen(ZonedDateTime.now());
     }
 
@@ -1336,12 +1339,12 @@ public class Whatsapp {
                     Map.of("to", chatJid.toJid()),
                     Node.of(COMPOSING.toString(), presence == RECORDING ? Map.of("media", "audio") : Map.of()));
             return socketHandler.sendNodeWithNoResponse(node)
-                    .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence));
+                    .thenAcceptAsync(socketHandler -> updatePresence(chatJid, presence));
         }
 
         var node = Node.of("presence", Map.of("type", presence.toString(), "name", store().name()));
         return socketHandler.sendNodeWithNoResponse(node)
-                .thenAcceptAsync(socketHandler -> updateSelfPresence(chatJid, presence));
+                .thenAcceptAsync(socketHandler -> updatePresence(chatJid, presence));
     }
 
     /**
@@ -1389,13 +1392,27 @@ public class Whatsapp {
     }
 
     private CompletableFuture<List<Jid>> executeActionOnGroupParticipant(JidProvider group, GroupAction action, JidProvider... jids) {
-        var body = Arrays.stream(jids)
-                .map(JidProvider::toJid)
-                .map(jid -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
-                .map(innerBody -> Node.of(action.data(), innerBody))
-                .toArray(Node[]::new);
-        return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenApplyAsync(result -> parseGroupActionResponse(result, group, action));
+        var initializer = prepareActionOnGroupParticipant(action, jids);
+        return initializer.thenComposeAsync(ignored -> {
+            var body = Arrays.stream(jids)
+                    .map(JidProvider::toJid)
+                    .map(jid -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(jid, "Cannot execute action on yourself"))))
+                    .map(innerBody -> Node.of(action.data(), innerBody))
+                    .toArray(Node[]::new);
+
+            return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
+                    .thenApplyAsync(result -> parseGroupActionResponse(result, group, action));
+        });
+    }
+
+    private CompletableFuture<?> prepareActionOnGroupParticipant(GroupAction action, JidProvider[] jids) {
+        if (action == GroupAction.ADD) {
+            sendGroupWam(Clock.nowSeconds());
+            return addContacts(jids)
+                    .thenComposeAsync(this::prepareGroupParticipants);
+        }
+
+        return CompletableFuture.completedFuture(null);
     }
 
     private Jid checkGroupParticipantJid(Jid jid, String errorMessage) {
@@ -1610,7 +1627,7 @@ public class Whatsapp {
                     var future = socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body);
                     sendGroupWam(timestamp);
                     return future.thenApplyAsync(this::parseGroupResponse);
-                }, CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS));
+                });
     }
 
     private CompletableFuture<List<Jid>> prepareGroupParticipants(List<Jid> availableMembers) {
@@ -2927,7 +2944,14 @@ public class Whatsapp {
 
     private CompletableFuture<Void> sendHistoryProtocolMessage(Jid jid, HistorySync historySync, HistorySync.Type type) {
         var syncBytes = HistorySyncSpec.encode(historySync);
-        return Medias.upload(syncBytes, AttachmentType.HISTORY_SYNC, store().mediaConnection())
+        var userAgent = socketHandler.store()
+                .device()
+                .toUserAgent(socketHandler.store().version());
+        var proxy = socketHandler.store()
+                .proxy()
+                .filter(ignored -> socketHandler.store().mediaProxySetting().allowsUploads())
+                .orElse(null);
+        return Medias.upload(syncBytes, AttachmentType.HISTORY_SYNC, store().mediaConnection(), userAgent, proxy)
                 .thenApplyAsync(upload -> createHistoryProtocolMessage(upload, type))
                 .thenComposeAsync(result -> socketHandler.sendPeerMessage(jid, result));
     }

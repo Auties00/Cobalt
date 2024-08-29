@@ -220,7 +220,14 @@ class MessageHandler {
                 .orElseThrow(() -> new IllegalArgumentException("Missing media to upload"));
         var attachmentType = getAttachmentType(chatJid, mediaMessage);
         var mediaConnection = socketHandler.store().mediaConnection();
-        return Medias.upload(media, attachmentType, mediaConnection)
+        var userAgent = socketHandler.store()
+                .device()
+                .toUserAgent(socketHandler.store().version());
+        var proxy = socketHandler.store()
+                .proxy()
+                .filter(ignored -> socketHandler.store().mediaProxySetting().allowsUploads())
+                .orElse(null);
+        return Medias.upload(media, attachmentType, mediaConnection, userAgent, proxy)
                 .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
     }
 

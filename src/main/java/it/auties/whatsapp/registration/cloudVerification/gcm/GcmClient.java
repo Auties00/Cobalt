@@ -94,7 +94,7 @@ public class GcmClient implements CloudVerificationClient  {
                 .version(3)
                 .userSerialNumber(0)
                 .build();
-        return httpClient.postRawWithoutSslParams(CHECK_IN_URL, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
+        return httpClient.postRaw(CHECK_IN_URL, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
                 .thenApplyAsync(AndroidCheckInResponseSpec::decode);
     }
 
@@ -111,7 +111,7 @@ public class GcmClient implements CloudVerificationClient  {
                 "Content-Type", "application/x-www-form-urlencoded",
                 "Authorization", "AidLogin %s:%s".formatted(checkInResponse.androidId(), checkInResponse.securityToken())
         );
-        return httpClient.postRawWithoutSslParams(REGISTER_URL, headers, HttpClient.toFormParams(params).getBytes())
+        return httpClient.postRaw(REGISTER_URL, headers, HttpClient.toFormParams(params).getBytes())
                 .thenApplyAsync(this::handleRegistration);
     }
 
@@ -134,7 +134,7 @@ public class GcmClient implements CloudVerificationClient  {
                 "encryption_key", encoder.encodeToString(keyPair.publicKey()),
                 "encryption_auth", encoder.encodeToString(authSecret)
         );
-        return httpClient.postRawWithoutSslParams(FCM_SUBSCRIBE_URL, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
+        return httpClient.postRaw(FCM_SUBSCRIBE_URL, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
                 .thenAcceptAsync(this::handleSubscription);
     }
 

@@ -231,6 +231,10 @@ class StreamHandler {
         }
 
         socketHandler.querySessionsForcefully(message.senderJid()).whenCompleteAsync((result, error) -> {
+            if(error != null) {
+                return;
+            }
+
             var all = message.senderJid().device() == 0;
             message.chat().ifPresent(Chat::clearParticipantsPreKeys);
             var recipients = all ? null : Set.of(message.senderJid());
@@ -916,25 +920,28 @@ class StreamHandler {
             sendPreKeys();
         }
 
+        CompletableFuture.allOf(finishLogin(), attributeStore())
+                .thenRunAsync(this::notifyChatsAndNewsletters);
+    }
+
+    private CompletableFuture<Void> finishLogin() {
         var loggedInFuture = queryRequiredInfo()
                 .thenComposeAsync(ignored -> initSession())
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        var initialAppSync = socketHandler.keys().initialAppSync();
-        if (!initialAppSync) {
-            configureApi().thenRunAsync(() -> {
-                onRegistration();
-                onInitialInfo();
-            }).exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        }else {
-            loggedInFuture.thenRunAsync(this::onInitialInfo);
+        if (socketHandler.keys().initialAppSync()) {
+            return loggedInFuture.thenRunAsync(this::onInitialInfo);
         }
 
-        var attributionFuture = socketHandler.store()
+        return configureApi()
+                .thenRunAsync(this::onInitialInfo)
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+    }
+
+    private CompletableFuture<Void> attributeStore() {
+        return socketHandler.store()
                 .serializer()
                 .attributeStore(socketHandler.store())
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
-        CompletableFuture.allOf(loggedInFuture, attributionFuture)
-                .thenRunAsync(() -> notifyChatsAndNewsletters(initialAppSync));
     }
 
     private CompletableFuture<Void> initSession() {
@@ -1055,16 +1062,8 @@ class StreamHandler {
                 .thenComposeAsync(ignored -> socketHandler.sendQuery("set", "tos", Node.of("trackable", Map.of("id", "20900727", "result", 1))));
     }
 
-    private void onRegistration() {
-        socketHandler.store().serialize(true);
-        socketHandler.keys().serialize(true);
-        if(socketHandler.store().clientType() == ClientType.MOBILE) {
-            socketHandler.keys().setInitialAppSync(true);
-        }
-    }
-
-    private void notifyChatsAndNewsletters(boolean notify) {
-        if(!notify) {
+    private void notifyChatsAndNewsletters() {
+        if(socketHandler.store().clientType() == ClientType.WEB) {
             return;
         }
 
@@ -1184,15 +1183,29 @@ class StreamHandler {
     }
 
     private void onInitialInfo() {
-        socketHandler.keys().setRegistered(true);
+        if(!socketHandler.keys().registered()) {
+            socketHandler.keys().setRegistered(true);
+            socketHandler.store().serialize(true);
+            socketHandler.keys().serialize(true);
+        }
+
+        if(socketHandler.store().clientType() == ClientType.MOBILE) {
+            socketHandler.keys().setInitialAppSync(true);
+            socketHandler.store()
+                    .jid()
+                    .map(Jid::toSimpleJid)
+                    .ifPresent(jid -> {
+                        var me = new Contact(jid, socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
+                        socketHandler.store().addContact(me);
+                    });
+        }
+
         schedulePing();
         retryConnection.set(false);
         socketHandler.onLoggedIn();
-        if (!socketHandler.keys().initialAppSync()) {
-            return;
+        if (socketHandler.keys().initialAppSync()) {
+            socketHandler.onContacts();
         }
-
-        socketHandler.onContacts();
     }
 
     private CompletableFuture<Void> queryRequiredInfo() {
