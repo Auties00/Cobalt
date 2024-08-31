@@ -115,7 +115,6 @@ public class HttpClient implements AutoCloseable {
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body) {
         var socket = getLockableSocketClient(uri);
         var builder = createRequestPayload(method, uri, headers, body);
-        System.out.println(builder);
         return (socket.isConnected() ? CompletableFuture.completedFuture(null) : socket.connectAsync(toSocketAddress(uri)))
                 .thenComposeAsync(ignored -> socket.writeAsync(StandardCharsets.ISO_8859_1.encode(builder.toString())))
                 .thenComposeAsync(ignored -> readResponse(method, uri, headers, body, socket))
@@ -588,7 +587,7 @@ public class HttpClient implements AutoCloseable {
     private SocketClient getLockableSocketClient(URI uri) {
         try {
             var aliveSocket = aliveSockets == null ? null : aliveSockets.get(uri.getHost() + ":" + uri.getPort());
-            if(aliveSocket != null) {
+            if(aliveSocket != null && !aliveSocket.isClosed()) {
                 return aliveSocket;
             }
 

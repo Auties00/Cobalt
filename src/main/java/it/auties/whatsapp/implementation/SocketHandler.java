@@ -461,7 +461,7 @@ public class SocketHandler implements SocketListener {
         var jid = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(jid, store.clientType()))
                 .chatJid(companion)
                 .fromMe(true)
                 .senderJid(jid)
@@ -528,13 +528,17 @@ public class SocketHandler implements SocketListener {
         var sideList = Node.of("side_list", sideListData);
         var sync = Node.of(
                 "usync",
-                Map.of("sid", ChatMessageKey.randomId(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
+                Map.of("sid", randomSid(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query,
                 list,
                 sideList
         );
         return sendQuery("get", "usync", sync)
                 .thenApplyAsync(this::parseQueryResult);
+    }
+
+    public static String randomSid() {
+        return Clock.nowSeconds() + "-" + ThreadLocalRandom.current().nextLong(1_000_000_000, 9_999_999_999L) + "-" + ThreadLocalRandom.current().nextInt(0, 1000);
     }
 
     private Optional<ContactAboutResponse> parseAbout(List<Node> responses) {

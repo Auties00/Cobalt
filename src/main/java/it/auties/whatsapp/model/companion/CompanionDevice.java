@@ -40,7 +40,7 @@ public final class CompanionDevice {
             Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
     );
     private static final List<Entry<String, String>> IOS_VERSION = List.of(
-            Map.entry("17.5.1", "21F91")
+            Map.entry("17.6.1", "21G101")
     );
     private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
     private static final int MIDDLEWARE_PERSONAL_PORT = 1119;

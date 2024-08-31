@@ -615,7 +615,7 @@ class MessageHandler {
         }
 
         var body = Node.of("usync",
-                Map.of("context", "message", "index", "0", "last", "true", "mode", "query", "sid", ChatMessageKey.randomId()),
+                Map.of("context", "message", "index", "0", "last", "true", "mode", "query", "sid", SocketHandler.randomSid()),
                 Node.of("query", Node.of("devices", Map.of("version", "2"))),
                 Node.of("list", contactNodes));
         return socketHandler.sendQuery("get", "usync", body)
@@ -941,7 +941,7 @@ class MessageHandler {
             var messageBuilder = new ChatMessageInfoBuilder()
                     .status(MessageStatus.PENDING);
             var keyBuilder = new ChatMessageKeyBuilder()
-                    .id(ChatMessageKey.randomId());
+                    .id(SocketHandler.randomSid());
             var receiver = socketHandler.store()
                     .jid()
                     .map(Jid::toSimpleJid)

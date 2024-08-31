@@ -78,10 +78,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -107,6 +104,7 @@ public class Whatsapp {
     // This is to make sure that the instances remain in memory only as long as it's needed
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
     private static final Method registerListenersMethod = getRegisterListenersMethod();
+    private static final ConcurrentMap<Jid, Boolean> usersCache = new ConcurrentHashMap<>();
 
     private static Method getRegisterListenersMethod() {
         try {
@@ -187,10 +185,10 @@ public class Whatsapp {
     }
 
     private final SocketHandler socketHandler;
-    private final Set<Jid> readyContacts;
+    private final Set<Jid> trustedContacts;
     protected Whatsapp(Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
-        this.readyContacts = ConcurrentHashMap.newKeySet();
+        this.trustedContacts = ConcurrentHashMap.newKeySet();
         handleDisconnections(store);
         registerListenersAutomatically(store);
     }
@@ -432,6 +430,34 @@ public class Whatsapp {
      * Sends a request to Whatsapp in order to receive updates when the status of a contact changes.
      * These changes include the last known presence and the seconds the contact was last seen.
      *
+     * @param jids the contacts whose status the api should receive updates on
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Void> subscribeToPresence(JidProvider... jids) {
+        var futures = Arrays.stream(jids)
+                .map(socketHandler::subscribeToPresence)
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(futures);
+    }
+
+    /**
+     * Sends a request to Whatsapp in order to receive updates when the status of a contact changes.
+     * These changes include the last known presence and the seconds the contact was last seen.
+     *
+     * @param jids the contacts whose status the api should receive updates on
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Void> subscribeToPresence(List<? extends JidProvider> jids) {
+        var futures = jids.stream()
+                .map(socketHandler::subscribeToPresence)
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(futures);
+    }
+
+    /**
+     * Sends a request to Whatsapp in order to receive updates when the status of a contact changes.
+     * These changes include the last known presence and the seconds the contact was last seen.
+     *
      * @param jid the contact whose status the api should receive updates on
      * @return a CompletableFuture
      */
@@ -472,7 +498,7 @@ public class Whatsapp {
      */
     public CompletableFuture<? extends MessageInfo> sendReaction(MessageInfo message, String reaction) {
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(message.senderJid(), store().clientType()))
                 .chatJid(message.parentJid())
                 .senderJid(message.senderJid())
                 .fromMe(Objects.equals(message.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid()))
@@ -674,8 +700,7 @@ public class Whatsapp {
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message, boolean compose) {
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var info = buildChatMessage(recipient, message);
-        var composingFuture = compose && message.type() == MessageType.TEXT ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
-        return composingFuture.thenComposeAsync(deltaResult -> sendMessage(info));
+        return sendMessage(info, compose);
     }
 
     private ChatMessageInfo buildChatMessage(JidProvider recipient, MessageContainer message) {
@@ -684,7 +709,7 @@ public class Whatsapp {
                 .deviceListMetadataVersion(2)
                 .build() : null;
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(jidOrThrowError(), store().clientType()))
                 .chatJid(recipient.toJid())
                 .fromMe(true)
                 .senderJid(jidOrThrowError())
@@ -699,90 +724,120 @@ public class Whatsapp {
                 .build();
     }
 
-    private CompletableFuture<Boolean> sendDeltaChatRequest(JidProvider recipient) {
-        if(!recipient.toJid().hasServer(JidServer.WHATSAPP)) {
-            return CompletableFuture.completedFuture(true);
+    private CompletableFuture<List<? extends JidProvider>> prepareChat(long timestamp, JidProvider... recipients) {
+        if(recipients == null || recipients.length == 0) {
+            return CompletableFuture.completedFuture(List.of());
         }
 
+        return hasWhatsapp(recipients).thenComposeAsync(result -> {
+            var availableRecipients = result.entrySet()
+                    .stream()
+                    .filter(Map.Entry::getValue)
+                    .map(Map.Entry::getKey)
+                    .toList();
+            if(store().clientType() == ClientType.WEB) {
+                return CompletableFuture.completedFuture(availableRecipients);
+            }
+
+            var identityUsers = Arrays.stream(recipients)
+                    .map(user -> Node.of("user", Map.of("jid", user)))
+                    .toList();
+            return socketHandler.sendQuery("get", "encrypt", Node.of("identity", identityUsers))
+                    .thenComposeAsync(response -> prepareRecipients(availableRecipients))
+                    .thenComposeAsync(ignored -> queryPreparePic(availableRecipients))
+                    .thenComposeAsync(ignored -> subscribeToPresence(availableRecipients))
+                    .thenComposeAsync(ignored -> socketHandler.querySessions(availableRecipients))
+                    .thenComposeAsync(ignored -> sendPrivacyTokens(timestamp, availableRecipients))
+                    .thenApplyAsync(ignored -> {
+                        trustedContacts.addAll(availableRecipients);
+                        return availableRecipients;
+                    });
+        });
+    }
+
+    private CompletableFuture<Node> prepareRecipients(List<Jid> recipients) {
+        var finalRecipients = recipients.stream()
+                .filter(user -> !trustedContacts.contains(user))
+                .toList();
+        var users = finalRecipients.stream()
+                .map(user -> Node.of(
+                        "user",
+                        Map.of("jid", user.toJid()),
+                        Node.of(
+                                "devices",
+                                Map.of("device_hash", "2:" + Base64.getEncoder().encodeToString(Bytes.random(6)))
+                        )
+                ))
+                .toList();
         var sync = Node.of(
                 "usync",
                 Map.of(
-                        "context", "interactive",
-                        "index", "0",
+                        "mode", "query",
+                        "context", "message",
                         "last", "true",
-                        "mode", "delta",
-                        "sid", ChatMessageKey.randomId()
+                        "sid", SocketHandler.randomSid(),
+                        "index", "0"
                 ),
+                Node.of("query", Node.of("devices", Map.of("version", "2"))),
                 Node.of(
-                        "query",
-                        Node.of("business", Node.of("verified_name"), Node.of("profile", Map.of("v", 372))),
-                        Node.of("contact"),
-                        Node.of("disappearing_mode"),
-                        Node.of("sidelist"),
-                        Node.of("status")
+                        "list",
+                        users
                 ),
-                Node.of("list"),
-                Node.of(
-                        "side_list",
-                        Node.of("user", Map.of("jid", recipient.toJid()))
-                )
+                Node.of("side_list")
         );
-        return socketHandler.sendQuery("get", "usync", sync)
-                .thenApply(result -> !isNotOnWhatsapp(result));
-    }
-
-    private boolean isNotOnWhatsapp(Node result) {
-        return result.findNode("usync")
-                .flatMap(entry -> entry.findNode("result"))
-                .flatMap(entry -> entry.findNode("sidelist"))
-                .map(entry -> entry.attributes().hasValue("type", "out"))
-                .orElse(false);
-    }
-
-    private CompletableFuture<Boolean> prepareChat(JidProvider recipient, long timestamp) {
-        if(store().clientType() == ClientType.WEB) {
-            return CompletableFuture.completedFuture(true);
-        }
-
-        if(!recipient.toJid().hasServer(JidServer.WHATSAPP)) {
-            return CompletableFuture.completedFuture(true);
-        }
-
-        if (readyContacts.contains(recipient.toJid())) {
-            return CompletableFuture.completedFuture(true);
-        }
-
-        return getContactData(recipient).thenComposeAsync(results -> {
-            var out = results.stream().anyMatch(entry -> entry.hasDescription("out"));
-            if (out) {
-                return CompletableFuture.completedFuture(false);
-            }
-
-            var contactOut = results.stream()
-                    .map(entry -> entry.findNode("contact"))
-                    .flatMap(Optional::stream)
-                    .anyMatch(entry -> entry.attributes().hasValue("type", "out"));
-            if (contactOut) {
-                return CompletableFuture.completedFuture(false);
-            }
-
-            return addContacts(recipient)
-                    .thenComposeAsync(firstResult -> {
-                        readyContacts.add(recipient.toJid());
-                        var secondQuery = List.of(Node.of("disappearing_mode"));
-                        var secondList = List.of(Node.of("user", Map.of("jid", recipient.toJid())));
-                        if(!firstResult.contains(recipient.toJid())) {
-                            return socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of());
-                        }
-
-                        var delayedExecutor = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
-                        return CompletableFuture.supplyAsync(() -> socketHandler.sendInteractiveQuery(secondQuery, secondList, List.of()).join(), delayedExecutor);
-                    })
-                    .thenComposeAsync(secondResult -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", recipient.toJid()), Node.of("picture", Map.of("type", "preview"))))
-                    .thenComposeAsync(thirdResult -> subscribeToPresence(recipient.toJid()))
-                    .thenComposeAsync(fourthResult -> socketHandler.querySessions(List.of(recipient.toJid())))
-                    .thenComposeAsync(trustResult -> sendDeltaChatRequest(recipient));
+        return socketHandler.sendQuery("get", "usync", sync).thenComposeAsync(response -> {
+            var users2 = finalRecipients.stream()
+                    .map(contact -> Node.of("user", Node.of("contact", contact.toJid().toPhoneNumber().getBytes())))
+                    .toList();
+            var sync2 = Node.of(
+                    "usync",
+                    Map.of(
+                            "mode", "delta",
+                            "allow_mutation", "true",
+                            "context", "interactive",
+                            "last", "true",
+                            "sid", SocketHandler.randomSid(),
+                            "index", "0"
+                    ),
+                    Node.of(
+                            "query",
+                            Node.of("business", Node.of("verified_name"), Node.of("profile", Map.of("v", 1396))),
+                            Node.of("contact"),
+                            Node.of("devices", Map.of("version", "2")),
+                            Node.of("disappearing_mode"),
+                            Node.of("sidelist"),
+                            Node.of("status")
+                    ),
+                    Node.of(
+                            "list",
+                            users2
+                    ),
+                    Node.of("side_list")
+            );
+            return socketHandler.sendQuery("get", "usync", sync2);
         });
+    }
+
+    private CompletableFuture<?> sendPrivacyTokens(long timestamp, List<Jid> toPrepare) {
+        var tokens = toPrepare.stream()
+                .filter(user -> !trustedContacts.contains(user))
+                .map(user -> Node.of("token", Map.of("t", timestamp, "jid", user.toJid(), "type", "trusted_contact")))
+                .toList();
+        if(tokens.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return socketHandler.sendQuery("set", "privacy", Node.of("tokens", tokens));
+    }
+
+    private CompletableFuture<Void> queryPreparePic(List<Jid> availableMembers) {
+        var futures = availableMembers.stream()
+                .flatMap(entry -> Stream.of(
+                        socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", entry), Node.of("picture", Map.of("type", "preview"))),
+                        socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", entry), Node.of("picture", Map.of("type", "image")))
+                ))
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(futures);
     }
 
     private CompletableFuture<List<Node>> getContactData(JidProvider recipient) {
@@ -809,7 +864,7 @@ public class Whatsapp {
                 .map(NewsletterMessageInfo::serverId)
                 .orElse(0);
         var info = new NewsletterMessageInfo(
-                ChatMessageKey.randomId(),
+                ChatMessageKey.randomIdV2(recipient.toJid(), store().clientType()),
                 oldServerId + 1,
                 Clock.nowSeconds(),
                 null,
@@ -884,7 +939,7 @@ public class Whatsapp {
     public CompletableFuture<ChatMessageInfo> sendStatus(MessageContainer message) {
         var timestamp = Clock.nowSeconds();
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(jidOrThrowError(), store().clientType()))
                 .chatJid(Jid.of("status@broadcast"))
                 .fromMe(true)
                 .senderJid(jidOrThrowError())
@@ -896,7 +951,7 @@ public class Whatsapp {
                 .timestampSeconds(timestamp)
                 .broadcast(false)
                 .build();
-        return sendMessage(info);
+        return sendMessage(info, false);
     }
 
     /**
@@ -906,15 +961,28 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ChatMessageInfo> sendMessage(ChatMessageInfo info) {
+        return sendMessage(info, true);
+    }
+
+    /**
+     * Sends a message to a chat
+     *
+     * @param info the message to send
+     * @param compose whether a compose status should be sent before sending the message
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<ChatMessageInfo> sendMessage(ChatMessageInfo info, boolean compose) {
         var recipient = info.chatJid();
         Validate.isTrue(!recipient.toJid().hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
-        return prepareChat(recipient, timestamp).thenComposeAsync(chatResult -> {
-            if (!chatResult) {
+        return prepareChat(timestamp, recipient).thenComposeAsync(chatResult -> {
+            if (chatResult.isEmpty()) {
                 return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
 
-            return socketHandler.sendMessage(new MessageSendRequest.Chat(info))
+            var composingFuture = compose && info.message().type() == MessageType.TEXT ? changePresence(recipient.toJid(), COMPOSING) : CompletableFuture.completedFuture(null);
+            return composingFuture
+                    .thenComposeAsync(ignored -> socketHandler.sendMessage(new MessageSendRequest.Chat(info)))
                     .thenApply(ignored -> info);
         });
     }
@@ -1029,8 +1097,9 @@ public class Whatsapp {
      * @param contact the contact to check
      * @return a CompletableFuture that wraps a non-null newsletters
      */
-    public CompletableFuture<HasWhatsappResponse> hasWhatsapp(JidProvider contact) {
-        return hasWhatsapp(new JidProvider[]{contact}).thenApply(result -> result.get(contact.toJid()));
+    public CompletableFuture<Boolean> hasWhatsapp(JidProvider contact) {
+        return hasWhatsapp(new JidProvider[]{contact})
+                .thenApply(result -> result.get(contact.toJid()));
     }
 
     /**
@@ -1039,25 +1108,44 @@ public class Whatsapp {
      * @param contacts the contacts to check
      * @return a CompletableFuture that wraps a non-null map
      */
-    public CompletableFuture<Map<Jid, HasWhatsappResponse>> hasWhatsapp(JidProvider... contacts) {
+    public CompletableFuture<Map<Jid, Boolean>> hasWhatsapp(JidProvider... contacts) {
+        var results = new HashMap<Jid, Boolean>();
+        var todo = new ArrayList<Jid>();
+        for (var contact : contacts) {
+            var cached = usersCache.get(contact.toJid());
+            if(cached != null) {
+                results.put(contact.toJid(), cached);
+            }else {
+                todo.add(contact.toJid());
+            }
+        }
+        if(todo.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.unmodifiableMap(results));
+        }
+
         var jids = Arrays.stream(contacts)
                 .map(JidProvider::toJid)
+                .filter(user -> !usersCache.containsKey(user))
                 .toList();
         var contactNodes = jids.stream()
                 .map(jid -> Node.of("user", Node.of("contact", jid.toPhoneNumber())))
                 .toList();
-        return socketHandler.sendInteractiveQuery(List.of(Node.of("contact")), contactNodes, List.of())
-                .thenApplyAsync(result -> parseHasWhatsappResponse(jids, result));
+        return socketHandler.sendInteractiveQuery(List.of(Node.of("contact")), contactNodes, List.of()).thenApplyAsync(result -> {
+            var additionalResults = parseHasWhatsappResponse(jids, result);
+            usersCache.putAll(additionalResults);
+            results.putAll(additionalResults);
+            return Collections.unmodifiableMap(results);
+        });
     }
 
-    private Map<Jid, HasWhatsappResponse> parseHasWhatsappResponse(List<Jid> contacts, List<Node> nodes) {
+    private Map<Jid, Boolean> parseHasWhatsappResponse(List<Jid> contacts, List<Node> nodes) {
         var result = nodes.stream()
                 .map(this::parseHasWhatsappResponse)
-                .collect(Collectors.toMap(HasWhatsappResponse::contact, Function.identity(), (first, second) -> first, HashMap::new));
+                .collect(Collectors.toMap(HasWhatsappResponse::contact, HasWhatsappResponse::hasWhatsapp, (first, second) -> first, HashMap::new));
         contacts.stream()
                 .filter(contact -> !result.containsKey(contact))
-                .forEach(contact -> result.put(contact, new HasWhatsappResponse(contact, false)));
-        return Collections.unmodifiableMap(result);
+                .forEach(contact -> result.put(contact, false));
+        return result;
     }
 
     private HasWhatsappResponse parseHasWhatsappResponse(Node node) {
@@ -1405,8 +1493,7 @@ public class Whatsapp {
     private CompletableFuture<?> prepareActionOnGroupParticipant(GroupAction action, JidProvider[] jids) {
         if (action == GroupAction.ADD) {
             sendGroupWam(Clock.nowSeconds());
-            return addContacts(jids)
-                    .thenComposeAsync(this::prepareGroupParticipants);
+            return prepareChat(Clock.nowSeconds(), jids);
         }
 
         return CompletableFuture.completedFuture(null);
@@ -1478,7 +1565,7 @@ public class Whatsapp {
                 .map(content -> Node.of("body", content.getBytes(StandardCharsets.UTF_8)))
                 .orElse(null);
         var attributes = Attributes.of()
-                .put("id", ChatMessageKey.randomId(), () -> description != null)
+                .put("id", SocketHandler.randomSid(), () -> description != null)
                 .put("delete", true, () -> description == null)
                 .put("prev", descriptionId, () -> descriptionId != null)
                 .toMap();
@@ -1603,47 +1690,34 @@ public class Whatsapp {
         var timestamp = Clock.nowSeconds();
         Validate.isTrue(!subject.isBlank(), "The subject of a group cannot be blank");
         Validate.isTrue( parentCommunity != null || contacts.length >= 1, "Expected at least 1 member for this group");
-        return addContacts(contacts)
-                .thenComposeAsync(this::prepareGroupParticipants)
-                .thenComposeAsync(availableMembers -> {
-                    var children = new ArrayList<Node>();
-                    if (parentCommunity != null) {
-                        children.add(Node.of("linked_parent", Map.of("jid", parentCommunity.toJid())));
-                    }
-                    if (timer != ChatEphemeralTimer.OFF) {
-                        children.add(Node.of("ephemeral", Map.of("expiration", timer.periodSeconds())));
-                    }
-                    children.add(Node.of("member_add_mode", "all_member_add".getBytes(StandardCharsets.UTF_8)));
-                    children.add(Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", "off"))));
-                    availableMembers.stream()
-                            .map(Jid::toSimpleJid)
-                            .distinct()
-                            .map(contact -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
-                            .forEach(children::add);
-                    var body = Node.of("create", Map.of("subject", subject, "key", timestamp), children);
-                    var future = socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body);
-                    sendGroupWam(timestamp);
-                    return future.thenApplyAsync(this::parseGroupResponse);
-                });
-    }
-
-    private CompletableFuture<List<Jid>> prepareGroupParticipants(List<Jid> availableMembers) {
-        return socketHandler.querySessions(availableMembers)
-                .thenComposeAsync(ignored -> queryPreviewPics(availableMembers))
-                .thenApplyAsync(ignored -> availableMembers);
-    }
-
-    private CompletableFuture<Void> queryPreviewPics(List<Jid> availableMembers) {
-        var futures = availableMembers.stream()
-                .map(entry -> socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", entry), Node.of("picture", Map.of("type", "preview"))))
-                .toArray(CompletableFuture[]::new);
-        return CompletableFuture.allOf(futures);
+        return prepareChat(timestamp, contacts).thenComposeAsync(availableMembers -> {
+            var children = new ArrayList<Node>();
+            if (parentCommunity != null) {
+                children.add(Node.of("linked_parent", Map.of("jid", parentCommunity.toJid())));
+            }
+            if (timer != ChatEphemeralTimer.OFF) {
+                children.add(Node.of("ephemeral", Map.of("expiration", timer.periodSeconds())));
+            }
+            children.add(Node.of("member_add_mode", "all_member_add".getBytes(StandardCharsets.UTF_8)));
+            children.add(Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", "off"))));
+            availableMembers.stream()
+                    .map(JidProvider::toJid)
+                    .map(Jid::toSimpleJid)
+                    .distinct()
+                    .map(contact -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
+                    .forEach(children::add);
+            var body = Node.of("create", Map.of("subject", subject, "key", timestamp), children);
+            var future = socketHandler.sendQuery(JidServer.GROUP.toJid(), "set", "w:g2", body);
+            sendGroupWam(timestamp);
+            return future.thenApplyAsync(this::parseGroupResponse);
+        });
     }
 
     private void sendGroupWam(long timestamp) {
         var wamBinary = "57414d0501020001200b800d086950686f6e652058800f0631362e372e34801109322e32342e342e373810152017502f0dd9e065206928830138790604387b060288eb0a0361746e887911904246342c316a332c55772c79492c39442c31552c45722c31432c41472c324a2c49662c35552c4f582c31462c352c41792c38772c4c442c414a2c35362c642c346f2c466d2c37512c36392c32442c332c31762c33772c337a2c31332c7a2c512c722c33752c32652c522c6f2c36662c502c692c572c372c562c4b2c382c31532c4c2c31362c31702c742c6d2c32382c5088a5134632343835312c32343336362c32313031382c32333939332c32333633302c31373832352c31373833302c32353530382c32353530302c363633372c32323634392c3233363237186b1828a71c88911e063230483234308879240431372e3018ed3318ab3888fb3c0935363936333037343129b4072601";
         var wamData = new String(HexFormat.of().parseHex(wamBinary))
                 .replace("iPhone X", socketHandler.store().device().model().replaceAll("_", " "))
+                .replace("16.7.4", socketHandler.store().device().osVersion().toString())
                 .replace("2.24.4.78", socketHandler.store().version().toString())
                 .getBytes();
         var addNode = Node.of("add", Map.of("t", timestamp), wamData);
@@ -1672,7 +1746,7 @@ public class Whatsapp {
                         "index", "0",
                         "last", "true",
                         "mode", "delta",
-                        "sid", ChatMessageKey.randomId()
+                        "sid", SocketHandler.randomSid()
                 ),
                 Node.of(
                         "query",
@@ -2104,7 +2178,7 @@ public class Whatsapp {
                     .build();
             var sender = messageInfo.chatJid().hasServer(JidServer.GROUP) ? jidOrThrowError() : null;
             var key = new ChatMessageKeyBuilder()
-                    .id(ChatMessageKey.randomId())
+                    .id(ChatMessageKey.randomIdV2(messageInfo.senderJid(), store().clientType()))
                     .chatJid(messageInfo.chatJid())
                     .fromMe(true)
                     .senderJid(sender)
@@ -3037,19 +3111,21 @@ public class Whatsapp {
      * Mobile API only
      *
      * @param contact the non-null contact
+     * @param video whether it's a video call or an audio call
      * @return a future
      */
-    public CompletableFuture<Call> startCall(JidProvider contact) {
+    public CompletableFuture<Call> startCall(JidProvider contact, boolean video) {
         Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
         return addContacts(contact)
                 .thenComposeAsync(ignored -> socketHandler.querySessions(List.of(contact.toJid())))
-                .thenComposeAsync(ignored -> sendCallMessage(contact));
+                .thenComposeAsync(ignored -> sendCallMessage(contact, video));
     }
 
-    private CompletableFuture<Call> sendCallMessage(JidProvider provider) {
-        var callId = ChatMessageKey.randomId();
-        var audioStream = Node.of("audio", Map.of("rate", 8000, "enc", "opus"));
-        var audioStreamTwo = Node.of("audio", Map.of("rate", 16000, "enc", "opus"));
+    private CompletableFuture<Call> sendCallMessage(JidProvider provider, boolean video) {
+        var callId = ChatMessageKey.randomIdV2(jidOrThrowError(), store().clientType());
+        var description = video ? "video" : "audio";
+        var audioStream = Node.of(description, Map.of("rate", 8000, "enc", "opus"));
+        var audioStreamTwo = Node.of(description, Map.of("rate", 16000, "enc", "opus"));
         var net = Node.of("net", Map.of("medium", 3));
         var encopt = Node.of("encopt", Map.of("keygen", 2));
         var enc = createCallNode(provider);
@@ -3080,7 +3156,6 @@ public class Whatsapp {
         return Node.of("enc", Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
     }
 
-
     /**
      * Rejects an incoming call or stops an active call
      * Mobile API only
@@ -3104,16 +3179,15 @@ public class Whatsapp {
      */
     public CompletableFuture<Boolean> stopCall(Call call) {
         Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
-        var callCreator = "%s.%s:%s@s.whatsapp.net".formatted(call.caller().user(), call.caller().device(), call.caller().device());
         if (Objects.equals(call.caller().user(), jidOrThrowError().user())) {
-            var rejectNode = Node.of("terminate", Map.of("reason", "timeout", "call-id", call.id(), "call-creator", callCreator));
+            var rejectNode = Node.of("terminate", Map.of("reason", "timeout", "call-id", call.id(), "call-creator", call.caller()));
             var body = Node.of("call", Map.of("to", call.chat()), rejectNode);
             return socketHandler.sendNode(body)
                     .thenApplyAsync(result -> !result.hasNode("error"));
         }
 
-        var rejectNode = Node.of("reject", Map.of("call-id", call.id(), "call-creator", callCreator, "count", 0));
-        var body = Node.of("call", Map.of("from", socketHandler.store().jid(), "to", call.caller()), rejectNode);
+        var rejectNode = Node.of("reject", Map.of("call-id", call.id(), "call-creator", call.caller(), "count", 0));
+        var body = Node.of("call", Map.of("from", jidOrThrowError(), "to", call.caller()), rejectNode);
         return socketHandler.sendNode(body)
                 .thenApplyAsync(result -> !result.hasNode("error"));
     }

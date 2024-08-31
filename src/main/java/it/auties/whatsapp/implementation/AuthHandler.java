@@ -11,7 +11,6 @@ import it.auties.whatsapp.util.SignalConstants;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 
 
 class AuthHandler {
@@ -88,14 +87,12 @@ class AuthHandler {
                         .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
-                        .passive(true)
-                        .pushName(socketHandler.store().name())
+                        .passive(false)
+                        .pushName(socketHandler.keys().initialAppSync() ? socketHandler.store().name() : null)
                         .userAgent(agent)
-                        .sessionId(ThreadLocalRandom.current().nextInt(100_000_000, 1_000_000_000))
                         .shortConnect(true)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                         .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
-                        .dnsSource(getDnsSource())
                         .connectAttemptCount(0)
                         .device(0)
                         .oc(false)
