@@ -69,8 +69,8 @@ public class TestLibrary implements Listener  {
 
     @BeforeAll
     public void init() throws IOException, InterruptedException  {
-        contact = Jid.of(13106510334L);
-        account = SixPartsKeys.of("14302521016,a4dCjtE2TIHRlzxJ9jau1OrjGq30EU0MT28wIblQSG0=,kDnK2kYzdVIrUg1XIqsDTE2OXfbNCZxEcimSrlio1EM=,wulDD7RCzWeYcuwlBajFvCRILN94etMprcTVIfov9xQ=,yHyfNo5bi+Ft9w6SiuAGcTdWQ0mvcoBQQjZ85bn9I0M=,tp5VusQKlx6fsA+tZOT8Ag==");
+        contact = Jid.of(18103478509L);
+        account = SixPartsKeys.of("18607078230,8ySQLFkcC3YVsdkxJPDdXFnZLBcTGVntAFB08ITZsjg=,YATXNuxrnNTdJxzWOYAtmcJtLmxH1UUj1GrUuW4aW3M=,+Tr7Dppyt3aEO4Fxs1QxxqVJ6tkLdu7a+L4SYKlnxnc=,uOrY0AEf5jMqjk/y/8qzS+cgL2mdzMRKFLCCBX9gEmI=,kvSkr6JQ9jIQS1t+NxIS3A==");
         createApi();
         createLatch();
         latch.await();
@@ -107,8 +107,8 @@ public class TestLibrary implements Listener  {
         Assertions.assertNotNull(contactResponse, "Missing response");
         var dummyResponse = response.get(dummy);
         Assertions.assertNotNull(dummy, "Missing response");
-        Assertions.assertTrue(contactResponse.hasWhatsapp(), "Erroneous response");
-        Assertions.assertFalse(dummyResponse.hasWhatsapp(), "Erroneous response");
+        Assertions.assertTrue(contactResponse, "Erroneous response");
+        Assertions.assertFalse(dummyResponse, "Erroneous response");
     }
 
     @Test
@@ -240,7 +240,6 @@ public class TestLibrary implements Listener  {
 
     @Test
     @Order(11)
-    @Disabled
     public void testCommunity()  {
         log("Creating community...");
         var communityCreationResponse = api.createCommunity(randomId(), "A nice body")
@@ -322,7 +321,7 @@ public class TestLibrary implements Listener  {
             return;
         }
         log("Adding %s...", contact);
-        var changeGroupResponse = api.addGroupParticipant(group, contact).join();
+        var changeGroupResponse = api.addGroupParticipant(group, contact, Jid.of(393495089819L)).join();
         log("Added: %s", changeGroupResponse);
     }
 
@@ -745,7 +744,7 @@ public class TestLibrary implements Listener  {
                 .jid()
                 .orElseThrow();
         var keyInfo = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(jid, api.store().clientType()))
                 .chatJid(contact)
                 .senderJid(jid)
                 .fromMe(true)
@@ -828,7 +827,9 @@ public class TestLibrary implements Listener  {
     @Override
     public void onDisconnected(DisconnectReason reason)  {
         System.out.printf("Disconnected: %s%n", reason);
-        Assertions.assertNotSame(reason, DisconnectReason.LOGGED_OUT);
+        if(reason != DisconnectReason.RECONNECTING) {
+            System.exit(1);
+        }
     }
 
     @Override
