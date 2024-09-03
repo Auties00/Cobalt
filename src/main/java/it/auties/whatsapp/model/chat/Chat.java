@@ -31,6 +31,7 @@ import java.util.function.Predicate;
  * effect on WhatsappWeb's servers
  */
 @ProtobufMessage(name = "Conversation")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Chat implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
@@ -65,7 +66,7 @@ public final class Chat implements JidProvider {
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
     boolean markedAsUnread;
     @ProtobufProperty(index = 20, type = ProtobufType.OBJECT)
-    final List<GroupParticipant> participants;
+    final List<ChatParticipant> participants;
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
     byte[] token;
     @ProtobufProperty(index = 22, type = ProtobufType.UINT64)
@@ -115,11 +116,11 @@ public final class Chat implements JidProvider {
     @ProtobufProperty(index = 1000, type = ProtobufType.STRING)
     final Set<Jid> participantsPreKeys;
     @ProtobufProperty(index = 1001, type = ProtobufType.OBJECT)
-    final Set<GroupPastParticipant> pastParticipants;
+    final Set<ChatPastParticipant> pastParticipants;
     private boolean update;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
+    Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<ChatParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<ChatPastParticipant> pastParticipants) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -533,7 +534,7 @@ public final class Chat implements JidProvider {
      *
      * @param participants the participants to add
      */
-    public void addParticipants(Collection<GroupParticipant> participants) {
+    public void addParticipants(Collection<ChatParticipant> participants) {
         participants.forEach(this::addParticipant);
         this.update = true;
     }
@@ -542,11 +543,11 @@ public final class Chat implements JidProvider {
      * Adds a participant to this chat
      *
      * @param jid  the non-null jid of the participant
-     * @param role the role of the participant
+     * @param role the role of the participant, can be null if it's a member of a community
      * @return whether the participant was added
      */
     public boolean addParticipant(Jid jid, GroupRole role) {
-        var result = addParticipant(new GroupParticipant(jid, role));
+        var result = addParticipant(role == null ? new CommunityParticipant(jid) : new GroupParticipant(jid, role));
         if (result) {
             this.update = true;
         }
@@ -560,7 +561,7 @@ public final class Chat implements JidProvider {
      * @param participant the non-null participant
      * @return whether the participant was added
      */
-    public boolean addParticipant(GroupParticipant participant) {
+    public boolean addParticipant(ChatParticipant participant) {
         var result = participants.add(participant);
         this.update = true;
         return true;
@@ -582,6 +583,13 @@ public final class Chat implements JidProvider {
     }
 
     /**
+     * Removes all participants from this chat
+     */
+    public void removeParticipants() {
+        participants.clear();
+    }
+
+    /**
      * Finds a participant by jid
      * This method only works if {@link Whatsapp#queryGroupMetadata(JidProvider)} has been called before on this chat.
      * By default, all groups that have been used in the last two weeks wil be synced automatically
@@ -589,7 +597,7 @@ public final class Chat implements JidProvider {
      * @param jid the non-null jid of the participant
      * @return the participant, if present
      */
-    public Optional<GroupParticipant> findParticipant(Jid jid) {
+    public Optional<ChatParticipant> findParticipant(Jid jid) {
         return participants.stream()
                 .filter(entry -> Objects.equals(entry.jid(), jid))
                 .findFirst();
@@ -601,7 +609,7 @@ public final class Chat implements JidProvider {
      * @param participant the non-null jid of the past participant
      * @return whether the participant was added
      */
-    public boolean addPastParticipant(GroupPastParticipant participant) {
+    public boolean addPastParticipant(ChatPastParticipant participant) {
         var result = pastParticipants.add(participant);
         if (result) {
             this.update = true;
@@ -616,7 +624,7 @@ public final class Chat implements JidProvider {
      * @param pastParticipants the non-null list of past participants
      * @return whether the participant were added
      */
-    public boolean addPastParticipants(List<GroupPastParticipant> pastParticipants) {
+    public boolean addPastParticipants(List<ChatPastParticipant> pastParticipants) {
         var result = true;
         for (var pastParticipant : pastParticipants) {
             result &= this.pastParticipants.add(pastParticipant);
@@ -650,7 +658,7 @@ public final class Chat implements JidProvider {
      * @param jid the non-null jid of the past participant
      * @return the past participant, if present
      */
-    public Optional<GroupPastParticipant> findPastParticipant(Jid jid) {
+    public Optional<ChatPastParticipant> findPastParticipant(Jid jid) {
         return pastParticipants.stream()
                 .filter(entry -> Objects.equals(entry.jid(), jid))
                 .findFirst();
@@ -761,7 +769,7 @@ public final class Chat implements JidProvider {
         return markedAsUnread;
     }
 
-    public List<GroupParticipant> participants() {
+    public List<ChatParticipant> participants() {
         return Collections.unmodifiableList(participants);
     }
 
@@ -853,7 +861,7 @@ public final class Chat implements JidProvider {
         return presences;
     }
 
-    public Set<GroupPastParticipant> pastParticipants() {
+    public Set<ChatPastParticipant> pastParticipants() {
         return pastParticipants;
     }
 

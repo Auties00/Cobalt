@@ -214,7 +214,7 @@ public final class ContextInfo implements Info {
         this.trustBannerAction = trustBannerAction;
     }
 
-    public static ContextInfo of(MessageInfo quotedMessage) {
+    public static ContextInfo of(MessageInfo<?> quotedMessage) {
         return new ContextInfoBuilder()
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessage(quotedMessage.message())

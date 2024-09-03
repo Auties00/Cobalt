@@ -15,7 +15,7 @@ public record GroupPastParticipants(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid groupJid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
-        List<GroupPastParticipant> pastParticipants
+        List<ChatPastParticipant> pastParticipants
 ) {
 
 }

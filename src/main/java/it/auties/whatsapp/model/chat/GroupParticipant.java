@@ -12,7 +12,7 @@ import java.util.Objects;
  * A model class that represents a participant of a group.
  */
 @ProtobufMessage(name = "GroupParticipant")
-public final class GroupParticipant {
+public final class GroupParticipant implements ChatParticipant {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Jid jid;
 

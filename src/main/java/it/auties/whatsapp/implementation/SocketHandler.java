@@ -32,7 +32,11 @@ import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
+import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest;
+import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest.Input;
+import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest.Variable;
 import it.auties.whatsapp.model.request.MessageSendRequest;
+import it.auties.whatsapp.model.response.CommunityLinkedGroupsResponse;
 import it.auties.whatsapp.model.response.ContactAboutResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
@@ -44,6 +48,7 @@ import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Exceptions;
+import it.auties.whatsapp.util.Json;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,7 +63,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.model.chat.GroupSetting.*;
 
 @SuppressWarnings("unused")
 public class SocketHandler implements SocketListener {
@@ -543,7 +547,7 @@ public class SocketHandler implements SocketListener {
 
     private Optional<ContactAboutResponse> parseAbout(List<Node> responses) {
         return responses.stream()
-                .map(entry -> entry.findNode("status"))
+                .map(entry -> entry.findChild("status"))
                 .flatMap(Optional::stream)
                 .findFirst()
                 .map(ContactAboutResponse::ofNode);
@@ -554,11 +558,11 @@ public class SocketHandler implements SocketListener {
     }
 
     private List<Node> parseQueryResult(Node result) {
-        return result == null ? List.of() : result.findNodes("usync")
+        return result == null ? List.of() : result.listChildren("usync")
                 .stream()
-                .map(node -> node.findNode("list"))
+                .map(node -> node.findChild("list"))
                 .flatMap(Optional::stream)
-                .map(node -> node.findNodes("user"))
+                .map(node -> node.listChildren("user"))
                 .flatMap(Collection::stream)
                 .toList();
     }
@@ -575,7 +579,7 @@ public class SocketHandler implements SocketListener {
 
     public CompletableFuture<Optional<URI>> queryPicture(JidProvider chat) {
         var body = Node.of("picture", Map.of("query", "url", "type", "image"));
-        if (chat.toJid().hasServer(JidServer.GROUP)) {
+        if (chat.toJid().hasServer(JidServer.GROUP_OR_COMMUNITY)) {
             return queryGroupMetadata(chat.toJid())
                     .thenComposeAsync(result -> sendQuery("get", "w:profile:picture", Map.of(result.isCommunity() ? "parent_group_jid" : "target", chat.toJid()), body))
                     .thenApplyAsync(this::parseChatPicture);
@@ -590,7 +594,7 @@ public class SocketHandler implements SocketListener {
     }
 
     private Optional<URI> parseChatPicture(Node result) {
-        return result.findNode("picture")
+        return result.findChild("picture")
                 .flatMap(picture -> picture.attributes().getOptionalString("url"))
                 .map(URI::create);
     }
@@ -601,9 +605,9 @@ public class SocketHandler implements SocketListener {
     }
 
     private List<Jid> parseBlockList(Node result) {
-        return result.findNode("list")
+        return result.findChild("list")
                 .stream()
-                .flatMap(node -> node.findNodes("item").stream())
+                .flatMap(node -> node.listChildren("item").stream())
                 .map(item -> item.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .toList();
@@ -620,7 +624,7 @@ public class SocketHandler implements SocketListener {
     }
 
     private OptionalLong parseNewsletterSubscription(Node result) {
-        return result.findNode("live_updates")
+        return result.findChild("live_updates")
                 .stream()
                 .map(node -> node.attributes().getOptionalLong("duration"))
                 .flatMapToLong(OptionalLong::stream)
@@ -638,41 +642,41 @@ public class SocketHandler implements SocketListener {
     }
 
     private void onNewsletterMessages(Newsletter newsletter, Node result) {
-        result.findNode("messages")
+        result.findChild("messages")
                 .stream()
-                .map(messages -> messages.findNodes("message"))
+                .map(messages -> messages.listChildren("message"))
                 .flatMap(Collection::stream)
                 .forEach(messages -> decodeMessage(messages, newsletter, false));
     }
 
-    public CompletableFuture<GroupMetadata> queryGroupMetadata(JidProvider group) {
+    public CompletableFuture<ChatMetadata> queryGroupMetadata(JidProvider group) {
         var body = Node.of("query", Map.of("request", "interactive"));
         return sendQuery(group.toJid(), "get", "w:g2", body)
-                .thenApplyAsync(this::handleGroupMetadata);
+                .thenComposeAsync(this::handleGroupMetadata);
     }
 
-    protected GroupMetadata handleGroupMetadata(Node response) {
-        var metadata = Optional.of(response)
+    public CompletableFuture<ChatMetadata> handleGroupMetadata(Node response) {
+        var metadataNode = Optional.of(response)
                 .filter(entry -> entry.hasDescription("group"))
-                .or(() -> response.findNode("group"))
-                .map(this::parseGroupMetadata)
+                .or(() -> response.findChild("group"))
                 .orElseThrow(() -> new NoSuchElementException("Erroneous response: %s".formatted(response)));
-        var chat = store.findChatByJid(metadata.jid())
-                .orElseGet(() -> store().addNewChat(metadata.jid()));
-        if (chat != null) {
+        return parseGroupMetadata(metadataNode).thenApplyAsync(metadata -> {
+            var chat = store.findChatByJid(metadata.jid())
+                    .orElseGet(() -> store().addNewChat(metadata.jid()));
+            chat.setName(metadata.subject());
             metadata.foundationTimestamp().ifPresent(timestamp -> chat.setFoundationTimestampSeconds(timestamp.toEpochSecond()));
             metadata.founder().ifPresent(chat::setFounder);
             metadata.description().ifPresent(chat::setDescription);
+            chat.removeParticipants();
             chat.addParticipants(metadata.participants());
-        }
-
-        return metadata;
+            return metadata;
+        });
     }
 
-    public GroupMetadata parseGroupMetadata(Node node) {
+    private CompletableFuture<ChatMetadata> parseGroupMetadata(Node node) {
         var groupId = node.attributes()
                 .getOptionalString("id")
-                .map(id -> Jid.of(id, JidServer.GROUP))
+                .map(id -> Jid.of(id, JidServer.GROUP_OR_COMMUNITY))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
         var subjectAuthor = node.attributes().getOptionalJid("s_o");
@@ -684,35 +688,93 @@ public class SocketHandler implements SocketListener {
                 .orElse(0L);
         var founder = node.attributes()
                 .getOptionalJid("creator");
-        var policies = new HashMap<GroupSetting, ChatSettingPolicy>();
-        policies.put(EDIT_GROUP_INFO, ChatSettingPolicy.of(node.hasNode("announce")));
-        policies.put(SEND_MESSAGES, ChatSettingPolicy.of(node.hasNode("restrict")));
-        var addParticipantsMode = node.findNode("member_add_mode")
-                .flatMap(Node::contentAsString)
-                .orElse(null);
-        policies.put(ADD_PARTICIPANTS, ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
-        policies.put(APPROVE_PARTICIPANTS, ChatSettingPolicy.of(node.hasNode("membership_approval_mode")));
-        var description = node.findNode("description")
-                .flatMap(parent -> parent.findNode("body"))
+        var description = node.findChild("description")
+                .flatMap(parent -> parent.findChild("body"))
                 .flatMap(Node::contentAsString);
-        var descriptionId = node.findNode("description")
+        var descriptionId = node.findChild("description")
                 .map(Node::attributes)
                 .flatMap(attributes -> attributes.getOptionalString("id"));
-        var community = node.findNode("parent")
-                .isPresent();
-        var openCommunity = community && node.findNode("parent")
-                .filter(entry -> entry.attributes().hasValue("default_membership_approval_mode", "request_required"))
-                .isEmpty();
-        var ephemeral = node.findNode("ephemeral")
+        var parentCommunityJid = node.findChild("linked_parent")
+                .flatMap(entry -> entry.attributes().getOptionalJid("jid"));
+        var ephemeral = node.findChild("ephemeral")
                 .map(Node::attributes)
                 .map(attributes -> attributes.getLong("expiration"))
                 .flatMap(Clock::parseSeconds);
-        var participants = node.findNodes("participant")
-                .stream()
-                .map(this::parseGroupParticipant)
-                .flatMap(Optional::stream)
-                .toList();
-        return new GroupMetadata(groupId, subject, subjectAuthor, Clock.parseSeconds(subjectTimestampSeconds), Clock.parseSeconds(foundationTimestampSeconds), founder, description, descriptionId, Collections.unmodifiableMap(policies), participants, ephemeral, community, openCommunity);
+        var communityNode = node.findChild("parent")
+                .orElse(null);
+        var policies = new HashMap<ChatSetting, ChatSettingPolicy>();
+        if (communityNode == null) {
+            policies.put(GroupSetting.EDIT_GROUP_INFO, ChatSettingPolicy.of(node.hasNode("announce")));
+            policies.put(GroupSetting.SEND_MESSAGES, ChatSettingPolicy.of(node.hasNode("restrict")));
+            var addParticipantsMode = node.findChild("member_add_mode")
+                    .flatMap(Node::contentAsString)
+                    .orElse(null);
+            policies.put(GroupSetting.ADD_PARTICIPANTS, ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
+            var groupJoin = node.findChild("membership_approval_mode")
+                    .flatMap(entry -> entry.findChild("group_join"))
+                    .map(entry -> entry.attributes().hasValue("state", "on"))
+                    .orElse(false);
+            policies.put(GroupSetting.APPROVE_PARTICIPANTS, ChatSettingPolicy.of(groupJoin));
+            var participants = node.listChildren("participant")
+                    .stream()
+                    .map(this::parseGroupParticipant)
+                    .flatMap(Optional::stream)
+                    .toList();
+            return CompletableFuture.completedFuture(new ChatMetadata(
+                    groupId,
+                    subject,
+                    subjectAuthor,
+                    Clock.parseSeconds(subjectTimestampSeconds),
+                    Clock.parseSeconds(foundationTimestampSeconds),
+                    founder,
+                    description,
+                    descriptionId,
+                    Collections.unmodifiableMap(policies),
+                    participants,
+                    ephemeral,
+                    parentCommunityJid,
+                    false,
+                    List.of()
+            ));
+        }
+
+        policies.put(CommunitySetting.MODIFY_GROUPS, ChatSettingPolicy.of(communityNode.hasNode("allow_non_admin_sub_group_creation")));
+        var addParticipantsMode = node.findChild("member_add_mode")
+                .flatMap(Node::contentAsString)
+                .orElse(null);
+        policies.put(CommunitySetting.ADD_PARTICIPANTS, ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
+        var mexBody = Json.writeValueAsBytes(new CommunityLinkedGroupsRequest(new Variable(new Input(groupId, "INTERACTIVE"))));
+        return sendQuery(groupId, "get", "w:g2", Node.of("linked_groups_participants")).thenComposeAsync(participantsNode -> {
+            var participants = participantsNode.findChild("linked_groups_participants")
+                    .stream()
+                    .flatMap(participantsNodeBody -> participantsNodeBody.streamChildren("participant"))
+                    .flatMap(participantNode -> participantNode.attributes().getOptionalJid("jid").stream())
+                    .map(CommunityParticipant::new)
+                    .toList();
+            return sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7353258338095347"), mexBody)).thenApplyAsync(communityResponse -> {
+                var linkedGroups = communityResponse.findChild("result")
+                        .flatMap(Node::contentAsBytes)
+                        .flatMap(CommunityLinkedGroupsResponse::ofJson)
+                        .map(CommunityLinkedGroupsResponse::linkedGroups)
+                        .orElse(List.of());
+                return new ChatMetadata(
+                        groupId,
+                        subject,
+                        subjectAuthor,
+                        Clock.parseSeconds(subjectTimestampSeconds),
+                        Clock.parseSeconds(foundationTimestampSeconds),
+                        founder,
+                        description,
+                        descriptionId,
+                        Collections.unmodifiableMap(policies),
+                        participants,
+                        ephemeral,
+                        parentCommunityJid,
+                        true,
+                        linkedGroups
+                );
+            });
+        });
     }
 
     private Optional<GroupParticipant> parseGroupParticipant(Node node) {
@@ -807,7 +869,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onMessageStatus(MessageInfo message) {
+    protected void onMessageStatus(MessageInfo<?> message) {
         callListenersAsync(listener -> {
             listener.onMessageStatus(whatsapp, message);
             listener.onMessageStatus(message);
@@ -829,7 +891,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onNewMessage(MessageInfo info) {
+    protected void onNewMessage(MessageInfo<?> info) {
         callListenersAsync(listener -> {
             listener.onNewMessage(whatsapp, info);
             listener.onNewMessage(info);
@@ -864,7 +926,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onMessageDeleted(MessageInfo message, boolean everyone) {
+    protected void onMessageDeleted(MessageInfo<?> message, boolean everyone) {
         callListenersAsync(listener -> {
             listener.onMessageDeleted(whatsapp, message, everyone);
             listener.onMessageDeleted(message, everyone);
@@ -1113,10 +1175,10 @@ public class SocketHandler implements SocketListener {
     }
 
     private List<BusinessCategory> parseBusinessCategories(Node result) {
-        return result.findNode("response")
-                .flatMap(entry -> entry.findNode("categories"))
+        return result.findChild("response")
+                .flatMap(entry -> entry.findChild("categories"))
                 .stream()
-                .map(entry -> entry.findNodes("category"))
+                .map(entry -> entry.listChildren("category"))
                 .flatMap(Collection::stream)
                 .map(BusinessCategory::of)
                 .toList();

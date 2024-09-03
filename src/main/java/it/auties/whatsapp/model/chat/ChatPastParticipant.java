@@ -16,7 +16,7 @@ import java.util.Optional;
  * Class representing a past participant in a chat
  */
 @ProtobufMessage(name = "PastParticipant")
-public record GroupPastParticipant(
+public record ChatPastParticipant(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid jid,
         @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)

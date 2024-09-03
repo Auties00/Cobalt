@@ -6,7 +6,7 @@ import it.auties.whatsapp.util.Json;
 
 import java.util.OptionalLong;
 
-public sealed interface MessageInfo extends Info permits ChatMessageInfo, NewsletterMessageInfo, MessageStatusInfo, QuotedMessageInfo {
+public sealed interface MessageInfo<T extends MessageInfo<T>> extends Info permits ChatMessageInfo, NewsletterMessageInfo, MessageStatusInfo, QuotedMessageInfo {
     Jid parentJid();
 
     Jid senderJid();
@@ -14,6 +14,8 @@ public sealed interface MessageInfo extends Info permits ChatMessageInfo, Newsle
     String id();
 
     MessageContainer message();
+
+    T setMessage(MessageContainer message);
 
     OptionalLong timestampSeconds();
 

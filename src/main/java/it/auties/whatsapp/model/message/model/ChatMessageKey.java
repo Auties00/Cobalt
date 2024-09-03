@@ -13,7 +13,6 @@ import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.util.Bytes;
 
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Objects;

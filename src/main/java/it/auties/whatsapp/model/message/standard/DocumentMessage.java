@@ -13,7 +13,6 @@ import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Validate;
@@ -30,8 +29,8 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
  * A model class that represents a message holding a document inside
  */
 @ProtobufMessage
-public final class DocumentMessage extends ExtendedMediaMessage<DocumentMessage>
-        implements MediaMessage<DocumentMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class DocumentMessage extends MediaMessage<DocumentMessage>
+        implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     private static final int THUMBNAIL_WIDTH = 480;
     private static final int THUMBNAIL_HEIGHT = 339;
 

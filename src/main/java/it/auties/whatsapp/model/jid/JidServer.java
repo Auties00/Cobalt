@@ -17,7 +17,7 @@ public enum JidServer {
     /**
      * Groups and communities
      */
-    GROUP("g.us"),
+    GROUP_OR_COMMUNITY("g.us"),
     /**
      * Broadcast group
      */

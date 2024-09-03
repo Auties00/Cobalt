@@ -75,8 +75,7 @@ import static it.auties.whatsapp.util.SignalConstants.KEY_BUNDLE_TYPE;
 
 class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
-    private static final int REQUIRED_PRE_KEYS_SIZE = 5;
-    private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
+    private static final int PRE_KEYS_UPLOAD_CHUNK = 10;
     private static final int PING_INTERVAL = 20;
     private static final int MAX_MESSAGE_RETRIES = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
@@ -145,7 +144,7 @@ class StreamHandler {
     }
 
     private ContactStatus getUpdateType(Node node) {
-        var metadata = node.findNode();
+        var metadata = node.findChild();
         var recording = metadata.map(entry -> entry.attributes().getString("media"))
                 .filter(entry -> entry.equals("audio"))
                 .isPresent();
@@ -258,9 +257,9 @@ class StreamHandler {
     }
 
     private List<String> getReceiptsMessageIds(Node node) {
-        var messageIds = Stream.ofNullable(node.findNode("list"))
+        var messageIds = Stream.ofNullable(node.findChild("list"))
                 .flatMap(Optional::stream)
-                .map(list -> list.findNodes("item"))
+                .map(list -> list.listChildren("item"))
                 .flatMap(Collection::stream)
                 .map(item -> item.attributes().getOptionalString("id"))
                 .flatMap(Optional::stream)
@@ -341,7 +340,7 @@ class StreamHandler {
     }
 
     private void digestCallAck(Node node) {
-        var relayNode = node.findNode("relay").orElse(null);
+        var relayNode = node.findChild("relay").orElse(null);
         if (relayNode == null) {
             return;
         }
@@ -350,7 +349,7 @@ class StreamHandler {
                 .getRequiredJid("call-creator");
         var callId = relayNode.attributes()
                 .getString("call-id");
-        relayNode.findNodes("participant")
+        relayNode.listChildren("participant")
                 .stream()
                 .map(entry -> entry.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
@@ -393,18 +392,18 @@ class StreamHandler {
             return;
         }
 
-        var liveUpdates = node.findNode("live_updates");
+        var liveUpdates = node.findChild("live_updates");
         if (liveUpdates.isEmpty()) {
             return;
         }
 
 
-        var messages = liveUpdates.get().findNode("messages");
+        var messages = liveUpdates.get().findChild("messages");
         if (messages.isEmpty()) {
             return;
         }
 
-        for (var messageNode : messages.get().findNodes("message")) {
+        for (var messageNode : messages.get().listChildren("message")) {
             var messageId = messageNode.attributes()
                     .getRequiredString("server_id");
             var newsletterMessage = socketHandler.store().findMessageById(newsletter.get(), messageId);
@@ -412,8 +411,8 @@ class StreamHandler {
                 continue;
             }
 
-            messageNode.findNode("reactions")
-                    .map(reactions -> reactions.findNodes("reaction"))
+            messageNode.findChild("reactions")
+                    .map(reactions -> reactions.listChildren("reaction"))
                     .stream()
                     .flatMap(Collection::stream)
                     .forEach(reaction -> onNewsletterReaction(reaction, newsletterMessage.get()));
@@ -431,7 +430,7 @@ class StreamHandler {
     }
 
     private void handleMexNamespace(Node node) {
-        var update = node.findNode("update")
+        var update = node.findChild("update")
                 .orElse(null);
         if (update == null) {
             return;
@@ -513,15 +512,15 @@ class StreamHandler {
 
     private void handleCompanionRegistration(Node node) {
         var phoneNumber = getPhoneNumberAsJid();
-        var linkCodeCompanionReg = node.findNode("link_code_companion_reg")
+        var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
                 .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
-        var ref = linkCodeCompanionReg.findNode("link_code_pairing_ref")
+        var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
-        var primaryIdentityPublicKey = linkCodeCompanionReg.findNode("primary_identity_pub")
+        var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
-        var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findNode("link_code_pairing_wrapped_primary_ephemeral_pub")
+        var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
         var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
@@ -562,7 +561,7 @@ class StreamHandler {
     }
 
     private void handleRegistrationNotification(Node node) {
-        var child = node.findNode("wa_old_registration");
+        var child = node.findChild("wa_old_registration");
         if (child.isEmpty()) {
             return;
         }
@@ -596,7 +595,7 @@ class StreamHandler {
     }
 
     private void handleGroupNotification(Node node) {
-        var child = node.findNode();
+        var child = node.findChild();
         if (child.isEmpty()) {
             return;
         }
@@ -615,7 +614,7 @@ class StreamHandler {
     }
 
     private void onGroupSubjectChange(Node node) {
-        var subject = node.findNode("subject")
+        var subject = node.findChild("subject")
                 .flatMap(subjectNode -> subjectNode.attributes().getOptionalString("subject"))
                 .orElse(null);
         if(subject == null) {
@@ -704,18 +703,15 @@ class StreamHandler {
         if (!chat.isServerJid(JidServer.WHATSAPP)) {
             return;
         }
-        var keysSize = node.findNode("count")
+        var keysSize = node.findChild("count")
                 .orElseThrow(() -> new NoSuchElementException("Missing count in notification"))
                 .attributes()
-                .getLong("value");
-        if (keysSize >= REQUIRED_PRE_KEYS_SIZE) {
-            return;
-        }
-        sendPreKeys();
+                .getInt("value");
+        sendPreKeys(keysSize);
     }
 
     private void handleAccountSyncNotification(Node node) {
-        var child = node.findNode();
+        var child = node.findChild();
         if (child.isEmpty()) {
             return;
         }
@@ -732,7 +728,7 @@ class StreamHandler {
     private void handleDevices(Node child) {
         var deviceHash = child.attributes().getString("dhash");
         socketHandler.store().setDeviceHash(deviceHash);
-        var devices = child.findNodes("device")
+        var devices = child.listChildren("device")
                 .stream()
                 .collect(Collectors.toMap(
                         entry -> entry.attributes().getRequiredJid("jid"),
@@ -748,7 +744,7 @@ class StreamHandler {
         devices.put(companionJid, companionDevice);
         socketHandler.store().setLinkedDevicesKeys(devices);
         socketHandler.onDevices(devices);
-        var keyIndexListNode = child.findNode("key-index-list")
+        var keyIndexListNode = child.findChild("key-index-list")
                 .orElseThrow(() -> new NoSuchElementException("Missing index key node from device sync"));
         var signedKeyIndexBytes = keyIndexListNode.contentAsBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing index key from device sync"));
@@ -758,7 +754,7 @@ class StreamHandler {
     }
 
     private void updateBlocklist(Node child) {
-        child.findNodes("item").forEach(this::updateBlocklistEntry);
+        child.listChildren("item").forEach(this::updateBlocklistEntry);
     }
 
     private void updateBlocklistEntry(Node entry) {
@@ -772,7 +768,7 @@ class StreamHandler {
     }
 
     private void changeUserPrivacySetting(Node child) {
-        var category = child.findNodes("category");
+        var category = child.listChildren("category");
         category.forEach(entry -> addPrivacySetting(entry, true));
     }
 
@@ -813,7 +809,7 @@ class StreamHandler {
         }
 
         var newValues = new ArrayList<>(privacyEntry.excluded());
-        for (var entry : node.findNodes("user")) {
+        for (var entry : node.listChildren("user")) {
             var jid = entry.attributes()
                     .getRequiredJid("jid");
             if (entry.attributes().hasValue("action", "add")) {
@@ -836,9 +832,9 @@ class StreamHandler {
     }
 
     private List<Jid> parsePrivacyExcludedContacts(Node result) {
-        return result.findNode("privacy")
-                .flatMap(node -> node.findNode("list"))
-                .map(node -> node.findNodes("user"))
+        return result.findChild("privacy")
+                .flatMap(node -> node.findChild("list"))
+                .map(node -> node.listChildren("user"))
                 .stream()
                 .flatMap(Collection::stream)
                 .map(user -> user.attributes().getOptionalJid("jid"))
@@ -851,7 +847,7 @@ class StreamHandler {
             return;
         }
 
-        var patches = node.findNodes("collection")
+        var patches = node.listChildren("collection")
                 .stream()
                 .map(entry -> entry.attributes().getRequiredString("name"))
                 .map(PatchType::of)
@@ -860,7 +856,7 @@ class StreamHandler {
     }
 
     private void digestIb(Node node) {
-        var dirty = node.findNode("dirty");
+        var dirty = node.findChild("dirty");
         if (dirty.isEmpty()) {
             Validate.isTrue(!node.hasNode("downgrade_webclient"), "Multi device beta is not enabled. Please enable it from Whatsapp");
             return;
@@ -965,7 +961,7 @@ class StreamHandler {
             return CompletableFuture.completedFuture(null);
         }
         
-        return sendPreKeys();
+        return sendPreKeys(PRE_KEYS_UPLOAD_CHUNK);
     }
 
     private CompletableFuture<Void> loadAdditionalWebData() {
@@ -989,7 +985,8 @@ class StreamHandler {
                         acceptDynamicTermsOfService(),
                         setPushEndpoint(),
                         updateSelfPresence(),
-                        scheduleMediaConnectionUpdate()
+                        scheduleMediaConnectionUpdate(),
+                        sendWam2()
                 )
                 .thenRunAsync(this::onInitialInfo);
         CompletableFuture.allOf(loginFuture, attributeStore())
@@ -997,13 +994,14 @@ class StreamHandler {
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
     }
 
-    private CompletableFuture<Node> acceptDynamicTermsOfService() {
-        return  socketHandler.sendQuery("get", "tos", Node.of("get_user_disclosures", Map.of("t", 0))).thenComposeAsync(result -> {
-            var notices = result.findNodes("notice")
+    private CompletableFuture<Void> acceptDynamicTermsOfService() {
+        return socketHandler.sendQuery("get", "tos", Node.of("get_user_disclosures", Map.of("t", 0))).thenComposeAsync(result -> {
+            var notices = result.listChildren("notice")
                     .stream()
                     .map(notice -> Node.of("notice", Map.of("id", notice.attributes().getRequiredString("id"))))
-                    .toList();
-            return socketHandler.sendQuery("get", "tos", Node.of("request", notices));
+                    .map(notice -> socketHandler.sendQuery("get", "tos", Node.of("request", notice)))
+                    .toArray(CompletableFuture[]::new);
+            return CompletableFuture.allOf(notices);
         });
     }
 
@@ -1172,7 +1170,7 @@ class StreamHandler {
     }
 
     private void parseNewsletters(Node result) {
-        var newslettersPayload = result.findNode("result")
+        var newslettersPayload = result.findChild("result")
                 .flatMap(Node::contentAsString);
         if(newslettersPayload.isEmpty()) {
             return;
@@ -1206,18 +1204,18 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryGroups() {
-        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
+        return socketHandler.sendQuery(JidServer.GROUP_OR_COMMUNITY.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
                 .thenAcceptAsync(this::onGroupsQuery);
     }
 
     private void onGroupsQuery(Node result) {
-        var groups = result.findNode("groups");
+        var groups = result.findChild("groups");
         if (groups.isEmpty()) {
             return;
         }
 
         groups.get()
-                .findNodes("group")
+                .listChildren("group")
                 .forEach(socketHandler::handleGroupMetadata);
     }
 
@@ -1233,7 +1231,7 @@ class StreamHandler {
                 .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails, true))
                 .build();
         return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate))).thenAccept(result -> {
-            var verifiedName = result.findNode("verified_name")
+            var verifiedName = result.findChild("verified_name")
                     .map(node -> node.attributes().getString("id"))
                     .orElse("");
             socketHandler.store().setVerifiedName(verifiedName);
@@ -1418,7 +1416,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> parsePrivacySettings(Node result) {
-        var privacy = result.findNodes("privacy")
+        var privacy = result.listChildren("privacy")
                 .stream()
                 .flatMap(entry -> entry.children().stream())
                 .map(entry -> addPrivacySetting(entry, false))
@@ -1427,9 +1425,9 @@ class StreamHandler {
     }
 
     private void parseProps(Node result) {
-        var properties = result.findNode("props")
+        var properties = result.findChild("props")
                 .stream()
-                .map(entry -> entry.findNodes("prop"))
+                .map(entry -> entry.listChildren("prop"))
                 .flatMap(Collection::stream)
                 .map(node -> Map.entry(node.attributes().getString("name"), node.attributes().getString("value")))
                 .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (first, second) -> second, ConcurrentHashMap::new));
@@ -1465,12 +1463,12 @@ class StreamHandler {
     }
 
     private void onMediaConnection(Node node) {
-        var mediaConnection = node.findNode("media_conn").orElse(node);
+        var mediaConnection = node.findChild("media_conn").orElse(node);
         var auth = mediaConnection.attributes().getString("auth");
         var ttl = mediaConnection.attributes().getInt("ttl");
         var maxBuckets = mediaConnection.attributes().getInt("max_buckets");
         var timestamp = System.currentTimeMillis();
-        var hosts = mediaConnection.findNodes("host")
+        var hosts = mediaConnection.listChildren("host")
                 .stream()
                 .map(Node::attributes)
                 .map(attributes -> attributes.getString("hostname"))
@@ -1481,7 +1479,7 @@ class StreamHandler {
     }
 
     private void digestIq(Node node) {
-        var container = node.findNode().orElse(null);
+        var container = node.findChild().orElse(null);
         if (container == null) {
             return;
         }
@@ -1492,9 +1490,9 @@ class StreamHandler {
         }
     }
 
-    private CompletableFuture<?> sendPreKeys() {
+    private CompletableFuture<?> sendPreKeys(int size) {
         var startId = socketHandler.keys().lastPreKeyId() + 1;
-        var preKeys = IntStream.range(startId, startId + WEB_PRE_KEYS_UPLOAD_CHUNK)
+        var preKeys = IntStream.range(startId, startId + size)
                 .mapToObj(SignalPreKeyPair::random)
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
@@ -1571,7 +1569,7 @@ class StreamHandler {
     }
 
     private void printQrCode(QrHandler qrHandler, Node container) {
-        var ref = container.findNode("ref")
+        var ref = container.findChild("ref")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
         var qr = String.join(
@@ -1587,7 +1585,7 @@ class StreamHandler {
 
     private void confirmPairing(Node node, Node container) {
         saveCompanion(container);
-        var deviceIdentity = container.findNode("device-identity")
+        var deviceIdentity = container.findChild("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
         var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity.contentAsBytes().orElseThrow());
         var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKeyPair().publicKey());
@@ -1636,7 +1634,7 @@ class StreamHandler {
     }
 
     private UserAgent.PlatformType getWebPlatform(Node node) {
-        var name = node.findNode("platform")
+        var name = node.findChild("platform")
                 .flatMap(entry -> entry.attributes().getOptionalString("name"))
                 .orElse(null);
         return switch (name) {
@@ -1659,7 +1657,7 @@ class StreamHandler {
     }
 
     private void saveCompanion(Node container) {
-        var node = container.findNode("device")
+        var node = container.findChild("device")
                 .orElseThrow(() -> new NoSuchElementException("Missing device"));
         var companion = node.attributes()
                 .getOptionalJid("jid")

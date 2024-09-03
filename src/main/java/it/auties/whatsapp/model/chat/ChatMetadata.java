@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * This model class represents the metadata of a group
+ * This model class represents the metadata of a group or community
  */
-public record GroupMetadata(
+public record ChatMetadata(
         Jid jid,
         String subject,
         Optional<Jid> subjectAuthor,
@@ -19,11 +19,12 @@ public record GroupMetadata(
         Optional<Jid> founder,
         Optional<String> description,
         Optional<String> descriptionId,
-        Map<GroupSetting, ChatSettingPolicy> policies,
-        List<GroupParticipant> participants,
+        Map<? super ChatSetting, ChatSettingPolicy> settings,
+        List<? extends ChatParticipant> participants,
         Optional<ZonedDateTime> ephemeralExpiration,
+        Optional<Jid> parentCommunityJid,
         boolean isCommunity,
-        boolean isOpenCommunity
+        List<CommunityLinkedGroup> communityGroups
 ) {
 
 }

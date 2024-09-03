@@ -16,7 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 @ProtobufMessage
-public final class NewsletterMessageInfo implements MessageInfo, MessageStatusInfo<NewsletterMessageInfo> {
+public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessageInfo>, MessageStatusInfo<NewsletterMessageInfo> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String id;
     @ProtobufProperty(index = 2, type = ProtobufType.INT32)
@@ -28,7 +28,7 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
     @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final Map<String, NewsletterReaction> reactions;
     @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
-    private final MessageContainer message;
+    private MessageContainer message;
     @JsonBackReference
     private Newsletter newsletter;
     @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
@@ -87,6 +87,12 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
 
     public MessageContainer message() {
         return message;
+    }
+
+    @Override
+    public NewsletterMessageInfo setMessage(MessageContainer message) {
+        this.message = message;
+        return this;
     }
 
     public Optional<ZonedDateTime> timestamp() {

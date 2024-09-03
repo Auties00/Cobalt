@@ -23,13 +23,13 @@ public record BusinessCollectionEntry(String id, String name,
      *                                node
      */
     public static BusinessCollectionEntry of(Node node) {
-        var id = node.findNode("id")
+        var id = node.findChild("id")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing id from business collections"));
-        var name = node.findNode("name")
+        var name = node.findChild("name")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing name from business collections"));
-        var products = node.findNodes("product").stream().map(BusinessCatalogEntry::of).toList();
+        var products = node.listChildren("product").stream().map(BusinessCatalogEntry::of).toList();
         return new BusinessCollectionEntry(id, name, products);
     }
 }
