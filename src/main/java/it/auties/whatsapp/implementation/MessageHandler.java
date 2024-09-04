@@ -69,7 +69,6 @@ class MessageHandler {
     private static final int MAX_MESSAGE_RETRIES = 5;
 
     private final SocketHandler socketHandler;
-    private final Map<Jid, List<ChatPastParticipant>> pastParticipantsQueue;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
     private final Map<String, Integer> retries;
     private final Set<Jid> historyCache;
@@ -79,7 +78,6 @@ class MessageHandler {
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
-        this.pastParticipantsQueue = new ConcurrentHashMap<>();
         this.devicesCache = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.historySyncTypes = EnumSet.noneOf(Type.class);
@@ -1355,26 +1353,14 @@ class MessageHandler {
                 attributeChatMessage(message.messageInfo());
             }
 
-            var pastParticipants = pastParticipantsQueue.remove(chat.jid());
-            if (pastParticipants != null) {
-                chat.addPastParticipants(pastParticipants);
-            }
-
             socketHandler.store().addChat(chat);
         }
     }
 
     private void handleNonBlockingData(HistorySync history) {
         for (var pastParticipants : history.pastParticipants()) {
-            handlePastParticipants(pastParticipants);
+            socketHandler.pastParticipants().put(pastParticipants.groupJid(), pastParticipants.pastParticipants());
         }
-    }
-
-    private void handlePastParticipants(GroupPastParticipants pastParticipants) {
-        socketHandler.store()
-                .findChatByJid(pastParticipants.groupJid())
-                .ifPresentOrElse(chat -> chat.addPastParticipants(pastParticipants.pastParticipants()),
-                        () -> pastParticipantsQueue.put(pastParticipants.groupJid(), pastParticipants.pastParticipants()));
     }
 
     @SafeVarargs

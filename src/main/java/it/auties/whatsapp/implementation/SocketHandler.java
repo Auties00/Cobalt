@@ -92,6 +92,7 @@ public class SocketHandler implements SocketListener {
     private final AtomicLong requestsCounter;
     private final ScheduledExecutorService scheduler;
     private final List<ScheduledFuture<?>> scheduledTasks;
+    private final ConcurrentMap<Jid, List<ChatPastParticipant>> pastParticipants;
     private final Semaphore writeSemaphore;
     private volatile SocketState state;
     private volatile CompletableFuture<Void> loginFuture;
@@ -112,6 +113,7 @@ public class SocketHandler implements SocketListener {
         this.scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
         this.scheduledTasks = new CopyOnWriteArrayList<>();
         this.writeSemaphore = new Semaphore(1, true);
+        this.pastParticipants = new ConcurrentHashMap<>();
     }
 
     private void onShutdown(boolean reconnect) {
@@ -664,11 +666,6 @@ public class SocketHandler implements SocketListener {
             var chat = store.findChatByJid(metadata.jid())
                     .orElseGet(() -> store().addNewChat(metadata.jid()));
             chat.setName(metadata.subject());
-            metadata.foundationTimestamp().ifPresent(timestamp -> chat.setFoundationTimestampSeconds(timestamp.toEpochSecond()));
-            metadata.founder().ifPresent(chat::setFounder);
-            metadata.description().ifPresent(chat::setDescription);
-            chat.removeParticipants();
-            chat.addParticipants(metadata.participants());
             return metadata;
         });
     }
@@ -703,6 +700,7 @@ public class SocketHandler implements SocketListener {
         var communityNode = node.findChild("parent")
                 .orElse(null);
         var policies = new HashMap<ChatSetting, ChatSettingPolicy>();
+        var pastParticipants = Objects.requireNonNullElseGet(this.pastParticipants.get(groupId), List::<ChatPastParticipant>of);
         if (communityNode == null) {
             policies.put(GroupSetting.EDIT_GROUP_INFO, ChatSettingPolicy.of(node.hasNode("announce")));
             policies.put(GroupSetting.SEND_MESSAGES, ChatSettingPolicy.of(node.hasNode("restrict")));
@@ -731,6 +729,7 @@ public class SocketHandler implements SocketListener {
                     descriptionId,
                     Collections.unmodifiableMap(policies),
                     participants,
+                    pastParticipants,
                     ephemeral,
                     parentCommunityJid,
                     false,
@@ -749,7 +748,7 @@ public class SocketHandler implements SocketListener {
                     .stream()
                     .flatMap(participantsNodeBody -> participantsNodeBody.streamChildren("participant"))
                     .flatMap(participantNode -> participantNode.attributes().getOptionalJid("jid").stream())
-                    .map(CommunityParticipant::new)
+                    .map(participantJid -> (ChatParticipant) new CommunityParticipant(participantJid))
                     .toList();
             return sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7353258338095347"), mexBody)).thenApplyAsync(communityResponse -> {
                 var linkedGroups = communityResponse.findChild("result")
@@ -768,6 +767,7 @@ public class SocketHandler implements SocketListener {
                         descriptionId,
                         Collections.unmodifiableMap(policies),
                         participants,
+                        pastParticipants,
                         ephemeral,
                         parentCommunityJid,
                         true,
@@ -777,7 +777,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    private Optional<GroupParticipant> parseGroupParticipant(Node node) {
+    private Optional<ChatParticipant> parseGroupParticipant(Node node) {
         if(node.attributes().hasKey("error")) {
             return Optional.empty();
         }
@@ -1236,5 +1236,19 @@ public class SocketHandler implements SocketListener {
 
     public CompletableFuture<Void> updateBusinessCertificate(String newName) {
         return streamHandler.updateBusinessCertificate(newName);
+    }
+
+    public ConcurrentMap<Jid, List<ChatPastParticipant>> pastParticipants() {
+        return pastParticipants;
+    }
+
+    public void addPastParticipant(Jid jid, ChatPastParticipant pastParticipant) {
+        var pastParticipants = pastParticipants().get(jid);
+        if(pastParticipants != null) {
+            pastParticipants.add(pastParticipant);
+            pastParticipants().put(jid, pastParticipants);
+        }else {
+            pastParticipants().put(jid, List.of(pastParticipant));
+        }
     }
 }

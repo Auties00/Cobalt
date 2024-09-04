@@ -13,9 +13,7 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.call.CallStatus;
-import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
-import it.auties.whatsapp.model.chat.GroupRole;
+import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -235,7 +233,6 @@ class StreamHandler {
             }
 
             var all = message.senderJid().device() == 0;
-            message.chat().ifPresent(Chat::clearParticipantsPreKeys);
             var recipients = all ? null : Set.of(message.senderJid());
             var request = new MessageSendRequest.Chat(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
@@ -246,14 +243,20 @@ class StreamHandler {
     private void updateReceipt(MessageStatus status, Chat chat, Contact participant, ChatMessageInfo message) {
         var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
         container.add(participant != null ? participant.jid() : message.senderJid());
-        if (chat != null && participant != null && chat.participants().size() != container.size()) {
+        if(chat == null) {
             return;
         }
 
-        switch (status) {
-            case READ -> message.receipt().readTimestampSeconds(Clock.nowSeconds());
-            case PLAYED -> message.receipt().playedTimestampSeconds(Clock.nowSeconds());
-        }
+        socketHandler.queryGroupMetadata(chat.jid()).thenAcceptAsync(metadata -> {
+            if (participant != null && metadata.participants().size() != container.size()) {
+                return;
+            }
+
+            switch (status) {
+                case READ -> message.receipt().readTimestampSeconds(Clock.nowSeconds());
+                case PLAYED -> message.receipt().playedTimestampSeconds(Clock.nowSeconds());
+            }
+        });
     }
 
     private List<String> getReceiptsMessageIds(Node node) {
@@ -663,17 +666,24 @@ class StreamHandler {
             return;
         }
 
-        handleGroupStubType(chat, stubType, participantJid);
+        handleGroupStubType(timestamp, chat, stubType, participantJid);
     }
 
-    private void handleGroupStubType(Chat chat, ChatMessageInfo.StubType stubType, Jid participantJid) {
+    private void handleGroupStubType(long timestamp, Chat chat, ChatMessageInfo.StubType stubType, Jid participantJid) {
         switch (stubType) {
-            case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
-            case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
-            case GROUP_PARTICIPANT_PROMOTE ->
-                    chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.ADMIN));
-            case GROUP_PARTICIPANT_DEMOTE ->
-                    chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.USER));
+            case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> {
+                var reason = stubType == ChatMessageInfo.StubType.GROUP_PARTICIPANT_REMOVE ? ChatPastParticipant.Reason.REMOVED : ChatPastParticipant.Reason.LEFT;
+                var pastParticipant = new ChatPastParticipant(participantJid, reason, timestamp);
+                socketHandler.addPastParticipant(chat.jid(), pastParticipant);
+            }
+            case GROUP_PARTICIPANT_ADD -> {
+                var pastParticipants = socketHandler.pastParticipants().get(chat.jid());
+                if(pastParticipants == null) {
+                    return;
+                }
+
+                pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), participantJid));
+            }
         }
     }
 

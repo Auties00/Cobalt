@@ -1611,7 +1611,7 @@ public class Whatsapp {
     }
 
     private List<Jid> parseGroupActionResponse(Node result, JidProvider groupJid, GroupAction action) {
-        var results = result.findChild(action.data())
+        return result.findChild(action.data())
                 .map(body -> body.listChildren("participant"))
                 .stream()
                 .flatMap(Collection::stream)
@@ -1619,35 +1619,6 @@ public class Whatsapp {
                 .map(participant -> participant.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
                 .toList();
-        store().findChatByJid(groupJid)
-                .ifPresent(chat -> results.forEach(entry -> handleGroupAction(action, chat, entry)));
-        return results;
-    }
-
-    private void handleGroupAction(GroupAction action, Chat chat, Jid entry) {
-        switch (action) {
-            case ADD -> chat.addParticipant(entry, GroupRole.USER);
-            case REMOVE -> {
-                chat.removeParticipant(entry);
-                chat.addPastParticipant(new ChatPastParticipant(entry, ChatPastParticipant.Reason.REMOVED, Clock.nowSeconds()));
-            }
-            case PROMOTE -> chat.findParticipant(entry).ifPresent(participant -> {
-                if(participant instanceof GroupParticipant groupParticipant) {
-                    groupParticipant.setRole(GroupRole.ADMIN);
-                }else {
-                    chat.removeParticipant(participant.jid());
-                    chat.addParticipant(new GroupParticipant(participant.jid(), GroupRole.ADMIN));
-                }
-            });
-            case DEMOTE -> chat.findParticipant(entry).ifPresent(participant -> {
-                if(participant instanceof GroupParticipant groupParticipant) {
-                    groupParticipant.setRole(GroupRole.USER);
-                }else {
-                    chat.removeParticipant(participant.jid());
-                    chat.addParticipant(new GroupParticipant(participant.jid(), GroupRole.USER));
-                }
-            });
-        }
     }
 
     /**
@@ -1691,17 +1662,7 @@ public class Whatsapp {
                 .toMap();
         var body = Node.of("description", attributes, descriptionNode);
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenRun(() -> onDescriptionSet(group, description));
-    }
-
-    private void onDescriptionSet(JidProvider groupJid, String description) {
-        if (groupJid instanceof Chat chat) {
-            chat.setDescription(description);
-            return;
-        }
-
-        var group = store().findChatByJid(groupJid);
-        group.ifPresent(chat -> chat.setDescription(description));
+                .thenRun(() -> {});
     }
 
     /**
@@ -1943,19 +1904,13 @@ public class Whatsapp {
     }
 
     private void handleLeaveGroup(JidProvider group) {
-        var chat = store()
-                .findChatByJid(group)
-                .orElse(null);
-        if (chat != null) {
-            var jid = jidOrThrowError().toSimpleJid();
-            chat.removeParticipant(jid);
-            var pastParticipant = new GroupPastParticipantBuilder()
-                    .jid(jid)
-                    .reason(ChatPastParticipant.Reason.REMOVED)
-                    .timestampSeconds(Clock.nowSeconds())
-                    .build();
-            chat.addPastParticipant(pastParticipant);
-        }
+        var jid = jidOrThrowError().toSimpleJid();
+        var pastParticipant = new ChatPastParticipantBuilder()
+                .jid(jid)
+                .reason(ChatPastParticipant.Reason.REMOVED)
+                .timestampSeconds(Clock.nowSeconds())
+                .build();
+        socketHandler.addPastParticipant(group.toJid(), pastParticipant);
     }
 
     /**
@@ -3293,13 +3248,14 @@ public class Whatsapp {
     }
 
     private GroupPastParticipants getPastParticipants(Chat chat) {
-        if (chat.pastParticipants().isEmpty()) {
+        var pastParticipants = socketHandler.pastParticipants().get(chat.jid());
+        if (pastParticipants == null || pastParticipants.isEmpty()) {
             return null;
         }
 
         return new GroupPastParticipantsBuilder()
                 .groupJid(chat.jid())
-                .pastParticipants(new ArrayList<>(chat.pastParticipants()))
+                .pastParticipants(new ArrayList<>(pastParticipants))
                 .build();
     }
 
