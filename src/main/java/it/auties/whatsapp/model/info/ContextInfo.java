@@ -217,11 +217,43 @@ public final class ContextInfo implements Info {
     public static ContextInfo of(MessageInfo<?> quotedMessage) {
         return new ContextInfoBuilder()
                 .quotedMessageId(quotedMessage.id())
+                .quotedMessageSenderJid(quotedMessage.senderJid())
                 .quotedMessage(quotedMessage.message())
                 .quotedMessageChatJid(quotedMessage.parentJid())
-                .quotedMessageSenderJid(quotedMessage.senderJid())
                 .mentions(new ArrayList<>())
                 .build();
+    }
+
+
+    public static ContextInfo of(ContextInfo contextInfo, MessageInfo<?> quotedMessage) {
+        return contextInfo == null ? of(quotedMessage) : new ContextInfoBuilder()
+                .quotedMessageId(quotedMessage.id())
+                .quotedMessageSenderJid(quotedMessage.senderJid())
+                .quotedMessage(quotedMessage.message())
+                .quotedMessageChatJid(quotedMessage.parentJid())
+                .mentions(new ArrayList<>())
+                .conversionSource(contextInfo.conversionSource)
+                .conversionData(contextInfo.conversionData)
+                .conversionDelaySeconds(contextInfo.conversionDelaySeconds)
+                .forwardingScore(contextInfo.forwardingScore)
+                .forwarded(contextInfo.forwarded)
+                .quotedAd(contextInfo.quotedAd)
+                .placeholderKey(contextInfo.placeholderKey)
+                .ephemeralExpiration(contextInfo.ephemeralExpiration)
+                .ephemeralSettingTimestamp(contextInfo.ephemeralSettingTimestamp)
+                .ephemeralSharedSecret(contextInfo.ephemeralSharedSecret)
+                .externalAdReply(contextInfo.externalAdReply)
+                .entryPointConversionSource(contextInfo.entryPointConversionSource)
+                .entryPointConversionApp(contextInfo.entryPointConversionApp)
+                .entryPointConversionDelaySeconds(contextInfo.entryPointConversionDelaySeconds)
+                .disappearingMode(contextInfo.disappearingMode)
+                .actionLink(contextInfo.actionLink)
+                .groupSubject(contextInfo.groupSubject)
+                .parentGroup(contextInfo.parentGroup)
+                .trustBannerType(contextInfo.trustBannerType)
+                .trustBannerAction(contextInfo.trustBannerAction)
+                .build();
+
     }
 
     public static ContextInfo empty() {

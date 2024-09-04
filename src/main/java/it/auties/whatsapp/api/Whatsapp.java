@@ -628,7 +628,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<? extends MessageInfo<?>> sendMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo<?> quotedMessage) {
-        var contextInfo = ContextInfo.of(quotedMessage);
+        var contextInfo = ContextInfo.of(message.contextInfo().orElse(null), quotedMessage);
         message.setContextInfo(contextInfo);
         return sendMessage(chat, MessageContainer.of(message));
     }
@@ -642,7 +642,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo<?> quotedMessage) {
-        var contextInfo = ContextInfo.of(quotedMessage);
+        var contextInfo = ContextInfo.of(message.contextInfo().orElse(null), quotedMessage);
         message.setContextInfo(contextInfo);
         return sendChatMessage(chat, MessageContainer.of(message));
     }
@@ -657,7 +657,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<NewsletterMessageInfo> sendNewsletterMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo<?> quotedMessage) {
-        var contextInfo = ContextInfo.of(quotedMessage);
+        var contextInfo = ContextInfo.of(message.contextInfo().orElse(null), quotedMessage);
         message.setContextInfo(contextInfo);
         return sendNewsletterMessage(chat, MessageContainer.of(message));
     }

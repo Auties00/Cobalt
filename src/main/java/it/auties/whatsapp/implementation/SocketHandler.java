@@ -844,12 +844,14 @@ public class SocketHandler implements SocketListener {
         var type = attrs.getOptionalString("type")
                 .filter(entry -> !Objects.equals(entry, "message"))
                 .orElse(null);
+        var participant = attrs.getNullableString("participant");
+        var recipient = attrs.getNullableString("recipient");
         var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("to", from)
                 .put("class", node.description())
-                .put("participant", attrs.getNullableString("participant"), Objects::nonNull)
-                .put("recipient", attrs.getNullableString("recipient"), Objects::nonNull)
+                .put("participant", Jid.of(participant).withAgent(null), Objects.nonNull(participant))
+                .put("recipient", Jid.of(recipient).withAgent(null), Objects.nonNull(recipient))
                 .put("type", type, Objects::nonNull)
                 .toMap();
         return sendNodeWithNoResponse(Node.of("ack", attributes));
