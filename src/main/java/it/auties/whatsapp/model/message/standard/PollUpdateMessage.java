@@ -16,7 +16,6 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Validate;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.chat;
 
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 
 import java.util.Arrays;

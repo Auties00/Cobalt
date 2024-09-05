@@ -982,9 +982,9 @@ public class Whatsapp {
                 return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
 
-            return changePresence(recipient, COMPOSING)
+            return (compose ? changePresence(recipient, COMPOSING) : CompletableFuture.completedFuture(null))
                     .thenComposeAsync(ignored -> socketHandler.sendMessage(new MessageSendRequest.Chat(info)))
-                    .thenComposeAsync(ignored -> changePresence(recipient, AVAILABLE))
+                    .thenComposeAsync(ignored -> compose ? pauseCompose(recipient) : CompletableFuture.completedFuture(null))
                     .thenApply(ignored -> info);
         });
     }

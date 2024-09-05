@@ -11,7 +11,7 @@ open module it.auties.cobalt {
     requires it.auties.qr;
     requires static java.desktop;
 
-    // Serialization (Protobuf, JSON, Smile)
+    // Serialization (Protobuf, JSON)
     requires it.auties.protobuf.base;
     requires java.compiler;
     requires com.fasterxml.jackson.annotation;

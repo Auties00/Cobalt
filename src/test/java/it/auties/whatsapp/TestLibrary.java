@@ -70,7 +70,7 @@ public class TestLibrary implements Listener  {
     @BeforeAll
     public void init() throws IOException, InterruptedException  {
         contact = Jid.of(18103478509L);
-        account = SixPartsKeys.of("18607078230,8ySQLFkcC3YVsdkxJPDdXFnZLBcTGVntAFB08ITZsjg=,YATXNuxrnNTdJxzWOYAtmcJtLmxH1UUj1GrUuW4aW3M=,+Tr7Dppyt3aEO4Fxs1QxxqVJ6tkLdu7a+L4SYKlnxnc=,uOrY0AEf5jMqjk/y/8qzS+cgL2mdzMRKFLCCBX9gEmI=,kvSkr6JQ9jIQS1t+NxIS3A==");
+        account = SixPartsKeys.of("16623707168,EjcGCnZGafa/EojrQnp1Md5C6vuHEhTT4+lci9i7yD0=,6F7inwSW50hAIOVIiNW5J35ZKx7qOfl7pDQMbWhV20M=,J+GkO3JlIn47PHTkZXJK3/UGW1bfOErRj5vDltr0lj4=,ABddg6ZCTgJ7Hvs/h74j3hBqf8JQ1ugo4pMNiBGTYXE=,JSFHjx3SC5lkfc+6030jlw==");
         createApi();
         createLatch();
         latch.await();
@@ -233,41 +233,9 @@ public class TestLibrary implements Listener  {
             log("Cannot create group");
             return;
         }
-
         group = response.get().jid();
         log("Created group: %s", response);
     }
-
-    @Test
-    @Order(11)
-    public void testCommunity()  {
-        log("Creating community...");
-        var communityCreationResponse = api.createCommunity(randomId(), "A nice body")
-                .join()
-                .orElse(null);
-        Assertions.assertNotNull(communityCreationResponse, "Cannot create community");
-        log("Created community: %s", communityCreationResponse);
-        log("Querying community metadata...");
-        var communityMetadataResponse = api.queryGroupMetadata(communityCreationResponse.jid()).join();
-        Assertions.assertTrue(communityMetadataResponse.isCommunity(), "Expected a community");
-        log("Queried community metadata: %s", communityMetadataResponse);
-        log("Creating child group...");
-        var communityChildCreationResponse = api.createGroup(randomId(), ChatEphemeralTimer.THREE_MONTHS, communityCreationResponse.jid()).join();
-        log("Created child group: %s", communityChildCreationResponse);
-        log("Querying child group metadata...");
-        var communityChildMetadataResponse = api.queryGroupMetadata(communityChildCreationResponse.orElseThrow().jid()).join();
-        Assertions.assertFalse(communityChildMetadataResponse.isCommunity(), "Expected a group");
-        log("Queried child group metadata: %s", communityChildMetadataResponse);
-        log("Unlinking child group...");
-        var unlinkChildCommunityResponse = api.unlinkGroupFromCommunity(communityMetadataResponse.jid(), communityChildMetadataResponse.jid()).join();
-        Assertions.assertTrue(unlinkChildCommunityResponse, "Failed unlink");
-        log("Unlinked child group");
-        log("Linking child group...");
-        var linkChildCommunityResponse = api.linkGroupsToCommunity(communityMetadataResponse.jid(), communityChildMetadataResponse.jid()).join();
-        Assertions.assertTrue(linkChildCommunityResponse.get(communityChildMetadataResponse.jid()), "Failed link");
-        log("Linked child group");
-    }
-
 
     @Test
     @Order(12)
@@ -275,14 +243,28 @@ public class TestLibrary implements Listener  {
         if (group == null)  {
             return;
         }
-        for (var presence : ContactStatus.values())  {          log("Changing individual presence to %s...", presence.name());
+        for (var presence : ContactStatus.values())  {
+            log("Changing individual presence to %s...", presence.name());
             var response = api.changePresence(group, presence).join();
             log("Changed individual presence: %s", response);
         }
+        api.changePresence(group, ContactStatus.AVAILABLE).join();
     }
 
     @Test
     @Order(13)
+    public void testChangeGroupPicture()  {
+        if (group == null)  {
+            return;
+        }
+
+        log("Changing group pic...");
+        var picResponse = api.changeGroupPicture(group, MediaUtils.readBytes("https://upload.wikimedia.org/wikipedia/commons/d/d2/Solid_white.png?20060513000852")).join();
+        log("Changed group pic: %s", picResponse);
+    }
+
+    @Test
+    @Order(14)
     public void testChangeGroupName()  {
         if (group == null)  {
             return;
@@ -293,7 +275,7 @@ public class TestLibrary implements Listener  {
     }
 
     @RepeatedTest(2)
-    @Order(14)
+    @Order(15)
     public void testChangeGroupDescription()  {
         if (group == null)  {
             return;
@@ -304,64 +286,66 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(15)
+    @Order(16)
     public void testRemoveGroupParticipant()  {
         if (group == null)  {
             return;
         }
         log("Removing %s...", contact);
-        var changeGroupResponse = api.removeGroupParticipant(group, contact).join();
+        var changeGroupResponse = api.removeGroupParticipants(group, contact).join();
         log("Removed: %s", changeGroupResponse);
     }
 
     @Test
-    @Order(16)
+    @Order(17)
     public void testAddGroupParticipant()  {
         if (group == null)  {
             return;
         }
         log("Adding %s...", contact);
-        var changeGroupResponse = api.addGroupParticipant(group, contact, Jid.of(393495089819L)).join();
+        var changeGroupResponse = api.addGroupParticipants(group, contact).join();
         log("Added: %s", changeGroupResponse);
     }
 
     @Test
-    @Order(17)
+    @Order(18)
     public void testPromotion()  {
         if (group == null)  {
             return;
         }
         log("Promoting %s...", contact);
-        var changeGroupResponse = api.promoteGroupParticipant(group, contact).join();
+        var changeGroupResponse = api.promoteGroupParticipants(group, contact).join();
         log("Promoted: %s", changeGroupResponse);
     }
 
     @Test
-    @Order(18)
+    @Order(19)
     public void testDemotion()  {
         if (group == null)  {
             return;
         }
         log("Demoting %s...", contact);
-        var changeGroupResponse = api.demoteGroupParticipant(group, contact).join();
+        var changeGroupResponse = api.demoteGroupParticipants(group, contact).join();
         log("Demoted: %s", changeGroupResponse);
     }
 
     @Test
-    @Order(19)
+    @Order(20)
     public void testChangeAllGroupSettings()  {
         if (group == null)  {
             return;
         }
-        for(var setting : GroupSetting.values())  {          for (var policy : ChatSettingPolicy.values())  {              log("Changing setting %s to %s...", setting.name(), policy.name());
-            api.changeGroupSetting(group, setting, policy).join();
-            log("Changed setting %s to %s", setting.name(), policy.name());
-        }
+        for(var setting : GroupSetting.values())  {
+            for (var policy : ChatSettingPolicy.values())  {
+                log("Changing setting %s to %s...", setting.name(), policy.name());
+                api.changeGroupSetting(group, setting, policy).join();
+                log("Changed setting %s to %s", setting.name(), policy.name());
+            }
         }
     }
 
     @Test
-    @Order(20)
+    @Order(21)
     public void testGroupQuery()  {
         if (group == null)  {
             return;
@@ -372,7 +356,88 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(21)
+    @Order(22)
+    public void testCommunity()  {
+        log("Creating community...");
+        var communityCreationResponse = api.createCommunity(randomId(), "A nice body")
+                .join()
+                .orElse(null);
+        Assertions.assertNotNull(communityCreationResponse, "Cannot create community");
+        log("Created community: %s", communityCreationResponse);
+
+        log("Querying community metadata...");
+        var communityMetadataResponse = api.queryCommunityMetadata(communityCreationResponse.jid()).join();
+        Assertions.assertTrue(communityMetadataResponse.isCommunity(), "Expected a community");
+        log("Queried community metadata: %s", communityMetadataResponse);
+
+        log("Querying community link...");
+        var link = api.queryGroupInviteLink(communityCreationResponse.jid()).join();
+        log("Queried community link: " + link);
+
+        log("Creating child group...");
+        var placeholderResponse = api.createCommunityGroup(randomId(), ChatEphemeralTimer.THREE_MONTHS, communityCreationResponse.jid())
+                .join()
+                .orElse(null);
+        Assertions.assertNotNull(placeholderResponse, "Cannot create child group");
+        log("Created child group: %s", placeholderResponse);
+
+        log("Creating another child group...");
+        var communityChildCreationResponse = api.createCommunityGroup(randomId(), ChatEphemeralTimer.THREE_MONTHS, communityCreationResponse.jid())
+                .join()
+                .orElse(null);
+        Assertions.assertNotNull(communityChildCreationResponse, "Cannot create another child group");
+        api.addCommunityParticipants(communityMetadataResponse.jid(), contact).join();
+        log("Created another child group: %s", communityChildCreationResponse);
+
+        log("Querying child group metadata...");
+        var communityChildMetadataResponse = api.queryGroupMetadata(communityChildCreationResponse.jid()).join();
+        Assertions.assertFalse(communityChildMetadataResponse.isCommunity(), "Expected a group");
+        log("Queried child group metadata: %s", communityChildMetadataResponse);
+
+        log("Changing community pic...");
+        var picResponse = api.changeCommunityPicture(communityCreationResponse.jid(), MediaUtils.readBytes("https://upload.wikimedia.org/wikipedia/commons/d/d2/Solid_white.png?20060513000852")).join();
+        log("Changed community pic: %s", picResponse);
+
+        log("Changing community subject...");
+        var subjectResponse = api.changeCommunitySubject(communityCreationResponse.jid(), "Renamed").join();
+        log("Changed community subject: %s", subjectResponse);
+
+        for(var i = 0; i < 2; i++) {
+            log("Changing community description...");
+            var descriptionResponse = api.changeCommunityDescription(communityCreationResponse.jid(), randomId()).join();
+            log("Changed community description: %s", descriptionResponse);
+        }
+
+        for (var setting : CommunitySetting.values()) {
+            log("Changing community setting: %s", setting);
+            log("Changing community setting %s to admin", setting);
+            api.changeCommunitySetting(communityCreationResponse.jid(), setting, ChatSettingPolicy.ADMINS).join();
+            log("Changing community setting %s to anyone", setting);
+            api.changeCommunitySetting(communityCreationResponse.jid(), setting, ChatSettingPolicy.ANYONE).join();
+            log("Changed community setting: %s", setting);
+        }
+
+        log("Unlinking child group...");
+        var unlinkChildCommunityResponse = api.removeCommunityGroup(communityMetadataResponse.jid(), communityChildMetadataResponse.jid()).join();
+        Assertions.assertTrue(unlinkChildCommunityResponse, "Failed unlink");
+        log("Unlinked child group");
+
+        log("Relinking child group...");
+        var linkChildCommunityResponse = api.addCommunityGroups(communityMetadataResponse.jid(), communityChildMetadataResponse.jid()).join();
+        Assertions.assertTrue(linkChildCommunityResponse.get(communityChildMetadataResponse.jid()), "Failed link");
+        log("Relinked child group");
+
+        log("Removing contact from community...");
+        api.removeCommunityParticipants(communityCreationResponse.jid(), contact).join();
+        log("Removed contact from community");
+
+        log("Deleting community...");
+        var deleteResponse = api.deactivateCommunity(communityCreationResponse.jid()).join();
+        log("Deleted community: " + deleteResponse);
+    }
+
+    @Test
+    @Order(23)
     public void testMute()  {
         if (group == null)  {
             return;
@@ -383,7 +448,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(22)
+    @Order(24)
     public void testUnmute()  {
         if (group == null)  {
             return;
@@ -394,7 +459,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(23)
+    @Order(25)
     public void testArchive()  {
         if (group == null)  {
             return;
@@ -405,7 +470,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(24)
+    @Order(26)
     public void testUnarchive()  {
         if (group == null)  {
             return;
@@ -416,7 +481,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(25)
+    @Order(27)
     public void testPin()  {
         if (group == null)  {
             return;
@@ -431,7 +496,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(26)
+    @Order(28)
     public void testUnpin()  {
         if (group == null)  {
             return;
@@ -446,11 +511,16 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(27)
+    @Order(29)
     public void testTextMessage()  {
         log("Sending simple text...");
         api.sendMessage(contact, "Hello").join();
         log("Sent simple text");
+    }
+
+    @Test
+    @Order(30)
+    public void testTextMessageExtended() {
         log("Sending youtube video...");
         api.sendMessage(contact, "Hello: https://www.youtube.com/watch?v=4boXExbbGCk").join();
         log("Sent youtube video");
@@ -461,7 +531,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(28)
+    @Order(31)
     public void deleteMessage()  {
         var example = (ChatMessageInfo) api.sendMessage(contact, "Hello").join();
         log("Deleting for you...");
@@ -473,8 +543,8 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(30)
-    public void testImageMessage()  {
+    @Order(32)
+    public void testImageMessage()  { // Run image first to check for media timeout
         log("Sending image...");
         var image = new ImageMessageSimpleBuilder()
                 .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
@@ -485,7 +555,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(31)
+    @Order(33)
     public void testAudioMessage()  {
         log("Sending audio...");
         var audio = new AudioMessageSimpleBuilder()
@@ -497,19 +567,20 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(32)
+    @Order(34)
     public void testVideoMessage()  {
         log("Sending video...");
         var video = new VideoMessageSimpleBuilder()
                 .media(MediaUtils.readBytes(VIDEO_URL))
                 .caption("Video")
                 .build();
+        api.sendMessage(contact, "Hello").join();
         api.sendMessage(contact, video).join();
         log("Sent video");
     }
 
     @Test
-    @Order(33)
+    @Order(35)
     public void testGifMessage()  {
         log("Sending gif...");
         var video = new GifMessageSimpleBuilder()
@@ -521,7 +592,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(34)
+    @Order(36)
     public void testPdfMessage()  {
         log("Sending pdf...");
         var document = new DocumentMessageSimpleBuilder()
@@ -535,7 +606,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(34)
+    @Order(37)
     public void testDocumentMessage()  {
         log("Sending document...");
         var document = new DocumentMessageSimpleBuilder()
@@ -548,7 +619,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(34)
+    @Order(38)
     public void testPowerpointMessage()  {
         log("Sending powerpoint...");
         var document = new DocumentMessageSimpleBuilder()
@@ -561,7 +632,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(35)
+    @Order(39)
     public void testContactMessage()  {
         log("Sending contact message...");
         var vcard = ContactCard.of("""
@@ -580,7 +651,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(36)
+    @Order(40)
     public void testLocationMessage()  {
         log("Sending location message...");
         var location = new LocationMessageBuilder()
@@ -593,7 +664,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(37)
+    @Order(41)
     public void testGroupInviteMessage()  {
         if (group == null)  {
             return;
@@ -613,7 +684,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(38)
+    @Order(42)
     public void testEnableEphemeralMessages()  {
         if (group == null)  {
             return;
@@ -624,7 +695,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(39)
+    @Order(43)
     public void testDisableEphemeralMessages()  {
         if (group == null)  {
             return;
@@ -635,7 +706,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(40)
+    @Order(44)
     public void testLeave()  {
         if (group == null)  {
             return;
@@ -646,7 +717,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(43)
+    @Order(45)
     public void testPollMessage()  {
         var pollOptionFirst = new PollOption("First");
         var pollOptionSecond = new PollOption("Second");
@@ -670,7 +741,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(44)
+    @Order(46)
     @Disabled
     public void testReaction()  {
         for (var emoji : Emoji.values())  {
@@ -680,7 +751,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(45)
+    @Order(47)
     public void testMediaDownload()  {
         log("Trying to decode some medias...");
         var success = new AtomicInteger();
@@ -702,7 +773,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(46)
+    @Order(48)
     public void testButtonsMessage()  {
         log("Sending buttons...");
         var imageButtons = new ButtonsMessageSimpleBuilder()
@@ -722,7 +793,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(47)
+    @Order(49)
     public void testListMessage()  {
         var buttons = List.of(ButtonRow.of("First option", "A nice description"), ButtonRow.of("Second option", "A nice description"), ButtonRow.of("Third option", "A nice description"));
         var section = new ButtonSection("First section", buttons);
@@ -760,7 +831,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Test
-    @Order(48)
+    @Order(50)
     public void testTemplateMessage()  {
         log("Sending template message...");
         var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
@@ -780,7 +851,7 @@ public class TestLibrary implements Listener  {
 
     // Just have a test to see if it gets sent, it's not actually a functioning button because it's designed for more complex use cases
     @Test
-    @Order(49)
+    @Order(51)
     public void testInteractiveMessage()  {
         log("Sending interactive messages..");
         var nativeFlowMessage = new InteractiveNativeFlowBuilder()
@@ -854,7 +925,7 @@ public class TestLibrary implements Listener  {
     }
 
     @Override
-    public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+    public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
         System.out.println(info.toJson());
     }
 

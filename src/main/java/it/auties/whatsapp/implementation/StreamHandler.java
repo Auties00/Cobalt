@@ -13,7 +13,9 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.call.CallStatus;
-import it.auties.whatsapp.model.chat.*;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.chat.ChatPastParticipant;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -955,10 +957,10 @@ class StreamHandler {
                         queryInitialDisappearingMode(),
                         queryInitialBlockList()
                 )
-                .thenComposeAsync(result -> loadAdditionalWebData())
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
         CompletableFuture.allOf(loginFuture, attributeStore())
+                .thenComposeAsync(result -> loadAdditionalWebData())
                 .thenRunAsync(this::notifyChatsAndNewsletters);
     }
 
@@ -1164,12 +1166,10 @@ class StreamHandler {
     }
 
     private void notifyChatsAndNewsletters() {
-        if(socketHandler.store().clientType() == ClientType.WEB) {
-            return;
+        if(socketHandler.store().clientType() != ClientType.WEB || socketHandler.keys().initialAppSync()) {
+            socketHandler.onChats();
+            socketHandler.onNewsletters();
         }
-
-        socketHandler.onChats();
-        socketHandler.onNewsletters();
     }
 
     private CompletableFuture<Void> queryNewsletters() {

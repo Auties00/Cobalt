@@ -9,7 +9,10 @@ import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
-import it.auties.whatsapp.model.chat.*;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.chat.ChatMetadata;
+import it.auties.whatsapp.model.chat.ChatParticipant;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.*;
@@ -57,8 +60,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
@@ -67,6 +73,7 @@ import static it.auties.whatsapp.util.SignalConstants.*;
 class MessageHandler {
     private static final int HISTORY_SYNC_TIMEOUT = 25;
     private static final int MAX_MESSAGE_RETRIES = 5;
+    private static final Set<Type> BASE_HISTORY_SYNC_TYPES = Set.of(Type.INITIAL_STATUS_V3, Type.PUSH_NAME, Type.INITIAL_BOOTSTRAP, Type.NON_BLOCKING_DATA);
 
     private final SocketHandler socketHandler;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
@@ -74,6 +81,9 @@ class MessageHandler {
     private final Set<Jid> historyCache;
     private final EnumSet<Type> historySyncTypes;
     private final ReentrantLock lock;
+    private final AtomicBoolean startedInitialAppSync;
+    private final HistorySyncProgressTracker recentHistorySyncTracker;
+    private final HistorySyncProgressTracker fullHistorySyncTracker;
     private ScheduledFuture<?> historySyncTask;
 
     protected MessageHandler(SocketHandler socketHandler) {
@@ -82,7 +92,10 @@ class MessageHandler {
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.historySyncTypes = EnumSet.noneOf(Type.class);
         this.lock = new ReentrantLock(true);
+        this.startedInitialAppSync = new AtomicBoolean(false);
         this.retries = new ConcurrentHashMap<>();
+        this.recentHistorySyncTracker = new HistorySyncProgressTracker();
+        this.fullHistorySyncTracker = new HistorySyncProgressTracker();
     }
 
     protected CompletableFuture<Void> encode(MessageSendRequest request) {
@@ -927,7 +940,6 @@ class MessageHandler {
 
     private void decodeChatMessage(Node infoNode, Node messageNode, String businessName, boolean notify) {
         try {
-            lock.lock();
             var pushName = infoNode.attributes().getNullableString("notify");
             var timestamp = infoNode.attributes().getLong("t");
             var id = infoNode.attributes().getRequiredString("id");
@@ -989,8 +1001,6 @@ class MessageHandler {
             sendEncMessageSuccessReceipt(infoNode, id, key.chatJid(), key.senderJid().orElse(null), key.fromMe());
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
-        }finally {
-            lock.unlock();
         }
     }
 
@@ -1048,6 +1058,7 @@ class MessageHandler {
 
     private MessageDecodeResult decodeMessageBytes(String type, byte[] encodedMessage, Jid from, Jid participant) {
         try {
+            lock.lock();
             if (encodedMessage == null) {
                 return new MessageDecodeResult(null, new IllegalArgumentException("Missing encoded message"));
             }
@@ -1079,6 +1090,8 @@ class MessageHandler {
             return new MessageDecodeResult(message, null);
         } catch (Throwable throwable) {
             return new MessageDecodeResult(null, throwable);
+        }finally {
+            lock.unlock();
         }
     }
 
@@ -1110,6 +1123,7 @@ class MessageHandler {
             if (info.message().content() instanceof ProtocolMessage protocolMessage) {
                 handleProtocolMessage(info, protocolMessage);
             }
+
             return;
         }
 
@@ -1147,6 +1161,7 @@ class MessageHandler {
             case APP_STATE_SYNC_KEY_SHARE -> onAppStateSyncKeyShare(protocolMessage);
             case REVOKE -> onMessageRevoked(info, protocolMessage);
             case EPHEMERAL_SETTING -> onEphemeralSettings(info, protocolMessage);
+            case null, default -> {}
         }
     }
 
@@ -1176,13 +1191,19 @@ class MessageHandler {
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         socketHandler.keys()
                 .addAppKeys(self, data.keys());
-        socketHandler.pullInitialPatches()
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(UNKNOWN, throwable));
     }
 
     private void onHistorySyncNotification(ChatMessageInfo info, ProtocolMessage protocolMessage) {
-        if (isZeroHistorySyncComplete()) {
-            return;
+        if(isBaseHistorySyncComplete()) {
+            if(!socketHandler.keys().initialAppSync() && !startedInitialAppSync.get()) {
+                startedInitialAppSync.set(true);
+                socketHandler.pullInitialPatches()
+                        .exceptionallyAsync(throwable -> socketHandler.handleFailure(INITIAL_APP_STATE_SYNC, throwable));
+            }
+
+            if(socketHandler.store().historyLength().isZero()) {
+                return;
+            }
         }
 
         downloadHistorySync(protocolMessage)
@@ -1191,12 +1212,8 @@ class MessageHandler {
                 .thenRunAsync(() -> socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync"));
     }
 
-    private boolean isZeroHistorySyncComplete() {
-        return socketHandler.store().historyLength().isZero()
-                && historySyncTypes.contains(Type.INITIAL_STATUS_V3)
-                && historySyncTypes.contains(Type.PUSH_NAME)
-                && historySyncTypes.contains(Type.INITIAL_BOOTSTRAP)
-                && historySyncTypes.contains(Type.NON_BLOCKING_DATA);
+    private boolean isBaseHistorySyncComplete() {
+        return historySyncTypes.containsAll(BASE_HISTORY_SYNC_TYPES);
     }
 
     private boolean isTyping(Contact sender) {
@@ -1224,7 +1241,18 @@ class MessageHandler {
             return;
         }
 
-        socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == Type.RECENT);
+        var recent = history.syncType() == Type.RECENT;
+        if(recent) {
+            recentHistorySyncTracker.commit(history.chunkOrder(), history.progress() == 100);
+            if(recentHistorySyncTracker.isDone()) {
+                socketHandler.onHistorySyncProgress(history.progress(), true);
+            }
+        }else {
+            fullHistorySyncTracker.commit(history.chunkOrder(), history.progress() == 100);
+            if(fullHistorySyncTracker.isDone()) {
+                socketHandler.onHistorySyncProgress(history.progress(), false);
+            }
+        }
     }
 
     private void onMessageDeleted(ChatMessageInfo info, ChatMessageInfo message) {
@@ -1239,7 +1267,8 @@ class MessageHandler {
                 case INITIAL_STATUS_V3 -> handleInitialStatus(history);
                 case PUSH_NAME -> handlePushNames(history);
                 case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
-                case RECENT, FULL -> handleChatsSync(history);
+                case FULL -> handleChatsSync(history, false);
+                case RECENT -> handleChatsSync(history, true);
                 case NON_BLOCKING_DATA -> handleNonBlockingData(history);
             }
         } finally {
@@ -1290,17 +1319,17 @@ class MessageHandler {
         socketHandler.onChats();
     }
 
-    private void handleChatsSync(HistorySync history) {
+    private void handleChatsSync(HistorySync history, boolean recent) {
         if (socketHandler.store().historyLength().isZero()) {
             return;
         }
 
         handleConversations(history);
-        handleConversationsNotifications(history);
+        handleConversationsNotifications(history, recent);
         scheduleHistorySyncTimeout();
     }
 
-    private void handleConversationsNotifications(HistorySync history) {
+    private void handleConversationsNotifications(HistorySync history, boolean recent) {
         var toRemove = new HashSet<Jid>();
         for (var cachedJid : historyCache) {
             var chat = socketHandler.store()
@@ -1310,7 +1339,7 @@ class MessageHandler {
                 continue;
             }
 
-            var done = !history.conversations().contains(chat);
+            var done = !recent && !history.conversations().contains(chat);
             if (done) {
                 chat.setEndOfHistoryTransfer(true);
                 chat.setEndOfHistoryTransferType(Chat.EndOfHistoryTransferType.COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY);
@@ -1498,11 +1527,42 @@ class MessageHandler {
         historyCache.clear();
         historySyncTask = null;
         historySyncTypes.clear();
+        startedInitialAppSync.set(false);
+        recentHistorySyncTracker.clear();
+        fullHistorySyncTracker.clear();
     }
 
     private record MessageDecodeResult(MessageContainer message, Throwable error) {
         public boolean hasError() {
             return error != null;
+        }
+    }
+
+    private static class HistorySyncProgressTracker {
+        private final BitSet chunksMarker;
+        private final AtomicInteger chunkEnd;
+        private HistorySyncProgressTracker() {
+            this.chunksMarker = new BitSet();
+            this.chunkEnd = new AtomicInteger(0);
+        }
+
+        private boolean isDone() {
+            var chunkEnd = this.chunkEnd.get();
+            return chunkEnd > 0 && IntStream.range(0, chunkEnd)
+                    .allMatch(chunksMarker::get);
+        }
+
+        private void commit(int chunk, boolean finished) {
+            if(finished) {
+                chunkEnd.set(chunk);
+            }
+
+            chunksMarker.set(chunk);
+        }
+
+        private void clear() {
+            chunksMarker.clear();
+            chunkEnd.set(0);
         }
     }
 }
