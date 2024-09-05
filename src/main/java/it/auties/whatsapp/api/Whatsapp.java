@@ -823,13 +823,9 @@ public class Whatsapp {
     private CompletableFuture<?> sendPrivacyTokens(long timestamp, List<Jid> toPrepare) {
         var tokens = toPrepare.stream()
                 .filter(user -> !trustedContacts.contains(user))
-                .map(user -> Node.of("token", Map.of("t", timestamp, "jid", user.toJid(), "type", "trusted_contact")))
-                .toList();
-        if(tokens.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        return socketHandler.sendQuery("set", "privacy", Node.of("tokens", tokens));
+                .map(user -> socketHandler.sendQuery("set", "privacy", Node.of("tokens", Node.of("token", Map.of("t", timestamp, "jid", user.toJid(), "type", "trusted_contact")))))
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(tokens);
     }
 
     private CompletableFuture<Void> queryPreparePic(List<Jid> availableMembers) {
