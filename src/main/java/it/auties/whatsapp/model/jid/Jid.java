@@ -138,7 +138,7 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
             case WHATSAPP -> Objects.equals(user(), "16505361212") ? JidType.OFFICIAL_SURVEY_ACCOUNT : JidType.USER;
             case LID -> JidType.LID;
             case BROADCAST -> Objects.equals(user(), "status") ? JidType.STATUS : JidType.BROADCAST;
-            case GROUP -> JidType.GROUP;
+            case GROUP_OR_COMMUNITY -> JidType.GROUP;
             case GROUP_CALL -> JidType.GROUP_CALL;
             case NEWSLETTER -> JidType.NEWSLETTER;
             case USER -> switch (user()) {

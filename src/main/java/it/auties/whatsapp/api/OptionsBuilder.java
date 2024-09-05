@@ -56,6 +56,19 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     }
 
     /**
+     * Sets whether the provided proxy should be used for media uploads/downloads
+     * By default, the proxy is used for both uploads and downloads
+     *
+     * @return the same instance for chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T mediaProxySetting(MediaProxySetting mediaProxySetting) {
+        store.setMediaProxySetting(mediaProxySetting);
+        return (T) this;
+    }
+
+
+    /**
      * Sets the error handler for this session
      *
      * @return the same instance for chaining

@@ -13,7 +13,7 @@ import java.util.OptionalLong;
 /**
  * An immutable model class that represents a quoted message
  */
-public final class QuotedMessageInfo implements MessageInfo {
+public final class QuotedMessageInfo implements MessageInfo<QuotedMessageInfo> {
     /**
      * The id of the message
      */
@@ -32,7 +32,7 @@ public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The message
      */
-    private final MessageContainer message;
+    private MessageContainer message;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public QuotedMessageInfo(String id, Chat chat, Contact sender, MessageContainer message) {
@@ -83,6 +83,7 @@ public final class QuotedMessageInfo implements MessageInfo {
         return Optional.ofNullable(sender);
     }
 
+    @Override
     public String id() {
         return id;
     }
@@ -91,8 +92,15 @@ public final class QuotedMessageInfo implements MessageInfo {
         return Optional.of(chat);
     }
 
+    @Override
     public MessageContainer message() {
         return message;
+    }
+
+    @Override
+    public QuotedMessageInfo setMessage(MessageContainer message) {
+        this.message = message;
+        return this;
     }
 
     @Override

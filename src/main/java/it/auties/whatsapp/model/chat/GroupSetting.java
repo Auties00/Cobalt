@@ -6,7 +6,7 @@ import it.auties.whatsapp.api.Whatsapp;
  * The constants of this enumerated type describe the various settings that can be toggled for a
  * group. Said settings can be changed using various methods in {@link Whatsapp}.
  */
-public enum GroupSetting {
+public enum GroupSetting implements ChatSetting {
     /**
      * Who can edit the metadata of a group
      */

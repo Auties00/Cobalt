@@ -311,7 +311,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param info     the message that was sent
      */
-    default void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+    default void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
     }
 
     /**
@@ -319,7 +319,7 @@ public interface Listener {
      *
      * @param info the message that was sent
      */
-    default void onNewMessage(MessageInfo info) {
+    default void onNewMessage(MessageInfo<?> info) {
     }
 
     /**
@@ -330,7 +330,7 @@ public interface Listener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(Whatsapp whatsapp, MessageInfo info, boolean everyone) {
+    default void onMessageDeleted(Whatsapp whatsapp, MessageInfo<?> info, boolean everyone) {
     }
 
     /**
@@ -340,7 +340,7 @@ public interface Listener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(MessageInfo info, boolean everyone) {
+    default void onMessageDeleted(MessageInfo<?> info, boolean everyone) {
     }
 
     /**
@@ -349,7 +349,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param info     the message whose status changed
      */
-    default void onMessageStatus(Whatsapp whatsapp, MessageInfo info) {
+    default void onMessageStatus(Whatsapp whatsapp, MessageInfo<?> info) {
     }
 
     /**
@@ -357,7 +357,7 @@ public interface Listener {
      *
      * @param info the message whose status changed
      */
-    default void onMessageStatus(MessageInfo info) {
+    default void onMessageStatus(MessageInfo<?> info) {
     }
 
 

@@ -20,7 +20,7 @@ import java.util.OptionalLong;
  * A model class that represents a message to notify the invoice about a successful payment.
  */
 @ProtobufMessage
-public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage<PaymentInvoiceMessage> {
+public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMessage> implements PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String note;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)

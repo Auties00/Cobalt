@@ -31,6 +31,7 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
         ANDROID(0),
         IOS(1),
         ANDROID_BUSINESS(10),
+        KAIOS(11),
         IOS_BUSINESS(12),
         WINDOWS(13),
         MACOS(24),
@@ -56,6 +57,10 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
 
         public boolean isBusiness() {
             return this == ANDROID_BUSINESS || this == IOS_BUSINESS;
+        }
+
+        public boolean isKaiOs() {
+            return this == KAIOS;
         }
 
         public PlatformType toPersonal() {

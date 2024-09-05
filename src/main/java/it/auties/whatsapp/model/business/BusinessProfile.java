@@ -30,26 +30,26 @@ public record BusinessProfile(
     public static BusinessProfile of(Node node) {
         var jid = node.attributes()
                 .getRequiredJid("jid");
-        var address = node.findNode("address")
+        var address = node.findChild("address")
                 .flatMap(Node::contentAsString);
-        var description = node.findNode("description")
+        var description = node.findChild("description")
                 .flatMap(Node::contentAsString);
-        var websites = node.findNodes("website")
+        var websites = node.listChildren("website")
                 .stream()
                 .map(Node::contentAsString)
                 .flatMap(Optional::stream)
                 .map(URI::create)
                 .toList();
-        var email = node.findNode("email")
+        var email = node.findChild("email")
                 .flatMap(Node::contentAsString);
-        var categories = node.findNodes("categories")
+        var categories = node.listChildren("categories")
                 .stream()
-                .map(entry -> entry.findNode("category"))
+                .map(entry -> entry.findChild("category"))
                 .flatMap(Optional::stream)
                 .map(BusinessCategory::of)
                 .toList();
-        var commerceExperience = node.findNode("profile_options");
-        var cartEnabled = commerceExperience.flatMap(entry -> entry.findNode("cart_enabled"))
+        var commerceExperience = node.findChild("profile_options");
+        var cartEnabled = commerceExperience.flatMap(entry -> entry.findChild("cart_enabled"))
                 .flatMap(Node::contentAsBoolean)
                 .orElse(commerceExperience.isEmpty());
         var hours = createHours(node);
@@ -57,16 +57,16 @@ public record BusinessProfile(
     }
 
     private static Optional<BusinessHours> createHours(Node node) {
-        var timezone = node.findNode("business_hours")
+        var timezone = node.findChild("business_hours")
                 .map(Node::attributes)
                 .map(attributes -> attributes.getNullableString("timezone"));
         if (timezone.isEmpty()) {
             return Optional.empty();
         }
 
-        var entries = node.findNode("business_hours")
+        var entries = node.findChild("business_hours")
                 .stream()
-                .map(entry -> entry.findNodes("business_hours_config"))
+                .map(entry -> entry.listChildren("business_hours_config"))
                 .flatMap(Collection::stream)
                 .map(BusinessHoursEntry::of)
                 .toList();

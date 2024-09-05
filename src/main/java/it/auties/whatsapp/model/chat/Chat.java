@@ -6,7 +6,6 @@ import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
@@ -31,6 +30,7 @@ import java.util.function.Predicate;
  * effect on WhatsappWeb's servers
  */
 @ProtobufMessage(name = "Conversation")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Chat implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
@@ -42,8 +42,6 @@ public final class Chat implements JidProvider {
     final Jid oldJid;
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
     int unreadMessagesCount;
-    @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
-    boolean readOnly;
     @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
     boolean endOfHistoryTransfer;
     @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
@@ -64,14 +62,6 @@ public final class Chat implements JidProvider {
     ChatDisappear disappearInitiator;
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
     boolean markedAsUnread;
-    @ProtobufProperty(index = 20, type = ProtobufType.OBJECT)
-    final List<GroupParticipant> participants;
-    @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
-    byte[] token;
-    @ProtobufProperty(index = 22, type = ProtobufType.UINT64)
-    long tokenTimestampSeconds;
-    @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
-    byte[] identityKey;
     @ProtobufProperty(index = 24, type = ProtobufType.UINT32)
     int pinnedTimestampSeconds;
     @ProtobufProperty(index = 25, type = ProtobufType.UINT64)
@@ -80,26 +70,12 @@ public final class Chat implements JidProvider {
     ChatWallpaper wallpaper;
     @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
     MediaVisibility mediaVisibility;
-    @ProtobufProperty(index = 28, type = ProtobufType.UINT64)
-    long tokenSenderTimestampSeconds;
     @ProtobufProperty(index = 29, type = ProtobufType.BOOL)
     boolean suspended;
     @ProtobufProperty(index = 30, type = ProtobufType.BOOL)
     boolean terminated;
-    @ProtobufProperty(index = 31, type = ProtobufType.UINT64)
-    long foundationTimestampSeconds;
-    @ProtobufProperty(index = 32, type = ProtobufType.STRING)
-    Jid founder;
-    @ProtobufProperty(index = 33, type = ProtobufType.STRING)
-    String description;
     @ProtobufProperty(index = 34, type = ProtobufType.BOOL)
     boolean support;
-    @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
-    boolean parentGroup;
-    @ProtobufProperty(index = 36, type = ProtobufType.BOOL)
-    boolean defaultSubGroup;
-    @ProtobufProperty(index = 37, type = ProtobufType.STRING)
-    final Jid parentGroupJid;
     @ProtobufProperty(index = 38, type = ProtobufType.STRING)
     String displayName;
     @ProtobufProperty(index = 39, type = ProtobufType.STRING)
@@ -109,23 +85,18 @@ public final class Chat implements JidProvider {
     @ProtobufProperty(index = 41, type = ProtobufType.BOOL)
     boolean pnhDuplicateLidThread;
     @ProtobufProperty(index = 42, type = ProtobufType.STRING)
-    Jid lidJid;
+    Jid lid;
     @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
     final ConcurrentHashMap<Jid, ContactStatus> presences;
-    @ProtobufProperty(index = 1000, type = ProtobufType.STRING)
-    final Set<Jid> participantsPreKeys;
-    @ProtobufProperty(index = 1001, type = ProtobufType.OBJECT)
-    final Set<GroupPastParticipant> pastParticipants;
     private boolean update;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean readOnly, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, List<GroupParticipant> participants, byte[] token, long tokenTimestampSeconds, byte[] identityKey, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, long tokenSenderTimestampSeconds, boolean suspended, boolean terminated, long foundationTimestampSeconds, Jid founder, String description, boolean support, boolean parentGroup, boolean defaultSubGroup, Jid parentGroupJid, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lidJid, ConcurrentHashMap<Jid, ContactStatus> presences, Set<Jid> participantsPreKeys, Set<GroupPastParticipant> pastParticipants) {
+    Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
         this.oldJid = oldJid;
         this.unreadMessagesCount = unreadMessagesCount;
-        this.readOnly = readOnly;
         this.endOfHistoryTransfer = endOfHistoryTransfer;
         this.ephemeralMessageDuration = ephemeralMessageDuration;
         this.ephemeralMessagesToggleTimeSeconds = ephemeralMessagesToggleTimeSeconds;
@@ -136,32 +107,19 @@ public final class Chat implements JidProvider {
         this.archived = archived;
         this.disappearInitiator = disappearInitiator;
         this.markedAsUnread = markedAsUnread;
-        this.participants = participants;
-        this.token = token;
-        this.tokenTimestampSeconds = tokenTimestampSeconds;
-        this.identityKey = identityKey;
         this.pinnedTimestampSeconds = pinnedTimestampSeconds;
         this.mute = mute;
         this.wallpaper = wallpaper;
         this.mediaVisibility = mediaVisibility;
-        this.tokenSenderTimestampSeconds = tokenSenderTimestampSeconds;
         this.suspended = suspended;
         this.terminated = terminated;
-        this.foundationTimestampSeconds = foundationTimestampSeconds;
-        this.founder = founder;
-        this.description = description;
         this.support = support;
-        this.parentGroup = parentGroup;
-        this.defaultSubGroup = defaultSubGroup;
-        this.parentGroupJid = parentGroupJid;
         this.displayName = displayName;
         this.phoneJid = phoneJid;
         this.shareOwnPhoneNumber = shareOwnPhoneNumber;
         this.pnhDuplicateLidThread = pnhDuplicateLidThread;
-        this.lidJid = lidJid;
+        this.lid = lid;
         this.presences = presences;
-        this.participantsPreKeys = participantsPreKeys;
-        this.pastParticipants = pastParticipants;
     }
 
     /**
@@ -380,33 +338,6 @@ public final class Chat implements JidProvider {
     }
 
     /**
-     * Returns the timestampSeconds for the creation of this chat's token
-     *
-     * @return an optional
-     */
-    public Optional<ZonedDateTime> tokenTimestamp() {
-        return Clock.parseSeconds(tokenTimestampSeconds);
-    }
-
-    /**
-     * Returns the timestampSeconds for the token sender creation of this chat
-     *
-     * @return an optional
-     */
-    public Optional<ZonedDateTime> tokenSenderTimestamp() {
-        return Clock.parseSeconds(tokenSenderTimestampSeconds);
-    }
-
-    /**
-     * Returns the timestampSeconds for the creation of this chat if it's a group
-     *
-     * @return an optional
-     */
-    public Optional<ZonedDateTime> foundationTimestamp() {
-        return Clock.parseSeconds(foundationTimestampSeconds);
-    }
-
-    /**
      * Adds a new unspecified amount of messages to this chat and sorts them accordingly
      *
      * @param newMessages the non-null messages to add
@@ -529,148 +460,6 @@ public final class Chat implements JidProvider {
     }
 
     /**
-     * Adds a collection of participants to this chat
-     *
-     * @param participants the participants to add
-     */
-    public void addParticipants(Collection<GroupParticipant> participants) {
-        participants.forEach(this::addParticipant);
-        this.update = true;
-    }
-
-    /**
-     * Adds a participant to this chat
-     *
-     * @param jid  the non-null jid of the participant
-     * @param role the role of the participant
-     * @return whether the participant was added
-     */
-    public boolean addParticipant(Jid jid, GroupRole role) {
-        var result = addParticipant(new GroupParticipant(jid, role));
-        if (result) {
-            this.update = true;
-        }
-
-        return result;
-    }
-
-    /**
-     * Adds a participant to this chat
-     *
-     * @param participant the non-null participant
-     * @return whether the participant was added
-     */
-    public boolean addParticipant(GroupParticipant participant) {
-        var result = participants.add(participant);
-        this.update = true;
-        return true;
-    }
-
-    /**
-     * Removes a participant from this chat
-     *
-     * @param jid the non-null jid of the participant
-     * @return whether the participant was removed
-     */
-    public boolean removeParticipant(Jid jid) {
-        var result = participants.removeIf(entry -> Objects.equals(entry.jid(), jid));
-        if (result) {
-            this.update = true;
-        }
-
-        return result;
-    }
-
-    /**
-     * Finds a participant by jid
-     * This method only works if {@link Whatsapp#queryGroupMetadata(JidProvider)} has been called before on this chat.
-     * By default, all groups that have been used in the last two weeks wil be synced automatically
-     *
-     * @param jid the non-null jid of the participant
-     * @return the participant, if present
-     */
-    public Optional<GroupParticipant> findParticipant(Jid jid) {
-        return participants.stream()
-                .filter(entry -> Objects.equals(entry.jid(), jid))
-                .findFirst();
-    }
-
-    /**
-     * Adds a past participant
-     *
-     * @param participant the non-null jid of the past participant
-     * @return whether the participant was added
-     */
-    public boolean addPastParticipant(GroupPastParticipant participant) {
-        var result = pastParticipants.add(participant);
-        if (result) {
-            this.update = true;
-        }
-
-        return result;
-    }
-
-    /**
-     * Adds a collection of past participants
-     *
-     * @param pastParticipants the non-null list of past participants
-     * @return whether the participant were added
-     */
-    public boolean addPastParticipants(List<GroupPastParticipant> pastParticipants) {
-        var result = true;
-        for (var pastParticipant : pastParticipants) {
-            result &= this.pastParticipants.add(pastParticipant);
-        }
-
-        if (result) {
-            this.update = true;
-        }
-
-        return result;
-    }
-
-    /**
-     * Removes a past participant
-     *
-     * @param jid the non-null jid of the past participant
-     * @return whether the participant was removed
-     */
-    public boolean removePastParticipant(Jid jid) {
-        var result = pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), jid));
-        if (result) {
-            this.update = true;
-        }
-
-        return result;
-    }
-
-    /**
-     * Finds a past participant by jid
-     *
-     * @param jid the non-null jid of the past participant
-     * @return the past participant, if present
-     */
-    public Optional<GroupPastParticipant> findPastParticipant(Jid jid) {
-        return pastParticipants.stream()
-                .filter(entry -> Objects.equals(entry.jid(), jid))
-                .findFirst();
-    }
-
-    public Set<Jid> participantsPreKeys() {
-        return Collections.unmodifiableSet(participantsPreKeys);
-    }
-
-    public void addParticipantsPreKeys(Collection<Jid> jids) {
-        participantsPreKeys.addAll(jids);
-        this.update = true;
-    }
-
-    public void clearParticipantsPreKeys() {
-        participantsPreKeys.clear();
-        this.update = true;
-    }
-
-    /**
      * Checks if this chat is equal to another chat
      *
      * @param other the chat
@@ -721,10 +510,6 @@ public final class Chat implements JidProvider {
         return unreadMessagesCount;
     }
 
-    public boolean readOnly() {
-        return readOnly;
-    }
-
     public boolean endOfHistoryTransfer() {
         return endOfHistoryTransfer;
     }
@@ -761,22 +546,6 @@ public final class Chat implements JidProvider {
         return markedAsUnread;
     }
 
-    public List<GroupParticipant> participants() {
-        return Collections.unmodifiableList(participants);
-    }
-
-    public Optional<byte[]> token() {
-        return Optional.ofNullable(token);
-    }
-
-    public long tokenTimestampSeconds() {
-        return tokenTimestampSeconds;
-    }
-
-    public Optional<byte[]> identityKey() {
-        return Optional.ofNullable(identityKey);
-    }
-
     public int pinnedTimestampSeconds() {
         return pinnedTimestampSeconds;
     }
@@ -793,10 +562,6 @@ public final class Chat implements JidProvider {
         return mediaVisibility;
     }
 
-    public long tokenSenderTimestampSeconds() {
-        return tokenSenderTimestampSeconds;
-    }
-
     public boolean suspended() {
         return suspended;
     }
@@ -805,36 +570,8 @@ public final class Chat implements JidProvider {
         return terminated;
     }
 
-    public long foundationTimestampSeconds() {
-        return foundationTimestampSeconds;
-    }
-
-    public Optional<Jid> founder() {
-        return Optional.ofNullable(founder);
-    }
-
-    public Optional<String> description() {
-        return Optional.ofNullable(description);
-    }
-
     public boolean support() {
         return support;
-    }
-
-    public boolean parentGroup() {
-        return parentGroup;
-    }
-
-    public boolean defaultSubGroup() {
-        return defaultSubGroup;
-    }
-
-    public Optional<Jid> parentGroupJid() {
-        return Optional.ofNullable(parentGroupJid);
-    }
-
-    public Optional<String> displayName() {
-        return Optional.ofNullable(displayName);
     }
 
     public Optional<Jid> phoneJid() {
@@ -846,15 +583,11 @@ public final class Chat implements JidProvider {
     }
 
     public Optional<Jid> lidJid() {
-        return Optional.ofNullable(lidJid);
+        return Optional.ofNullable(lid);
     }
 
     public ConcurrentHashMap<Jid, ContactStatus> presences() {
         return presences;
-    }
-
-    public Set<GroupPastParticipant> pastParticipants() {
-        return pastParticipants;
     }
 
     public boolean hasName() {
@@ -867,12 +600,6 @@ public final class Chat implements JidProvider {
 
     public Chat setUnreadMessagesCount(int unreadMessagesCount) {
         this.unreadMessagesCount = unreadMessagesCount;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
         this.update = true;
         return this;
     }
@@ -937,24 +664,6 @@ public final class Chat implements JidProvider {
         return this;
     }
 
-    public Chat setToken(byte[] token) {
-        this.token = token;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setTokenTimestampSeconds(long tokenTimestampSeconds) {
-        this.tokenTimestampSeconds = tokenTimestampSeconds;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setIdentityKey(byte[] identityKey) {
-        this.identityKey = identityKey;
-        this.update = true;
-        return this;
-    }
-
     public Chat setPinnedTimestampSeconds(int pinnedTimestampSeconds) {
         this.pinnedTimestampSeconds = pinnedTimestampSeconds;
         this.update = true;
@@ -979,12 +688,6 @@ public final class Chat implements JidProvider {
         return this;
     }
 
-    public Chat setTokenSenderTimestampSeconds(long tokenSenderTimestampSeconds) {
-        this.tokenSenderTimestampSeconds = tokenSenderTimestampSeconds;
-        this.update = true;
-        return this;
-    }
-
     public Chat setSuspended(boolean suspended) {
         this.suspended = suspended;
         this.update = true;
@@ -997,44 +700,8 @@ public final class Chat implements JidProvider {
         return this;
     }
 
-    public Chat setFoundationTimestampSeconds(long foundationTimestampSeconds) {
-        this.foundationTimestampSeconds = foundationTimestampSeconds;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setFounder(Jid founder) {
-        this.founder = founder;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setDescription(String description) {
-        this.description = description;
-        this.update = true;
-        return this;
-    }
-
     public Chat setSupport(boolean support) {
         this.support = support;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setParentGroup(boolean parentGroup) {
-        this.parentGroup = parentGroup;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setDefaultSubGroup(boolean defaultSubGroup) {
-        this.defaultSubGroup = defaultSubGroup;
-        this.update = true;
-        return this;
-    }
-
-    public Chat setDisplayName(String displayName) {
-        this.displayName = displayName;
         this.update = true;
         return this;
     }
@@ -1057,8 +724,8 @@ public final class Chat implements JidProvider {
         return this;
     }
 
-    public Chat setLidJid(Jid lidJid) {
-        this.lidJid = lidJid;
+    public Chat setLid(Jid lid) {
+        this.lid = lid;
         this.update = true;
         return this;
     }

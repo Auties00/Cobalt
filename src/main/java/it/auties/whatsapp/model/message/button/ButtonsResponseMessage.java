@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.button.base.ButtonBody;
 import it.auties.whatsapp.model.button.base.ButtonText;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.button.ButtonsResponseMessage.ResponseType;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 

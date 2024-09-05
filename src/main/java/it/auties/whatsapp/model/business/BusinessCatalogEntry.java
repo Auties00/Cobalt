@@ -34,36 +34,36 @@ public record BusinessCatalogEntry(String id, URI encryptedImage, BusinessReview
     public static BusinessCatalogEntry of(Node node) {
         var id = node.attributes().getRequiredString("id");
         var hidden = node.attributes().getBoolean("is_hidden");
-        var name = node.findNode("name")
+        var name = node.findChild("name")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing name for catalog entry"));
-        var encryptedImage = node.findNode("media")
-                .flatMap(entry -> entry.findNode("original_image_url"))
+        var encryptedImage = node.findChild("media")
+                .flatMap(entry -> entry.findChild("original_image_url"))
                 .flatMap(Node::contentAsString)
                 .map(URI::create)
                 .orElseThrow(() -> new NoSuchElementException("Missing image for catalog entry"));
-        var statusInfo = node.findNode("status_info")
-                .flatMap(entry -> entry.findNode("status"))
+        var statusInfo = node.findChild("status_info")
+                .flatMap(entry -> entry.findChild("status"))
                 .flatMap(Node::contentAsString)
                 .map(BusinessReviewStatus::of)
                 .orElse(BusinessReviewStatus.NO_REVIEW);
-        var availability = node.findNode("availability")
+        var availability = node.findChild("availability")
                 .flatMap(Node::contentAsString)
                 .map(BusinessItemAvailability::of)
                 .orElse(BusinessItemAvailability.UNKNOWN);
-        var sellerId = node.findNode("retailer_id")
+        var sellerId = node.findChild("retailer_id")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing seller id for catalog entry"));
-        var uri = node.findNode("url")
+        var uri = node.findChild("url")
                 .flatMap(Node::contentAsString)
                 .map(URI::create)
                 .orElseThrow(() -> new NoSuchElementException("Missing uri for catalog entry"));
-        var description = node.findNode("description").flatMap(Node::contentAsString).orElse("");
-        var price = node.findNode("price")
+        var description = node.findChild("description").flatMap(Node::contentAsString).orElse("");
+        var price = node.findChild("price")
                 .flatMap(Node::contentAsString)
                 .map(Long::parseUnsignedLong)
                 .orElseThrow(() -> new NoSuchElementException("Missing price for catalog entry"));
-        var currency = node.findNode("currency")
+        var currency = node.findChild("currency")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing currency for catalog entry"));
         return new BusinessCatalogEntry(id, encryptedImage, statusInfo, availability, name, sellerId, uri, description, price, currency, hidden);

@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * A model class that holds the information related to a {@link Message}.
  */
 @ProtobufMessage(name = "WebMessageInfo")
-public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<ChatMessageInfo> {
+public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, MessageStatusInfo<ChatMessageInfo> {
     @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
     private final ChatMessageKey key;
     @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
@@ -330,6 +330,7 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo<Cha
         return message;
     }
 
+    @Override
     public ChatMessageInfo setMessage(MessageContainer message) {
         this.message = message;
         return this;

@@ -15,7 +15,7 @@ import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
-import it.auties.whatsapp.model.chat.GroupRole;
+import it.auties.whatsapp.model.chat.ChatPastParticipant;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -75,8 +75,7 @@ import static it.auties.whatsapp.util.SignalConstants.KEY_BUNDLE_TYPE;
 
 class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
-    private static final int REQUIRED_PRE_KEYS_SIZE = 5;
-    private static final int WEB_PRE_KEYS_UPLOAD_CHUNK = 30;
+    private static final int PRE_KEYS_UPLOAD_CHUNK = 10;
     private static final int PING_INTERVAL = 20;
     private static final int MAX_MESSAGE_RETRIES = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
@@ -145,7 +144,7 @@ class StreamHandler {
     }
 
     private ContactStatus getUpdateType(Node node) {
-        var metadata = node.findNode();
+        var metadata = node.findChild();
         var recording = metadata.map(entry -> entry.attributes().getString("media"))
                 .filter(entry -> entry.equals("audio"))
                 .isPresent();
@@ -231,8 +230,11 @@ class StreamHandler {
         }
 
         socketHandler.querySessionsForcefully(message.senderJid()).whenCompleteAsync((result, error) -> {
+            if(error != null) {
+                return;
+            }
+
             var all = message.senderJid().device() == 0;
-            message.chat().ifPresent(Chat::clearParticipantsPreKeys);
             var recipients = all ? null : Set.of(message.senderJid());
             var request = new MessageSendRequest.Chat(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
@@ -243,20 +245,26 @@ class StreamHandler {
     private void updateReceipt(MessageStatus status, Chat chat, Contact participant, ChatMessageInfo message) {
         var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
         container.add(participant != null ? participant.jid() : message.senderJid());
-        if (chat != null && participant != null && chat.participants().size() != container.size()) {
+        if(chat == null) {
             return;
         }
 
-        switch (status) {
-            case READ -> message.receipt().readTimestampSeconds(Clock.nowSeconds());
-            case PLAYED -> message.receipt().playedTimestampSeconds(Clock.nowSeconds());
-        }
+        socketHandler.queryGroupMetadata(chat.jid()).thenAcceptAsync(metadata -> {
+            if (participant != null && metadata.participants().size() != container.size()) {
+                return;
+            }
+
+            switch (status) {
+                case READ -> message.receipt().readTimestampSeconds(Clock.nowSeconds());
+                case PLAYED -> message.receipt().playedTimestampSeconds(Clock.nowSeconds());
+            }
+        });
     }
 
     private List<String> getReceiptsMessageIds(Node node) {
-        var messageIds = Stream.ofNullable(node.findNode("list"))
+        var messageIds = Stream.ofNullable(node.findChild("list"))
                 .flatMap(Optional::stream)
-                .map(list -> list.findNodes("item"))
+                .map(list -> list.listChildren("item"))
                 .flatMap(Collection::stream)
                 .map(item -> item.attributes().getOptionalString("id"))
                 .flatMap(Optional::stream)
@@ -281,6 +289,10 @@ class StreamHandler {
         socketHandler.sendMessageAck(from, node);
         var callNode = node.children().peekFirst();
         if (callNode == null) {
+            return;
+        }
+
+        if (!callNode.description().equals("offer")) {
             return;
         }
 
@@ -333,7 +345,7 @@ class StreamHandler {
     }
 
     private void digestCallAck(Node node) {
-        var relayNode = node.findNode("relay").orElse(null);
+        var relayNode = node.findChild("relay").orElse(null);
         if (relayNode == null) {
             return;
         }
@@ -342,7 +354,7 @@ class StreamHandler {
                 .getRequiredJid("call-creator");
         var callId = relayNode.attributes()
                 .getString("call-id");
-        relayNode.findNodes("participant")
+        relayNode.listChildren("participant")
                 .stream()
                 .map(entry -> entry.attributes().getOptionalJid("jid"))
                 .flatMap(Optional::stream)
@@ -385,18 +397,18 @@ class StreamHandler {
             return;
         }
 
-        var liveUpdates = node.findNode("live_updates");
+        var liveUpdates = node.findChild("live_updates");
         if (liveUpdates.isEmpty()) {
             return;
         }
 
 
-        var messages = liveUpdates.get().findNode("messages");
+        var messages = liveUpdates.get().findChild("messages");
         if (messages.isEmpty()) {
             return;
         }
 
-        for (var messageNode : messages.get().findNodes("message")) {
+        for (var messageNode : messages.get().listChildren("message")) {
             var messageId = messageNode.attributes()
                     .getRequiredString("server_id");
             var newsletterMessage = socketHandler.store().findMessageById(newsletter.get(), messageId);
@@ -404,8 +416,8 @@ class StreamHandler {
                 continue;
             }
 
-            messageNode.findNode("reactions")
-                    .map(reactions -> reactions.findNodes("reaction"))
+            messageNode.findChild("reactions")
+                    .map(reactions -> reactions.listChildren("reaction"))
                     .stream()
                     .flatMap(Collection::stream)
                     .forEach(reaction -> onNewsletterReaction(reaction, newsletterMessage.get()));
@@ -423,7 +435,7 @@ class StreamHandler {
     }
 
     private void handleMexNamespace(Node node) {
-        var update = node.findNode("update")
+        var update = node.findChild("update")
                 .orElse(null);
         if (update == null) {
             return;
@@ -505,15 +517,15 @@ class StreamHandler {
 
     private void handleCompanionRegistration(Node node) {
         var phoneNumber = getPhoneNumberAsJid();
-        var linkCodeCompanionReg = node.findNode("link_code_companion_reg")
+        var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
                 .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
-        var ref = linkCodeCompanionReg.findNode("link_code_pairing_ref")
+        var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
-        var primaryIdentityPublicKey = linkCodeCompanionReg.findNode("primary_identity_pub")
+        var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
-        var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findNode("link_code_pairing_wrapped_primary_ephemeral_pub")
+        var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
         var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
@@ -554,7 +566,7 @@ class StreamHandler {
     }
 
     private void handleRegistrationNotification(Node node) {
-        var child = node.findNode("wa_old_registration");
+        var child = node.findChild("wa_old_registration");
         if (child.isEmpty()) {
             return;
         }
@@ -588,7 +600,7 @@ class StreamHandler {
     }
 
     private void handleGroupNotification(Node node) {
-        var child = node.findNode();
+        var child = node.findChild();
         if (child.isEmpty()) {
             return;
         }
@@ -607,7 +619,7 @@ class StreamHandler {
     }
 
     private void onGroupSubjectChange(Node node) {
-        var subject = node.findNode("subject")
+        var subject = node.findChild("subject")
                 .flatMap(subjectNode -> subjectNode.attributes().getOptionalString("subject"))
                 .orElse(null);
         if(subject == null) {
@@ -637,7 +649,7 @@ class StreamHandler {
                 .orElse(null);
         var parameters = getStubTypeParameters(metadata);
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomId())
+                .id(ChatMessageKey.randomIdV2(Objects.requireNonNullElse(participantJid, chat.jid()), socketHandler.store().clientType()))
                 .chatJid(chat.jid())
                 .senderJid(participantJid)
                 .build();
@@ -656,17 +668,24 @@ class StreamHandler {
             return;
         }
 
-        handleGroupStubType(chat, stubType, participantJid);
+        handleGroupStubType(timestamp, chat, stubType, participantJid);
     }
 
-    private void handleGroupStubType(Chat chat, ChatMessageInfo.StubType stubType, Jid participantJid) {
+    private void handleGroupStubType(long timestamp, Chat chat, ChatMessageInfo.StubType stubType, Jid participantJid) {
         switch (stubType) {
-            case GROUP_PARTICIPANT_ADD -> chat.addParticipant(participantJid, GroupRole.USER);
-            case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> chat.removeParticipant(participantJid);
-            case GROUP_PARTICIPANT_PROMOTE ->
-                    chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.ADMIN));
-            case GROUP_PARTICIPANT_DEMOTE ->
-                    chat.findParticipant(participantJid).ifPresent(participant -> participant.setRole(GroupRole.USER));
+            case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> {
+                var reason = stubType == ChatMessageInfo.StubType.GROUP_PARTICIPANT_REMOVE ? ChatPastParticipant.Reason.REMOVED : ChatPastParticipant.Reason.LEFT;
+                var pastParticipant = new ChatPastParticipant(participantJid, reason, timestamp);
+                socketHandler.addPastParticipant(chat.jid(), pastParticipant);
+            }
+            case GROUP_PARTICIPANT_ADD -> {
+                var pastParticipants = socketHandler.pastParticipants().get(chat.jid());
+                if(pastParticipants == null) {
+                    return;
+                }
+
+                pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), participantJid));
+            }
         }
     }
 
@@ -696,18 +715,15 @@ class StreamHandler {
         if (!chat.isServerJid(JidServer.WHATSAPP)) {
             return;
         }
-        var keysSize = node.findNode("count")
+        var keysSize = node.findChild("count")
                 .orElseThrow(() -> new NoSuchElementException("Missing count in notification"))
                 .attributes()
-                .getLong("value");
-        if (keysSize >= REQUIRED_PRE_KEYS_SIZE) {
-            return;
-        }
-        sendPreKeys();
+                .getInt("value");
+        sendPreKeys(keysSize);
     }
 
     private void handleAccountSyncNotification(Node node) {
-        var child = node.findNode();
+        var child = node.findChild();
         if (child.isEmpty()) {
             return;
         }
@@ -724,7 +740,7 @@ class StreamHandler {
     private void handleDevices(Node child) {
         var deviceHash = child.attributes().getString("dhash");
         socketHandler.store().setDeviceHash(deviceHash);
-        var devices = child.findNodes("device")
+        var devices = child.listChildren("device")
                 .stream()
                 .collect(Collectors.toMap(
                         entry -> entry.attributes().getRequiredJid("jid"),
@@ -740,7 +756,7 @@ class StreamHandler {
         devices.put(companionJid, companionDevice);
         socketHandler.store().setLinkedDevicesKeys(devices);
         socketHandler.onDevices(devices);
-        var keyIndexListNode = child.findNode("key-index-list")
+        var keyIndexListNode = child.findChild("key-index-list")
                 .orElseThrow(() -> new NoSuchElementException("Missing index key node from device sync"));
         var signedKeyIndexBytes = keyIndexListNode.contentAsBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing index key from device sync"));
@@ -750,7 +766,7 @@ class StreamHandler {
     }
 
     private void updateBlocklist(Node child) {
-        child.findNodes("item").forEach(this::updateBlocklistEntry);
+        child.listChildren("item").forEach(this::updateBlocklistEntry);
     }
 
     private void updateBlocklistEntry(Node entry) {
@@ -764,7 +780,7 @@ class StreamHandler {
     }
 
     private void changeUserPrivacySetting(Node child) {
-        var category = child.findNodes("category");
+        var category = child.listChildren("category");
         category.forEach(entry -> addPrivacySetting(entry, true));
     }
 
@@ -805,7 +821,7 @@ class StreamHandler {
         }
 
         var newValues = new ArrayList<>(privacyEntry.excluded());
-        for (var entry : node.findNodes("user")) {
+        for (var entry : node.listChildren("user")) {
             var jid = entry.attributes()
                     .getRequiredJid("jid");
             if (entry.attributes().hasValue("action", "add")) {
@@ -828,9 +844,9 @@ class StreamHandler {
     }
 
     private List<Jid> parsePrivacyExcludedContacts(Node result) {
-        return result.findNode("privacy")
-                .flatMap(node -> node.findNode("list"))
-                .map(node -> node.findNodes("user"))
+        return result.findChild("privacy")
+                .flatMap(node -> node.findChild("list"))
+                .map(node -> node.listChildren("user"))
                 .stream()
                 .flatMap(Collection::stream)
                 .map(user -> user.attributes().getOptionalJid("jid"))
@@ -843,7 +859,7 @@ class StreamHandler {
             return;
         }
 
-        var patches = node.findNodes("collection")
+        var patches = node.listChildren("collection")
                 .stream()
                 .map(entry -> entry.attributes().getRequiredString("name"))
                 .map(PatchType::of)
@@ -852,7 +868,7 @@ class StreamHandler {
     }
 
     private void digestIb(Node node) {
-        var dirty = node.findNode("dirty");
+        var dirty = node.findChild("dirty");
         if (dirty.isEmpty()) {
             Validate.isTrue(!node.hasNode("downgrade_webclient"), "Multi device beta is not enabled. Please enable it from Whatsapp");
             return;
@@ -911,69 +927,167 @@ class StreamHandler {
         socketHandler.confirmConnection();
         node.attributes().getOptionalJid("lid")
                 .ifPresent(socketHandler.store()::setLid);
-        socketHandler.sendQuery("set", "passive", Node.of("active"));
-        if (!socketHandler.keys().hasPreKeys()) {
-            sendPreKeys();
-        }
+        finishLogin();
+    }
 
-        var loggedInFuture = queryRequiredInfo()
-                .thenComposeAsync(ignored -> initSession())
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        var initialAppSync = socketHandler.keys().initialAppSync();
-        if (!initialAppSync) {
-            configureApi().thenRunAsync(() -> {
-                onRegistration();
-                onInitialInfo();
-            }).exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        }else {
-            loggedInFuture.thenRunAsync(this::onInitialInfo);
-        }
-
-        var attributionFuture = socketHandler.store()
+    private CompletableFuture<Void> attributeStore() {
+        return socketHandler.store()
                 .serializer()
                 .attributeStore(socketHandler.store())
                 .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
-        CompletableFuture.allOf(loggedInFuture, attributionFuture)
-                .thenRunAsync(() -> notifyChatsAndNewsletters(initialAppSync));
     }
 
-    private CompletableFuture<Void> initSession() {
-        return CompletableFuture.allOf(
-                scheduleMediaConnectionUpdate(),
-                updateSelfPresence(),
-                queryInitial2fa(),
-                queryInitialAboutPrivacy(),
-                queryInitialPrivacySettings(),
-                queryInitialDisappearingMode(),
-                sendInitialMetadata(),
-                queryInitialBlockList(),
-                updateUserAbout(false),
-                updateUserPicture(false)
-        );
-    }
-
-    private CompletableFuture<Void> configureApi() {
-        return switch (socketHandler.store().clientType()) {
-            case WEB -> CompletableFuture.allOf(
-                    queryGroups(),
-                    queryNewsletters()
-            );
-            case MOBILE -> CompletableFuture.allOf(
-                    acceptTermsOfService(),
-                    setPushEndpoint(),
-                    setDefaultStatus(),
-                    resetMultiDevice(),
-                    setupGoogleCrypto(),
-                    setupRescueToken(),
-                    getInviteSender(),
-                    preRegistrationAddRequests(),
-                    sendNumberMetadata()
-            );
+    private void finishLogin() {
+        switch (socketHandler.store().clientType()) {
+            case WEB -> finishWebLogin();
+            case MOBILE -> finishMobileLogin();
         };
     }
 
-    private CompletableFuture<?> preRegistrationAddRequests() {
-        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "get", "w:g2", Node.of("pre_reg_add_requests"));
+    private void finishWebLogin() {
+        var loginFuture = CompletableFuture.allOf(
+                        setActiveConnection(),
+                        queryRequiredWebInfo(),
+                        sendInitialPreKeys(),
+                        scheduleMediaConnectionUpdate(),
+                        updateSelfPresence(),
+                        queryInitial2fa(),
+                        queryInitialAboutPrivacy(),
+                        queryInitialPrivacySettings(),
+                        queryInitialDisappearingMode(),
+                        queryInitialBlockList()
+                )
+                .thenRunAsync(this::onInitialInfo)
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+        CompletableFuture.allOf(loginFuture, attributeStore())
+                .thenComposeAsync(result -> loadAdditionalWebData())
+                .thenRunAsync(this::notifyChatsAndNewsletters);
+    }
+
+    private CompletableFuture<Node> setActiveConnection() {
+        return socketHandler.sendQuery("set", "passive", Node.of("active"));
+    }
+
+    private CompletableFuture<?> sendInitialPreKeys() {
+        if (socketHandler.keys().hasPreKeys()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        
+        return sendPreKeys(PRE_KEYS_UPLOAD_CHUNK);
+    }
+
+    private CompletableFuture<Void> loadAdditionalWebData() {
+        if (socketHandler.keys().initialAppSync()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return CompletableFuture.allOf(queryGroups(), queryNewsletters());
+    }
+
+    private void finishMobileLogin() {
+        if (!socketHandler.keys().initialAppSync()) {
+            initMobileSession();
+            return;
+        }
+
+        var loginFuture = CompletableFuture.allOf(
+                        setupRescueToken(),
+                        setActiveConnection(),
+                        queryMobileSessionMex(),
+                        acceptDynamicTermsOfService(),
+                        setPushEndpoint(),
+                        updateSelfPresence(),
+                        scheduleMediaConnectionUpdate()
+                )
+                .thenRunAsync(this::onInitialInfo);
+        CompletableFuture.allOf(loginFuture, attributeStore())
+                .thenRunAsync(this::notifyChatsAndNewsletters)
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+    }
+
+    private CompletableFuture<Void> acceptDynamicTermsOfService() {
+        return socketHandler.sendQuery("get", "tos", Node.of("get_user_disclosures", Map.of("t", 0))).thenComposeAsync(result -> {
+            var notices = result.listChildren("notice")
+                    .stream()
+                    .map(notice -> Node.of("notice", Map.of("id", notice.attributes().getRequiredString("id"))))
+                    .map(notice -> socketHandler.sendQuery("get", "tos", Node.of("request", notice)))
+                    .toArray(CompletableFuture[]::new);
+            return CompletableFuture.allOf(notices);
+        });
+    }
+
+    private CompletableFuture<Void> queryMobileSessionMex() {
+        return CompletableFuture.allOf(
+                socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7561558900567547"), HexFormat.of().parseHex("7b227661726961626c6573223a7b7d7d"))),
+                socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7480997188628461"), HexFormat.of().parseHex("7b227661726961626c6573223a7b22696e707574223a22454d41494c227d7d")))
+        );
+    }
+
+    private void initMobileSession() {
+        initMobileSessionPresence(false)
+                .thenComposeAsync(result -> CompletableFuture.allOf(
+                        setPushEndpoint(),
+                        queryProtocolV2(),
+                        queryGroups(),
+                        queryLists(),
+                        updateUserPicture(false),
+                        updateUserAbout(false),
+                        sendInitialPreKeys(),
+                        setActiveConnection(),
+                        setDefaultStatus(),
+                        queryInitial2fa(),
+                        queryInitialAboutPrivacy(),
+                        queryInitialPrivacySettings(),
+                        queryInitialDisappearingMode(),
+                        queryInitialBlockList(),
+                        acceptTermsOfService(),
+                        queryProtocolV1(),
+                        setupGoogleCrypto(),
+                        resetCompanionDevices(),
+                        checkBusinessStatus(),
+                        setupGoogleCrypto(),
+                        cleanGroups(),
+                        initMobileSessionPresence(true),
+                        getInviteSender(),
+                        queryMobileSessionInitMex()
+                ))
+                .thenComposeAsync(ignored -> {
+                    socketHandler.keys().setInitialAppSync(true);
+                    return socketHandler.disconnect(DisconnectReason.RECONNECTING);
+                })
+                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+    }
+
+    private CompletableFuture<Void> initMobileSessionPresence(boolean done) {
+        if(!done) {
+            return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("type", "unavailable")));
+        }
+
+        return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("type", "available", "name", socketHandler.store().name())));
+    }
+
+    private CompletableFuture<Node> queryMobileSessionInitMex() {
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7561558900567547"), HexFormat.of().parseHex("7b227661726961626c6573223a7b7d7d")));
+    }
+
+    private CompletableFuture<Node> cleanGroups() {
+        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("type", "groups")));
+    }
+
+    private CompletableFuture<Node> resetCompanionDevices() {
+        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")));
+    }
+
+    private CompletableFuture<Node> queryProtocolV1() {
+        return socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", 1)));
+    }
+
+    private CompletableFuture<Node> queryLists() {
+        return socketHandler.sendQuery("get", "w:b", Node.of("lists"));
+    }
+
+    private CompletableFuture<Node> queryProtocolV2() {
+        return socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")));
     }
 
     private CompletableFuture<?> getInviteSender() {
@@ -982,28 +1096,6 @@ class StreamHandler {
 
     private CompletableFuture<Void> setDefaultStatus() {
         return socketHandler.changeAbout("Hey there! I am using WhatsApp.");
-    }
-
-    private CompletableFuture<?> sendInitialMetadata() {
-        var wamBinary = "57414d0501010001200b800d086950686f6e652058800f0631362e372e34801109322e32342e352e373510152017502f15a1fc65206928830138790604387b060288eb0a036e616f88a513053231363233186b1818a71c88911e063230483234308879240431372e3018fb2e18ed3318ab3888fb3c09353735323538303733290c147602dce54645287fd941";
-        var wamData = new String(HexFormat.of().parseHex(wamBinary))
-                .replace("iPhone X", socketHandler.store().device().model().replaceAll("_", " "))
-                .replace("2.24.5.75", socketHandler.store().version().toString())
-                .getBytes();
-        var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
-        return socketHandler.sendQuery("set", "w:stats", addNode);
-    }
-
-    private CompletableFuture<Void> sendNumberMetadata() {
-        var wamBinary = "57414d0501010001200b800d086950686f6e652058800f0631362e372e34801109322e32342e322e373110152017502fc8a2b265206928830138790604387b060288eb0a03636c6e186b1818a71c88911e063230483234308879240431372e3018fb2e18ed3318ab3888fb3c09353537393735393734290c147602705fefb1a86cd941";
-        var wamData = new String(HexFormat.of().parseHex(wamBinary))
-                .replace("iPhone X", socketHandler.store().device().model().replaceAll("_", " "))
-                .replace("2.24.2.71", socketHandler.store().version().toString())
-                .replace("557975974", String.valueOf(socketHandler.store().phoneNumber().orElseThrow().numberWithoutPrefix()))
-                .getBytes();
-        var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
-        return socketHandler.sendQuery("set", "w:stats", addNode)
-                .thenRun(() -> {});
     }
 
     private CompletableFuture<?> setPushEndpoint() {
@@ -1023,17 +1115,12 @@ class StreamHandler {
                 .put("preview", 1)
                 .put("reg_push", 1)
                 .put("version", 2)
-                .put("voip", "35e178c41d2bd90b8db50c7a2684a38bf802e760cd1f2d7ff803d663412a9320")
+                .put("voip", HexFormat.of().formatHex(Bytes.random(32)))
                 .put("voip_payload_type", 2)
                 .toMap();
         return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes));
     }
-
-    private CompletableFuture<?> resetMultiDevice() {
-        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("set", "w:sync:app:state", Node.of("delete_all_data")));
-    }
-
+    
     private CompletableFuture<?> setupRescueToken() {
         return socketHandler.sendQuery("set", "w:auth:token", Node.of("token", HexFormat.of().parseHex("20292dbd11e06094feb1908737ca76e6")));
     }
@@ -1046,30 +1133,18 @@ class StreamHandler {
     }
 
     private CompletableFuture<?> acceptTermsOfService() {
-        var firstNotice = Node.of("notice", Map.of("id", "20230902"));
-        var secondNotice = Node.of("notice", Map.of("id", "20230901"));
-        var thirdNotice = Node.of("notice", Map.of("id", "20231027"));
-        return socketHandler.sendQuery("get", "tos", Node.of("request", firstNotice, secondNotice, thirdNotice))
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("accept")))
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("set", "tos", Node.of("trackable", Map.of("id", "20601216", "result", 1))))
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("set", "tos", Node.of("trackable", Map.of("id", "20900727", "result", 1))));
+        var notices = Stream.of("20230901", "20240729", "20230902", "20231027")
+                .map(id ->  Node.of("notice", Map.of("id", id)))
+                .toList();
+        return socketHandler.sendQuery("get", "tos", Node.of("request", notices))
+                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("accept")));
     }
 
-    private void onRegistration() {
-        socketHandler.store().serialize(true);
-        socketHandler.keys().serialize(true);
-        if(socketHandler.store().clientType() == ClientType.MOBILE) {
-            socketHandler.keys().setInitialAppSync(true);
+    private void notifyChatsAndNewsletters() {
+        if(socketHandler.store().clientType() != ClientType.WEB || socketHandler.keys().initialAppSync()) {
+            socketHandler.onChats();
+            socketHandler.onNewsletters();
         }
-    }
-
-    private void notifyChatsAndNewsletters(boolean notify) {
-        if(!notify) {
-            return;
-        }
-
-        socketHandler.onChats();
-        socketHandler.onNewsletters();
     }
 
     private CompletableFuture<Void> queryNewsletters() {
@@ -1080,7 +1155,7 @@ class StreamHandler {
     }
 
     private void parseNewsletters(Node result) {
-        var newslettersPayload = result.findNode("result")
+        var newslettersPayload = result.findChild("result")
                 .flatMap(Node::contentAsString);
         if(newslettersPayload.isEmpty()) {
             return;
@@ -1114,18 +1189,18 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryGroups() {
-        return socketHandler.sendQuery(JidServer.GROUP.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
+        return socketHandler.sendQuery(JidServer.GROUP_OR_COMMUNITY.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
                 .thenAcceptAsync(this::onGroupsQuery);
     }
 
     private void onGroupsQuery(Node result) {
-        var groups = result.findNode("groups");
+        var groups = result.findChild("groups");
         if (groups.isEmpty()) {
             return;
         }
 
         groups.get()
-                .findNodes("group")
+                .listChildren("group")
                 .forEach(socketHandler::handleGroupMetadata);
     }
 
@@ -1141,7 +1216,7 @@ class StreamHandler {
                 .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails, true))
                 .build();
         return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate))).thenAccept(result -> {
-            var verifiedName = result.findNode("verified_name")
+            var verifiedName = result.findChild("verified_name")
                     .map(node -> node.attributes().getString("id"))
                     .orElse("");
             socketHandler.store().setVerifiedName(verifiedName);
@@ -1184,39 +1259,28 @@ class StreamHandler {
     }
 
     private void onInitialInfo() {
-        socketHandler.keys().setRegistered(true);
+        if(!socketHandler.keys().registered()) {
+            socketHandler.keys().setRegistered(true);
+            socketHandler.store().serialize(true);
+            socketHandler.keys().serialize(true);
+        }
+
+        if(socketHandler.store().clientType() == ClientType.MOBILE) {
+            socketHandler.store()
+                    .jid()
+                    .map(Jid::toSimpleJid)
+                    .ifPresent(jid -> {
+                        var me = new Contact(jid, socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
+                        socketHandler.store().addContact(me);
+                    });
+        }
+
         schedulePing();
         retryConnection.set(false);
         socketHandler.onLoggedIn();
-        if (!socketHandler.keys().initialAppSync()) {
-            return;
+        if (socketHandler.keys().initialAppSync()) {
+            socketHandler.onContacts();
         }
-
-        socketHandler.onContacts();
-    }
-
-    private CompletableFuture<Void> queryRequiredInfo() {
-        return switch (socketHandler.store().clientType()) {
-            case WEB -> queryRequiredWebInfo();
-            case MOBILE -> queryRequiredMobileInfo();
-        };
-    }
-
-    private CompletableFuture<Void> queryRequiredMobileInfo() {
-        return checkBusinessStatus()
-                .thenCompose(ignored -> socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", ""))))
-                .thenAcceptAsync(this::parseProps)
-                .thenRunAsync(() -> {
-                    socketHandler.sendQuery("get", "w:b", Node.of("lists"))
-                            .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                    socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("type", "groups")))
-                            .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                    if (socketHandler.store().device().platform().isBusiness()) {
-                        socketHandler.sendQuery("get", "fb:thrift_iq", Map.of("smax_id", 42), Node.of("linked_accounts"))
-                                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
-                    }
-                })
-                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
     }
 
     private CompletableFuture<Void> queryRequiredWebInfo() {
@@ -1337,7 +1401,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> parsePrivacySettings(Node result) {
-        var privacy = result.findNodes("privacy")
+        var privacy = result.listChildren("privacy")
                 .stream()
                 .flatMap(entry -> entry.children().stream())
                 .map(entry -> addPrivacySetting(entry, false))
@@ -1346,9 +1410,9 @@ class StreamHandler {
     }
 
     private void parseProps(Node result) {
-        var properties = result.findNode("props")
+        var properties = result.findChild("props")
                 .stream()
-                .map(entry -> entry.findNodes("prop"))
+                .map(entry -> entry.listChildren("prop"))
                 .flatMap(Collection::stream)
                 .map(node -> Map.entry(node.attributes().getString("name"), node.attributes().getString("value")))
                 .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (first, second) -> second, ConcurrentHashMap::new));
@@ -1384,12 +1448,12 @@ class StreamHandler {
     }
 
     private void onMediaConnection(Node node) {
-        var mediaConnection = node.findNode("media_conn").orElse(node);
+        var mediaConnection = node.findChild("media_conn").orElse(node);
         var auth = mediaConnection.attributes().getString("auth");
         var ttl = mediaConnection.attributes().getInt("ttl");
         var maxBuckets = mediaConnection.attributes().getInt("max_buckets");
         var timestamp = System.currentTimeMillis();
-        var hosts = mediaConnection.findNodes("host")
+        var hosts = mediaConnection.listChildren("host")
                 .stream()
                 .map(Node::attributes)
                 .map(attributes -> attributes.getString("hostname"))
@@ -1400,7 +1464,12 @@ class StreamHandler {
     }
 
     private void digestIq(Node node) {
-        var container = node.findNode().orElse(null);
+        if (node.attributes().hasValue("xmlns", "urn:xmpp:ping")) {
+            socketHandler.sendQueryWithNoResponse("result", null);
+            return;
+        }
+
+        var container = node.findChild().orElse(null);
         if (container == null) {
             return;
         }
@@ -1411,14 +1480,14 @@ class StreamHandler {
         }
     }
 
-    private void sendPreKeys() {
+    private CompletableFuture<?> sendPreKeys(int size) {
         var startId = socketHandler.keys().lastPreKeyId() + 1;
-        var preKeys = IntStream.range(startId, startId + WEB_PRE_KEYS_UPLOAD_CHUNK)
+        var preKeys = IntStream.range(startId, startId + size)
                 .mapToObj(SignalPreKeyPair::random)
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        socketHandler.sendQuery(
+        return socketHandler.sendQuery(
                 "set",
                 "encrypt",
                 Node.of("registration", socketHandler.keys().encodedRegistrationId()),
@@ -1490,7 +1559,7 @@ class StreamHandler {
     }
 
     private void printQrCode(QrHandler qrHandler, Node container) {
-        var ref = container.findNode("ref")
+        var ref = container.findChild("ref")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
         var qr = String.join(
@@ -1506,7 +1575,7 @@ class StreamHandler {
 
     private void confirmPairing(Node node, Node container) {
         saveCompanion(container);
-        var deviceIdentity = container.findNode("device-identity")
+        var deviceIdentity = container.findChild("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
         var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity.contentAsBytes().orElseThrow());
         var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKeyPair().publicKey());
@@ -1555,7 +1624,7 @@ class StreamHandler {
     }
 
     private UserAgent.PlatformType getWebPlatform(Node node) {
-        var name = node.findNode("platform")
+        var name = node.findChild("platform")
                 .flatMap(entry -> entry.attributes().getOptionalString("name"))
                 .orElse(null);
         return switch (name) {
@@ -1578,7 +1647,7 @@ class StreamHandler {
     }
 
     private void saveCompanion(Node container) {
-        var node = container.findNode("device")
+        var node = container.findChild("device")
                 .orElseThrow(() -> new NoSuchElementException("Missing device"));
         var companion = node.attributes()
                 .getOptionalJid("jid")

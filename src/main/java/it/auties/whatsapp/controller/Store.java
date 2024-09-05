@@ -9,6 +9,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.MediaProxySetting;
 import it.auties.whatsapp.api.TextPreviewSetting;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.implementation.SocketRequest;
@@ -339,11 +340,17 @@ public final class Store extends Controller<Store> {
     @ProtobufProperty(index = 39, type = ProtobufType.BOOL)
     boolean checkPatchMacs;
 
-        /**
-         * All args constructor
-         */
+    /**
+     * The setting to use when uploading/downloading medias
+     */
+    @ProtobufProperty(index = 42, type = ProtobufType.OBJECT)
+    MediaProxySetting mediaProxySetting;
+
+    /**
+     * All args constructor
+     */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, MediaProxySetting mediaProxySetting) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.proxy = proxy;
         this.online = online;
@@ -387,6 +394,7 @@ public final class Store extends Controller<Store> {
         this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
         this.device = device;
         this.checkPatchMacs = checkPatchMacs;
+        this.mediaProxySetting = Objects.requireNonNullElse(mediaProxySetting, MediaProxySetting.ALL);
     }
 
     public static Store newStore(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
@@ -412,7 +420,7 @@ public final class Store extends Controller<Store> {
      * @return a non-null optional
      */
     public Optional<Contact> findContactByJid(JidProvider jid) {
-       return switch (jid) {
+        return switch (jid) {
             case Contact contact -> Optional.of(contact);
             case null -> Optional.empty();
             default -> Optional.ofNullable(contacts.get(jid.toJid()));
@@ -1348,6 +1356,10 @@ public final class Store extends Controller<Store> {
         return this.textPreviewSetting;
     }
 
+    public MediaProxySetting mediaProxySetting() {
+        return this.mediaProxySetting;
+    }
+
     public WebHistoryLength historyLength() {
         return this.historyLength;
     }
@@ -1473,6 +1485,11 @@ public final class Store extends Controller<Store> {
 
     public Store setTextPreviewSetting(TextPreviewSetting textPreviewSetting) {
         this.textPreviewSetting = textPreviewSetting;
+        return this;
+    }
+
+    public Store setMediaProxySetting(MediaProxySetting mediaProxySetting) {
+        this.mediaProxySetting = mediaProxySetting;
         return this;
     }
 

@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 public final class Medias {
@@ -40,9 +41,6 @@ public final class Medias {
     private static final int PROFILE_PIC_SIZE = 640;
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
-
-    private static volatile HttpClient httpClient;
-    private static final Object httpClientLock = new Object();
 
     public static byte[] getProfilePic(byte[] file) {
         try {
@@ -78,28 +76,26 @@ public final class Medias {
             var safeHeaders = Attributes.of(headers)
                     .put("User-Agent", userAgent, Objects::nonNull)
                     .toMap();
-            return getOrCreateClient().getRaw(uri, safeHeaders);
+            return withDisposableHttpClient(null, client -> client.getRaw(uri, safeHeaders));
         } catch (Throwable exception) {
             return CompletableFuture.failedFuture(exception);
         }
     }
-    
-    private static HttpClient getOrCreateClient() {
-        var value = httpClient;
-        if (value == null) {
-            synchronized (httpClientLock) {
-                value = httpClient;
-                if (value == null) {
-                    value = new HttpClient(HttpClient.Platform.DEFAULT, false);
-                    httpClient = value;
-                }
-            }
-        }
 
-        return value;
+    private static <T> CompletableFuture<T> withDisposableHttpClient(URI proxy, Function<HttpClient, CompletableFuture<T>> function) {
+        var client = new HttpClient(HttpClient.Platform.DEFAULT, proxy, false);
+        return function.apply(client)
+                .thenApplyAsync(result -> {
+                    client.close();
+                    return result;
+                })
+                .exceptionallyComposeAsync(error -> {
+                    client.close();
+                    return CompletableFuture.failedFuture(error);
+                });
     }
 
-    public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection) {
+    public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection, String userAgent, URI proxy) {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
         var uploadData = type.inflatable() ? Bytes.compress(file) : file;
         var mediaFile = prepareMediaFile(type, uploadData);
@@ -110,12 +106,13 @@ public final class Medias {
                 .encodeToString(Objects.requireNonNullElse(mediaFile.fileEncSha256(), mediaFile.fileSha256()));
         var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, path, token, auth, token));
         var headers = Map.of(
+                "User-Agent", userAgent,
                 "Content-Type", "application/octet-stream",
                 "Accept", "application/json",
                 "Origin", WEB_ORIGIN
         );
         var body = Objects.requireNonNullElse(mediaFile.encryptedFile(), file);
-        return getOrCreateClient().postRawWithoutSslParams(uri, headers, body).thenApplyAsync(response -> {
+        return withDisposableHttpClient(proxy, client -> client.postRaw(uri, headers, body)).thenApplyAsync(response -> {
             var upload = Json.readValue(response, MediaUpload.class);
             return new MediaFile(
                     mediaFile.encryptedFile(),
@@ -157,8 +154,7 @@ public final class Medias {
                     .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
                     .map(URI::create)
                     .orElseThrow(() -> new NoSuchElementException("Missing url and path from media"));
-            return getOrCreateClient()
-                    .getRaw(url)
+            return withDisposableHttpClient(null, client -> client.getRaw(url))
                     .thenApplyAsync(response -> handleResponse(provider, response));
         } catch (Throwable error) {
             return CompletableFuture.completedFuture(Optional.empty());

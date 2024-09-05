@@ -7,7 +7,7 @@ import java.time.ZonedDateTime;
 
 /**
  * A model interface that represents a gdpr account report. This can be queried using
- * {@link Whatsapp#getGdprAccountInfoStatus()}
+ * {@link Whatsapp#queryGdprAccountInfoStatus()}
  */
 public sealed interface GdprAccountReport {
     /**

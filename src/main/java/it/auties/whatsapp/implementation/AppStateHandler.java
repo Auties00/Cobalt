@@ -330,9 +330,9 @@ class AppStateHandler {
 
     private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
         return Stream.ofNullable(node)
-                .map(sync -> sync.findNodes("sync"))
+                .map(sync -> sync.listChildren("sync"))
                 .flatMap(Collection::stream)
-                .map(sync -> sync.findNodes("collection"))
+                .map(sync -> sync.listChildren("collection"))
                 .flatMap(Collection::stream)
                 .map(this::parseSync)
                 .flatMap(Optional::stream)
@@ -343,13 +343,13 @@ class AppStateHandler {
         var name = PatchType.of(sync.attributes().getString("name"));
         Validate.isTrue(!sync.attributes().hasValue("type", "error"), "App state sync failed");
         var more = sync.attributes().getBoolean("has_more_patches");
-        var snapshotSync = sync.findNode("snapshot")
+        var snapshotSync = sync.findChild("snapshot")
                 .flatMap(this::decodeSnapshot)
                 .orElse(null);
         var versionCode = sync.attributes().getInt("version");
-        var patches = sync.findNode("patches")
+        var patches = sync.findChild("patches")
                 .orElse(sync)
-                .findNodes("patch")
+                .listChildren("patch")
                 .stream()
                 .map(patch -> decodePatch(patch, versionCode))
                 .flatMap(Optional::stream)

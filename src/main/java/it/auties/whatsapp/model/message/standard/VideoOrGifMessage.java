@@ -14,8 +14,6 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
-import it.auties.whatsapp.model.message.standard.VideoOrGifMessage.Attribution;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Validate;
@@ -30,8 +28,8 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding a video inside
  */
 @ProtobufMessage(name = "Message.VideoMessage")
-public final class VideoOrGifMessage extends ExtendedMediaMessage<VideoOrGifMessage>
-        implements MediaMessage<VideoOrGifMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
+        implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)

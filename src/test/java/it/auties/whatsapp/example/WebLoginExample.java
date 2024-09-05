@@ -23,6 +23,7 @@ public class WebLoginExample {
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
                 .addMessageStatusListener((info) -> System.out.printf("Message status update for %s%n", info.id()))
                 .addChatMessagesSyncListener((api, chat, last) -> System.out.printf("%s now has %s messages: %s(oldest message: %s)%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done", chat.oldestMessage().flatMap(ChatMessageInfo::timestamp).orElse(null)))
+                .addHistorySyncProgressListener((progress, recent) -> System.out.println("History sync progress: " + progress + "%(" + recent + ")"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
                 .join()

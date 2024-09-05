@@ -53,7 +53,7 @@ In short, if you use this library without a malicious intent, you will never get
     <dependency>
         <groupId>com.github.auties00</groupId>
         <artifactId>cobalt</artifactId>
-        <version>0.0.6</version>
+        <version>0.0.7</version>
     </dependency>
     ```
    
@@ -67,7 +67,7 @@ In short, if you use this library without a malicious intent, you will never get
                 <annotationProcessorPath>
                     <groupId>com.github.auties00</groupId>
                     <artifactId>cobalt</artifactId>
-                    <version>0.0.6</version>
+                    <version>0.0.7</version>
                 <annotationProcessorPath>
             <annotationProcessorPaths>
         <configuration>
@@ -79,23 +79,23 @@ In short, if you use this library without a malicious intent, you will never get
 - Groovy DSL
     - Dependency
     ```groovy
-    implementation 'com.github.auties00:cobalt:0.0.6'
+    implementation 'com.github.auties00:cobalt:0.0.7'
     ```
   
     - Annotation processor (required for @RegisterListener)
     ```groovy
-    annotationProcessor 'com.github.auties00:cobalt:0.0.6'
+    annotationProcessor 'com.github.auties00:cobalt:0.0.7'
     ```
 
 - Kotlin DSL
     - Dependency
     ```groovy
-    implementation("com.github.auties00:cobalt:0.0.6")
+    implementation("com.github.auties00:cobalt:0.0.7")
     ```
   
     - Annotation processor (required for @RegisterListener)
     ```groovy
-    annotationProcessor("com.github.auties00:cobalt:0.0.6")
+    annotationProcessor("com.github.auties00:cobalt:0.0.7")
     ```
 
 ### Javadocs & Documentation

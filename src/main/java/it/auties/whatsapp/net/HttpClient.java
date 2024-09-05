@@ -49,7 +49,7 @@ public class HttpClient implements AutoCloseable {
             //,"use default"
     };
     public static final byte[] EMPTY_BUFFER = new byte[0];
-    private static final byte[] HTTP_MESSAGE_END_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] HTTP_MESSAGE_END_BYTES = "\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
 
     private final Platform platform;
     private final URI proxy;
@@ -107,15 +107,16 @@ public class HttpClient implements AutoCloseable {
         return sendRequest("POST", uri, headers, body);
     }
 
-    public CompletableFuture<byte[]> postRawWithoutSslParams(URI uri, Map<String, ?> headers, byte[] body) {
-        return sendRequest("POST", uri, headers, body);
+    public CompletableFuture<String> postString(URI uri, Map<String, ?> headers, byte[] body) {
+        return sendRequest("POST", uri, headers, body)
+                .thenApplyAsync(String::new);
     }
 
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body) {
         var socket = getLockableSocketClient(uri);
         var builder = createRequestPayload(method, uri, headers, body);
         return (socket.isConnected() ? CompletableFuture.completedFuture(null) : socket.connectAsync(toSocketAddress(uri)))
-                .thenComposeAsync(ignored -> socket.writeAsync(builder.toString().getBytes()))
+                .thenComposeAsync(ignored -> socket.writeAsync(StandardCharsets.ISO_8859_1.encode(builder.toString())))
                 .thenComposeAsync(ignored -> readResponse(method, uri, headers, body, socket))
                 .orTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                 .exceptionallyComposeAsync(error -> {
@@ -413,7 +414,7 @@ public class HttpClient implements AutoCloseable {
                 if(divider != -1) {
                     response.limit(divider);
                 }
-                var content = StandardCharsets.US_ASCII.decode(response).toString();
+                var content = StandardCharsets.ISO_8859_1.decode(response).toString();
                 if(this.headers == null) {
                     this.headers = content;
                 }else {
@@ -586,7 +587,7 @@ public class HttpClient implements AutoCloseable {
     private SocketClient getLockableSocketClient(URI uri) {
         try {
             var aliveSocket = aliveSockets == null ? null : aliveSockets.get(uri.getHost() + ":" + uri.getPort());
-            if(aliveSocket != null) {
+            if(aliveSocket != null && !aliveSocket.isClosed()) {
                 return aliveSocket;
             }
 

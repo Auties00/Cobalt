@@ -11,7 +11,7 @@ open module it.auties.cobalt {
     requires it.auties.qr;
     requires static java.desktop;
 
-    // Serialization (Protobuf, JSON, Smile)
+    // Serialization (Protobuf, JSON)
     requires it.auties.protobuf.base;
     requires java.compiler;
     requires com.fasterxml.jackson.annotation;
@@ -19,7 +19,6 @@ open module it.auties.cobalt {
     requires com.fasterxml.jackson.module.paramnames;
     requires com.fasterxml.jackson.datatype.jdk8;
     requires com.fasterxml.jackson.datatype.jsr310;
-    requires dd.plist;
 
     // Generate message previews
     requires it.auties.linkpreview;
@@ -29,7 +28,6 @@ open module it.auties.cobalt {
 
     // Mobile api
     requires libphonenumber;
-    requires net.dongliu.apkparser;
 
     // Unsafe reflection
     requires jdk.unsupported;
