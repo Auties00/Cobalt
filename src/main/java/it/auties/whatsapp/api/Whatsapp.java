@@ -973,7 +973,7 @@ public class Whatsapp {
         var recipient = info.chatJid();
         Validate.isTrue(!recipient.hasServer(JidServer.NEWSLETTER), "Use sendNewsletterMessage to send a message in a newsletter");
         var timestamp = Clock.nowSeconds();
-        return (recipient.hasServer(JidServer.WHATSAPP) ? prepareChat(timestamp, Set.of(recipient)) : CompletableFuture.completedFuture(List.of(participant))).thenComposeAsync(chatResult -> {
+        return (recipient.hasServer(JidServer.WHATSAPP) ? prepareChat(timestamp, Set.of(recipient)) : CompletableFuture.completedFuture(List.of(recipient))).thenComposeAsync(chatResult -> {
             if (chatResult.isEmpty()) {
                 return CompletableFuture.completedFuture(info.setStatus(MessageStatus.ERROR));
             }
