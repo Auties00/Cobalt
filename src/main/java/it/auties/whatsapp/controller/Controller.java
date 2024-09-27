@@ -38,7 +38,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The client type
      */
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
     protected final ClientType clientType;
 
     /**

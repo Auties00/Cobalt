@@ -6,10 +6,10 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 
 import static it.auties.protobuf.model.ProtobufType.BOOL;
-import static it.auties.protobuf.model.ProtobufType.OBJECT;
+import static it.auties.protobuf.model.ProtobufType.ENUM;
 
 @ProtobufMessage(name = "ClientPayload.DNSSource")
-public record DNSSource(@ProtobufProperty(index = 15, type = OBJECT) ResolutionMethod dnsMethod,
+public record DNSSource(@ProtobufProperty(index = 15, type = ENUM) ResolutionMethod dnsMethod,
                         @ProtobufProperty(index = 16, type = BOOL) boolean appCached) {
 
     @ProtobufEnum(name = "ClientPayload.DNSSource.DNSResolutionMethod")

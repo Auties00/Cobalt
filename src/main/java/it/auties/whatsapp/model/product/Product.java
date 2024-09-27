@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.message.standard.ImageMessage;
  */
 @ProtobufMessage(name = "Message.ListMessage.Product")
 public record Product(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         ImageMessage image,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String id,

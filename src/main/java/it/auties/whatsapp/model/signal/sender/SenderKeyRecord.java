@@ -10,7 +10,7 @@ import java.util.*;
 
 @ProtobufMessage
 public final class SenderKeyRecord {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final List<SenderKeyState> states;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

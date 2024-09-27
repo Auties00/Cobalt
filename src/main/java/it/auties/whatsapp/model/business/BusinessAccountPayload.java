@@ -9,7 +9,7 @@ import it.auties.protobuf.model.ProtobufType;
  */
 @ProtobufMessage(name = "BizAccountPayload")
 public record BusinessAccountPayload(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         BusinessVerifiedNameCertificate certificate,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         byte[] info

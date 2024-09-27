@@ -19,7 +19,7 @@ import java.util.Optional;
 public record ChatPastParticipant(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid jid,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
         Reason reason,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
         long timestampSeconds

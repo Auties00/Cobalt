@@ -12,7 +12,7 @@ import java.util.Objects;
 public final class NewsletterViewerMetadata {
     @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
     private boolean mute;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
     private NewsletterViewerRole role;
 
     public NewsletterViewerMetadata(boolean mute, NewsletterViewerRole role) {

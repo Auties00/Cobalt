@@ -29,6 +29,7 @@ public class MobileRegisterExample {
                     System.out.println("Enter OTP: ");
                     return new Scanner(System.in).nextLine();
                 })
+                .printRequests(true)
                 .register(phoneNumber)
                 .join()
                 .whatsapp()

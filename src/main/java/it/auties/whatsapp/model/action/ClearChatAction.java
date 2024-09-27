@@ -13,7 +13,7 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "SyncActionValue.ClearChatAction")
 public record ClearChatAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<ActionMessageRangeSync> messageRange
 ) implements Action {
     /**

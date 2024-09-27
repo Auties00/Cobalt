@@ -15,7 +15,7 @@ import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
 public record InteractiveShop(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String id,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
         SurfaceType surfaceType,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)
         int version

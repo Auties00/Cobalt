@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 public record ActionDataSync(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
         byte[] index,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         ActionValueSync value,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
         byte[] padding,

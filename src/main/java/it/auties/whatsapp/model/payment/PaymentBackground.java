@@ -26,9 +26,9 @@ public record PaymentBackground(
         int textArgb,
         @ProtobufProperty(index = 8, type = ProtobufType.FIXED32)
         int subtextArgb,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
         Optional<PaymentMediaData> mediaData,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 10, type = ProtobufType.ENUM)
         PaymentBackgroundType type
 ) {
 

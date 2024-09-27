@@ -26,9 +26,9 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     private final byte[] thumbnail;
     @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
     private final int itemCount;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
     private final Status status;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
     private final PaymentOrderSurface surface;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final String message;
@@ -42,7 +42,7 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     private final long amount;
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
     private final String currency;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public PaymentOrderMessage(String id, byte[] thumbnail, int itemCount, Status status, PaymentOrderSurface surface, String message, String title, Jid sellerId, String token, long amount, String currency, ContextInfo contextInfo) {

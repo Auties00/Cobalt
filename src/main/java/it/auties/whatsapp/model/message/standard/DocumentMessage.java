@@ -66,7 +66,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     final byte[] thumbnailEncSha256;
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     ContextInfo contextInfo;
     @ProtobufProperty(index = 18, type = ProtobufType.UINT32)
     final Integer thumbnailHeight;

@@ -13,7 +13,7 @@ import java.util.List;
  */
 @ProtobufMessage(name = "SyncActionValue.RecentEmojiWeightsAction")
 public record RecentEmojiWeightsAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         List<RecentEmojiWeight> weights
 ) implements Action {
     /**

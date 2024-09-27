@@ -48,7 +48,7 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     private byte[] mediaKey;
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
-    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
     private final List<InteractiveLocationAnnotation> interactiveAnnotations;
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
     private String mediaDirectPath;
@@ -56,7 +56,7 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     private Long mediaKeyTimestampSeconds;
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] firstScanSidecar;

@@ -15,7 +15,7 @@ import java.util.OptionalLong;
  */
 @ProtobufMessage(name = "Message.PaymentInviteMessage")
 public record PaymentInviteMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         ServiceType serviceType,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         OptionalLong expiryTimestamp

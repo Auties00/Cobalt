@@ -13,17 +13,17 @@ import java.util.Optional;
 
 @ProtobufMessage(name = "GlobalSettings")
 public record GlobalSettings(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<ChatWallpaper> lightThemeWallpaper,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
         MediaVisibility mediaVisibility,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<ChatWallpaper> darkThemeWallpaper,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<AutoDownloadSettings> autoDownloadWiFi,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         Optional<AutoDownloadSettings> autoDownloadCellular,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         Optional<AutoDownloadSettings> autoDownloadRoaming,
         @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
         boolean showIndividualNotificationsPreview,
@@ -33,7 +33,7 @@ public record GlobalSettings(
         int disappearingModeDuration,
         @ProtobufProperty(index = 10, type = ProtobufType.INT64)
         long disappearingModeTimestampSeconds,
-        @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 11, type = ProtobufType.MESSAGE)
         AvatarUserSettings avatarUserSettings
 ) {
     /**

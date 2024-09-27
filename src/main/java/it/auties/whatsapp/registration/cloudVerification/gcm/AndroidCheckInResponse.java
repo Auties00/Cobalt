@@ -1,7 +1,7 @@
 package it.auties.whatsapp.registration.cloudVerification.gcm;
 
-import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
@@ -18,7 +18,7 @@ record AndroidCheckInResponse(
         boolean settingsDiff,
         @ProtobufProperty(index = 10, type = ProtobufType.STRING)
         List<String> deleteSetting,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         List<Setting> setting,
         @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
         boolean marketOk,

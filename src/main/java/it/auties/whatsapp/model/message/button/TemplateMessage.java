@@ -25,15 +25,15 @@ import java.util.Optional;
 public final class TemplateMessage implements ContextualMessage<TemplateMessage>, ButtonMessage {
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
     private final String id;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final HydratedFourRowTemplate content;
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final HydratedFourRowTemplate hydratedFourRowTemplateFormat;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final InteractiveMessage interactiveMessageFormat;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public TemplateMessage(String id, HydratedFourRowTemplate content, HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat, HydratedFourRowTemplate hydratedFourRowTemplateFormat, InteractiveMessage interactiveMessageFormat, ContextInfo contextInfo) {

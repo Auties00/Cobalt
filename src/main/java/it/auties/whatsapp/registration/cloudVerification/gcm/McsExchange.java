@@ -1,9 +1,9 @@
 package it.auties.whatsapp.registration.cloudVerification.gcm;
 
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
@@ -75,7 +75,7 @@ sealed interface McsExchange {
             String message,
             @ProtobufProperty(index = 3, type = ProtobufType.STRING)
             String type,
-            @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
             Extension extension
     ) implements McsExchange {
 
@@ -117,7 +117,7 @@ sealed interface McsExchange {
 
     @ProtobufMessage
     record ClientEvent(
-            @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
             Type type,
             @ProtobufProperty(index = 100, type = ProtobufType.UINT32)
             int numberDiscardedEvents,
@@ -163,25 +163,25 @@ sealed interface McsExchange {
             String deviceId,
             @ProtobufProperty(index = 7, type = ProtobufType.INT64)
             Long lastRmqId,
-            @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
             List<Setting> setting,
             @ProtobufProperty(index = 10, type = ProtobufType.STRING)
             List<String> receivedPersistentId,
             @ProtobufProperty(index = 12, type = ProtobufType.BOOL)
             Boolean adaptiveHeartbeat,
-            @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
             HeartbeatStat heartbeatStat,
             @ProtobufProperty(index = 14, type = ProtobufType.BOOL)
             Boolean useRmq2,
             @ProtobufProperty(index = 15, type = ProtobufType.INT64)
             Long accountId,
-            @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 16, type = ProtobufType.ENUM)
             AuthService authService,
             @ProtobufProperty(index = 17, type = ProtobufType.INT32)
             Integer networkType,
             @ProtobufProperty(index = 18, type = ProtobufType.INT64)
             Long status,
-            @ProtobufProperty(index = 22, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 22, type = ProtobufType.MESSAGE)
             List<ClientEvent> clientEvent
     ) implements McsExchange {
         @ProtobufEnum
@@ -202,15 +202,15 @@ sealed interface McsExchange {
             String id,
             @ProtobufProperty(index = 2, type = ProtobufType.STRING)
             String jid,
-            @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
             ErrorInfo error,
-            @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
             List<Setting> setting,
             @ProtobufProperty(index = 5, type = ProtobufType.INT32)
             int streamId,
             @ProtobufProperty(index = 6, type = ProtobufType.INT32)
             int lastStreamIdReceived,
-            @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
             HeartbeatConfig heartbeatConfig,
             @ProtobufProperty(index = 8, type = ProtobufType.INT64)
             long serverTimestamp
@@ -247,7 +247,7 @@ sealed interface McsExchange {
     record IqStanza(
             @ProtobufProperty(index = 1, type = ProtobufType.INT64)
             long rmqId,
-            @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
             IqType type,
             @ProtobufProperty(index = 3, type = ProtobufType.STRING)
             String id,
@@ -255,9 +255,9 @@ sealed interface McsExchange {
             String from,
             @ProtobufProperty(index = 5, type = ProtobufType.STRING)
             String to,
-            @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
             ErrorInfo error,
-            @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
             Extension extension,
             @ProtobufProperty(index = 8, type = ProtobufType.STRING)
             String persistentId,
@@ -305,7 +305,7 @@ sealed interface McsExchange {
             String to,
             @ProtobufProperty(index = 5, type = ProtobufType.STRING)
             String category,
-            @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+            @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
             List<AppData> appData,
             @ProtobufProperty(index = 9, type = ProtobufType.STRING)
             String persistentId,

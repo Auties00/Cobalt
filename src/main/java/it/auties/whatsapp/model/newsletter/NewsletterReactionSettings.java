@@ -13,7 +13,7 @@ import java.util.*;
 
 @ProtobufMessage
 public record NewsletterReactionSettings(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         Type value,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         List<String> blockedCodes,

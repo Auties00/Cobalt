@@ -31,101 +31,101 @@ import java.util.Optional;
 public record MessageContainer(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String> textWithNoContextMessage,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<SenderKeyDistributionMessage> senderKeyDistributionMessage,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<ImageMessage> imageMessage,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<ContactMessage> contactMessage,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         Optional<LocationMessage> locationMessage,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         Optional<TextMessage> textMessage,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<DocumentMessage> documentMessage,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
         Optional<AudioMessage> audioMessage,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
         Optional<VideoOrGifMessage> videoMessage,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
         Optional<CallMessage> callMessage,
-        @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
         Optional<ProtocolMessage> protocolMessage,
-        @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
         Optional<ContactsMessage> contactsArrayMessage,
-        @ProtobufProperty(index = 14, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 14, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredMessage> highlyStructuredMessage,
-        @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 16, type = ProtobufType.MESSAGE)
         Optional<SendPaymentMessage> sendPaymentMessage,
-        @ProtobufProperty(index = 18, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 18, type = ProtobufType.MESSAGE)
         Optional<LiveLocationMessage> liveLocationMessage,
-        @ProtobufProperty(index = 22, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 22, type = ProtobufType.MESSAGE)
         Optional<RequestPaymentMessage> requestPaymentMessage,
-        @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
         Optional<DeclinePaymentRequestMessage> declinePaymentRequestMessage,
-        @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
         Optional<CancelPaymentRequestMessage> cancelPaymentRequestMessage,
-        @ProtobufProperty(index = 25, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 25, type = ProtobufType.MESSAGE)
         Optional<TemplateMessage> templateMessage,
-        @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 26, type = ProtobufType.MESSAGE)
         Optional<StickerMessage> stickerMessage,
-        @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
         Optional<GroupInviteMessage> groupInviteMessage,
-        @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 29, type = ProtobufType.MESSAGE)
         Optional<TemplateReplyMessage> templateReplyMessage,
-        @ProtobufProperty(index = 30, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 30, type = ProtobufType.MESSAGE)
         Optional<ProductMessage> productMessage,
-        @ProtobufProperty(index = 31, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
         Optional<DeviceSentMessage> deviceSentMessage,
-        @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
         Optional<DeviceSyncMessage> deviceSyncMessage,
-        @ProtobufProperty(index = 36, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 36, type = ProtobufType.MESSAGE)
         Optional<ListMessage> listMessage,
-        @ProtobufProperty(index = 37, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 37, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> viewOnceMessage,
-        @ProtobufProperty(index = 38, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 38, type = ProtobufType.MESSAGE)
         Optional<PaymentOrderMessage> orderMessage,
-        @ProtobufProperty(index = 39, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 39, type = ProtobufType.MESSAGE)
         Optional<ListResponseMessage> listResponseMessage,
-        @ProtobufProperty(index = 40, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 40, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> ephemeralMessage,
-        @ProtobufProperty(index = 41, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 41, type = ProtobufType.MESSAGE)
         Optional<PaymentInvoiceMessage> invoiceMessage,
-        @ProtobufProperty(index = 42, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 42, type = ProtobufType.MESSAGE)
         Optional<ButtonsMessage> buttonsMessage,
-        @ProtobufProperty(index = 43, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 43, type = ProtobufType.MESSAGE)
         Optional<ButtonsResponseMessage> buttonsResponseMessage,
-        @ProtobufProperty(index = 44, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 44, type = ProtobufType.MESSAGE)
         Optional<PaymentInviteMessage> paymentInviteMessage,
-        @ProtobufProperty(index = 45, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 45, type = ProtobufType.MESSAGE)
         Optional<InteractiveMessage> interactiveMessage,
-        @ProtobufProperty(index = 46, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 46, type = ProtobufType.MESSAGE)
         Optional<ReactionMessage> reactionMessage,
-        @ProtobufProperty(index = 47, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 47, type = ProtobufType.MESSAGE)
         Optional<StickerSyncRMRMessage> stickerSyncMessage,
-        @ProtobufProperty(index = 48, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 48, type = ProtobufType.MESSAGE)
         Optional<InteractiveResponseMessage> interactiveResponseMessage,
-        @ProtobufProperty(index = 49, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 49, type = ProtobufType.MESSAGE)
         Optional<PollCreationMessage> pollCreationMessage,
-        @ProtobufProperty(index = 50, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 50, type = ProtobufType.MESSAGE)
         Optional<PollUpdateMessage> pollUpdateMessage,
-        @ProtobufProperty(index = 51, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 51, type = ProtobufType.MESSAGE)
         Optional<KeepInChatMessage> keepInChatMessage,
-        @ProtobufProperty(index = 53, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 53, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> documentWithCaptionMessage,
-        @ProtobufProperty(index = 54, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 54, type = ProtobufType.MESSAGE)
         Optional<RequestPhoneNumberMessage> requestPhoneNumberMessage,
-        @ProtobufProperty(index = 55, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 55, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> viewOnceV2Message,
-        @ProtobufProperty(index = 56, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 56, type = ProtobufType.MESSAGE)
         Optional<EncryptedReactionMessage> encryptedReactionMessage,
-        @ProtobufProperty(index = 58, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 58, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> editedMessage,
-        @ProtobufProperty(index = 59, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 59, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> viewOnceV2ExtensionMessage,
-        @ProtobufProperty(index = 78, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 78, type = ProtobufType.MESSAGE)
         Optional<NewsletterAdminInviteMessage> newsletterAdminInviteMessage,
-        @ProtobufProperty(index = 35, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 35, type = ProtobufType.MESSAGE)
         Optional<DeviceContextInfo> deviceInfo
 ) {
     /**

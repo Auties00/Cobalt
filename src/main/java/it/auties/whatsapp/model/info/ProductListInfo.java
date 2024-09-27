@@ -14,9 +14,9 @@ import java.util.List;
  */
 @ProtobufMessage(name = "Message.ListMessage.ProductListInfo")
 public record ProductListInfo(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         List<ProductSection> productSections,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         ProductListHeaderImage headerImage,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Jid seller

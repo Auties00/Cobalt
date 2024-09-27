@@ -17,7 +17,7 @@ public record Call(
         long timestampSeconds,
         @ProtobufProperty(index = 5, type = ProtobufType.BOOL)
         boolean video,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.ENUM)
         CallStatus status,
         @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
         boolean offline

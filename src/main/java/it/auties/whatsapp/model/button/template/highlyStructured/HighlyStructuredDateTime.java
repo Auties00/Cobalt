@@ -11,9 +11,9 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime")
 public record HighlyStructuredDateTime(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredDateTimeComponent> dateComponent,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredDateTimeUnixEpoch> dateUnixEpoch
 ) implements HighlyStructuredLocalizableParameterValue {
     /**

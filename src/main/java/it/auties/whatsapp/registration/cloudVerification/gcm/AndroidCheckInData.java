@@ -18,9 +18,9 @@ record AndroidCheckInData(
         String roaming,
         @ProtobufProperty(index = 9, type = ProtobufType.INT32)
         int userNumber,
-        @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 12, type = ProtobufType.ENUM)
         DeviceType type,
-        @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
         ChromeBuild chromeBuild
 ) {
     @ProtobufEnum

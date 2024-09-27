@@ -30,13 +30,13 @@ import static java.util.Objects.requireNonNullElseGet;
  */
 @ProtobufMessage(name = "WebMessageInfo")
 public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, MessageStatusInfo<ChatMessageInfo> {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final ChatMessageKey key;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private MessageContainer message;
     @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
     private final long timestampSeconds;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
     private MessageStatus status;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     private final Jid senderJid;
@@ -58,7 +58,7 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
     private final boolean urlText;
     @ProtobufProperty(index = 23, type = ProtobufType.BOOL)
     private final boolean urlNumber;
-    @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 24, type = ProtobufType.ENUM)
     private final StubType stubType;
     @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
     private final boolean clearMedia;
@@ -68,11 +68,11 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
     private final int duration;
     @ProtobufProperty(index = 28, type = ProtobufType.STRING)
     private final List<String> labels;
-    @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 29, type = ProtobufType.MESSAGE)
     private final PaymentInfo paymentInfo;
-    @ProtobufProperty(index = 30, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 30, type = ProtobufType.MESSAGE)
     private final LiveLocationMessage finalLiveLocation;
-    @ProtobufProperty(index = 31, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
     private final PaymentInfo quotedPaymentInfo;
     @ProtobufProperty(index = 32, type = ProtobufType.UINT64)
     private final long ephemeralStartTimestamp;
@@ -82,27 +82,27 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
     private final boolean enableEphemeral;
     @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
     private final boolean ephemeralOutOfSync;
-    @ProtobufProperty(index = 36, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 36, type = ProtobufType.ENUM)
     private final BusinessPrivacyStatus businessPrivacyStatus;
     @ProtobufProperty(index = 37, type = ProtobufType.STRING)
     private final String businessVerifiedName;
-    @ProtobufProperty(index = 38, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 38, type = ProtobufType.MESSAGE)
     private final MediaData mediaData;
-    @ProtobufProperty(index = 39, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 39, type = ProtobufType.MESSAGE)
     private final PhotoChange photoChange;
-    @ProtobufProperty(index = 40, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 40, type = ProtobufType.MESSAGE)
     private final MessageReceipt receipt;
-    @ProtobufProperty(index = 41, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 41, type = ProtobufType.MESSAGE)
     private final List<ReactionMessage> reactions;
-    @ProtobufProperty(index = 42, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 42, type = ProtobufType.MESSAGE)
     private final MediaData quotedStickerData;
     @ProtobufProperty(index = 43, type = ProtobufType.BYTES)
     private final byte[] futureProofData;
-    @ProtobufProperty(index = 44, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 44, type = ProtobufType.MESSAGE)
     private final PublicServiceAnnouncementStatus psaStatus;
-    @ProtobufProperty(index = 45, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 45, type = ProtobufType.MESSAGE)
     private final List<PollUpdate> pollUpdates;
-    @ProtobufProperty(index = 46, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 46, type = ProtobufType.MESSAGE)
     private PollAdditionalMetadata pollAdditionalMetadata;
     @ProtobufProperty(index = 47, type = ProtobufType.STRING)
     private final String agentId;
@@ -110,7 +110,7 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
     private final boolean statusAlreadyViewed;
     @ProtobufProperty(index = 49, type = ProtobufType.BYTES)
     private byte[] messageSecret;
-    @ProtobufProperty(index = 50, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 50, type = ProtobufType.MESSAGE)
     private final KeepInChat keepInChat;
     @ProtobufProperty(index = 51, type = ProtobufType.STRING)
     private final Jid originalSender;

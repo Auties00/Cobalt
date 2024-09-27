@@ -15,11 +15,11 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "KeepInChat")
 public record KeepInChat(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         KeepInChatType keepType,
         @ProtobufProperty(index = 2, type = ProtobufType.INT64)
         long serverTimestampSeconds,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         ChatMessageKey key,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Jid deviceJid,

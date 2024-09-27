@@ -21,9 +21,9 @@ public record BusinessAccountLinkInfo(
         String phoneNumber,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
         long issueTimeSeconds,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
         HostStorageType hostStorage,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
         AccountType accountType
 ) {
     /**

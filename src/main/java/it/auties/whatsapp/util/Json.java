@@ -11,6 +11,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,6 +65,14 @@ public final class Json {
         }
     }
 
+    public static void writeValueAsBytes(Object object, OutputStream outputStream) {
+        try {
+            json.writer().writeValue(outputStream, object);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot write json", exception);
+        }
+    }
+
     public static String writeValueAsString(Object object) {
         return writeValueAsString(object, false);
     }
@@ -93,6 +103,14 @@ public final class Json {
     }
 
     public static <T> T readValue(String value, Class<T> clazz) {
+        try {
+            return json.readValue(value, clazz);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot read json", exception);
+        }
+    }
+
+    public static <T> T readValue(InputStream value, Class<T> clazz) {
         try {
             return json.readValue(value, clazz);
         } catch (IOException exception) {

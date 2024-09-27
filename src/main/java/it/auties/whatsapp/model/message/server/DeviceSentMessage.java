@@ -18,7 +18,7 @@ import java.util.Optional;
 public record DeviceSentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid destinationJid,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         MessageContainer message,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Optional<String> phash

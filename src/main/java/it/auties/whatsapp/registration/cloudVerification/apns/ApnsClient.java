@@ -11,7 +11,10 @@ import it.auties.whatsapp.util.Json;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URI;

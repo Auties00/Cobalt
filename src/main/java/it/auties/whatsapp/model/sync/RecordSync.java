@@ -8,11 +8,11 @@ import it.auties.protobuf.model.ProtobufType;
 
 @ProtobufMessage(name = "SyncdRecord")
 public record RecordSync(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         IndexSync index,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         ValueSync value,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         KeyId keyId
 ) implements Syncable {
     @Override

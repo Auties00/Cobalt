@@ -9,7 +9,7 @@ import it.auties.protobuf.model.ProtobufType;
  */
 @ProtobufMessage(name = "Message.FutureProofMessage")
 public record FutureMessageContainer(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         MessageContainer content
 ) {
     static FutureMessageContainer of(Message message) {

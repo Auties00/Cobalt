@@ -17,11 +17,11 @@ import java.util.Optional;
 public record Button(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String id,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<ButtonText> bodyText,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<NativeFlowInfo> bodyNativeFlow,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
         Type bodyType
 ) {
     /**

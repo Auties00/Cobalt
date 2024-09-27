@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @ProtobufMessage
 public final class Session {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final ConcurrentHashMap.KeySetView<SessionState, Boolean> states;
 
     public Session() {

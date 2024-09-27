@@ -23,16 +23,16 @@ public final class SessionState {
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private final byte[] remoteIdentityKey;
 
-    @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     private final ConcurrentHashMap<String, SessionChain> chains;
 
     @ProtobufProperty(index = 6, type = ProtobufType.BYTES)
     private byte[] rootKey;
 
-    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
     private SessionPreKey pendingPreKey;
 
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
     private SignalKeyPair ephemeralKeyPair;
 
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)

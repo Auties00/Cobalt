@@ -12,7 +12,7 @@ import java.util.LinkedList;
 public record CompanionSyncKey(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid companion,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         LinkedList<AppStateSyncKey> keys
 ) {
 

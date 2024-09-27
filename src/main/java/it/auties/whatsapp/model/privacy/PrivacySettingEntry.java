@@ -16,9 +16,9 @@ import java.util.List;
  */
 @ProtobufMessage
 public record PrivacySettingEntry(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         PrivacySettingType type,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
         PrivacySettingValue value,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         List<Jid> excluded

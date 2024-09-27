@@ -10,7 +10,7 @@ import it.auties.whatsapp.model.message.model.ServerMessage;
 
 @ProtobufMessage(name = "Message.EncReactionMessage")
 public record EncryptedReactionMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         ChatMessageKey targetMessageKey,
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         byte[] encPayload,

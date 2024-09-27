@@ -221,11 +221,6 @@ public class SocketHandler implements SocketListener {
 
 
     private void onNodeReceived(Node node) {
-        var caller = store.findPendingRequest(node.id());
-        if(caller.isPresent() && caller.get().body() instanceof Node callerNode && callerNode.hasNode("ping")) {
-            return;
-        }
-
         callListenersAsync(listener -> {
             listener.onNodeReceived(whatsapp, node);
             listener.onNodeReceived(node);
@@ -511,10 +506,6 @@ public class SocketHandler implements SocketListener {
     }
 
     private void onNodeSent(Node node) {
-        if (node.hasNode("ping")) {
-            return;
-        }
-
         callListenersAsync(listener -> {
             listener.onNodeSent(whatsapp, node);
             listener.onNodeSent(node);

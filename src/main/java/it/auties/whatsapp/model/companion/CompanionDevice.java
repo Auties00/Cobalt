@@ -51,13 +51,13 @@ public final class CompanionDevice {
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String manufacturer;
 
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
     private final PlatformType platform;
 
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final Version appVersion;
 
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final Version osVersion;
 
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
@@ -69,7 +69,7 @@ public final class CompanionDevice {
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
     private final String modelId;
 
-    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 9, type = ProtobufType.ENUM)
     private final ClientType clientType;
 
     private CompanionDevice(

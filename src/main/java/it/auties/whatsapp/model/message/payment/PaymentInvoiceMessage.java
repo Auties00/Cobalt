@@ -25,7 +25,7 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     private final String note;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String token;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
     private final PaymentAttachmentType paymentAttachmentType;
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     private final String mimeType;
@@ -41,7 +41,7 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     private String mediaDirectPath;
     @ProtobufProperty(index = 10, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

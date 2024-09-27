@@ -28,7 +28,7 @@ record AndroidCheckInRequest(
         String digest,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
         String locale,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         AndroidCheckInData data,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         String desiredBuild,

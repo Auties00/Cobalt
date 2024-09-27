@@ -20,15 +20,15 @@ public record InteractiveHeader(
         String title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> subtitle,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<DocumentMessage> attachmentDocument,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<ImageMessage> attachmentImage,
         @ProtobufProperty(index = 5, type = ProtobufType.BOOL)
         boolean mediaAttachment,
         @ProtobufProperty(index = 6, type = ProtobufType.BYTES)
         Optional<InteractiveHeaderThumbnail> attachmentThumbnail,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<VideoOrGifMessage> attachmentVideo
 ) {
     @ProtobufBuilder(className = "InteractiveHeaderSimpleBuilder")

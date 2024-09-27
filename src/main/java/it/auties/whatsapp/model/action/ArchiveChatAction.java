@@ -15,7 +15,7 @@ import java.util.Optional;
 public record ArchiveChatAction(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean archived,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<ActionMessageRangeSync> messageRange
 ) implements Action {
     /**

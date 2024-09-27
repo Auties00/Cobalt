@@ -9,7 +9,7 @@ import java.util.Objects;
 
 @ProtobufMessage(name = "HistorySyncMsg")
 public record HistorySyncMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         ChatMessageInfo messageInfo,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long messageOrderId

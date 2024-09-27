@@ -16,11 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SenderKeyState {
     @ProtobufProperty(index = 1, type = ProtobufType.INT32)
     private final int id;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final SignalKeyPair signingKey;
-    @ProtobufProperty(index = 3, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
     private final ConcurrentHashMap<Integer, SenderMessageKey> messageKeys;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private SenderChainKey chainKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

@@ -20,19 +20,19 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "Message.InteractiveMessage")
 public final class InteractiveMessage implements ContextualMessage<InteractiveMessage>, ButtonMessage, TemplateFormatter {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final InteractiveHeader header;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final InteractiveBody body;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final InteractiveFooter footer;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final InteractiveShop contentShop;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final InteractiveCollection contentCollection;
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     private final InteractiveNativeFlow contentNativeFlow;
-    @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 15, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public InteractiveMessage(InteractiveHeader header, InteractiveBody body, InteractiveFooter footer, InteractiveShop contentShop, InteractiveCollection contentCollection, InteractiveNativeFlow contentNativeFlow, ContextInfo contextInfo) {

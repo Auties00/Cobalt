@@ -14,6 +14,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -238,15 +239,9 @@ public class SocketClient extends Socket implements AutoCloseable {
 
     @Override
     public InetAddress getInetAddress() {
-        try {
-            if(channel.getRemoteAddress() instanceof InetSocketAddress inetSocketAddress) {
-                return inetSocketAddress.getAddress();
-            }
-
-            return null;
-        } catch (Throwable e) {
-            return null;
-        }
+        return socketConnection.address()
+                .map(InetSocketAddress::getAddress)
+                .orElse(null);
     }
 
     @Override
@@ -256,11 +251,8 @@ public class SocketClient extends Socket implements AutoCloseable {
 
     @Override
     public SocketAddress getRemoteSocketAddress() {
-        try {
-            return channel.getRemoteAddress();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return socketConnection.address()
+                .orElse(null);
     }
 
     @Override
@@ -940,6 +932,7 @@ public class SocketClient extends Socket implements AutoCloseable {
         final AsynchronousSocketChannel channel;
         final SocketTransport socketTransport;
         final URI proxy;
+        InetSocketAddress address;
         private SocketConnection(AsynchronousSocketChannel channel, SocketTransport socketTransport, URI proxy) {
             this.channel = channel;
             this.socketTransport = socketTransport;
@@ -965,11 +958,16 @@ public class SocketClient extends Socket implements AutoCloseable {
                 var start = System.currentTimeMillis();
                 var future = channel.connect(address);
                 future.get();
+                this.address = address;
             }catch (Throwable throwable) {
                 throw new RuntimeException("Cannot connect to " + address, throwable);
             }finally {
                 CONNECTION_SEMAPHORE.release();
             }
+        }
+
+        public Optional<InetSocketAddress> address() {
+            return Optional.ofNullable(address);
         }
 
         private static final class NoProxy extends SocketConnection {

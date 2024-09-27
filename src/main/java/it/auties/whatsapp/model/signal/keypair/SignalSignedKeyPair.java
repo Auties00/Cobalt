@@ -14,7 +14,7 @@ import java.util.Optional;
 public record SignalSignedKeyPair(
         @ProtobufProperty(index = 1, type = ProtobufType.INT32)
         int id,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         SignalKeyPair keyPair,
         @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
         byte[] signature

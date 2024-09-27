@@ -7,6 +7,6 @@ import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "Message.AppStateSyncKeyData")
 public record AppStateSyncKeyData(@ProtobufProperty(index = 1, type = BYTES) byte[] keyData,
-                                  @ProtobufProperty(index = 2, type = OBJECT) AppStateSyncKeyFingerprint fingerprint,
+                                  @ProtobufProperty(index = 2, type = MESSAGE) AppStateSyncKeyFingerprint fingerprint,
                                   @ProtobufProperty(index = 3, type = INT64) Long timestamp) {
 }

@@ -1,11 +1,16 @@
 package it.auties.whatsapp.controller.builtin;
 
+import it.auties.protobuf.stream.ProtobufInputStream;
+import it.auties.protobuf.stream.ProtobufOutputStream;
 import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatSpec;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.newsletter.NewsletterSpec;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -43,42 +48,62 @@ public class ProtobufControllerSerializer extends FileControllerSerializer {
     }
 
     @Override
-    byte[] encodeKeys(Keys keys) {
-        return KeysSpec.encode(keys);
+    void encodeKeys(Keys keys, Path path) {
+        try(var stream = Files.newOutputStream(path)) {
+            KeysSpec.encode(keys, new ProtobufOutputStream(stream));
+            stream.flush();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    byte[] encodeStore(Store store) {
-        return StoreSpec.encode(store);
+    void encodeStore(Store store, Path path) {
+        try(var stream = Files.newOutputStream(path)) {
+            StoreSpec.encode(store, new ProtobufOutputStream(stream));
+            stream.flush();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    byte[] encodeChat(Chat chat) {
-        return ChatSpec.encode(chat);
+    void encodeChat(Chat chat, Path path) {
+        try(var stream = Files.newOutputStream(path)) {
+            ChatSpec.encode(chat, new ProtobufOutputStream(stream));
+            stream.flush();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    byte[] encodeNewsletter(Newsletter newsletter) {
-        return NewsletterSpec.encode(newsletter);
+    void encodeNewsletter(Newsletter newsletter, Path path) {
+        try(var stream = Files.newOutputStream(path)) {
+            NewsletterSpec.encode(newsletter, new ProtobufOutputStream(stream));
+            stream.flush();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+    
+    @Override
+    Keys decodeKeys(Path keys) throws IOException {
+        return KeysSpec.decode(new ProtobufInputStream(keys));
     }
 
     @Override
-    Keys decodeKeys(byte[] keys) {
-        return KeysSpec.decode(keys);
+    Store decodeStore(Path store) throws IOException {
+        return StoreSpec.decode(new ProtobufInputStream(store));
     }
 
     @Override
-    Store decodeStore(byte[] store) {
-        return StoreSpec.decode(store);
+    Chat decodeChat(Path chat) throws IOException {
+        return ChatSpec.decode(new ProtobufInputStream(chat));
     }
 
     @Override
-    Chat decodeChat(byte[] chat) {
-        return ChatSpec.decode(chat);
-    }
-
-    @Override
-    Newsletter decodeNewsletter(byte[] newsletter) {
-        return NewsletterSpec.decode(newsletter);
+    Newsletter decodeNewsletter(Path newsletter) throws IOException {
+        return NewsletterSpec.decode(new ProtobufInputStream(newsletter));
     }
 }

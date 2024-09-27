@@ -25,7 +25,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     private byte[] mediaEncryptedSha256;
     @ProtobufProperty(index = 5, type = STRING)
     private String mediaDirectPath;
-    @ProtobufProperty(index = 6, type = OBJECT)
+    @ProtobufProperty(index = 6, type = ENUM)
     private final HistorySync.Type syncType;
     @ProtobufProperty(index = 7, type = UINT32)
     private final Integer chunkOrder;

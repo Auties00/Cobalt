@@ -25,13 +25,13 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     private final Long timestampSeconds;
     @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
     private final Long views;
-    @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final Map<String, NewsletterReaction> reactions;
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     private MessageContainer message;
     @JsonBackReference
     private Newsletter newsletter;
-    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     private MessageStatus status;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

@@ -34,9 +34,9 @@ public final class GroupInviteMessage implements ContextualMessage<GroupInviteMe
     private final byte[] thumbnail;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final String caption;
-    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.ENUM)
     private final Type groupType;
 
     public GroupInviteMessage(Jid group, String code, long expirationSeconds, String groupName, byte[] thumbnail, String caption, ContextInfo contextInfo, Type groupType) {

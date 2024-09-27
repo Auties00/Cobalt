@@ -10,7 +10,7 @@ import it.auties.whatsapp.model.message.standard.ImageMessage;
  */
 @ProtobufMessage(name = "Message.ProductMessage.CatalogSnapshot")
 public record ProductCatalog(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         ImageMessage catalogImage,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String title,

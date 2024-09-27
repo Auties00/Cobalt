@@ -12,9 +12,9 @@ import java.util.Optional;
 
 @ProtobufMessage(name = "NotificationMessageInfo")
 public record NotificationMessageInfo(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         ChatMessageKey key,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         MessageContainer message,
         @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
         long messageTimestampSeconds,

@@ -5,12 +5,11 @@ import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 
-import static it.auties.protobuf.model.ProtobufType.OBJECT;
-import static it.auties.protobuf.model.ProtobufType.STRING;
+import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "ClientPayload.UserAgent")
-public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType platform,
-                        @ProtobufProperty(index = 2, type = OBJECT) Version appVersion,
+public record UserAgent(@ProtobufProperty(index = 1, type = ENUM) PlatformType platform,
+                        @ProtobufProperty(index = 2, type = MESSAGE) Version appVersion,
                         @ProtobufProperty(index = 3, type = STRING) String mcc,
                         @ProtobufProperty(index = 4, type = STRING) String mnc,
                         @ProtobufProperty(index = 5, type = STRING) String osVersion,
@@ -18,11 +17,11 @@ public record UserAgent(@ProtobufProperty(index = 1, type = OBJECT) PlatformType
                         @ProtobufProperty(index = 7, type = STRING) String device,
                         @ProtobufProperty(index = 8, type = STRING) String osBuildNumber,
                         @ProtobufProperty(index = 9, type = STRING) String phoneId,
-                        @ProtobufProperty(index = 10, type = OBJECT) ReleaseChannel releaseChannel,
+                        @ProtobufProperty(index = 10, type = ENUM) ReleaseChannel releaseChannel,
                         @ProtobufProperty(index = 11, type = STRING) String localeLanguageIso6391,
                         @ProtobufProperty(index = 12, type = STRING) String localeCountryIso31661Alpha2,
                         @ProtobufProperty(index = 13, type = STRING) String deviceBoard,
-                        @ProtobufProperty(index = 15, type = OBJECT) DeviceType deviceType,
+                        @ProtobufProperty(index = 15, type = ENUM) DeviceType deviceType,
                         @ProtobufProperty(index = 16, type = STRING) String deviceModelType) {
 
     @ProtobufEnum(name = "ClientPayload.UserAgent.Platform")

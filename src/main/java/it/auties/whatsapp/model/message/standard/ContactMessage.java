@@ -20,7 +20,7 @@ public final class ContactMessage implements ContextualMessage<ContactMessage> {
     private final String name;
     @ProtobufProperty(index = 16, type = ProtobufType.STRING)
     private final ContactCard vcard;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public ContactMessage(String name, ContactCard vcard, ContextInfo contextInfo) {

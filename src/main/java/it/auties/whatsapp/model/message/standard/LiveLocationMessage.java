@@ -35,7 +35,7 @@ public final class LiveLocationMessage implements ContextualMessage<LiveLocation
     private final int timeOffset;
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public LiveLocationMessage(double latitude, double longitude, int accuracy, float speed, int magneticNorthOffset, String caption, long sequenceNumber, int timeOffset, byte[] thumbnail, ContextInfo contextInfo) {

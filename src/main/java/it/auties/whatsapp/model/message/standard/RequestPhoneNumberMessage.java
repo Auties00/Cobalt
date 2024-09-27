@@ -16,7 +16,7 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "Message.RequestPhoneNumberMessage")
 public final class RequestPhoneNumberMessage implements ContextualMessage<RequestPhoneNumberMessage> {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public RequestPhoneNumberMessage(ContextInfo contextInfo) {

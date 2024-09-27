@@ -26,13 +26,13 @@ public record RequestPaymentMessage(
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Jid requestFrom,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<MessageContainer> noteMessage,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         PaymentMoney amount,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {
     /**

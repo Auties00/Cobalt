@@ -60,7 +60,6 @@ public class WebSocketClient implements AutoCloseable {
         return new WebSocketClient(underlyingSocket, listener);
     }
 
-
     public static WebSocketClient newSecureClient(SSLEngine sslEngine, URI proxy, Listener listener) throws IOException {
         var underlyingSocket = SocketClient.newSecureClient(sslEngine, proxy);
         return new WebSocketClient(underlyingSocket, listener);

@@ -21,7 +21,7 @@ public final class TemplateReplyMessage implements ButtonReplyMessage<TemplateRe
     private final String id;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String buttonText;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
     private final int index;

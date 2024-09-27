@@ -8,7 +8,7 @@ import java.util.List;
 
 @ProtobufMessage(name = "SyncdMutations")
 public record MutationsSync(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         List<MutationSync> mutations
 ) {
 

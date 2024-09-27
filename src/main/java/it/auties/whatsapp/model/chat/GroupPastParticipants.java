@@ -14,7 +14,7 @@ import java.util.List;
 public record GroupPastParticipants(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Jid groupJid,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         List<ChatPastParticipant> pastParticipants
 ) {
 
