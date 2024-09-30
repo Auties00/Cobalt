@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,61 +50,85 @@ public class ProtobufControllerSerializer extends FileControllerSerializer {
 
     @Override
     void encodeKeys(Keys keys, Path path) {
-        try(var stream = Files.newOutputStream(path)) {
-            KeysSpec.encode(keys, new ProtobufOutputStream(stream));
-            stream.flush();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        try {
+            var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
+            try(var stream = Files.newOutputStream(tempFile)) {
+                KeysSpec.encode(keys, ProtobufOutputStream.toStream(stream));
+                stream.flush();
+            }
+            Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
         }
     }
 
     @Override
     void encodeStore(Store store, Path path) {
-        try(var stream = Files.newOutputStream(path)) {
-            StoreSpec.encode(store, new ProtobufOutputStream(stream));
-            stream.flush();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        try {
+            var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
+            try(var stream = Files.newOutputStream(tempFile)) {
+                StoreSpec.encode(store, ProtobufOutputStream.toStream(stream));
+                stream.flush();
+            }
+            Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
         }
     }
 
     @Override
     void encodeChat(Chat chat, Path path) {
-        try(var stream = Files.newOutputStream(path)) {
-            ChatSpec.encode(chat, new ProtobufOutputStream(stream));
-            stream.flush();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        try {
+            var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
+            try(var stream = Files.newOutputStream(tempFile)) {
+                ChatSpec.encode(chat, ProtobufOutputStream.toStream(stream));
+                stream.flush();
+            }
+            Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
         }
     }
 
     @Override
     void encodeNewsletter(Newsletter newsletter, Path path) {
-        try(var stream = Files.newOutputStream(path)) {
-            NewsletterSpec.encode(newsletter, new ProtobufOutputStream(stream));
-            stream.flush();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        try {
+            var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
+            try(var stream = Files.newOutputStream(tempFile)) {
+                NewsletterSpec.encode(newsletter, ProtobufOutputStream.toStream(stream));
+                stream.flush();
+            }
+            Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
+        }catch (IOException exception) {
+            throw new UncheckedIOException(exception);
         }
     }
     
     @Override
     Keys decodeKeys(Path keys) throws IOException {
-        return KeysSpec.decode(new ProtobufInputStream(keys));
+        try(var stream = Files.newInputStream(keys)) {
+            return KeysSpec.decode(ProtobufInputStream.fromStream(stream));
+        }
     }
 
     @Override
     Store decodeStore(Path store) throws IOException {
-        return StoreSpec.decode(new ProtobufInputStream(store));
+        try(var stream = Files.newInputStream(store)) {
+            return StoreSpec.decode(ProtobufInputStream.fromStream(stream));
+        }
     }
 
     @Override
     Chat decodeChat(Path chat) throws IOException {
-        return ChatSpec.decode(new ProtobufInputStream(chat));
+        try(var stream = Files.newInputStream(chat)) {
+            return ChatSpec.decode(ProtobufInputStream.fromStream(stream));
+        }
     }
 
     @Override
     Newsletter decodeNewsletter(Path newsletter) throws IOException {
-        return NewsletterSpec.decode(new ProtobufInputStream(newsletter));
+        try(var stream = Files.newInputStream(newsletter)) {
+            return NewsletterSpec.decode(ProtobufInputStream.fromStream(stream));
+        }
     }
 }
