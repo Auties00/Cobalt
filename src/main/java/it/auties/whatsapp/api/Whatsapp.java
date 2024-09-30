@@ -2912,6 +2912,7 @@ public class Whatsapp {
      *
      * @param community the target community
      * @throws IllegalArgumentException if the provided chat is not a community
+     * @return a future
      */
     public CompletableFuture<Void> leaveCommunity(JidProvider community) {
         Validate.isTrue(community.toJid().hasServer(JidServer.GROUP_OR_COMMUNITY), "Expected a community");
@@ -2923,6 +2924,29 @@ public class Whatsapp {
                 metadata.communityGroups().forEach(linkedGroup -> handleLeaveGroup(linkedGroup.jid()));
             });
         });
+    }
+
+    /**
+     * Opens a wa.me chat link
+     *
+     * @param link the non-null link to open
+     * @return a future
+     */
+    public CompletableFuture<Optional<Jid>> openChatLink(URI link) {
+        Validate.isTrue(link.getHost() != null && link.getHost().equalsIgnoreCase("wa.me"),
+                "Expected wa.me link");
+        try {
+            var result = Jid.of(link.getPath());
+            return prepareChat(Clock.nowSeconds(), Set.of(result)).thenApply(results -> {
+                if(results.isEmpty()) {
+                    return Optional.empty();
+                }
+
+                return Optional.of(result);
+            });
+        }catch (Throwable throwable) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
     }
 
     /**
