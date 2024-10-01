@@ -2933,10 +2933,14 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Optional<Jid>> openChatLink(URI link) {
-        Validate.isTrue(link.getHost() != null && link.getHost().equalsIgnoreCase("wa.me"),
+        var host = link.getHost();
+        Validate.isTrue(host != null && host.equalsIgnoreCase("wa.me"),
                 "Expected wa.me link");
+        var path = link.getPath();
+        Validate.isTrue(path != null && !path.isEmpty(),
+                "Expected path component");
         try {
-            var result = Jid.of(link.getPath());
+            var result = Jid.of(path.substring(1));
             return prepareChat(Clock.nowSeconds(), Set.of(result)).thenApply(results -> {
                 if(results.isEmpty()) {
                     return Optional.empty();
