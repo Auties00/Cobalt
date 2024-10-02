@@ -16,6 +16,11 @@ public record AutoDownloadSettings(
         boolean downloadDocuments
 ) implements Setting {
     @Override
+    public int settingVersion() {
+        return -1;
+    }
+
+    @Override
     public String indexName() {
         throw new UnsupportedOperationException("Cannot send setting: no index name");
     }

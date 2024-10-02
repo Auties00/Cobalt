@@ -10,6 +10,11 @@ public record PushNameSettings(
         String name
 ) implements Setting {
     @Override
+    public int settingVersion() {
+        return 1;
+    }
+
+    @Override
     public String indexName() {
         return "setting_pushName";
     }

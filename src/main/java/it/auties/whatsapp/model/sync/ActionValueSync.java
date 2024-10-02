@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.util.Clock;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 @ProtobufMessage(name = "SyncActionValue")
 public record ActionValueSync(
@@ -217,5 +218,20 @@ public record ActionValueSync(
             return localeSetting;
         }
         return unarchiveChatsSetting;
+    }
+
+    @SuppressWarnings("OptionalIsPresent")
+    public OptionalInt version() {
+        var setting = setting();
+        if(setting.isPresent()) {
+            return OptionalInt.of(setting.get().settingVersion());
+        }
+
+        var action = action();
+        if(action.isPresent()) {
+            return OptionalInt.of(action.get().actionVersion());
+        }
+
+        return OptionalInt.empty();
     }
 }

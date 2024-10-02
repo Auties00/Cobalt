@@ -129,15 +129,14 @@ class AppStateHandler {
 
     private MutationResult createMutationSync(PatchEntry patch, MutationKeys mutationKeys, AppStateSyncKey key, KeyId syncId) {
         var index = patch.index().getBytes(StandardCharsets.UTF_8);
-        var actionVersion = patch.sync()
-                .action()
-                .orElseThrow(() -> new NoSuchElementException("Missing action"))
-                .actionVersion();
+        var version = patch.sync()
+                .version()
+                .orElseThrow(() -> new IllegalArgumentException("Empty patch sync"));
         var actionData = new ActionDataSyncBuilder()
                 .index(index)
                 .value(patch.sync())
                 .padding(new byte[0])
-                .version(actionVersion)
+                .version(version)
                 .build();
         var encoded = ActionDataSyncSpec.encode(actionData);
         var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());
@@ -161,7 +160,6 @@ class AppStateHandler {
                 .put("name", request.type())
                 .put("version", version, !mobile)
                 .put("return_snapshot", false, !mobile)
-                .put("order", request.type() != PatchType.CRITICAL_UNBLOCK_LOW ? "1" : "0", mobile)
                 .toMap();
         return Node.of("collection", collectionAttributes,
                 Node.of("patch", PatchSyncSpec.encode(request.sync())));

@@ -57,8 +57,6 @@ import it.auties.whatsapp.model.product.LeaveNewsletterRequest;
 import it.auties.whatsapp.model.request.*;
 import it.auties.whatsapp.model.request.UpdateNewsletterRequest.UpdatePayload;
 import it.auties.whatsapp.model.response.*;
-import it.auties.whatsapp.model.setting.LocaleSettings;
-import it.auties.whatsapp.model.setting.PushNameSettings;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -3013,11 +3011,6 @@ public class Whatsapp {
         var publicKey = Base64.getDecoder().decode(qrCodeParts[1]);
         var advIdentity = Base64.getDecoder().decode(qrCodeParts[2]);
         var identityKey = Base64.getDecoder().decode(qrCodeParts[3]);
-        return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("delete_all_data"))
-                .thenComposeAsync(ignored -> linkDevice(advIdentity, identityKey, ref, publicKey));
-    }
-
-    private CompletableFuture<CompanionLinkResult> linkDevice(byte[] advIdentity, byte[] identityKey, String ref, byte[] publicKey) {
         var deviceIdentity = new DeviceIdentityBuilder()
                 .rawId(ThreadLocalRandom.current().nextInt(800_000_000, 900_000_000))
                 .keyIndex(store().linkedDevices().size() + 1)
@@ -3040,7 +3033,8 @@ public class Whatsapp {
                 .hmac(Hmac.calculateSha256(signedDeviceIdentityBytes, identityKey))
                 .details(signedDeviceIdentityBytes)
                 .build();
-        var knownDevices = store().linkedDevices()
+        var knownDevices = store()
+                .linkedDevices()
                 .stream()
                 .map(Jid::device)
                 .toList();
@@ -3058,6 +3052,7 @@ public class Whatsapp {
                 .build();
         return socketHandler.sendQuery("set", "md", Node.of("pair-device",
                         Node.of("ref", ref),
+                        Node.of("ref-cert"),
                         Node.of("pub-key", publicKey),
                         Node.of("device-identity", SignedDeviceIdentityHMACSpec.encode(deviceIdentityHmac)),
                         Node.of("key-index-list", Map.of("ts", deviceIdentity.timestamp()), SignedKeyIndexListSpec.encode(signedKeyIndexList))))
@@ -3124,93 +3119,19 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Void> syncCompanionState(Jid companion) {
-        var criticalUnblockLowRequest = createCriticalUnblockLowRequest();
-        var criticalBlockRequest = createCriticalBlockRequest();
-        return socketHandler.pushPatches(companion, List.of(criticalBlockRequest, criticalUnblockLowRequest)).thenComposeAsync(ignored -> {
-            var regularLowRequests = createRegularLowRequests();
-            var regularRequests = createRegularRequests();
-            return socketHandler.pushPatches(companion, List.of(regularLowRequests, regularRequests));
-        });
-    }
-
-    private PatchRequest createRegularRequests() {
-        return new PatchRequest(PatchType.REGULAR, List.of());
-    }
-
-    private PatchRequest createRegularLowRequests() {
-        var timeFormatEntry = createTimeFormatEntry();
-        var primaryVersion = new PrimaryVersionAction(store().version().toString());
-        var sessionVersionEntry = createPrimaryVersionEntry(primaryVersion, "session@s.whatsapp.net");
-        var keepVersionEntry = createPrimaryVersionEntry(primaryVersion, "current@s.whatsapp.net");
-        var nuxEntry = createNuxRequest();
-        var androidEntry = createAndroidEntry();
-        var entries = Stream.of(timeFormatEntry, sessionVersionEntry, keepVersionEntry, nuxEntry, androidEntry)
-                .filter(Objects::nonNull)
-                .toList();
-        // TODO: Archive chat actions, StickerAction
-        return new PatchRequest(PatchType.REGULAR_LOW, entries);
-    }
-
-    // FIXME: Settings can't be serialized
-    private PatchRequest createCriticalBlockRequest() {
-        var localeEntry = createLocaleEntry();
-        var pushNameEntry = createPushNameEntry();
-        return new PatchRequest(PatchType.CRITICAL_BLOCK, List.of(localeEntry, pushNameEntry));
-    }
-
-    private PatchRequest createCriticalUnblockLowRequest() {
-        var criticalUnblockLow = createContactEntries();
-        return new PatchRequest(PatchType.CRITICAL_UNBLOCK_LOW, criticalUnblockLow);
-    }
-
-    private List<PatchEntry> createContactEntries() {
-        return store().contacts()
-                .stream()
-                .filter(entry -> entry.shortName().isPresent() || entry.fullName().isPresent())
-                .map(this::createContactRequestEntry)
-                .collect(Collectors.toList());
-    }
-
-    private PatchEntry createPushNameEntry() {
-        var pushNameSetting = new PushNameSettings(store().name());
-        return PatchEntry.of(ActionValueSync.of(pushNameSetting), Operation.SET);
-    }
-
-    private PatchEntry createLocaleEntry() {
-        var localeSetting = new LocaleSettings(store().locale().toString());
-        return PatchEntry.of(ActionValueSync.of(localeSetting), Operation.SET);
-    }
-
-    private PatchEntry createAndroidEntry() {
-        if (!store().device().platform().isAndroid()) {
-            return null;
-        }
-
-        var action = new AndroidUnsupportedActions(true);
-        return PatchEntry.of(ActionValueSync.of(action), Operation.SET);
-    }
-
-    private PatchEntry createNuxRequest() {
-        var nuxAction = new NuxAction(true);
-        var timeFormatSync = ActionValueSync.of(nuxAction);
-        return PatchEntry.of(timeFormatSync, Operation.SET, "keep@s.whatsapp.net");
-    }
-
-    private PatchEntry createPrimaryVersionEntry(PrimaryVersionAction primaryVersion, String to) {
-        var timeFormatSync = ActionValueSync.of(primaryVersion);
-        return PatchEntry.of(timeFormatSync, Operation.SET, to);
-    }
-
-    private PatchEntry createTimeFormatEntry() {
-        var timeFormatAction = new TimeFormatAction(store().twentyFourHourFormat());
-        var timeFormatSync = ActionValueSync.of(timeFormatAction);
-        return PatchEntry.of(timeFormatSync, Operation.SET);
-    }
-
-    private PatchEntry createContactRequestEntry(Contact contact) {
-        var action = new ContactAction(null, contact.shortName(), contact.fullName());
-        var sync = ActionValueSync.of(action);
-        return PatchEntry.of(sync, Operation.SET, contact.jid().toString());
+        return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync",
+                        Node.of("collection", Map.of("order", 4, "name", "regular_high")),
+                        Node.of("collection", Map.of("order", 2, "name", "regular")),
+                        Node.of("collection", Map.of("order", 3, "name", "regular_low")),
+                        Node.of("collection", Map.of("order", 1, "name", "critical_block"))))
+                .thenComposeAsync(ignored -> {
+                    return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync",
+                            Node.of("collection", Map.of("version", 1, "name", "regular_high")),
+                            Node.of("collection", Map.of("version", 1, "name", "regular")),
+                            Node.of("collection", Map.of("version", 1, "name", "regular_low")),
+                            Node.of("collection", Map.of("version", 1, "name", "critical_block"))
+                    )).thenRun(() -> {});
+                });
     }
 
     private CompletableFuture<Void> sendRecentMessage(Jid jid) {
