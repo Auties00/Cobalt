@@ -13,23 +13,20 @@ import it.auties.whatsapp.util.Json;
 import it.auties.whatsapp.util.Validate;
 
 import javax.net.ssl.SSLContext;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-// TODO: Rewrite socket implementation for this class
-// Also read message length in a better way
 public class GcmClient implements CloudVerificationClient  {
     private static final long DEFAULT_GCM_SENDER_ID = 293955441834L;
     private static final int AUTH_SECRET_LENGTH = 16;
-    private static final String CHROME_VERSION = "123.0.6312.86";
+    private static final String CHROME_VERSION = "63.0.3234.0";
     private static final URI CHECK_IN_URL = URI.create("https://android.clients.google.com/checkin");
     private static final String FCM_SERVER_KEY = "BDOU99-h67HcA6JeFXHbSNMu7e2yNNu3RzoMj8TM4W88jITfq7ZmPvIM1Iv-4_l2LxQcYwhqby2xGpWwzjfAnG4";
     private static final String FCM_ENDPOINT = "https://fcm.googleapis.com/fcm/send/";
@@ -94,7 +91,10 @@ public class GcmClient implements CloudVerificationClient  {
                 .version(3)
                 .userSerialNumber(0)
                 .build();
-        return httpClient.postRaw(CHECK_IN_URL, Map.of("Content-Type", "application/x-protobuf"), AndroidCheckInRequestSpec.encode(checkInRequest))
+        var headers = Map.of(
+                "Content-Type", "application/x-protobuf"
+        );
+        return httpClient.postRaw(CHECK_IN_URL, headers, AndroidCheckInRequestSpec.encode(checkInRequest))
                 .thenApplyAsync(AndroidCheckInResponseSpec::decode);
     }
 
@@ -134,7 +134,12 @@ public class GcmClient implements CloudVerificationClient  {
                 "encryption_key", encoder.encodeToString(keyPair.publicKey()),
                 "encryption_auth", encoder.encodeToString(authSecret)
         );
-        return httpClient.postRaw(FCM_SUBSCRIBE_URL, Map.of("Content-Type", "application/x-www-form-urlencoded"), HttpClient.toFormParams(params).getBytes())
+        var userAgent = Map.of(
+                "Content-Type", "application/x-www-form-urlencoded",
+                "Accept", "application/json",
+                "Accept-Encoding", "gzip, deflate"
+        );
+        return httpClient.postRaw(FCM_SUBSCRIBE_URL, userAgent, HttpClient.toFormParams(params).getBytes())
                 .thenAcceptAsync(this::handleSubscription);
     }
 
@@ -158,67 +163,39 @@ public class GcmClient implements CloudVerificationClient  {
     }
 
     private void onLoggedIn() {
-        readMessages();
-        sendLoginPacket();
-    }
-
-    private void readMessages() {
-        Thread.ofPlatform().start(() -> {
-            try(var dataInputStream = new DataInputStream(socket.getInputStream())) {
-                var version = dataInputStream.readByte();
-                Validate.isTrue(version == FCM_VERSION[0],
-                        "Versions mismatch, expected %s got %s", FCM_VERSION[0], version);
-                while (socket.isConnected()) {
-                    var tag = dataInputStream.readByte();
-                    var length = readLength(dataInputStream);
-                    if (length <= 0) {
-                        continue;
-                    }
-
-                    var message = new byte[length];
-                    dataInputStream.readFully(message);
-                    var payload = McsExchange.readMessage(tag, message);
-                    if(payload.isEmpty()) {
-                        continue;
-                    }
-
-                    handleMessage(payload.get());
-                }
-            }catch (Throwable throwable) {
-                if(!loginFuture.isDone()) {
-                    loginFuture.completeExceptionally(throwable);
-                    return;
-                }
-
-                if(!dataFuture.isDone()) {
-                    dataFuture.completeExceptionally(throwable);
-                    return;
-                }
-
-                if(socket.isClosed()) {
-                    return;
-                }
-
-                throw new RuntimeException(throwable);
-            }
+        socket.readFullyAsync(1).thenAcceptAsync(versionBuffer -> {
+            var version = versionBuffer.get();
+            Validate.isTrue(version == FCM_VERSION[0],
+                    "Versions mismatch, expected %s got %s", FCM_VERSION[0], version);
+            readMessages();
+            sendLoginPacket();
         });
     }
 
-    private int readLength(DataInputStream dataInputStream) throws IOException {
-        var continuationBit = true;
-        byte varIntByte;
-        var result = new StringBuilder();
-        while (continuationBit) {
-            varIntByte = dataInputStream.readByte();
-            continuationBit = getVarIntContinuation(varIntByte);
-            result.insert(0, getVarIntValue(varIntByte));
-        }
-
-        return Integer.parseUnsignedInt(result.toString(), 2);
+    private void readMessages() {
+        socket.readFullyAsync(1).thenAcceptAsync(tagBuffer -> {
+            var tag = tagBuffer.get();
+            socket.readFullyAsync(10).thenAcceptAsync(lengthBuffer -> {
+                var messageLength = getMessageLength(lengthBuffer);
+                socket.readFullyAsync(messageLength - lengthBuffer.remaining()).thenAcceptAsync(messageBuffer -> {
+                    var message = new byte[messageLength];
+                    lengthBuffer.get(messageLength);
+                    messageBuffer.get(message);
+                    var payload = McsExchange.readMessage(tag, message);
+                    payload.ifPresent(this::handleMessage);
+                });
+            });
+        });
     }
 
-    private boolean getVarIntContinuation(byte originalValue) {
-        return (originalValue & 0x80) != 0;
+    private int getMessageLength(ByteBuffer lengthBuffer) {
+        byte varIntByte;
+        var result = new StringBuilder();
+        do {
+            varIntByte = lengthBuffer.get();
+            result.insert(0, getVarIntValue(varIntByte));
+        }while ((varIntByte & 0x80) != 0);
+        return Integer.parseUnsignedInt(result.toString(), 2);
     }
 
     private String getVarIntValue(byte number) {
@@ -263,34 +240,29 @@ public class GcmClient implements CloudVerificationClient  {
     }
 
     private void sendLoginPacket() {
-        try {
-            var newVc = new McsExchangeSettingBuilder()
-                    .name("new_vc")
-                    .value("1")
-                    .build();
-            var request = new McsExchangeLoginRequestBuilder()
-                    .accountId(1000000L)
-                    .authService(AuthService.ANDROID_ID)
-                    .authToken(String.valueOf(securityToken))
-                    .id("chrome-" + CHROME_VERSION)
-                    .domain(MCS_DOMAIN)
-                    .deviceId("android-" + Long.toHexString(androidId))
-                    .networkType(1)
-                    .resource(String.valueOf(androidId))
-                    .user(String.valueOf(androidId))
-                    .useRmq2(true)
-                    .lastRmqId(1L)
-                    .setting(List.of(newVc))
-                    .adaptiveHeartbeat(false)
-                    .build();
-            var message = McsExchangeLoginRequestSpec.encode(request);
-            var requestSize = Bytes.intToVarInt(message.length);
-            var data = Bytes.concat(FCM_VERSION, new byte[]{McsExchange.TAG_LOGIN_REQUEST}, requestSize, message);
-            socket.getOutputStream().write(data);
-            socket.getOutputStream().flush();
-        } catch (IOException exception) {
-            throw new UncheckedIOException(exception);
-        }
+        var newVc = new McsExchangeSettingBuilder()
+                .name("new_vc")
+                .value("1")
+                .build();
+        var request = new McsExchangeLoginRequestBuilder()
+                .accountId(1000000L)
+                .authService(AuthService.ANDROID_ID)
+                .authToken(String.valueOf(securityToken))
+                .id("chrome-" + CHROME_VERSION)
+                .domain(MCS_DOMAIN)
+                .deviceId("android-" + Long.toHexString(androidId))
+                .networkType(1)
+                .resource(String.valueOf(androidId))
+                .user(String.valueOf(androidId))
+                .useRmq2(true)
+                .lastRmqId(1L)
+                .setting(List.of(newVc))
+                .adaptiveHeartbeat(false)
+                .build();
+        var message = McsExchangeLoginRequestSpec.encode(request);
+        var requestSize = Bytes.intToVarInt(message.length);
+        var data = Bytes.concat(FCM_VERSION, new byte[]{McsExchange.TAG_LOGIN_REQUEST}, requestSize, message);
+        socket.writeAsync(data);
     }
 
     @Override

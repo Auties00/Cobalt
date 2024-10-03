@@ -292,7 +292,7 @@ public class ApnsClient implements CloudVerificationClient {
                     default -> throw new IllegalStateException("Unexpected value");
                 }
             }
-            socket.getOutputStream().write(byteArrayOutputStream.toByteArray());
+            socket.writeAsync(byteArrayOutputStream.toByteArray());
         } catch (SocketException ignored) {
             // Ignored
         }catch (IOException exception) {

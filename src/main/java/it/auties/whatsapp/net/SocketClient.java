@@ -6,7 +6,9 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.InvalidMarkException;
@@ -15,7 +17,6 @@ import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Semaphore;
@@ -23,8 +24,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("unused")
-public class SocketClient extends Socket implements AutoCloseable {
+public class SocketClient implements AutoCloseable {
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;
+
 
     public static SocketClient newPlainClient(URI proxy) throws IOException {
         var channel = AsynchronousSocketChannel.open();
@@ -62,21 +64,6 @@ public class SocketClient extends Socket implements AutoCloseable {
         return socketTransport.handshake(); // Upgrading a websocket is not supported, so path is always null
     }
 
-    @Override
-    public void connect(SocketAddress endpoint) throws IOException {
-        connect(endpoint, DEFAULT_CONNECTION_TIMEOUT);
-    }
-
-    @Override
-    public void connect(SocketAddress endpoint, int timeout) throws IOException {
-        if(!(endpoint instanceof InetSocketAddress inetSocketAddress)) {
-            throw new IllegalArgumentException("Unsupported address type");
-        }
-
-        var future = connectAsync(inetSocketAddress, timeout);
-        future.join();
-    }
-
     public CompletableFuture<Void> connectAsync(InetSocketAddress address) {
         return connectAsync(address, DEFAULT_CONNECTION_TIMEOUT);
     }
@@ -98,81 +85,10 @@ public class SocketClient extends Socket implements AutoCloseable {
     }
 
     @Override
-    public InputStream getInputStream() throws IOException {
-        if(!isConnected()) {
-            throw new IOException("Connection is closed");
-        }
-
-        return new InputStream() {
-            @Override
-            public int read() throws IOException {
-                var data = new byte[1];
-                var result = read(data);
-                if(result == -1) {
-                    close();
-                    throw new EOFException();
-                }
-
-                return Byte.toUnsignedInt(data[0]);
-            }
-
-            @Override
-            public int read(byte[] b) {
-                return read(b, 0, b.length);
-            }
-
-            @Override
-            public int read(byte[] b, int off, int len) {
-                if(len == 0) {
-                    return 0;
-                }
-
-                return readAsync(ByteBuffer.wrap(b, off, len))
-                        .join();
-            }
-
-            @Override
-            public void close() throws IOException {
-                SocketClient.this.close();
-            }
-        };
-    }
-
-    @Override
-    public OutputStream getOutputStream() throws IOException {
-        if(!isConnected()) {
-            throw new IOException("Connection is closed");
-        }
-
-        return new OutputStream() {
-            @Override
-            public void write(int b) {
-                write(new byte[]{(byte) b}, 0, 1);
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len) {
-                writeAsync(b, off, len).join();
-            }
-
-            @Override
-            public void close() throws IOException {
-                SocketClient.this.close();
-            }
-        };
-    }
-
-    @Override
     public void close() throws IOException {
         channel.close();
     }
 
-    @Override
-    public boolean isBound() {
-        return channel.isOpen();
-    }
-
-    @Override
     public boolean isConnected() {
         try {
             return channel.getRemoteAddress() != null;
@@ -181,192 +97,25 @@ public class SocketClient extends Socket implements AutoCloseable {
         }
     }
 
-    @Override
-    public boolean isOutputShutdown() {
-        return !isConnected();
-    }
-
-    @Override
-    public boolean isInputShutdown() {
-        return !isConnected();
-    }
-
-    @Override
     public boolean isClosed() {
         return !channel.isOpen();
     }
 
-    @Override
     public int getReceiveBufferSize() {
-        try {
-            return channel.getOption(StandardSocketOptions.SO_RCVBUF);
-        } catch (Throwable e) {
-            return 0;
-        }
+        return socketTransport.getReceiveBufferSize();
     }
 
-    @Override
     public int getSendBufferSize() {
-        try {
-            return channel.getOption(StandardSocketOptions.SO_SNDBUF);
-        } catch (Throwable e) {
-            return 0;
-        }
+        return socketTransport.getSendBufferSize();
     }
 
-    @Override
-    public void bind(SocketAddress endpoint) throws IOException {
-        throw new UnsupportedOperationException("Client socket");
-    }
-
-    @Override
-    public int getPort() {
-        try {
-            if(channel.getRemoteAddress() instanceof InetSocketAddress inetSocketAddress) {
-                return inetSocketAddress.getPort();
-            }
-
-            return -1;
-        } catch (Throwable e) {
-            return -1;
-        }
-    }
-
-    @Override
-    public int getLocalPort() {
-        return -1;
-    }
-
-    @Override
-    public InetAddress getInetAddress() {
-        return socketConnection.address()
-                .map(InetSocketAddress::getAddress)
-                .orElse(null);
-    }
-
-    @Override
-    public InetAddress getLocalAddress() {
-        return null;
-    }
-
-    @Override
     public SocketAddress getRemoteSocketAddress() {
         return socketConnection.address()
                 .orElse(null);
     }
 
-    @Override
-    public SocketAddress getLocalSocketAddress() {
-        return null;
-    }
-
-    @Override
-    public void setTcpNoDelay(boolean on) throws SocketException {
-        if(!supportedOptions().contains(StandardSocketOptions.TCP_NODELAY)) {
-            return;
-        }
-
-        try {
-            channel.setOption(StandardSocketOptions.TCP_NODELAY, on);
-        } catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
-    public boolean getTcpNoDelay() throws SocketException {
-        try {
-            return getOption(StandardSocketOptions.TCP_NODELAY);
-        } catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
-    public void setSoLinger(boolean on, int linger) throws SocketException {
-        if(!supportedOptions().contains(StandardSocketOptions.SO_LINGER)) {
-            return;
-        }
-
-        try {
-            if(on) {
-                channel.setOption(StandardSocketOptions.SO_LINGER, linger);
-            }else {
-                channel.setOption(StandardSocketOptions.SO_LINGER, -1);
-            }
-        }catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
-    public int getSoLinger() {
-        try {
-            return getOption(StandardSocketOptions.SO_LINGER);
-        } catch (Throwable ignored) {
-            return 0;
-        }
-    }
-
-    @Override
-    public void sendUrgentData(int data) throws SocketException {
-        try {
-            var future = writeAsync(new byte[]{(byte) data});
-            future.join();
-        }catch (Throwable throwable) {
-            throw new SocketException(throwable);
-        }
-    }
-
-    @Override
-    public void setOOBInline(boolean on) {
-
-    }
-
-    @Override
-    public boolean getOOBInline() {
-        return false;
-    }
-
-    @Override
-    public void setSoTimeout(int timeout) {
-
-    }
-
-    @Override
-    public int getSoTimeout() {
-        return 0;
-    }
-
-    @Override
-    public void setSendBufferSize(int size) throws SocketException {
-        if(!supportedOptions().contains(StandardSocketOptions.SO_SNDBUF)) {
-            return;
-        }
-
-        try {
-            channel.setOption(StandardSocketOptions.SO_SNDBUF, size);
-        } catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
-    public void setReceiveBufferSize(int size) throws SocketException {
-        if(!supportedOptions().contains(StandardSocketOptions.SO_RCVBUF)) {
-            return;
-        }
-
-        try {
-            channel.setOption(StandardSocketOptions.SO_RCVBUF, size);
-        } catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
     public void setKeepAlive(boolean on) throws SocketException {
-        if(!supportedOptions().contains(StandardSocketOptions.SO_KEEPALIVE)) {
+        if(!channel.supportedOptions().contains(StandardSocketOptions.SO_KEEPALIVE)) {
             return;
         }
 
@@ -377,83 +126,12 @@ public class SocketClient extends Socket implements AutoCloseable {
         }
     }
 
-    @Override
     public boolean getKeepAlive() {
         try {
-            return getOption(StandardSocketOptions.SO_KEEPALIVE);
+            return channel.getOption(StandardSocketOptions.SO_KEEPALIVE);
         } catch (IOException ignored) {
             return false;
         }
-    }
-
-    @Override
-    public void setTrafficClass(int tc) throws SocketException {
-        if(!supportedOptions().contains(StandardSocketOptions.IP_TOS)) {
-            return;
-        }
-
-        try {
-            channel.setOption(StandardSocketOptions.IP_TOS, tc);
-        } catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
-    public int getTrafficClass() throws SocketException {
-        try {
-            return getOption(StandardSocketOptions.IP_TOS);
-        } catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
-    public void setReuseAddress(boolean on) throws SocketException {
-        if(!supportedOptions().contains(StandardSocketOptions.SO_REUSEADDR)) {
-            return;
-        }
-
-        try {
-            channel.setOption(StandardSocketOptions.SO_REUSEADDR, on);
-        } catch (IOException e) {
-            throw new SocketException(e);
-        }
-    }
-
-    @Override
-    public boolean getReuseAddress() {
-        try {
-            return getOption(StandardSocketOptions.SO_REUSEADDR);
-        } catch (IOException ignored) {
-            return false;
-        }
-    }
-
-    @Override
-    public void shutdownInput() throws IOException {
-        channel.shutdownInput();
-    }
-
-    @Override
-    public void shutdownOutput() throws IOException {
-        channel.shutdownOutput();
-    }
-
-    @Override
-    public <T> Socket setOption(SocketOption<T> name, T value) throws IOException {
-        channel.setOption(name, value);
-        return this;
-    }
-
-    @Override
-    public <T> T getOption(SocketOption<T> name) throws IOException {
-        return channel.getOption(name);
-    }
-
-    @Override
-    public Set<SocketOption<?>> supportedOptions() {
-        return channel.supportedOptions();
     }
 
     public CompletableFuture<Void> writeAsync(byte[] data) {
@@ -525,7 +203,9 @@ public class SocketClient extends Socket implements AutoCloseable {
         socketTransport.read(buffer, true, callback);
     }
 
-    private static sealed abstract class SocketTransport {
+    static sealed abstract class SocketTransport {
+        private static final int DEFAULT_BUFFER_SIZE = 8192;
+
         final AsynchronousSocketChannel channel;
         private SocketTransport(AsynchronousSocketChannel channel) {
             this.channel = channel;
@@ -539,15 +219,28 @@ public class SocketClient extends Socket implements AutoCloseable {
 
         abstract <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, R result);
 
+        public int getReceiveBufferSize() {
+            try {
+                return channel.getOption(StandardSocketOptions.SO_RCVBUF);
+            } catch (Throwable e) {
+                return DEFAULT_BUFFER_SIZE;
+            }
+        }
+
+        public int getSendBufferSize() {
+            try {
+                return channel.getOption(StandardSocketOptions.SO_SNDBUF);
+            } catch (Throwable e) {
+                return DEFAULT_BUFFER_SIZE;
+            }
+        }
+
         <R extends Response<Integer>> R readPlain(ByteBuffer buffer, boolean lastRead, R result) {
-            var outerCaller = new RuntimeException();
             channel.read(buffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer bytesRead, Object attachment) {
                     if(bytesRead == -1) {
-                        var eof = new EOFException();
-                        eof.addSuppressed(outerCaller);
-                        result.completeExceptionally(eof);
+                        result.completeExceptionally(new EOFException());
                         return;
                     }
 
@@ -560,7 +253,6 @@ public class SocketClient extends Socket implements AutoCloseable {
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
-                    exc.addSuppressed(outerCaller);
                     result.completeExceptionally(exc);
                 }
             });
@@ -568,7 +260,6 @@ public class SocketClient extends Socket implements AutoCloseable {
         }
 
         <R extends Response<Void>> R writePlain(ByteBuffer buffer, R result) {
-            var outerCaller = new RuntimeException();
             channel.write(buffer, null, new CompletionHandler<>() {
                 @Override
                 public void completed(Integer bytesWritten, Object attachment) {
@@ -587,7 +278,6 @@ public class SocketClient extends Socket implements AutoCloseable {
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
-                    exc.addSuppressed(outerCaller);
                     result.completeExceptionally(exc);
                 }
             });
@@ -923,11 +613,6 @@ public class SocketClient extends Socket implements AutoCloseable {
     }
 
     private sealed static abstract class SocketConnection {
-        // Necessary because of a bug in the JDK
-        // The number 50 was reached after debugging to find the best possible number to minimize connection time
-        // The problem with this approach is that 50 threads ask for a bad connection, they block other instances
-        // Shouldn't be a problem because the connection would error out immediately, but it should be looked into
-        // Also maybe find a fix, so I can report it to Oracle
         private static final Semaphore CONNECTION_SEMAPHORE = new Semaphore(50, true);
         final AsynchronousSocketChannel channel;
         final SocketTransport socketTransport;
@@ -1017,6 +702,7 @@ public class SocketClient extends Socket implements AutoCloseable {
             }
 
             private CompletableFuture<String> readAuthenticationResponse() {
+                var decoder = new HttpDecoder(socketTransport);
                 var future = new CompletableFuture<String>();
                 var buffer = ByteBuffer.allocate(readReceiveBufferSize());
                 socketTransport.read(buffer, true, (Response.Callback<Integer>) (result, error) -> {
