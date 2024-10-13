@@ -33,6 +33,7 @@ open module it.auties.cobalt {
 
     // Unsafe reflection
     requires jdk.unsupported;
+    requires java.net.http;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
@@ -72,5 +73,4 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.jid;
     exports it.auties.whatsapp.model.newsletter;
     exports it.auties.whatsapp.exception;
-    exports it.auties.whatsapp.registration.cloudVerification;
 }
