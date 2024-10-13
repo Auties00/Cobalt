@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -16,24 +15,27 @@ import java.util.stream.Collectors;
 public class HttpClient implements AutoCloseable {
     private static final int REQUEST_TIMEOUT = 300;
     private static final String[] IOS_CIPHERS = {
+            // "TLS_GREASE_IS_THE_WORD_DA",
             "TLS_AES_128_GCM_SHA256",
-            "TLS_CHACHA20_POLY1305_SHA256",
             "TLS_AES_256_GCM_SHA384",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_CHACHA20_POLY1305_SHA256",
             "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
             "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
             "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
             "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
             "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
             "TLS_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_RSA_WITH_AES_128_GCM_SHA256",
             "TLS_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_EMPTY_RENEGOTIATION_INFO_SCSV"
+            "TLS_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+            "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
     };
     private static final String[] ANDROID_CIPHERS = {
             "TLS_AES_128_GCM_SHA256"
@@ -104,9 +106,11 @@ public class HttpClient implements AutoCloseable {
     }
 
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body) {
-        var builder = createRequestPayload(method, uri, headers, body);
-        return getLockableSocketClient(uri)
-                .thenComposeAsync(socket -> sendRequest(method, uri, headers, body, socket, builder.toString()));
+        return getLockableSocketClient(uri).thenComposeAsync(socket -> {
+            var http2 = socket.applicationProtocol().filter("h2"::equals).isPresent();
+            var payload = createRequestPayload(method, uri, headers, body, http2);
+            return sendRequest(method, uri, headers, body, socket, payload.toString());
+        });
     }
 
     private CompletableFuture<byte[]> sendRequest(String method, URI uri, Map<String, ?> headers, byte[] body, SocketClient socket, String payload) {
@@ -151,13 +155,15 @@ public class HttpClient implements AutoCloseable {
         }
     }
 
-    private StringBuilder createRequestPayload(String method, URI uri, Map<String, ?> headers, byte[] body) {
+    private String createRequestPayload(String method, URI uri, Map<String, ?> headers, byte[] body, boolean http2) {
         var builder = new StringBuilder();
         builder.append(method)
                 .append(" ")
                 .append(uri.getPath())
                 .append(uri.getQuery() == null || uri.getQuery().isEmpty() ? "" : "?" + uri.getQuery())
-                .append(" HTTP/1.1\r\n");
+                .append(" ")
+                .append("HTTP/1.1")
+                .append("\r\n");
         builder.append("Host: ")
                 .append(uri.getHost())
                 .append(uri.getPort() == -1 ? "" : ":" + uri.getPort())
@@ -182,7 +188,7 @@ public class HttpClient implements AutoCloseable {
             builder.append(new String(body, StandardCharsets.ISO_8859_1))
                     .append("\r\n");
         }
-        return builder;
+        return builder.toString();
     }
 
     private InetSocketAddress toSocketAddress(URI uri) {
@@ -213,10 +219,9 @@ public class HttpClient implements AutoCloseable {
                 }
                 case "https" -> {
                     var sslEngine = platform.sslContext()
-                            .createSSLEngine(uri.getHost(), uri.getPort() == 1 ? 443 : uri.getPort());
+                            .createSSLEngine(uri.getHost(), uri.getPort() == -1 ? 443 : uri.getPort());
                     sslEngine.setUseClientMode(true);
-                    platform.sslParameters()
-                            .ifPresent(sslEngine::setSSLParameters);
+                    sslEngine.setSSLParameters(platform.sslParameters());
                     var result = SocketClient.newSecureClient(sslEngine, proxy);
                     result.setKeepAlive(true);
                     if(aliveSockets != null) {
@@ -235,6 +240,19 @@ public class HttpClient implements AutoCloseable {
 
     public enum Platform {
         DEFAULT,
+        /*
+        sun.security.ssl.ClientHello:214
+        var result = new int[21];
+        result[0] = 0x5A5A;
+        for(var i = 0; i < ids.length; i++) {
+            result[1 + i] = ids[i];
+        }
+        result[17] = 0x002F;
+        result[18] = 0xC008;
+        result[19] = 0xC012;
+        result[20] = 0x000A;
+        ids = result;
+         */
         IOS,
         ANDROID;
 
@@ -242,22 +260,22 @@ public class HttpClient implements AutoCloseable {
             return DEFAULT_SSL_CONTEXT;
         }
 
-        private Optional<SSLParameters> sslParameters() {
-            return switch (this) {
-                case DEFAULT -> Optional.empty();
+        public SSLParameters sslParameters() {
+            var sslParameters = sslContext().getDefaultSSLParameters();
+            // sslParameters.setApplicationProtocols(new String[]{"h2", "http/1.1"});
+            switch (this) {
                 case IOS -> {
-                    var sslParameters = sslContext().getDefaultSSLParameters();
                     sslParameters.setCipherSuites(IOS_CIPHERS);
+                    System.out.println("LEN: " + ThreadLocalRandom.current().nextInt(sslParameters.getMaximumPacketSize() / 2, sslParameters.getMaximumPacketSize() * 2));
+                    sslParameters.setMaximumPacketSize(ThreadLocalRandom.current().nextInt(sslParameters.getMaximumPacketSize() / 2, sslParameters.getMaximumPacketSize() * 2));
                     sslParameters.setUseCipherSuitesOrder(true);
-                    yield Optional.of(sslParameters);
                 }
                 case ANDROID -> {
-                    var sslParameters = sslContext().getDefaultSSLParameters();
                     sslParameters.setCipherSuites(ANDROID_CIPHERS);
                     sslParameters.setUseCipherSuitesOrder(true);
-                    yield Optional.of(sslParameters);
                 }
-            };
+            }
+            return sslParameters;
         }
 
         private static final SSLContext DEFAULT_SSL_CONTEXT;

@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.registration.WhatsappRegistration;
-import it.auties.whatsapp.registration.cloudVerification.CloudVerificationClient;
 
 import java.net.URI;
 import java.util.Objects;
@@ -37,7 +36,6 @@ public sealed class MobileRegistrationBuilder {
     public final static class Unregistered extends MobileRegistrationBuilder {
         private UnverifiedResult unregisteredResult;
         private VerificationCodeMethod verificationCodeMethod;
-        private CloudVerificationClient cloudVerificationClient;
         private boolean autocloseCloudVerificationClient;
 
         Unregistered(Store store, Keys keys, ErrorHandler errorHandler) {
@@ -75,11 +73,6 @@ public sealed class MobileRegistrationBuilder {
             return this;
         }
 
-        public void cloudVerificationClient(CloudVerificationClient cloudVerificationClient, boolean autoclose) {
-            this.cloudVerificationClient = cloudVerificationClient;
-            this.autocloseCloudVerificationClient = autoclose;
-        }
-
         /**
          * Registers a phone number by asking for a verification code and then sending it to Whatsapp
          *
@@ -102,7 +95,6 @@ public sealed class MobileRegistrationBuilder {
                         keys,
                         verificationCodeSupplier,
                         verificationCodeMethod,
-                        cloudVerificationClient,
                         printRequests
                 );
                 return registration.registerPhoneNumber()
@@ -113,26 +105,15 @@ public sealed class MobileRegistrationBuilder {
                                     .errorHandler(errorHandler)
                                     .build();
                             return this.result = new RegisteredResult(api, Optional.ofNullable(response));
-                        })
-                        .exceptionallyComposeAsync(error -> {
-                            closeCloudVerificationClient();
-                            return CompletableFuture.failedFuture(error);
                         });
             }
 
-            closeCloudVerificationClient();
             var api = Whatsapp.customBuilder()
                     .store(store)
                     .keys(keys)
                     .errorHandler(errorHandler)
                     .build();
             return CompletableFuture.completedFuture(result);
-        }
-
-        private void closeCloudVerificationClient() {
-            if(autocloseCloudVerificationClient && cloudVerificationClient != null) {
-                cloudVerificationClient.close();
-            }
         }
 
         /**
@@ -155,7 +136,6 @@ public sealed class MobileRegistrationBuilder {
                         keys,
                         verificationCodeSupplier,
                         verificationCodeMethod,
-                        cloudVerificationClient,
                         printRequests
                 );
                 return registration.requestVerificationCode().thenApply(response -> {
@@ -229,7 +209,6 @@ public sealed class MobileRegistrationBuilder {
                     keys,
                     verificationCodeSupplier,
                     VerificationCodeMethod.NONE,
-                    null,
                     printRequests
             );
             return registration.sendVerificationCode().thenApply(response -> {

@@ -26,7 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @SuppressWarnings("unused")
 public class SocketClient implements AutoCloseable {
     private static final int DEFAULT_CONNECTION_TIMEOUT = 300;
-
+    static {
+        System.setProperty("jdk.tls.client.enableSessionTicketExtension", "false");
+    }
 
     public static SocketClient newPlainClient(URI proxy) throws IOException {
         var channel = AsynchronousSocketChannel.open();
@@ -203,6 +205,10 @@ public class SocketClient implements AutoCloseable {
         socketTransport.read(buffer, true, callback);
     }
 
+    public Optional<String> applicationProtocol() {
+        return socketTransport.getApplicationProtocol();
+    }
+
     static sealed abstract class SocketTransport {
         private static final int DEFAULT_BUFFER_SIZE = 8192;
 
@@ -212,6 +218,8 @@ public class SocketClient implements AutoCloseable {
         }
 
         abstract CompletableFuture<Void> handshake();
+
+        abstract Optional<String> getApplicationProtocol();
 
         abstract boolean isSecure();
 
@@ -312,6 +320,11 @@ public class SocketClient implements AutoCloseable {
             }
 
             @Override
+            Optional<String> getApplicationProtocol() {
+                return Optional.empty();
+            }
+
+            @Override
             <R extends Response<Integer>> R read(ByteBuffer buffer, boolean lastRead, R result) {
                 return readPlain(buffer, lastRead, result);
             }
@@ -350,6 +363,11 @@ public class SocketClient implements AutoCloseable {
             @Override
             boolean isSecure() {
                 return true;
+            }
+
+            @Override
+            Optional<String> getApplicationProtocol() {
+                return Optional.ofNullable(sslEngine.getApplicationProtocol());
             }
 
             @Override

@@ -65,7 +65,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     }
 
     /**
-     * Checks whether a non-null key whatsappOldEligible in this map
+     * Checks whether a non-null key has a value in this map
      *
      * @param key the non-null key
      * @return a boolean
@@ -75,7 +75,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     }
 
     /**
-     * Checks whether a non-null key whatsappOldEligible in this map and has the provided value
+     * Checks whether a non-null key value in this map and has the provided value
      *
      * @param key   the non-null key
      * @param value the nullable value to check against

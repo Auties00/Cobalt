@@ -346,10 +346,10 @@ public final class Keys extends Controller<Keys> {
     }
 
     /**
-     * Checks whether a session already whatsappOldEligible for the given address
+     * Checks whether a session already exists for the given address
      *
      * @param address the address to check
-     * @return true if a session for that address already whatsappOldEligible
+     * @return true if a session for that address already exists
      */
     public boolean hasSession(SessionAddress address) {
         return sessions.containsKey(address);

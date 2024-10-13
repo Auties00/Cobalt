@@ -21,26 +21,10 @@ import java.util.concurrent.ThreadLocalRandom;
 @ProtobufMessage
 public final class CompanionDevice {
     private static final List<Entry<String, String>> IPHONES = List.of(
-            Map.entry("iPhone_11", "iPhone12,1"),
-            Map.entry("iPhone_11_Pro", "iPhone12,3"),
-            Map.entry("iPhone_11_Pro_Max", "iPhone12,5"),
-            Map.entry("iPhone_12", "iPhone13,2"),
-            Map.entry("iPhone_12_Pro", "iPhone13,3"),
-            Map.entry("iPhone_12_Pro_Max", "iPhone13,4"),
-            Map.entry("iPhone_13", "iPhone14,5"),
-            Map.entry("iPhone_13_Pro", "iPhone14,2"),
-            Map.entry("iPhone_13_Pro_Max", "iPhone14,3"),
-            Map.entry("iPhone_14", "iPhone14,7"),
-            Map.entry("iPhone_14_Plus", "iPhone14,8"),
-            Map.entry("iPhone_14_Pro", "iPhone15,2"),
-            Map.entry("iPhone_14_Pro_Max", "iPhone15,3"),
-            Map.entry("iPhone_15", "iPhone15,4"),
-            Map.entry("iPhone_15_Plus", "iPhone15,5"),
-            Map.entry("iPhone_15_Pro", "iPhone16,1"),
-            Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
+            Map.entry("iPhone_7", "iPhone12,1")
     );
     private static final List<Entry<String, String>> IOS_VERSION = List.of(
-            Map.entry("17.6.1", "21G101")
+            Map.entry("15.8.3", "21G101")
     );
     private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
     private static final int MIDDLEWARE_PERSONAL_PORT = 1119;

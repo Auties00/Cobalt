@@ -176,7 +176,7 @@ public class Whatsapp {
         var keys = Keys.newKeys(randomedUUID, phoneNumber, null, ClientType.MOBILE);
         keys.setSerializer(ControllerSerializer.discarding());
         store.setPhoneNumber(PhoneNumber.of(phoneNumber));
-        var service = new WhatsappRegistration(store, keys, null, VerificationCodeMethod.NONE, null,false);
+        var service = new WhatsappRegistration(store, keys, null, VerificationCodeMethod.NONE, false);
         return service.exists();
     }
 

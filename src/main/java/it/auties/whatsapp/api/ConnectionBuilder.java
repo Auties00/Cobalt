@@ -49,7 +49,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
 
     /**
      * Creates a new connection using a unique identifier
-     * If a session with the given id already whatsappOldEligible, it will be retrieved.
+     * If a session with the given id already otpEligible, it will be retrieved.
      * Otherwise, a new one will be created.
      *
      * @param uuid the nullable uuid to use to create the connection
@@ -64,7 +64,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
 
     /**
      * Creates a new connection using a phone number
-     * If a session with the given phone number already whatsappOldEligible, it will be retrieved.
+     * If a session with the given phone number already exists, it will be retrieved.
      * Otherwise, a new one will be created.
      *
      * @param phoneNumber the nullable uuid to use to create the connection
@@ -78,7 +78,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
 
     /**
      * Creates a new connection using an alias
-     * If a session with the given alias already whatsappOldEligible, it will be retrieved.
+     * If a session with the given alias already exists, it will be retrieved.
      * Otherwise, a new one will be created.
      *
      * @param alias the nullable alias to use to create the connection

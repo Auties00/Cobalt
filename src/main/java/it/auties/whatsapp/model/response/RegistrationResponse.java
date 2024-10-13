@@ -25,7 +25,7 @@ import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
  * @param securityCodeSet     whether 2fa is enabled
  * @param imageCaptcha        the image captcha to solve, only available for business accounts
  * @param audioCaptcha        the audio captcha to solve, only available for business accounts
- * @param whatsappOldEligible if requested, whether the phone number was already registered on Whatsapp
+ * @param otpEligible if requested, whether the phone number was already registered on Whatsapp
  */
 public record RegistrationResponse(@JsonProperty("login") PhoneNumber number,
                                    @JsonProperty("lid") long lid,
@@ -44,7 +44,8 @@ public record RegistrationResponse(@JsonProperty("login") PhoneNumber number,
                                    @JsonProperty("image_blob") String imageCaptcha,
                                    @JsonProperty("audio_blob") String audioCaptcha,
                                    @JsonProperty("cert") String cert,
-                                   @JsonProperty("wa_old_eligible") boolean whatsappOldEligible,
+                                   @JsonProperty("wa_old_eligible") boolean otpEligible,
+                                   @JsonProperty(value = "send_sms_eligible", defaultValue = "true") boolean smsEligible,
                                    @JsonProperty("possible_migration") boolean possibleMigration,
                                    @JsonProperty(value = "autoconf_type", defaultValue = "0") boolean autoConfigure,
                                    @JsonProperty("wipe_token") String wipeToken

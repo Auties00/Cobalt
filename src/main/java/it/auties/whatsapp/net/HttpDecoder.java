@@ -226,7 +226,7 @@ class HttpDecoder {
     }
 
     private boolean isRedirect() {
-        return statusCode == 302;
+        return statusCode == 301 || statusCode == 302;
     }
 
     private int statusCode() {
