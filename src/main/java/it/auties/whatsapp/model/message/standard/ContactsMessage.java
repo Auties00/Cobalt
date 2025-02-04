@@ -18,9 +18,9 @@ import java.util.Optional;
 public final class ContactsMessage implements ContextualMessage<ContactsMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String name;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final List<ContactMessage> contacts;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
 

@@ -43,16 +43,16 @@ public final class TextMessage implements ContextualMessage<TextMessage> {
     @ProtobufProperty(index = 8, type = ProtobufType.FIXED32)
     private Integer backgroundArgb;
 
-    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 9, type = ProtobufType.ENUM)
     private FontType font;
 
-    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 10, type = ProtobufType.ENUM)
     private PreviewType previewType;
 
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private byte[] thumbnail;
 
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     @ProtobufProperty(index = 18, type = ProtobufType.BOOL)
@@ -79,7 +79,7 @@ public final class TextMessage implements ContextualMessage<TextMessage> {
     @ProtobufProperty(index = 25, type = ProtobufType.UINT32)
     private Integer thumbnailWidth;
 
-    @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 26, type = ProtobufType.ENUM)
     private InviteLinkGroupType inviteLinkGroupType;
 
     @ProtobufProperty(index = 27, type = ProtobufType.STRING)
@@ -88,7 +88,7 @@ public final class TextMessage implements ContextualMessage<TextMessage> {
     @ProtobufProperty(index = 28, type = ProtobufType.BYTES)
     private byte[] inviteLinkParentGroupThumbnailV2;
 
-    @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 29, type = ProtobufType.ENUM)
     private InviteLinkGroupType inviteLinkGroupTypeV2;
 
     @ProtobufProperty(index = 30, type = ProtobufType.BOOL)

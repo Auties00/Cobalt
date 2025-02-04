@@ -11,10 +11,10 @@ import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "DeviceProps")
 public record CompanionProperties(@ProtobufProperty(index = 1, type = STRING) String os,
-                                  @ProtobufProperty(index = 2, type = OBJECT) Version version,
-                                  @ProtobufProperty(index = 3, type = OBJECT) PlatformType platformType,
+                                  @ProtobufProperty(index = 2, type = MESSAGE) Version version,
+                                  @ProtobufProperty(index = 3, type = ENUM) PlatformType platformType,
                                   @ProtobufProperty(index = 4, type = BOOL) boolean requireFullSync,
-                                  @ProtobufProperty(index = 5, type = OBJECT) HistorySyncConfig historySyncConfig) {
+                                  @ProtobufProperty(index = 5, type = MESSAGE) HistorySyncConfig historySyncConfig) {
 
     @ProtobufEnum
     public enum PlatformType {

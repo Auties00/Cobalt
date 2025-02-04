@@ -16,9 +16,9 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "PollUpdate")
 public record PollUpdate(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         ChatMessageKey pollUpdateMessageKey,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         PollUpdateEncryptedOptions vote,
         @ProtobufProperty(index = 3, type = ProtobufType.INT64)
         long senderTimestampMilliseconds

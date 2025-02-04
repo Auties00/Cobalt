@@ -27,13 +27,13 @@ public record HighlyStructuredMessage(
         Optional<String> fallbackLg,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         Optional<String> fallbackLc,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         List<HighlyStructuredLocalizableParameter> localizableParameters,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> deterministicLg,
         @ProtobufProperty(index = 8, type = ProtobufType.STRING)
         Optional<String> deterministicLc,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
         TemplateMessage templateMessage
 ) implements ButtonMessage, HighlyStructuredFourRowTemplateTitle {
     @Override

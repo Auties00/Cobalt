@@ -10,9 +10,9 @@ import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructure
  */
 @ProtobufMessage(name = "TemplateButton.URLButton")
 public record HighlyStructuredURLButton(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         HighlyStructuredMessage text,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         HighlyStructuredMessage url
 ) implements HighlyStructuredButton {
     @Override

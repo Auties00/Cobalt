@@ -26,15 +26,15 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
     private final String description;
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     private final String button;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
     private final Type listType;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final List<ButtonSection> sections;
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     private final ProductListInfo productListInfo;
     @ProtobufProperty(index = 7, type = ProtobufType.STRING)
     private final String footer;
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public ListMessage(String title, String description, String button, Type listType, List<ButtonSection> sections, ProductListInfo productListInfo, String footer, ContextInfo contextInfo) {

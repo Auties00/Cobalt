@@ -13,7 +13,7 @@ import java.util.Objects;
  */
 @ProtobufMessage(name = "DisappearingMode")
 public record ChatDisappear(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         Initiator initiator
 ) {
     /**

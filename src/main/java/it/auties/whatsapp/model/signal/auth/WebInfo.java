@@ -5,14 +5,13 @@ import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 
-import static it.auties.protobuf.model.ProtobufType.OBJECT;
-import static it.auties.protobuf.model.ProtobufType.STRING;
+import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "ClientPayload.WebInfo")
 public record WebInfo(@ProtobufProperty(index = 1, type = STRING) String refToken,
                       @ProtobufProperty(index = 2, type = STRING) String version,
-                      @ProtobufProperty(index = 3, type = OBJECT) WebPayload webPayload,
-                      @ProtobufProperty(index = 4, type = OBJECT) Platform webSubPlatform) {
+                      @ProtobufProperty(index = 3, type = MESSAGE) WebPayload webPayload,
+                      @ProtobufProperty(index = 4, type = ENUM) Platform webSubPlatform) {
 
     @ProtobufEnum(name = "ClientPayload.UserAgent.Platform")
     public enum Platform {

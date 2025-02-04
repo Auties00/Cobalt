@@ -20,27 +20,27 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "Message.ProtocolMessage")
 public record ProtocolMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<ChatMessageKey> key,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
         Type protocolType,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
         long ephemeralExpiration,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long ephemeralSettingTimestampSeconds,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         Optional<HistorySyncNotification> historySyncNotification,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<AppStateSyncKeyShare> appStateSyncKeyShare,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
         Optional<AppStateSyncKeyRequest> appStateSyncKeyRequest,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
         Optional<InitialSecurityNotificationSettingSync> initialSecurityNotificationSettingSync,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
         Optional<AppStateFatalExceptionNotification> appStateFatalExceptionNotification,
-        @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 11, type = ProtobufType.MESSAGE)
         Optional<ChatDisappear> disappearingMode,
-        @ProtobufProperty(index = 14, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 14, type = ProtobufType.MESSAGE)
         Optional<MessageContainer> editedMessage,
         @ProtobufProperty(index = 15, type = ProtobufType.INT64)
         long timestampMilliseconds

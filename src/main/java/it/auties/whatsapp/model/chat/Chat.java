@@ -34,7 +34,7 @@ import java.util.function.Predicate;
 public final class Chat implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     final ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages;
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     final Jid newJid;
@@ -48,7 +48,7 @@ public final class Chat implements JidProvider {
     ChatEphemeralTimer ephemeralMessageDuration;
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
     long ephemeralMessagesToggleTimeSeconds;
-    @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 11, type = ProtobufType.ENUM)
     EndOfHistoryTransferType endOfHistoryTransferType;
     @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
     long timestampSeconds;
@@ -58,7 +58,7 @@ public final class Chat implements JidProvider {
     boolean notSpam;
     @ProtobufProperty(index = 16, type = ProtobufType.BOOL)
     boolean archived;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     ChatDisappear disappearInitiator;
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
     boolean markedAsUnread;
@@ -66,9 +66,9 @@ public final class Chat implements JidProvider {
     int pinnedTimestampSeconds;
     @ProtobufProperty(index = 25, type = ProtobufType.UINT64)
     ChatMute mute;
-    @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 26, type = ProtobufType.MESSAGE)
     ChatWallpaper wallpaper;
-    @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 27, type = ProtobufType.ENUM)
     MediaVisibility mediaVisibility;
     @ProtobufProperty(index = 29, type = ProtobufType.BOOL)
     boolean suspended;
@@ -86,7 +86,7 @@ public final class Chat implements JidProvider {
     boolean pnhDuplicateLidThread;
     @ProtobufProperty(index = 42, type = ProtobufType.STRING)
     Jid lid;
-    @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.ENUM)
     final ConcurrentHashMap<Jid, ContactStatus> presences;
     private boolean update;
 

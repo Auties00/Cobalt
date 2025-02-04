@@ -50,31 +50,31 @@ public final class Keys extends Controller<Keys> {
     /**
      * The secret key pair used for buffer messages
      */
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     final SignalKeyPair noiseKeyPair;
 
     /**
      * The ephemeral key pair
      */
-    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
     final SignalKeyPair ephemeralKeyPair;
 
     /**
      * The signed identity key
      */
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
     final SignalKeyPair identityKeyPair;
 
     /**
      * The companion secret key
      */
-    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
     SignalKeyPair companionKeyPair;
 
     /**
      * The signed pre key
      */
-    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
     SignalSignedKeyPair signedKeyPair;
 
     /**
@@ -93,7 +93,7 @@ public final class Keys extends Controller<Keys> {
     /**
      * Whether these keys have generated pre keys assigned to them
      */
-    @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
     final List<SignalPreKeyPair> preKeys;
 
     /**
@@ -126,35 +126,35 @@ public final class Keys extends Controller<Keys> {
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     SignedDeviceIdentity companionIdentity;
 
     /**
      * Sender keys for signal implementation
      */
-    @ProtobufProperty(index = 18, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 18, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
      * App state keys
      */
-    @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 19, type = ProtobufType.MESSAGE)
     final List<CompanionSyncKey> appStateKeys;
 
     /**
      * Sessions map
      */
-    @ProtobufProperty(index = 20, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 20, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentMap<SessionAddress, Session> sessions;
 
     /**
      * Hash state
      */
-    @ProtobufProperty(index = 21, type = ProtobufType.OBJECT, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 21, type = ProtobufType.MESSAGE, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentMap<String, CompanionHashState> hashStates;
 
 
-    @ProtobufProperty(index = 22, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 22, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys;
 
     /**
@@ -346,10 +346,10 @@ public final class Keys extends Controller<Keys> {
     }
 
     /**
-     * Checks whether a session already whatsappOldEligible for the given address
+     * Checks whether a session already exists for the given address
      *
      * @param address the address to check
-     * @return true if a session for that address already whatsappOldEligible
+     * @return true if a session for that address already exists
      */
     public boolean hasSession(SessionAddress address) {
         return sessions.containsKey(address);

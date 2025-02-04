@@ -181,9 +181,9 @@ public class SocketHandler implements SocketListener {
     }
 
     @Override
-    public void onMessage(byte[] message, int length) {
+    public void onMessage(byte[] message) {
         if (state == SocketState.WAITING || state == SocketState.RECONNECTING || state == SocketState.PAUSED) {
-            handshake(message.length != length ? Arrays.copyOfRange(message, 0, length) : message); // for now copy array
+            handshake(message); // for now copy array
             return;
         }
 
@@ -197,7 +197,7 @@ public class SocketHandler implements SocketListener {
         }
 
         var iv = keys.nextReadCounter(true);
-        var decipheredMessage = AesGcm.decrypt(iv, message, 0, length, readKey.get());
+        var decipheredMessage = AesGcm.decrypt(iv, message, 0, message.length, readKey.get());
         try(var decoder = new BinaryDecoder(decipheredMessage)) {
             var node = decoder.decode();
             onNodeReceived(node);
@@ -221,11 +221,6 @@ public class SocketHandler implements SocketListener {
 
 
     private void onNodeReceived(Node node) {
-        var caller = store.findPendingRequest(node.id());
-        if(caller.isPresent() && caller.get().body() instanceof Node callerNode && callerNode.hasNode("ping")) {
-            return;
-        }
-
         callListenersAsync(listener -> {
             listener.onNodeReceived(whatsapp, node);
             listener.onNodeReceived(node);
@@ -511,10 +506,6 @@ public class SocketHandler implements SocketListener {
     }
 
     private void onNodeSent(Node node) {
-        if (node.hasNode("ping")) {
-            return;
-        }
-
         callListenersAsync(listener -> {
             listener.onNodeSent(whatsapp, node);
             listener.onNodeSent(node);

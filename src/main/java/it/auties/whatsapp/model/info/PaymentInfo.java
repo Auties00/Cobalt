@@ -20,17 +20,17 @@ import java.util.Optional;
 @ProtobufMessage(name = "PaymentInfo")
 public record PaymentInfo(
         @Deprecated
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         Currency currencyDeprecated,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Jid receiverJid,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
         Status status,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long transactionTimestampSeconds,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
@@ -38,13 +38,13 @@ public record PaymentInfo(
         boolean futureProofed,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
         String currency,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 10, type = ProtobufType.ENUM)
         TransactionStatus transactionStatus,
         @ProtobufProperty(index = 11, type = ProtobufType.BOOL)
         boolean useNoviFormat,
-        @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
         PaymentMoney primaryAmount,
-        @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
         PaymentMoney exchangeAmount
 ) implements Info {
     /**

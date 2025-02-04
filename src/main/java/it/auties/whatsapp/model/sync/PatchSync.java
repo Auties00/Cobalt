@@ -9,19 +9,19 @@ import java.util.List;
 
 @ProtobufMessage(name = "SyncdPatch")
 public final class PatchSync {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private VersionSync version;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final List<MutationSync> mutations;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final ExternalBlobReference externalMutations;
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private final byte[] snapshotMac;
     @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
     private final byte[] patchMac;
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     private final KeyId keyId;
-    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
     private final ExitCode exitCode;
     @ProtobufProperty(index = 8, type = ProtobufType.UINT32)
     private final Integer deviceIndex;

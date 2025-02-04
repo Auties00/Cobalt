@@ -11,11 +11,11 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "HydratedTemplateButton")
 public record HighlyStructuredButtonTemplate(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredQuickReplyButton> highlyStructuredQuickReplyButton,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredURLButton> highlyStructuredUrlButton,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredCallButton> highlyStructuredCallButton,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
         int index

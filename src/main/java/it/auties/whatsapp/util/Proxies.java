@@ -1,12 +1,28 @@
 package it.auties.whatsapp.util;
 
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URI;
+import java.net.*;
 import java.util.Objects;
 import java.util.OptionalInt;
 
 public final class Proxies {
+    static {
+        System.setProperty("jdk.http.auth.proxying.disabledSchemes", "");
+        System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
+    }
+
+    public static ProxySelector toProxySelector(URI uri) {
+        if (uri == null) {
+            return null;
+        }
+
+        var scheme = Objects.requireNonNull(uri.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(uri));
+        Validate.isTrue(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"),
+                "Only HTTP and HTTPS proxies are supported in this context");
+        var host = Objects.requireNonNull(uri.getHost(), "Invalid proxy, expected a host: %s".formatted(uri));
+        var port = getDefaultPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
+        return ProxySelector.of(InetSocketAddress.createUnresolved(host, port));
+    }
+
     public static Proxy toProxy(URI uri) {
         if (uri == null) {
             return Proxy.NO_PROXY;
@@ -40,10 +56,30 @@ public final class Proxies {
             throw new IllegalArgumentException("Invalid proxy authentication: " + userInfo);
         }
 
-        return new UserInfo(data[0], data.length == 2 ? data[1] : null);
+        return new UserInfo(data[0], data.length == 2 ? data[1] : "");
     }
 
     public record UserInfo(String username, String password) {
 
+    }
+
+    public static Authenticator toAuthenticator(URI proxy) {
+        if(proxy == null) {
+            return null;
+        }
+
+        return new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                Validate.isTrue(Objects.equals(getRequestingHost(), proxy.getHost()) && Objects.equals(getRequestingPort(), proxy.getPort()),
+                        "Unexpected proxy request: %s:%s", getRequestingHost(), getRequestingPort());
+                var userInfo = parseUserInfo(proxy.getUserInfo());
+                if(userInfo == null) {
+                    return null;
+                }
+
+                return new PasswordAuthentication(userInfo.username(), userInfo.password().toCharArray());
+            }
+        };
     }
 }

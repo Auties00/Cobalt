@@ -10,10 +10,12 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
-import it.auties.whatsapp.net.HttpClient;
 import it.auties.whatsapp.util.Json;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -27,7 +29,7 @@ public final class WhatsappMetadata {
     private static final String MOBILE_BUSINESS_IOS_STATIC = "USUDuDYDeQhY4RF2fCSp5m3F6kJ1M2J8wS7bbNA2";
 
     private static volatile Version webVersion;
-    
+
     public static CompletableFuture<Version> getVersion(PlatformType platform) {
         return switch (platform) {
             case WEB, WINDOWS, MACOS ->
@@ -45,11 +47,15 @@ public final class WhatsappMetadata {
             return CompletableFuture.completedFuture(webVersion);
         }
 
-        var client = new HttpClient(HttpClient.Platform.DEFAULT, false);
-        return client.getString(WEB_UPDATE_URL).thenApplyAsync(response -> {
-            var webVersionResponse = Json.readValue(response, WebVersionResponse.class);
-            return webVersion = Version.of(webVersionResponse.currentVersion());
-        });
+        try(var client = HttpClient.newHttpClient()) {
+            var request = HttpRequest.newBuilder()
+                    .uri(WEB_UPDATE_URL)
+                    .build();
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
+                var webVersionResponse = Json.readValue(response.body(), WebVersionResponse.class);
+                return webVersion = Version.of(webVersionResponse.currentVersion());
+            });
+        }
     }
 
     public static CompletableFuture<String> getToken(long phoneNumber, PlatformType platform, Version appVersion) {
@@ -81,11 +87,11 @@ public final class WhatsappMetadata {
 
 
     private record WebVersionResponse(@JsonProperty("isBroken") boolean broken,
-                                     @JsonProperty("isBelowSoft") boolean outdatedSoft,
-                                     @JsonProperty("isBelowHard") boolean outdatedHard,
-                                     @JsonProperty("hardUpdateTime") long outdatedUpdateTime,
-                                     @JsonProperty("beta") String beta,
-                                     @JsonProperty("currentVersion") String currentVersion) {
+                                      @JsonProperty("isBelowSoft") boolean outdatedSoft,
+                                      @JsonProperty("isBelowHard") boolean outdatedHard,
+                                      @JsonProperty("hardUpdateTime") long outdatedUpdateTime,
+                                      @JsonProperty("beta") String beta,
+                                      @JsonProperty("currentVersion") String currentVersion) {
 
     }
 }

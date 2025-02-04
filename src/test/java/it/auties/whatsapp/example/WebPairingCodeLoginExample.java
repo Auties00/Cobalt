@@ -1,16 +1,20 @@
 package it.auties.whatsapp.example;
 
-import it.auties.whatsapp.api.QrHandler;
+import it.auties.whatsapp.api.PairingCodeHandler;
 import it.auties.whatsapp.api.WebHistoryLength;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 
-public class WebLoginExample {
+import java.util.Scanner;
+
+public class WebPairingCodeLoginExample {
     public static void main(String[] args) {
+        System.out.println("Enter the phone number: ");
+        var phoneNumber = new Scanner(System.in).nextLong();
         Whatsapp.webBuilder()
                 .newConnection()
                 .historyLength(WebHistoryLength.extended())
-                .unregistered(QrHandler.toTerminal())
+                .unregistered(phoneNumber, PairingCodeHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewChatMessageListener((api, message) -> System.out.println(message.toJson()))
@@ -23,7 +27,6 @@ public class WebLoginExample {
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
                 .addMessageStatusListener((info) -> System.out.printf("Message status update for %s%n", info.id()))
                 .addChatMessagesSyncListener((api, chat, last) -> System.out.printf("%s now has %s messages: %s(oldest message: %s)%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done", chat.oldestMessage().flatMap(ChatMessageInfo::timestamp).orElse(null)))
-                .addHistorySyncProgressListener((progress, recent) -> System.out.println("History sync progress: " + progress + "%(" + recent + ")"))
                 .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
                 .connect()
                 .join()

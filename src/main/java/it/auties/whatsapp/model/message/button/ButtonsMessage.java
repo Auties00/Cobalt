@@ -25,23 +25,23 @@ import java.util.Optional;
 public final class ButtonsMessage implements ButtonMessage, ContextualMessage<ButtonsMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final ButtonsMessageHeaderText headerText;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final DocumentMessage headerDocument;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final ImageMessage headerImage;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final VideoOrGifMessage headerVideo;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final LocationMessage headerLocation;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final String body;
     @ProtobufProperty(index = 7, type = ProtobufType.STRING)
     private final String footer;
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
     private final List<Button> buttons;
-    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 10, type = ProtobufType.ENUM)
     private final Type headerType;
 
 

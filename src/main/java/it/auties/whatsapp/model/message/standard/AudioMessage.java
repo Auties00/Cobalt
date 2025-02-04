@@ -40,7 +40,7 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     private String mediaDirectPath;
     @ProtobufProperty(index = 10, type = ProtobufType.INT64)
     private Long mediaKeyTimestampSeconds;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] streamingSidecar;

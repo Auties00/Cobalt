@@ -18,7 +18,7 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "Message.ReactionMessage")
 public record ReactionMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         ChatMessageKey key,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         String content,

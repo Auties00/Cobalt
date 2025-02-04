@@ -16,11 +16,11 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "Message.SendPaymentMessage")
 public record SendPaymentMessage(
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<MessageContainer> noteMessage,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         ChatMessageKey requestMessageKey,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {
 

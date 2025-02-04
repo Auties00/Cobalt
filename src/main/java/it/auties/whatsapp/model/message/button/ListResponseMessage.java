@@ -20,11 +20,11 @@ import java.util.Optional;
 public final class ListResponseMessage implements ButtonReplyMessage<ListResponseMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String title;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
     private final Type listType;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final SingleSelectReplyButton reply;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     private final String description;

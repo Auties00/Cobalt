@@ -45,7 +45,7 @@ public record ButtonOpaqueData(
         Optional<String> loc,
         @ProtobufProperty(index = 17, type = ProtobufType.STRING)
         Optional<String> pollName,
-        @ProtobufProperty(index = 18, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 18, type = ProtobufType.MESSAGE)
         List<PollOption> pollOptions,
         @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
         int pollSelectableOptionsCount,
@@ -57,7 +57,7 @@ public record ButtonOpaqueData(
         long senderTimestampMs,
         @ProtobufProperty(index = 23, type = ProtobufType.STRING)
         Optional<String> pollUpdateParentKey,
-        @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
         Optional<PollUpdateEncryptedMetadata> encPollVote,
         @ProtobufProperty(index = 25, type = ProtobufType.STRING)
         Optional<String> encReactionTargetMessageKey,

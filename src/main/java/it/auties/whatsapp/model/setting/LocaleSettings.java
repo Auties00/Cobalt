@@ -10,6 +10,11 @@ public record LocaleSettings(
         String locale
 ) implements Setting {
     @Override
+    public int settingVersion() {
+        return 3;
+    }
+
+    @Override
     public String indexName() {
         return "setting_locale";
     }

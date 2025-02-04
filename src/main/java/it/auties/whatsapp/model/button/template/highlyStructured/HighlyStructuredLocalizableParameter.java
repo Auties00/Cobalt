@@ -13,9 +13,9 @@ import java.util.Optional;
 public record HighlyStructuredLocalizableParameter(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String defaultValue,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredCurrency> parameterCurrency,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredDateTime> parameterDateTime
 ) {
     /**

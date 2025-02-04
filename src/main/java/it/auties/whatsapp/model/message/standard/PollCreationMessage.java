@@ -29,15 +29,15 @@ public final class PollCreationMessage implements ContextualMessage<PollCreation
     private byte[] encryptionKey;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String title;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final List<PollOption> selectableOptions;
     @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
     private final int selectableOptionsCount;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-    @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final Map<String, PollOption> selectableOptionsMap;
-    @ProtobufProperty(index = 1000, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1000, type = ProtobufType.MESSAGE)
     final List<SelectedPollOption> selectedOptions;
 
     public PollCreationMessage(byte[] encryptionKey, String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, List<SelectedPollOption> selectedOptions) {

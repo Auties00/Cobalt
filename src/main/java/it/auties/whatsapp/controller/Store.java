@@ -89,7 +89,7 @@ public final class Store extends Controller<Store> {
     /**
      * The locale of the user linked to this account
      */
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
     CountryLocale locale;
 
     /**
@@ -145,7 +145,7 @@ public final class Store extends Controller<Store> {
     /**
      * The category of this account, if it's a business account
      */
-    @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 16, type = ProtobufType.MESSAGE)
     BusinessCategory businessCategory;
 
     /**
@@ -204,13 +204,13 @@ public final class Store extends Controller<Store> {
     /**
      * The non-null map of contacts
      */
-    @ProtobufProperty(index = 24, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 24, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentHashMap<Jid, Contact> contacts;
 
     /**
      * The non-null list of status messages
      */
-    @ProtobufProperty(index = 25, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 25, type = ProtobufType.MESSAGE)
     final KeySetView<ChatMessageInfo, Boolean> status;
 
     /**
@@ -222,13 +222,13 @@ public final class Store extends Controller<Store> {
     /**
      * The non-null map of privacy settings
      */
-    @ProtobufProperty(index = 26, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 26, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentHashMap<String, PrivacySettingEntry> privacySettings;
 
     /**
      * The non-null map of calls
      */
-    @ProtobufProperty(index = 27, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 27, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentHashMap<String, Call> calls;
 
     /**
@@ -289,19 +289,19 @@ public final class Store extends Controller<Store> {
     /**
      * The request tag, used to create messages
      */
-    @ProtobufProperty(index = 31, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 31, type = ProtobufType.ENUM)
     ChatEphemeralTimer newChatsEphemeralTimer;
 
     /**
      * The setting to use when generating previews for text messages that contain links
      */
-    @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 32, type = ProtobufType.ENUM)
     TextPreviewSetting textPreviewSetting;
 
     /**
      * Describes how much chat history Whatsapp should send
      */
-    @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 33, type = ProtobufType.MESSAGE)
     WebHistoryLength historyLength;
 
     /**
@@ -325,13 +325,13 @@ public final class Store extends Controller<Store> {
      * The release channel to use when connecting to Whatsapp
      * This should allow the use of beta features
      */
-    @ProtobufProperty(index = 37, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 37, type = ProtobufType.ENUM)
     ReleaseChannel releaseChannel;
 
     /**
      * Metadata about the device that is being simulated for Whatsapp
      */
-    @ProtobufProperty(index = 38, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 38, type = ProtobufType.MESSAGE)
     CompanionDevice device;
 
     /**
@@ -343,7 +343,7 @@ public final class Store extends Controller<Store> {
     /**
      * The setting to use when uploading/downloading medias
      */
-    @ProtobufProperty(index = 42, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 42, type = ProtobufType.ENUM)
     MediaProxySetting mediaProxySetting;
 
     /**

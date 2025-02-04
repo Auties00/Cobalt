@@ -17,7 +17,7 @@ public record WebNotificationsInfo(
         int unreadChats,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
         int notifyMessageCount,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         List<ChatMessageInfo> notifyMessages
 ) implements Info {
     /**

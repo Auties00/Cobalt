@@ -13,11 +13,11 @@ import java.util.Optional;
 
 @ProtobufMessage(name = "Message.InteractiveResponseMessage")
 public final class InteractiveResponseMessage implements ContextualMessage<InteractiveResponseMessage> {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final InteractiveBody body;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final NativeFlowResponseMessage nativeFlowResponseMessage;
-    @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 15, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public InteractiveResponseMessage(InteractiveBody body, NativeFlowResponseMessage nativeFlowResponseMessage, ContextInfo contextInfo) {

@@ -7,13 +7,13 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 
 import java.util.Optional;
 
-import static it.auties.protobuf.model.ProtobufType.OBJECT;
+import static it.auties.protobuf.model.ProtobufType.ENUM;
 import static it.auties.protobuf.model.ProtobufType.STRING;
 
 @ProtobufMessage(name = "MediaRetryNotification")
 public record MediaRetryNotification(@ProtobufProperty(index = 1, type = STRING) String stanzaId,
                                      @ProtobufProperty(index = 2, type = STRING) Optional<String> directPath,
-                                     @ProtobufProperty(index = 3, type = OBJECT) MediaRetryNotificationResultType result) {
+                                     @ProtobufProperty(index = 3, type = ENUM) MediaRetryNotificationResultType result) {
 
     @ProtobufEnum
     public enum MediaRetryNotificationResultType {

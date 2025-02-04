@@ -13,8 +13,6 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
-import it.auties.whatsapp.model.node.Attributes;
-import it.auties.whatsapp.net.HttpClient;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -25,13 +23,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 public final class Medias {
@@ -41,6 +41,9 @@ public final class Medias {
     private static final int PROFILE_PIC_SIZE = 640;
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
+
+    private static volatile HttpClient httpClient;
+    private static final Object httpClientLock = new Object();
 
     public static byte[] getProfilePic(byte[] file) {
         try {
@@ -68,31 +71,20 @@ public final class Medias {
 
     @SafeVarargs
     public static CompletableFuture<byte[]> downloadAsync(URI uri, String userAgent, Map.Entry<String, String>... headers) {
-        try {
-            if (uri == null) {
-                return CompletableFuture.completedFuture(null);
-            }
-
-            var safeHeaders = Attributes.of(headers)
-                    .put("User-Agent", userAgent, Objects::nonNull)
-                    .toMap();
-            return withDisposableHttpClient(null, client -> client.getRaw(uri, safeHeaders));
-        } catch (Throwable exception) {
-            return CompletableFuture.failedFuture(exception);
+        if (uri == null) {
+            return CompletableFuture.completedFuture(null);
         }
-    }
 
-    private static <T> CompletableFuture<T> withDisposableHttpClient(URI proxy, Function<HttpClient, CompletableFuture<T>> function) {
-        var client = new HttpClient(HttpClient.Platform.DEFAULT, proxy, false);
-        return function.apply(client)
-                .thenApplyAsync(result -> {
-                    client.close();
-                    return result;
-                })
-                .exceptionallyComposeAsync(error -> {
-                    client.close();
-                    return CompletableFuture.failedFuture(error);
-                });
+        var request = HttpRequest.newBuilder()
+                .uri(uri);
+        if(userAgent != null) {
+            request.header("User-Agent", userAgent);
+        }
+        for(var header : headers) {
+            request.header(header.getKey(), header.getValue());
+        }
+        return getOrCreateClient().sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray())
+                .thenApplyAsync(HttpResponse::body);
     }
 
     public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection, String userAgent, URI proxy) {
@@ -105,15 +97,17 @@ public final class Medias {
                 .withoutPadding()
                 .encodeToString(Objects.requireNonNullElse(mediaFile.fileEncSha256(), mediaFile.fileSha256()));
         var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, path, token, auth, token));
-        var headers = Map.of(
-                "User-Agent", userAgent,
-                "Content-Type", "application/octet-stream",
-                "Accept", "application/json",
-                "Origin", WEB_ORIGIN
-        );
         var body = Objects.requireNonNullElse(mediaFile.encryptedFile(), file);
-        return withDisposableHttpClient(proxy, client -> client.postRaw(uri, headers, body)).thenApplyAsync(response -> {
-            var upload = Json.readValue(response, MediaUpload.class);
+        var request = HttpRequest.newBuilder()
+                .uri(uri)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body))
+                .header("User-Agent", userAgent)
+                .header("Content-Type", "application/octet-stream")
+                .header("Accept", "application/json")
+                .headers("Origin", WEB_ORIGIN)
+                .build();
+        return getOrCreateClient().sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
+            var upload = Json.readValue(response.body(), MediaUpload.class);
             return new MediaFile(
                     mediaFile.encryptedFile(),
                     mediaFile.fileSha256(),
@@ -149,15 +143,29 @@ public final class Medias {
     }
 
     public static CompletableFuture<Optional<byte[]>> downloadAsync(MutableAttachmentProvider<?> provider) {
-        try {
-            var url = provider.mediaUrl()
-                    .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
-                    .map(URI::create)
-                    .orElseThrow(() -> new NoSuchElementException("Missing url and path from media"));
-            return withDisposableHttpClient(null, client -> client.getRaw(url))
-                    .thenApplyAsync(response -> handleResponse(provider, response));
-        } catch (Throwable error) {
-            return CompletableFuture.completedFuture(Optional.empty());
+       return provider.mediaUrl()
+                .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
+                .map(url -> {
+                    var request = HttpRequest.newBuilder()
+                            .uri(URI.create(url))
+                            .build();
+                    return getOrCreateClient().sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+                            .thenApplyAsync(response -> handleResponse(provider, response.body()));
+                })
+                .orElseGet(() -> CompletableFuture.failedFuture(new NoSuchElementException("Missing url and path from media")));
+    }
+
+    private static HttpClient getOrCreateClient() {
+        if(httpClient != null) {
+            return httpClient;
+        }
+
+        synchronized (httpClientLock) {
+            if(httpClient != null) {
+                return httpClient;
+            }
+
+            return httpClient = HttpClient.newHttpClient();
         }
     }
 

@@ -1198,6 +1198,7 @@ class MessageHandler {
             if(!socketHandler.keys().initialAppSync() && !startedInitialAppSync.get()) {
                 startedInitialAppSync.set(true);
                 socketHandler.pullInitialPatches()
+                        .thenRunAsync(() -> socketHandler.keys().setInitialAppSync(true))
                         .exceptionallyAsync(throwable -> socketHandler.handleFailure(INITIAL_APP_STATE_SYNC, throwable));
             }
 

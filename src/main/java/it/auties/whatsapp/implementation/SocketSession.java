@@ -1,21 +1,25 @@
 package it.auties.whatsapp.implementation;
 
-import it.auties.whatsapp.net.SocketClient;
-import it.auties.whatsapp.net.WebSocketClient;
+import it.auties.whatsapp.util.Proxies;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
-    private static final String WEB_SOCKET_HOST = "web.whatsapp.com";
-    private static final int WEB_SOCKET_PORT = 443;
-    private static final String WEB_SOCKET_PATH = "/ws/chat";
-    private static final String MOBILE_SOCKET_HOST = "g.whatsapp.net";
-    private static final int MOBILE_SOCKET_PORT = 443;
+    private static final URI WEB_SOCKET = URI.create("wss://web.whatsapp.com/ws/chat");
+    private static final InetSocketAddress MOBILE_SOCKET_ENDPOINT = new InetSocketAddress("g.whatsapp.net", 443);
     private static final int MESSAGE_LENGTH = 3;
 
     final URI proxy;
@@ -42,65 +46,73 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         return new RawSocketSession(proxy);
     }
 
-    public static final class WebSocketSession extends SocketSession implements WebSocketClient.Listener {
-        private WebSocketClient webSocket;
-        private final MessageOutputStream messageOutputStream;
+    public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
+        private WebSocket session;
+        private byte[] message;
+        private int messageOffset;
 
         WebSocketSession(URI proxy) {
             super(proxy);
-            this.messageOutputStream = new MessageOutputStream();
         }
 
+        @SuppressWarnings("resource") // Not needed
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
-            if (webSocket != null) {
+            if (session != null) {
                 return CompletableFuture.completedFuture(null);
             }
 
             super.connect(listener);
-            try {
-                var sslContext = SSLContext.getInstance("TLSv1.3");
-                sslContext.init(null, null, null);
-                var sslEngine = sslContext.createSSLEngine(WEB_SOCKET_HOST, WEB_SOCKET_PORT);
-                sslEngine.setUseClientMode(true);
-                this.webSocket = WebSocketClient.newSecureClient(sslEngine, proxy, this);
-                var endpoint = proxy != null ? InetSocketAddress.createUnresolved(WEB_SOCKET_HOST, WEB_SOCKET_PORT) : new InetSocketAddress(WEB_SOCKET_HOST, WEB_SOCKET_PORT);
-                return webSocket.connectAsync(endpoint, WEB_SOCKET_PATH)
-                        .thenRunAsync(() -> listener.onOpen(this));
-            }catch (Throwable throwable) {
-                return CompletableFuture.failedFuture(throwable);
+            var builder = HttpClient.newBuilder();
+            if(proxy != null) {
+                builder.proxy(Proxies.toProxySelector(proxy));
+                builder.authenticator(Proxies.toAuthenticator(proxy));
             }
+            return builder.build()
+                    .newWebSocketBuilder()
+                    .buildAsync(WEB_SOCKET, this)
+                    .thenAcceptAsync(webSocket -> {
+                        this.session = webSocket;
+                        listener.onOpen(this);
+                    });
         }
 
         @Override
         void disconnect() {
-            if (webSocket == null) {
+            if (session == null) {
                 return;
             }
 
-            webSocket.close();
+            session.sendClose(WebSocket.NORMAL_CLOSURE, "");
         }
 
         @Override
         public CompletableFuture<?> sendBinary(byte[] bytes) {
-            if (webSocket == null) {
+            if (session == null) {
                 return CompletableFuture.completedFuture(null);
             }
 
-            return webSocket.sendBinary(ByteBuffer.wrap(bytes));
+            return session.sendBinary(ByteBuffer.wrap(bytes), true);
         }
 
         @Override
-        public void onClose(int statusCode, String reason) {
+        public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+            message = null;
             listener.onClose();
-            this.webSocket = null;
+            session = null;
+            return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         }
 
         @Override
-        public void onMessage(ByteBuffer data, boolean last) {
+        public void onError(WebSocket webSocket, Throwable error) {
+            listener.onError(error);
+        }
+
+        @Override
+        public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
             try {
                 while (data.hasRemaining()) {
-                    if(messageOutputStream.isReady()) {
+                    if(messageOffset == 0) {
                         if(data.remaining() < MESSAGE_LENGTH) {
                             break;
                         }
@@ -108,62 +120,30 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
                         var messageLength = (data.get() << 16) | Short.toUnsignedInt(data.getShort());
                         if (messageLength < 0) {
                             disconnect();
-                            return;
+                            break;
                         }
 
-                        messageOutputStream.init(messageLength);
+                        message = new byte[messageLength];
                     }
 
-                    var result = messageOutputStream.write(data);
-                    if(result != null) {
-                        listener.onMessage(result, messageOutputStream.length());
+                    var remaining = Math.min(message.length - messageOffset, data.remaining());
+                    data.get(message, messageOffset, remaining);
+                    messageOffset += remaining;
+                    if (messageOffset == message.length) {
+                        messageOffset = 0;
+                        listener.onMessage(message);
                     }
                 }
             } catch (Throwable throwable) {
                 listener.onError(throwable);
             }
-        }
 
-        private final static class MessageOutputStream {
-            private byte[] buffer;
-            private int position;
-            private int limit;
-            public void init(int limit) {
-                if(buffer == null || buffer.length < limit) {
-                    this.buffer = new byte[limit];
-                }
-
-                this.limit = limit;
-            }
-
-            public byte[] write(ByteBuffer input) {
-                if(!input.hasRemaining()) {
-                    return null;
-                }
-
-                var remaining = Math.min(limit - position, input.remaining());
-                input.get(buffer, position, remaining);
-                position += remaining;
-                if (position != limit) {
-                    return null;
-                }
-
-                position = 0;
-                return buffer;
-            }
-
-            public boolean isReady() {
-                return position == 0;
-            }
-
-            public int length() {
-                return limit;
-            }
+            return WebSocket.Listener.super.onBinary(webSocket, data, last);
         }
     }
 
     static final class RawSocketSession extends SocketSession {
-        private volatile SocketClient socket;
+        private SocketChannel channel;
 
         RawSocketSession(URI proxy) {
             super(proxy);
@@ -171,94 +151,229 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         CompletableFuture<Void> connect(SocketListener listener) {
+            super.connect(listener);
             if (isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
-
-            super.connect(listener);
             try {
-                this.socket = SocketClient.newPlainClient(proxy);
-                var address = proxy != null ? InetSocketAddress.createUnresolved(MOBILE_SOCKET_HOST, MOBILE_SOCKET_PORT) : new InetSocketAddress(MOBILE_SOCKET_HOST, MOBILE_SOCKET_PORT);
-                return socket.connectAsync(address).thenRunAsync(() -> {
-                    listener.onOpen(RawSocketSession.this);
-                    notifyNextMessage();
-                });
-            }catch (IOException exception) {
+                channel = SocketChannel.open();
+                channel.configureBlocking(false);
+
+                var context = new ConnectionContext(this, listener, new CompletableFuture<>());
+
+                if (channel.connect(MOBILE_SOCKET_ENDPOINT)) {
+                    context.connectFuture.complete(null);
+                    listener.onOpen(this);
+                    CentralSelector.INSTANCE.register(channel, SelectionKey.OP_READ, context);
+                } else {
+                    CentralSelector.INSTANCE.register(channel, SelectionKey.OP_CONNECT, context);
+                }
+                return context.connectFuture;
+            } catch (IOException exception) {
                 return CompletableFuture.failedFuture(exception);
-            }
-        }
-
-        private void notifyNextMessage() {
-            if(socket == null) {
-                return;
-            }
-
-            socket.readFullyAsync(
-                    MESSAGE_LENGTH,
-                    this::readNextMessageLength
-            );
-        }
-
-        private void readNextMessageLength(ByteBuffer lengthBuffer, Throwable error) {
-            if(error != null) {
-                disconnect();
-                return;
-            }
-
-            var messageLength = (lengthBuffer.get() << 16) | ((lengthBuffer.get() & 0xFF) << 8) | (lengthBuffer.get() & 0xFF);
-            if(messageLength < 0) {
-                disconnect();
-                return;
-            }
-
-            socket.readFullyAsync(
-                    messageLength,
-                    this::notifyNextMessage
-            );
-        }
-
-        private void notifyNextMessage(ByteBuffer messageBuffer, Throwable error) {
-            if(error != null) {
-                disconnect();
-                return;
-            }
-
-            try {
-                var message = messageBuffer.array();
-                listener.onMessage(message, message.length);
-            }catch (Throwable throwable) {
-                listener.onError(throwable);
-            }finally {
-                notifyNextMessage();
             }
         }
 
         @Override
         void disconnect() {
             try {
-                if (socket == null) {
+                if (channel == null) {
                     return;
                 }
-
+                channel.close();
                 listener.onClose();
-                socket.close();
-                this.socket = null;
             } catch (Throwable ignored) {
-                // No need to handle this
+
             }
         }
 
         private boolean isOpen() {
-            return socket != null && socket.isConnected();
+            return channel != null && channel.isOpen();
         }
 
         @Override
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
-            if (socket == null) {
+            if (channel == null) {
                 return CompletableFuture.completedFuture(null);
             }
 
-            return socket.writeAsync(bytes);
+            CentralSelector.INSTANCE.addWrite(channel, ByteBuffer.wrap(bytes));
+            return CompletableFuture.completedFuture(null);
+        }
+
+        private static final class CentralSelector implements Runnable{
+            private static final CentralSelector INSTANCE = new CentralSelector();
+
+            private final Selector selector;
+            private final Object lock = new Object();
+
+            private volatile Thread selectorThread;
+
+            private CentralSelector() {
+                try {
+                    selector = Selector.open();
+                } catch (IOException e) {
+                    throw new RuntimeException("Cannot open selector", e);
+                }
+            }
+
+            public synchronized void register(SocketChannel channel, int ops, ConnectionContext context) {
+                synchronized (lock) {
+                    try {
+                        channel.register(selector, ops, context);
+                    } catch (ClosedChannelException e) {
+                        context.listener.onError(e);
+                    }
+                    if (selectorThread == null || !selectorThread.isAlive()) {
+                        selectorThread = Thread.startVirtualThread(this);
+                    }
+                    selector.wakeup();
+                }
+            }
+
+            public void addWrite(SocketChannel channel, ByteBuffer buffer) {
+                var key = channel.keyFor(selector);
+                if (key == null) {
+                    // Channel not registered.
+                    return;
+                }
+                var ctx = (ConnectionContext) key.attachment();
+                ctx.pendingWrites.add(buffer);
+                key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+                selector.wakeup();
+            }
+
+            @Override
+            public void run() {
+                try {
+                    while (true) {
+                        int readyChannels = selector.select();
+                        if (readyChannels > 0) {
+                            var iter = selector.selectedKeys()
+                                    .iterator();
+                            while (iter.hasNext()) {
+                                var key = iter.next();
+                                iter.remove();
+                                handleKey(key);
+                            }
+                        }
+                        if (selector.keys().isEmpty()) {
+                            synchronized (lock) {
+                                if (selector.keys().isEmpty()) {
+                                    selectorThread = null;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch (IOException error) {
+                    System.getLogger("Socket").log(System.Logger.Level.ERROR, error);
+                }
+            }
+
+            private void handleKey(SelectionKey key) {
+                var attachment = key.attachment();
+                if (!(attachment instanceof ConnectionContext ctx)) {
+                    return;
+                }
+                var channel = (SocketChannel) key.channel();
+                try {
+                    if (key.isConnectable()) {
+                        if (channel.finishConnect()) {
+                            key.interestOps(SelectionKey.OP_READ);
+                            ctx.connectFuture.complete(null);
+                            ctx.listener.onOpen(ctx.session);
+                        }
+                    }
+                    if (key.isReadable()) {
+                        var ok = processRead(channel, ctx);
+                        if (!ok) {
+                            key.cancel();
+                            channel.close();
+                            ctx.listener.onClose();
+                        }
+                    }
+                    if (key.isWritable()) {
+                        processWrite(channel, key, ctx);
+                    }
+                } catch (IOException e) {
+                    key.cancel();
+                    try {
+                        channel.close();
+                    } catch (IOException ignored) {
+
+                    }
+                    ctx.listener.onError(e);
+                }
+            }
+
+            private boolean processRead(SocketChannel channel, ConnectionContext ctx) throws IOException {
+                if (ctx.lengthBuffer.hasRemaining()) {
+                    var bytesRead = channel.read(ctx.lengthBuffer);
+                    if (bytesRead == -1) {
+                        return false;
+                    }
+
+                    if (ctx.lengthBuffer.hasRemaining()) {
+                        return true;
+                    }
+
+                    ctx.lengthBuffer.flip();
+                    var length = ((ctx.lengthBuffer.get() & 0xFF) << 16)
+                            | ((ctx.lengthBuffer.get() & 0xFF) << 8)
+                            | (ctx.lengthBuffer.get() & 0xFF);
+                    ctx.payloadBuffer = ByteBuffer.allocate(length);
+                }
+
+                if (ctx.payloadBuffer != null && ctx.payloadBuffer.hasRemaining()) {
+                    var bytesRead = channel.read(ctx.payloadBuffer);
+                    if (bytesRead == -1) {
+                        return false;
+                    }
+
+                    if (ctx.payloadBuffer.hasRemaining()) {
+                        return true;
+                    }
+
+                    ctx.payloadBuffer.flip();
+                    byte[] message = new byte[ctx.payloadBuffer.remaining()];
+                    ctx.payloadBuffer.get(message);
+                    ctx.lengthBuffer.clear();
+                    ctx.payloadBuffer = null;
+                    ctx.listener.onMessage(message);
+                }
+                return true;
+            }
+
+            private void processWrite(SocketChannel channel, SelectionKey key, ConnectionContext ctx) throws IOException {
+                var queue = ctx.pendingWrites;
+                while (!queue.isEmpty()) {
+                    ByteBuffer buf = queue.peek();
+                    channel.write(buf);
+                    if (buf.hasRemaining()) {
+                        break;
+                    }
+                    queue.poll();
+                }
+
+                if (queue.isEmpty()) {
+                    key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+                }
+            }
+        }
+
+        private static final class ConnectionContext {
+            private final RawSocketSession session;
+            private final SocketListener listener;
+            private final CompletableFuture<Void> connectFuture;
+            private final Queue<ByteBuffer> pendingWrites = new ConcurrentLinkedQueue<>();
+            private final ByteBuffer lengthBuffer = ByteBuffer.allocate(3);
+            private ByteBuffer payloadBuffer = null;
+            private ConnectionContext(RawSocketSession session, SocketListener listener, CompletableFuture<Void> connectFuture) {
+                this.session = session;
+                this.listener = listener;
+                this.connectFuture = connectFuture;
+            }
         }
     }
 }

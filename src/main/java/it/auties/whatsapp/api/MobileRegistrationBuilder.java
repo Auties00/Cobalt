@@ -23,12 +23,14 @@ public sealed class MobileRegistrationBuilder {
     final Keys keys;
     final ErrorHandler errorHandler;
     RegisteredResult result;
+    boolean printRequests;
     AsyncVerificationCodeSupplier verificationCodeSupplier;
 
     MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler) {
         this.store = store;
         this.keys = keys;
         this.errorHandler = errorHandler;
+        this.printRequests = false;
     }
 
     public final static class Unregistered extends MobileRegistrationBuilder {
@@ -63,6 +65,11 @@ public sealed class MobileRegistrationBuilder {
 
         public Unregistered verificationCodeMethod(VerificationCodeMethod verificationCodeMethod) {
             this.verificationCodeMethod = verificationCodeMethod;
+            return this;
+        }
+
+        public Unregistered printRequests(boolean printRequests) {
+            this.printRequests = printRequests;
             return this;
         }
 
@@ -163,6 +170,11 @@ public sealed class MobileRegistrationBuilder {
 
         public Unverified proxy(URI proxy) {
             store.setProxy(proxy);
+            return this;
+        }
+
+        public Unverified printRequests(boolean printRequests) {
+            this.printRequests = printRequests;
             return this;
         }
 

@@ -25,9 +25,9 @@ public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsR
     private final String buttonId;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String buttonText;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
     private final ResponseType responseType;
 
     public ButtonsResponseMessage(String buttonId, String buttonText, ContextInfo contextInfo, ResponseType responseType) {

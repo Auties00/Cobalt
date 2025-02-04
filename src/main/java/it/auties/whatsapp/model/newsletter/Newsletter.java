@@ -19,13 +19,13 @@ import java.util.Optional;
 public final class Newsletter implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Jid jid;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private NewsletterState state;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private NewsletterMetadata metadata;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final NewsletterViewerMetadata viewerMetadata;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

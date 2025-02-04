@@ -15,7 +15,7 @@ public record HighlyStructuredCurrency(
         long amount1000
 ) implements HighlyStructuredLocalizableParameterValue {
     @Override
-    public HighlyStructuredLocalizableParameterValue.Type parameterType() {
-        return HighlyStructuredLocalizableParameterValue.Type.CURRENCY;
+    public Type parameterType() {
+        return Type.CURRENCY;
     }
 }

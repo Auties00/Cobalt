@@ -37,7 +37,7 @@ public final class ContextInfo implements Info {
     /**
      * The message container that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final MessageContainer quotedMessage;
 
     /**
@@ -85,13 +85,13 @@ public final class ContextInfo implements Info {
     /**
      * The ad that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
     private final AdReplyInfo quotedAd;
 
     /**
      * Placeholder key
      */
-    @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
     private final ChatMessageKey placeholderKey;
 
     /**
@@ -117,7 +117,7 @@ public final class ContextInfo implements Info {
     /**
      * External ad reply
      */
-    @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
     private final ExternalAdReplyInfo externalAdReply;
 
     /**
@@ -141,13 +141,13 @@ public final class ContextInfo implements Info {
     /**
      * Disappearing mode
      */
-    @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
     private final ChatDisappear disappearingMode;
 
     /**
      * Action link
      */
-    @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 33, type = ProtobufType.MESSAGE)
     private final ButtonActionLink actionLink;
 
     /**

@@ -42,7 +42,7 @@ public final class LocationMessage implements ContextualMessage<LocationMessage>
     private final String caption;
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public LocationMessage(double latitude, double longitude, String name, String address, String url, boolean live, int accuracy, float speed, int magneticNorthOffset, String caption, byte[] thumbnail, ContextInfo contextInfo) {

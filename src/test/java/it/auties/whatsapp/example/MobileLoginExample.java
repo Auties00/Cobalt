@@ -19,6 +19,7 @@ public class MobileLoginExample {
         };
         Whatsapp.mobileBuilder()
                 .newConnection(SixPartsKeys.of(sixParts))
+                // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
                 .device(CompanionDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
                 .registered()
                 .orElseThrow()

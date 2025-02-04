@@ -27,7 +27,7 @@ public record HighlyStructuredDateTimeUnixEpoch(
     }
 
     @Override
-    public HighlyStructuredDateTimeValue.Type dateType() {
-        return HighlyStructuredDateTimeValue.Type.UNIX_EPOCH;
+    public Type dateType() {
+        return Type.UNIX_EPOCH;
     }
 }

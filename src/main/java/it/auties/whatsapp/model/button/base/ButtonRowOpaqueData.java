@@ -11,9 +11,9 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "MsgRowOpaqueData")
 public record ButtonRowOpaqueData(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<ButtonOpaqueData> currentMessage,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<ButtonOpaqueData> quotedMessage
 ) {
 

@@ -232,9 +232,9 @@ public record Node(String description, Attributes attributes, Object content) {
     }
 
     /**
-     * Checks whether the child node with the given description whatsappOldEligible
+     * Checks whether the child node with the given description exists
      *
-     * @return true if a child node with the given description whatsappOldEligible
+     * @return true if a child node with the given description exists
      */
     public boolean hasNode(String description) {
         return children().stream().anyMatch(node -> Objects.equals(node.description(), description));

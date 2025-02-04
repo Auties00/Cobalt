@@ -7,6 +7,11 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.util.Json;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -44,42 +49,58 @@ public class JsonControllerSerializer extends FileControllerSerializer {
     }
 
     @Override
-    byte[] encodeKeys(Keys keys) {
-        return Json.writeValueAsBytes(keys);
+    void encodeKeys(Keys keys, Path path) {
+        try {
+            Json.writeValueAsBytes(keys, Files.newOutputStream(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    byte[] encodeStore(Store store) {
-        return Json.writeValueAsBytes(store);
+    void encodeStore(Store store, Path path) {
+        try {
+            Json.writeValueAsBytes(store, Files.newOutputStream(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    byte[] encodeChat(Chat chat) {
-        return Json.writeValueAsBytes(chat);
+    void encodeChat(Chat chat, Path path) {
+        try {
+            Json.writeValueAsBytes(chat, Files.newOutputStream(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    byte[] encodeNewsletter(Newsletter newsletter) {
-        return Json.writeValueAsBytes(newsletter);
+    void encodeNewsletter(Newsletter newsletter, Path path) {
+        try {
+            Json.writeValueAsBytes(newsletter, Files.newOutputStream(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    Keys decodeKeys(byte[] keys) {
-        return Json.readValue(keys, Keys.class);
+    Keys decodeKeys(Path keys) throws IOException {
+        return Json.readValue(Channels.newInputStream(FileChannel.open(keys)), Keys.class);
     }
 
     @Override
-    Store decodeStore(byte[] store) {
-        return Json.readValue(store, Store.class);
+    Store decodeStore(Path store) throws IOException {
+        return Json.readValue(Channels.newInputStream(FileChannel.open(store)), Store.class);
     }
 
     @Override
-    Chat decodeChat(byte[] chat) {
-        return Json.readValue(chat, Chat.class);
+    Chat decodeChat(Path chat) throws IOException {
+        return Json.readValue(Channels.newInputStream(FileChannel.open(chat)), Chat.class);
     }
 
     @Override
-    Newsletter decodeNewsletter(byte[] newsletter) {
-        return Json.readValue(newsletter, Newsletter.class);
+    Newsletter decodeNewsletter(Path newsletter) throws IOException {
+        return Json.readValue(Channels.newInputStream(FileChannel.open(newsletter)), Newsletter.class);
     }
 }

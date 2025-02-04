@@ -16,7 +16,7 @@ public final class GroupParticipant extends ChatParticipant {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Jid jid;
 
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
     private GroupRole role;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

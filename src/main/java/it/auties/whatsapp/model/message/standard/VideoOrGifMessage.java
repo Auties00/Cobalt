@@ -52,7 +52,7 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     private final Integer width;
     @ProtobufProperty(index = 11, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
-    @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
     private final List<InteractiveLocationAnnotation> interactiveAnnotations;
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
     private String mediaDirectPath;
@@ -60,11 +60,11 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     private long mediaKeyTimestampSeconds;
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] streamingSidecar;
-    @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 19, type = ProtobufType.ENUM)
     private final Attribution gifAttribution;
     @ProtobufProperty(index = 20, type = ProtobufType.BOOL)
     private final boolean viewOnce;

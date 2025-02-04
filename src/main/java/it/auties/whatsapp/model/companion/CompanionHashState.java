@@ -17,7 +17,7 @@ import static it.auties.whatsapp.model.node.Node.of;
 
 @ProtobufMessage
 public final class CompanionHashState {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
     private PatchType type;
 
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)

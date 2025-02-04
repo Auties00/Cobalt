@@ -10,6 +10,11 @@ public record UnarchiveChatsSettings(
         boolean unarchiveChats
 ) implements Setting {
     @Override
+    public int settingVersion() {
+        return 4;
+    }
+
+    @Override
     public String indexName() {
         return "setting_unarchiveChats";
     }

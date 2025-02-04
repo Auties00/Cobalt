@@ -18,7 +18,7 @@ public record ExternalAdReplyInfo(
         Optional<String> title,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<String> body,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
         Optional<MediaType> mediaType,
         @ProtobufProperty(index = 4, type = ProtobufType.STRING)
         Optional<String> thumbnailUrl,

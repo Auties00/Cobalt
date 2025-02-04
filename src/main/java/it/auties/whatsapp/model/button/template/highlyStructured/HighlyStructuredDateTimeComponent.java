@@ -11,7 +11,7 @@ import it.auties.protobuf.model.ProtobufType;
  */
 @ProtobufMessage(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent")
 public record HighlyStructuredDateTimeComponent(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         DayOfWeek dayOfWeek,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
         int year,
@@ -23,12 +23,12 @@ public record HighlyStructuredDateTimeComponent(
         int hour,
         @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
         int minute,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
         CalendarType calendar
 ) implements HighlyStructuredDateTimeValue {
     @Override
-    public HighlyStructuredDateTimeValue.Type dateType() {
-        return HighlyStructuredDateTimeValue.Type.COMPONENT;
+    public Type dateType() {
+        return Type.COMPONENT;
     }
 
     /**

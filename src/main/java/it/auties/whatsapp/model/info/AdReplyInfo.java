@@ -16,7 +16,7 @@ import java.util.Optional;
 public record AdReplyInfo(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String advertiserName,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
         MediaType mediaType,
         @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
         Optional<byte[]> thumbnail,

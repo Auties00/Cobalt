@@ -25,19 +25,19 @@ import java.util.Optional;
  */
 @ProtobufMessage(name = "Message.PollUpdateMessage")
 public final class PollUpdateMessage implements Message, EncryptedMessage {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final ChatMessageKey pollCreationMessageKey;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private PollUpdateEncryptedMetadata encryptedMetadata;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final PollUpdateMessageMetadata metadata;
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
     private final long senderTimestampMilliseconds;
     @ProtobufProperty(index = 999, type = ProtobufType.STRING)
     private Jid voter;
-    @ProtobufProperty(index = 1000, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1000, type = ProtobufType.MESSAGE)
     private PollCreationMessage pollCreationMessage;
-    @ProtobufProperty(index = 1001, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1001, type = ProtobufType.MESSAGE)
     private List<PollOption> votes;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

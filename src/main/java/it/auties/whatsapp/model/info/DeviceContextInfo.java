@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @ProtobufMessage(name = "MessageContextInfo")
 public final class DeviceContextInfo implements Info {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final DeviceListMetadata deviceListMetadata;
 
     @ProtobufProperty(index = 2, type = ProtobufType.INT32)

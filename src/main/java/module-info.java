@@ -28,9 +28,7 @@ open module it.auties.cobalt {
 
     // Mobile api
     requires libphonenumber;
-
-    // Unsafe reflection
-    requires jdk.unsupported;
+    requires java.net.http;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;

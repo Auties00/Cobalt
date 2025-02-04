@@ -15,18 +15,18 @@ import java.util.Objects;
 import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "HistorySync")
-public record HistorySync(@ProtobufProperty(index = 1, type = OBJECT, required = true) Type syncType,
-                          @ProtobufProperty(index = 2, type = OBJECT) List<Chat> conversations,
-                          @ProtobufProperty(index = 3, type = OBJECT) List<ChatMessageInfo> statusV3Messages,
+public record HistorySync(@ProtobufProperty(index = 1, type = ENUM, required = true) Type syncType,
+                          @ProtobufProperty(index = 2, type = MESSAGE) List<Chat> conversations,
+                          @ProtobufProperty(index = 3, type = MESSAGE) List<ChatMessageInfo> statusV3Messages,
                           @ProtobufProperty(index = 5, type = UINT32) int chunkOrder,
                           @ProtobufProperty(index = 6, type = UINT32) Integer progress,
-                          @ProtobufProperty(index = 7, type = OBJECT) List<PushName> pushNames,
-                          @ProtobufProperty(index = 8, type = OBJECT) GlobalSettings globalSettings,
+                          @ProtobufProperty(index = 7, type = MESSAGE) List<PushName> pushNames,
+                          @ProtobufProperty(index = 8, type = MESSAGE) GlobalSettings globalSettings,
                           @ProtobufProperty(index = 9, type = BYTES) byte[] threadIdUserSecret,
                           @ProtobufProperty(index = 10, type = UINT32) int threadDsTimeframeOffset,
-                          @ProtobufProperty(index = 11, type = OBJECT)
+                          @ProtobufProperty(index = 11, type = MESSAGE)
                           List<StickerMetadata> recentStickers,
-                          @ProtobufProperty(index = 12, type = OBJECT)
+                          @ProtobufProperty(index = 12, type = MESSAGE)
                           List<GroupPastParticipants> pastParticipants) {
     public HistorySync {
         Objects.requireNonNull(syncType, "Missing mandatory field: syncType");

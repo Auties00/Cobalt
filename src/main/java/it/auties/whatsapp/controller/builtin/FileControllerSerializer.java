@@ -29,8 +29,6 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 abstract class FileControllerSerializer implements ControllerSerializer {
     private static final String CHAT_PREFIX = "chat_";
@@ -51,15 +49,15 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     abstract String fileExtension();
     
-    abstract byte[] encodeKeys(Keys keys);
-    abstract byte[] encodeStore(Store store);
-    abstract byte[] encodeChat(Chat chat);
-    abstract byte[] encodeNewsletter(Newsletter newsletter);
+    abstract void encodeKeys(Keys keys, Path path);
+    abstract void encodeStore(Store store, Path path);
+    abstract void encodeChat(Chat chat, Path path);
+    abstract void encodeNewsletter(Newsletter newsletter, Path path);
 
-    abstract Keys decodeKeys(byte[] keys);
-    abstract Store decodeStore(byte[] store);
-    abstract Chat decodeChat(byte[] chat);
-    abstract Newsletter decodeNewsletter(byte[] newsletter);
+    abstract Keys decodeKeys(Path keys) throws IOException;
+    abstract Store decodeStore(Path store) throws IOException;
+    abstract Chat decodeChat(Path chat) throws IOException;
+    abstract Newsletter decodeNewsletter(Path newsletter) throws IOException;
 
     @Override
     public LinkedList<UUID> listIds(ClientType type) {
@@ -147,11 +145,11 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         var keysName = "keys" + fileExtension();
         var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), keysName);
         if (async) {
-            return CompletableFuture.runAsync(() -> writeFile(encodeKeys(keys), keysName, outputFile))
-                    .exceptionallyAsync(this::onError);
+            return CompletableFuture.runAsync(() -> encodeKeys(keys, outputFile))
+                    .exceptionallyAsync(error -> onError(outputFile, error));
         }
 
-        writeFile(encodeKeys(keys), keysName, outputFile);
+        encodeKeys(keys, outputFile);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -179,7 +177,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         var result = CompletableFuture.allOf(dependableFutures).thenRunAsync(() -> {
             var storeName = "store" + fileExtension();
             var storePath = getSessionFile(store, storeName);
-            writeFile(encodeStore(store), storeName, storePath);
+            encodeStore(store, storePath);
         });
         if (async) {
             return result;
@@ -203,12 +201,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
         var fileName = CHAT_PREFIX + chat.jid().user() + fileExtension();
         var outputFile = getSessionFile(store, fileName);
-        return CompletableFuture.runAsync(() -> writeFile(encodeChat(chat), fileName, outputFile))
-                .exceptionallyAsync(this::onError);
+        return CompletableFuture.runAsync(() -> encodeChat(chat, outputFile))
+                .exceptionallyAsync(error -> onError(outputFile, error));
     }
 
-    private Void onError(Throwable error) {
-        var logger = System.getLogger("Serializer");
+    private Void onError(Path path, Throwable error) {
+        var logger = System.getLogger("FileSerializer - " + path);
         logger.log(System.Logger.Level.ERROR, error);
         return null;
     }
@@ -223,21 +221,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private CompletableFuture<Void> serializeNewsletterAsync(Store store, Newsletter newsletter) {
         var fileName = NEWSLETTER_PREFIX + newsletter.jid().user() + fileExtension();
         var outputFile = getSessionFile(store, fileName);
-        return CompletableFuture.runAsync(() -> writeFile(encodeNewsletter(newsletter), fileName, outputFile));
-    }
-
-    private void writeFile(byte[] object, String fileName, Path outputFile) {
-        try {
-            var tempFile = Files.createTempFile(fileName, ".tmp");
-            Files.createDirectories(tempFile.getParent());
-            try (var tempFileOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
-                tempFileOutputStream.write(object);
-            }
-            Files.createDirectories(outputFile.getParent());
-            Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot write file", exception);
-        }
+        return CompletableFuture.runAsync(() -> encodeNewsletter(newsletter, outputFile));
     }
 
     @Override
@@ -275,9 +259,13 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     private Optional<Keys> deserializeKeysFromId(ClientType type, String id) {
         var path = getSessionFile(type, id, "keys.proto");
-        try (var input = new GZIPInputStream(Files.newInputStream(path))) {
-            return Optional.of(decodeKeys(input.readAllBytes()));
-        } catch (IOException exception) {
+        if(Files.notExists(path)) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(decodeKeys(path));
+        } catch (IOException e) {
             return Optional.empty();
         }
     }
@@ -321,8 +309,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
             return Optional.empty();
         }
 
-        try (var input = new GZIPInputStream(Files.newInputStream(path))) {
-            return Optional.of(decodeStore(input.readAllBytes()));
+        try {
+            return Optional.of(decodeStore(path));
         } catch (IOException exception) {
             return Optional.empty();
         }
@@ -379,9 +367,9 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private CompletableFuture<Void> handleStoreFile(Store store, Path entry) {
         return switch (FileType.of(entry)) {
             case NEWSLETTER -> CompletableFuture.runAsync(() -> deserializeNewsletter(store, entry))
-                    .exceptionallyAsync(this::onError);
+                    .exceptionallyAsync(error -> onError(entry, error));
             case CHAT -> CompletableFuture.runAsync(() -> deserializeChat(store, entry))
-                    .exceptionallyAsync(this::onError);
+                    .exceptionallyAsync(error -> onError(entry, error));
             case UNKNOWN -> null;
         };
     }
@@ -463,8 +451,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     private void deserializeChat(Store store, Path chatFile) {
-        try (var input = new GZIPInputStream(Files.newInputStream(chatFile))) {
-            var chat = decodeChat(input.readAllBytes());
+        try {
+            var chat = decodeChat(chatFile);
             for (var message : chat.messages()) {
                 message.messageInfo().setChat(chat);
                 store.findContactByJid(message.messageInfo().senderJid())
@@ -491,8 +479,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     private void deserializeNewsletter(Store store, Path newsletterFile) {
-        try (var input = new GZIPInputStream(Files.newInputStream(newsletterFile))) {
-            var newsletter = decodeNewsletter(input.readAllBytes());
+        try {
+            var newsletter = decodeNewsletter(newsletterFile);
             for (var message : newsletter.messages()) {
                 message.setNewsletter(newsletter);
             }

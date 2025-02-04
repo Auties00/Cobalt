@@ -53,7 +53,7 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     private final boolean animated;
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
     @ProtobufProperty(index = 18, type = ProtobufType.INT64)
     private final Long stickerSentTimestamp;

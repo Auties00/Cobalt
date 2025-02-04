@@ -56,7 +56,7 @@ public final class Contact implements JidProvider {
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
      * send updates, use {@link Whatsapp#subscribeToPresence(JidProvider)}.
      */
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
     private ContactStatus lastKnownPresence;
 
     /**
