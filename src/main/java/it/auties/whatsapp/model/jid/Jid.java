@@ -82,10 +82,11 @@ public record Jid(String user, JidServer server, Integer device, Integer agent) 
         if (jid == null) {
             return null;
         }
-        for (var server : JidServer.values()) {
-            jid = jid.replace("@%s".formatted(server), "");
+        var index = jid.indexOf("@");
+        if(index == -1) {
+            return null;
         }
-        return jid;
+        return jid.substring(0, index);
     }
 
     private static Integer tryParseAgent(String string) {
