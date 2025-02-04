@@ -1241,7 +1241,9 @@ public class SocketHandler implements SocketListener {
             pastParticipants.add(pastParticipant);
             pastParticipants().put(jid, pastParticipants);
         }else {
-            pastParticipants().put(jid, List.of(pastParticipant));
+            pastParticipants().put(jid, new ArrayList<>(){{
+                add(pastParticipant);
+            }});
         }
     }
 }

@@ -1378,7 +1378,7 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(status);
         }
 
-        var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
+        var presence = available ? AVAILABLE : UNAVAILABLE;
         var node = Node.of("presence", Map.of("name", store().name(), "type", presence.toString()));
         return socketHandler.sendNodeWithNoResponse(node)
                 .thenAcceptAsync(socketHandler -> updatePresence(null, presence))
@@ -1387,7 +1387,7 @@ public class Whatsapp {
 
     private void updatePresence(JidProvider chatJid, ContactStatus presence) {
         if (chatJid == null) {
-            store().setOnline(presence == ContactStatus.AVAILABLE);
+            store().setOnline(presence == AVAILABLE);
         }
 
         var self = store().findContactByJid(jidOrThrowError().toSimpleJid());
@@ -1395,7 +1395,7 @@ public class Whatsapp {
             return;
         }
 
-        if (presence == ContactStatus.AVAILABLE || presence == ContactStatus.UNAVAILABLE) {
+        if (presence == AVAILABLE || presence == UNAVAILABLE) {
             self.get().setLastKnownPresence(presence);
         }
 
@@ -1658,12 +1658,21 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> changeProfilePicture(byte[] image) {
         var profilePic = image != null ? Medias.getProfilePic(image) : null;
-        var body = Node.of("picture", Map.of("type", "image"), profilePic);
-        return socketHandler.sendQuery(jidOrThrowError(), "set", "w:profile:picture", body)
-                .thenRun(() -> {});
+        return switch (store().clientType()) {
+            case WEB -> {
+                var body = Node.of("picture", Map.of("type", "image"), profilePic);
+                yield socketHandler.sendQuery("set", "w:profile:picture", Map.of("target", jidOrThrowError().toSimpleJid()), body)
+                        .thenRun(() -> {});
+            }
+            case MOBILE -> {
+                var body = Node.of("picture", Map.of("type", "image"), profilePic);
+                yield socketHandler.sendQuery(jidOrThrowError(), "set", "w:profile:picture", body)
+                        .thenRun(() -> {});
+            }
+        };
     }
 
-    /**
+    /**is ready wi
      * Changes the picture of a group
      *
      * @param group the target group
@@ -3223,7 +3232,8 @@ public class Whatsapp {
         var syncBytes = HistorySyncSpec.encode(historySync);
         var userAgent = socketHandler.store()
                 .device()
-                .toUserAgent(socketHandler.store().version());
+                .toUserAgent(socketHandler.store().version())
+                .orElse(null);
         var proxy = socketHandler.store()
                 .proxy()
                 .filter(ignored -> socketHandler.store().mediaProxySetting().allowsUploads())

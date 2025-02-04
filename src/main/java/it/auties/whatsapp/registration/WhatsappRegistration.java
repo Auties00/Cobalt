@@ -97,11 +97,17 @@ public final class WhatsappRegistration {
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(MOBILE_REGISTRATION_ENDPOINT + "/reg_onboard_abprop?" + toFormParams(attributes)))
                 .GET()
-                .header("User-Agent", store.device().toUserAgent(store.version()))
+                .header("User-Agent", userAgent())
                 .header("Content-Type","application/x-www-form-urlencoded")
                 .build();
         return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
                 .thenApply(response -> Json.readValue(response.body(), AbPropsResponse.class));
+    }
+
+    private String userAgent() {
+        return store.device()
+                .toUserAgent(store.version())
+                .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
     }
 
     private CompletableFuture<RegistrationResponse> exists(VerificationCodeError lastError) {
@@ -227,7 +233,6 @@ public final class WhatsappRegistration {
 
     private CompletableFuture<String> sendRequest(String path, Map<String, Object> params) {
         var encodedParams = toFormParams(params);
-        var userAgent = store.device().toUserAgent(store.version());
         var keypair = SignalKeyPair.random();
         var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey());
         var buffer = AesGcm.encrypt(new byte[12], encodedParams.getBytes(StandardCharsets.UTF_8), key);
@@ -235,7 +240,7 @@ public final class WhatsappRegistration {
         var request = HttpRequest.newBuilder()
                 .uri(URI.create("%s%s?ENC=%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
                 .GET()
-                .header("User-Agent", userAgent);
+                .header("User-Agent", userAgent());
         if(store.device().platform().isAndroid()) {
             request.header("Accept", "text/json")
                     .header("WaMsysRequest", "1")

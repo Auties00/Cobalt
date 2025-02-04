@@ -1,9 +1,6 @@
 package it.auties.whatsapp;
 
-import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.Emoji;
-import it.auties.whatsapp.api.ErrorHandler;
-import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.button.base.Button;
@@ -69,8 +66,7 @@ public class TestLibrary implements Listener  {
 
     @BeforeAll
     public void init() throws IOException, InterruptedException  {
-        contact = Jid.of(18103478509L);
-        account = SixPartsKeys.of("16623707168,EjcGCnZGafa/EojrQnp1Md5C6vuHEhTT4+lci9i7yD0=,6F7inwSW50hAIOVIiNW5J35ZKx7qOfl7pDQMbWhV20M=,J+GkO3JlIn47PHTkZXJK3/UGW1bfOErRj5vDltr0lj4=,ABddg6ZCTgJ7Hvs/h74j3hBqf8JQ1ugo4pMNiBGTYXE=,JSFHjx3SC5lkfc+6030jlw==");
+        contact = Jid.of(393668765864L);
         createApi();
         createLatch();
         latch.await();
@@ -78,17 +74,14 @@ public class TestLibrary implements Listener  {
 
     private void createApi()  {
         log("Initializing api to start testing...");
-        api = Whatsapp.mobileBuilder()
+        api = Whatsapp.webBuilder()
                 .serializer(ControllerSerializer.discarding())
-                .newConnection(Objects.requireNonNull(account, "Missing account"))
+                .newConnection()
                 .errorHandler((whatsapp, location, throwable) -> {
                     Assertions.fail(throwable);
                     return ErrorHandler.Result.DISCONNECT;
                 })
-                .proxy(URI.create("http://wy961882248_%s-country-us:999999@proxyus.rola.vip:1066/".formatted(ThreadLocalRandom.current().nextInt(1, 100_000))))
-                .device(CompanionDevice.ios(true)) // Make sure to select the correct account type(business or personal) or you'll get error 401
-                .registered()
-                .orElseThrow()
+                .unregistered(QrHandler.toTerminal())
                 .addListener(this);
         future = api.connect()
                 .exceptionally(Assertions::fail);
@@ -742,9 +735,10 @@ public class TestLibrary implements Listener  {
 
     @Test
     @Order(46)
-    @Disabled
     public void testReaction()  {
-        for (var emoji : Emoji.values())  {
+        var values = Emoji.values();
+        for (var i = 0; i < 10; i++) {
+            var emoji = values[i];
             api.sendMessage(contact, emoji.name())
                     .thenAcceptAsync(message -> api.sendReaction(message, emoji)).join();
         }

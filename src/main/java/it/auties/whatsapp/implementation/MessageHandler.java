@@ -232,7 +232,8 @@ class MessageHandler {
         var mediaConnection = socketHandler.store().mediaConnection();
         var userAgent = socketHandler.store()
                 .device()
-                .toUserAgent(socketHandler.store().version());
+                .toUserAgent(socketHandler.store().version())
+                .orElse(null);
         var proxy = socketHandler.store()
                 .proxy()
                 .filter(ignored -> socketHandler.store().mediaProxySetting().allowsUploads())

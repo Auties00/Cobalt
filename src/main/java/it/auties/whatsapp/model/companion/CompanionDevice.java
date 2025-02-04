@@ -202,13 +202,36 @@ public final class CompanionDevice {
         return Objects.requireNonNullElse(osBuildNumber, osVersion.toString());
     }
 
-    public String toUserAgent(Version appVersion) {
-        return "WhatsApp/%s %s/%s Device/%s".formatted(
+    public Optional<String> toUserAgent(Version appVersion) {
+        var platformName = switch (platform()) {
+            case ANDROID -> "Android";
+            case ANDROID_BUSINESS -> "SMBA";
+            case IOS -> "iOS";
+            case IOS_BUSINESS -> "SMB iOS";
+            case KAIOS -> "KaiOS";
+            default -> null;
+        };
+        if(platformName == null) {
+            return Optional.empty();
+        }
+
+        var deviceName = switch (platform()) {
+            case ANDROID, ANDROID_BUSINESS -> manufacturer + "-" + model;
+            case IOS, IOS_BUSINESS -> model;
+            case KAIOS -> manufacturer + "+" + model;
+            default -> null;
+        };
+        if(deviceName == null) {
+            return Optional.empty();
+        }
+
+        var deviceVersion = platform.isKaiOs() ? "%s+20190925153113".formatted(osVersion) : osVersion.toString();
+        return Optional.of("WhatsApp/%s %s/%s Device/%s".formatted(
                 appVersion,
-                platformName(),
-                deviceVersion(),
-                deviceName()
-        );
+                platformName,
+                deviceVersion,
+                deviceName
+        ));
     }
 
     public CompanionDevice toPersonal() {
@@ -239,30 +262,6 @@ public final class CompanionDevice {
                 modelId,
                 clientType
         );
-    }
-
-    private String deviceVersion() {
-        return platform.isKaiOs() ? "%s+20190925153113".formatted(osVersion) : osVersion.toString();
-    }
-
-    private String deviceName() {
-        return switch (platform()) {
-            case ANDROID, ANDROID_BUSINESS -> manufacturer + "-" + model;
-            case IOS, IOS_BUSINESS -> model;
-            case KAIOS -> manufacturer + "+" + model;
-            default -> throw new IllegalStateException("Unsupported mobile os");
-        };
-    }
-
-    private String platformName() {
-        return switch (platform()) {
-            case ANDROID -> "Android";
-            case ANDROID_BUSINESS -> "SMBA";
-            case IOS -> "iOS";
-            case IOS_BUSINESS -> "SMB iOS";
-            case KAIOS -> "KaiOS";
-            default -> throw new IllegalStateException("Unsupported mobile os");
-        };
     }
 
     public String model() {

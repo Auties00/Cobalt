@@ -100,13 +100,15 @@ public final class Medias {
         var body = Objects.requireNonNullElse(mediaFile.encryptedFile(), file);
         var request = HttpRequest.newBuilder()
                 .uri(uri)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(body))
-                .header("User-Agent", userAgent)
-                .header("Content-Type", "application/octet-stream")
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body));
+        if(userAgent != null) {
+            request.header("User-Agent", userAgent);
+        }
+        request.header("Content-Type", "application/octet-stream")
                 .header("Accept", "application/json")
                 .headers("Origin", WEB_ORIGIN)
                 .build();
-        return getOrCreateClient().sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
+        return getOrCreateClient().sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
             var upload = Json.readValue(response.body(), MediaUpload.class);
             return new MediaFile(
                     mediaFile.encryptedFile(),
