@@ -288,14 +288,56 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hashCode(id());
+    public boolean equals(Object o) {
+        return o instanceof ChatMessageInfo that &&
+                timestampSeconds == that.timestampSeconds &&
+                messageC2STimestamp == that.messageC2STimestamp &&
+                ignore == that.ignore &&
+                starred == that.starred &&
+                broadcast == that.broadcast &&
+                multicast == that.multicast &&
+                urlText == that.urlText &&
+                urlNumber == that.urlNumber &&
+                clearMedia == that.clearMedia &&
+                duration == that.duration &&
+                ephemeralStartTimestamp == that.ephemeralStartTimestamp &&
+                ephemeralDuration == that.ephemeralDuration &&
+                enableEphemeral == that.enableEphemeral &&
+                ephemeralOutOfSync == that.ephemeralOutOfSync &&
+                statusAlreadyViewed == that.statusAlreadyViewed &&
+                revokeTimestampSeconds == that.revokeTimestampSeconds &&
+                Objects.equals(key, that.key) &&
+                Objects.equals(message, that.message) &&
+                status == that.status &&
+                Objects.equals(senderJid, that.senderJid) &&
+                Objects.equals(pushName, that.pushName) &&
+                Objects.deepEquals(mediaCiphertextSha256, that.mediaCiphertextSha256) &&
+                stubType == that.stubType &&
+                Objects.equals(stubParameters, that.stubParameters) &&
+                Objects.equals(labels, that.labels) &&
+                Objects.equals(paymentInfo, that.paymentInfo) &&
+                Objects.equals(finalLiveLocation, that.finalLiveLocation) &&
+                Objects.equals(quotedPaymentInfo, that.quotedPaymentInfo) &&
+                businessPrivacyStatus == that.businessPrivacyStatus &&
+                Objects.equals(businessVerifiedName, that.businessVerifiedName) &&
+                Objects.equals(mediaData, that.mediaData) &&
+                Objects.equals(photoChange, that.photoChange) &&
+                Objects.equals(receipt, that.receipt) &&
+                Objects.equals(reactions, that.reactions) &&
+                Objects.equals(quotedStickerData, that.quotedStickerData) &&
+                Objects.deepEquals(futureProofData, that.futureProofData) &&
+                Objects.equals(psaStatus, that.psaStatus) &&
+                Objects.equals(pollUpdates, that.pollUpdates) &&
+                Objects.equals(pollAdditionalMetadata, that.pollAdditionalMetadata) &&
+                Objects.equals(agentId, that.agentId) &&
+                Objects.deepEquals(messageSecret, that.messageSecret) &&
+                Objects.equals(keepInChat, that.keepInChat) &&
+                Objects.equals(originalSender, that.originalSender);
     }
 
-    public boolean equals(Object object) {
-        return object instanceof ChatMessageInfo that
-                && Objects.equals(this.id(), that.id())
-                && Objects.equals(this.stubType, that.stubType);
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, message, timestampSeconds, status, senderJid, messageC2STimestamp, ignore, starred, broadcast, pushName, Arrays.hashCode(mediaCiphertextSha256), multicast, urlText, urlNumber, stubType, clearMedia, stubParameters, duration, labels, paymentInfo, finalLiveLocation, quotedPaymentInfo, ephemeralStartTimestamp, ephemeralDuration, enableEphemeral, ephemeralOutOfSync, businessPrivacyStatus, businessVerifiedName, mediaData, photoChange, receipt, reactions, quotedStickerData, Arrays.hashCode(futureProofData), psaStatus, pollUpdates, pollAdditionalMetadata, agentId, statusAlreadyViewed, Arrays.hashCode(messageSecret), keepInChat, originalSender, revokeTimestampSeconds);
     }
 
     /**

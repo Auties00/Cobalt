@@ -3,6 +3,7 @@ package it.auties.whatsapp.controller.builtin;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.util.ImmutableLinkedList;
 
 import java.util.LinkedList;
 import java.util.Optional;
@@ -11,21 +12,19 @@ import java.util.concurrent.CompletableFuture;
 
 public class DiscardingControllerSerializer implements ControllerSerializer {
     private static final DiscardingControllerSerializer SINGLETON = new DiscardingControllerSerializer();
-    private static final LinkedList<UUID> EMPTY_IDS = new LinkedList<>();
-    private static final LinkedList<PhoneNumber> EMPTY_PHONE_NUMBERS = new LinkedList<>();
 
-    public static ControllerSerializer of() {
+    public static ControllerSerializer instance() {
         return SINGLETON;
     }
 
     @Override
     public LinkedList<UUID> listIds(ClientType type) {
-        return EMPTY_IDS;
+        return ImmutableLinkedList.empty();
     }
 
     @Override
     public LinkedList<PhoneNumber> listPhoneNumbers(ClientType type) {
-        return EMPTY_PHONE_NUMBERS;
+        return ImmutableLinkedList.empty();
     }
 
     @Override

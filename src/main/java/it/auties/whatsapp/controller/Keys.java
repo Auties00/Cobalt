@@ -672,4 +672,37 @@ public final class Keys extends Controller<Keys> {
                 .map(phoneNumber -> phoneNumber + ","  + cryptographicKeys)
                 .orElse(cryptographicKeys);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Keys keys &&
+                registered == keys.registered &&
+                businessCertificate == keys.businessCertificate &&
+                initialAppSync == keys.initialAppSync &&
+                Objects.equals(registrationId, keys.registrationId) &&
+                Objects.equals(noiseKeyPair, keys.noiseKeyPair) &&
+                Objects.equals(ephemeralKeyPair, keys.ephemeralKeyPair) &&
+                Objects.equals(identityKeyPair, keys.identityKeyPair) &&
+                Objects.equals(companionKeyPair, keys.companionKeyPair) &&
+                Objects.equals(signedKeyPair, keys.signedKeyPair) &&
+                Objects.deepEquals(signedKeyIndex, keys.signedKeyIndex) &&
+                Objects.equals(signedKeyIndexTimestamp, keys.signedKeyIndexTimestamp) &&
+                Objects.equals(preKeys, keys.preKeys) &&
+                Objects.equals(fdid, keys.fdid) &&
+                Objects.deepEquals(deviceId, keys.deviceId) &&
+                Objects.equals(advertisingId, keys.advertisingId) &&
+                Objects.deepEquals(identityId, keys.identityId) &&
+                Objects.deepEquals(backupToken, keys.backupToken) &&
+                Objects.equals(companionIdentity, keys.companionIdentity) &&
+                Objects.equals(senderKeys, keys.senderKeys) &&
+                Objects.equals(appStateKeys, keys.appStateKeys) &&
+                Objects.equals(sessions, keys.sessions) &&
+                Objects.equals(hashStates, keys.hashStates) &&
+                Objects.equals(groupsPreKeys, keys.groupsPreKeys);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(registrationId, noiseKeyPair, ephemeralKeyPair, identityKeyPair, companionKeyPair, signedKeyPair, Arrays.hashCode(signedKeyIndex), signedKeyIndexTimestamp, preKeys, fdid, Arrays.hashCode(deviceId), advertisingId, Arrays.hashCode(identityId), Arrays.hashCode(backupToken), companionIdentity, senderKeys, appStateKeys, sessions, hashStates, groupsPreKeys, registered, businessCertificate, initialAppSync);
+    }
 }

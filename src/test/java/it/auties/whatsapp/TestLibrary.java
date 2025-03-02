@@ -12,7 +12,6 @@ import it.auties.whatsapp.model.button.interactive.InteractiveHeaderSimpleBuilde
 import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlowBuilder;
 import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.*;
-import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactStatus;
@@ -24,6 +23,9 @@ import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
+import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterName;
+import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
@@ -34,15 +36,13 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Objects;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -66,7 +66,7 @@ public class TestLibrary implements Listener  {
 
     @BeforeAll
     public void init() throws IOException, InterruptedException  {
-        contact = Jid.of(393668765864L);
+        contact = Jid.of(393668765865L);
         createApi();
         createLatch();
         latch.await();
@@ -88,7 +88,7 @@ public class TestLibrary implements Listener  {
     }
 
     private void createLatch()  {
-        latch = new CountDownLatch(3);
+        latch = new CountDownLatch(4);
     }
 
     @Test
@@ -215,6 +215,65 @@ public class TestLibrary implements Listener  {
         log("Deleting chat...");
         var ephemeralResponse = api.deleteChat(contact).join();
         log("Deleted chat: %s", ephemeralResponse);
+    }
+
+    @Test
+    @Order(11)
+    public void testNewsletters() {
+        log("Creating newsletter...");
+        var newsletter = api.createNewsletter("Newsletter", "A brand new newsletter", null)
+                .join()
+                .orElseThrow(() -> new NoSuchElementException("Cannot create newsletter"));
+        log("Created newsletter: %s", newsletter);
+
+        // TODO: Change newsletter title
+
+        log("Changing newsletter name...");
+        api.changeNewsletterDescription(newsletter, "A new description")
+                .join();
+        log("Changed newsletter name");
+
+        for(var role : NewsletterViewerRole.values()) {
+            if(role != NewsletterViewerRole.UNKNOWN) {
+                log("Querying newsletter as %s...", role);
+                var result = api.queryNewsletter(newsletter.jid(), role)
+                        .join();
+                log("Queried newsletter: %s", result);
+            }
+        }
+
+        log("Querying 100 messages...", newsletter);
+        api.queryNewsletterMessages(newsletter, 100)
+                .join();
+        log("Queried %s messages", newsletter.messages().size());
+
+        log("Querying subscribers...", newsletter);
+        var subscribers = api.queryNewsletterSubscribers(newsletter).join();
+        log("Queried subscribers: %s", subscribers);
+
+        log("Querying recommended newsletters...", newsletter);
+        var recommendedNewsletters = api.queryRecommendedNewsletters("IT")
+                .join()
+                .orElseThrow(() -> new NoSuchElementException("Missing recommended newsletters"))
+                .newsletters();
+        log("Queried recommended newsletters: %s", recommendedNewsletters);
+
+        if(!recommendedNewsletters.isEmpty()) {
+            var recommendedNewsletter = recommendedNewsletters.getFirst();
+            var nameOrJid = recommendedNewsletter.metadata()
+                    .name()
+                    .map(NewsletterName::text)
+                    .orElseGet(recommendedNewsletter.jid()::toString);
+            log("Joining newsletter: %s", nameOrJid);
+            api.joinNewsletter(recommendedNewsletter)
+                    .join();
+            System.out.println("Joined newsletter");
+
+            log("Leaving newsletter: %s", nameOrJid);
+            api.leaveNewsletter(recommendedNewsletter)
+                    .join();
+            System.out.println("Left newsletter");
+        }
     }
 
     @Test
@@ -830,7 +889,7 @@ public class TestLibrary implements Listener  {
         log("Sending template message...");
         var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
         var urlButton = HydratedTemplateButton.of(new HydratedURLButton("Search it", "https://google.com"));
-        var callButton = HydratedTemplateButton.of(new HydratedCallButton("Call me", contact.toPhoneNumber()));
+        var callButton = HydratedTemplateButton.of(new HydratedCallButton("Call me", contact.toPhoneNumber().orElseThrow()));
         var fourRowTemplate = new HydratedFourRowTemplateSimpleBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
@@ -907,6 +966,12 @@ public class TestLibrary implements Listener  {
     public void onChats(Collection<Chat> chats)  {
         latch.countDown();
         log("Got chats: -%s", latch.getCount());
+    }
+
+    @Override
+    public void onNewsletters(Collection<Newsletter> newsletters) {
+        latch.countDown();
+        log("Got newsletters: %s", latch.getCount());
     }
 
     @Override

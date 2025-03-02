@@ -32,8 +32,8 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      *
      * @return the same instance for chaining
      */
-    public WebOptionsBuilder historyLength(WebHistoryLength historyLength) {
-        store.setHistoryLength(historyLength);
+    public WebOptionsBuilder historySetting(WebHistorySetting historyLength) {
+        store.setWebHistorySetting(historyLength);
         return this;
     }
 

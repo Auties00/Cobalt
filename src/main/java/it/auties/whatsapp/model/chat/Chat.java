@@ -88,7 +88,6 @@ public final class Chat implements JidProvider {
     Jid lid;
     @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.ENUM)
     final ConcurrentHashMap<Jid, ContactStatus> presences;
-    private boolean update;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean pnhDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
@@ -344,7 +343,6 @@ public final class Chat implements JidProvider {
      */
     public void addMessages(Collection<HistorySyncMessage> newMessages) {
         historySyncMessages.addAll(newMessages);
-        this.update = true;
     }
 
     /**
@@ -354,7 +352,6 @@ public final class Chat implements JidProvider {
      */
     public void addOldMessages(Collection<HistorySyncMessage> oldMessages) {
         oldMessages.forEach(historySyncMessages::addFirst);
-        this.update = true;
     }
 
     /**
@@ -369,7 +366,6 @@ public final class Chat implements JidProvider {
             return false;
         }
         historySyncMessages.add(sync);
-        this.update = true;
         updateChatTimestamp(info);
         return true;
     }
@@ -382,7 +378,6 @@ public final class Chat implements JidProvider {
      */
     public boolean addOldMessage(HistorySyncMessage info) {
         historySyncMessages.addFirst(info);
-        this.update = true;
         return true;
     }
 
@@ -394,10 +389,6 @@ public final class Chat implements JidProvider {
      */
     public boolean removeMessage(ChatMessageInfo info) {
         var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.messageInfo().id(), info.id()));
-        if (result) {
-            this.update = true;
-        }
-
         refreshChatTimestamp();
         return result;
     }
@@ -438,7 +429,6 @@ public final class Chat implements JidProvider {
         }
 
         this.timestampSeconds = newTimestamp;
-        this.update = true;
     }
 
     /**
@@ -446,7 +436,6 @@ public final class Chat implements JidProvider {
      */
     public void removeMessages() {
         historySyncMessages.clear();
-        this.update = true;
     }
 
     /**
@@ -460,17 +449,6 @@ public final class Chat implements JidProvider {
     }
 
     /**
-     * Checks if this chat is equal to another chat
-     *
-     * @param other the chat
-     * @return a boolean
-     */
-    public boolean equals(Object other) {
-        return other instanceof Chat that
-                && Objects.equals(this.jid(), that.jid());
-    }
-
-    /**
      * Returns this object as a jid
      *
      * @return a non-null jid
@@ -480,14 +458,42 @@ public final class Chat implements JidProvider {
         return jid();
     }
 
-    /**
-     * Returns the hash code for this chat
-     *
-     * @return an int
-     */
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Chat chat &&
+                unreadMessagesCount == chat.unreadMessagesCount &&
+                endOfHistoryTransfer == chat.endOfHistoryTransfer &&
+                ephemeralMessagesToggleTimeSeconds == chat.ephemeralMessagesToggleTimeSeconds &&
+                timestampSeconds == chat.timestampSeconds &&
+                notSpam == chat.notSpam &&
+                archived == chat.archived &&
+                markedAsUnread == chat.markedAsUnread &&
+                pinnedTimestampSeconds == chat.pinnedTimestampSeconds &&
+                suspended == chat.suspended &&
+                terminated == chat.terminated &&
+                support == chat.support &&
+                shareOwnPhoneNumber == chat.shareOwnPhoneNumber &&
+                pnhDuplicateLidThread == chat.pnhDuplicateLidThread &&
+                Objects.equals(jid, chat.jid) &&
+                Objects.equals(historySyncMessages, chat.historySyncMessages) &&
+                Objects.equals(newJid, chat.newJid) &&
+                Objects.equals(oldJid, chat.oldJid) &&
+                ephemeralMessageDuration == chat.ephemeralMessageDuration &&
+                endOfHistoryTransferType == chat.endOfHistoryTransferType &&
+                Objects.equals(name, chat.name) &&
+                Objects.equals(disappearInitiator, chat.disappearInitiator) &&
+                Objects.equals(mute, chat.mute) &&
+                Objects.equals(wallpaper, chat.wallpaper) &&
+                mediaVisibility == chat.mediaVisibility &&
+                Objects.equals(displayName, chat.displayName) &&
+                Objects.equals(phoneJid, chat.phoneJid) &&
+                Objects.equals(lid, chat.lid) &&
+                Objects.equals(presences, chat.presences);
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(jid());
+        return Objects.hash(jid, historySyncMessages, newJid, oldJid, unreadMessagesCount, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTimeSeconds, endOfHistoryTransferType, timestampSeconds, name, notSpam, archived, disappearInitiator, markedAsUnread, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, suspended, terminated, support, displayName, phoneJid, shareOwnPhoneNumber, pnhDuplicateLidThread, lid, presences);
     }
 
     public Jid jid() {
@@ -600,138 +606,112 @@ public final class Chat implements JidProvider {
 
     public Chat setUnreadMessagesCount(int unreadMessagesCount) {
         this.unreadMessagesCount = unreadMessagesCount;
-        this.update = true;
         return this;
     }
 
     public Chat setEndOfHistoryTransfer(boolean endOfHistoryTransfer) {
         this.endOfHistoryTransfer = endOfHistoryTransfer;
-        this.update = true;
         return this;
     }
 
     public Chat setEphemeralMessageDuration(ChatEphemeralTimer ephemeralMessageDuration) {
         this.ephemeralMessageDuration = ephemeralMessageDuration;
-        this.update = true;
         return this;
     }
 
     public Chat setEphemeralMessagesToggleTimeSeconds(long ephemeralMessagesToggleTimeSeconds) {
         this.ephemeralMessagesToggleTimeSeconds = ephemeralMessagesToggleTimeSeconds;
-        this.update = true;
         return this;
     }
 
     public Chat setEndOfHistoryTransferType(EndOfHistoryTransferType endOfHistoryTransferType) {
         this.endOfHistoryTransferType = endOfHistoryTransferType;
-        this.update = true;
         return this;
     }
 
     public Chat setTimestampSeconds(long timestampSeconds) {
         this.timestampSeconds = timestampSeconds;
-        this.update = true;
         return this;
     }
 
     public Chat setName(String name) {
         this.name = name;
-        this.update = true;
         return this;
     }
 
     public Chat setNotSpam(boolean notSpam) {
         this.notSpam = notSpam;
-        this.update = true;
         return this;
     }
 
     public Chat setArchived(boolean archived) {
         this.archived = archived;
-        this.update = true;
         return this;
     }
 
     public Chat setDisappearInitiator(ChatDisappear disappearInitiator) {
         this.disappearInitiator = disappearInitiator;
-        this.update = true;
         return this;
     }
 
     public Chat setMarkedAsUnread(boolean markedAsUnread) {
         this.markedAsUnread = markedAsUnread;
-        this.update = true;
         return this;
     }
 
     public Chat setPinnedTimestampSeconds(int pinnedTimestampSeconds) {
         this.pinnedTimestampSeconds = pinnedTimestampSeconds;
-        this.update = true;
         return this;
     }
 
     public Chat setMute(ChatMute mute) {
         this.mute = mute;
-        this.update = true;
         return this;
     }
 
     public Chat setWallpaper(ChatWallpaper wallpaper) {
         this.wallpaper = wallpaper;
-        this.update = true;
         return this;
     }
 
     public Chat setMediaVisibility(MediaVisibility mediaVisibility) {
         this.mediaVisibility = mediaVisibility;
-        this.update = true;
         return this;
     }
 
     public Chat setSuspended(boolean suspended) {
         this.suspended = suspended;
-        this.update = true;
         return this;
     }
 
     public Chat setTerminated(boolean terminated) {
         this.terminated = terminated;
-        this.update = true;
         return this;
     }
 
     public Chat setSupport(boolean support) {
         this.support = support;
-        this.update = true;
         return this;
     }
 
     public Chat setPhoneJid(Jid phoneJid) {
         this.phoneJid = phoneJid;
-        this.update = true;
         return this;
     }
 
     public Chat setShareOwnPhoneNumber(boolean shareOwnPhoneNumber) {
         this.shareOwnPhoneNumber = shareOwnPhoneNumber;
-        this.update = true;
         return this;
     }
 
     public Chat setPnhDuplicateLidThread(boolean pnhDuplicateLidThread) {
         this.pnhDuplicateLidThread = pnhDuplicateLidThread;
-        this.update = true;
         return this;
     }
 
     public Chat setLid(Jid lid) {
         this.lid = lid;
-        this.update = true;
         return this;
-    }
-
-    public boolean hasUpdate() {
-        return update;
     }
 
     /**

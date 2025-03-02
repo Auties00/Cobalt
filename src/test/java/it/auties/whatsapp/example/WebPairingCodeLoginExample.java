@@ -1,7 +1,7 @@
 package it.auties.whatsapp.example;
 
 import it.auties.whatsapp.api.PairingCodeHandler;
-import it.auties.whatsapp.api.WebHistoryLength;
+import it.auties.whatsapp.api.WebHistorySetting;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 
@@ -13,7 +13,7 @@ public class WebPairingCodeLoginExample {
         var phoneNumber = new Scanner(System.in).nextLong();
         Whatsapp.webBuilder()
                 .newConnection()
-                .historyLength(WebHistoryLength.extended())
+                .historySetting(WebHistorySetting.standard(true))
                 .unregistered(phoneNumber, PairingCodeHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))

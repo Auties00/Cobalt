@@ -210,12 +210,11 @@ public class SocketHandler implements SocketListener {
 
     private void handshake(byte[] message) {
         authHandler.login(message).whenCompleteAsync((result, throwable) -> {
-            if (throwable == null || state == SocketState.RECONNECTING) {
+            if (throwable == null) {
                 setState(SocketState.HANDSHAKE);
-                return;
+            }else if(state != SocketState.RECONNECTING) {
+                handleFailure(LOGIN, throwable);
             }
-
-            handleFailure(LOGIN, throwable);
         });
     }
 
@@ -484,7 +483,7 @@ public class SocketHandler implements SocketListener {
 
     @SuppressWarnings("UnusedReturnValue")
     public CompletableFuture<Void> sendQueryWithNoResponse(String method, String category, Node... body) {
-        return sendQueryWithNoResponse(null, JidServer.WHATSAPP.toJid(), method, category, null, body);
+        return sendQueryWithNoResponse(null, JidServer.whatsapp().toJid(), method, category, null, body);
     }
 
     public CompletableFuture<Void> sendQueryWithNoResponse(String id, Jid to, String method, String category, Map<String, Object> metadata, Node... body) {
@@ -547,7 +546,7 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body) {
-        return sendQuery(null, JidServer.WHATSAPP.toJid(), method, category, null, body);
+        return sendQuery(null, JidServer.whatsapp().toJid(), method, category, null, body);
     }
 
     private List<Node> parseQueryResult(Node result) {
@@ -572,7 +571,7 @@ public class SocketHandler implements SocketListener {
 
     public CompletableFuture<Optional<URI>> queryPicture(JidProvider chat) {
         var body = Node.of("picture", Map.of("query", "url", "type", "image"));
-        if (chat.toJid().hasServer(JidServer.GROUP_OR_COMMUNITY)) {
+        if (chat.toJid().hasServer(JidServer.groupOrCommunity())) {
             return queryGroupMetadata(chat.toJid())
                     .thenComposeAsync(result -> sendQuery("get", "w:profile:picture", Map.of(result.isCommunity() ? "parent_group_jid" : "target", chat.toJid()), body))
                     .thenApplyAsync(this::parseChatPicture);
@@ -583,7 +582,7 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata, Node... body) {
-        return sendQuery(null, JidServer.WHATSAPP.toJid(), method, category, metadata, body);
+        return sendQuery(null, JidServer.whatsapp().toJid(), method, category, metadata, body);
     }
 
     private Optional<URI> parseChatPicture(Node result) {
@@ -664,7 +663,7 @@ public class SocketHandler implements SocketListener {
     private CompletableFuture<ChatMetadata> parseGroupMetadata(Node node) {
         var groupId = node.attributes()
                 .getOptionalString("id")
-                .map(id -> Jid.of(id, JidServer.GROUP_OR_COMMUNITY))
+                .map(id -> Jid.of(id, JidServer.groupOrCommunity()))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
         var subjectAuthor = node.attributes().getOptionalJid("s_o");
@@ -794,8 +793,8 @@ public class SocketHandler implements SocketListener {
         var receiptAttributes = Attributes.of()
                 .put("id", messageId)
                 .put("type", "retry")
-                .put("to", chatJid.withAgent(null))
-                .put("participant", participantJid == null ? null : participantJid.withAgent(null), participantJid != null)
+                .put("to", chatJid.withoutAgent())
+                .put("participant", participantJid == null ? null : participantJid.withoutAgent(), participantJid != null)
                 .toMap();
         var receipt = Node.of("receipt", receiptAttributes, retryNode, registrationNode);
         return sendNodeWithNoResponse(receipt);
@@ -809,11 +808,11 @@ public class SocketHandler implements SocketListener {
         var attributes = Attributes.of()
                 .put("id", messages.getFirst())
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
-                .put("to", jid.withAgent(null))
+                .put("to", jid.withoutAgent())
                 .put("type", type, Objects::nonNull);
-        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.WHATSAPP)) {
-            attributes.put("recipient", jid.withAgent(null));
-            attributes.put("to", participant.withAgent(null));
+        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.whatsapp())) {
+            attributes.put("recipient", jid.withoutAgent());
+            attributes.put("to", participant.withoutAgent());
         }
 
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
@@ -841,8 +840,8 @@ public class SocketHandler implements SocketListener {
                 .put("id", node.id())
                 .put("to", from)
                 .put("class", node.description())
-                .put("participant", Jid.of(participant).withAgent(null), Objects.nonNull(participant))
-                .put("recipient", Jid.of(recipient).withAgent(null), Objects.nonNull(recipient))
+                .put("participant", participant != null ? Jid.of(participant).withoutAgent() : null)
+                .put("recipient", recipient != null ? Jid.of(recipient).withoutAgent() : null)
                 .put("type", type, Objects::nonNull)
                 .toMap();
         return sendNodeWithNoResponse(Node.of("ack", attributes));
@@ -1245,5 +1244,10 @@ public class SocketHandler implements SocketListener {
                 add(pastParticipant);
             }});
         }
+    }
+
+    protected void queryNewsletters() {
+        streamHandler.queryNewsletters()
+                .exceptionallyAsync(throwable -> handleFailure(HISTORY_SYNC, throwable));
     }
 }

@@ -25,7 +25,7 @@ public interface ControllerSerializer {
      * @return a serializer
      */
     static ControllerSerializer discarding() {
-        return DiscardingControllerSerializer.of();
+        return DiscardingControllerSerializer.instance();
     }
 
     /**
@@ -35,7 +35,7 @@ public interface ControllerSerializer {
      * @return a serializer
      */
     static ControllerSerializer toProtobuf() {
-        return ProtobufControllerSerializer.ofDefaultPath();
+        return new ProtobufControllerSerializer();
     }
 
     /**
@@ -46,7 +46,7 @@ public interface ControllerSerializer {
      * @return a serializer
      */
     static ControllerSerializer toProtobuf(Path baseDirectory) {
-        return ProtobufControllerSerializer.of(baseDirectory);
+        return new ProtobufControllerSerializer(baseDirectory);
     }
 
     /**
@@ -56,7 +56,7 @@ public interface ControllerSerializer {
      * @return a serializer
      */
     static ControllerSerializer toJson() {
-        return JsonControllerSerializer.ofDefaultPath();
+        return new JsonControllerSerializer();
     }
 
     /**
@@ -67,7 +67,7 @@ public interface ControllerSerializer {
      * @return a serializer
      */
     static ControllerSerializer toJson(Path baseDirectory) {
-        return JsonControllerSerializer.of(baseDirectory);
+        return new JsonControllerSerializer(baseDirectory);
     }
 
     /**

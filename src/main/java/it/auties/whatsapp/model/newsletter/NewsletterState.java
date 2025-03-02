@@ -34,6 +34,11 @@ public final class NewsletterState {
     }
 
     @Override
+    public boolean equals(Object o) {
+        return o instanceof NewsletterState that && Objects.equals(type, that.type);
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(type);
     }

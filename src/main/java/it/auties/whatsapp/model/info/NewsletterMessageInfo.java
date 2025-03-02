@@ -163,13 +163,20 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof NewsletterMessageInfo that && Objects.equals(this.id(), that.id());
+    public boolean equals(Object o) {
+        return o instanceof NewsletterMessageInfo that &&
+                serverId == that.serverId &&
+                Objects.equals(id, that.id) &&
+                Objects.equals(timestampSeconds, that.timestampSeconds) &&
+                Objects.equals(views, that.views) &&
+                Objects.equals(reactions, that.reactions) &&
+                Objects.equals(message, that.message) &&
+                Objects.equals(newsletter, that.newsletter) &&
+                status == that.status;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(id, serverId, timestampSeconds, views, reactions, message, newsletter, status);
     }
-
 }

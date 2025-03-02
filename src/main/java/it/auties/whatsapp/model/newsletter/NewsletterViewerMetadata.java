@@ -61,6 +61,13 @@ public final class NewsletterViewerMetadata {
     }
 
     @Override
+    public boolean equals(Object o) {
+        return o instanceof NewsletterViewerMetadata that
+                && mute == that.mute
+                && role == that.role;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(mute, role);
     }

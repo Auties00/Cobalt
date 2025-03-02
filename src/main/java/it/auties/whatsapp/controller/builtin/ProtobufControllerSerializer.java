@@ -5,6 +5,7 @@ import it.auties.protobuf.stream.ProtobufOutputStream;
 import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatSpec;
+import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.newsletter.NewsletterSpec;
 
@@ -16,30 +17,16 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class ProtobufControllerSerializer extends FileControllerSerializer {
     private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
-    private static final Map<Path, ProtobufControllerSerializer> serializers = new ConcurrentHashMap<>();
-    static {
-        serializers.put(DEFAULT_SERIALIZER_PATH, new ProtobufControllerSerializer(DEFAULT_SERIALIZER_PATH));
+
+    public ProtobufControllerSerializer() {
+        this(DEFAULT_SERIALIZER_PATH);
     }
 
-    public static ControllerSerializer ofDefaultPath() {
-        return Objects.requireNonNull(serializers.get(DEFAULT_SERIALIZER_PATH));
-    }
-
-    public static ControllerSerializer of(Path baseDirectory) {
-        var known = serializers.get(baseDirectory);
-        if(known != null) {
-            return known;
-        }
-
-        var result = new ProtobufControllerSerializer(baseDirectory);
-        serializers.put(baseDirectory, result);
-        return result;
-    }
-
-    private ProtobufControllerSerializer(Path baseDirectory) {
+    public ProtobufControllerSerializer(Path baseDirectory) {
         super(baseDirectory);
     }
 

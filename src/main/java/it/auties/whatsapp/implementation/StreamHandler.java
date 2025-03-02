@@ -115,13 +115,6 @@ class StreamHandler {
             case "message" -> socketHandler.decodeMessage(node, null, true);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
-            case "xmlstreamend" -> digestStreamEnd();
-        }
-    }
-
-    private void digestStreamEnd() {
-        if(socketHandler.state() == SocketState.CONNECTED) {
-            socketHandler.disconnect(DisconnectReason.RECONNECTING);
         }
     }
 
@@ -490,7 +483,7 @@ class StreamHandler {
         var joinJson = NewsletterResponse.ofJson(joinPayload)
                 .orElseThrow(() -> new NoSuchElementException("Malformed join payload"));
         socketHandler.store().addNewsletter(joinJson.newsletter());
-        if(!socketHandler.store().historyLength().isZero()) {
+        if(!socketHandler.store().webHistorySetting().isZero()) {
             socketHandler.queryNewsletterMessages(joinJson.newsletter().jid(), DEFAULT_NEWSLETTER_MESSAGES);
         }
     }
@@ -712,7 +705,7 @@ class StreamHandler {
     private void handleEncryptNotification(Node node) {
         var chat = node.attributes()
                 .getRequiredJid("from");
-        if (!chat.isServerJid(JidServer.WHATSAPP)) {
+        if (!chat.isServerJid(JidServer.whatsapp())) {
             return;
         }
         var keysSize = node.findChild("count")
@@ -960,7 +953,7 @@ class StreamHandler {
                 .thenRunAsync(this::onInitialInfo)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
         CompletableFuture.allOf(loginFuture, attributeStore())
-                .thenComposeAsync(result -> loadAdditionalWebData())
+                .thenComposeAsync(result -> socketHandler.keys().initialAppSync() ? CompletableFuture.completedFuture(null) : queryGroups())
                 .thenRunAsync(this::notifyChatsAndNewsletters);
     }
 
@@ -974,14 +967,6 @@ class StreamHandler {
         }
         
         return sendPreKeys(PRE_KEYS_UPLOAD_CHUNK);
-    }
-
-    private CompletableFuture<Void> loadAdditionalWebData() {
-        if (socketHandler.keys().initialAppSync()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        return CompletableFuture.allOf(queryGroups(), queryNewsletters());
     }
 
     private void finishMobileLogin() {
@@ -1172,7 +1157,7 @@ class StreamHandler {
         }
     }
 
-    private CompletableFuture<Void> queryNewsletters() {
+    protected CompletableFuture<Void> queryNewsletters() {
         var query = new SubscribedNewslettersRequest(new SubscribedNewslettersRequest.Variable());
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), Json.writeValueAsBytes(query)))
                 .thenAcceptAsync(this::parseNewsletters)
@@ -1192,7 +1177,7 @@ class StreamHandler {
     }
 
     private void onNewsletters(SubscribedNewslettersResponse result) {
-        var noMessages = socketHandler.store().historyLength().isZero();
+        var noMessages = socketHandler.store().webHistorySetting().isZero();
         var data = result.newsletters();
         var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
         for (var index = 0; index < data.size(); index++) {
@@ -1214,7 +1199,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> queryGroups() {
-        return socketHandler.sendQuery(JidServer.GROUP_OR_COMMUNITY.toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
+        return socketHandler.sendQuery(JidServer.groupOrCommunity().toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
                 .thenAcceptAsync(this::onGroupsQuery);
     }
 
@@ -1665,7 +1650,7 @@ class StreamHandler {
         var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("type", "result")
-                .put("to", JidServer.WHATSAPP.toJid())
+                .put("to", JidServer.whatsapp().toJid())
                 .toMap();
         var request = Node.of("iq", attributes, content);
         socketHandler.sendNodeWithNoResponse(request);

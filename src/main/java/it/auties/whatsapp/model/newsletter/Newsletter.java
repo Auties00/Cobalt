@@ -112,8 +112,18 @@ public final class Newsletter implements JidProvider {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Newsletter that && Objects.equals(this.jid(), that.jid());
+    public boolean equals(Object o) {
+        return o instanceof Newsletter that &&
+                Objects.equals(jid, that.jid) &&
+                Objects.equals(state, that.state) &&
+                Objects.equals(metadata, that.metadata) &&
+                Objects.equals(viewerMetadata, that.viewerMetadata) &&
+                Objects.equals(messages, that.messages);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(jid, state, metadata, viewerMetadata, messages);
     }
 
     @Override
@@ -125,10 +135,5 @@ public final class Newsletter implements JidProvider {
                 ", viewerMetadata=" + viewerMetadata +
                 ", messages=" + messages +
                 '}';
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid);
     }
 }

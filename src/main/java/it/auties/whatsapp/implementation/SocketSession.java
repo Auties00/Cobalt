@@ -97,9 +97,11 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-            message = null;
-            listener.onClose();
-            session = null;
+            if(session != null) {
+                message = null;
+                listener.onClose();
+                session = null;
+            }
             return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         }
 

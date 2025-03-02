@@ -127,7 +127,7 @@ public final class BinaryDecoder implements AutoCloseable {
     private Jid readJidPair() throws IOException {
         return switch (read(true)) {
             case String encoded -> Jid.of(encoded, JidServer.of(readString()));
-            case null -> Jid.ofServer(JidServer.of(readString()));
+            case null -> Jid.of(JidServer.of(readString()));
             default -> throw new RuntimeException("Invalid jid type");
         };
     }
@@ -136,7 +136,7 @@ public final class BinaryDecoder implements AutoCloseable {
         var agent = dataInputStream.readUnsignedByte();
         var device = dataInputStream.readUnsignedByte();
         var user = readString();
-        return new Jid(user, JidServer.WHATSAPP, device == 0 ? null : device, agent == 0 ? null : agent);
+        return Jid.of(user, JidServer.whatsapp(), device, agent);
     }
 
     private int readSize(int token) throws IOException {
@@ -155,7 +155,7 @@ public final class BinaryDecoder implements AutoCloseable {
 
     private static Object getValueWithContext(String key, Object value) {
         if (value instanceof Jid jid && Objects.equals(key, "lid")) {
-            return jid.withServer(JidServer.LID);
+            return jid.withServer(JidServer.lid());
         }
 
         return value;

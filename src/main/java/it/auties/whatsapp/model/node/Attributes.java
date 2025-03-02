@@ -123,7 +123,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
      * @return the calling instance
      */
     public Attributes put(String key, Object value, boolean condition) {
-        if (condition) {
+        if (value != null && condition) {
             toMap.put(key, value);
         }
         return this;
@@ -137,7 +137,9 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
      * @return the calling instance
      */
     public Attributes put(String key, Object value) {
-        toMap.put(key, value);
+        if(value != null) {
+            toMap.put(key, value);
+        }
         return this;
     }
 

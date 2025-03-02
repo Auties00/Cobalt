@@ -59,7 +59,7 @@ public final class ChatMessageKey {
                 yield "3EB0" + HexFormat.of().formatHex(Sha256.calculate(buffer.array()), 0, 9).toUpperCase();
             }
             case ClientType.MOBILE -> {
-                var meJid = Objects.requireNonNullElse(jid, Jid.ofServer(JidServer.WHATSAPP));
+                var meJid = Objects.requireNonNullElse(jid, Jid.of(JidServer.whatsapp()));
                 var meUser = meJid.toSimpleJid().toString().getBytes();
                 var timeMillis = System.currentTimeMillis();
                 var timeArray = new byte[8];
@@ -110,8 +110,8 @@ public final class ChatMessageKey {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof ChatMessageKey other && Objects.equals(id(), other.id());
+    public boolean equals(Object o) {
+        return o instanceof ChatMessageKey that && fromMe == that.fromMe && Objects.equals(chatJid, that.chatJid) && Objects.equals(id, that.id) && Objects.equals(senderJid, that.senderJid);
     }
 
     @Override

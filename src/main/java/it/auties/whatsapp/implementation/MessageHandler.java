@@ -60,7 +60,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -71,17 +70,14 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.util.SignalConstants.*;
 
 class MessageHandler {
-    private static final int HISTORY_SYNC_TIMEOUT = 25;
+    private static final int HISTORY_SYNC_MAX_TIMEOUT = 25;
     private static final int MAX_MESSAGE_RETRIES = 5;
-    private static final Set<Type> BASE_HISTORY_SYNC_TYPES = Set.of(Type.INITIAL_STATUS_V3, Type.PUSH_NAME, Type.INITIAL_BOOTSTRAP, Type.NON_BLOCKING_DATA);
 
     private final SocketHandler socketHandler;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
     private final Map<String, Integer> retries;
     private final Set<Jid> historyCache;
-    private final EnumSet<Type> historySyncTypes;
     private final ReentrantLock lock;
-    private final AtomicBoolean startedInitialAppSync;
     private final HistorySyncProgressTracker recentHistorySyncTracker;
     private final HistorySyncProgressTracker fullHistorySyncTracker;
     private ScheduledFuture<?> historySyncTask;
@@ -90,9 +86,7 @@ class MessageHandler {
         this.socketHandler = socketHandler;
         this.devicesCache = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
-        this.historySyncTypes = EnumSet.noneOf(Type.class);
         this.lock = new ReentrantLock(true);
-        this.startedInitialAppSync = new AtomicBoolean(false);
         this.retries = new ConcurrentHashMap<>();
         this.recentHistorySyncTracker = new HistorySyncProgressTracker();
         this.fullHistorySyncTracker = new HistorySyncProgressTracker();
@@ -243,7 +237,7 @@ class MessageHandler {
     }
 
     private AttachmentType getAttachmentType(Jid chatJid, MediaMessage<?> mediaMessage) {
-        if (!chatJid.hasServer(JidServer.NEWSLETTER)) {
+        if (!chatJid.hasServer(JidServer.newsletter())) {
             return mediaMessage.attachmentType();
         }
 
@@ -495,8 +489,8 @@ class MessageHandler {
     }
 
     private boolean isConversation(ChatMessageInfo info) {
-        return info.chatJid().hasServer(JidServer.WHATSAPP)
-                || info.chatJid().hasServer(JidServer.USER);
+        return info.chatJid().hasServer(JidServer.whatsapp())
+                || info.chatJid().hasServer(JidServer.user());
     }
 
     private Node createEncodedMessageNode(MessageSendRequest.Chat request, List<Node> preKeys, Node descriptor) {
@@ -676,13 +670,13 @@ class MessageHandler {
             return Optional.empty();
         }
 
-        var result = Jid.ofDevice(jid.user(), deviceId);
+        var result = jid.withDevice(deviceId);
         cacheDevice(result);
         if(excludeSelf && isMe(result)) {
             return Optional.empty();
         }
 
-        return Optional.of(Jid.ofDevice(jid.user(), deviceId));
+        return Optional.of(jid.withDevice(deviceId));
     }
 
     private boolean isMe(Jid jid) {
@@ -964,7 +958,7 @@ class MessageHandler {
                 return;
             }
 
-            if (from.hasServer(JidServer.WHATSAPP) || from.hasServer(JidServer.USER)) {
+            if (from.hasServer(JidServer.whatsapp()) || from.hasServer(JidServer.user())) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
                 keyBuilder.fromMe(Objects.equals(from.toSimpleJid(), receiver));
@@ -988,7 +982,7 @@ class MessageHandler {
             }
 
             var info = messageBuilder.key(key)
-                    .broadcast(key.chatJid().hasServer(JidServer.BROADCAST))
+                    .broadcast(key.chatJid().hasServer(JidServer.broadcast()))
                     .pushName(pushName)
                     .status(MessageStatus.DELIVERED)
                     .businessVerifiedName(businessName)
@@ -1071,14 +1065,14 @@ class MessageHandler {
                     yield signalGroup.decrypt(encodedMessage);
                 }
                 case PKMSG -> {
-                    var user = from.hasServer(JidServer.WHATSAPP) ? from : participant;
+                    var user = from.hasServer(JidServer.whatsapp()) ? from : participant;
                     Objects.requireNonNull(user, "Cannot decipher pkmsg without user");
                     var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
                     yield session.decrypt(preKey);
                 }
                 case MSG -> {
-                    var user = from.hasServer(JidServer.WHATSAPP) ? from : participant;
+                    var user = from.hasServer(JidServer.whatsapp()) ? from : participant;
                     Objects.requireNonNull(user, "Cannot decipher msg without user");
                     var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var signalMessage = SignalMessage.ofSerialized(encodedMessage);
@@ -1192,20 +1186,14 @@ class MessageHandler {
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         socketHandler.keys()
                 .addAppKeys(self, data.keys());
+        socketHandler.pullInitialPatches();
     }
 
     private void onHistorySyncNotification(ChatMessageInfo info, ProtocolMessage protocolMessage) {
-        if(isBaseHistorySyncComplete()) {
-            if(!socketHandler.keys().initialAppSync() && !startedInitialAppSync.get()) {
-                startedInitialAppSync.set(true);
-                socketHandler.pullInitialPatches()
-                        .thenRunAsync(() -> socketHandler.keys().setInitialAppSync(true))
-                        .exceptionallyAsync(throwable -> socketHandler.handleFailure(INITIAL_APP_STATE_SYNC, throwable));
-            }
+        scheduleHistorySyncTimeout();
 
-            if(socketHandler.store().historyLength().isZero()) {
-                return;
-            }
+        if(isHistorySyncIgnorable(protocolMessage)) {
+            return;
         }
 
         downloadHistorySync(protocolMessage)
@@ -1214,8 +1202,11 @@ class MessageHandler {
                 .thenRunAsync(() -> socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync"));
     }
 
-    private boolean isBaseHistorySyncComplete() {
-        return historySyncTypes.containsAll(BASE_HISTORY_SYNC_TYPES);
+    private boolean isHistorySyncIgnorable(ProtocolMessage protocolMessage) {
+        return socketHandler.store().webHistorySetting().isZero()
+                && protocolMessage.historySyncNotification()
+                    .filter(entry -> entry.syncType() == Type.RECENT)
+                    .isPresent();
     }
 
     private boolean isTyping(Contact sender) {
@@ -1264,17 +1255,13 @@ class MessageHandler {
     }
 
     private void handleHistorySync(HistorySync history) {
-        try {
-            switch (history.syncType()) {
-                case INITIAL_STATUS_V3 -> handleInitialStatus(history);
-                case PUSH_NAME -> handlePushNames(history);
-                case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
-                case FULL -> handleChatsSync(history, false);
-                case RECENT -> handleChatsSync(history, true);
-                case NON_BLOCKING_DATA -> handleNonBlockingData(history);
-            }
-        } finally {
-            historySyncTypes.add(history.syncType());
+        switch (history.syncType()) {
+            case INITIAL_STATUS_V3 -> handleInitialStatus(history);
+            case PUSH_NAME -> handlePushNames(history);
+            case INITIAL_BOOTSTRAP -> handleInitialBootstrap(history);
+            case FULL -> handleChatsSync(history, false);
+            case RECENT -> handleChatsSync(history, true);
+            case NON_BLOCKING_DATA -> handleNonBlockingData(history);
         }
     }
 
@@ -1309,7 +1296,7 @@ class MessageHandler {
     }
 
     private void handleInitialBootstrap(HistorySync history) {
-        if (!socketHandler.store().historyLength().isZero()) {
+        if (!socketHandler.store().webHistorySetting().isZero()) {
             var jids = history.conversations()
                     .stream()
                     .map(Chat::jid)
@@ -1322,7 +1309,7 @@ class MessageHandler {
     }
 
     private void handleChatsSync(HistorySync history, boolean recent) {
-        if (socketHandler.store().historyLength().isZero()) {
+        if (socketHandler.store().webHistorySetting().isZero()) {
             return;
         }
 
@@ -1354,12 +1341,20 @@ class MessageHandler {
         historyCache.removeAll(toRemove);
     }
 
+    private void onHistorySyncProbablyDone() {
+        if(!socketHandler.keys().initialAppSync()) {
+            socketHandler.pullInitialPatches()
+                    .thenRunAsync(() -> socketHandler.keys().setInitialAppSync(true))
+                    .exceptionallyAsync(throwable -> socketHandler.handleFailure(INITIAL_APP_STATE_SYNC, throwable));
+        }
+    }
+
     private void scheduleHistorySyncTimeout() {
         if (historySyncTask != null && !historySyncTask.isDone()) {
             historySyncTask.cancel(true);
         }
 
-        this.historySyncTask = socketHandler.scheduleDelayed(this::onForcedHistorySyncCompletion, HISTORY_SYNC_TIMEOUT);
+        this.historySyncTask = socketHandler.scheduleDelayed(this::onForcedHistorySyncCompletion, HISTORY_SYNC_MAX_TIMEOUT);
     }
 
     private void onForcedHistorySyncCompletion() {
@@ -1407,7 +1402,7 @@ class MessageHandler {
     }
 
     private void attributeSender(ChatMessageInfo info, Jid senderJid) {
-        if(senderJid.server() != JidServer.WHATSAPP && senderJid.server() != JidServer.USER) {
+        if(senderJid.server() != JidServer.whatsapp() && senderJid.server() != JidServer.user()) {
             return;
         }
 
@@ -1527,9 +1522,10 @@ class MessageHandler {
 
     protected void dispose() {
         historyCache.clear();
-        historySyncTask = null;
-        historySyncTypes.clear();
-        startedInitialAppSync.set(false);
+        if(historySyncTask != null) {
+            historySyncTask.cancel(true);
+            historySyncTask = null;
+        }
         recentHistorySyncTracker.clear();
         fullHistorySyncTracker.clear();
     }

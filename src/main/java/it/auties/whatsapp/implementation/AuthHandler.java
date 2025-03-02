@@ -154,15 +154,31 @@ class AuthHandler {
     private CompanionProperties createCompanionProps() {
         return switch (socketHandler.store().clientType()) {
             case WEB -> {
-                var historyLength = socketHandler.store().historyLength();
+                var historyLength = socketHandler.store().webHistorySetting();
                 var config = new HistorySyncConfigBuilder()
                         .inlineInitialPayloadInE2EeMsg(true)
                         .supportBotUserAgentChatHistory(true)
+                        .supportCallLogHistory(true)
                         .storageQuotaMb(historyLength.size())
+                        .fullSyncSizeMbLimit(historyLength.size())
                         .build();
+
+                // Extended history sync won't work if we don't have a Desktop device
+                if(socketHandler.store().webHistorySetting().isExtended() && !socketHandler.store().device().platform().isDesktop()) {
+                    socketHandler.store().setDevice(socketHandler.store().device().withPlatform(UserAgent.PlatformType.WINDOWS));
+                }
+
+                var platformType = switch (socketHandler.store().device().platform()) {
+                    case UNKNOWN, KAIOS -> CompanionProperties.PlatformType.UNKNOWN;
+                    case IOS, IOS_BUSINESS -> CompanionProperties.PlatformType.IOS_PHONE;
+                    case ANDROID, ANDROID_BUSINESS -> CompanionProperties.PlatformType.ANDROID_PHONE;
+                    case WINDOWS -> CompanionProperties.PlatformType.UWP;
+                    case MACOS -> CompanionProperties.PlatformType.CATALINA;
+                    case WEB -> CompanionProperties.PlatformType.CHROME;
+                };
                 yield new CompanionPropertiesBuilder()
                         .os(socketHandler.store().name())
-                        .platformType(CompanionProperties.PlatformType.CHROME)
+                        .platformType(platformType)
                         .requireFullSync(historyLength.isExtended())
                         .historySyncConfig(config)
                         .build();

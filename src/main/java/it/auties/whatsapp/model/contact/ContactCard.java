@@ -112,10 +112,12 @@ public sealed interface ContactCard {
         }
 
         private void addPhoneNumber(VCard vcard, String type, Jid contact) {
-            var telephone = new Telephone(contact.toPhoneNumber());
-            telephone.getParameters().setType(type);
-            telephone.getParameters().put(PHONE_NUMBER_VCARD_PROPERTY, contact.user());
-            vcard.addTelephoneNumber(telephone);
+            contact.toPhoneNumber().ifPresent(phoneNumber -> {
+                var telephone = new Telephone(phoneNumber);
+                telephone.getParameters().setType(type);
+                telephone.getParameters().put(PHONE_NUMBER_VCARD_PROPERTY, contact.user());
+                vcard.addTelephoneNumber(telephone);
+            });
         }
 
         public void addPhoneNumber(Jid contact) {

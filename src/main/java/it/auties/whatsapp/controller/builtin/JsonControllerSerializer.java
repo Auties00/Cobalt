@@ -1,6 +1,5 @@
 package it.auties.whatsapp.controller.builtin;
 
-import it.auties.whatsapp.controller.ControllerSerializer;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.Chat;
@@ -13,33 +12,15 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class JsonControllerSerializer extends FileControllerSerializer {
     private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
-    private static final Map<Path, JsonControllerSerializer> serializers = new ConcurrentHashMap<>();
-    static {
-        serializers.put(DEFAULT_SERIALIZER_PATH, new JsonControllerSerializer(DEFAULT_SERIALIZER_PATH));
+
+    public JsonControllerSerializer() {
+        this(DEFAULT_SERIALIZER_PATH);
     }
 
-    public static ControllerSerializer ofDefaultPath() {
-        return Objects.requireNonNull(serializers.get(DEFAULT_SERIALIZER_PATH));
-    }
-
-    public static ControllerSerializer of(Path baseDirectory) {
-        var known = serializers.get(baseDirectory);
-        if(known != null) {
-            return known;
-        }
-
-        var result = new JsonControllerSerializer(baseDirectory);
-        serializers.put(baseDirectory, result);
-        return result;
-    }
-
-    private JsonControllerSerializer(Path baseDirectory) {
+    public JsonControllerSerializer(Path baseDirectory) {
         super(baseDirectory);
     }
 

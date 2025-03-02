@@ -11,7 +11,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.MediaProxySetting;
 import it.auties.whatsapp.api.TextPreviewSetting;
-import it.auties.whatsapp.api.WebHistoryLength;
+import it.auties.whatsapp.api.WebHistorySetting;
 import it.auties.whatsapp.implementation.SocketRequest;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
@@ -64,11 +64,6 @@ import java.util.stream.Stream;
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 @ProtobufMessage
 public final class Store extends Controller<Store> {
-    /**
-     * Default push name
-     */
-    private static final String DEFAULT_NAME = "User";
-
     /**
      * The version used by this session
      */
@@ -302,7 +297,7 @@ public final class Store extends Controller<Store> {
      * Describes how much chat history Whatsapp should send
      */
     @ProtobufProperty(index = 33, type = ProtobufType.MESSAGE)
-    WebHistoryLength historyLength;
+    WebHistorySetting historyLength;
 
     /**
      * Whether listeners should be automatically scanned and registered or not
@@ -350,12 +345,12 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistoryLength historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, MediaProxySetting mediaProxySetting) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistorySetting historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, MediaProxySetting mediaProxySetting) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.proxy = proxy;
         this.online = online;
         this.locale = locale;
-        this.name = Objects.requireNonNullElse(name, DEFAULT_NAME);
+        this.name = name;
         this.verifiedName = verifiedName;
         this.businessAddress = businessAddress;
         this.businessLongitude = businessLongitude;
@@ -387,7 +382,7 @@ public final class Store extends Controller<Store> {
         this.mediaConnectionLatch = new CountDownLatch(1);
         this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
         this.textPreviewSetting = Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE);
-        this.historyLength = Objects.requireNonNullElseGet(historyLength, WebHistoryLength::standard);
+        this.historyLength = Objects.requireNonNullElseGet(historyLength, () -> WebHistorySetting.standard(true));
         this.autodetectListeners = autodetectListeners;
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.automaticMessageReceipts = automaticMessageReceipts;
@@ -405,7 +400,6 @@ public final class Store extends Controller<Store> {
                 .device(clientType == ClientType.MOBILE ? CompanionDevice.ios(false) : CompanionDevice.web())
                 .clientType(clientType)
                 .alias(alias)
-                .name(DEFAULT_NAME)
                 .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
                 .autodetectListeners(true)
                 .automaticPresenceUpdates(true)
@@ -510,6 +504,8 @@ public final class Store extends Controller<Store> {
                 default -> findChatByJid(contactJid)
                         .flatMap(chat -> findMessageById(chat, id));
             };
+            case JidServer jidServer -> findChatByJid(jidServer.toJid())
+                    .flatMap(chat -> findMessageById(chat, id));
         };
     }
 
@@ -795,7 +791,7 @@ public final class Store extends Controller<Store> {
      * @return the old chat, if present
      */
     public Optional<Chat> addChat(Chat chat) {
-        if (chat.hasName() && chat.jid().hasServer(JidServer.WHATSAPP)) {
+        if (chat.hasName() && chat.jid().hasServer(JidServer.whatsapp())) {
             var contact = findContactByJid(chat.jid())
                     .orElseGet(() -> addContact(new Contact(chat.jid())));
             contact.setFullName(chat.name());
@@ -1317,7 +1313,11 @@ public final class Store extends Controller<Store> {
     }
 
     public String name() {
-        return name;
+        if(name == null) {
+            return device.platform().platformName();
+        }else {
+            return name;
+        }
     }
 
     public Optional<String> deviceHash() {
@@ -1360,7 +1360,7 @@ public final class Store extends Controller<Store> {
         return this.mediaProxySetting;
     }
 
-    public WebHistoryLength historyLength() {
+    public WebHistorySetting webHistorySetting() {
         return this.historyLength;
     }
 
@@ -1493,8 +1493,8 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setHistoryLength(WebHistoryLength historyLength) {
-        this.historyLength = historyLength;
+    public Store setWebHistorySetting(WebHistorySetting webHistorySetting) {
+        this.historyLength = webHistorySetting;
         return this;
     }
 
@@ -1580,5 +1580,52 @@ public final class Store extends Controller<Store> {
             this.future = null;
             this.value = value;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Store store)) return false;
+        return online == store.online &&
+                unarchiveChats == store.unarchiveChats &&
+                twentyFourHourFormat == store.twentyFourHourFormat &&
+                autodetectListeners == store.autodetectListeners &&
+                automaticPresenceUpdates == store.automaticPresenceUpdates &&
+                automaticMessageReceipts == store.automaticMessageReceipts &&
+                checkPatchMacs == store.checkPatchMacs &&
+                Objects.equals(proxy, store.proxy) &&
+                Objects.equals(version, store.version) &&
+                Objects.equals(locale, store.locale) &&
+                Objects.equals(name, store.name) &&
+                Objects.equals(verifiedName, store.verifiedName) &&
+                Objects.equals(businessAddress, store.businessAddress) &&
+                Objects.equals(businessLongitude, store.businessLongitude) &&
+                Objects.equals(businessLatitude, store.businessLatitude) &&
+                Objects.equals(businessDescription, store.businessDescription) &&
+                Objects.equals(businessWebsite, store.businessWebsite) &&
+                Objects.equals(businessEmail, store.businessEmail) &&
+                Objects.equals(businessCategory, store.businessCategory) &&
+                Objects.equals(deviceHash, store.deviceHash) &&
+                Objects.equals(linkedDevicesKeys, store.linkedDevicesKeys) &&
+                Objects.equals(profilePicture, store.profilePicture) &&
+                Objects.equals(about, store.about) &&
+                Objects.equals(jid, store.jid) &&
+                Objects.equals(lid, store.lid) &&
+                Objects.equals(properties, store.properties) &&
+                Objects.equals(contacts, store.contacts) &&
+                Objects.equals(status, store.status) &&
+                Objects.equals(privacySettings, store.privacySettings) &&
+                Objects.equals(calls, store.calls) &&
+                Objects.equals(initializationTimeStamp, store.initializationTimeStamp) &&
+                newChatsEphemeralTimer == store.newChatsEphemeralTimer &&
+                textPreviewSetting == store.textPreviewSetting &&
+                Objects.equals(historyLength, store.historyLength) &&
+                releaseChannel == store.releaseChannel &&
+                Objects.equals(device, store.device) &&
+                mediaProxySetting == store.mediaProxySetting;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(proxy, version, online, locale, name, verifiedName, businessAddress, businessLongitude, businessLatitude, businessDescription, businessWebsite, businessEmail, businessCategory, deviceHash, linkedDevicesKeys, profilePicture, about, jid, lid, properties, contacts, status, privacySettings, calls, unarchiveChats, twentyFourHourFormat, initializationTimeStamp, newChatsEphemeralTimer, textPreviewSetting, historyLength, autodetectListeners, automaticPresenceUpdates, automaticMessageReceipts, releaseChannel, device, checkPatchMacs, mediaProxySetting);
     }
 }

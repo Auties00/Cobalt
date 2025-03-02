@@ -30,7 +30,17 @@ public record CompanionProperties(@ProtobufProperty(index = 1, type = STRING) St
         ANDROID_TABLET(9),
         OHANA(10),
         ALOHA(11),
-        CATALINA(12);
+        CATALINA(12),
+        TCL_TV(13),
+        IOS_PHONE(14),
+        IOS_CATALYST(15),
+        ANDROID_PHONE(16),
+        ANDROID_AMBIGUOUS(17),
+        WEAR_OS(18),
+        AR_WRIST(19),
+        AR_DEVICE(20),
+        UWP(21),
+        VR(22);
 
         PlatformType(@ProtobufEnumIndex int index) {
             this.index = index;

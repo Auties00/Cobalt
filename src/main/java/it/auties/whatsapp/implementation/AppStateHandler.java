@@ -208,18 +208,21 @@ class AppStateHandler {
         }
 
         var jid = socketHandler.store().jid();
-        if (jid.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        return pull(jid.get(), Set.of(PatchType.values()))
-                .thenAcceptAsync(success -> onPull(true, success))
-                .exceptionallyAsync(exception -> onPullError(true, exception));
+        return jid.map(value -> pull(value, Set.of(PatchType.values()))
+                        .thenAcceptAsync(success -> onPull(true, success))
+                        .exceptionallyAsync(exception -> onPullError(true, exception)))
+                .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
 
     private void onPull(boolean initial, boolean success) {
         if (!socketHandler.keys().initialAppSync()) {
-            socketHandler.keys().setInitialAppSync((initial && success) || isSyncComplete());
+            var result = (initial && success) || isSyncComplete();
+            if(result) {
+                socketHandler.keys().setInitialAppSync(true);
+                if(socketHandler.store().webHistorySetting().hasNewsletters()) {
+                    socketHandler.queryNewsletters();
+                }
+            }
         }
 
         attempts.clear();

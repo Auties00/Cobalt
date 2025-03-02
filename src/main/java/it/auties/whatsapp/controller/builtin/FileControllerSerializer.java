@@ -13,6 +13,7 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.util.ImmutableLinkedList;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,10 +24,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,17 +31,15 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";
     
-    final Path baseDirectory;
-    final ConcurrentMap<UUID, CompletableFuture<Void>> attributeStoreSerializers;
-    LinkedList<UUID> cachedUuids;
-    final Object uuidsLock;
-    LinkedList<PhoneNumber> cachedPhoneNumbers;
-    final Object phoneNumbersLock;
+    private final Path baseDirectory;
+    private int keysHashCode;
+    private int storeHashCode;
+    private final ConcurrentMap<Jid, Integer> jidsHashCodes;
     FileControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
-        this.attributeStoreSerializers = new ConcurrentHashMap<>();
-        this.uuidsLock = new Object();
-        this.phoneNumbersLock = new Object();
+        this.keysHashCode = -1;
+        this.storeHashCode = -1;
+        this.jidsHashCodes = new ConcurrentHashMap<>();
     }
 
     abstract String fileExtension();
@@ -61,53 +56,33 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @Override
     public LinkedList<UUID> listIds(ClientType type) {
-        if (cachedUuids != null) {
-            return new ImmutableLinkedList<>(cachedUuids);
+        var directory = getHome(type);
+        if (Files.notExists(directory)) {
+            return ImmutableLinkedList.empty();
         }
-        
-        synchronized (uuidsLock) {
-            if (cachedUuids != null) {
-                return new ImmutableLinkedList<>(cachedUuids);
-            }
-            
-            var directory = getHome(type);
-            if (Files.notExists(directory)) {
-                return ImmutableLinkedList.empty();
-            }
 
-            try (var walker = Files.walk(directory, 1).sorted(Comparator.comparing(this::getLastModifiedTime))) {
-                return cachedUuids = walker.map(this::parsePathAsId)
-                        .flatMap(Optional::stream)
-                        .collect(Collectors.toCollection(LinkedList::new));
-            } catch (IOException exception) {
-                return ImmutableLinkedList.empty();
-            }
+        try (var walker = Files.walk(directory, 1).sorted(Comparator.comparing(this::getLastModifiedTime))) {
+            return walker.map(this::parsePathAsId)
+                    .flatMap(Optional::stream)
+                    .collect(Collectors.toCollection(LinkedList::new));
+        } catch (IOException exception) {
+            return ImmutableLinkedList.empty();
         }
     }
 
     @Override
     public LinkedList<PhoneNumber> listPhoneNumbers(ClientType type) {
-        if (cachedPhoneNumbers != null) {
-            return new ImmutableLinkedList<>(cachedPhoneNumbers);
+        var directory = getHome(type);
+        if (Files.notExists(directory)) {
+            return ImmutableLinkedList.empty();
         }
 
-        synchronized (phoneNumbersLock) {
-            if (cachedPhoneNumbers != null) {
-                return new ImmutableLinkedList<>(cachedPhoneNumbers);
-            }
-
-            var directory = getHome(type);
-            if (Files.notExists(directory)) {
-                return ImmutableLinkedList.empty();
-            }
-
-            try (var walker = Files.walk(directory, 1).sorted(Comparator.comparing(this::getLastModifiedTime))) {
-                return cachedPhoneNumbers = walker.map(this::parsePathAsPhoneNumber)
-                        .flatMap(Optional::stream)
-                        .collect(Collectors.toCollection(LinkedList::new));
-            } catch (IOException exception) {
-                return ImmutableLinkedList.empty();
-            }
+        try (var walker = Files.walk(directory, 1).sorted(Comparator.comparing(this::getLastModifiedTime))) {
+            return walker.map(this::parsePathAsPhoneNumber)
+                    .flatMap(Optional::stream)
+                    .collect(Collectors.toCollection(LinkedList::new));
+        } catch (IOException exception) {
+            return ImmutableLinkedList.empty();
         }
     }
 
@@ -138,10 +113,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @Override
     public CompletableFuture<Void> serializeKeys(Keys keys, boolean async) {
-        if (cachedUuids != null && !cachedUuids.contains(keys.uuid())) {
-            cachedUuids.add(keys.uuid());
+        var newHashCode = keys.hashCode();
+        if(newHashCode == keysHashCode) {
+            return CompletableFuture.completedFuture(null);
         }
 
+        this.keysHashCode = newHashCode;
         var keysName = "keys" + fileExtension();
         var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), keysName);
         if (async) {
@@ -155,20 +132,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @Override
     public CompletableFuture<Void> serializeStore(Store store, boolean async) {
-        if (cachedUuids != null && !cachedUuids.contains(store.uuid())) {
-            cachedUuids.add(store.uuid());
+        var newHashCode = store.hashCode();
+        if(newHashCode == storeHashCode) {
+            return CompletableFuture.completedFuture(null);
         }
 
-        var phoneNumber = store.phoneNumber().orElse(null);
-        if (cachedPhoneNumbers != null && !cachedPhoneNumbers.contains(phoneNumber)) {
-            cachedPhoneNumbers.add(phoneNumber);
-        }
-
-        var task = attributeStoreSerializers.get(store.uuid());
-        if (task != null && !task.isDone()) {
-            return task;
-        }
-
+        this.storeHashCode = newHashCode;
         var chatsFutures = serializeChatsAsync(store);
         var newslettersFutures = serializeNewslettersAsync(store);
         var dependableFutures = Stream.of(chatsFutures, newslettersFutures)
@@ -195,10 +164,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeChatAsync(Store store, Chat chat) {
-        if (!chat.hasUpdate()) {
+        var newHashCode = chat.hashCode();
+        if(newHashCode == jidsHashCodes.getOrDefault(chat.jid(), -1)) {
             return CompletableFuture.completedFuture(null);
         }
 
+        jidsHashCodes.put(chat.jid(), newHashCode);
         var fileName = CHAT_PREFIX + chat.jid().user() + fileExtension();
         var outputFile = getSessionFile(store, fileName);
         return CompletableFuture.runAsync(() -> encodeChat(chat, outputFile))
@@ -219,6 +190,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     private CompletableFuture<Void> serializeNewsletterAsync(Store store, Newsletter newsletter) {
+        var newHashCode = newsletter.hashCode();
+        if(newHashCode == jidsHashCodes.getOrDefault(newsletter.jid(), -1)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        jidsHashCodes.put(newsletter.jid(), newHashCode);
         var fileName = NEWSLETTER_PREFIX + newsletter.jid().user() + fileExtension();
         var outputFile = getSessionFile(store, fileName);
         return CompletableFuture.runAsync(() -> encodeNewsletter(newsletter, outputFile));
@@ -264,7 +241,9 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         }
 
         try {
-            return Optional.of(decodeKeys(path));
+            var keys = decodeKeys(path);
+            keysHashCode = keys.hashCode();
+            return Optional.of(keys);
         } catch (IOException e) {
             return Optional.empty();
         }
@@ -310,7 +289,9 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         }
 
         try {
-            return Optional.of(decodeStore(path));
+            var store = decodeStore(path);
+            storeHashCode = store.hashCode();
+            return Optional.of(store);
         } catch (IOException exception) {
             return Optional.empty();
         }
@@ -318,10 +299,6 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @Override
     public CompletableFuture<Void> attributeStore(Store store) {
-        var oldTask = attributeStoreSerializers.get(store.uuid());
-        if (oldTask != null) {
-            return oldTask;
-        }
         var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
         if (Files.notExists(directory)) {
             return CompletableFuture.completedFuture(null);
@@ -330,10 +307,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
             var futures = walker.map(entry -> handleStoreFile(store, entry))
                     .filter(Objects::nonNull)
                     .toArray(CompletableFuture[]::new);
-            var result = CompletableFuture.allOf(futures)
+            return CompletableFuture.allOf(futures)
                     .thenRun(() -> attributeStoreContextualMessages(store));
-            attributeStoreSerializers.put(store.uuid(), result);
-            return result;
         } catch (IOException exception) {
             return CompletableFuture.failedFuture(exception);
         }
@@ -453,6 +428,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private void deserializeChat(Store store, Path chatFile) {
         try {
             var chat = decodeChat(chatFile);
+            jidsHashCodes.put(chat.jid(), chat.hashCode());
             for (var message : chat.messages()) {
                 message.messageInfo().setChat(chat);
                 store.findContactByJid(message.messageInfo().senderJid())
@@ -481,6 +457,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private void deserializeNewsletter(Store store, Path newsletterFile) {
         try {
             var newsletter = decodeNewsletter(newsletterFile);
+            jidsHashCodes.put(newsletter.jid(), newsletter.hashCode());
             for (var message : newsletter.messages()) {
                 message.setNewsletter(newsletter);
             }
@@ -533,273 +510,6 @@ abstract class FileControllerSerializer implements ControllerSerializer {
             return result;
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot create directory", exception);
-        }
-    }
-
-    private static class ImmutableLinkedList<E> extends LinkedList<E> {
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        private static final ImmutableLinkedList EMPTY = new ImmutableLinkedList(new LinkedList());
-
-        private final LinkedList<E> delegate;
-
-        @SuppressWarnings("unchecked")
-        private static <E> ImmutableLinkedList<E> empty() {
-            return EMPTY;
-        }
-
-        private ImmutableLinkedList(LinkedList<E> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public E getFirst() {
-            return delegate.getFirst();
-        }
-
-        @Override
-        public E getLast() {
-            return delegate.getLast();
-        }
-
-        @Override
-        public boolean contains(Object o) {
-            return delegate.contains(o);
-        }
-
-        @Override
-        public int size() {
-            return delegate.size();
-        }
-
-        @Override
-        public void clear() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E get(int index) {
-            return delegate.get(index);
-        }
-
-        @Override
-        public int indexOf(Object o) {
-            return delegate.indexOf(o);
-        }
-
-        @Override
-        public int lastIndexOf(Object o) {
-            return delegate.lastIndexOf(o);
-        }
-
-        @Override
-        public E peek() {
-            return delegate.peek();
-        }
-
-        @Override
-        public E element() {
-            return delegate.element();
-        }
-
-        @Override
-        public E poll() {
-            return delegate.poll();
-        }
-
-        @Override
-        public boolean offer(E e) {
-            return delegate.offer(e);
-        }
-
-        @Override
-        public boolean offerFirst(E e) {
-            return delegate.offerFirst(e);
-        }
-
-        @Override
-        public boolean offerLast(E e) {
-            return delegate.offerLast(e);
-        }
-
-        @Override
-        public E peekFirst() {
-            return delegate.peekFirst();
-        }
-
-        @Override
-        public E peekLast() {
-            return delegate.peekLast();
-        }
-
-        @Override
-        public E pollFirst() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E pollLast() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void push(E e) {
-            delegate.push(e);
-        }
-
-        @Override
-        public E pop() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ListIterator<E> listIterator(int index) {
-            return delegate.listIterator(index);
-        }
-
-        @Override
-        public Iterator<E> descendingIterator() {
-            return delegate.descendingIterator();
-        }
-
-        @SuppressWarnings("MethodDoesntCallSuperMethod")
-        @Override
-        public Object clone() {
-            return delegate.clone();
-        }
-
-        @Override
-        public Object[] toArray() {
-            return delegate.toArray();
-        }
-
-        @Override
-        public <T> T[] toArray(T[] a) {
-            return delegate.toArray(a);
-        }
-
-        @Override
-        public Spliterator<E> spliterator() {
-            return delegate.spliterator();
-        }
-
-        @Override
-        public LinkedList<E> reversed() {
-            return delegate.reversed();
-        }
-
-        @Override
-        public void replaceAll(UnaryOperator<E> operator) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void sort(Comparator<? super E> c) {
-            delegate.sort(c);
-        }
-
-        @Override
-        public <T> T[] toArray(IntFunction<T[]> generator) {
-            return delegate.toArray(generator);
-        }
-
-        @Override
-        public Stream<E> stream() {
-            return delegate.stream();
-        }
-
-        @Override
-        public Stream<E> parallelStream() {
-            return delegate.parallelStream();
-        }
-
-        @Override
-        public void forEach(Consumer<? super E> action) {
-            delegate.forEach(action);
-        }
-
-        @Override
-        public boolean add(E e) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void add(int index, E element) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addLast(E e) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addFirst(E e) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean addAll(Collection<? extends E> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean addAll(int index, Collection<? extends E> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E removeFirst() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E removeLast() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        protected void removeRange(int fromIndex, int toIndex) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean removeAll(Collection<?> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean removeFirstOccurrence(Object o) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E remove(int index) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean removeIf(Predicate<? super E> filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean removeLastOccurrence(Object o) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E set(int index, E element) {
-            throw new UnsupportedOperationException();
         }
     }
 }
