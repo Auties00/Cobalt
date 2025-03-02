@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
+abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
     private static final URI WEB_SOCKET = URI.create("wss://web.whatsapp.com/ws/chat");
     private static final InetSocketAddress MOBILE_SOCKET_ENDPOINT = new InetSocketAddress("g.whatsapp.net", 443);
     private static final int MESSAGE_LENGTH = 3;
@@ -29,7 +29,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         this.proxy = proxy;
     }
 
-    CompletableFuture<Void> connect(SocketListener listener) {
+    public CompletableFuture<Void> connect(SocketListener listener) {
         this.listener = listener;
         return CompletableFuture.completedFuture(null);
     }
@@ -46,7 +46,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         return new RawSocketSession(proxy);
     }
 
-    public static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
+    private static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
         private WebSocket session;
         private byte[] message;
         private int messageOffset;
@@ -57,7 +57,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
 
         @SuppressWarnings("resource") // Not needed
         @Override
-        CompletableFuture<Void> connect(SocketListener listener) {
+        public CompletableFuture<Void> connect(SocketListener listener) {
             if (session != null) {
                 return CompletableFuture.completedFuture(null);
             }
@@ -144,7 +144,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
     }
 
-    static final class RawSocketSession extends SocketSession {
+    private static final class RawSocketSession extends SocketSession {
         private SocketChannel channel;
 
         RawSocketSession(URI proxy) {
@@ -152,7 +152,7 @@ public abstract sealed class SocketSession permits SocketSession.WebSocketSessio
         }
 
         @Override
-        CompletableFuture<Void> connect(SocketListener listener) {
+        public CompletableFuture<Void> connect(SocketListener listener) {
             super.connect(listener);
             if (isOpen()) {
                 return CompletableFuture.completedFuture(null);

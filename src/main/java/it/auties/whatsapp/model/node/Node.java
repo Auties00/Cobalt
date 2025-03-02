@@ -348,7 +348,10 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     @Override
     public boolean equals(Object other) {
-        return other instanceof Node that && Objects.equals(this.description(), that.description()) && Objects.equals(this.attributes(), that.attributes()) && (Objects.equals(this.content(), that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(theseBytes, thoseBytes));
+        return other instanceof Node that
+                && Objects.equals(this.description(), that.description())
+                && Objects.equals(this.attributes(), that.attributes())
+                && (Objects.equals(this.content(), that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(theseBytes, thoseBytes));
     }
 
     /**
@@ -358,7 +361,7 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     @Override
     public String toString() {
-        var description = this.description.isBlank() || this.description.isEmpty() ? "" : "description=%s".formatted(this.description);
+        var description = this.description.isBlank() ? "" : "description=%s".formatted(this.description);
         var attributes = this.attributes.toMap().isEmpty() ? "" : ", attributes=%s".formatted(this.attributes.toMap());
         var content = this.content == null ? "" : ", content=%s".formatted(contentToString());
         return "Node[%s%s%s]".formatted(description, attributes, content);

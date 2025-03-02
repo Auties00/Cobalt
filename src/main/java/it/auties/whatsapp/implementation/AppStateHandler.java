@@ -81,11 +81,10 @@ class AppStateHandler {
             return socketHandler.sendQuery("set", "w:sync:app:state", sync)
                     .thenAcceptAsync(this::parseSyncRequest)
                     .thenRunAsync(() -> onPush(jid, requests, readPatches))
-                    .whenCompleteAsync((result, error) -> {
-                        pushSemaphore.release();
-                        if(error != null) {
-                            Exceptions.rethrow(error);
-                        }
+                    .thenRun(pullSemaphore::release)
+                    .exceptionallyCompose(throwable -> {
+                        pullSemaphore.release();
+                        return CompletableFuture.failedFuture(throwable);
                     });
         }catch (Throwable throwable) {
             return CompletableFuture.failedFuture(throwable);
@@ -259,11 +258,13 @@ class AppStateHandler {
                     .thenApplyAsync(records -> decodeSyncs(jid, tempStates, records))
                     .thenComposeAsync(remaining -> handlePullResult(jid, remaining))
                     .orTimeout(TIMEOUT, TimeUnit.SECONDS)
-                    .whenCompleteAsync((result, error) -> {
+                    .thenApply(result -> {
                         pullSemaphore.release();
-                        if(error != null) {
-                            Exceptions.rethrow(error);
-                        }
+                        return result;
+                    })
+                    .exceptionallyCompose(throwable -> {
+                        pullSemaphore.release();
+                        return CompletableFuture.failedFuture(throwable);
                     });
         }catch (Throwable throwable) {
             pullSemaphore.release();

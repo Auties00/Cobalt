@@ -47,11 +47,13 @@ public final class WhatsappRegistration {
     public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
         return requestVerificationCode(false)
                 .thenCompose(ignored -> sendVerificationCode())
-                .whenComplete((result, exception) -> {
+                .thenApply(result -> {
                     dispose();
-                    if(exception != null) {
-                        Exceptions.rethrow(exception);
-                    }
+                    return result;
+                })
+                .exceptionallyCompose(throwable -> {
+                    dispose();
+                    return CompletableFuture.failedFuture(throwable);
                 });
     }
 
@@ -70,19 +72,20 @@ public final class WhatsappRegistration {
                     .thenComposeAsync(ignored -> exists(null))
                     .thenComposeAsync(result -> clientLog(result, Map.entry("current_screen", "verify_sms"), Map.entry("previous_screen", "enter_number"), Map.entry("action_taken", "continue"))
                             .thenComposeAsync(response -> requestVerificationCode(response, null)))
-                    .whenComplete((result, exception) -> onRequestVerificationCode(closeResources, exception));
+                    .thenApply(result -> {
+                        if(closeResources) {
+                            dispose();
+                        }
+                        return result;
+                    })
+                    .exceptionallyCompose(throwable -> {
+                        if(closeResources) {
+                            dispose();
+                        }
+                        return CompletableFuture.failedFuture(throwable);
+                    });
             default -> throw new IllegalStateException("Unsupported mobile os");
         };
-    }
-
-    private void onRequestVerificationCode(boolean closeResources, Throwable exception) {
-        if(closeResources) {
-            dispose();
-        }
-
-        if (exception != null) {
-            Exceptions.rethrow(exception);
-        }
     }
 
     private CompletableFuture<AbPropsResponse> onboard(String cc, Long in, String abHash) {

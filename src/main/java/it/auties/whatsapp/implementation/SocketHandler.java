@@ -47,7 +47,6 @@ import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.Json;
 
 import java.io.IOException;
@@ -63,12 +62,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @SuppressWarnings("unused")
 public class SocketHandler implements SocketListener {
     private static final Set<UUID> connectedUuids = ConcurrentHashMap.newKeySet();
     private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
     private static final Set<String> connectedAlias = ConcurrentHashMap.newKeySet();
+    private static final int PING_TIMEOUT = 20;
 
     public static boolean isConnected(UUID uuid) {
         return connectedUuids.contains(uuid);
@@ -96,6 +97,7 @@ public class SocketHandler implements SocketListener {
     private final Semaphore writeSemaphore;
     private volatile SocketState state;
     private volatile CompletableFuture<Void> loginFuture;
+    private volatile boolean pinging;
     private Keys keys;
     private Store store;
     private Thread shutdownHook;
@@ -110,7 +112,7 @@ public class SocketHandler implements SocketListener {
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
         this.requestsCounter = new AtomicLong();
-        this.scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
         this.scheduledTasks = new CopyOnWriteArrayList<>();
         this.writeSemaphore = new Semaphore(1, true);
         this.pastParticipants = new ConcurrentHashMap<>();
@@ -245,7 +247,8 @@ public class SocketHandler implements SocketListener {
             return;
         }
 
-        if(state() == SocketState.RECONNECTING || state() == SocketState.DISCONNECTED) {
+        // Shallow web socket exceptions
+        if(store.clientType() == ClientType.WEB || state() == SocketState.RECONNECTING || state() == SocketState.DISCONNECTED) {
             return;
         }
 
@@ -356,20 +359,19 @@ public class SocketHandler implements SocketListener {
         }
 
         this.session = SocketSession.of(store.proxy().orElse(null), store.clientType() == ClientType.WEB);
-        return session.connect(this).exceptionallyAsync(throwable -> {
+        return session.connect(this).exceptionallyCompose(throwable -> {
             if(state == SocketState.CONNECTED || state == SocketState.RECONNECTING || state == SocketState.PAUSED) {
                 setState(SocketState.PAUSED);
                 onSocketEvent(SocketEvent.PAUSED);
                 handleFailure(Location.RECONNECT, throwable);
-                return null;
+                return CompletableFuture.failedFuture(throwable);
             }
 
             if(loginFuture != null && !loginFuture.isDone()) {
                 loginFuture.completeExceptionally(throwable);
             }
 
-            Exceptions.rethrow(throwable);
-            return null;
+            return CompletableFuture.failedFuture(throwable);
         });
     }
 
@@ -1218,9 +1220,28 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void sendPing() {
-        sendQuery("get", "w:p", Node.of("ping"))
-                .thenRunAsync(() -> onSocketEvent(SocketEvent.PING))
-                .exceptionallyAsync(throwable -> {
+        if(pinging) {
+            return;
+        }
+
+        pinging = true;
+        var attributes = Attributes.of()
+                .put("xmlns", "w:p")
+                .put("to", JidServer.whatsapp().toJid())
+                .put("type", "get")
+                .put("id", HexFormat.of().formatHex(Bytes.random(6)))
+                .toMap();
+        var node = Node.of("iq", attributes, Node.of("ping"));
+        var future = new CompletableFuture<Node>()
+                .orTimeout(PING_TIMEOUT, SECONDS);
+        var request = new SocketRequest(node.id(), node, future, null);
+        sendRequest(request, false, true)
+                .thenApply(result -> {
+                    pinging = false;
+                    return result;
+                })
+                .exceptionally(throwable -> {
+                    pinging = false;
                     disconnect(DisconnectReason.RECONNECTING);
                     return null;
                 });
