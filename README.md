@@ -98,7 +98,7 @@ In short, if you use this library without a malicious intent, you will never get
 
 ### Javadocs & Documentation
 
-Javadocs for Whatsapp4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
+Javadocs for Cobalt are available [here](https://www.javadoc.io/doc/com.github.auties00/cobalt/0.0.8).
 The documentation for this project reaches most of the publicly available APIs(i.e. public members in exported packages), but sometimes the Javadoc may be incomplete 
 or some methods could be absent from the project's README. If you find any of the latter, know that even small contributions are welcomed!
 
