@@ -1,6 +1,6 @@
 package it.auties.whatsapp.implementation;
 
-public interface SocketListener {
+interface SocketListener {
     void onOpen(SocketSession session);
 
     void onMessage(byte[] message);

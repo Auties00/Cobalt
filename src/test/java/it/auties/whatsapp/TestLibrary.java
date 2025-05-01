@@ -2,7 +2,7 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonRow;
 import it.auties.whatsapp.model.button.base.ButtonSection;
@@ -24,6 +24,7 @@ import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
 import it.auties.whatsapp.model.newsletter.NewsletterName;
 import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 import it.auties.whatsapp.model.node.Node;
@@ -53,7 +54,7 @@ import java.util.stream.IntStream;
 // I repeat: DO NOT RUN THIS CI LOCALLY ON A BRAND-NEW NUMBER OR IT WILL GET BANNED
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class TestLibrary implements Listener  {
+public class TestLibrary implements WhatsappListener {
     @SuppressWarnings("HttpUrlsUsage")
     private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 
@@ -261,7 +262,7 @@ public class TestLibrary implements Listener  {
         if(!recommendedNewsletters.isEmpty()) {
             var recommendedNewsletter = recommendedNewsletters.getFirst();
             var nameOrJid = recommendedNewsletter.metadata()
-                    .name()
+                    .flatMap(NewsletterMetadata::name)
                     .map(NewsletterName::text)
                     .orElseGet(recommendedNewsletter.jid()::toString);
             log("Joining newsletter: %s", nameOrJid);

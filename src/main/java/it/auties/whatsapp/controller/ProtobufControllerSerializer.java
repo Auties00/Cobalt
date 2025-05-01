@@ -1,11 +1,9 @@
-package it.auties.whatsapp.controller.builtin;
+package it.auties.whatsapp.controller;
 
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
-import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatSpec;
-import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.newsletter.NewsletterSpec;
 
@@ -14,19 +12,15 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
-public class ProtobufControllerSerializer extends FileControllerSerializer {
+class ProtobufControllerSerializer extends FileControllerSerializer {
     private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
 
-    public ProtobufControllerSerializer() {
+    ProtobufControllerSerializer() {
         this(DEFAULT_SERIALIZER_PATH);
     }
 
-    public ProtobufControllerSerializer(Path baseDirectory) {
+    ProtobufControllerSerializer(Path baseDirectory) {
         super(baseDirectory);
     }
 

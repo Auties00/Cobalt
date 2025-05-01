@@ -16,12 +16,21 @@ public record ChatDisappear(
         @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         Initiator initiator
 ) {
+    public ChatDisappear(Initiator initiator) {
+        this.initiator = Objects.requireNonNullElse(initiator, Initiator.UNKNOWN);
+    }
+
     /**
      * The constants of this enumerated type describe the various actors that can initialize
      * disappearing messages in a chat
      */
     @ProtobufEnum(name = "DisappearingMode.Initiator")
     public enum Initiator {
+        /**
+         * Unknown
+         */
+        UNKNOWN(999),
+
         /**
          * Changed in chat
          */

@@ -218,9 +218,7 @@ class AppStateHandler {
             var result = (initial && success) || isSyncComplete();
             if(result) {
                 socketHandler.keys().setInitialAppSync(true);
-                if(socketHandler.store().webHistorySetting().hasNewsletters()) {
-                    socketHandler.queryNewsletters();
-                }
+                socketHandler.queryNewsletters();
             }
         }
 
@@ -360,9 +358,13 @@ class AppStateHandler {
     }
 
     private Optional<SnapshotSync> decodeSnapshot(Node snapshot) {
+        var proxy = switch (socketHandler.store().mediaProxySetting()) {
+            case NONE, UPLOADS -> null;
+            case DOWNLOADS, ALL -> socketHandler.store().proxy().orElse(null);
+        };
         return snapshot == null ? Optional.empty() : snapshot.contentAsBytes()
                 .map(ExternalBlobReferenceSpec::decode)
-                .map(Medias::downloadAsync)
+                .map(blob -> Medias.downloadAsync(blob, proxy))
                 .flatMap(CompletableFuture::join)
                 .map(SnapshotSyncSpec::decode);
     }
@@ -527,7 +529,11 @@ class AppStateHandler {
 
     private MutationsRecord decodePatch(Jid jid, PatchType patchType, CompanionHashState newState, PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            Medias.downloadAsync(patch.externalMutations())
+            var proxy = switch (socketHandler.store().mediaProxySetting()) {
+                case NONE, UPLOADS -> null;
+                case DOWNLOADS, ALL -> socketHandler.store().proxy().orElse(null);
+            };
+            Medias.downloadAsync(patch.externalMutations(), proxy)
                     .join()
                     .ifPresent(blob -> handleExternalMutation(patch, blob));
         }

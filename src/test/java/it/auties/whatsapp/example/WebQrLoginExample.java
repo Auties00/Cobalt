@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.info.ChatMessageInfo;
 public class WebQrLoginExample {
     public static void main(String[] args) {
         Whatsapp.webBuilder()
-                .lastConnection()
+                .newConnection()
                 .historySetting(WebHistorySetting.standard(true))
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))

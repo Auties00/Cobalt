@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-abstract sealed class SocketSession permits SocketSession.WebSocketSession, SocketSession.RawSocketSession {
+abstract sealed class SocketSession {
     private static final URI WEB_SOCKET = URI.create("wss://web.whatsapp.com/ws/chat");
     private static final InetSocketAddress MOBILE_SOCKET_ENDPOINT = new InetSocketAddress("g.whatsapp.net", 443);
     private static final int MESSAGE_LENGTH = 3;
@@ -199,7 +199,8 @@ abstract sealed class SocketSession permits SocketSession.WebSocketSession, Sock
                 return CompletableFuture.completedFuture(null);
             }
 
-            CentralSelector.INSTANCE.addWrite(channel, ByteBuffer.wrap(bytes));
+            CentralSelector.INSTANCE
+                    .addWrite(channel, ByteBuffer.wrap(bytes));
             return CompletableFuture.completedFuture(null);
         }
 
@@ -219,7 +220,7 @@ abstract sealed class SocketSession permits SocketSession.WebSocketSession, Sock
                 }
             }
 
-            public synchronized void register(SocketChannel channel, int ops, ConnectionContext context) {
+            public void register(SocketChannel channel, int ops, ConnectionContext context) {
                 synchronized (lock) {
                     try {
                         channel.register(selector, ops, context);
@@ -247,9 +248,9 @@ abstract sealed class SocketSession permits SocketSession.WebSocketSession, Sock
 
             @Override
             public void run() {
-                try {
-                    while (true) {
-                        int readyChannels = selector.select();
+                while (selector.isOpen()) {
+                    try {
+                        var readyChannels = selector.select();
                         if (readyChannels > 0) {
                             var iter = selector.selectedKeys()
                                     .iterator();
@@ -267,9 +268,9 @@ abstract sealed class SocketSession permits SocketSession.WebSocketSession, Sock
                                 }
                             }
                         }
+                    }catch (IOException ignored) {
+
                     }
-                } catch (IOException error) {
-                    System.getLogger("Socket").log(System.Logger.Level.ERROR, error);
                 }
             }
 
@@ -278,6 +279,7 @@ abstract sealed class SocketSession permits SocketSession.WebSocketSession, Sock
                 if (!(attachment instanceof ConnectionContext ctx)) {
                     return;
                 }
+
                 var channel = (SocketChannel) key.channel();
                 try {
                     if (key.isConnectable()) {

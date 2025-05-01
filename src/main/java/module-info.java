@@ -29,6 +29,7 @@ open module it.auties.cobalt {
     // Mobile api
     requires libphonenumber;
     requires java.net.http;
+    requires net.dongliu.apkparser;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
@@ -47,7 +48,6 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.response;
     exports it.auties.whatsapp.model.payment;
     exports it.auties.whatsapp.model.message.button;
-    exports it.auties.whatsapp.listener;
     exports it.auties.whatsapp.model.privacy;
     exports it.auties.whatsapp.model.poll;
     exports it.auties.whatsapp.model.mobile;

@@ -42,9 +42,6 @@ public final class Medias {
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
 
-    private static volatile HttpClient httpClient;
-    private static final Object httpClientLock = new Object();
-
     public static byte[] getProfilePic(byte[] file) {
         try {
             try (var inputStream = new ByteArrayInputStream(file)) {
@@ -65,12 +62,12 @@ public final class Medias {
     }
 
     @SafeVarargs
-    public static CompletableFuture<byte[]> downloadAsync(URI uri, Map.Entry<String, String>... headers) {
-        return downloadAsync(uri, MOBILE_ANDROID_USER_AGENT, headers);
+    public static CompletableFuture<byte[]> downloadAsync(URI uri, URI proxy, Map.Entry<String, String>... headers) {
+        return downloadAsync(uri, proxy, MOBILE_ANDROID_USER_AGENT, headers);
     }
 
     @SafeVarargs
-    public static CompletableFuture<byte[]> downloadAsync(URI uri, String userAgent, Map.Entry<String, String>... headers) {
+    public static CompletableFuture<byte[]> downloadAsync(URI uri, URI proxy, String userAgent, Map.Entry<String, String>... headers) {
         if (uri == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -83,11 +80,13 @@ public final class Medias {
         for(var header : headers) {
             request.header(header.getKey(), header.getValue());
         }
-        return getOrCreateClient().sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray())
-                .thenApplyAsync(HttpResponse::body);
+        try(var client = createHttpClient(proxy)) {
+            return client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray())
+                    .thenApplyAsync(HttpResponse::body);
+        }
     }
 
-    public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection, String userAgent, URI proxy) {
+    public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection, URI proxy, String userAgent) {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
         var uploadData = type.inflatable() ? Bytes.compress(file) : file;
         var mediaFile = prepareMediaFile(type, uploadData);
@@ -108,20 +107,22 @@ public final class Medias {
                 .header("Accept", "application/json")
                 .headers("Origin", WEB_ORIGIN)
                 .build();
-        return getOrCreateClient().sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
-            var upload = Json.readValue(response.body(), MediaUpload.class);
-            return new MediaFile(
-                    mediaFile.encryptedFile(),
-                    mediaFile.fileSha256(),
-                    mediaFile.fileEncSha256(),
-                    mediaFile.mediaKey(),
-                    mediaFile.fileLength(),
-                    upload.directPath(),
-                    upload.url(),
-                    upload.handle(),
-                    mediaFile.timestamp()
-            );
-        });
+        try(var client = createHttpClient(proxy)) {
+            return client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
+                var upload = Json.readValue(response.body(), MediaUpload.class);
+                return new MediaFile(
+                        mediaFile.encryptedFile(),
+                        mediaFile.fileSha256(),
+                        mediaFile.fileEncSha256(),
+                        mediaFile.mediaKey(),
+                        mediaFile.fileLength(),
+                        upload.directPath(),
+                        upload.url(),
+                        upload.handle(),
+                        mediaFile.timestamp()
+                );
+            });
+        }
     }
 
     private static MediaFile prepareMediaFile(AttachmentType type, byte[] uploadData) {
@@ -144,31 +145,19 @@ public final class Medias {
         return Arrays.copyOf(hmac, 10);
     }
 
-    public static CompletableFuture<Optional<byte[]>> downloadAsync(MutableAttachmentProvider<?> provider) {
+    public static CompletableFuture<Optional<byte[]>> downloadAsync(MutableAttachmentProvider<?> provider, URI proxy) {
        return provider.mediaUrl()
                 .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
                 .map(url -> {
                     var request = HttpRequest.newBuilder()
                             .uri(URI.create(url))
                             .build();
-                    return getOrCreateClient().sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
-                            .thenApplyAsync(response -> handleResponse(provider, response.body()));
+                    try(var client = createHttpClient(proxy)) {
+                        return client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+                                .thenApplyAsync(response -> handleResponse(provider, response.body()));
+                    }
                 })
                 .orElseGet(() -> CompletableFuture.failedFuture(new NoSuchElementException("Missing url and path from media")));
-    }
-
-    private static HttpClient getOrCreateClient() {
-        if(httpClient != null) {
-            return httpClient;
-        }
-
-        synchronized (httpClientLock) {
-            if(httpClient != null) {
-                return httpClient;
-            }
-
-            return httpClient = HttpClient.newHttpClient();
-        }
     }
 
     public static String createMediaUrl(String directPath) {
@@ -359,5 +348,14 @@ public final class Medias {
                 .asFloatBuffer()
                 .get(rawData);
         return rawData;
+    }
+
+    private static HttpClient createHttpClient(URI proxy) {
+        var builder = HttpClient.newBuilder();
+        if (proxy != null) {
+            builder.proxy(Proxies.toProxySelector(proxy));
+            builder.authenticator(Proxies.toAuthenticator(proxy));
+        }
+        return builder.build();
     }
 }

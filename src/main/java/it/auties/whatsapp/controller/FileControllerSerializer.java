@@ -1,10 +1,6 @@
-package it.auties.whatsapp.controller.builtin;
+package it.auties.whatsapp.controller;
 
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.controller.Controller;
-import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.info.ContextInfo;

@@ -13,7 +13,7 @@ import it.auties.whatsapp.api.MediaProxySetting;
 import it.auties.whatsapp.api.TextPreviewSetting;
 import it.auties.whatsapp.api.WebHistorySetting;
 import it.auties.whatsapp.implementation.SocketRequest;
-import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
@@ -34,14 +34,14 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.model.newsletter.NewsletterName;
+import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
-import it.auties.whatsapp.registration.WhatsappMetadata;
+import it.auties.whatsapp.util.AppMetadata;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 
@@ -255,7 +255,7 @@ public final class Store extends Controller<Store> {
      * The non-null list of listeners
      */
     @JsonIgnore
-    final KeySetView<Listener, Boolean> listeners;
+    final KeySetView<WhatsappListener, Boolean> listeners;
 
     /**
      * The request tag, used to create messages
@@ -605,7 +605,14 @@ public final class Store extends Controller<Store> {
     private Stream<Newsletter> findNewslettersByNameStream(String name) {
         return name == null ? Stream.empty() : newsletters.values()
                 .parallelStream()
-                .filter(newsletter -> name.equalsIgnoreCase(newsletter.metadata().name().map(NewsletterName::text).orElse(null)));
+                .filter(newsletter -> hasNewsletterName(newsletter, name));
+    }
+
+    private static boolean hasNewsletterName(Newsletter newsletter, String name) {
+        return newsletter.metadata()
+                .flatMap(NewsletterMetadata::name)
+                .filter(entry -> Objects.equals(entry.text(), name))
+                .isPresent();
     }
 
     /**
@@ -1122,7 +1129,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null collection
      */
-    public Collection<Listener> listeners() {
+    public Collection<WhatsappListener> listeners() {
         return Collections.unmodifiableSet(listeners);
     }
 
@@ -1132,7 +1139,7 @@ public final class Store extends Controller<Store> {
      * @param listener the listener to register
      * @return the same instance
      */
-    public Store addListener(Listener listener) {
+    public Store addListener(WhatsappListener listener) {
         listeners.add(listener);
         return this;
     }
@@ -1143,7 +1150,7 @@ public final class Store extends Controller<Store> {
      * @param listeners the listeners to register
      * @return the same instance
      */
-    public Store addListeners(Collection<Listener> listeners) {
+    public Store addListeners(Collection<WhatsappListener> listeners) {
         this.listeners.addAll(listeners);
         return this;
     }
@@ -1154,7 +1161,7 @@ public final class Store extends Controller<Store> {
      * @param listener the listener to remove
      * @return the same instance
      */
-    public Store removeListener(Listener listener) {
+    public Store removeListener(WhatsappListener listener) {
         listeners.remove(listener);
         return this;
     }
@@ -1298,7 +1305,7 @@ public final class Store extends Controller<Store> {
     @JsonGetter("version")
     public Version version() {
         if(version == null) {
-            this.version = WhatsappMetadata.getVersion(device.platform());
+            this.version = AppMetadata.getVersion(device.platform());
         }
 
         return version.join();
@@ -1522,7 +1529,7 @@ public final class Store extends Controller<Store> {
         this.device = device;
         this.version = device.appVersion()
                 .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> WhatsappMetadata.getVersion(device.platform()));
+                .orElseGet(() -> AppMetadata.getVersion(device.platform()));
         return this;
     }
 

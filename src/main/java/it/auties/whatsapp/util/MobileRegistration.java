@@ -1,4 +1,4 @@
-package it.auties.whatsapp.registration;
+package it.auties.whatsapp.util;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.AsyncVerificationCodeSupplier;
@@ -13,7 +13,6 @@ import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.response.AbPropsResponse;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.util.*;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -26,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-public final class WhatsappRegistration {
+public final class MobileRegistration {
     public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
 
@@ -36,7 +35,7 @@ public final class WhatsappRegistration {
     private final AsyncVerificationCodeSupplier codeHandler;
     private final VerificationCodeMethod method;
 
-    public WhatsappRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
+    public MobileRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
         this.store = store;
         this.keys = keys;
         this.codeHandler = codeHandler;
@@ -258,13 +257,13 @@ public final class WhatsappRegistration {
     private CompletableFuture<Map<String, Object>> getRegistrationOptions(Store store, Keys keys, boolean useToken, Entry<String, Object>... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : WhatsappMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version());
+        var tokenFuture = !useToken ? CompletableFuture.completedFuture(null) : AppMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version());
         return tokenFuture.thenApplyAsync(token -> {
-            var certificate = store.device().platform().isBusiness() ? WhatsappMetadata.generateBusinessCertificate(keys) : null;
+            var certificate = store.device().platform().isBusiness() ? AppMetadata.generateBusinessCertificate(keys) : null;
             var requiredAttributes = Arrays.stream(attributes)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (first, second) -> first, LinkedHashMap::new));
-            var result = Attributes.of()
+            return Attributes.of()
                     .put("cc", phoneNumber.countryCode().prefix())
                     .put("in", phoneNumber.numberWithoutPrefix())
                     .put("rc", store.releaseChannel().index())
@@ -285,8 +284,6 @@ public final class WhatsappRegistration {
                     .put("token", token, useToken)
                     .putAll(requiredAttributes)
                     .toMap();
-            System.out.println(Json.writeValueAsString(result, true));
-            return result;
         });
     }
 

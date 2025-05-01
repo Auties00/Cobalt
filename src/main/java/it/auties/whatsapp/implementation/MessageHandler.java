@@ -211,7 +211,12 @@ class MessageHandler {
         textMessage.setDescription(match.result().siteDescription());
         textMessage.setTitle(match.result().title());
         textMessage.setPreviewType(videoUri.isPresent() ? TextMessage.PreviewType.VIDEO : TextMessage.PreviewType.NONE);
-        return imageThumbnail.map(data -> Medias.downloadAsync(data.uri()).thenAccept(textMessage::setThumbnail))
+        var proxy = switch (socketHandler.store().mediaProxySetting()) {
+            case NONE, UPLOADS -> null;
+            case DOWNLOADS, ALL -> socketHandler.store().proxy().orElse(null);
+        };
+        return imageThumbnail.map(data -> Medias.downloadAsync(data.uri(), proxy)
+                        .thenAccept(textMessage::setThumbnail))
                 .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
 
@@ -232,7 +237,7 @@ class MessageHandler {
                 .proxy()
                 .filter(ignored -> socketHandler.store().mediaProxySetting().allowsUploads())
                 .orElse(null);
-        return Medias.upload(media, attachmentType, mediaConnection, userAgent, proxy)
+        return Medias.upload(media, attachmentType, mediaConnection, proxy, userAgent)
                 .thenAccept(upload -> attributeMediaMessage(mediaMessage, upload));
     }
 
@@ -1223,9 +1228,15 @@ class MessageHandler {
     private CompletableFuture<HistorySync> downloadHistorySyncNotification(HistorySyncNotification notification) {
         return notification.initialHistBootstrapInlinePayload()
                 .map(result -> CompletableFuture.completedFuture(HistorySyncSpec.decode(Bytes.decompress(result))))
-                .orElseGet(() -> Medias.downloadAsync(notification)
-                        .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
-                        .thenApplyAsync(result -> HistorySyncSpec.decode(Bytes.decompress(result))));
+                .orElseGet(() -> {
+                    var proxy = switch (socketHandler.store().mediaProxySetting()) {
+                        case NONE, UPLOADS -> null;
+                        case DOWNLOADS, ALL -> socketHandler.store().proxy().orElse(null);
+                    };
+                    return Medias.downloadAsync(notification, proxy)
+                            .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
+                            .thenApplyAsync(result -> HistorySyncSpec.decode(Bytes.decompress(result)));
+                });
     }
 
     private void onHistoryNotification(HistorySync history) {

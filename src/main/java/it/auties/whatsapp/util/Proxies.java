@@ -12,7 +12,7 @@ public final class Proxies {
 
     public static ProxySelector toProxySelector(URI uri) {
         if (uri == null) {
-            return null;
+            return ProxySelector.getDefault();
         }
 
         var scheme = Objects.requireNonNull(uri.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(uri));
@@ -25,7 +25,7 @@ public final class Proxies {
 
     public static Proxy toProxy(URI uri) {
         if (uri == null) {
-            return Proxy.NO_PROXY;
+            return null;
         }
 
         var scheme = Objects.requireNonNull(uri.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(uri));

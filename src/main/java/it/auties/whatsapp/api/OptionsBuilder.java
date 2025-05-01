@@ -2,7 +2,6 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 
 import java.net.URI;

@@ -203,27 +203,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>process-test-annotations</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <annotationProcessorPath>
-                                    <groupId>${groupId}</groupId>
-                                    <artifactId>${artifactId}</artifactId>
-                                    <version>${version}</version>
-                                </annotationProcessorPath>
-                            </annotationProcessorPaths>
-                            <annotationProcessors>
-                                <annotationProcessor>it.auties.whatsapp.listener.RegisterListenerProcessor</annotationProcessor>
-                            </annotationProcessors>
-                        </configuration>
-                    </execution>
-                </executions>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -314,14 +293,7 @@
             <version>${libphonenumber.version}</version>
         </dependency>
 
-        <!-- Parse PLIST files for Apple APNS (Mobile API) -->
-        <dependency>
-            <groupId>com.googlecode.plist</groupId>
-            <artifactId>dd-plist</artifactId>
-            <version>${plist.version}</version>
-        </dependency>
-
-        <!-- Parse Android APK for token generation (Mobile API) -->
+        <!-- Parse Android APK (Mobile API) -->
         <dependency>
             <groupId>net.dongliu</groupId>
             <artifactId>apk-parser</artifactId>

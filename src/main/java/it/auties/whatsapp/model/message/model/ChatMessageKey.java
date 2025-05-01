@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in
@@ -37,7 +38,7 @@ public final class ChatMessageKey {
     public ChatMessageKey(Jid chatJid, boolean fromMe, String id, Jid senderJid) {
         this.chatJid = chatJid;
         this.fromMe = fromMe;
-        this.id = Objects.requireNonNull(id);
+        this.id = Objects.requireNonNullElseGet(id, () -> UUID.randomUUID().toString());
         this.senderJid = senderJid;
     }
 

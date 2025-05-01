@@ -76,7 +76,7 @@ import static it.auties.whatsapp.util.SignalConstants.KEY_BUNDLE_TYPE;
 class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final int PRE_KEYS_UPLOAD_CHUNK = 10;
-    private static final int PING_INTERVAL = 10;
+    private static final int PING_INTERVAL = 20;
     private static final int MAX_MESSAGE_RETRIES = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
     private static final byte[][] CALL_RELAY = new byte[][]{
@@ -462,19 +462,26 @@ class StreamHandler {
         var newsletter = socketHandler.store()
                 .findNewsletterByJid(updateJson.newsletter().jid())
                 .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-        var oldMetadata = newsletter.metadata();
-        var updatedMetadata = updateJson.newsletter().metadata();
-        var mergedMetadata = new NewsletterMetadata(
-                updatedMetadata.name().or(oldMetadata::name),
-                updatedMetadata.description().or(oldMetadata::description),
-                updatedMetadata.picture().or(oldMetadata::picture),
-                updatedMetadata.handle().or(oldMetadata::handle),
-                updatedMetadata.settings().or(oldMetadata::settings),
-                updatedMetadata.invite().or(oldMetadata::invite),
-                updatedMetadata.verification().or(oldMetadata::verification),
-                updatedMetadata.creationTimestampSeconds().isPresent() ? updatedMetadata.creationTimestampSeconds() : oldMetadata.creationTimestampSeconds()
-        );
-        newsletter.setMetadata(mergedMetadata);
+        var updatedMetadata = updateJson.newsletter()
+                .metadata()
+                .orElse(null);
+        var oldMetadata = newsletter.metadata()
+                .orElse(null);
+        if(oldMetadata == null) {
+            newsletter.setMetadata(updatedMetadata);
+        }else if (updatedMetadata != null) {
+            var mergedMetadata = new NewsletterMetadata(
+                    updatedMetadata.name().or(oldMetadata::name),
+                    updatedMetadata.description().or(oldMetadata::description),
+                    updatedMetadata.picture().or(oldMetadata::picture),
+                    updatedMetadata.handle().or(oldMetadata::handle),
+                    updatedMetadata.settings().or(oldMetadata::settings),
+                    updatedMetadata.invite().or(oldMetadata::invite),
+                    updatedMetadata.verification().or(oldMetadata::verification),
+                    updatedMetadata.creationTimestampSeconds().isPresent() ? updatedMetadata.creationTimestampSeconds() : oldMetadata.creationTimestampSeconds()
+            );
+            newsletter.setMetadata(mergedMetadata);
+        }
     }
 
     private void handleNewsletterJoin(Node update) {
@@ -934,7 +941,7 @@ class StreamHandler {
         switch (socketHandler.store().clientType()) {
             case WEB -> finishWebLogin();
             case MOBILE -> finishMobileLogin();
-        };
+        }
     }
 
     private void finishWebLogin() {
@@ -1160,7 +1167,11 @@ class StreamHandler {
     protected CompletableFuture<Void> queryNewsletters() {
         var query = new SubscribedNewslettersRequest(new SubscribedNewslettersRequest.Variable());
         return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), Json.writeValueAsBytes(query)))
-                .thenAcceptAsync(this::parseNewsletters)
+                .thenAcceptAsync(result -> {
+                    if(socketHandler.store().webHistorySetting().hasNewsletters()) {
+                        parseNewsletters(result);
+                    }
+                })
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
     }
 
@@ -1184,7 +1195,8 @@ class StreamHandler {
             var newsletter = data.get(index);
             socketHandler.store().addNewsletter(newsletter);
             if(!noMessages) {
-                futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES);
+                futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES)
+                        .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
             }
         }
 
@@ -1355,13 +1367,11 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> updateUserAbout(boolean update) {
-        var jid = socketHandler.store().jid();
-        if (jid.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        return socketHandler.queryAbout(jid.get().toSimpleJid())
-                .thenAcceptAsync(result -> parseNewAbout(result.orElse(null), update));
+        return socketHandler.store()
+                .jid()
+                .map(value -> socketHandler.queryAbout(value.toSimpleJid())
+                        .thenAcceptAsync(result -> parseNewAbout(result.orElse(null), update)))
+                .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
 
     private void parseNewAbout(ContactAboutResponse result, boolean update) {
@@ -1381,13 +1391,11 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> updateUserPicture(boolean update) {
-        var jid = socketHandler.store().jid();
-        if (jid.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        return socketHandler.queryPicture(jid.get().toSimpleJid())
-                .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
+        return socketHandler.store()
+                .jid()
+                .map(value -> socketHandler.queryPicture(value.toSimpleJid())
+                        .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update)))
+                .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
 
     private void handleUserPictureChange(URI newPicture, boolean update) {
@@ -1513,13 +1521,15 @@ class StreamHandler {
             case QrHandler qrHandler -> {
                 printQrCode(qrHandler, container);
                 sendConfirmNode(node, null);
+                schedulePing();
             }
-            case PairingCodeHandler codeHandler -> askPairingCode(codeHandler);
+            case PairingCodeHandler codeHandler -> askPairingCode(codeHandler)
+                    .thenRun(this::schedulePing);
             default -> throw new IllegalArgumentException("Cannot verify account: unknown verification method");
         }
     }
 
-    private void askPairingCode(PairingCodeHandler codeHandler) {
+    private CompletableFuture<Void> askPairingCode(PairingCodeHandler codeHandler) {
         var code = Bytes.bytesToCrockford(Bytes.random(5));
         var registration = Node.of(
                 "link_code_companion_reg",
@@ -1530,7 +1540,7 @@ class StreamHandler {
                 Node.of("companion_platform_display", "Chrome (Linux)".getBytes(StandardCharsets.UTF_8)),
                 Node.of("link_code_pairing_nonce", 0)
         );
-        socketHandler.sendQuery("set", "md", registration).thenAccept(result -> {
+        return socketHandler.sendQuery("set", "md", registration).thenAccept(result -> {
             lastLinkCodeKey.set(code);
             codeHandler.accept(code);
         });

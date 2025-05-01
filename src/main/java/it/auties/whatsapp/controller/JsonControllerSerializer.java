@@ -1,7 +1,5 @@
-package it.auties.whatsapp.controller.builtin;
+package it.auties.whatsapp.controller;
 
-import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.util.Json;
@@ -13,14 +11,14 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class JsonControllerSerializer extends FileControllerSerializer {
+class JsonControllerSerializer extends FileControllerSerializer {
     private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
 
-    public JsonControllerSerializer() {
+    JsonControllerSerializer() {
         this(DEFAULT_SERIALIZER_PATH);
     }
 
-    public JsonControllerSerializer(Path baseDirectory) {
+    JsonControllerSerializer(Path baseDirectory) {
         super(baseDirectory);
     }
 

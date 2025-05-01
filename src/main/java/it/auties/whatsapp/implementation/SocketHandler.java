@@ -7,7 +7,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.io.BinaryDecoder;
 import it.auties.whatsapp.io.BinaryEncoder;
-import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -29,6 +29,8 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
+import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -36,8 +38,10 @@ import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest;
 import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest.Input;
 import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest.Variable;
 import it.auties.whatsapp.model.request.MessageSendRequest;
+import it.auties.whatsapp.model.request.QueryNewsletterRequest;
 import it.auties.whatsapp.model.response.CommunityLinkedGroupsResponse;
 import it.auties.whatsapp.model.response.ContactAboutResponse;
+import it.auties.whatsapp.model.response.NewsletterResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessageBuilder;
@@ -91,10 +95,10 @@ public class SocketHandler implements SocketListener {
     private final AppStateHandler appStateHandler;
     private final ErrorHandler errorHandler;
     private final AtomicLong requestsCounter;
-    private final ScheduledExecutorService scheduler;
-    private final List<ScheduledFuture<?>> scheduledTasks;
+    private volatile ScheduledExecutorService scheduler;
     private final ConcurrentMap<Jid, List<ChatPastParticipant>> pastParticipants;
     private final Semaphore writeSemaphore;
+    private final Map<Jid, ChatMetadata> chatMetadataCache;
     private volatile SocketState state;
     private volatile CompletableFuture<Void> loginFuture;
     private volatile boolean pinging;
@@ -112,10 +116,9 @@ public class SocketHandler implements SocketListener {
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, ErrorHandler.toTerminal());
         this.requestsCounter = new AtomicLong();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
-        this.scheduledTasks = new CopyOnWriteArrayList<>();
         this.writeSemaphore = new Semaphore(1, true);
         this.pastParticipants = new ConcurrentHashMap<>();
+        this.chatMetadataCache = new ConcurrentHashMap<>();
     }
 
     private void onShutdown(boolean reconnect) {
@@ -124,17 +127,11 @@ public class SocketHandler implements SocketListener {
             store.dispose();
         }
 
-        killScheduledTasks();
+        scheduler.shutdownNow();
+        this.scheduler = null;
         if (!reconnect) {
             dispose();
         }
-    }
-
-    private void killScheduledTasks() {
-        for(var scheduledTask : scheduledTasks) {
-            scheduledTask.cancel(true);
-        }
-        scheduledTasks.clear();
     }
 
     protected void onSocketEvent(SocketEvent event) {
@@ -144,7 +141,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    private void callListenersAsync(Consumer<Listener> consumer) {
+    private void callListenersAsync(Consumer<WhatsappListener> consumer) {
         store.listeners()
                 .forEach(listener -> Thread.startVirtualThread(() -> invokeListenerSafe(consumer, listener)));
     }
@@ -626,13 +623,18 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Void> queryNewsletterMessages(JidProvider newsletterJid, int count) {
-        var newsletter = store.findNewsletterByJid(newsletterJid)
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-        var newsletterInvite = newsletter.metadata()
-                .invite()
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter key"));
-        return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterInvite)))
-                .thenAcceptAsync(result -> onNewsletterMessages(newsletter, result));
+        return store.findNewsletterByJid(newsletterJid)
+                .map(entry -> CompletableFuture.completedFuture(Optional.of(entry)))
+                .orElseGet(() -> queryNewsletter(newsletterJid.toJid(), NewsletterViewerRole.GUEST))
+                .thenCompose(newsletter -> {
+                    var newsletterInvite = newsletter.orElseThrow(() -> new NoSuchElementException("Cannot querty newsletter " + newsletterJid))
+                            .metadata()
+                            .orElseThrow(() -> new NoSuchElementException("Cannot query newsletter messages: missing metadata " + newsletterJid))
+                            .invite()
+                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter key"));
+                    return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterInvite)))
+                            .thenAcceptAsync(result -> onNewsletterMessages(newsletter.get(), result));
+                });
     }
 
     private void onNewsletterMessages(Newsletter newsletter, Node result) {
@@ -644,9 +646,18 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<ChatMetadata> queryGroupMetadata(JidProvider group) {
+        var metadata = chatMetadataCache.get(group.toJid());
+        if(metadata != null) {
+            return CompletableFuture.completedFuture(metadata);
+        }
+
         var body = Node.of("query", Map.of("request", "interactive"));
         return sendQuery(group.toJid(), "get", "w:g2", body)
-                .thenComposeAsync(this::handleGroupMetadata);
+                .thenComposeAsync(this::handleGroupMetadata)
+                .thenApply(result -> {
+                    chatMetadataCache.put(group.toJid(), result);
+                    return result;
+                });
     }
 
     public CompletableFuture<ChatMetadata> handleGroupMetadata(Node response) {
@@ -963,13 +974,13 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public void callListenersSync(Consumer<Listener> consumer) {
+    public void callListenersSync(Consumer<WhatsappListener> consumer) {
         for(var listener : store.listeners()) {
             invokeListenerSafe(consumer, listener);
         }
     }
 
-    private void invokeListenerSafe(Consumer<Listener> consumer, Listener listener) {
+    private void invokeListenerSafe(Consumer<WhatsappListener> consumer, WhatsappListener listener) {
         try {
             consumer.accept(listener);
         } catch (Throwable throwable) {
@@ -1136,7 +1147,6 @@ public class SocketHandler implements SocketListener {
         streamHandler.dispose();
         messageHandler.dispose();
         appStateHandler.dispose();
-        scheduler.shutdownNow();
         confirmConnection();
     }
 
@@ -1209,14 +1219,23 @@ public class SocketHandler implements SocketListener {
 
     @SuppressWarnings("SameParameterValue")
     protected void scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
-        var result = scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
-        scheduledTasks.add(result);
+        createScheduler();
+        scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
     }
 
     protected ScheduledFuture<?> scheduleDelayed(Runnable command, long delay) {
-        var result = scheduler.schedule(command, delay, TimeUnit.SECONDS);
-        scheduledTasks.add(result);
-        return result;
+        createScheduler();
+        return scheduler.schedule(command, delay, TimeUnit.SECONDS);
+    }
+
+    private void createScheduler() {
+        if(scheduler == null || scheduler.isShutdown()) {
+            synchronized (this) {
+                if(scheduler == null || scheduler.isShutdown()) {
+                    this.scheduler = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
+                }
+            }
+        }
     }
 
     protected void sendPing() {
@@ -1271,4 +1290,19 @@ public class SocketHandler implements SocketListener {
         streamHandler.queryNewsletters()
                 .exceptionallyAsync(throwable -> handleFailure(HISTORY_SYNC, throwable));
     }
+
+    public CompletableFuture<Optional<Newsletter>> queryNewsletter(Jid newsletterJid, NewsletterViewerRole role) {
+        var key = new QueryNewsletterRequest.Input(newsletterJid, "JID", role);
+        var request = new QueryNewsletterRequest(new QueryNewsletterRequest.Variable(key, true, false, true));
+        return sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6620195908089573"), Json.writeValueAsBytes(request)))
+                .thenApplyAsync(this::parseNewsletterQuery);
+    }
+
+    private Optional<Newsletter> parseNewsletterQuery(Node response) {
+        return response.findChild("result")
+                .flatMap(Node::contentAsString)
+                .flatMap(NewsletterResponse::ofJson)
+                .map(NewsletterResponse::newsletter);
+    }
+
 }

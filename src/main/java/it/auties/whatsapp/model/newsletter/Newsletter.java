@@ -103,8 +103,8 @@ public final class Newsletter implements JidProvider {
         return this;
     }
 
-    public NewsletterMetadata metadata() {
-        return metadata;
+    public Optional<NewsletterMetadata> metadata() {
+        return Optional.ofNullable(metadata);
     }
 
     public Optional<NewsletterViewerMetadata> viewerMetadata() {

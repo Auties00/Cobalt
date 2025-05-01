@@ -6,7 +6,7 @@ import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.response.RegistrationResponse;
-import it.auties.whatsapp.registration.WhatsappRegistration;
+import it.auties.whatsapp.util.MobileRegistration;
 
 import java.net.URI;
 import java.util.Objects;
@@ -90,7 +90,7 @@ public sealed class MobileRegistrationBuilder {
                 var number = PhoneNumber.of(phoneNumber);
                 keys.setPhoneNumber(number);
                 store.setPhoneNumber(number);
-                var registration = new WhatsappRegistration(
+                var registration = new MobileRegistration(
                         store,
                         keys,
                         verificationCodeSupplier,
@@ -130,7 +130,7 @@ public sealed class MobileRegistrationBuilder {
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             if (!keys.registered()) {
-                var registration = new WhatsappRegistration(
+                var registration = new MobileRegistration(
                         store,
                         keys,
                         verificationCodeSupplier,
@@ -202,7 +202,7 @@ public sealed class MobileRegistrationBuilder {
 
             Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
-            var registration = new WhatsappRegistration(
+            var registration = new MobileRegistration(
                     store,
                     keys,
                     verificationCodeSupplier,

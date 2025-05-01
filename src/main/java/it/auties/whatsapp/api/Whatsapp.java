@@ -17,9 +17,6 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.implementation.SocketHandler;
 import it.auties.whatsapp.implementation.SocketState;
-import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.listener.ListenerConsumer;
-import it.auties.whatsapp.listener.RegisterListenerProcessor;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -55,7 +52,6 @@ import it.auties.whatsapp.model.request.*;
 import it.auties.whatsapp.model.request.UpdateNewsletterRequest.UpdatePayload;
 import it.auties.whatsapp.model.response.*;
 import it.auties.whatsapp.model.setting.Setting;
-import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
@@ -97,17 +93,7 @@ public class Whatsapp {
     // The instances are added and removed when the client connects/disconnects
     // This is to make sure that the instances remain in memory only as long as it's needed
     private static final Map<UUID, Whatsapp> instances = new ConcurrentHashMap<>();
-    private static final MethodHandle registerListenersMethod = getRegisterListenersMethod();
     private static final ConcurrentMap<Jid, Boolean> usersCache = new ConcurrentHashMap<>();
-
-    private static MethodHandle getRegisterListenersMethod() {
-        try {
-            return MethodHandles.publicLookup()
-                    .findStatic(Class.forName(RegisterListenerProcessor.qualifiedClassName()), RegisterListenerProcessor.methodName(), MethodType.methodType(Whatsapp.class));
-        }catch (ReflectiveOperationException exception) {
-            return null;
-        }
-    }
 
     static Optional<Whatsapp> getInstanceByUuid(UUID uuid) {
         return Optional.ofNullable(instances.get(uuid));
@@ -153,7 +139,6 @@ public class Whatsapp {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
         this.trustedContacts = ConcurrentHashMap.newKeySet();
         handleDisconnections(store);
-        registerListenersAutomatically(store);
     }
 
     private void handleDisconnections(Store store) {
@@ -162,18 +147,6 @@ public class Whatsapp {
                 removeInstanceByUuid(store.uuid());
             }
         });
-    }
-
-    private void registerListenersAutomatically(Store store) {
-        if (!store.autodetectListeners() || registerListenersMethod == null) {
-            return;
-        }
-
-        try {
-            registerListenersMethod.invokeExact(null, this);
-        } catch (Throwable exception) {
-            throw new RuntimeException("Cannot register listeners automatically", exception);
-        }
     }
 
     /**
@@ -1683,7 +1656,11 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> changeGroupPicture(JidProvider group, URI image) {
         Validate.isTrue(group.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a group/community");
-        var imageFuture = image == null ? CompletableFuture.completedFuture((byte[]) null) : Medias.downloadAsync(image);
+        var proxy = switch (store().mediaProxySetting()) {
+            case NONE, DOWNLOADS -> null;
+            case UPLOADS, ALL -> store().proxy().orElse(null);
+        };
+        var imageFuture = image == null ? CompletableFuture.completedFuture((byte[]) null) : Medias.downloadAsync(image, proxy);
         return imageFuture.thenComposeAsync(imageResult -> changeGroupPicture(group, imageResult));
     }
 
@@ -2525,7 +2502,11 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(decodedMedia);
         }
 
-        return Medias.downloadAsync(mediaMessage).thenApply(result -> {
+        var proxy = switch (store().mediaProxySetting()) {
+            case NONE, UPLOADS -> null;
+            case DOWNLOADS, ALL -> store().proxy().orElse(null);
+        };
+        return Medias.downloadAsync(mediaMessage, proxy).thenApply(result -> {
             result.ifPresent(mediaMessage::setDecodedMedia);
             return result;
         });
@@ -2934,335 +2915,6 @@ public class Whatsapp {
     }
 
     /**
-     * Unlinks all the companions of this device
-     *
-     * @return a future
-     */
-    public CompletableFuture<Whatsapp> unlinkDevices() {
-        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")))
-                .thenRun(() -> store().removeLinkedCompanions())
-                .thenApply(ignored -> this);
-    }
-
-    /**
-     * Unlinks a specific companion
-     *
-     * @param companion the non-null companion to unlink
-     * @return a future
-     */
-    public CompletableFuture<Whatsapp> unlinkDevice(Jid companion) {
-        Validate.isTrue(companion.hasAgent(), "Expected companion, got jid without agent: %s", companion);
-        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("jid", companion, "reason", "user_initiated")))
-                .thenRun(() -> store().removeLinkedCompanion(companion))
-                .thenApply(ignored -> this);
-    }
-
-    /**
-     * Links a companion to this device
-     *
-     * @param qrCode the non-null qr code as an image
-     * @return a future
-     */
-    public CompletableFuture<CompanionLinkResult> linkDevice(byte[] qrCode) {
-        try {
-            var inputStream = new ByteArrayInputStream(qrCode);
-            var luminanceSource = new BufferedImageLuminanceSource(ImageIO.read(inputStream));
-            var hybridBinarizer = new HybridBinarizer(luminanceSource);
-            var binaryBitmap = new BinaryBitmap(hybridBinarizer);
-            var reader = new QRCodeReader();
-            var result = reader.decode(binaryBitmap);
-            return linkDevice(result.getText());
-        } catch (IOException | NotFoundException | ChecksumException | FormatException exception) {
-            throw new IllegalArgumentException("Cannot read qr code", exception);
-        }
-    }
-
-    /**
-     * Links a companion to this device
-     * Mobile api only
-     *
-     * @param qrCodeData the non-null qr code as a String
-     * @return a future
-     */
-    public CompletableFuture<CompanionLinkResult> linkDevice(String qrCodeData) {
-        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Device linking is only available for the mobile api");
-        var maxDevices = getMaxLinkedDevices();
-        if (store().linkedDevices().size() > maxDevices) {
-            return CompletableFuture.completedFuture(CompanionLinkResult.MAX_DEVICES_ERROR);
-        }
-
-        var qrCodeParts = qrCodeData.split(",");
-        Validate.isTrue(qrCodeParts.length >= 4, "Expected qr code to be made up of at least four parts");
-        var ref = qrCodeParts[0];
-        var publicKey = Base64.getDecoder().decode(qrCodeParts[1]);
-        var advIdentity = Base64.getDecoder().decode(qrCodeParts[2]);
-        var identityKey = Base64.getDecoder().decode(qrCodeParts[3]);
-        var deviceIdentity = new DeviceIdentityBuilder()
-                .rawId(ThreadLocalRandom.current().nextInt(800_000_000, 900_000_000))
-                .keyIndex(store().linkedDevices().size() + 1)
-                .timestamp(Clock.nowSeconds())
-                .build();
-        var deviceIdentityBytes = DeviceIdentitySpec.encode(deviceIdentity);
-        var accountSignatureMessage = Bytes.concat(
-                ACCOUNT_SIGNATURE_HEADER,
-                deviceIdentityBytes,
-                advIdentity
-        );
-        var accountSignature = Curve25519.sign(keys().identityKeyPair().privateKey(), accountSignatureMessage, true);
-        var signedDeviceIdentity = new SignedDeviceIdentityBuilder()
-                .accountSignature(accountSignature)
-                .accountSignatureKey(keys().identityKeyPair().publicKey())
-                .details(deviceIdentityBytes)
-                .build();
-        var signedDeviceIdentityBytes = SignedDeviceIdentitySpec.encode(signedDeviceIdentity);
-        var deviceIdentityHmac = new SignedDeviceIdentityHMACBuilder()
-                .hmac(Hmac.calculateSha256(signedDeviceIdentityBytes, identityKey))
-                .details(signedDeviceIdentityBytes)
-                .build();
-        var knownDevices = store()
-                .linkedDevices()
-                .stream()
-                .map(Jid::device)
-                .toList();
-        var keyIndexList = new KeyIndexListBuilder()
-                .rawId(deviceIdentity.rawId())
-                .timestamp(deviceIdentity.timestamp())
-                .validIndexes(knownDevices)
-                .build();
-        var keyIndexListBytes = KeyIndexListSpec.encode(keyIndexList);
-        var deviceSignatureMessage = Bytes.concat(DEVICE_MOBILE_SIGNATURE_HEADER, keyIndexListBytes);
-        var keyAccountSignature = Curve25519.sign(keys().identityKeyPair().privateKey(), deviceSignatureMessage, true);
-        var signedKeyIndexList = new SignedKeyIndexListBuilder()
-                .accountSignature(keyAccountSignature)
-                .details(keyIndexListBytes)
-                .build();
-        return socketHandler.sendQuery("set", "md", Node.of("pair-device",
-                        Node.of("ref", ref),
-                        Node.of("ref-cert"),
-                        Node.of("pub-key", publicKey),
-                        Node.of("device-identity", SignedDeviceIdentityHMACSpec.encode(deviceIdentityHmac)),
-                        Node.of("key-index-list", Map.of("ts", deviceIdentity.timestamp()), SignedKeyIndexListSpec.encode(signedKeyIndexList))))
-                .thenComposeAsync(result -> handleCompanionPairing(result, deviceIdentity.keyIndex()));
-    }
-
-    private int getMaxLinkedDevices() {
-        var maxDevices = socketHandler.store().properties().get("linked_device_max_count");
-        if (maxDevices == null) {
-            return MAX_COMPANIONS;
-        }
-
-        try {
-            return Integer.parseInt(maxDevices);
-        } catch (NumberFormatException exception) {
-            return MAX_COMPANIONS;
-        }
-    }
-
-    private CompletableFuture<CompanionLinkResult> handleCompanionPairing(Node result, int keyId) {
-        if (result.attributes().hasValue("type", "error")) {
-            var error = result.findChild("error")
-                    .filter(entry -> entry.attributes().hasValue("text", "resource-limit"))
-                    .map(entry -> CompanionLinkResult.MAX_DEVICES_ERROR)
-                    .orElse(CompanionLinkResult.RETRY_ERROR);
-            return CompletableFuture.completedFuture(error);
-        }
-
-        var device = result.findChild("device")
-                .flatMap(entry -> entry.attributes().getOptionalJid("jid"))
-                .orElse(null);
-        if (device == null) {
-            return CompletableFuture.completedFuture(CompanionLinkResult.RETRY_ERROR);
-        }
-
-        return awaitCompanionRegistration(device)
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "encrypt", Node.of("key", Node.of("user", Map.of("jid", device)))))
-                .thenComposeAsync(encryptResult -> handleCompanionEncrypt(encryptResult, device, keyId));
-    }
-
-    private CompletableFuture<Void> awaitCompanionRegistration(Jid device) {
-        var future = new CompletableFuture<Void>();
-        addLinkedDevicesListener((Collection<Jid> data) -> {
-            if (data.contains(device) && !future.isDone()) {
-                future.complete(null);
-            }
-        });
-        return future.orTimeout(COMPANION_PAIRING_TIMEOUT, TimeUnit.SECONDS)
-                .exceptionally(ignored -> null);
-    }
-
-    private CompletableFuture<CompanionLinkResult> handleCompanionEncrypt(Node result, Jid companion, int keyId) {
-        store().addLinkedDevice(companion, keyId);
-        socketHandler.parseSessions(result);
-        return sendInitialSecurityMessage(companion)
-                .thenComposeAsync(ignore -> sendAppStateKeysMessage(companion))
-                .thenComposeAsync(ignore -> sendInitialNullMessage(companion))
-                .thenComposeAsync(ignore -> sendInitialStatusMessage(companion))
-                .thenComposeAsync(ignore -> sendPushNamesMessage(companion))
-                .thenComposeAsync(ignore -> sendInitialBootstrapMessage(companion))
-                .thenComposeAsync(ignore -> sendRecentMessage(companion))
-                .thenComposeAsync(ignored -> syncCompanionState(companion))
-                .thenApplyAsync(ignored -> CompanionLinkResult.SUCCESS);
-    }
-
-    private CompletableFuture<Void> syncCompanionState(Jid companion) {
-        return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync",
-                        Node.of("collection", Map.of("order", 4, "name", "regular_high")),
-                        Node.of("collection", Map.of("order", 2, "name", "regular")),
-                        Node.of("collection", Map.of("order", 3, "name", "regular_low")),
-                        Node.of("collection", Map.of("order", 1, "name", "critical_block"))))
-                .thenComposeAsync(ignored -> {
-                    return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync",
-                            Node.of("collection", Map.of("version", 1, "name", "regular_high")),
-                            Node.of("collection", Map.of("version", 1, "name", "regular")),
-                            Node.of("collection", Map.of("version", 1, "name", "regular_low")),
-                            Node.of("collection", Map.of("version", 1, "name", "critical_block"))
-                    )).thenRun(() -> {});
-                });
-    }
-
-    private CompletableFuture<Void> sendRecentMessage(Jid jid) {
-        var pushNames = new HistorySyncBuilder()
-                .conversations(List.of())
-                .syncType(HistorySync.Type.RECENT)
-                .build();
-        return sendHistoryProtocolMessage(jid, pushNames, HistorySync.Type.PUSH_NAME);
-    }
-
-    private CompletableFuture<Void> sendPushNamesMessage(Jid jid) {
-        var pushNamesData = store()
-                .contacts()
-                .stream()
-                .filter(entry -> entry.chosenName().isPresent())
-                .map(entry -> new PushName(entry.jid().toString(), entry.chosenName()))
-                .toList();
-        var pushNames = new HistorySyncBuilder()
-                .pushNames(pushNamesData)
-                .syncType(HistorySync.Type.PUSH_NAME)
-                .build();
-        return sendHistoryProtocolMessage(jid, pushNames, HistorySync.Type.PUSH_NAME);
-    }
-
-    private CompletableFuture<Void> sendInitialStatusMessage(Jid jid) {
-        var initialStatus = new HistorySyncBuilder()
-                .statusV3Messages(new ArrayList<>(store().status()))
-                .syncType(HistorySync.Type.INITIAL_STATUS_V3)
-                .build();
-        return sendHistoryProtocolMessage(jid, initialStatus, HistorySync.Type.INITIAL_STATUS_V3);
-    }
-
-    private CompletableFuture<Void> sendInitialBootstrapMessage(Jid jid) {
-        var chats = store().chats()
-                .stream()
-                .toList();
-        var initialBootstrap = new HistorySyncBuilder()
-                .conversations(chats)
-                .syncType(HistorySync.Type.INITIAL_BOOTSTRAP)
-                .build();
-        return sendHistoryProtocolMessage(jid, initialBootstrap, HistorySync.Type.INITIAL_BOOTSTRAP);
-    }
-
-    private CompletableFuture<Void> sendInitialNullMessage(Jid jid) {
-        var pastParticipants = store().chats()
-                .stream()
-                .map(this::getPastParticipants)
-                .filter(Objects::nonNull)
-                .toList();
-        var initialBootstrap = new HistorySyncBuilder()
-                .syncType(HistorySync.Type.NON_BLOCKING_DATA)
-                .pastParticipants(pastParticipants)
-                .build();
-        return sendHistoryProtocolMessage(jid, initialBootstrap, null);
-    }
-
-    private GroupPastParticipants getPastParticipants(Chat chat) {
-        var pastParticipants = socketHandler.pastParticipants().get(chat.jid());
-        if (pastParticipants == null || pastParticipants.isEmpty()) {
-            return null;
-        }
-
-        return new GroupPastParticipantsBuilder()
-                .groupJid(chat.jid())
-                .pastParticipants(new ArrayList<>(pastParticipants))
-                .build();
-    }
-
-    private CompletableFuture<Void> sendAppStateKeysMessage(Jid companion) {
-        var preKeys = IntStream.range(0, 10)
-                .mapToObj(index -> createAppKey(companion, index))
-                .toList();
-        keys().addAppKeys(companion, preKeys);
-        var appStateSyncKeyShare = new AppStateSyncKeyShareBuilder()
-                .keys(preKeys)
-                .build();
-        var result = new ProtocolMessageBuilder()
-                .protocolType(ProtocolMessage.Type.APP_STATE_SYNC_KEY_SHARE)
-                .appStateSyncKeyShare(appStateSyncKeyShare)
-                .build();
-        return socketHandler.sendPeerMessage(companion, result);
-    }
-
-    private AppStateSyncKey createAppKey(Jid jid, int index) {
-        return new AppStateSyncKeyBuilder()
-                .keyId(new AppStateSyncKeyId(Bytes.intToBytes(ThreadLocalRandom.current().nextInt(19000, 20000), 6)))
-                .keyData(createAppKeyData(jid, index))
-                .build();
-    }
-
-    private AppStateSyncKeyData createAppKeyData(Jid jid, int index) {
-        return new AppStateSyncKeyDataBuilder()
-                .keyData(SignalKeyPair.random().publicKey())
-                .fingerprint(createAppKeyFingerprint(jid, index))
-                .timestamp(Clock.nowMilliseconds())
-                .build();
-    }
-
-    private AppStateSyncKeyFingerprint createAppKeyFingerprint(Jid jid, int index) {
-        return new AppStateSyncKeyFingerprintBuilder()
-                .rawId(ThreadLocalRandom.current().nextInt())
-                .currentIndex(index)
-                .deviceIndexes(new ArrayList<>(store().linkedDevicesKeys().values()))
-                .build();
-    }
-
-    private CompletableFuture<Void> sendInitialSecurityMessage(Jid jid) {
-        var protocolMessage = new ProtocolMessageBuilder()
-                .protocolType(ProtocolMessage.Type.INITIAL_SECURITY_NOTIFICATION_SETTING_SYNC)
-                .initialSecurityNotificationSettingSync(new InitialSecurityNotificationSettingSync(true))
-                .build();
-        return socketHandler.sendPeerMessage(jid, protocolMessage);
-    }
-
-    private CompletableFuture<Void> sendHistoryProtocolMessage(Jid jid, HistorySync historySync, HistorySync.Type type) {
-        var syncBytes = HistorySyncSpec.encode(historySync);
-        var userAgent = socketHandler.store()
-                .device()
-                .toUserAgent(socketHandler.store().version())
-                .orElse(null);
-        var proxy = socketHandler.store()
-                .proxy()
-                .filter(ignored -> socketHandler.store().mediaProxySetting().allowsUploads())
-                .orElse(null);
-        return Medias.upload(syncBytes, AttachmentType.HISTORY_SYNC, store().mediaConnection(), userAgent, proxy)
-                .thenApplyAsync(upload -> createHistoryProtocolMessage(upload, type))
-                .thenComposeAsync(result -> socketHandler.sendPeerMessage(jid, result));
-    }
-
-    private ProtocolMessage createHistoryProtocolMessage(MediaFile upload, HistorySync.Type type) {
-        var notification = new HistorySyncNotificationBuilder()
-                .mediaSha256(upload.fileSha256())
-                .mediaEncryptedSha256(upload.fileEncSha256())
-                .mediaKey(upload.mediaKey())
-                .mediaDirectPath(upload.directPath())
-                .mediaSize(upload.fileLength())
-                .syncType(type)
-                .build();
-        return new ProtocolMessageBuilder()
-                .protocolType(ProtocolMessage.Type.HISTORY_SYNC_NOTIFICATION)
-                .historySyncNotification(notification)
-                .build();
-    }
-
-    /**
      * Gets the verified name certificate
      *
      * @return a future
@@ -3643,7 +3295,7 @@ public class Whatsapp {
 
     private CompletableFuture<ChatMessageInfo> sendNewsletterInviteMessage(JidProvider newsletterJid, String inviteCaption, long expirationTimestamp, JidProvider admin) {
         var newsletterName = store().findNewsletterByJid(newsletterJid.toJid())
-                .map(Newsletter::metadata)
+                .flatMap(Newsletter::metadata)
                 .flatMap(NewsletterMetadata::name)
                 .map(NewsletterName::text)
                 .orElse(null);
@@ -3726,17 +3378,7 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Optional<Newsletter>> queryNewsletter(Jid newsletterJid, NewsletterViewerRole role) {
-        var key = new QueryNewsletterRequest.Input(newsletterJid, "JID", role);
-        var request = new QueryNewsletterRequest(new QueryNewsletterRequest.Variable(key, true, true, true));
-        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6620195908089573"), Json.writeValueAsBytes(request)))
-                .thenApplyAsync(this::parseNewsletterQuery);
-    }
-
-    private Optional<Newsletter> parseNewsletterQuery(Node response) {
-        return response.findChild("result")
-                .flatMap(Node::contentAsString)
-                .flatMap(NewsletterResponse::ofJson)
-                .map(NewsletterResponse::newsletter);
+        return socketHandler.queryNewsletter(newsletterJid, role);
     }
 
     /**
@@ -3745,7 +3387,7 @@ public class Whatsapp {
      * @param listener the listener to register
      * @return the same instance
      */
-    public Whatsapp addListener(Listener listener) {
+    public Whatsapp addListener(WhatsappListener listener) {
         store().addListener(listener);
         return this;
     }
@@ -3756,15 +3398,15 @@ public class Whatsapp {
      * @param listener the listener to unregister
      * @return the same instance
      */
-    public Whatsapp removeListener(Listener listener) {
+    public Whatsapp removeListener(WhatsappListener listener) {
         store().removeListener(listener);
         return this;
     }
 
     // Generated code from it.auties.whatsapp.routine.GenerateListenersLambda
 
-    public Whatsapp addNodeSentListener(ListenerConsumer.Binary<Whatsapp, Node> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNodeSentListener(WhatsappListener.Consumer.Binary<Whatsapp, Node> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNodeSent(Whatsapp whatsapp, Node outgoing) {
                 consumer.accept(whatsapp, outgoing);
@@ -3773,8 +3415,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNodeSentListener(ListenerConsumer.Unary<Node> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNodeSentListener(WhatsappListener.Consumer.Unary<Node> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNodeSent(Node outgoing) {
                 consumer.accept(outgoing);
@@ -3783,8 +3425,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNodeReceivedListener(ListenerConsumer.Unary<Node> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNodeReceivedListener(WhatsappListener.Consumer.Unary<Node> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNodeReceived(Node incoming) {
                 consumer.accept(incoming);
@@ -3793,8 +3435,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNodeReceivedListener(ListenerConsumer.Binary<Whatsapp, Node> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNodeReceivedListener(WhatsappListener.Consumer.Binary<Whatsapp, Node> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNodeReceived(Whatsapp whatsapp, Node incoming) {
                 consumer.accept(whatsapp, incoming);
@@ -3803,8 +3445,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addLoggedInListener(ListenerConsumer.Empty consumer) {
-        addListener(new Listener() {
+    public Whatsapp addLoggedInListener(WhatsappListener.Consumer.Empty consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onLoggedIn() {
                 consumer.accept();
@@ -3813,8 +3455,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addLoggedInListener(ListenerConsumer.Unary<Whatsapp> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addLoggedInListener(WhatsappListener.Consumer.Unary<Whatsapp> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onLoggedIn(Whatsapp whatsapp) {
                 consumer.accept(whatsapp);
@@ -3823,8 +3465,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMetadataListener(ListenerConsumer.Unary<Map<String, String>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMetadataListener(WhatsappListener.Consumer.Unary<Map<String, String>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMetadata(Map<String, String> metadata) {
                 consumer.accept(metadata);
@@ -3833,8 +3475,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMetadataListener(ListenerConsumer.Binary<Whatsapp, Map<String, String>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMetadataListener(WhatsappListener.Consumer.Binary<Whatsapp, Map<String, String>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMetadata(Whatsapp whatsapp, Map<String, String> metadata) {
                 consumer.accept(whatsapp, metadata);
@@ -3843,8 +3485,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addDisconnectedListener(ListenerConsumer.Unary<DisconnectReason> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addDisconnectedListener(WhatsappListener.Consumer.Unary<DisconnectReason> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onDisconnected(DisconnectReason reason) {
                 consumer.accept(reason);
@@ -3853,8 +3495,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addDisconnectedListener(ListenerConsumer.Binary<Whatsapp, DisconnectReason> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addDisconnectedListener(WhatsappListener.Consumer.Binary<Whatsapp, DisconnectReason> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onDisconnected(Whatsapp whatsapp, DisconnectReason reason) {
                 consumer.accept(whatsapp, reason);
@@ -3863,8 +3505,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addActionListener(ListenerConsumer.Binary<Action, MessageIndexInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addActionListener(WhatsappListener.Consumer.Binary<Action, MessageIndexInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onAction(Action action, MessageIndexInfo messageIndexInfo) {
                 consumer.accept(action, messageIndexInfo);
@@ -3873,8 +3515,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addActionListener(ListenerConsumer.Ternary<Whatsapp, Action, MessageIndexInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addActionListener(WhatsappListener.Consumer.Ternary<Whatsapp, Action, MessageIndexInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onAction(Whatsapp whatsapp, Action action, MessageIndexInfo messageIndexInfo) {
                 consumer.accept(whatsapp, action, messageIndexInfo);
@@ -3883,8 +3525,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addSettingListener(ListenerConsumer.Unary<Setting> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addSettingListener(WhatsappListener.Consumer.Unary<Setting> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onSetting(Setting setting) {
                 consumer.accept(setting);
@@ -3893,8 +3535,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addSettingListener(ListenerConsumer.Binary<Whatsapp, Setting> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addSettingListener(WhatsappListener.Consumer.Binary<Whatsapp, Setting> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onSetting(Whatsapp whatsapp, Setting setting) {
                 consumer.accept(whatsapp, setting);
@@ -3903,18 +3545,18 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addFeaturesListener(ListenerConsumer.Unary<List<String>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addFeaturesListener(WhatsappListener.Consumer.Unary<List<String>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onFeatures(List<String> features) {
-                Listener.super.onFeatures(features);
+                WhatsappListener.super.onFeatures(features);
             }
         });
         return this;
     }
 
-    public Whatsapp addFeaturesListener(ListenerConsumer.Binary<Whatsapp, List<String>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addFeaturesListener(WhatsappListener.Consumer.Binary<Whatsapp, List<String>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onFeatures(Whatsapp whatsapp, List<String> features) {
                 consumer.accept(whatsapp, features);
@@ -3923,8 +3565,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addContactsListener(ListenerConsumer.Unary<Collection<Contact>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addContactsListener(WhatsappListener.Consumer.Unary<Collection<Contact>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onContacts(Collection<Contact> contacts) {
                 consumer.accept(contacts);
@@ -3933,8 +3575,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addContactsListener(ListenerConsumer.Binary<Whatsapp, Collection<Contact>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addContactsListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Contact>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onContacts(Whatsapp whatsapp, Collection<Contact> contacts) {
                 consumer.accept(whatsapp, contacts);
@@ -3943,8 +3585,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addContactPresenceListener(ListenerConsumer.Binary<Chat, JidProvider> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addContactPresenceListener(WhatsappListener.Consumer.Binary<Chat, JidProvider> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onContactPresence(Chat chat, JidProvider jid) {
                 consumer.accept(chat, jid);
@@ -3953,8 +3595,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addContactPresenceListener(ListenerConsumer.Ternary<Whatsapp, Chat, JidProvider> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addContactPresenceListener(WhatsappListener.Consumer.Ternary<Whatsapp, Chat, JidProvider> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onContactPresence(Whatsapp whatsapp, Chat chat, JidProvider jid) {
                 consumer.accept(whatsapp, chat, jid);
@@ -3963,8 +3605,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addChatsListener(ListenerConsumer.Unary<Collection<Chat>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addChatsListener(WhatsappListener.Consumer.Unary<Collection<Chat>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onChats(Collection<Chat> chats) {
                 consumer.accept(chats);
@@ -3973,8 +3615,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addChatsListener(ListenerConsumer.Binary<Whatsapp, Collection<Chat>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addChatsListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Chat>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onChats(Whatsapp whatsapp, Collection<Chat> chats) {
                 consumer.accept(whatsapp, chats);
@@ -3983,8 +3625,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewslettersListener(ListenerConsumer.Unary<Collection<Newsletter>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewslettersListener(WhatsappListener.Consumer.Unary<Collection<Newsletter>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewsletters(Collection<Newsletter> newsletters) {
                 consumer.accept(newsletters);
@@ -3993,8 +3635,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewslettersListener(ListenerConsumer.Binary<Whatsapp, Collection<Newsletter>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewslettersListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Newsletter>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewsletters(Whatsapp whatsapp, Collection<Newsletter> newsletters) {
                 consumer.accept(whatsapp, newsletters);
@@ -4003,8 +3645,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addChatMessagesSyncListener(ListenerConsumer.Binary<Chat, Boolean> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addChatMessagesSyncListener(WhatsappListener.Consumer.Binary<Chat, Boolean> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onChatMessagesSync(Chat chat, boolean last) {
                 consumer.accept(chat, last);
@@ -4013,8 +3655,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addChatMessagesSyncListener(ListenerConsumer.Ternary<Whatsapp, Chat, Boolean> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addChatMessagesSyncListener(WhatsappListener.Consumer.Ternary<Whatsapp, Chat, Boolean> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onChatMessagesSync(Whatsapp whatsapp, Chat chat, boolean last) {
                 consumer.accept(whatsapp, chat, last);
@@ -4023,8 +3665,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addHistorySyncProgressListener(ListenerConsumer.Ternary<Whatsapp, Integer, Boolean> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addHistorySyncProgressListener(WhatsappListener.Consumer.Ternary<Whatsapp, Integer, Boolean> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent) {
                 consumer.accept(whatsapp, percentage, recent);
@@ -4033,8 +3675,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addHistorySyncProgressListener(ListenerConsumer.Binary<Integer, Boolean> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addHistorySyncProgressListener(WhatsappListener.Consumer.Binary<Integer, Boolean> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onHistorySyncProgress(int percentage, boolean recent) {
                 consumer.accept(percentage, recent);
@@ -4043,8 +3685,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewMessageListener(ListenerConsumer.Unary<MessageInfo<?>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewMessageListener(WhatsappListener.Consumer.Unary<MessageInfo<?>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(MessageInfo<?> info) {
                 consumer.accept(info);
@@ -4053,8 +3695,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewChatMessageListener(ListenerConsumer.Unary<ChatMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewChatMessageListener(WhatsappListener.Consumer.Unary<ChatMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(MessageInfo<?> info) {
                 if(info instanceof ChatMessageInfo chatMessageInfo) {
@@ -4065,8 +3707,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewNewsletterMessageListener(ListenerConsumer.Unary<NewsletterMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewNewsletterMessageListener(WhatsappListener.Consumer.Unary<NewsletterMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(MessageInfo<?> info) {
                 if(info instanceof NewsletterMessageInfo newsletterMessageInfo) {
@@ -4077,8 +3719,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewMessageListener(ListenerConsumer.Binary<Whatsapp, MessageInfo<?>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewMessageListener(WhatsappListener.Consumer.Binary<Whatsapp, MessageInfo<?>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
                 consumer.accept(whatsapp, info);
@@ -4087,8 +3729,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewNewsletterMessageListener(ListenerConsumer.Binary<Whatsapp, NewsletterMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewNewsletterMessageListener(WhatsappListener.Consumer.Binary<Whatsapp, NewsletterMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
                 if(info instanceof NewsletterMessageInfo newsletterMessageInfo) {
@@ -4099,8 +3741,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewChatMessageListener(ListenerConsumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewChatMessageListener(WhatsappListener.Consumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
                 if(info instanceof ChatMessageInfo chatMessageInfo) {
@@ -4111,8 +3753,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMessageDeletedListener(ListenerConsumer.Binary<MessageInfo<?>, Boolean> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMessageDeletedListener(WhatsappListener.Consumer.Binary<MessageInfo<?>, Boolean> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMessageDeleted(MessageInfo<?> info, boolean everyone) {
                 consumer.accept(info, everyone);
@@ -4121,8 +3763,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMessageDeletedListener(ListenerConsumer.Ternary<Whatsapp, MessageInfo<?>, Boolean> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMessageDeletedListener(WhatsappListener.Consumer.Ternary<Whatsapp, MessageInfo<?>, Boolean> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMessageDeleted(Whatsapp whatsapp, MessageInfo<?> info, boolean everyone) {
                 consumer.accept(whatsapp, info, everyone);
@@ -4131,8 +3773,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMessageStatusListener(ListenerConsumer.Unary<MessageInfo<?>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMessageStatusListener(WhatsappListener.Consumer.Unary<MessageInfo<?>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMessageStatus(MessageInfo<?> info) {
                 consumer.accept(info);
@@ -4141,8 +3783,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMessageStatusListener(ListenerConsumer.Binary<Whatsapp, MessageInfo<?>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMessageStatusListener(WhatsappListener.Consumer.Binary<Whatsapp, MessageInfo<?>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMessageStatus(Whatsapp whatsapp, MessageInfo<?> info) {
                 consumer.accept(whatsapp, info);
@@ -4151,8 +3793,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addStatusListener(ListenerConsumer.Unary<Collection<ChatMessageInfo>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addStatusListener(WhatsappListener.Consumer.Unary<Collection<ChatMessageInfo>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onStatus(Collection<ChatMessageInfo> status) {
                 consumer.accept(status);
@@ -4161,8 +3803,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addStatusListener(ListenerConsumer.Binary<Whatsapp, Collection<ChatMessageInfo>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addStatusListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<ChatMessageInfo>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onStatus(Whatsapp whatsapp, Collection<ChatMessageInfo> status) {
                 consumer.accept(whatsapp, status);
@@ -4171,8 +3813,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewStatusListener(ListenerConsumer.Unary<ChatMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewStatusListener(WhatsappListener.Consumer.Unary<ChatMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewStatus(ChatMessageInfo status) {
                 consumer.accept(status);
@@ -4181,8 +3823,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewStatusListener(ListenerConsumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewStatusListener(WhatsappListener.Consumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewStatus(Whatsapp whatsapp, ChatMessageInfo status) {
                 consumer.accept(whatsapp, status);
@@ -4191,8 +3833,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addSocketEventListener(ListenerConsumer.Unary<SocketEvent> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addSocketEventListener(WhatsappListener.Consumer.Unary<SocketEvent> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onSocketEvent(SocketEvent event) {
                 consumer.accept(event);
@@ -4201,8 +3843,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addSocketEventListener(ListenerConsumer.Binary<Whatsapp, SocketEvent> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addSocketEventListener(WhatsappListener.Consumer.Binary<Whatsapp, SocketEvent> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onSocketEvent(Whatsapp whatsapp, SocketEvent event) {
                 consumer.accept(whatsapp, event);
@@ -4211,8 +3853,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMessageReplyListener(ListenerConsumer.Ternary<Whatsapp, ChatMessageInfo, QuotedMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMessageReplyListener(WhatsappListener.Consumer.Ternary<Whatsapp, ChatMessageInfo, QuotedMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMessageReply(Whatsapp whatsapp, ChatMessageInfo response, QuotedMessageInfo quoted) {
                 consumer.accept(whatsapp, response, quoted);
@@ -4221,8 +3863,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMessageReplyListener(ListenerConsumer.Binary<ChatMessageInfo, QuotedMessageInfo> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addMessageReplyListener(WhatsappListener.Consumer.Binary<ChatMessageInfo, QuotedMessageInfo> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onMessageReply(ChatMessageInfo response, QuotedMessageInfo quoted) {
                 consumer.accept(response, quoted);
@@ -4231,8 +3873,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addProfilePictureChangedListener(ListenerConsumer.Unary<Contact> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addProfilePictureChangedListener(WhatsappListener.Consumer.Unary<Contact> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onProfilePictureChanged(Contact contact) {
                 consumer.accept(contact);
@@ -4241,8 +3883,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addProfilePictureChangedListener(ListenerConsumer.Binary<Whatsapp, Contact> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addProfilePictureChangedListener(WhatsappListener.Consumer.Binary<Whatsapp, Contact> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onProfilePictureChanged(Whatsapp whatsapp, Contact contact) {
                 consumer.accept(whatsapp, contact);
@@ -4251,8 +3893,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addGroupPictureChangedListener(ListenerConsumer.Binary<Whatsapp, Chat> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addGroupPictureChangedListener(WhatsappListener.Consumer.Binary<Whatsapp, Chat> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onGroupPictureChanged(Whatsapp whatsapp, Chat group) {
                 consumer.accept(whatsapp, group);
@@ -4261,8 +3903,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addGroupPictureChangedListener(ListenerConsumer.Unary<Chat> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addGroupPictureChangedListener(WhatsappListener.Consumer.Unary<Chat> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onGroupPictureChanged(Chat group) {
                 consumer.accept(group);
@@ -4271,8 +3913,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNameChangedListener(ListenerConsumer.Binary<String, String> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNameChangedListener(WhatsappListener.Consumer.Binary<String, String> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNameChanged(String oldName, String newName) {
                 consumer.accept(oldName, newName);
@@ -4281,8 +3923,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNameChangedListener(ListenerConsumer.Ternary<Whatsapp, String, String> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNameChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, String, String> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNameChanged(Whatsapp whatsapp, String oldName, String newName) {
                 consumer.accept(whatsapp, oldName, newName);
@@ -4291,8 +3933,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addAboutChangedListener(ListenerConsumer.Ternary<Whatsapp, String, String> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addAboutChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, String, String> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onAboutChanged(Whatsapp whatsapp, String oldAbout, String newAbout) {
                 consumer.accept(whatsapp, oldAbout, newAbout);
@@ -4301,8 +3943,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addAboutChangedListener(ListenerConsumer.Binary<String, String> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addAboutChangedListener(WhatsappListener.Consumer.Binary<String, String> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onAboutChanged(String oldAbout, String newAbout) {
                 consumer.accept(oldAbout, newAbout);
@@ -4311,8 +3953,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addLocaleChangedListener(ListenerConsumer.Ternary<Whatsapp, CountryLocale, CountryLocale> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addLocaleChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, CountryLocale, CountryLocale> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onLocaleChanged(Whatsapp whatsapp, CountryLocale oldLocale, CountryLocale newLocale) {
                 consumer.accept(whatsapp, oldLocale, newLocale);
@@ -4321,8 +3963,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addLocaleChangedListener(ListenerConsumer.Binary<CountryLocale, CountryLocale> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addLocaleChangedListener(WhatsappListener.Consumer.Binary<CountryLocale, CountryLocale> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onLocaleChanged(CountryLocale oldLocale, CountryLocale newLocale) {
                 consumer.accept(oldLocale, newLocale);
@@ -4331,8 +3973,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addContactBlockedListener(ListenerConsumer.Binary<Whatsapp, Contact> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addContactBlockedListener(WhatsappListener.Consumer.Binary<Whatsapp, Contact> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onContactBlocked(Whatsapp whatsapp, Contact contact) {
                 consumer.accept(whatsapp, contact);
@@ -4341,8 +3983,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addContactBlockedListener(ListenerConsumer.Unary<Contact> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addContactBlockedListener(WhatsappListener.Consumer.Unary<Contact> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onContactBlocked(Contact contact) {
                 consumer.accept(contact);
@@ -4351,8 +3993,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewContactListener(ListenerConsumer.Unary<Contact> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewContactListener(WhatsappListener.Consumer.Unary<Contact> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewContact(Contact contact) {
                 consumer.accept(contact);
@@ -4361,8 +4003,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewContactListener(ListenerConsumer.Binary<Whatsapp, Contact> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addNewContactListener(WhatsappListener.Consumer.Binary<Whatsapp, Contact> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onNewContact(Whatsapp whatsapp, Contact contact) {
                 consumer.accept(whatsapp, contact);
@@ -4371,8 +4013,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addPrivacySettingChangedListener(ListenerConsumer.Binary<PrivacySettingEntry, PrivacySettingEntry> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addPrivacySettingChangedListener(WhatsappListener.Consumer.Binary<PrivacySettingEntry, PrivacySettingEntry> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
                 consumer.accept(oldPrivacyEntry, newPrivacyEntry);
@@ -4381,8 +4023,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addPrivacySettingChangedListener(ListenerConsumer.Ternary<Whatsapp, PrivacySettingEntry, PrivacySettingEntry> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addPrivacySettingChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, PrivacySettingEntry, PrivacySettingEntry> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
                 consumer.accept(whatsapp, oldPrivacyEntry, newPrivacyEntry);
@@ -4391,8 +4033,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addLinkedDevicesListener(ListenerConsumer.Unary<Collection<Jid>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addLinkedDevicesListener(WhatsappListener.Consumer.Unary<Collection<Jid>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onLinkedDevices(Collection<Jid> devices) {
                 consumer.accept(devices);
@@ -4401,18 +4043,18 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addLinkedDevicesListener(ListenerConsumer.Binary<Whatsapp, Collection<Jid>> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addLinkedDevicesListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Jid>> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices) {
-                Listener.super.onLinkedDevices(whatsapp, devices);
+                WhatsappListener.super.onLinkedDevices(whatsapp, devices);
             }
         });
         return this;
     }
 
-    public Whatsapp addRegistrationCodeListener(ListenerConsumer.Binary<Whatsapp, Long> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addRegistrationCodeListener(WhatsappListener.Consumer.Binary<Whatsapp, Long> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onRegistrationCode(Whatsapp whatsapp, long code) {
                 consumer.accept(whatsapp, code);
@@ -4421,8 +4063,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addRegistrationCodeListener(ListenerConsumer.Unary<Long> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addRegistrationCodeListener(WhatsappListener.Consumer.Unary<Long> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onRegistrationCode(long code) {
                 consumer.accept(code);
@@ -4431,8 +4073,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addCallListener(ListenerConsumer.Unary<Call> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addCallListener(WhatsappListener.Consumer.Unary<Call> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onCall(Call call) {
                 consumer.accept(call);
@@ -4441,8 +4083,8 @@ public class Whatsapp {
         return this;
     }
 
-    public Whatsapp addCallListener(ListenerConsumer.Binary<Whatsapp, Call> consumer) {
-        addListener(new Listener() {
+    public Whatsapp addCallListener(WhatsappListener.Consumer.Binary<Whatsapp, Call> consumer) {
+        addListener(new WhatsappListener() {
             @Override
             public void onCall(Whatsapp whatsapp, Call call) {
                 consumer.accept(whatsapp, call);
@@ -4460,7 +4102,7 @@ public class Whatsapp {
     }
 
     public Whatsapp addMessageReplyListener(String id, Consumer<MessageInfo<?>> consumer) {
-        return addListener(new Listener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(MessageInfo<?> info) {
                 if (!info.id().equals(id)) {
@@ -4473,7 +4115,7 @@ public class Whatsapp {
     }
 
     public Whatsapp addMessageReplyListener(String id, BiConsumer<Whatsapp, MessageInfo<?>> consumer) {
-        return addListener(new Listener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
                 if (!info.id().equals(id)) {

@@ -384,14 +384,14 @@ Listeners can be used either as:
 
 1. Standalone concrete implementation
    
-   If your application is complex enough, 
+   If your application is complex enough,
    it's preferable to divide your listeners' logic across multiple specialized classes.
    To create a new concrete listener, declare a class or record that implements the Listener interface:
 
    ```java
-   import it.auties.whatsapp.listener.Listener;
+   import it.auties.whatsapp.api.WhatsappListener;
 
-   public class MyListener implements Listener {
+   public class MyListener implements WhatsappListener {
     @Override
     public void onLoggedIn() {
         System.out.println("Hello :)");
@@ -408,10 +408,10 @@ Listeners can be used either as:
    Or to register it automatically using the `@RegisterListener` annotation:
 
    ```java
-   import it.auties.whatsapp.listener.RegisterListener;
-   import it.auties.whatsapp.listener.Listener;
 
-   @RegisterListener // Automatically registers this listener
+   import it.auties.whatsapp.api.WhatsappListener;
+
+// Automatically registers this listener
    public class MyListener implements Listener {
     @Override
     public void onLoggedIn() {
@@ -420,17 +420,17 @@ Listeners can be used either as:
    }
    ```
    
-   Listeners often need access to the Whatsapp instance that registered them to, for example, send messages. 
+   Listeners often need access to the Whatsapp instance that registered them to, for example, send messages.
    If your listener is marked with @RegisterListener and a single argument constructor that takes a Whatsapp instance as a parameter exists,
    the latter can be injected automatically, regardless of if your implementation uses a class or a record.
    Records, though, are usually more elegant:
 
    ```java
-   import it.auties.whatsapp.listener.RegisterListener;
-   import it.auties.whatsapp.api.Whatsapp;
-   import it.auties.whatsapp.listener.Listener;
 
-   @RegisterListener // Automatically registers this listener
+   import it.auties.whatsapp.api.Whatsapp;
+   import it.auties.whatsapp.api.WhatsappListener;
+
+// Automatically registers this listener
    public record MyListener(Whatsapp api) implements Listener { // A non-null whatsapp instance is injected
     @Override
     public void onLoggedIn() {
@@ -496,12 +496,12 @@ These are the three reasons that can cause a disconnect:
 3. LOGGED_OUT
 
     The client was logged out by itself or by its companion.
-    By default, no error is thrown if this happens, though this behaviour can be changed easily:
+   By default, no error is thrown if this happens, though this behaviour can be changed easily:
     ```java
     import it.auties.whatsapp.api.DisconnectReason;
-    import it.auties.whatsapp.listener.Listener;
+    import it.auties.whatsapp.api.WhatsappListener;
 
-    class ThrowOnLogOut implements Listener {
+    class ThrowOnLogOut implements WhatsappListener {
         @Override
         public void onDisconnected(DisconnectReason reason) {
             if (reason != SocketEvent.LOGGED_OUT) {
