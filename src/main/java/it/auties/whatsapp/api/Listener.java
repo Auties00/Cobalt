@@ -23,10 +23,7 @@ import java.util.Map;
 
 /**
  * This interface can be used to listen for events fired when new information is sent by
- * WhatsappWeb's socket. A listener can be registered manually using
- * {@link Whatsapp#addListener(Listener)}. Otherwise, it can be registered by annotating it with the
- * {@link RegisterListener} annotation. To disable the latter, check out
- * {@link Store#autodetectListeners()}.
+ * WhatsappWeb's socket. A listener can be registered using {@link Whatsapp#addListener(Listener)}.
  */
 @SuppressWarnings("unused")
 public interface Listener {

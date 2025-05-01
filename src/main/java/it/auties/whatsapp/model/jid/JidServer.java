@@ -1,9 +1,5 @@
 package it.auties.whatsapp.model.jid;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-
-import java.util.Arrays;
 import java.util.Objects;
 
 /**

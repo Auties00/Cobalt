@@ -7,7 +7,6 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.io.BinaryDecoder;
 import it.auties.whatsapp.io.BinaryEncoder;
-import it.auties.whatsapp.api.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -888,7 +887,7 @@ public class SocketHandler implements SocketListener {
         }
 
         var provider = contact.isPresent() ? contact.get() : jid;
-        chat.presences().put(jid, status);
+        chat.addPresence(jid, status);
         callListenersAsync(listener -> {
             listener.onContactPresence(whatsapp, chat, provider);
             listener.onContactPresence(chat, provider);

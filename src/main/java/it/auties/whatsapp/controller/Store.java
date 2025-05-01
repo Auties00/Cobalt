@@ -9,8 +9,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.*;
-import it.auties.whatsapp.socket.SocketRequest;
-import it.auties.whatsapp.api.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
@@ -38,6 +36,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.AppMetadata;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
@@ -297,12 +296,6 @@ public final class Store extends Controller<Store> {
     WebHistorySetting historyLength;
 
     /**
-     * Whether listeners should be automatically scanned and registered or not
-     */
-    @ProtobufProperty(index = 34, type = ProtobufType.BOOL)
-    boolean autodetectListeners;
-
-    /**
      * Whether updates about the presence of the session should be sent automatically to Whatsapp
      * For example, when the bot is started, the status of the companion is changed to available if this option is enabled
      * If this option is enabled, the companion will not receive notifications because the bot will instantly read them
@@ -342,7 +335,7 @@ public final class Store extends Controller<Store> {
      * All args constructor
      */
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistorySetting historyLength, boolean autodetectListeners, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, MediaProxySetting mediaProxySetting) {
+    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistorySetting historyLength, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, MediaProxySetting mediaProxySetting) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.proxy = proxy;
         this.online = online;
@@ -380,7 +373,6 @@ public final class Store extends Controller<Store> {
         this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
         this.textPreviewSetting = Objects.requireNonNullElse(textPreviewSetting, TextPreviewSetting.ENABLED_WITH_INFERENCE);
         this.historyLength = Objects.requireNonNullElseGet(historyLength, () -> WebHistorySetting.standard(true));
-        this.autodetectListeners = autodetectListeners;
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.automaticMessageReceipts = automaticMessageReceipts;
         this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
@@ -398,7 +390,6 @@ public final class Store extends Controller<Store> {
                 .clientType(clientType)
                 .alias(alias)
                 .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
-                .autodetectListeners(true)
                 .automaticPresenceUpdates(true)
                 .automaticMessageReceipts(clientType == ClientType.MOBILE)
                 .build();
@@ -414,7 +405,7 @@ public final class Store extends Controller<Store> {
         return switch (jid) {
             case Contact contact -> Optional.of(contact);
             case null -> Optional.empty();
-            default -> Optional.ofNullable(contacts.get(jid.toJid()));
+            default -> Optional.ofNullable(contacts.get(jid.toJid().toSimpleJid()));
         };
     }
 
@@ -1368,10 +1359,6 @@ public final class Store extends Controller<Store> {
         return this.historyLength;
     }
 
-    public boolean autodetectListeners() {
-        return this.autodetectListeners;
-    }
-
     public boolean automaticPresenceUpdates() {
         return this.automaticPresenceUpdates;
     }
@@ -1502,11 +1489,6 @@ public final class Store extends Controller<Store> {
         return this;
     }
 
-    public Store setAutodetectListeners(boolean autodetectListeners) {
-        this.autodetectListeners = autodetectListeners;
-        return this;
-    }
-
     public Store setAutomaticPresenceUpdates(boolean automaticPresenceUpdates) {
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         return this;
@@ -1588,11 +1570,10 @@ public final class Store extends Controller<Store> {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Store store)) return false;
-        return online == store.online &&
+        return o instanceof Store store &&
+                online == store.online &&
                 unarchiveChats == store.unarchiveChats &&
                 twentyFourHourFormat == store.twentyFourHourFormat &&
-                autodetectListeners == store.autodetectListeners &&
                 automaticPresenceUpdates == store.automaticPresenceUpdates &&
                 automaticMessageReceipts == store.automaticMessageReceipts &&
                 checkPatchMacs == store.checkPatchMacs &&
@@ -1630,6 +1611,6 @@ public final class Store extends Controller<Store> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(proxy, version, online, locale, name, verifiedName, businessAddress, businessLongitude, businessLatitude, businessDescription, businessWebsite, businessEmail, businessCategory, deviceHash, linkedDevicesKeys, profilePicture, about, jid, lid, properties, contacts, status, privacySettings, calls, unarchiveChats, twentyFourHourFormat, initializationTimeStamp, newChatsEphemeralTimer, textPreviewSetting, historyLength, autodetectListeners, automaticPresenceUpdates, automaticMessageReceipts, releaseChannel, device, checkPatchMacs, mediaProxySetting);
+        return Objects.hash(proxy, version, online, locale, name, verifiedName, businessAddress, businessLongitude, businessLatitude, businessDescription, businessWebsite, businessEmail, businessCategory, deviceHash, linkedDevicesKeys, profilePicture, about, jid, lid, properties, contacts, status, privacySettings, calls, unarchiveChats, twentyFourHourFormat, initializationTimeStamp, newChatsEphemeralTimer, textPreviewSetting, historyLength, automaticPresenceUpdates, automaticMessageReceipts, releaseChannel, device, checkPatchMacs, mediaProxySetting);
     }
 }

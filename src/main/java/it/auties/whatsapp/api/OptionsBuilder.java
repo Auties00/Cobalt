@@ -31,18 +31,6 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     }
 
     /**
-     * Sets whether listeners marked with the {@link RegisterListener} annotation should be automatically detected and registered
-     * By default, this option is enabled
-     *
-     * @return the same instance for chaining
-     */
-    @SuppressWarnings("unchecked")
-    public T autodetectListeners(boolean autodetectListeners) {
-        store.setAutodetectListeners(autodetectListeners);
-        return (T) this;
-    }
-
-    /**
      * Sets whether a preview should be automatically generated and attached to text messages that contain links
      * By default, it's enabled with inference
      *

@@ -592,8 +592,16 @@ public final class Chat implements JidProvider {
         return Optional.ofNullable(lid);
     }
 
-    public ConcurrentHashMap<Jid, ContactStatus> presences() {
-        return presences;
+    public Optional<ContactStatus> getPresence(JidProvider jid) {
+        return Optional.ofNullable(presences.get(jid.toJid()));
+    }
+
+    public void addPresence(JidProvider jid, ContactStatus status) {
+        presences.put(jid.toJid(), status);
+    }
+
+    public boolean removePresence(JidProvider jid) {
+        return presences.remove(jid.toJid()) != null;
     }
 
     public boolean hasName() {

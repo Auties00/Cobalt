@@ -21,7 +21,10 @@ import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSettings;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.SignalConstants;
+import it.auties.whatsapp.util.Validate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -81,12 +84,13 @@ class AppStateHandler {
             return socketHandler.sendQuery("set", "w:sync:app:state", sync)
                     .thenAcceptAsync(this::parseSyncRequest)
                     .thenRunAsync(() -> onPush(jid, requests, readPatches))
-                    .thenRun(pullSemaphore::release)
+                    .thenRun(pushSemaphore::release)
                     .exceptionallyCompose(throwable -> {
-                        pullSemaphore.release();
+                        pushSemaphore.release();
                         return CompletableFuture.failedFuture(throwable);
                     });
         }catch (Throwable throwable) {
+            pushSemaphore.release();
             return CompletableFuture.failedFuture(throwable);
         }
     }

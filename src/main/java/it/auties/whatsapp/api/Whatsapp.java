@@ -6,8 +6,6 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.SessionCipher;
-import it.auties.whatsapp.socket.SocketHandler;
-import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -44,6 +42,8 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
+import it.auties.whatsapp.socket.SocketHandler;
+import it.auties.whatsapp.socket.SocketState;
 import it.auties.whatsapp.util.*;
 
 import java.net.URI;
@@ -1330,17 +1330,16 @@ public class Whatsapp {
      * @param available whether you are online or not
      * @return a CompletableFuture
      */
-    public CompletableFuture<Boolean> changePresence(boolean available) {
+    public CompletableFuture<Void> changePresence(boolean available) {
         var status = socketHandler.store().online();
         if (status == available) {
-            return CompletableFuture.completedFuture(status);
+            return CompletableFuture.completedFuture(null);
         }
 
         var presence = available ? AVAILABLE : UNAVAILABLE;
         var node = Node.of("presence", Map.of("name", store().name(), "type", presence.toString()));
         return socketHandler.sendNodeWithNoResponse(node)
-                .thenAcceptAsync(socketHandler -> updatePresence(null, presence))
-                .thenApplyAsync(ignored -> available);
+                .thenAcceptAsync(socketHandler -> updatePresence(null, presence));
     }
 
     private void updatePresence(JidProvider chatJid, ContactStatus presence) {
@@ -1353,13 +1352,11 @@ public class Whatsapp {
             return;
         }
 
-        if (presence == AVAILABLE || presence == UNAVAILABLE) {
-            self.get().setLastKnownPresence(presence);
-        }
+        self.get().setLastKnownPresence(presence);
 
         if (chatJid != null) {
             store().findChatByJid(chatJid)
-                    .ifPresent(chat -> chat.presences().put(self.get().jid(), presence));
+                    .ifPresent(chat -> chat.addPresence(self.get().jid(), presence));
         }
 
         self.get().setLastSeen(ZonedDateTime.now());
@@ -3352,6 +3349,23 @@ public class Whatsapp {
                 .flatMap(Node::contentAsString)
                 .flatMap(AcceptAdminInviteNewsletterResponse::ofJson)
                 .map(AcceptAdminInviteNewsletterResponse::jid);
+    }
+
+    /**
+     * Sends a message retry for the specified message
+     * Use this if a message is marked as unavailable
+     * View once messages are only visible on the companion device
+     *
+     * @param messageInfo the message to retry
+     * @return a future
+     */
+    public CompletableFuture<Void> sendMessageRetry(MessageInfo<?> messageInfo) {
+        Validate.isTrue(messageInfo != null, "Invalid message");
+        var timestamp = messageInfo.timestampSeconds()
+                .orElse(0);
+        var chatJid = messageInfo.parentJid();
+        var senderJid = messageInfo.senderJid();
+        return socketHandler.sendRetryReceipt(timestamp, chatJid, senderJid, messageInfo.id(), 1);
     }
 
     /**

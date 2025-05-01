@@ -2,7 +2,6 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.api.Listener;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonRow;
 import it.auties.whatsapp.model.button.base.ButtonSection;
@@ -12,6 +11,7 @@ import it.auties.whatsapp.model.button.interactive.InteractiveHeaderSimpleBuilde
 import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlowBuilder;
 import it.auties.whatsapp.model.button.template.hydrated.*;
 import it.auties.whatsapp.model.chat.*;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactStatus;
@@ -32,16 +32,15 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.ConfigUtils;
+import it.auties.whatsapp.util.GithubActions;
 import it.auties.whatsapp.util.MediaUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.Collection;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +66,7 @@ public class TestLibrary implements Listener {
 
     @BeforeAll
     public void init() throws IOException, InterruptedException  {
-        contact = Jid.of(393668765865L);
+        loadConfig();
         createApi();
         createLatch();
         latch.await();
@@ -75,17 +74,46 @@ public class TestLibrary implements Listener {
 
     private void createApi()  {
         log("Initializing api to start testing...");
-        api = Whatsapp.webBuilder()
-                .serializer(ControllerSerializer.discarding())
-                .newConnection()
-                .errorHandler((whatsapp, location, throwable) -> {
-                    Assertions.fail(throwable);
-                    return ErrorHandler.Result.DISCONNECT;
-                })
-                .unregistered(QrHandler.toTerminal())
-                .addListener(this);
-        future = api.connect()
+        if(account == null) {
+            log("Using web api to test...");
+            api = Whatsapp.webBuilder()
+                    .serializer(ControllerSerializer.discarding())
+                    .newConnection()
+                    .errorHandler((whatsapp, location, throwable) -> {
+                        Assertions.fail(throwable);
+                        return ErrorHandler.Result.DISCONNECT;
+                    })
+                    .unregistered(QrHandler.toTerminal());
+        }else {
+            log("Using mobile api to test...");
+            api = Whatsapp.mobileBuilder()
+                    .newConnection(Objects.requireNonNull(account, "Missing account"))
+                    .device(CompanionDevice.ios(true)) // Make sure to select the correct account type(business or personal) or you'll get error 401
+                    .registered()
+                    .orElseThrow();
+        }
+        future = api.addListener(this)
+                .connect()
                 .exceptionally(Assertions::fail);
+    }
+
+    private void loadConfig() throws IOException  {
+        if (GithubActions.isActionsEnvironment())  {
+            log("Loading environment variables...");
+            contact = Jid.of(System.getenv(GithubActions.CONTACT_NAME));
+            account = SixPartsKeys.of(System.getenv(GithubActions.ACCOUNT));
+            log("Loaded environment variables...");
+            return;
+        }
+
+        log("Loading configuration file...");
+        var props = ConfigUtils.loadConfiguration();
+        contact = Jid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
+        var account = props.getProperty("account");
+        if(account != null) {
+            TestLibrary.account = SixPartsKeys.of(account);
+        }
+        log("Loaded configuration file");
     }
 
     private void createLatch()  {
@@ -101,35 +129,40 @@ public class TestLibrary implements Listener {
         Assertions.assertNotNull(contactResponse, "Missing response");
         var dummyResponse = response.get(dummy);
         Assertions.assertNotNull(dummy, "Missing response");
-        Assertions.assertTrue(contactResponse, "Erroneous response");
         Assertions.assertFalse(dummyResponse, "Erroneous response");
+        try {
+            Assertions.assertTrue(contactResponse, "Erroneous response");
+        }catch (AssertionError error) {
+            log("%s is not on WhatsApp: cannot run tests", contact);
+            System.exit(1);
+            throw error;
+        }
     }
 
     @Test
     @Order(2)
     public void testChangeGlobalPresence()  {
         api.changePresence(false).join();
-        Assertions.assertFalse(getOnlineStatus(), "Erroneous status");
+        assertContactOnlineStatus(ContactStatus.UNAVAILABLE);
         Assertions.assertFalse(api.store().online(), "Erroneous status");
         api.changePresence(true).join();
-        Assertions.assertTrue(api.store().online(), "Erroneous status");
-        Assertions.assertTrue(getOnlineStatus(), "Erroneous status");
+        assertContactOnlineStatus(ContactStatus.AVAILABLE);
     }
 
-    private boolean getOnlineStatus()  {
-        return api.store()
+    private void assertContactOnlineStatus(ContactStatus contactStatus)  {
+        var expectedOnlineStatus = api.store().online();
+        var actualOnlineStatus = contactStatus != ContactStatus.UNAVAILABLE;
+        Assertions.assertSame(expectedOnlineStatus, actualOnlineStatus, "Erroneous online status: expected %s, got %s".formatted(expectedOnlineStatus, actualOnlineStatus));
+        var companionJid = api.store()
                 .jid()
-                .flatMap(api.store()::findContactByJid)
-                .map(entry -> entry.lastKnownPresence() == ContactStatus.AVAILABLE)
-                .orElse(false);
-    }
-
-    private void log(String message, Object... params)  {
-        System.out.printf(message + "%n", redactParameters(params));
-    }
-
-    private Object[] redactParameters(Object... params)  {
-        return params;
+                .orElse(null);
+       Assertions.assertNotNull(companionJid, "No companion jid");
+       var companionContact = api.store()
+               .findContactByJid(companionJid)
+               .orElse(null);
+        Assertions.assertNotNull(companionContact, "No companion contact");
+        var actualContactStatus = companionContact.lastKnownPresence();
+        Assertions.assertSame(actualContactStatus, contactStatus, "Erroneous contact status: expected %s, got %s".formatted(contactStatus, actualContactStatus));
     }
 
     @Test
@@ -991,5 +1024,13 @@ public class TestLibrary implements Listener {
 
     private String randomId()  {
         return HexFormat.of().formatHex(Bytes.random(5));
+    }
+
+    private void log(String message, Object... params)  {
+        System.out.printf(message + "%n", redactParameters(params));
+    }
+
+    private Object[] redactParameters(Object... params)  {
+        return params;
     }
 }
