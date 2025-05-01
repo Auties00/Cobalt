@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.interactive.*;
-import it.auties.whatsapp.model.button.template.TemplateFormatter;
+import it.auties.whatsapp.model.button.base.TemplateFormatter;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;

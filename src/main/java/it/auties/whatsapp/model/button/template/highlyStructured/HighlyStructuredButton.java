@@ -1,8 +1,7 @@
-package it.auties.whatsapp.model.button.template.hsm;
+package it.auties.whatsapp.model.button.template.highlyStructured;
 
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 
 /**
  * A model that represents all types of hydrated buttons

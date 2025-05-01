@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.button.template.hsm;
+package it.auties.whatsapp.model.button.template.highlyStructured;
 
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;

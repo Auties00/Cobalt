@@ -1,8 +1,8 @@
-package it.auties.whatsapp.model.button.template;
+package it.auties.whatsapp.model.button.base;
 
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
+import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;

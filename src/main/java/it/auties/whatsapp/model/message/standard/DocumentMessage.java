@@ -6,7 +6,7 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.media.AttachmentType;

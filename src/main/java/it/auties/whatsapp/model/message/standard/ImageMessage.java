@@ -8,7 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.model.button.interactive.InteractiveLocationAnnotation;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;

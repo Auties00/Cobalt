@@ -7,7 +7,7 @@ import it.auties.whatsapp.api.TextPreviewSetting;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplate;
+import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;

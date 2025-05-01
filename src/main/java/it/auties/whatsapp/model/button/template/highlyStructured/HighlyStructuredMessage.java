@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.button.template.highlyStructured;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.MessageType;

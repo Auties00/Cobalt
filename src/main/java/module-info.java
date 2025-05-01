@@ -2,9 +2,6 @@ open module it.auties.cobalt {
     // Cryptography
     requires it.auties.curve;
 
-    // Scan listeners
-    requires jdk.compiler;
-
     // QR related dependencies
     requires com.google.zxing;
     requires com.google.zxing.javase;
@@ -27,9 +24,11 @@ open module it.auties.cobalt {
     requires com.googlecode.ezvcard;
 
     // Mobile api
-    requires libphonenumber;
-    requires java.net.http;
     requires net.dongliu.apkparser;
+    requires com.google.i18n.phonenumbers.libphonenumber;
+
+    // Web api
+    requires java.net.http;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
@@ -54,8 +53,6 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.button.interactive;
     exports it.auties.whatsapp.model.button.base;
     exports it.auties.whatsapp.model.button.template.hydrated;
-    exports it.auties.whatsapp.model.button.template.hsm;
-    exports it.auties.whatsapp.model.button.template;
     exports it.auties.whatsapp.model.companion;
     exports it.auties.whatsapp.model.signal.session;
     exports it.auties.whatsapp.model.signal.auth;
