@@ -1,19 +1,10 @@
 package it.auties.whatsapp.api;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.ChecksumException;
-import com.google.zxing.FormatException;
-import com.google.zxing.NotFoundException;
-import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
-import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.qrcode.QRCodeReader;
-import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.implementation.SocketHandler;
 import it.auties.whatsapp.implementation.SocketState;
@@ -22,15 +13,12 @@ import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.*;
-import it.auties.whatsapp.model.companion.CompanionLinkResult;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.*;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
-import it.auties.whatsapp.model.media.AttachmentType;
-import it.auties.whatsapp.model.media.MediaFile;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
@@ -58,24 +46,19 @@ import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.*;
 
-import javax.imageio.ImageIO;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.model.contact.ContactStatus.*;
@@ -2299,9 +2282,10 @@ public class Whatsapp {
         return changeBusinessAttribute("email", email);
     }
 
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^(.+)@(\\S+)$");
+
     private boolean isValidEmail(String email) {
-        return Pattern.compile("^(.+)@(\\S+)$")
-                .matcher(email)
+        return EMAIL_PATTERN.matcher(email)
                 .matches();
     }
 

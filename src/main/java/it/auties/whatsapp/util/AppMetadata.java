@@ -97,23 +97,30 @@ public final class AppMetadata {
             var request = HttpRequest.newBuilder()
                     .uri(WEB_UPDATE_URL)
                     .header("User-Agent", MOBILE_WEB_USER_AGENT)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Sec-Fetch-Dest", "document")
+                    .header("Sec-Fetch-Mode", "navigate")
+                    .header("Sec-Fetch-Site", "none")
+                    .header("Sec-Fetch-User", "?1")
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApplyAsync(response -> {
                 if(response.statusCode() != 200) {
                     return WEB_VERSION;
                 }
 
-                var clientVersionString =  WEB_UPDATE_PATTERN.matcher(response.body());
-                if(clientVersionString.groupCount() == 0) {
-                    return WEB_VERSION;
-                }
-
-                try {
-                    var clientVersion = Integer.parseUnsignedInt(clientVersionString.group(1));
-                    return webVersion = new Version(2, 3000, clientVersion);
-                }catch (Throwable throwable) {
-                    return WEB_VERSION;
-                }
+                return WEB_UPDATE_PATTERN.matcher(response.body())
+                        .results()
+                        .findFirst()
+                        .map(entry -> {
+                            try {
+                                var clientVersion = Integer.parseUnsignedInt(entry.group(1));
+                                return webVersion = new Version(2, 3000, clientVersion);
+                            }catch (Throwable throwable) {
+                                return WEB_VERSION;
+                            }
+                        })
+                        .orElse(WEB_VERSION);
             });
         }
     }
