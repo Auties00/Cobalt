@@ -7,7 +7,6 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,13 +20,37 @@ import java.util.concurrent.ThreadLocalRandom;
 @ProtobufMessage
 public final class CompanionDevice {
     private static final List<Entry<String, String>> IPHONES = List.of(
-            Map.entry("iPhone_7", "iPhone12,1")
+            Map.entry("iPhone_11", "iPhone12,1"),
+            Map.entry("iPhone_11_Pro", "iPhone12,3"),
+            Map.entry("iPhone_11_Pro_Max", "iPhone12,5"),
+            Map.entry("iPhone_12", "iPhone13,2"),
+            Map.entry("iPhone_12_Pro", "iPhone13,3"),
+            Map.entry("iPhone_12_Pro_Max", "iPhone13,4"),
+            Map.entry("iPhone_13", "iPhone14,5"),
+            Map.entry("iPhone_13_Pro", "iPhone14,2"),
+            Map.entry("iPhone_13_Pro_Max", "iPhone14,3"),
+            Map.entry("iPhone_14", "iPhone14,7"),
+            Map.entry("iPhone_14_Plus", "iPhone14,8"),
+            Map.entry("iPhone_14_Pro", "iPhone15,2"),
+            Map.entry("iPhone_14_Pro_Max", "iPhone15,3"),
+            Map.entry("iPhone_15", "iPhone15,4"),
+            Map.entry("iPhone_15_Plus", "iPhone15,5"),
+            Map.entry("iPhone_15_Pro", "iPhone16,1"),
+            Map.entry("iPhone_15_Pro_Max", "iPhone16,2")
     );
     private static final List<Entry<String, String>> IOS_VERSION = List.of(
-            Map.entry("15.8.3", "21G101")
+            Map.entry("17.1", "21B74"),
+            Map.entry("17.1.1", "21B91"),
+            Map.entry("17.1.2", "21B101"),
+            Map.entry("17.2", "21C62"),
+            Map.entry("17.2.1", "21C66"),
+            Map.entry("17.3", "21D50"),
+            Map.entry("17.3.1", "21D61"),
+            Map.entry("17.4", "21E219"),
+            Map.entry("17.4.1", "21E237"),
+            Map.entry("17.5.1", "21F84"),
+            Map.entry("17.5.1", "21F91")
     );
-    private static final int MIDDLEWARE_BUSINESS_PORT = 1120;
-    private static final int MIDDLEWARE_PERSONAL_PORT = 1119;
 
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String model;
@@ -47,38 +70,11 @@ public final class CompanionDevice {
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final String osBuildNumber;
 
-    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-    private final String address;
-
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
     private final String modelId;
 
     @ProtobufProperty(index = 9, type = ProtobufType.ENUM)
     private final ClientType clientType;
-
-    private CompanionDevice(
-            String model,
-            String manufacturer,
-            PlatformType platform,
-            Version appVersion,
-            Version osVersion,
-            String osBuildNumber,
-            List<String> addresses,
-            String modelId,
-            ClientType clientType
-    ) {
-        this(
-                model,
-                manufacturer,
-                platform,
-                appVersion,
-                osVersion,
-                osBuildNumber,
-                addresses == null || addresses.isEmpty() ? null : addresses.get(ThreadLocalRandom.current().nextInt(0, addresses.size())),
-                modelId,
-                clientType
-        );
-    }
 
     CompanionDevice(
             String model,
@@ -87,7 +83,6 @@ public final class CompanionDevice {
             Version appVersion,
             Version osVersion,
             String osBuildNumber,
-            String address,
             String modelId,
             ClientType clientType
     ) {
@@ -98,12 +93,6 @@ public final class CompanionDevice {
         this.appVersion = appVersion;
         this.osVersion = osVersion;
         this.osBuildNumber = osBuildNumber;
-        var uri = address == null ? null : URI.create(address);
-        this.address = uri == null ? null : "%s://%s:%s".formatted(
-                Objects.requireNonNullElse(uri.getScheme(), "http"),
-                Objects.requireNonNull(uri.getHost(), "Missing hostname"),
-                uri.getPort() != -1 ? uri.getPort() : (platform.isBusiness() ? MIDDLEWARE_BUSINESS_PORT : MIDDLEWARE_PERSONAL_PORT)
-        );
         this.clientType = clientType;
     }
 
@@ -119,7 +108,6 @@ public final class CompanionDevice {
                 appVersion,
                 Version.of("1.0"),
                 null,
-                List.of(),
                 null,
                 ClientType.WEB
         );
@@ -147,7 +135,6 @@ public final class CompanionDevice {
                 appVersion,
                 Version.of(version.getKey()),
                 version.getValue(),
-                address,
                 model.getValue(),
                 ClientType.MOBILE
         );
@@ -174,7 +161,6 @@ public final class CompanionDevice {
                 appVersion,
                 Version.of(String.valueOf(ThreadLocalRandom.current().nextInt(11, 16))),
                 null,
-                address,
                 model,
                 ClientType.MOBILE
         );
@@ -192,7 +178,6 @@ public final class CompanionDevice {
                 appVersion,
                 Version.of("2.5.4"),
                 null,
-                List.of(),
                 "8110",
                 ClientType.MOBILE
         );
@@ -258,7 +243,6 @@ public final class CompanionDevice {
                 appVersion,
                 osVersion,
                 osBuildNumber,
-                address,
                 modelId,
                 clientType
         );
@@ -288,25 +272,18 @@ public final class CompanionDevice {
         return osVersion;
     }
 
-    public Optional<String> address() {
-        return Optional.ofNullable(address);
-    }
-
     public ClientType clientType() {
         return clientType;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CompanionDevice that = (CompanionDevice) o;
-        return Objects.equals(model, that.model) && Objects.equals(manufacturer, that.manufacturer) && platform == that.platform && Objects.equals(appVersion, that.appVersion) && Objects.equals(osVersion, that.osVersion) && Objects.equals(osBuildNumber, that.osBuildNumber) && Objects.equals(address, that.address) && Objects.equals(modelId, that.modelId) && clientType == that.clientType;
+        return o instanceof CompanionDevice that && Objects.equals(model, that.model) && Objects.equals(manufacturer, that.manufacturer) && platform == that.platform && Objects.equals(appVersion, that.appVersion) && Objects.equals(osVersion, that.osVersion) && Objects.equals(osBuildNumber, that.osBuildNumber) && Objects.equals(modelId, that.modelId) && clientType == that.clientType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(model, manufacturer, platform, appVersion, osVersion, osBuildNumber, address, modelId, clientType);
+        return Objects.hash(model, manufacturer, platform, appVersion, osVersion, osBuildNumber, modelId, clientType);
     }
 
     @Override
@@ -318,7 +295,6 @@ public final class CompanionDevice {
                 ", appVersion=" + appVersion +
                 ", osVersion=" + osVersion +
                 ", osBuildNumber='" + osBuildNumber + '\'' +
-                ", address='" + address + '\'' +
                 ", modelId='" + modelId + '\'' +
                 ", clientType=" + clientType +
                 '}';

@@ -351,7 +351,8 @@ public final class Medias {
     }
 
     private static HttpClient createHttpClient(URI proxy) {
-        var builder = HttpClient.newBuilder();
+        var builder = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.ALWAYS);
         if (proxy != null) {
             builder.proxy(Proxies.toProxySelector(proxy));
             builder.authenticator(Proxies.toAuthenticator(proxy));

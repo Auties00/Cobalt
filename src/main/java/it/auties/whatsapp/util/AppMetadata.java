@@ -53,7 +53,7 @@ public final class AppMetadata {
     private static final Path ANDROID_CACHE = Path.of(System.getProperty("user.home") + "/.cobalt/token/android");
     private static final Path KAI_OS_CACHE = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
     private static final String MOBILE_WEB_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
-    private static final String MOBILE_KAIOS_URL = "https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA";
+    private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
     private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final byte[] MOBILE_ANDROID_SALT = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
     private static final Version WEB_VERSION = Version.of("2.3000.1022032575");
@@ -64,11 +64,12 @@ public final class AppMetadata {
     private static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
     private static final String MOBILE_BUSINESS_IOS_STATIC = "USUDuDYDeQhY4RF2fCSp5m3F6kJ1M2J8wS7bbNA2";
     private static final URI MOBILE_ANDROID_URL = URI.create("https://www.whatsapp.com/android/current/WhatsApp.apk");
-    private static final URI MOBILE_BUSINESS_ANDROID_URL = URI.create("https://d.cdnpure.com/b/APK/com.whatsapp.w4b?version=latest");;
+    private static final URI MOBILE_BUSINESS_ANDROID_URL = URI.create("https://d.cdnpure.com/b/APK/com.whatsapp.w4b?version=latest");
     private static final String MOBILE_KAIOS_STATIC = "aa8243c465a743c488beb4645dda63edc2ca9a58";
-    private static final String MOBILE_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp";
-    private static final String MOBILE_BUSINESS_IOS_URL = "https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB";
+    private static final URI MOBILE_IOS_URL = URI.create("https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp");
+    private static final URI MOBILE_BUSINESS_IOS_URL = URI.create("https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB");
     private static final String MOBILE_IOS_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1";
+   private static final String MOBILE_ANDROID_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
 
     public static CompletableFuture<Version> getVersion(PlatformType platform) {
         return switch (platform) {
@@ -134,7 +135,7 @@ public final class AppMetadata {
             return CompletableFuture.completedFuture(personalIosVersion);
         }
 
-        return Medias.downloadAsync(URI.create(business ? MOBILE_BUSINESS_IOS_URL : MOBILE_IOS_URL), null, MOBILE_IOS_USER_AGENT).thenApplyAsync(response -> {
+        return Medias.downloadAsync(business ? MOBILE_BUSINESS_IOS_URL : MOBILE_IOS_URL, null, MOBILE_IOS_USER_AGENT).thenApplyAsync(response -> {
             var result = Json.readValue(response, IosVersionResponse.class);
             if(result == null) {
                 return business ? MOBILE_BUSINESS_IOS_VERSION : MOBILE_PERSONAL_IOS_VERSION;
@@ -229,7 +230,7 @@ public final class AppMetadata {
     }
 
     private static CompletableFuture<WhatsappAndroidApp> downloadAndroidData(boolean business) {
-        return Medias.downloadAsync(business ? MOBILE_BUSINESS_ANDROID_URL : MOBILE_ANDROID_URL, null, (String) null).thenApplyAsync(apk -> {
+        return Medias.downloadAsync(business ? MOBILE_BUSINESS_ANDROID_URL : MOBILE_ANDROID_URL, null, MOBILE_ANDROID_USER_AGENT).thenApplyAsync(apk -> {
             try (var apkFile = new ByteArrayApkFile(apk)) {
                 var version = Version.of(apkFile.getApkMeta().getVersionName());
                 var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
@@ -300,6 +301,8 @@ public final class AppMetadata {
         return KAI_OS_CACHE.resolve("whatsapp.json");
     }
 
+    // https://faq.whatsapp.com/420008397294796
+    // Leaving it here just for research
     private static CompletableFuture<WhatsappKaiOsApp> getKaiOsData() {
         if (kaiOsApp != null) {
             return CompletableFuture.completedFuture(kaiOsApp);
@@ -330,7 +333,7 @@ public final class AppMetadata {
     }
 
     private static CompletableFuture<WhatsappKaiOsApp> downloadKaiOsData() {
-        return Medias.downloadAsync(URI.create(MOBILE_KAIOS_URL), null, MOBILE_KAIOS_USER_AGENT, Map.entry("Content-Type", "application/json")).thenComposeAsync(catalogResponse -> {
+        return Medias.downloadAsync(MOBILE_KAIOS_URL, null, MOBILE_KAIOS_USER_AGENT, Map.entry("Content-Type", "application/json")).thenComposeAsync(catalogResponse -> {
             try (var compressedStream = new GZIPInputStream(new ByteArrayInputStream(catalogResponse))) {
                 var catalog = Json.readValue(compressedStream.readAllBytes(), KaiOsCatalogResponse.class);
                 var app = catalog.apps()
