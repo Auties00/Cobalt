@@ -1,4 +1,4 @@
-package it.auties.whatsapp.implementation;
+package it.auties.whatsapp.socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.curve25519.Curve25519;

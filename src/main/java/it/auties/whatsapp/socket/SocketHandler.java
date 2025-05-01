@@ -1,4 +1,4 @@
-package it.auties.whatsapp.implementation;
+package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
@@ -7,7 +7,7 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.io.BinaryDecoder;
 import it.auties.whatsapp.io.BinaryEncoder;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.api.Listener;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -29,7 +29,6 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
 import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
@@ -141,7 +140,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    private void callListenersAsync(Consumer<WhatsappListener> consumer) {
+    private void callListenersAsync(Consumer<Listener> consumer) {
         store.listeners()
                 .forEach(listener -> Thread.startVirtualThread(() -> invokeListenerSafe(consumer, listener)));
     }
@@ -974,13 +973,13 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public void callListenersSync(Consumer<WhatsappListener> consumer) {
+    public void callListenersSync(Consumer<Listener> consumer) {
         for(var listener : store.listeners()) {
             invokeListenerSafe(consumer, listener);
         }
     }
 
-    private void invokeListenerSafe(Consumer<WhatsappListener> consumer, WhatsappListener listener) {
+    private void invokeListenerSafe(Consumer<Listener> consumer, Listener listener) {
         try {
             consumer.accept(listener);
         } catch (Throwable throwable) {

@@ -2,7 +2,7 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.api.Listener;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.button.base.ButtonRow;
 import it.auties.whatsapp.model.button.base.ButtonSection;
@@ -54,7 +54,7 @@ import java.util.stream.IntStream;
 // I repeat: DO NOT RUN THIS CI LOCALLY ON A BRAND-NEW NUMBER OR IT WILL GET BANNED
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class TestLibrary implements WhatsappListener {
+public class TestLibrary implements Listener {
     @SuppressWarnings("HttpUrlsUsage")
     private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 

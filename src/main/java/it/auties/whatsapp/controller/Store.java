@@ -8,12 +8,9 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.api.MediaProxySetting;
-import it.auties.whatsapp.api.TextPreviewSetting;
-import it.auties.whatsapp.api.WebHistorySetting;
-import it.auties.whatsapp.implementation.SocketRequest;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.socket.SocketRequest;
+import it.auties.whatsapp.api.Listener;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
@@ -255,7 +252,7 @@ public final class Store extends Controller<Store> {
      * The non-null list of listeners
      */
     @JsonIgnore
-    final KeySetView<WhatsappListener, Boolean> listeners;
+    final KeySetView<Listener, Boolean> listeners;
 
     /**
      * The request tag, used to create messages
@@ -1129,7 +1126,7 @@ public final class Store extends Controller<Store> {
      *
      * @return a non-null collection
      */
-    public Collection<WhatsappListener> listeners() {
+    public Collection<Listener> listeners() {
         return Collections.unmodifiableSet(listeners);
     }
 
@@ -1139,7 +1136,7 @@ public final class Store extends Controller<Store> {
      * @param listener the listener to register
      * @return the same instance
      */
-    public Store addListener(WhatsappListener listener) {
+    public Store addListener(Listener listener) {
         listeners.add(listener);
         return this;
     }
@@ -1150,7 +1147,7 @@ public final class Store extends Controller<Store> {
      * @param listeners the listeners to register
      * @return the same instance
      */
-    public Store addListeners(Collection<WhatsappListener> listeners) {
+    public Store addListeners(Collection<Listener> listeners) {
         this.listeners.addAll(listeners);
         return this;
     }
@@ -1161,7 +1158,7 @@ public final class Store extends Controller<Store> {
      * @param listener the listener to remove
      * @return the same instance
      */
-    public Store removeListener(WhatsappListener listener) {
+    public Store removeListener(Listener listener) {
         listeners.remove(listener);
         return this;
     }

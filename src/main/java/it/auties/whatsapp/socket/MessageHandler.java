@@ -1,4 +1,4 @@
-package it.auties.whatsapp.implementation;
+package it.auties.whatsapp.socket;
 
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMatch;

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.implementation;
+package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.ClientType;

@@ -389,9 +389,9 @@ Listeners can be used either as:
    To create a new concrete listener, declare a class or record that implements the Listener interface:
 
    ```java
-   import it.auties.whatsapp.api.WhatsappListener;
+   import it.auties.whatsapp.api.Listener;
 
-   public class MyListener implements WhatsappListener {
+   public class MyListener implements Listener {
     @Override
     public void onLoggedIn() {
         System.out.println("Hello :)");
@@ -409,7 +409,7 @@ Listeners can be used either as:
 
    ```java
 
-   import it.auties.whatsapp.api.WhatsappListener;
+   import it.auties.whatsapp.api.Listener;
 
 // Automatically registers this listener
    public class MyListener implements Listener {
@@ -428,7 +428,7 @@ Listeners can be used either as:
    ```java
 
    import it.auties.whatsapp.api.Whatsapp;
-   import it.auties.whatsapp.api.WhatsappListener;
+   import it.auties.whatsapp.api.Listener;
 
 // Automatically registers this listener
    public record MyListener(Whatsapp api) implements Listener { // A non-null whatsapp instance is injected
@@ -499,9 +499,9 @@ These are the three reasons that can cause a disconnect:
    By default, no error is thrown if this happens, though this behaviour can be changed easily:
     ```java
     import it.auties.whatsapp.api.DisconnectReason;
-    import it.auties.whatsapp.api.WhatsappListener;
+    import it.auties.whatsapp.api.Listener;import it.auties.whatsapp.api.WhatsappListener;
 
-    class ThrowOnLogOut implements WhatsappListener {
+    class ThrowOnLogOut implements Listener {
         @Override
         public void onDisconnected(DisconnectReason reason) {
             if (reason != SocketEvent.LOGGED_OUT) {
