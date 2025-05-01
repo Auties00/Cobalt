@@ -166,8 +166,9 @@ public final class Medias {
 
     private static Optional<byte[]> handleResponse(MutableAttachmentProvider<?> provider, byte[] body) {
         var sha256 = Sha256.calculate(body);
-        Validate.isTrue(provider.mediaEncryptedSha256().isEmpty() || Arrays.equals(sha256, provider.mediaEncryptedSha256().get()),
-                "Cannot decode media: Invalid sha256 signature", SecurityException.class);
+        if(provider.mediaEncryptedSha256().isPresent() && !Arrays.equals(sha256, provider.mediaEncryptedSha256().get())) {
+            throw new IllegalArgumentException("Cannot decode media: Invalid sha256 signature");
+        }
         var encryptedMedia = Arrays.copyOf(body, body.length - 10);
         var mediaMac = Arrays.copyOfRange(body, body.length - 10, body.length);
         var keyName = provider.attachmentType().keyName();
@@ -182,7 +183,9 @@ public final class Medias {
 
         var keys = MediaKeys.of(mediaKey.get(), keyName.get());
         var hmac = calculateMac(encryptedMedia, keys);
-        Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
+        if(!Arrays.equals(hmac, mediaMac)) {
+            throw new HmacValidationException("media_decryption");
+        }
         var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
         return Optional.of(decrypted);
     }

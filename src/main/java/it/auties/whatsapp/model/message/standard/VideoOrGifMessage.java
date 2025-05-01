@@ -16,7 +16,6 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Validate;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -122,7 +121,9 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
 
     @ProtobufBuilder(className = "GifMessageSimpleBuilder")
     static VideoOrGifMessage gifBuilder(byte[] media, String mimeType, String caption, Attribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
-        Validate.isTrue(isNotGif(media, mimeType), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+        if (!isNotGif(media, mimeType)) {
+            throw new IllegalArgumentException("Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+        }
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
         return new VideoOrGifMessageBuilder()

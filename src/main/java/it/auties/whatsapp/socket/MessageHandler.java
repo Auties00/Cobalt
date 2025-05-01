@@ -51,7 +51,6 @@ import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Validate;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -716,7 +715,9 @@ class MessageHandler {
     }
 
     private void parseSession(Node node) {
-        Validate.isTrue(!node.hasNode("error"), "Erroneous session node", SecurityException.class);
+        if (node.hasNode("error")) {
+            throw new IllegalArgumentException("Erroneous session node");
+        }
         var jid = node.attributes()
                 .getRequiredJid("jid");
         var registrationId = node.findChild("registration")

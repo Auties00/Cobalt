@@ -2,11 +2,10 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.util.Validate;
 
 import java.util.Objects;
 
-public class WhatsappCustomBuilder {
+public final class WhatsappCustomBuilder {
     private Store store;
     private Keys keys;
     private ErrorHandler errorHandler;
@@ -37,7 +36,9 @@ public class WhatsappCustomBuilder {
     }
 
     public Whatsapp build() {
-        Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUID mismatch: %s != %s", store.uuid(), keys.uuid());
+        if (!Objects.equals(store.uuid(), keys.uuid())) {
+            throw new IllegalArgumentException("UUID mismatch: %s != %s".formatted(store.uuid(), keys.uuid()));
+        }
         var knownInstance = Whatsapp.getInstanceByUuid(store.uuid());
         if (knownInstance.isPresent()) {
             return knownInstance.get();

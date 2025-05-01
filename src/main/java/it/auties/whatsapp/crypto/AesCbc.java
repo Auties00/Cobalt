@@ -1,7 +1,6 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Validate;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -39,8 +38,12 @@ public final class AesCbc {
 
     public static byte[] decrypt(byte[] iv, byte[] encrypted, byte[] key) {
         try {
-            Validate.isTrue(iv.length == AES_BLOCK_SIZE, "Invalid iv size: expected %s, got %s", AES_BLOCK_SIZE, iv.length);
-            Validate.isTrue(encrypted.length % AES_BLOCK_SIZE == 0, "Invalid encrypted size");
+            if (iv.length != AES_BLOCK_SIZE) {
+                throw new IllegalArgumentException("Invalid iv size: expected %s, got %s".formatted(AES_BLOCK_SIZE, iv.length));
+            }
+            if (encrypted.length % AES_BLOCK_SIZE != 0) {
+                throw new IllegalArgumentException("Invalid encrypted size");
+            }
             var cipher = Cipher.getInstance(AES_CBC);
             var keySpec = new SecretKeySpec(key, AES);
             cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));

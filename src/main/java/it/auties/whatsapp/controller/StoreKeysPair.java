@@ -1,7 +1,5 @@
 package it.auties.whatsapp.controller;
 
-import it.auties.whatsapp.util.Validate;
-
 import java.util.Objects;
 
 /**
@@ -9,6 +7,8 @@ import java.util.Objects;
  */
 public record StoreKeysPair(Store store, Keys keys) {
     public StoreKeysPair {
-        Validate.isTrue(Objects.equals(store.uuid(), keys.uuid()), "UUID mismatch between store and keys");
+        if (!Objects.equals(store.uuid(), keys.uuid())) {
+            throw new IllegalArgumentException("UUID mismatch between store and keys");
+        }
     }
 }

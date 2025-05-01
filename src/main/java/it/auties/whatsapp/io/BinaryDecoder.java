@@ -4,7 +4,6 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Validate;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -33,7 +32,9 @@ public final class BinaryDecoder implements AutoCloseable {
 
         var token = dataInputStream.readUnsignedByte();
         var size = readSize(token);
-        Validate.isTrue(size != 0, "Cannot decode node with empty body");
+        if (size == 0) {
+            throw new IllegalArgumentException("Cannot decode node with empty body");
+        }
         var description = readString();
         var attrs = readAttributes(size);
         return size % 2 != 0 ? Node.of(description, attrs) : Node.of(description, attrs, read(false));

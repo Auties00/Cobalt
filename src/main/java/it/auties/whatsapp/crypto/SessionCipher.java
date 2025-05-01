@@ -13,7 +13,6 @@ import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.SignalConstants;
-import it.auties.whatsapp.util.Validate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -31,7 +30,9 @@ public record SessionCipher(SessionAddress address, Keys keys) {
         }
         var currentState = loadSession().currentState()
                 .orElseThrow(() -> new NoSuchElementException("Missing session for address %s".formatted(address)));
-        Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key", SecurityException.class);
+        if (!keys.hasTrust(address, currentState.remoteIdentityKey())) {
+            throw new IllegalArgumentException("Untrusted key");
+        }
         var chain = currentState.findChain(currentState.ephemeralKeyPair().signalPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
         fillMessageKeys(chain, chain.counter().get() + 1);
@@ -85,10 +86,15 @@ public record SessionCipher(SessionAddress address, Keys keys) {
         if (chain.counter().get() >= counter) {
             return;
         }
-        Validate.isTrue(counter - chain.counter()
-                .get() <= MAX_MESSAGES, "Message overflow: expected <= %s, got %s", MAX_MESSAGES, counter - chain.counter()
-                .get());
-        Validate.isTrue(chain.key().get() != null, "Closed chain");
+        var delta = counter - chain.counter().get();
+        if (delta > MAX_MESSAGES) {
+            throw new IllegalArgumentException("Message overflow: expected <= %s, got %s".formatted(MAX_MESSAGES, delta));
+        }
+
+        if (chain.key().get() == null) {
+            throw new IllegalArgumentException("Closed chain");
+        }
+
         var messagesHmac = Hmac.calculateSha256(new byte[]{1}, chain.key().get());
         chain.messageKeys().put(chain.counter().get() + 1, messagesHmac);
         var keyHmac = Hmac.calculateSha256(new byte[]{2}, chain.key().get());
@@ -123,7 +129,9 @@ public record SessionCipher(SessionAddress address, Keys keys) {
 
     private Optional<byte[]> tryDecrypt(SignalMessage message, SessionState state) {
         try {
-            Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()), "Untrusted key");
+            if (!keys.hasTrust(address, state.remoteIdentityKey())) {
+                throw new IllegalArgumentException("Untrusted key");
+            }
             return Optional.of(decrypt(message, state));
         } catch (Throwable throwable) {
             return Optional.empty();
@@ -135,7 +143,9 @@ public record SessionCipher(SessionAddress address, Keys keys) {
         var chain = state.findChain(message.ephemeralPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Invalid chain"));
         fillMessageKeys(chain, message.counter());
-        Validate.isTrue(chain.hasMessageKey(message.counter()), "Key used already or never filled");
+        if (!chain.hasMessageKey(message.counter())) {
+            throw new IllegalArgumentException("Key used already or never filled");
+        }
         var messageKey = chain.messageKeys().get(message.counter());
         var secrets = Hkdf.deriveSecrets(messageKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
         var hmacValue = Bytes.concat(
@@ -146,7 +156,9 @@ public record SessionCipher(SessionAddress address, Keys keys) {
         var hmacInput = Arrays.copyOfRange(hmacValue, 0, hmacValue.length - MAC_LENGTH);
         var hmacSha256 = Hmac.calculateSha256(hmacInput, secrets[1]);
         var hmac = Arrays.copyOf(hmacSha256, MAC_LENGTH);
-        Validate.isTrue(Arrays.equals(message.signature(), hmac), "message_decryption", HmacValidationException.class);
+        if(!Arrays.equals(message.signature(), hmac)) {
+            throw new HmacValidationException("message_decryption");
+        }
         var iv = Arrays.copyOf(secrets[2], IV_LENGTH);
         var plaintext = AesCbc.decrypt(iv, message.ciphertext(), secrets[0]);
         state.pendingPreKey(null);

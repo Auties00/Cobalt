@@ -197,7 +197,9 @@ public final class MobileRegistration {
             case NO_ROUTES -> throw new RegistrationException(response, "You can only register numbers that are already on Whatsapp, if you need to register any numbers please contact me on Telegram @Auties00");
             default -> {
                 var newErrorReason = response.errorReason();
-                Validate.isTrue(newErrorReason != lastError, () -> new RegistrationException(response, result));
+                if(newErrorReason == lastError) {
+                    throw new RegistrationException(response, result);
+                }
                 yield requestVerificationCode(existsResponse, newErrorReason);
             }
         };

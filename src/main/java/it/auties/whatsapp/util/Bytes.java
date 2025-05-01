@@ -32,13 +32,6 @@ public final class Bytes {
         return bytes;
     }
 
-    public static byte[] concat(List<byte[]> entries) {
-        return entries.stream()
-                .filter(Objects::nonNull)
-                .reduce(Bytes::concat)
-                .orElseGet(() -> new byte[0]);
-    }
-
     public static byte[] concat(byte[]... entries) {
         return Arrays.stream(entries)
                 .filter(entry -> entry != null && entry.length != 0)
@@ -158,14 +151,6 @@ public final class Bytes {
         var result = 0;
         for (var i = 0; i < length; i++) {
             result = 256 * result + Byte.toUnsignedInt(bytes[i]);
-        }
-        return result;
-    }
-
-    public static int bytesToInt(ByteBuffer buffer, int length) {
-        var result = 0;
-        for (var i = 0; i < length; i++) {
-            result = 256 * result + Byte.toUnsignedInt(buffer.get());
         }
         return result;
     }

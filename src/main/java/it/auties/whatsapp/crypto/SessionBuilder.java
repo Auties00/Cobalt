@@ -9,7 +9,6 @@ import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.SignalConstants;
-import it.auties.whatsapp.util.Validate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -19,9 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public record SessionBuilder(SessionAddress address, Keys keys) {
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey) {
-        Validate.isTrue(keys.hasTrust(address, identityKey), "Untrusted key", SecurityException.class);
-        Validate.isTrue(Curve25519.verifySignature(ISignalKeyPair.toCurveKey(identityKey), signedPreKey.keyPair()
-                .signalPublicKey(), signedPreKey.signature()), "Signature mismatch", SecurityException.class);
+        if (!keys.hasTrust(address, identityKey)) {
+            throw new IllegalArgumentException("Untrusted key");
+        }
+        if (!Curve25519.verifySignature(ISignalKeyPair.toCurveKey(identityKey), signedPreKey.keyPair().signalPublicKey(), signedPreKey.signature())) {
+            throw new IllegalArgumentException("Signature mismatch");
+        }
         var baseKey = SignalKeyPair.random();
         var state = createState(true,
                 baseKey,
@@ -46,10 +48,14 @@ public record SessionBuilder(SessionAddress address, Keys keys) {
 
     public SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey, byte[] theirIdentityPubKey, byte[] theirEphemeralPubKey, byte[] theirSignedPubKey, int registrationId, int version) {
         if (isInitiator) {
-            Validate.isTrue(ourSignedKey == null, "Our signed key should be null");
+            if (ourSignedKey != null) {
+                throw new IllegalArgumentException("Our signed key should be null");
+            }
             ourSignedKey = ourEphemeralKey;
         } else {
-            Validate.isTrue(theirSignedPubKey == null, "Their signed public key should be null");
+            if (theirSignedPubKey != null) {
+                throw new IllegalArgumentException("Their signed public key should be null");
+            }
             theirSignedPubKey = theirEphemeralPubKey;
         }
         var signedSecret = Curve25519.sharedKey(ISignalKeyPair.toCurveKey(theirSignedPubKey), keys.identityKeyPair()
@@ -107,7 +113,9 @@ public record SessionBuilder(SessionAddress address, Keys keys) {
     }
 
     public void createIncoming(Session session, SignalPreKeyMessage message) {
-        Validate.isTrue(keys.hasTrust(address, message.identityKey()), "Untrusted key", SecurityException.class);
+        if (!keys.hasTrust(address, message.identityKey())) {
+            throw new IllegalArgumentException("Untrusted key");
+        }
         if (session.hasState(message.version(), message.baseKey())) {
             return;
         }

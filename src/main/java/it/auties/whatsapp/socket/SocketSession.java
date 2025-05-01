@@ -157,8 +157,14 @@ abstract sealed class SocketSession {
             if (isOpen()) {
                 return CompletableFuture.completedFuture(null);
             }
+
+            if(proxy != null) {
+                return CompletableFuture.failedFuture(new UnsupportedOperationException("Proxies are not supported on the mobile api"));
+            }
+
             try {
                 channel = SocketChannel.open();
+
                 channel.configureBlocking(false);
 
                 var context = new ConnectionContext(this, listener, new CompletableFuture<>());

@@ -15,7 +15,6 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Validate;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -102,8 +101,10 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     @ProtobufBuilder(className = "DocumentMessageSimpleBuilder")
     static DocumentMessage customBuilder(byte[] media, String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
         var extensionIndex = fileName.lastIndexOf(".");
-        Validate.isTrue(extensionIndex != -1 && extensionIndex + 1 < fileName.length(), "Expected fileName to be formatted as name.extension");
-        var extension = fileName.substring(extensionIndex + 1);
+        if (extensionIndex == -1 || extensionIndex + 1 >= fileName.length()) {
+            throw new IllegalArgumentException("Expected fileName to be formatted as name.extension");
+        }
+
         return new DocumentMessageBuilder()
                 .mimetype(getMimeType(media, fileName, mimeType))
                 .fileName(fileName)

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
-import it.auties.whatsapp.util.Validate;
 
 import java.util.Objects;
 
@@ -13,7 +12,9 @@ public record SessionAddress(String name, int id) {
     @ProtobufDeserializer
     public static SessionAddress of(String serialized) {
         var split = serialized.split(":", 2);
-        Validate.isTrue(split.length == 2, "Too few parts");
+        if (split.length != 2) {
+            throw new IllegalArgumentException("Malformed address: " + serialized);
+        }
         return new SessionAddress(split[0], Integer.parseInt(split[1]));
     }
 

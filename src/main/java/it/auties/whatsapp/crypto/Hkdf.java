@@ -1,7 +1,6 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Validate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -26,8 +25,14 @@ public final class Hkdf {
     }
 
     public static byte[][] deriveSecrets(byte[] input, byte[] salt, byte[] info, int chunks) {
-        Validate.isTrue(salt.length == KEY_LENGTH, "Incorrect salt codeLength: %s", salt.length);
-        Validate.isTrue(chunks >= 1 && chunks <= 3, "Incorrect number of chunks: %s", chunks);
+        if (salt.length != KEY_LENGTH) {
+            throw new IllegalArgumentException("Incorrect salt codeLength: %s".formatted(salt.length));
+        }
+
+        if (chunks < 1 || chunks > 3) {
+            throw new IllegalArgumentException("Incorrect number of chunks: %s".formatted(chunks));
+        }
+
         var prk = Hmac.calculateSha256(input, salt);
         var result = Bytes.concat(new byte[KEY_LENGTH], info, new byte[]{1});
         var signed = new byte[chunks][];

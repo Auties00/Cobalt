@@ -258,8 +258,9 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public final CompletableFuture<Void> changePrivacySetting(PrivacySettingType type, PrivacySettingValue value, JidProvider... excluded) {
-        Validate.isTrue(type.isSupported(value),
-                "Cannot change setting %s to %s: this toggle cannot be used because Whatsapp doesn't support it", value.name(), type.name());
+        if (!type.isSupported(value)) {
+            throw new IllegalArgumentException("Cannot change setting %s to %s: this toggle cannot be used because Whatsapp doesn't support it".formatted(value.name(), type.name()));
+        }
         var attributes = Attributes.of()
                 .put("name", type.data())
                 .put("value", value.data())
@@ -322,9 +323,11 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Void> changeName(String newName) {
-        Validate.isTrue(store().clientType() != ClientType.WEB || !store().device().platform().isBusiness(),
-                "The business name cannot be changed using the web api");
-        if(store().clientType() == ClientType.MOBILE && store().device().platform().isBusiness()) {
+        if (store().clientType() == ClientType.WEB && store().device().platform().isBusiness()) {
+            throw new IllegalArgumentException("The business name cannot be changed using the web api");
+        }
+
+        if (store().clientType() == ClientType.MOBILE && store().device().platform().isBusiness()) {
             var oldName = store().name();
             return socketHandler.updateBusinessCertificate(newName)
                     .thenRunAsync(() -> socketHandler.onUserChanged(newName, oldName));
@@ -617,7 +620,9 @@ public class Whatsapp {
     }
 
     public CompletableFuture<ChatMessageInfo> sendChatMessage(JidProvider recipient, MessageContainer message, boolean compose) {
-        Validate.isTrue(!recipient.toJid().hasServer(JidServer.newsletter()), "Use sendNewsletterMessage to send a message in a newsletter");
+        if (!recipient.toJid().hasServer(JidServer.newsletter())) {
+            throw new IllegalArgumentException("Use sendNewsletterMessage to send a message in a newsletter");
+        }
         var info = buildChatMessage(recipient, message);
         return sendMessage(info, compose);
     }
@@ -778,10 +783,10 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<NewsletterMessageInfo> sendNewsletterMessage(JidProvider recipient, MessageContainer message) {
-        var newsletter = store().findNewsletterByJid(recipient);
-        Validate.isTrue(newsletter.isPresent(), "Cannot send a message in a newsletter that you didn't join");
-        var oldServerId = newsletter.get()
-                .newestMessage()
+        var newsletter = store()
+                .findNewsletterByJid(recipient)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot send a message in a newsletter that you didn't join"));
+        var oldServerId = newsletter.newestMessage()
                 .map(NewsletterMessageInfo::serverId)
                 .orElse(0);
         var info = new NewsletterMessageInfo(
@@ -793,7 +798,7 @@ public class Whatsapp {
                 message,
                 MessageStatus.PENDING
         );
-        info.setNewsletter(newsletter.get());
+        info.setNewsletter(newsletter);
         return sendMessage(info);
     }
 
@@ -807,9 +812,9 @@ public class Whatsapp {
     public <T extends MessageInfo<T>> CompletableFuture<T> editMessage(T oldMessage, Message newMessage) {
         var oldMessageType = oldMessage.message().content().type();
         var newMessageType = newMessage.type();
-        Validate.isTrue(oldMessageType == newMessageType,
-                "Message type mismatch: %s != %s",
-                oldMessageType, newMessageType);
+        if (oldMessageType != newMessageType) {
+            throw new IllegalArgumentException("Message type mismatch: %s != %s".formatted(oldMessageType, newMessageType));
+        }
         return switch (oldMessage) {
             case NewsletterMessageInfo oldNewsletterInfo -> {
                 var info = new NewsletterMessageInfo(
@@ -894,7 +899,9 @@ public class Whatsapp {
      */
     public CompletableFuture<ChatMessageInfo> sendMessage(ChatMessageInfo info, boolean compose) {
         var recipient = info.chatJid();
-        Validate.isTrue(!recipient.hasServer(JidServer.newsletter()), "Use sendNewsletterMessage to send a message in a newsletter");
+        if (recipient.hasServer(JidServer.newsletter())) {
+            throw new IllegalArgumentException("Use sendNewsletterMessage to send a message in a newsletter");
+        }
         var timestamp = Clock.nowSeconds();
         return (recipient.hasServer(JidServer.whatsapp()) ? prepareChat(timestamp, Set.of(recipient)) : CompletableFuture.completedFuture(List.of(recipient))).thenComposeAsync(chatResult -> {
             if (chatResult.isEmpty()) {
@@ -1168,9 +1175,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ChatMetadata> queryGroupMetadata(JidProvider chat) {
-        Validate.isTrue(chat.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a group/community");
+        if (!chat.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("Expected a group/community");
+        }
         return socketHandler.queryGroupMetadata(chat.toJid()).thenApply(result -> {
-            Validate.isTrue(!result.isCommunity(), "Expected a group: use queryCommunityMetadata for a community or queryChatMetadata");
+            if (result.isCommunity()) {
+                throw new IllegalArgumentException("Expected a group: use queryCommunityMetadata for a community or queryChatMetadata");
+            }
             return result;
         });
     }
@@ -1393,7 +1404,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> promoteGroupParticipants(JidProvider group, JidProvider... contacts) {
         return queryGroupMetadata(group.toJid())
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(!metadata.isCommunity(), "Expected a group: use promoteCommunityParticipants for communities");
+                    if (metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a group: use promoteCommunityParticipants for communities");
+                    }
                     var participantsSet = metadata.participants()
                             .stream()
                             .map(ChatParticipant::jid)
@@ -1423,7 +1436,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> demoteGroupParticipants(JidProvider group, JidProvider... contacts) {
         return queryGroupMetadata(group.toJid())
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(!metadata.isCommunity(), "Expected a group: use demoteCommunityParticipants for communities");
+                    if (metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a group: use demoteCommunityParticipants for communities");
+                    }
                     var participantsSet = metadata.participants()
                             .stream()
                             .map(ChatParticipant::jid)
@@ -1453,7 +1468,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> addGroupParticipants(JidProvider group, JidProvider... contacts) {
         return queryGroupMetadata(group.toJid())
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(!metadata.isCommunity(), "Expected a group: use addCommunityParticipants for communities");
+                    if (metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a group: use addCommunityParticipants for communities");
+                    }
                     var participantsSet = metadata.participants()
                             .stream()
                             .map(ChatParticipant::jid)
@@ -1483,7 +1500,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> removeGroupParticipants(JidProvider group, JidProvider... contacts) {
         return queryGroupMetadata(group.toJid())
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(!metadata.isCommunity(), "Expected a group: use removeCommunityParticipants for communities");
+                    if (metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a group: use removeCommunityParticipants for communities");
+                    }
                     var participantsSet = metadata.participants()
                             .stream()
                             .map(ChatParticipant::jid)
@@ -1524,7 +1543,11 @@ public class Whatsapp {
     }
 
     private Jid checkGroupParticipantJid(Jid jid, String errorMessage) {
-        Validate.isTrue(!Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid()), errorMessage);
+        var self = Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid());
+        if (self) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+
         return jid;
     }
 
@@ -1548,8 +1571,9 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
     public CompletableFuture<Void> changeGroupSubject(JidProvider group, String newName) {
-        Validate.isTrue(newName != null && !newName.isBlank(),
-                "Empty subjects are not allowed");
+        if (newName != null && newName.isBlank()) {
+            throw new IllegalArgumentException("Empty subjects are not allowed");
+        }
         var body = Node.of("subject", newName.getBytes(StandardCharsets.UTF_8));
         return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body)
                 .thenRun(() -> {});
@@ -1592,7 +1616,9 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Void> changeGroupSetting(JidProvider group, GroupSetting setting, ChatSettingPolicy policy) {
-        Validate.isTrue(group.toJid().hasServer(JidServer.groupOrCommunity()), "This method only accepts groups");
+        if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("This method only accepts groups");
+        }
         var body = switch (setting) {
             case EDIT_GROUP_INFO -> Node.of(policy == ChatSettingPolicy.ADMINS ? "locked" : "unlocked");
             case SEND_MESSAGES -> Node.of(policy == ChatSettingPolicy.ADMINS ? "announcement" : "not_announcement");
@@ -1635,7 +1661,9 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> changeGroupPicture(JidProvider group, URI image) {
-        Validate.isTrue(group.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a group/community");
+        if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("Expected a group/community");
+        }
         var proxy = switch (store().mediaProxySetting()) {
             case NONE, DOWNLOADS -> null;
             case UPLOADS, ALL -> store().proxy().orElse(null);
@@ -1652,7 +1680,9 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> changeGroupPicture(JidProvider group, byte[] image) {
-        Validate.isTrue(group.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a group/community");
+        if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("Expected a group/community");
+        }
         var profilePic = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), profilePic);
         return socketHandler.sendQuery("set", "w:profile:picture", Map.of("target", group.toJid()), body)
@@ -1707,8 +1737,12 @@ public class Whatsapp {
     
     private CompletableFuture<Optional<ChatMetadata>> createGroup(String subject, ChatEphemeralTimer timer, JidProvider parentCommunity, JidProvider... contacts) {
         var timestamp = Clock.nowSeconds();
-        Validate.isTrue(!subject.isBlank(), "The subject of a group cannot be blank");
-        Validate.isTrue( parentCommunity != null || contacts.length >= 1, "Expected at least 1 member for this group");
+        if (subject == null || subject.isBlank()) {
+            throw new IllegalArgumentException("The subject of a group cannot be blank");
+        }
+        if(parentCommunity == null && contacts.length < 1) {
+            throw new IllegalArgumentException("Expected at least 1 member for this group");
+        }
         var contactsJids = Arrays.stream(contacts)
                 .map(JidProvider::toJid)
                 .collect(Collectors.toUnmodifiableSet());
@@ -1830,7 +1864,9 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<Void> leaveGroup(JidProvider group) {
-        Validate.isTrue(group.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a group");
+        if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("Expected a group");
+        }
         var body = Node.of("leave", Node.of("group", Map.of("id", group.toJid())));
         return socketHandler.sendQuery(JidServer.groupOrCommunity().toJid(), "set", "w:g2", body)
                 .thenAcceptAsync(ignored -> handleLeaveGroup(group));
@@ -2255,7 +2291,9 @@ public class Whatsapp {
         var actual = keyNode.get()
                 .contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing business %s newsletters, something went wrong: %s".formatted(key, findErrorNode(result))));
-        Validate.isTrue(value == null || value.equals(actual), "Cannot change business %s: conflict(expected %s, got %s)", key, value, actual);
+        if (value != null && !value.equals(actual)) {
+            throw new IllegalArgumentException("Cannot change business %s: conflict(expected %s, got %s)".formatted(key, value, actual));
+        }
     }
 
     /**
@@ -2275,7 +2313,9 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<String> changeBusinessEmail(String email) {
-        Validate.isTrue(email == null || isValidEmail(email), "Invalid email: %s", email);
+        if (email != null && !isValidEmail(email)) {
+            throw new IllegalArgumentException("Invalid email: " + email);
+        }
         return changeBusinessAttribute("email", email);
     }
 
@@ -2523,8 +2563,9 @@ public class Whatsapp {
     }
 
     private void parseMediaReupload(ChatMessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
-        Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s", node.attributes()
-                .getInt("code"));
+        if (node.hasNode("error")) {
+            throw new IllegalArgumentException("Erroneous response from media reupload: " + node.attributes().getInt("code"));
+        }
         var encryptNode = node.findChild("encrypt")
                 .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
         var mediaPayload = encryptNode.findChild("enc_p")
@@ -2584,9 +2625,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ChatMetadata> queryCommunityMetadata(JidProvider community) {
-        Validate.isTrue(community.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a group/community");
+        if (!community.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("Expected a group/community");
+        }
         return socketHandler.queryGroupMetadata(community.toJid()).thenApply(result -> {
-            Validate.isTrue(result.isCommunity(), "Expected a community: use queryGroupMetadata for a group or queryChatMetadata");
+            if (!result.isCommunity()) {
+                throw new IllegalArgumentException("Expected a community: use queryGroupMetadata for a group or queryChatMetadata");
+            }
             return result;
         });
     }
@@ -2598,7 +2643,9 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> deactivateCommunity(JidProvider community) {
-        Validate.isTrue(community.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a community");
+        if (!community.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("Expected a community");
+        }
         return socketHandler.sendQuery(community.toJid(), "set","w:g2", Node.of("delete_parent"))
                 .thenRunAsync(() -> {});
     }
@@ -2657,7 +2704,9 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Void> changeCommunitySetting(JidProvider community, CommunitySetting setting, ChatSettingPolicy policy) {
-        Validate.isTrue(community.toJid().hasServer(JidServer.groupOrCommunity()), "This method only accepts communities");
+        if (!community.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("This method only accepts communities");
+        }
         return switch (setting) {
             case MODIFY_GROUPS -> {
                 var mexBody = "{\"variables\":{\"allow_non_admin_sub_group_creation\":%s,\"id\":\"%s\"}}".formatted(policy == ChatSettingPolicy.ANYONE, community);
@@ -2666,15 +2715,21 @@ public class Whatsapp {
                     var resultJsonSource = result.findChild("result")
                             .flatMap(Node::contentAsString)
                             .orElse(null);
-                    Validate.isTrue(resultJsonSource != null, "Cannot change community setting: " + result);
+                    if (resultJsonSource == null) {
+                        throw new IllegalArgumentException("Cannot change community setting: " + result);
+                    }
                     var resultJson = Json.readValue(resultJsonSource, new TypeReference<Map<String, ?>>(){});
-                    Validate.isTrue(resultJson.get("errors") == null, "Cannot change community setting: " + resultJsonSource);
+                    if (resultJson.get("errors") != null) {
+                        throw new IllegalArgumentException(("Cannot change community setting: " + resultJsonSource));
+                    }
                 });
             }
             case ADD_PARTICIPANTS -> {
                 var body = Node.of("member_add_mode", policy == ChatSettingPolicy.ANYONE ? "all_member_add".getBytes() : "admin_add".getBytes());
                 yield socketHandler.sendQuery(community.toJid(), "set", "w:g2", body).thenAcceptAsync(result -> {
-                    Validate.isTrue(!result.hasNode("error"), "Cannot change community setting: " + result);
+                    if (result.hasNode("error")) {
+                        throw new IllegalArgumentException(("Cannot change community setting: " + result));
+                    }
                 });
             }
         };
@@ -2741,7 +2796,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> promoteCommunityParticipants(JidProvider community, JidProvider... contacts) {
         return queryCommunityMetadata(community)
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(metadata.isCommunity(), "Expected a community: use promoteGroupParticipants for groups");
+                    if (!metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a community: use promoteGroupParticipants for groups");
+                    }
                     var participantsSet = metadata.participants()
                             .stream()
                             .map(ChatParticipant::jid)
@@ -2771,7 +2828,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> demoteCommunityParticipants(JidProvider community, JidProvider... contacts) {
         return queryCommunityMetadata(community)
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(metadata.isCommunity(), "Expected a community: use demoteGroupParticipants for groups");
+                    if (!metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a community: use demoteGroupParticipants for groups");
+                    }
                     var participantsSet = metadata.participants()
                             .stream()
                             .map(ChatParticipant::jid)
@@ -2801,7 +2860,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> addCommunityParticipants(JidProvider community, JidProvider... contacts) {
         return queryCommunityMetadata(community)
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(metadata.isCommunity(), "Expected a community: use addGroupParticipants for groups");
+                    if (!metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a community: use addGroupParticipants for groups");
+                    }
                     var participantsSet = metadata.participants()
                             .stream()
                             .map(ChatParticipant::jid)
@@ -2834,7 +2895,9 @@ public class Whatsapp {
     public CompletableFuture<List<Jid>> removeCommunityParticipants(JidProvider community, JidProvider... contacts) {
         return queryCommunityMetadata(community)
                 .thenComposeAsync(metadata -> {
-                    Validate.isTrue(metadata.isCommunity(), "Expected a community: use removeGroupParticipants for groups");
+                    if (!metadata.isCommunity()) {
+                        throw new IllegalArgumentException("Expected a community: use removeGroupParticipants for groups");
+                    }
                     var targets = Arrays.stream(contacts)
                             .map(JidProvider::toJid)
                             .collect(Collectors.toUnmodifiableSet()); // No contains check because we would need to enumerate all the children, just let whatsapp do it internally
@@ -2857,7 +2920,9 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Void> leaveCommunity(JidProvider community) {
-        Validate.isTrue(community.toJid().hasServer(JidServer.groupOrCommunity()), "Expected a community");
+        if (!community.toJid().hasServer(JidServer.groupOrCommunity())) {
+            throw new IllegalArgumentException("Expected a community");
+        }
         return queryCommunityMetadata(community).thenComposeAsync(metadata -> {
             var communityJid = metadata.parentCommunityJid().orElse(metadata.jid());
             var body = Node.of("leave", Node.of("linked_groups", Map.of("parent_group_jid", communityJid)));
@@ -2876,11 +2941,13 @@ public class Whatsapp {
      */
     public CompletableFuture<Optional<Jid>> openChatLink(URI link) {
         var host = link.getHost();
-        Validate.isTrue(host != null && host.equalsIgnoreCase("wa.me"),
-                "Expected wa.me link");
+        if (!"wa.me".equals(host)) {
+            throw new IllegalArgumentException("Expected wa.me link");
+        }
         var path = link.getPath();
-        Validate.isTrue(path != null && !path.isEmpty(),
-                "Expected path component");
+        if (path == null || path.isEmpty()) {
+            throw new IllegalArgumentException("Expected path component");
+        }
         try {
             var result = Jid.of(path.substring(1));
             return prepareChat(Clock.nowSeconds(), Set.of(result)).thenApply(results -> {
@@ -2945,16 +3012,23 @@ public class Whatsapp {
     }
 
     private CompletableFuture<Boolean> set2fa(String code, String email) {
-        Validate.isTrue(store().clientType() == ClientType.MOBILE, "2FA is only available for the mobile api");
-        Validate.isTrue(code == null || (code.matches("^[0-9]*$") && code.length() == 6),
-                "Invalid 2fa code: expected a numeric six digits string");
-        Validate.isTrue(email == null || isValidEmail(email),
-                "Invalid email: %s", email);
+        if (store().clientType() != ClientType.MOBILE) {
+            throw new IllegalArgumentException("2FA is only available for the mobile api");
+        }
+        if (code != null && (!code.matches("^[0-9]*$") || code.length() != 6)) {
+            throw new IllegalArgumentException("Invalid 2fa code: expected a numeric six digits string");
+        }
+
+        if (email != null && !isValidEmail(email)) {
+            throw new IllegalArgumentException("Invalid email: %s".formatted(email));
+        }
+
         var body = new ArrayList<Node>();
         body.add(Node.of("code", Objects.requireNonNullElse(code, "").getBytes(StandardCharsets.UTF_8)));
         if (code != null && email != null) {
             body.add(Node.of("email", email.getBytes(StandardCharsets.UTF_8)));
         }
+
         return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:account", Node.of("2fa", body))
                 .thenApplyAsync(result -> !result.hasNode("error"));
     }
@@ -2968,7 +3042,9 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Call> startCall(JidProvider contact, boolean video) {
-        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
+        if (store().clientType() != ClientType.MOBILE) {
+            throw new IllegalArgumentException("Calling is only available for the mobile api");
+        }
         return addContacts(contact)
                 .thenComposeAsync(ignored -> socketHandler.querySessions(List.of(contact.toJid())))
                 .thenComposeAsync(ignored -> sendCallMessage(contact, video));
@@ -3017,7 +3093,9 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Boolean> stopCall(String callId) {
-        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
+        if (store().clientType() != ClientType.MOBILE) {
+            throw new IllegalArgumentException("Calling is only available for the mobile api");
+        }
         return store().findCallById(callId)
                 .map(this::stopCall)
                 .orElseGet(() -> CompletableFuture.completedFuture(false));
@@ -3031,7 +3109,9 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Boolean> stopCall(Call call) {
-        Validate.isTrue(store().clientType() == ClientType.MOBILE, "Calling is only available for the mobile api");
+        if (store().clientType() != ClientType.MOBILE) {
+            throw new IllegalArgumentException("Calling is only available for the mobile api");
+        }
         if (Objects.equals(call.caller().user(), jidOrThrowError().user())) {
             var rejectNode = Node.of("terminate", Map.of("reason", "timeout", "call-id", call.id(), "call-creator", call.caller()));
             var body = Node.of("call", Map.of("to", call.chat()), rejectNode);
@@ -3360,7 +3440,6 @@ public class Whatsapp {
      * @return a future
      */
     public CompletableFuture<Void> sendMessageRetry(MessageInfo<?> messageInfo) {
-        Validate.isTrue(messageInfo != null, "Invalid message");
         var timestamp = messageInfo.timestampSeconds()
                 .orElse(0);
         var chatJid = messageInfo.parentJid();

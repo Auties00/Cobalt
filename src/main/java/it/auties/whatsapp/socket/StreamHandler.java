@@ -45,7 +45,6 @@ import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.Validate;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -870,7 +869,6 @@ class StreamHandler {
     private void digestIb(Node node) {
         var dirty = node.findChild("dirty");
         if (dirty.isEmpty()) {
-            Validate.isTrue(!node.hasNode("downgrade_webclient"), "Multi device beta is not enabled. Please enable it from Whatsapp");
             return;
         }
         var type = dirty.get().attributes().getString("type");

@@ -6,7 +6,6 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.util.Validate;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -39,7 +38,10 @@ public record Version(
     @JsonCreator
     public static Version of(String version) {
         var tokens = version.split("\\.", 5);
-        Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s", version, tokens);
+        if (tokens.length > 5) {
+            throw new IllegalArgumentException("Invalid number of tokens for version %s: %s".formatted(version, tokens));
+        }
+
         var primary = tokens.length > 0 ? parseInt(tokens[0]) : null;
         var secondary = tokens.length > 1 ? parseInt(tokens[1]) : null;
         var tertiary = tokens.length > 2 ? parseInt(tokens[2]) : null;

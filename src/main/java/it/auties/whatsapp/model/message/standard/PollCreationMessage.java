@@ -15,7 +15,6 @@ import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.SelectedPollOption;
 import it.auties.whatsapp.util.Bytes;
-import it.auties.whatsapp.util.Validate;
 
 import java.util.*;
 
@@ -60,8 +59,12 @@ public final class PollCreationMessage implements ContextualMessage<PollCreation
      */
     @ProtobufBuilder(className = "PollCreationMessageSimpleBuilder")
     static PollCreationMessage simpleBuilder(String title, List<PollOption> selectableOptions) {
-        Validate.isTrue(!title.isBlank(), "Title cannot be empty");
-        Validate.isTrue(selectableOptions.size() > 1, "Options must have at least two entries");
+        if (title.isBlank()) {
+            throw new IllegalArgumentException("Title cannot be empty");
+        }
+        if (selectableOptions.size() <= 1) {
+            throw new IllegalArgumentException("Options must have at least two entries");
+        }
         var result = new PollCreationMessageBuilder()
                 .encryptionKey(Bytes.random(32))
                 .title(title)

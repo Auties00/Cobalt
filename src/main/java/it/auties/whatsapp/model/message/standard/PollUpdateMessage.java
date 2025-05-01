@@ -13,7 +13,6 @@ import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateMessageMetadata;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Validate;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -61,8 +60,9 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
      */
     @ProtobufBuilder(className = "PollUpdateMessageSimpleBuilder")
     static PollUpdateMessage simpleBuilder(ChatMessageInfo poll, List<PollOption> votes) {
-        Validate.isTrue(poll.message()
-                .type() == MessageType.POLL_CREATION, "Expected a poll, got %s".formatted(poll.message().type()));
+        if (poll.message().type() != MessageType.POLL_CREATION) {
+            throw new IllegalArgumentException("Expected a poll, got %s".formatted(poll.message().type()));
+        }
         var result = new PollUpdateMessageBuilder()
                 .pollCreationMessageKey(poll.key())
                 .senderTimestampMilliseconds(Clock.nowMilliseconds())
