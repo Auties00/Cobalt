@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
@@ -8,10 +7,10 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.message.model.MediaMessage;
-import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
+import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,36 +20,48 @@ import java.util.OptionalLong;
 @ProtobufMessage(name = "Message.AudioMessage")
 public final class AudioMessage extends MediaMessage<AudioMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private String mediaUrl;
-    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String mimetype;
-    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private byte[] mediaSha256;
-    @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
-    private Long mediaSize;
-    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
-    private final Integer duration;
-    @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
-    private final boolean voiceMessage;
-    @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
-    private byte[] mediaKey;
-    @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
-    private byte[] mediaEncryptedSha256;
-    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-    private String mediaDirectPath;
-    @ProtobufProperty(index = 10, type = ProtobufType.INT64)
-    private Long mediaKeyTimestampSeconds;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
-    @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
-    private final byte[] streamingSidecar;
-    @ProtobufProperty(index = 19, type = ProtobufType.BYTES)
-    private final byte[] waveform;
-    @ProtobufProperty(index = 20, type = ProtobufType.FIXED32)
-    private final Integer backgroundArgb;
+    String mediaUrl;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public AudioMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, boolean voiceMessage, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, ContextInfo contextInfo, byte[] streamingSidecar, byte[] waveform, Integer backgroundArgb) {
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final String mimetype;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
+    byte[] mediaSha256;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
+    Long mediaSize;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
+    final Integer duration;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
+    final boolean voiceMessage;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
+    byte[] mediaKey;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
+    byte[] mediaEncryptedSha256;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    String mediaDirectPath;
+
+    @ProtobufProperty(index = 10, type = ProtobufType.INT64)
+    Long mediaKeyTimestampSeconds;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
+    final byte[] streamingSidecar;
+
+    @ProtobufProperty(index = 19, type = ProtobufType.BYTES)
+    final byte[] waveform;
+
+    @ProtobufProperty(index = 20, type = ProtobufType.FIXED32)
+    final Integer backgroundArgb;
+
+    AudioMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, boolean voiceMessage, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, Long mediaKeyTimestampSeconds, ContextInfo contextInfo, byte[] streamingSidecar, byte[] waveform, Integer backgroundArgb) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.mediaSha256 = mediaSha256;
@@ -68,21 +79,21 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @ProtobufBuilder(className = "AudioMessageSimpleBuilder")
-    static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+    static AudioMessage customBuilder(ByteBuffer media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
         return new AudioMessageBuilder()
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .duration(Medias.getDuration(media))
                 .mimetype(getMimeType(media, mimeType))
                 .voiceMessage(voiceMessage)
-                .waveform(Medias.getAudioWaveForm(media).orElse(null))
+                .waveform(Medias.getAudioWaveForm(media))
                 .build()
                 .setDecodedMedia(media);
     }
 
-    private static String getMimeType(byte[] media, String mimeType) {
+    private static String getMimeType(ByteBuffer media, String mimeType) {
         return Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(media))
-                .orElseGet(MediaMessageType.AUDIO::mimeType);
+                .orElseGet(Type.AUDIO::mimeType);
     }
 
     public Optional<String> mimetype() {
@@ -208,7 +219,7 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public MediaMessageType mediaType() {
-        return MediaMessageType.AUDIO;
+    public Type mediaType() {
+        return Type.AUDIO;
     }
 }

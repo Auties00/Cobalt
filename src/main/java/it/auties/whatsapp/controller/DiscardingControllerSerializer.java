@@ -27,7 +27,7 @@ class DiscardingControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, Long phoneNumber, String alias, ClientType clientType) {
+    public Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, PhoneNumber phoneNumber, String alias, ClientType clientType) {
         return Optional.empty();
     }
 
@@ -47,7 +47,7 @@ class DiscardingControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, long phoneNumber) {
+    public Optional<Keys> deserializeKeys(ClientType type, PhoneNumber phoneNumber) {
         return Optional.empty();
     }
 
@@ -62,7 +62,7 @@ class DiscardingControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, long phoneNumber) {
+    public Optional<Store> deserializeStore(ClientType type, PhoneNumber phoneNumber) {
         return Optional.empty();
     }
 

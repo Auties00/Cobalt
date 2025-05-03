@@ -8,8 +8,7 @@ import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.Message;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -21,31 +20,42 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.LocationMessage")
 public final class LocationMessage implements ContextualMessage<LocationMessage>, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.DOUBLE)
-    private final double latitude;
-    @ProtobufProperty(index = 2, type = ProtobufType.DOUBLE)
-    private final double longitude;
-    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    private final String name;
-    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private final String address;
-    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-    private final String url;
-    @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
-    private final boolean live;
-    @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
-    private final int accuracy;
-    @ProtobufProperty(index = 8, type = ProtobufType.FLOAT)
-    private final float speed;
-    @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
-    private final int magneticNorthOffset;
-    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
-    private final String caption;
-    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    final double latitude;
 
-    public LocationMessage(double latitude, double longitude, String name, String address, String url, boolean live, int accuracy, float speed, int magneticNorthOffset, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 2, type = ProtobufType.DOUBLE)
+    final double longitude;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+    final String name;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+    final String address;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
+    final String url;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
+    final boolean live;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
+    final int accuracy;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.FLOAT)
+    final float speed;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
+    final int magneticNorthOffset;
+
+    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
+    final String caption;
+
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    final byte[] thumbnail;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    LocationMessage(double latitude, double longitude, String name, String address, String url, boolean live, int accuracy, float speed, int magneticNorthOffset, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.name = name;
@@ -61,13 +71,13 @@ public final class LocationMessage implements ContextualMessage<LocationMessage>
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.LOCATION;
+    public Message.Type type() {
+        return Message.Type.LOCATION;
     }
 
     @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
+    public Category category() {
+        return Category.STANDARD;
     }
 
     @Override

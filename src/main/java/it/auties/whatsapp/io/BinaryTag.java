@@ -1,42 +1,19 @@
 package it.auties.whatsapp.io;
 
-import java.util.Arrays;
-
-public enum BinaryTag {
-    UNKNOWN(-1),
-    LIST_EMPTY(0),
-    STREAM_END(2),
-    DICTIONARY_0(236),
-    DICTIONARY_1(237),
-    DICTIONARY_2(238),
-    DICTIONARY_3(239),
-    COMPANION_JID(247),
-    LIST_8(248),
-    LIST_16(249),
-    JID_PAIR(250),
-    HEX_8(251),
-    BINARY_8(252),
-    BINARY_20(253),
-    BINARY_32(254),
-    NIBBLE_8(255),
-    SINGLE_BYTE_MAX(256),
-    PACKED_MAX(254);
-
-    private final int data;
-
-    BinaryTag(int data) {
-        this.data = data;
-    }
-
-    public static BinaryTag of(int data) {
-        return Arrays.stream(values()).filter(entry -> entry.data() == data).findAny().orElse(UNKNOWN);
-    }
-
-    public boolean contentEquals(int number) {
-        return number == this.data();
-    }
-
-    public int data() {
-        return this.data;
-    }
+public final class BinaryTag {
+    public static final byte LIST_EMPTY = 0;
+    public static final byte STREAM_END = 2;
+    public static final byte DICTIONARY_0 = (byte) 236;
+    public static final byte DICTIONARY_1 = (byte) 237;
+    public static final byte DICTIONARY_2 = (byte) 238;
+    public static final byte DICTIONARY_3 = (byte) 239;
+    public static final byte COMPANION_JID = (byte) 247;
+    public static final byte LIST_8 = (byte) 248;
+    public static final byte LIST_16 = (byte) 249;
+    public static final byte JID_PAIR = (byte) 250;
+    public static final byte HEX_8 = (byte) 251;
+    public static final byte BINARY_8 = (byte) 252;
+    public static final byte BINARY_20 = (byte) 253;
+    public static final byte BINARY_32 = (byte) 254;
+    public static final byte NIBBLE_8 = (byte) 255;
 }

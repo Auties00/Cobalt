@@ -11,7 +11,9 @@ public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, 
                            byte[] identityId) {
     public static SixPartsKeys of(String sixParts) {
         Objects.requireNonNull(sixParts, "Invalid six parts");
-        var parts = sixParts.replaceAll(" ", "").replaceAll("\n", "").split(",", 6);
+        var parts = sixParts.trim()
+                .replaceAll("\n", "")
+                .split(",", 6);
         if (parts.length != 6) {
             throw new IllegalArgumentException("Malformed six parts: " + sixParts);
         }

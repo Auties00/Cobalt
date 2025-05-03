@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.info;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -21,158 +19,158 @@ import java.util.Optional;
  * A model class that holds the information related to a {@link it.auties.whatsapp.model.message.model.ContextualMessage}.
  */
 @ProtobufMessage(name = "ContextInfo")
-public final class ContextInfo implements Info {
+public final class ContextInfo implements Info { // TODO: Check me
     /**
      * The jid of the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String quotedMessageId;
+    final String quotedMessageId;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final Jid quotedMessageSenderJid;
+    final Jid quotedMessageSenderJid;
 
     /**
      * The message container that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private final MessageContainer quotedMessage;
+    final MessageContainer quotedMessage;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private final Jid quotedMessageChatJid;
+    final Jid quotedMessageChatJid;
 
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
     @ProtobufProperty(index = 15, type = ProtobufType.STRING)
-    private final List<Jid> mentions;
+    final List<Jid> mentions;
 
     /**
      * Conversation source
      */
     @ProtobufProperty(index = 18, type = ProtobufType.STRING)
-    private final String conversionSource;
+    final String conversionSource;
 
     /**
      * Conversation data
      */
     @ProtobufProperty(index = 19, type = ProtobufType.BYTES)
-    private final byte[] conversionData;
+    final byte[] conversionData;
 
     /**
      * Conversation delay in endTimeStamp
      */
     @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
-    private final int conversionDelaySeconds;
+    final int conversionDelaySeconds;
 
     /**
      * Forwarding score
      */
     @ProtobufProperty(index = 21, type = ProtobufType.UINT32)
-    private final int forwardingScore;
+    final int forwardingScore;
 
     /**
      * Whether this ContextualMessage is forwarded
      */
     @ProtobufProperty(index = 22, type = ProtobufType.BOOL)
-    private final boolean forwarded;
+    final boolean forwarded;
 
     /**
      * The ad that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
-    private final AdReplyInfo quotedAd;
+    final AdReplyInfo quotedAd;
 
     /**
      * Placeholder key
      */
     @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
-    private final ChatMessageKey placeholderKey;
+    final ChatMessageKey placeholderKey;
 
     /**
      * The expiration in seconds for this ContextualMessage. Only valid if the chat where this message
      * was sent is ephemeral.
      */
     @ProtobufProperty(index = 25, type = ProtobufType.UINT32)
-    private int ephemeralExpiration;
+    int ephemeralExpiration;
     /**
      * The timestampSeconds, that is the seconds in seconds since {@link java.time.Instant#EPOCH}, of the
      * last modification to the ephemeral settings for the chat where this ContextualMessage was
      * sent.
      */
     @ProtobufProperty(index = 26, type = ProtobufType.INT64)
-    private long ephemeralSettingTimestamp;
+    long ephemeralSettingTimestamp;
 
     /**
      * Ephemeral shared secret
      */
     @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
-    private final byte[] ephemeralSharedSecret;
+    final byte[] ephemeralSharedSecret;
 
     /**
      * External ad reply
      */
     @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
-    private final ExternalAdReplyInfo externalAdReply;
+    final ExternalAdReplyInfo externalAdReply;
 
     /**
      * Entry point conversion source
      */
     @ProtobufProperty(index = 29, type = ProtobufType.STRING)
-    private final String entryPointConversionSource;
+    final String entryPointConversionSource;
 
     /**
      * Entry point conversion app
      */
     @ProtobufProperty(index = 30, type = ProtobufType.STRING)
-    private final String entryPointConversionApp;
+    final String entryPointConversionApp;
 
     /**
      * Entry point conversion delay in endTimeStamp
      */
     @ProtobufProperty(index = 31, type = ProtobufType.UINT32)
-    private final int entryPointConversionDelaySeconds;
+    final int entryPointConversionDelaySeconds;
 
     /**
      * Disappearing mode
      */
     @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
-    private final ChatDisappear disappearingMode;
+    final ChatDisappear disappearingMode;
 
     /**
      * Action link
      */
     @ProtobufProperty(index = 33, type = ProtobufType.MESSAGE)
-    private final ButtonActionLink actionLink;
+    final ButtonActionLink actionLink;
 
     /**
      * Group subject
      */
     @ProtobufProperty(index = 34, type = ProtobufType.STRING)
-    private final String groupSubject;
+    final String groupSubject;
 
     /**
      * Parent group
      */
     @ProtobufProperty(index = 35, type = ProtobufType.STRING)
-    private final Jid parentGroup;
+    final Jid parentGroup;
 
     /**
      * Trust banner type
      */
     @ProtobufProperty(index = 37, type = ProtobufType.STRING)
-    private final String trustBannerType;
+    final String trustBannerType;
 
     /**
      * Trust banner action
      */
     @ProtobufProperty(index = 38, type = ProtobufType.UINT32)
-    private final int trustBannerAction;
+    final int trustBannerAction;
 
     /**
      * The contact that sent the message that this ContextualMessage quotes
@@ -182,11 +180,9 @@ public final class ContextInfo implements Info {
     /**
      * The contact that sent the message that this ContextualMessage quotes
      */
-    @JsonBackReference
     private Chat quotedMessageChat;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public ContextInfo(String quotedMessageId, Jid quotedMessageSenderJid, MessageContainer quotedMessage, Jid quotedMessageChatJid, List<Jid> mentions, String conversionSource, byte[] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, AdReplyInfo quotedAd, ChatMessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte[] ephemeralSharedSecret, ExternalAdReplyInfo externalAdReply, String entryPointConversionSource, String entryPointConversionApp, int entryPointConversionDelaySeconds, ChatDisappear disappearingMode, ButtonActionLink actionLink, String groupSubject, Jid parentGroup, String trustBannerType, int trustBannerAction) {
+    ContextInfo(String quotedMessageId, Jid quotedMessageSenderJid, MessageContainer quotedMessage, Jid quotedMessageChatJid, List<Jid> mentions, String conversionSource, byte[] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, AdReplyInfo quotedAd, ChatMessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte[] ephemeralSharedSecret, ExternalAdReplyInfo externalAdReply, String entryPointConversionSource, String entryPointConversionApp, int entryPointConversionDelaySeconds, ChatDisappear disappearingMode, ButtonActionLink actionLink, String groupSubject, Jid parentGroup, String trustBannerType, int trustBannerAction) {
         this.quotedMessageId = quotedMessageId;
         this.quotedMessageSenderJid = quotedMessageSenderJid;
         this.quotedMessage = quotedMessage;

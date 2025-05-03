@@ -3,20 +3,47 @@ package it.auties.whatsapp.model.message.server;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
+
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * A model class that represents a message that refers to a message sent by the device paired with
  * the active WhatsappWeb session to dataSync.
  */
 @ProtobufMessage(name = "Message.DeviceSyncMessage")
-public record DeviceSyncMessage(
-        @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
-        byte[] serializedXmlBytes
-) implements ServerMessage {
+public final class DeviceSyncMessage implements ServerMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
+    final byte[] serializedXmlBytes;
+
+    DeviceSyncMessage(byte[] serializedXmlBytes) {
+        this.serializedXmlBytes = Objects.requireNonNull(serializedXmlBytes, "serializedXmlBytes cannot be null");
+    }
+
+    public byte[] serializedXmlBytes() {
+        return serializedXmlBytes;
+    }
+
     @Override
-    public MessageType type() {
-        return MessageType.DEVICE_SYNC;
+    public Type type() {
+        return Type.DEVICE_SYNC;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof DeviceSyncMessage that
+                && Arrays.equals(serializedXmlBytes, that.serializedXmlBytes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(serializedXmlBytes);
+    }
+
+    @Override
+    public String toString() {
+        return "DeviceSyncMessage[" +
+                "serializedXmlBytes=" + Arrays.toString(serializedXmlBytes) + ']';
     }
 }

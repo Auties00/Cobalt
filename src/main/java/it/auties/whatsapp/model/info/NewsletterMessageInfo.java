@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.info;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonCreator;
+import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -15,26 +14,33 @@ import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+@Json
 @ProtobufMessage
 public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessageInfo>, MessageStatusInfo<NewsletterMessageInfo> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String id;
+    final String id;
+
     @ProtobufProperty(index = 2, type = ProtobufType.INT32)
-    private final int serverId;
+    final int serverId;
+
     @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
-    private final Long timestampSeconds;
+    final Long timestampSeconds;
+
     @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
-    private final Long views;
+    final Long views;
+
     @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final Map<String, NewsletterReaction> reactions;
-    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
-    private MessageContainer message;
-    @JsonBackReference
-    private Newsletter newsletter;
-    @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
-    private MessageStatus status;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
+    MessageContainer message;
+
+    @Json.Ignore
+    private Newsletter newsletter;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
+    MessageStatus status;
+
     public NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
         this.id = id;
         this.serverId = serverId;

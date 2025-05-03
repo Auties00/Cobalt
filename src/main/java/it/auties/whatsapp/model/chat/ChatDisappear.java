@@ -12,12 +12,34 @@ import java.util.Objects;
  * A model that represents a chat disappear mode
  */
 @ProtobufMessage(name = "DisappearingMode")
-public record ChatDisappear(
-        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
-        Initiator initiator
-) {
-    public ChatDisappear(Initiator initiator) {
+public final class ChatDisappear {
+    @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
+    final Initiator initiator;
+
+    ChatDisappear(Initiator initiator) {
         this.initiator = Objects.requireNonNullElse(initiator, Initiator.UNKNOWN);
+    }
+
+    public Initiator initiator() {
+        return initiator;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof ChatDisappear that
+                && Objects.equals(initiator, that.initiator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(initiator);
+    }
+
+    @Override
+    public String toString() {
+        return "ChatDisappear[" +
+                "initiator=" + initiator + ']';
     }
 
     /**
@@ -49,14 +71,5 @@ public record ChatDisappear(
         Initiator(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return index;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(initiator.index());
     }
 }

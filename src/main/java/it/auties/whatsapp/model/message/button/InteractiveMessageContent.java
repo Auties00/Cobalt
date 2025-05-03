@@ -45,9 +45,5 @@ public sealed interface InteractiveMessageContent permits InteractiveShop, Inter
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return this.index;
-        }
     }
 }

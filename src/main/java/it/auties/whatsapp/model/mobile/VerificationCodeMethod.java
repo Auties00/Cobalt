@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.mobile;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import io.avaje.jsonb.Json;
 import it.auties.whatsapp.api.ClientType;
 
 import java.util.Arrays;
@@ -50,8 +50,8 @@ public enum VerificationCodeMethod {
         this.fallback = fallback;
     }
 
-    @JsonCreator
-    public static VerificationCodeMethod of(String type) {
+    @Json.Creator
+    static VerificationCodeMethod of(String type) {
         return Arrays.stream(values())
                 .filter(entry -> entry.data().equals(type))
                 .findFirst()

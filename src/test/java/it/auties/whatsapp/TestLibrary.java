@@ -849,7 +849,7 @@ public class TestLibrary implements Listener {
                 .map(Chat::messages)
                 .flatMap(Collection::stream)
                 .map(HistorySyncMessage::messageInfo)
-                .filter(info -> !info.fromMe() && info.message().category() == MessageCategory.MEDIA)
+                .filter(info -> !info.fromMe() && info.message().category() == Message.Category.MEDIA)
                 .limit(30)
                 .map(info -> api.downloadMedia(info)
                         .thenApply(ignored -> success.incrementAndGet())
@@ -902,7 +902,7 @@ public class TestLibrary implements Listener {
                 .jid()
                 .orElseThrow();
         var keyInfo = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomIdV2(jid, api.store().clientType()))
+                .id(ChatMessageKey.randomId(api.store().clientType()))
                 .chatJid(contact)
                 .senderJid(jid)
                 .fromMe(true)

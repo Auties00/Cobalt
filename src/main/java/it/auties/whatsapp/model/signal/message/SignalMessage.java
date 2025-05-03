@@ -1,43 +1,58 @@
 package it.auties.whatsapp.model.signal.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.Bytes;
+import it.auties.protobuf.stream.ProtobufInputStream;
+import it.auties.protobuf.stream.ProtobufOutputStream;
+import it.auties.whatsapp.crypto.Hmac;
 
 import java.util.Arrays;
-import java.util.Objects;
 
-import static it.auties.whatsapp.util.SignalConstants.MAC_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.*;
 
 @ProtobufMessage(name = "SignalMessage")
-public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
+public final class SignalMessage {
+    private int version;
+
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
-    private final byte[] ephemeralPublicKey;
+    final byte[] ephemeralPublicKey;
 
     @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
-    private final Integer counter;
+    final Integer counter;
 
     @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
-    private final Integer previousCounter;
+    final Integer previousCounter;
 
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private final byte[] ciphertext;
+    final byte[] ciphertext;
 
     private byte[] signature;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SignalMessage(byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext, byte[] signature) {
-        this.ephemeralPublicKey = ephemeralPublicKey;
-        this.counter = counter;
-        this.previousCounter = previousCounter;
-        this.ciphertext = ciphertext;
-        this.signature = signature;
+    public static SignalMessage ofSigned(int version, byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext, byte[] identityPublicKey, byte[] signalRemoteIdentityKey, byte[] hmacKey) {
+        if(identityPublicKey == null || identityPublicKey.length != KEY_LENGTH) {
+            throw new IllegalArgumentException("Invalid identityPublicKey");
+        }
+
+        if(signalRemoteIdentityKey == null || signalRemoteIdentityKey.length != KEY_LENGTH + 1 || signalRemoteIdentityKey[0] != KEY_TYPE) {
+            throw new IllegalArgumentException("Invalid signalRemoteIdentityKey");
+        }
+
+        var message = new SignalMessage(ephemeralPublicKey, counter, previousCounter, ciphertext);
+        message.version = version;
+        var messageLength = SignalMessageSpec.sizeOf(message);
+        var macInput = new byte[1 + identityPublicKey.length + signalRemoteIdentityKey.length + 1 + messageLength];
+        macInput[0] = KEY_TYPE;
+        System.arraycopy(identityPublicKey, 0, macInput, 1, identityPublicKey.length);
+        System.arraycopy(signalRemoteIdentityKey, 0, macInput, 1 + identityPublicKey.length, signalRemoteIdentityKey.length);
+        macInput[1 + identityPublicKey.length + signalRemoteIdentityKey.length] = message.serializedVersion();
+        SignalMessageSpec.encode(message, ProtobufOutputStream.toBytes(macInput, 1 + identityPublicKey.length + signalRemoteIdentityKey.length + 1));
+        var signature = Hmac.calculateSha256(macInput, hmacKey);
+        message.signature =  Arrays.copyOf(signature, MAC_LENGTH);
+        return message;
     }
 
-
-    public SignalMessage(byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext) {
+    SignalMessage(byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext) {
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;
         this.previousCounter = previousCounter;
@@ -45,22 +60,40 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     }
 
     public static SignalMessage ofSerialized(byte[] serialized) {
-        var data = Arrays.copyOfRange(serialized, 1, serialized.length - MAC_LENGTH);
         var signature = Arrays.copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length);
-        return SignalMessageSpec.decode(data)
-                .setVersion(Bytes.bytesToVersion(serialized[0]))
-                .setSerialized(serialized)
-                .setSignature(signature);
+        var result = SignalMessageSpec.decode(ProtobufInputStream.fromBytes(serialized, 1, serialized.length - 1 - MAC_LENGTH));
+        result.version = Byte.toUnsignedInt(serialized[0]) >> 4;
+        result.signature = signature;
+        return result;
     }
 
-    @Override
     public byte[] serialized() {
-        if (serialized == null) {
-            var encodedMessage = Bytes.concat(serializedVersion(), SignalMessageSpec.encode(this));
-            this.serialized = Bytes.concat(encodedMessage, Objects.requireNonNull(signature, "Message wasn't signed"));
+        var messageLength = SignalMessageSpec.sizeOf(this);
+        var serialized = new byte[1 + messageLength + SIGNATURE_LENGTH];
+        serialized[0] = serializedVersion();
+        SignalMessageSpec.encode(this, ProtobufOutputStream.toBytes(serialized, 1));
+        if(signature == null || signature.length != SIGNATURE_LENGTH) {
+            throw new InternalError();
         }
 
+        System.arraycopy(signature, 0, serialized, 1 + messageLength, signature.length);
         return serialized;
+    }
+
+    public int version() {
+        if(version == 0) {
+            throw new InternalError();
+        }
+
+        return version;
+    }
+
+    public byte serializedVersion() {
+        if(version == 0) {
+            throw new InternalError();
+        }
+
+        return (byte) (version << 4 | CURRENT_VERSION);
     }
 
     public byte[] ephemeralPublicKey() {
@@ -81,10 +114,5 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
 
     public byte[] signature() {
         return signature;
-    }
-
-    public SignalMessage setSignature(byte[] signature) {
-        this.signature = signature;
-        return this;
     }
 }

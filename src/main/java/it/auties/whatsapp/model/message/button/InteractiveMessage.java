@@ -9,8 +9,7 @@ import it.auties.whatsapp.model.button.base.TemplateFormatter;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.Message;
 
 import java.util.Optional;
 
@@ -21,19 +20,25 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.InteractiveMessage")
 public final class InteractiveMessage implements ContextualMessage<InteractiveMessage>, ButtonMessage, TemplateFormatter {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    private final InteractiveHeader header;
+    final InteractiveHeader header;
+
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    private final InteractiveBody body;
+    final InteractiveBody body;
+
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private final InteractiveFooter footer;
+    final InteractiveFooter footer;
+
     @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private final InteractiveShop contentShop;
+    final InteractiveShop contentShop;
+
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    private final InteractiveCollection contentCollection;
+    final InteractiveCollection contentCollection;
+
     @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
-    private final InteractiveNativeFlow contentNativeFlow;
+    final InteractiveNativeFlow contentNativeFlow;
+
     @ProtobufProperty(index = 15, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    ContextInfo contextInfo;
 
     public InteractiveMessage(InteractiveHeader header, InteractiveBody body, InteractiveFooter footer, InteractiveShop contentShop, InteractiveCollection contentCollection, InteractiveNativeFlow contentNativeFlow, ContextInfo contextInfo) {
         this.header = header;
@@ -47,17 +52,22 @@ public final class InteractiveMessage implements ContextualMessage<InteractiveMe
 
     @ProtobufBuilder(className = "InteractiveMessageSimpleBuilder")
     static InteractiveMessage simpleBuilder(InteractiveHeader header, String body, String footer, InteractiveMessageContent content, ContextInfo contextInfo) {
+        var interactiveBody = body == null ? null : new InteractiveBodyBuilder()
+                .content(body)
+                .build();
+        var interactiveFooter = footer == null ? null : new InteractiveFooterBuilder()
+                .content(footer)
+                .build();
         var builder = new InteractiveMessageBuilder()
                 .header(header)
-                .body(InteractiveBody.ofNullable(body).orElse(null))
-                .footer(InteractiveFooter.ofNullable(footer).orElse(null))
+                .body(interactiveBody)
+                .footer(interactiveFooter)
                 .contextInfo(contextInfo);
         switch (content) {
             case InteractiveShop interactiveShop -> builder.contentShop(interactiveShop);
             case InteractiveCollection interactiveCollection -> builder.contentCollection(interactiveCollection);
             case InteractiveNativeFlow interactiveNativeFlow -> builder.contentNativeFlow(interactiveNativeFlow);
-            case null -> {
-            }
+            case null -> {}
         }
         return builder.build();
     }
@@ -81,28 +91,28 @@ public final class InteractiveMessage implements ContextualMessage<InteractiveMe
     public Optional<? extends InteractiveMessageContent> content() {
         if (contentShop != null) {
             return Optional.of(contentShop);
-        }
-
-        if (contentCollection != null) {
+        }else if (contentCollection != null) {
             return Optional.of(contentCollection);
+        }else if(contentNativeFlow != null){
+            return Optional.of(contentNativeFlow);
+        }else {
+            return Optional.empty();
         }
-
-        return Optional.ofNullable(contentNativeFlow);
     }
 
     @Override
-    public Type templateType() {
-        return Type.INTERACTIVE;
+    public TemplateFormatter.Type templateType() {
+        return TemplateFormatter.Type.INTERACTIVE;
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.INTERACTIVE;
+    public Message.Type type() {
+        return Message.Type.INTERACTIVE;
     }
 
     @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
+    public Category category() {
+        return Category.STANDARD;
     }
 
     public Optional<InteractiveHeader> header() {
@@ -151,5 +161,4 @@ public final class InteractiveMessage implements ContextualMessage<InteractiveMe
                 "contentNativeFlow=" + contentNativeFlow + ", " +
                 "contextInfo=" + contextInfo + ']';
     }
-
 }

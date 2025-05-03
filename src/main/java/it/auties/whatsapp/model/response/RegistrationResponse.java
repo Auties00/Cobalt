@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
@@ -27,28 +27,29 @@ import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
  * @param audioCaptcha        the audio captcha to solve, only available for business accounts
  * @param otpEligible if requested, whether the phone number was already registered on Whatsapp
  */
-public record RegistrationResponse(@JsonProperty("login") PhoneNumber number,
-                                   @JsonProperty("lid") long lid,
-                                   @JsonProperty("status") VerificationCodeStatus status,
-                                   @JsonProperty("reason") VerificationCodeError errorReason,
-                                   @JsonProperty("method") VerificationCodeMethod method,
-                                   @JsonProperty("length") int codeLength,
-                                   @JsonProperty("notify_after") int notifyAfter,
-                                   @JsonProperty("retry_after") long retryAfter,
-                                   @JsonProperty("voice_length") long voiceLength,
-                                   @JsonProperty(value = "voice_wait", defaultValue = "-1") long callWait,
-                                   @JsonProperty(value = "sms_wait", defaultValue = "-1") long smsWait,
-                                   @JsonProperty(value = "flash_type", defaultValue = "0") boolean flashType,
-                                   @JsonProperty(value = "wa_old_wait", defaultValue = "-1") long whatsappWait,
-                                   @JsonProperty("security_code_set") boolean securityCodeSet,
-                                   @JsonProperty("image_blob") String imageCaptcha,
-                                   @JsonProperty("audio_blob") String audioCaptcha,
-                                   @JsonProperty("cert") String cert,
-                                   @JsonProperty("wa_old_eligible") boolean otpEligible,
-                                   @JsonProperty(value = "send_sms_eligible", defaultValue = "true") boolean smsEligible,
-                                   @JsonProperty("possible_migration") boolean possibleMigration,
-                                   @JsonProperty(value = "autoconf_type", defaultValue = "0") boolean autoConfigure,
-                                   @JsonProperty("wipe_token") String wipeToken
+@Json
+public record RegistrationResponse(@Json.Property("login") PhoneNumber number,
+                                   @Json.Property("lid") long lid,
+                                   @Json.Property("status") VerificationCodeStatus status,
+                                   @Json.Property("reason") VerificationCodeError errorReason,
+                                   @Json.Property("method") VerificationCodeMethod method,
+                                   @Json.Property("length") int codeLength,
+                                   @Json.Property("notify_after") int notifyAfter,
+                                   @Json.Property("retry_after") long retryAfter,
+                                   @Json.Property("voice_length") long voiceLength,
+                                   @Json.Property("voice_wait") long callWait,
+                                   @Json.Property("sms_wait") long smsWait,
+                                   @Json.Property("flash_type") boolean flashType,
+                                   @Json.Property("wa_old_wait") long whatsappWait,
+                                   @Json.Property("security_code_set") boolean securityCodeSet,
+                                   @Json.Property("image_blob") String imageCaptcha,
+                                   @Json.Property("audio_blob") String audioCaptcha,
+                                   @Json.Property("cert") String cert,
+                                   @Json.Property("wa_old_eligible") boolean otpEligible,
+                                   @Json.Property("send_sms_eligible") boolean smsEligible,
+                                   @Json.Property("possible_migration") boolean possibleMigration,
+                                   @Json.Property("autoconf_type") boolean autoConfigure,
+                                   @Json.Property("wipe_token") String wipeToken
 ) {
 
 }

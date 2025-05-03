@@ -3,46 +3,51 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.RecentEmojiWeight;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A model clas that represents a change in the weight of recent emojis
  */
 @ProtobufMessage(name = "SyncActionValue.RecentEmojiWeightsAction")
-public record RecentEmojiWeightsAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-        List<RecentEmojiWeight> weights
-) implements Action {
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
+public final class RecentEmojiWeightsAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
+    final List<RecentEmojiWeight> weights;
+
+    RecentEmojiWeightsAction(List<RecentEmojiWeight> weights) {
+        this.weights = weights;
+    }
+
     @Override
     public String indexName() {
         throw new UnsupportedOperationException("Cannot send action");
     }
 
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
     @Override
     public int actionVersion() {
         throw new UnsupportedOperationException("Cannot send action");
     }
 
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
+    public List<RecentEmojiWeight> weights() {
+        return weights;
+    }
+
     @Override
-    public PatchType actionType() {
-        throw new UnsupportedOperationException("Cannot send action");
+    public boolean equals(Object o) {
+        return o instanceof RecentEmojiWeightsAction that
+                && Objects.equals(weights, that.weights);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(weights);
+    }
+
+    @Override
+    public String toString() {
+        return "RecentEmojiWeightsAction[" +
+                "weights=" + weights + ']';
     }
 }

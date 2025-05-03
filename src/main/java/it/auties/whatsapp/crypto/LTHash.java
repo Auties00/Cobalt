@@ -5,23 +5,23 @@ import it.auties.whatsapp.model.sync.RecordSync;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class LTHash {
+// TODO: Optimize this whole thing including indexValueMap
+public final class LTHash {
     private static final int EXPAND_SIZE = 128;
-    public static final String SALT = "WhatsApp Patch Integrity";
+    private static final byte[] SALT = "WhatsApp Patch Integrity".getBytes();
 
     private final byte[] salt;
 
     private final byte[] hash;
 
-    private final Map<String, byte[]> indexValueMap;
+    private final Map<Integer, byte[]> indexValueMap;
 
     private final List<byte[]> add, subtract;
 
     public LTHash(CompanionHashState hash) {
-        this.salt = SALT.getBytes(StandardCharsets.UTF_8);
+        this.salt = SALT;
         this.hash = hash.hash();
         this.indexValueMap = new HashMap<>(hash.indexValueMap());
         this.add = new ArrayList<>();
@@ -29,16 +29,16 @@ public class LTHash {
     }
 
     public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
-        var indexMacBase64 = Base64.getEncoder().encodeToString(indexMac);
-        var prevOp = indexValueMap.get(indexMacBase64);
+        var hashCode = Arrays.hashCode(indexMac);
+        var prevOp = indexValueMap.get(hashCode);
         if (operation == RecordSync.Operation.REMOVE) {
             if (prevOp == null) {
                 return;
             }
-            indexValueMap.remove(indexMacBase64, prevOp);
+            indexValueMap.remove(hashCode, prevOp);
         } else {
             add.add(valueMac);
-            indexValueMap.put(indexMacBase64, valueMac);
+            indexValueMap.put(hashCode, valueMac);
         }
         if (prevOp != null) {
             subtract.add(prevOp);
@@ -73,6 +73,7 @@ public class LTHash {
         return result;
     }
 
-    public record Result(byte[] hash, Map<String, byte[]> indexValueMap) {
+    public record Result(byte[] hash, Map<Integer, byte[]> indexValueMap) {
+
     }
 }

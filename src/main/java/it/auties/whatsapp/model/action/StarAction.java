@@ -3,43 +3,49 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
+
+import java.util.Objects;
 
 /**
  * A model clas that represents a new star status for a message
  */
 @ProtobufMessage(name = "SyncActionValue.StarAction")
-public record StarAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-        boolean starred
-) implements Action {
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+public final class StarAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
+    final boolean starred;
+
+    StarAction(boolean starred) {
+        this.starred = starred;
+    }
+
     @Override
     public String indexName() {
         return "star";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 2;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public boolean starred() {
+        return starred;
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof StarAction that
+                && starred == that.starred;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(starred);
+    }
+
+    @Override
+    public String toString() {
+        return "StarAction[" +
+                "starred=" + starred + ']';
     }
 }

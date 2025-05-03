@@ -21,11 +21,6 @@ public enum DisconnectReason {
     LOGGED_OUT,
 
     /**
-     * Session restore
-     */
-    RESTORE,
-
-    /**
      * Ban
      */
     BANNED

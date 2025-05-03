@@ -1,59 +1,80 @@
 package it.auties.whatsapp.model.signal.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.Bytes;
+import it.auties.protobuf.stream.ProtobufInputStream;
+import it.auties.protobuf.stream.ProtobufOutputStream;
 
 import java.util.Arrays;
 
+import static it.auties.whatsapp.util.SignalConstants.CURRENT_VERSION;
 import static it.auties.whatsapp.util.SignalConstants.SIGNATURE_LENGTH;
 
 @ProtobufMessage(name = "SenderKeyMessage")
-public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessage> {
+public final class SenderKeyMessage {
+    private int version;
+
     @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
-    private final Integer id;
+    final Integer id;
 
     @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
-    private final Integer iteration;
+    final Integer iteration;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private final byte[] cipherText;
+    final byte[] cipherText;
 
-    private byte[] signingKey;
+    private byte[] signature;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SenderKeyMessage(Integer id, Integer iteration, byte[] cipherText, byte[] signingKey) {
+    public SenderKeyMessage(int version, Integer id, Integer iteration, byte[] cipherText, byte[] signature) {
+        this.version = version;
         this.id = id;
         this.iteration = iteration;
         this.cipherText = cipherText;
-        this.signingKey = signingKey;
+        this.signature = signature;
     }
 
-    public SenderKeyMessage(int id, int iteration, byte[] cipherText) {
+    SenderKeyMessage(int id, int iteration, byte[] cipherText) {
         this.id = id;
         this.iteration = iteration;
         this.cipherText = cipherText;
     }
 
     public static SenderKeyMessage ofSerialized(byte[] serialized) {
-        var data = Arrays.copyOfRange(serialized, 1, serialized.length - SIGNATURE_LENGTH);
-        return SenderKeyMessageSpec.decode(data)
-                .setVersion(Bytes.bytesToVersion(serialized[0]))
-                .setSerialized(serialized);
+        var signature = Arrays.copyOfRange(serialized, serialized.length - SIGNATURE_LENGTH, serialized.length);
+        var result = SenderKeyMessageSpec.decode(ProtobufInputStream.fromBytes(serialized, 1, serialized.length - 1 - SIGNATURE_LENGTH));
+        result.version = Byte.toUnsignedInt(serialized[0]) >> 4;
+        result.signature = signature;
+        return result;
     }
 
-    @Override
     public byte[] serialized() {
-        if (serialized == null) {
-            var serialized = Bytes.concat(serializedVersion(), SenderKeyMessageSpec.encode(this));
-            var signature = Curve25519.sign(signingKey, serialized, true);
-            this.serialized = Bytes.concat(serialized, signature);
+        var messageLength = SenderKeyMessageSpec.sizeOf(this);
+        var serialized = new byte[1 + messageLength + SIGNATURE_LENGTH];
+        serialized[0] = serializedVersion();
+        SenderKeyMessageSpec.encode(this, ProtobufOutputStream.toBytes(serialized, 1));
+        if(signature == null || signature.length != SIGNATURE_LENGTH) {
+            throw new InternalError();
         }
 
+        System.arraycopy(signature, 0, serialized, 1 + messageLength, signature.length);
         return serialized;
+    }
+
+    public int version() {
+        if(version == 0) {
+            throw new InternalError();
+        }
+
+        return version;
+    }
+
+    public byte serializedVersion() {
+        if(version == 0) {
+            throw new InternalError();
+        }
+
+        return (byte) (version << 4 | CURRENT_VERSION);
     }
 
     public Integer id() {
@@ -66,9 +87,5 @@ public final class SenderKeyMessage extends SignalProtocolMessage<SenderKeyMessa
 
     public byte[] cipherText() {
         return cipherText;
-    }
-
-    public byte[] signingKey() {
-        return signingKey;
     }
 }

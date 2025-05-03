@@ -9,7 +9,7 @@ import it.auties.whatsapp.model.message.standard.ProductMessage;
  */
 public sealed interface ButtonMessage extends Message permits ButtonsMessage, HighlyStructuredMessage, ListMessage, NativeFlowResponseMessage, TemplateMessage, ButtonReplyMessage, InteractiveMessage, ProductMessage {
     @Override
-    default MessageCategory category() {
-        return MessageCategory.BUTTON;
+    default Category category() {
+        return Category.BUTTON;
     }
 }

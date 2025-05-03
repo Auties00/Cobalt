@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentType;
@@ -14,19 +13,18 @@ import static it.auties.protobuf.model.ProtobufType.*;
 @ProtobufMessage(name = "ExternalBlobReference")
 public final class ExternalBlobReference implements MutableAttachmentProvider<ExternalBlobReference> {
     @ProtobufProperty(index = 1, type = BYTES)
-    private byte[] mediaKey;
+    byte[] mediaKey;
     @ProtobufProperty(index = 2, type = STRING)
-    private String mediaDirectPath;
+    String mediaDirectPath;
     @ProtobufProperty(index = 3, type = STRING)
-    private final String handle;
+    final String handle;
     @ProtobufProperty(index = 4, type = UINT64)
-    private long mediaSize;
+    long mediaSize;
     @ProtobufProperty(index = 5, type = BYTES)
-    private byte[] mediaSha256;
+    byte[] mediaSha256;
     @ProtobufProperty(index = 6, type = BYTES)
-    private byte[] mediaEncryptedSha256;
+    byte[] mediaEncryptedSha256;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ExternalBlobReference(byte[] mediaKey,
                                  String mediaDirectPath,
                                  String handle,

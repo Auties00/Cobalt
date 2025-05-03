@@ -5,6 +5,7 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.util.SignalConstants;
 
 import java.util.Arrays;
 
@@ -15,8 +16,10 @@ public record SignalKeyPair(
         @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
         byte[] privateKey
 ) implements ISignalKeyPair {
-    public SignalKeyPair(byte[] publicKey, byte[] privateKey) {
-        this.publicKey = ISignalKeyPair.toCurveKey(publicKey);
+    public SignalKeyPair(
+            byte[] publicKey,
+            byte[] privateKey) {
+        this.publicKey = SignalConstants.createCurveKey(publicKey);
         this.privateKey = privateKey;
     }
 
@@ -25,24 +28,20 @@ public record SignalKeyPair(
     }
 
     public static SignalKeyPair random() {
-        var keyPair = Curve25519.randomKeyPair();
-        var publicKey = Curve25519.readKey(keyPair.getPublic());
-        var privateKey = Curve25519.readKey(keyPair.getPrivate());
+        var privateKey = Curve25519.randomPrivateKey();
+        var publicKey = Curve25519.getPublicKey(privateKey);
         return new SignalKeyPair(publicKey, privateKey);
     }
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof SignalKeyPair that && Arrays.equals(publicKey(), that.publicKey()) && Arrays.equals(privateKey(), that.privateKey());
+        return other instanceof SignalKeyPair(var otherPublicKey, var otherPrivateKey)
+                && Arrays.equals(publicKey, otherPublicKey)
+                && Arrays.equals(privateKey, otherPrivateKey);
     }
 
     @Override
     public Node toNode() {
-        throw new UnsupportedOperationException("Cannot serialize generic signal key pair");
-    }
-
-    @Override
-    public SignalKeyPair toGenericKeyPair() {
-        return this;
+        return Node.of("key", Node.of("value", publicKey()));
     }
 }

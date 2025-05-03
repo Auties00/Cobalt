@@ -24,21 +24,6 @@ public final class Proxies {
         return ProxySelector.of(InetSocketAddress.createUnresolved(host, port));
     }
 
-    public static Proxy toProxy(URI uri) {
-        if (uri == null) {
-            return null;
-        }
-
-        var scheme = Objects.requireNonNull(uri.getScheme(), "Invalid proxy, expected a scheme: %s".formatted(uri));
-        var host = Objects.requireNonNull(uri.getHost(), "Invalid proxy, expected a host: %s".formatted(uri));
-        var port = getDefaultPort(scheme, uri.getPort()).orElseThrow(() -> new NullPointerException("Invalid proxy, expected a port: %s".formatted(uri)));
-        return switch (scheme.toLowerCase()) {
-            case "http", "https" -> new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(host, port));
-            case "socks5", "socks5h" -> new Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port));
-            default -> throw new IllegalStateException("Unexpected scheme: " + scheme);
-        };
-    }
-
     private static OptionalInt getDefaultPort(String scheme, int port) {
         return port != -1 ? OptionalInt.of(port) : switch (scheme.toLowerCase()) {
             case "http" -> OptionalInt.of(80);

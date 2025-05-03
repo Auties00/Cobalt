@@ -39,10 +39,6 @@ public enum ContactStatus {
         this.index = index;
     }
 
-    public int index() {
-        return index;
-    }
-
     public static Optional<ContactStatus> of(String name) {
         return Arrays.stream(values())
                 .filter(entry -> entry.name().equalsIgnoreCase(name))

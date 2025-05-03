@@ -49,9 +49,5 @@ public sealed interface HydratedButton permits HydratedCallButton, HydratedQuick
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return index;
-        }
     }
 }

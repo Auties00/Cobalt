@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.newsletter;
 
+import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -7,16 +8,22 @@ import it.auties.protobuf.model.ProtobufType;
 import java.util.Objects;
 
 @ProtobufMessage
+@Json
 public final class NewsletterReaction {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String content;
+    @Json.Property("content")
+    final String content;
+
     @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
-    private long count;
+    @Json.Property("count")
+    long count;
+
     @ProtobufProperty(index = 3, type = ProtobufType.BOOL)
-    private boolean fromMe;
+    @Json.Property("fromMe")
+    boolean fromMe;
 
     public NewsletterReaction(String content, long count, boolean fromMe) {
-        this.content = content;
+        this.content = Objects.requireNonNull(content, "content cannot be null");
         this.count = count;
         this.fromMe = fromMe;
     }
@@ -61,6 +68,4 @@ public final class NewsletterReaction {
                 "count=" + count + ", " +
                 "fromMe=" + fromMe + ']';
     }
-
-
 }

@@ -178,10 +178,11 @@
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>3.4.2</protoc.version>
+        <json.version>3.5-RC2</json.version>
+        <protoc.version>3.4.3</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
         <jackson.version>2.15.2</jackson.version>
-        <curve25519.version>1.2</curve25519.version>
+        <curve25519.version>2.0</curve25519.version>
         <lazysodium.version>5.1.4</lazysodium.version>
         <linkpreview.version>2.3</linkpreview.version>
         <vcard.version>0.12.1</vcard.version>
@@ -207,6 +208,11 @@
                     <target>${java.version}</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
+                        <dependency>
+                            <groupId>io.avaje</groupId>
+                            <artifactId>avaje-jsonb-generator</artifactId>
+                            <version>${json.version}</version>
+                        </dependency>
                         <annotationProcessorPath>
                             <groupId>com.github.auties00</groupId>
                             <artifactId>protobuf-serialization-plugin</artifactId>
@@ -265,24 +271,9 @@
 
         <!-- Json serialization (used by Whatsapp) -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-parameter-names</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
+            <groupId>io.avaje</groupId>
+            <artifactId>avaje-jsonb</artifactId>
+            <version>${json.version}</version>
         </dependency>
 
         <!-- Parse phone numbers (Mobile API) -->

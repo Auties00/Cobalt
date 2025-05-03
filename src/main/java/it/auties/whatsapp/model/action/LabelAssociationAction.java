@@ -3,43 +3,49 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
+
+import java.util.Objects;
 
 /**
  * A model clas that represents a label association
  */
 @ProtobufMessage(name = "SyncActionValue.LabelAssociationAction")
-public record LabelAssociationAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-        boolean labeled
-) implements Action {
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+public final class LabelAssociationAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
+    final boolean labeled;
+
+    LabelAssociationAction(boolean labeled) {
+        this.labeled = labeled;
+    }
+
     @Override
     public String indexName() {
         return "label_message";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 3;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public boolean labeled() {
+        return labeled;
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof LabelAssociationAction that
+                && labeled == that.labeled;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(labeled);
+    }
+
+    @Override
+    public String toString() {
+        return "LabelAssociationAction[" +
+                "labeled=" + labeled + ']';
     }
 }

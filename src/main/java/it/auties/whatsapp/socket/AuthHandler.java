@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
+import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
@@ -9,20 +10,20 @@ import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.SignalConstants;
 
+import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 
-
-class AuthHandler {
+final class AuthHandler {
     private final SocketHandler socketHandler;
 
     AuthHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
     }
 
-    protected CompletableFuture<Void> login(byte[] message) {
+    CompletableFuture<Void> login(ByteBuffer message) {
         try {
-            var serverHandshake = HandshakeMessageSpec.decode(message);
+            var serverHandshake = HandshakeMessageSpec.decode(ProtobufInputStream.fromBuffer(message));
             var serverHello = serverHandshake.serverHello();
             var handshake = new SocketHandshake(socketHandler.keys(), SocketHandshake.getPrologue(socketHandler.store().clientType()));
             handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
@@ -43,7 +44,8 @@ class AuthHandler {
                     .clientFinish(clientFinish)
                     .build();
             return socketHandler.sendBinaryWithNoResponse(HandshakeMessageSpec.encode(clientHandshake), false).thenRunAsync(() -> {
-                socketHandler.keys().clearReadWriteKey();
+                socketHandler.keys()
+                        .clearReadWriteKey();
                 handshake.finish();
             });
         } catch (Throwable throwable) {
@@ -126,13 +128,6 @@ class AuthHandler {
         };
     }
 
-    private DNSSource getDnsSource() {
-        return new DNSSourceBuilder()
-                .dnsMethod(DNSSource.ResolutionMethod.SYSTEM)
-                .appCached(false)
-                .build();
-    }
-
     private CompanionRegistrationData createRegisterData() {
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(socketHandler.store().version().toHash())
@@ -140,7 +135,7 @@ class AuthHandler {
                 .eKeytype(Bytes.intToBytes(SignalConstants.KEY_TYPE, 1))
                 .eIdent(socketHandler.keys().identityKeyPair().publicKey())
                 .eSkeyId(socketHandler.keys().signedKeyPair().encodedId())
-                .eSkeyVal(socketHandler.keys().signedKeyPair().keyPair().publicKey())
+                .eSkeyVal(socketHandler.keys().signedKeyPair().publicKey())
                 .eSkeySig(socketHandler.keys().signedKeyPair().signature());
         if (socketHandler.store().clientType() == ClientType.WEB) {
             var props = createCompanionProps();

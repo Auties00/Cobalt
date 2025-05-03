@@ -1,32 +1,47 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.util.Json;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
-public record NewsletterMuteResponse(@JsonProperty("id") Jid jid, @JsonProperty("mute") boolean mute) {
-    @JsonCreator
-    NewsletterMuteResponse(Map<String, String> json) {
-        this(Jid.of(json.get("id")), Objects.equals(json.get("mute"), "ON"));
+@Json
+public final class NewsletterMuteResponse {
+    private static final NewsletterMuteResponse EMPTY = new NewsletterMuteResponse(null, false);
+
+    private final Jid jid;
+    private final boolean mute;
+
+    private NewsletterMuteResponse(Jid jid, boolean mute) {
+        this.jid = jid;
+        this.mute = mute;
     }
 
-    public static Optional<NewsletterMuteResponse> ofJson(String json) {
-        return Json.readValue(json, JsonData.class)
-                .data()
-                .map(JsonResponse::response);
+    @Json.Creator
+    static NewsletterMuteResponse of(@Json.Unmapped Map<String, Object> json) {
+        if(!(json.get("data") instanceof Map<?,?> data)) {
+            return EMPTY;
+        }
+
+        if(!(data.get("xwa2_notify_newsletter_on_mute_change") instanceof Map<?,?> response)) {
+            return EMPTY;
+        }
+
+        if(!(response.get("id") instanceof String value)) {
+            return EMPTY;
+        }
+
+        var jid = Jid.of(value);
+        var mute = response.get("mute") instanceof Boolean muteValue ? muteValue : false;
+        return new NewsletterMuteResponse(jid, mute);
     }
 
-    private record JsonData(Optional<JsonResponse> data) {
-
+    public Optional<Jid> jid() {
+        return Optional.ofNullable(jid);
     }
 
-    private record JsonResponse(
-            @JsonProperty("xwa2_notify_newsletter_on_mute_change") NewsletterMuteResponse response) {
-
+    public boolean mute() {
+        return mute;
     }
 }

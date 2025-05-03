@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.avaje.jsonb.Jsonb;
+import io.avaje.jsonb.Types;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.crypto.AesGcm;
@@ -11,12 +12,14 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
-import it.auties.whatsapp.model.call.Call;
+import it.auties.whatsapp.model.call.CallBuilder;
 import it.auties.whatsapp.model.call.CallStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatPastParticipant;
+import it.auties.whatsapp.model.chat.ChatPastParticipantBuilder;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactBuilder;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
@@ -33,10 +36,11 @@ import it.auties.whatsapp.model.newsletter.NewsletterReaction;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
+import it.auties.whatsapp.model.privacy.PrivacySettingEntryBuilder;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
-import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.request.SubscribedNewslettersRequest;
+import it.auties.whatsapp.model.request.MessageRequest;
+import it.auties.whatsapp.model.request.NewsletterRequests;
 import it.auties.whatsapp.model.response.*;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -44,7 +48,6 @@ import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Json;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -52,12 +55,11 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.ZonedDateTime;
+import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -91,14 +93,14 @@ class StreamHandler {
     private final WebVerificationHandler webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
-    private final AtomicBoolean retryConnection;
+    private final AtomicBoolean retriedConnection;
 
     protected StreamHandler(SocketHandler socketHandler, WebVerificationHandler webVerificationHandler) {
         this.socketHandler = socketHandler;
         this.webVerificationHandler = webVerificationHandler;
         this.retries = new ConcurrentHashMap<>();
         this.lastLinkCodeKey = new AtomicReference<>();
-        this.retryConnection = new AtomicBoolean(false);
+        this.retriedConnection = new AtomicBoolean(false);
     }
 
     protected void digest(Node node) {
@@ -114,6 +116,7 @@ class StreamHandler {
             case "message" -> socketHandler.decodeMessage(node, null, true);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
+            case "xmlstreamend" -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
         }
     }
 
@@ -228,7 +231,7 @@ class StreamHandler {
 
             var all = message.senderJid().device() == 0;
             var recipients = all ? null : Set.of(message.senderJid());
-            var request = new MessageSendRequest.Chat(message, recipients, !all, false, null);
+            var request = new MessageRequest.Chat(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
             retries.put(message.id(), attempts + 1);
         });
@@ -247,8 +250,8 @@ class StreamHandler {
             }
 
             switch (status) {
-                case READ -> message.receipt().readTimestampSeconds(Clock.nowSeconds());
-                case PLAYED -> message.receipt().playedTimestampSeconds(Clock.nowSeconds());
+                case READ -> message.receipt().setReadTimestampSeconds(Clock.nowSeconds());
+                case PLAYED -> message.receipt().setPlayedTimestampSeconds(Clock.nowSeconds());
             }
         });
     }
@@ -299,7 +302,15 @@ class StreamHandler {
                 .orElseGet(Clock::nowSeconds);
         var isOffline = callNode.attributes().hasKey("offline");
         var hasVideo = callNode.hasNode("video");
-        var call = new Call(from, caller, callId, timestampSeconds, hasVideo, status, isOffline);
+        var call = new CallBuilder()
+                .chatJid(from)
+                .callerJid(caller)
+                .id(callId)
+                .timestampSeconds(timestampSeconds)
+                .video(hasVideo)
+                .status(status)
+                .offline(isOffline)
+                .build();
         socketHandler.store().addCall(call);
         socketHandler.onCall(call);
     }
@@ -329,7 +340,7 @@ class StreamHandler {
             return;
         }
 
-        if (match.status().index() >= MessageStatus.SERVER_ACK.index()) {
+        if (match.status().ordinal() >= MessageStatus.SERVER_ACK.ordinal()) {
             return;
         }
 
@@ -445,73 +456,116 @@ class StreamHandler {
     private void handleNewsletterStateUpdate(Node update) {
         var updatePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing state update payload"));
-        var updateJson = NewsletterStateResponse.ofJson(updatePayload)
-                .orElseThrow(() -> new NoSuchElementException("Malformed state update payload"));
-        var newsletter = socketHandler.store()
-                .findNewsletterByJid(updateJson.jid())
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-        newsletter.setState(updateJson.state());
+        var updateJson = Jsonb.builder()
+                .build()
+                .type(NewsletterStateResponse.class)
+                .fromJson(updatePayload);
+        updateJson.jid().ifPresent(newsletterJid -> {
+            var newsletter = socketHandler.store()
+                    .findNewsletterByJid(newsletterJid)
+                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+            newsletter.setState(updateJson.state());
+        });
     }
 
     private void handleNewsletterMetadataUpdate(Node update) {
         var updatePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing update payload"));
-        var updateJson = NewsletterResponse.ofJson(updatePayload)
-                .orElseThrow(() -> new NoSuchElementException("Malformed update payload"));
-        var newsletter = socketHandler.store()
-                .findNewsletterByJid(updateJson.newsletter().jid())
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-        var updatedMetadata = updateJson.newsletter()
-                .metadata()
-                .orElse(null);
-        var oldMetadata = newsletter.metadata()
-                .orElse(null);
-        if(oldMetadata == null) {
-            newsletter.setMetadata(updatedMetadata);
-        }else if (updatedMetadata != null) {
-            var mergedMetadata = new NewsletterMetadata(
-                    updatedMetadata.name().or(oldMetadata::name),
-                    updatedMetadata.description().or(oldMetadata::description),
-                    updatedMetadata.picture().or(oldMetadata::picture),
-                    updatedMetadata.handle().or(oldMetadata::handle),
-                    updatedMetadata.settings().or(oldMetadata::settings),
-                    updatedMetadata.invite().or(oldMetadata::invite),
-                    updatedMetadata.verification().or(oldMetadata::verification),
-                    updatedMetadata.creationTimestampSeconds().isPresent() ? updatedMetadata.creationTimestampSeconds() : oldMetadata.creationTimestampSeconds()
-            );
-            newsletter.setMetadata(mergedMetadata);
-        }
+        Jsonb.builder()
+                .build()
+                .type(NewsletterResponse.class)
+                .fromJson(updatePayload)
+                .newsletter()
+                .ifPresent(updatedNewsletter -> {
+                    var newsletter = socketHandler.store()
+                            .findNewsletterByJid(updatedNewsletter.jid())
+                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+                    var updatedMetadata = updatedNewsletter.metadata()
+                            .orElse(null);
+                    var oldMetadata = newsletter.metadata()
+                            .orElse(null);
+                    if(oldMetadata == null) {
+                        newsletter.setMetadata(updatedMetadata);
+                    }else if (updatedMetadata != null) {
+                        var name = updatedMetadata.name()
+                                .or(oldMetadata::name)
+                                .orElse(null);
+                        var description = updatedMetadata.description()
+                                .or(oldMetadata::description)
+                                .orElse(null);
+                        var picture = updatedMetadata.picture()
+                                .or(oldMetadata::picture)
+                                .orElse(null);
+                        var handle = updatedMetadata.handle()
+                                .or(oldMetadata::handle)
+                                .orElse(null);
+                        var settings = updatedMetadata.settings()
+                                .or(oldMetadata::settings)
+                                .orElse(null);
+                        var invite = updatedMetadata.invite()
+                                .or(oldMetadata::invite)
+                                .orElse(null);
+                        var verification = updatedMetadata.verification() || oldMetadata.verification();
+                        var creationTimestamp = updatedMetadata.creationTimestamp()
+                                .or(oldMetadata::creationTimestamp)
+                                .map(ChronoZonedDateTime::toEpochSecond)
+                                .orElse(0L);
+                        var mergedMetadata = new NewsletterMetadata(
+                                name,
+                                description,
+                                picture,
+                                handle,
+                                settings,
+                                invite,
+                                verification,
+                                creationTimestamp
+                        );
+                        newsletter.setMetadata(mergedMetadata);
+                    }
+                });
     }
 
     private void handleNewsletterJoin(Node update) {
         var joinPayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing join payload"));
-        var joinJson = NewsletterResponse.ofJson(joinPayload)
-                .orElseThrow(() -> new NoSuchElementException("Malformed join payload"));
-        socketHandler.store().addNewsletter(joinJson.newsletter());
-        if(!socketHandler.store().webHistorySetting().isZero()) {
-            socketHandler.queryNewsletterMessages(joinJson.newsletter().jid(), DEFAULT_NEWSLETTER_MESSAGES);
-        }
+        Jsonb.builder()
+                .build()
+                .type(NewsletterResponse.class)
+                .fromJson(joinPayload)
+                .newsletter()
+                .ifPresent(newsletter -> {
+                    socketHandler.store().addNewsletter(newsletter);
+                    if(!socketHandler.store().webHistorySetting().isZero()) {
+                        socketHandler.queryNewsletterMessages(newsletter.jid(), DEFAULT_NEWSLETTER_MESSAGES);
+                    }
+                });
     }
 
     private void handleNewsletterMute(Node update) {
         var mutePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing mute payload"));
-        var muteJson = NewsletterMuteResponse.ofJson(mutePayload)
-                .orElseThrow(() -> new NoSuchElementException("Malformed mute payload"));
-        var newsletter = socketHandler.store()
-                .findNewsletterByJid(muteJson.jid())
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-        newsletter.viewerMetadata()
-                .ifPresent(viewerMetadata -> viewerMetadata.setMute(muteJson.mute()));
+        var response = Jsonb.builder()
+                .build()
+                .type(NewsletterMuteResponse.class)
+                .fromJson(mutePayload);
+        response.jid().ifPresent(newsletterJid -> {
+            var newsletter = socketHandler.store()
+                    .findNewsletterByJid(newsletterJid)
+                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+            newsletter.viewerMetadata()
+                    .ifPresent(viewerMetadata -> viewerMetadata.setMute(response.mute()));
+        });
     }
 
     private void handleNewsletterLeave(Node update) {
         var leavePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing leave payload"));
-        var leaveJson = NewsletterLeaveResponse.ofJson(leavePayload)
-                .orElseThrow(() -> new NoSuchElementException("Malformed leave payload"));
-        socketHandler.store().removeNewsletter(leaveJson.jid());
+        var response = Jsonb.builder()
+                .build()
+                .type(NewsletterLeaveResponse.class)
+                .fromJson(leavePayload);
+        response.jid()
+                .ifPresent(newsletterJid -> socketHandler.store().removeNewsletter(newsletterJid));
     }
 
     private void handleCompanionRegistration(Node node) {
@@ -648,7 +702,7 @@ class StreamHandler {
                 .orElse(null);
         var parameters = getStubTypeParameters(metadata);
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomIdV2(Objects.requireNonNullElse(participantJid, chat.jid()), socketHandler.store().clientType()))
+                .id(ChatMessageKey.randomId(socketHandler.store().clientType()))
                 .chatJid(chat.jid())
                 .senderJid(participantJid)
                 .build();
@@ -674,7 +728,11 @@ class StreamHandler {
         switch (stubType) {
             case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> {
                 var reason = stubType == ChatMessageInfo.StubType.GROUP_PARTICIPANT_REMOVE ? ChatPastParticipant.Reason.REMOVED : ChatPastParticipant.Reason.LEFT;
-                var pastParticipant = new ChatPastParticipant(participantJid, reason, timestamp);
+                var pastParticipant = new ChatPastParticipantBuilder()
+                        .jid(participantJid)
+                        .reason(reason)
+                        .timestampSeconds(timestamp)
+                        .build();
                 socketHandler.addPastParticipant(chat.jid(), pastParticipant);
             }
             case GROUP_PARTICIPANT_ADD -> {
@@ -689,23 +747,25 @@ class StreamHandler {
     }
 
     private List<String> getStubTypeParameters(Node metadata) {
-        try {
-            var mapper = new ObjectMapper();
-            var attributes = new ArrayList<String>();
-            attributes.add(mapper.writeValueAsString(metadata.attributes().toMap()));
-            for (var child : metadata.children()) {
-                var data = child.attributes();
-                if (data.isEmpty()) {
-                    continue;
-                }
-
-                attributes.add(mapper.writeValueAsString(data.toMap()));
+        var attributes = new ArrayList<String>();
+        attributes.add(toJson(metadata.attributes()));
+        for (var child : metadata.children()) {
+            var data = child.attributes();
+            if (data.isEmpty()) {
+                continue;
             }
 
-            return Collections.unmodifiableList(attributes);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot encode stub parameters", exception);
+            attributes.add(toJson(data));
         }
+
+        return Collections.unmodifiableList(attributes);
+    }
+
+    private String toJson(Attributes attributes) {
+        return Jsonb.builder()
+                .build()
+                .type(Types.mapOf(Object.class))
+                .toJson(attributes);
     }
 
     private void handleEncryptNotification(Node node) {
@@ -802,16 +862,28 @@ class StreamHandler {
         }
 
         if (!update) {
-            return queryPrivacyExcludedContacts(privacyType.get(), privacyValue.get())
-                    .thenAcceptAsync(response -> socketHandler.store().addPrivacySetting(privacyType.get(), new PrivacySettingEntry(privacyType.get(), privacyValue.get(), response)));
+            return queryPrivacyExcludedContacts(privacyType.get(), privacyValue.get()).thenAcceptAsync(response -> {
+                var newEntry = new PrivacySettingEntryBuilder()
+                        .type(privacyType.get())
+                        .value(privacyValue.get())
+                        .excluded(response)
+                        .build();
+                socketHandler.store()
+                        .addPrivacySetting(privacyType.get(), newEntry);
+            });
+        }else {
+            var oldEntry = socketHandler.store().findPrivacySetting(privacyType.get());
+            var newValues = getUpdatedBlockedList(node, oldEntry, privacyValue.get());
+            var newEntry = new PrivacySettingEntryBuilder()
+                    .type(privacyType.get())
+                    .value(privacyValue.get())
+                    .excluded(newValues)
+                    .build();
+            socketHandler.store()
+                    .addPrivacySetting(privacyType.get(), newEntry);
+            socketHandler.onPrivacySettingChanged(oldEntry, newEntry);
+            return CompletableFuture.completedFuture(null);
         }
-
-        var oldEntry = socketHandler.store().findPrivacySetting(privacyType.get());
-        var newValues = getUpdatedBlockedList(node, oldEntry, privacyValue.get());
-        var newEntry = new PrivacySettingEntry(privacyType.get(), privacyValue.get(), Collections.unmodifiableList(newValues));
-        socketHandler.store().addPrivacySetting(privacyType.get(), newEntry);
-        socketHandler.onPrivacySettingChanged(oldEntry, newEntry);
-        return CompletableFuture.completedFuture(null);
     }
 
     private List<Jid> getUpdatedBlockedList(Node node, PrivacySettingEntry privacyEntry, PrivacySettingValue privacyValue) {
@@ -887,26 +959,19 @@ class StreamHandler {
         }
 
         if (node.hasNode("bad-mac")) {
-            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac. Unresolved nodes: " + getUnresolvedNodes()));
+            socketHandler.handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
             return;
         }
 
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
-            case 403, 503 -> socketHandler.disconnect(retryConnection.getAndSet(true) ? DisconnectReason.BANNED : DisconnectReason.RECONNECTING);
+            case 403, 503 -> socketHandler.disconnect(retriedConnection.getAndSet(true) ? DisconnectReason.BANNED : DisconnectReason.RECONNECTING);
             case 500 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             case 401 -> handleStreamError(node);
-            default -> node.children().forEach(error -> socketHandler.store().resolvePendingRequest(error, true));
+            case 515 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            default -> node.children()
+                    .forEach(error -> socketHandler.store().resolvePendingRequest(error));
         }
-    }
-
-    private String getUnresolvedNodes() {
-        return socketHandler.store()
-                .pendingRequests()
-                .stream()
-                .map(SocketRequest::body)
-                .map(String::valueOf)
-                .collect(Collectors.joining("\n"));
     }
 
     private void handleStreamError(Node node) {
@@ -922,7 +987,6 @@ class StreamHandler {
     }
 
     private void digestSuccess(Node node) {
-        socketHandler.confirmConnection();
         node.attributes().getOptionalJid("lid")
                 .ifPresent(socketHandler.store()::setLid);
         finishLogin();
@@ -1163,8 +1227,8 @@ class StreamHandler {
     }
 
     protected CompletableFuture<Void> queryNewsletters() {
-        var query = new SubscribedNewslettersRequest(new SubscribedNewslettersRequest.Variable());
-        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), Json.writeValueAsBytes(query)))
+        var request = NewsletterRequests.subscribedNewsletters();
+        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), request))
                 .thenAcceptAsync(result -> {
                     if(socketHandler.store().webHistorySetting().hasNewsletters()) {
                         parseNewsletters(result);
@@ -1173,19 +1237,17 @@ class StreamHandler {
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
     }
 
-    private void parseNewsletters(Node result) {
-        var newslettersPayload = result.findChild("result")
+    private void parseNewsletters(Node node) {
+        var newslettersPayload = node.findChild("result")
                 .flatMap(Node::contentAsString);
         if(newslettersPayload.isEmpty()) {
             return;
         }
 
-        var newslettersJson = SubscribedNewslettersResponse.ofJson(newslettersPayload.get())
-                .orElseThrow(() -> new NoSuchElementException("Malformed newsletters payload: " + newslettersPayload));
-        onNewsletters(newslettersJson);
-    }
-
-    private void onNewsletters(SubscribedNewslettersResponse result) {
+        var result = Jsonb.builder()
+                .build()
+                .type(SubscribedNewslettersResponse.class)
+                .fromJson(newslettersPayload.get());
         var noMessages = socketHandler.store().webHistorySetting().isZero();
         var data = result.newsletters();
         var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
@@ -1233,7 +1295,7 @@ class StreamHandler {
         var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
         var certificate = new BusinessVerifiedNameCertificateBuilder()
                 .encodedDetails(encodedDetails)
-                .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails, true))
+                .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails))
                 .build();
         return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate))).thenAccept(result -> {
             var verifiedName = result.findChild("verified_name")
@@ -1290,13 +1352,13 @@ class StreamHandler {
                     .jid()
                     .map(Jid::toSimpleJid)
                     .ifPresent(jid -> {
-                        var me = new Contact(jid, socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
+                        var me = buildMe(jid);
                         socketHandler.store().addContact(me);
                     });
         }
 
         schedulePing();
-        retryConnection.set(false);
+        retriedConnection.set(false);
         socketHandler.onLoggedIn();
         if (socketHandler.keys().initialAppSync()) {
             socketHandler.onContacts();
@@ -1372,7 +1434,7 @@ class StreamHandler {
                 .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
 
-    private void parseNewAbout(ContactAboutResponse result, boolean update) {
+    private void parseNewAbout(UserAboutResponse result, boolean update) {
         if (result == null) {
             return;
         }
@@ -1437,10 +1499,6 @@ class StreamHandler {
     }
 
     private void schedulePing() {
-        if (socketHandler.state() != SocketState.CONNECTED) {
-            return;
-        }
-
         socketHandler.scheduleAtFixedInterval(() -> {
             socketHandler.sendPing();
             socketHandler.store().serialize(true);
@@ -1450,10 +1508,6 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> scheduleMediaConnectionUpdate() {
-        if (socketHandler.state() != SocketState.CONNECTED) {
-            return CompletableFuture.completedFuture(null);
-        }
-
         return socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
                 .thenAcceptAsync(this::onMediaConnection)
                 .exceptionallyAsync(throwable -> {
@@ -1528,7 +1582,7 @@ class StreamHandler {
     }
 
     private CompletableFuture<Void> askPairingCode(PairingCodeHandler codeHandler) {
-        var code = Bytes.bytesToCrockford(Bytes.random(5));
+        var code = Bytes.randomHex(5);
         var registration = Node.of(
                 "link_code_companion_reg",
                 Map.of("jid", getPhoneNumberAsJid(), "stage", "companion_hello", "should_show_push_notification", true),
@@ -1551,8 +1605,15 @@ class StreamHandler {
             var secretKey = getSecretPairingKey(linkCodeKey, salt);
             var cipher = Cipher.getInstance("AES/CTR/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(randomIv));
-            var ciphered = cipher.doFinal(socketHandler.keys().companionKeyPair().publicKey());
-            return Bytes.concat(salt, randomIv, ciphered);
+            var companionPublicKey = socketHandler.keys()
+                    .companionKeyPair()
+                    .publicKey();
+            cipher.update(companionPublicKey);
+            var result = new byte[salt.length + randomIv.length + cipher.getOutputSize(companionPublicKey.length)];
+            System.arraycopy(salt, 0, result, 0, salt.length);
+            System.arraycopy(randomIv, 0, result, salt.length, randomIv.length);
+            cipher.doFinal(result, salt.length + randomIv.length);
+            return result;
         } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot cipher link code pairing key", exception);
         }
@@ -1622,7 +1683,7 @@ class StreamHandler {
                 .accountSignature(account.accountSignature())
                 .accountSignatureKey(account.accountSignatureKey())
                 .details(account.details())
-                .deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage, true))
+                .deviceSignature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), deviceSignatureMessage))
                 .build();
         var keyIndex = DeviceIdentitySpec.decode(result.details()).keyIndex();
         var outgoingDeviceIdentity = SignedDeviceIdentitySpec.encode(new SignedDeviceIdentity(result.details(), null, result.accountSignature(), result.deviceSignature()));
@@ -1661,7 +1722,8 @@ class StreamHandler {
                 .put("to", JidServer.whatsapp().toJid())
                 .toMap();
         var request = Node.of("iq", attributes, content);
-        socketHandler.sendNodeWithNoResponse(request);
+        socketHandler.sendNodeWithNoResponse(request)
+                .exceptionally(throwable -> socketHandler.handleFailure(STREAM, throwable));
     }
 
     private void saveCompanion(Node container) {
@@ -1671,10 +1733,21 @@ class StreamHandler {
                 .getOptionalJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store().setJid(companion);
-        socketHandler.store().setPhoneNumber(PhoneNumber.of(companion.user()));
+        PhoneNumber.of(companion.user())
+                .ifPresent(phoneNumber -> socketHandler.store().setPhoneNumber(phoneNumber));
         socketHandler.addToKnownConnections();
-        var me = new Contact(companion.toSimpleJid(), socketHandler.store().name(), null, null, ContactStatus.AVAILABLE, Clock.nowSeconds(), false);
+        var me = buildMe(companion.toSimpleJid());
         socketHandler.store().addContact(me);
+    }
+
+    private Contact buildMe(Jid companion) {
+        return new ContactBuilder()
+                .jid(companion)
+                .chosenName(socketHandler.store().name())
+                .lastKnownPresence(ContactStatus.AVAILABLE)
+                .lastSeenSeconds(Clock.nowSeconds())
+                .blocked(false)
+                .build();
     }
 
     protected void dispose() {

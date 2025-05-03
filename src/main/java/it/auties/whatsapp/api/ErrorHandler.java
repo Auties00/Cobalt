@@ -22,7 +22,7 @@ public interface ErrorHandler {
      * @param whatsapp  the caller api
      * @param location  the location where the error occurred
      * @param throwable a stacktrace of the error, if available
-     * @return a newsletters determining what should be done
+     * @return a result determining what should be done
      */
     Result handleError(Whatsapp whatsapp, Location location, Throwable throwable);
 
@@ -80,21 +80,12 @@ public interface ErrorHandler {
                 printer.accept(whatsapp, throwable);
             }
 
-            if(location == LOGIN) {
-                logger.log(WARNING, "[{0}] Cannot login", jid);
-                return Result.DISCONNECT;
-            }
-
-            if (location == CRYPTOGRAPHY && whatsapp.store().clientType() == ClientType.MOBILE) {
-                logger.log(WARNING, "[{0}] Reconnecting", jid);
-                return Result.RECONNECT;
-            }
-
-            if (location == INITIAL_APP_STATE_SYNC
+            if(location == LOGIN
+                    || location == INITIAL_APP_STATE_SYNC
                     || location == CRYPTOGRAPHY
                     || (location == MESSAGE && throwable instanceof HmacValidationException)) {
-                logger.log(WARNING, "[{0}] Restore", jid);
-                return Result.RESTORE;
+                logger.log(WARNING, "[{0}] Cannot login", jid);
+                return Result.DISCONNECT;
             }
 
             logger.log(WARNING, "[{0}] Ignored failure", jid);
@@ -162,10 +153,6 @@ public interface ErrorHandler {
          * Ignores an error that was thrown by the socket
          */
         DISCARD,
-        /**
-         * Deletes the current session and creates a new one instantly
-         */
-        RESTORE,
         /**
          * Disconnects from the current session without deleting it
          */

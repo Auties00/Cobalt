@@ -8,7 +8,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 
 import java.util.Arrays;
@@ -21,31 +20,42 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.PaymentOrderMessage")
 public final class PaymentOrderMessage implements ContextualMessage<PaymentOrderMessage>, PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String id;
-    @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
-    private final byte[] thumbnail;
-    @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
-    private final int itemCount;
-    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
-    private final Status status;
-    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
-    private final PaymentOrderSurface surface;
-    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-    private final String message;
-    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-    private final String title;
-    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-    private final Jid sellerId;
-    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-    private final String token;
-    @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
-    private final long amount;
-    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
-    private final String currency;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    final String id;
 
-    public PaymentOrderMessage(String id, byte[] thumbnail, int itemCount, Status status, PaymentOrderSurface surface, String message, String title, Jid sellerId, String token, long amount, String currency, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
+    final byte[] thumbnail;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
+    final int itemCount;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
+    final Status status;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
+    final PaymentOrderSurface surface;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    final String message;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+    final String title;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+    final Jid sellerId;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    final String token;
+
+    @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
+    final long amount;
+
+    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
+    final String currency;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    PaymentOrderMessage(String id, byte[] thumbnail, int itemCount, Status status, PaymentOrderSurface surface, String message, String title, Jid sellerId, String token, long amount, String currency, ContextInfo contextInfo) {
         this.id = id;
         this.thumbnail = thumbnail;
         this.itemCount = itemCount;
@@ -61,8 +71,8 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.PAYMENT_ORDER;
+    public Type type() {
+        return Type.PAYMENT_ORDER;
     }
 
     public String id() {
@@ -150,10 +160,6 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
         Status(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return this.index;
-        }
     }
 
     @ProtobufEnum(name = "Message.OrderMessage.OrderSurface")
@@ -167,10 +173,6 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
 
         PaymentOrderSurface(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return this.index;
         }
     }
 }

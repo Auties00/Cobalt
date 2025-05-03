@@ -1,19 +1,20 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @ProtobufMessage
 public final class SenderKeyRecord {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    private final List<SenderKeyState> states;
+    final List<SenderKeyState> states;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public SenderKeyRecord(List<SenderKeyState> states) {
         this.states = states;
     }
@@ -23,9 +24,11 @@ public final class SenderKeyRecord {
     }
 
     public SenderKeyState firstState() {
-        return states.stream()
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Cannot get head state for empty record"));
+        if(states.isEmpty()) {
+            throw new NoSuchElementException("Cannot get head state for empty record");
+        }
+
+        return states.getFirst();
     }
 
     public List<SenderKeyState> findStatesById(int keyId) {
@@ -41,10 +44,6 @@ public final class SenderKeyRecord {
     public void addState(int id, SignalKeyPair signingKey, int iteration, byte[] seed) {
         var state = new SenderKeyState(id, signingKey, iteration, seed);
         states.add(state);
-    }
-
-    public List<SenderKeyState> states() {
-        return Collections.unmodifiableList(states);
     }
 
     public boolean isEmpty() {

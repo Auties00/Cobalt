@@ -4,20 +4,30 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * A model class that represents a time a localizable parameter
  */
 @ProtobufMessage(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter")
-public record HighlyStructuredLocalizableParameter(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        String defaultValue,
-        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-        Optional<HighlyStructuredCurrency> parameterCurrency,
-        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-        Optional<HighlyStructuredDateTime> parameterDateTime
-) {
+public final class HighlyStructuredLocalizableParameter {
+
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String defaultValue;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    final HighlyStructuredCurrency parameterCurrency;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    final HighlyStructuredDateTime parameterDateTime;
+
+    HighlyStructuredLocalizableParameter(String defaultValue, HighlyStructuredCurrency parameterCurrency, HighlyStructuredDateTime parameterDateTime) {
+        this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue cannot be null");
+        this.parameterCurrency = parameterCurrency;
+        this.parameterDateTime = parameterDateTime;
+    }
+
     /**
      * Constructs a new localizable parameter with a default value and a parameter
      *
@@ -32,10 +42,21 @@ public record HighlyStructuredLocalizableParameter(
             case HighlyStructuredCurrency highlyStructuredCurrency ->
                     builder.parameterCurrency(highlyStructuredCurrency);
             case HighlyStructuredDateTime businessDateTime -> builder.parameterDateTime(businessDateTime);
-            case null -> {
-            }
+            case null -> {}
         }
         return builder.build();
+    }
+
+    public String defaultValue() {
+        return defaultValue;
+    }
+
+    public Optional<HighlyStructuredCurrency> parameterCurrency() {
+        return Optional.ofNullable(parameterCurrency);
+    }
+
+    public Optional<HighlyStructuredDateTime> parameterDateTime() {
+        return Optional.ofNullable(parameterDateTime);
     }
 
     /**
@@ -55,6 +76,33 @@ public record HighlyStructuredLocalizableParameter(
      * @return a non-null optional
      */
     public Optional<? extends HighlyStructuredLocalizableParameterValue> parameter() {
-        return parameterCurrency.isPresent() ? parameterCurrency : parameterDateTime;
+        if(parameterCurrency != null) {
+            return Optional.of(parameterCurrency);
+        }else if (parameterDateTime != null) {
+            return Optional.of(parameterDateTime);
+        }else {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof HighlyStructuredLocalizableParameter that
+                && Objects.equals(defaultValue, that.defaultValue)
+                && Objects.equals(parameterCurrency, that.parameterCurrency)
+                && Objects.equals(parameterDateTime, that.parameterDateTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(defaultValue, parameterCurrency, parameterDateTime);
+    }
+
+    @Override
+    public String toString() {
+        return "HighlyStructuredLocalizableParameter[" +
+                "defaultValue=" + defaultValue + ", " +
+                "parameterCurrency=" + parameterCurrency + ", " +
+                "parameterDateTime=" + parameterDateTime + ']';
     }
 }

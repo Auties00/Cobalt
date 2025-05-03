@@ -9,16 +9,28 @@ import it.auties.whatsapp.util.SignalConstants;
 
 import java.util.NoSuchElementException;
 
-public record GroupCipher(SenderKeyName name, Keys keys) {
-    public CipheredMessageResult encrypt(byte[] data) {
-        if (data == null) {
-            return new CipheredMessageResult(null, SignalConstants.UNAVAILABLE);
-        }
+import static it.auties.whatsapp.util.SignalConstants.CURRENT_VERSION;
 
+public final class GroupCipher {
+    private final SenderKeyName name;
+    private final Keys keys;
+
+    public GroupCipher(SenderKeyName name, Keys keys) {
+        this.name = name;
+        this.keys = keys;
+    }
+
+    public CipheredMessageResult encrypt(byte[] data) {
         var currentState = keys.findSenderKeyByName(name).firstState();
         var messageKey = currentState.chainKey().toMessageKey();
         var ciphertext = AesCbc.encrypt(messageKey.iv(), data, messageKey.cipherKey());
-        var senderKeyMessage = new SenderKeyMessage(currentState.id(), messageKey.iteration(), ciphertext, currentState.signingKey().privateKey());
+        var senderKeyMessage = new SenderKeyMessage(
+                CURRENT_VERSION,
+                currentState.id(),
+                messageKey.iteration(),
+                ciphertext,
+                currentState.signingKey().privateKey()
+        );
         var next = currentState.chainKey().next();
         currentState.setChainKey(next);
         return new CipheredMessageResult(senderKeyMessage.serialized(), SignalConstants.SKMSG);
@@ -41,8 +53,7 @@ public record GroupCipher(SenderKeyName name, Keys keys) {
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
         if (senderKeyState.chainKey().iteration() > iteration) {
             return senderKeyState.findSenderMessageKey(iteration)
-                    .orElseThrow(() -> new NoSuchElementException("Received message with old counter: got %s, expected more than %s".formatted(iteration, senderKeyState.chainKey()
-                            .iteration())));
+                    .orElseThrow(() -> new NoSuchElementException("Received message with old counter: got %s, expected more than %s".formatted(iteration, senderKeyState.chainKey().iteration())));
         }
         var lastChainKey = senderKeyState.chainKey();
         while (lastChainKey.iteration() < iteration) {

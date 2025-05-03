@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.newsletter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -16,44 +15,34 @@ import java.util.Objects;
 import java.util.Optional;
 
 @ProtobufMessage
+@Json
 public final class Newsletter implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final Jid jid;
-    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    private NewsletterState state;
-    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private NewsletterMetadata metadata;
-    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private final NewsletterViewerMetadata viewerMetadata;
-    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    private final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
+    @Json.Property("id")
+    final Jid jid;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Newsletter(
-            @JsonProperty("id")
-            Jid jid,
-            @JsonProperty("state")
-            NewsletterState state,
-            @JsonProperty("thread_metadata")
-            NewsletterMetadata metadata,
-            @JsonProperty("viewer_metadata")
-            NewsletterViewerMetadata viewerMetadata,
-            @JsonProperty("messages")
-            ConcurrentLinkedSet<NewsletterMessageInfo> messages
-    ) {
-        this.jid = jid;
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    @Json.Property("state")
+    NewsletterState state;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    @Json.Property("thread_metadata")
+    NewsletterMetadata metadata;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    @Json.Property("viewer_metadata")
+    final NewsletterViewerMetadata viewerMetadata;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
+    @Json.Property("messages")
+    final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
+
+    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, ConcurrentLinkedSet<NewsletterMessageInfo> messages) {
+        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
         this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedSet::new);
-    }
-
-    public Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata) {
-        this.jid = jid;
-        this.state = state;
-        this.metadata = metadata;
-        this.viewerMetadata = viewerMetadata;
-        this.messages = new ConcurrentLinkedSet<>();
     }
 
     public void addMessage(NewsletterMessageInfo message) {

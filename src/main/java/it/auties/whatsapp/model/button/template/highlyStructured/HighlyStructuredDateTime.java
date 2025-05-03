@@ -4,18 +4,25 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * A model class that represents a time
  */
 @ProtobufMessage(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime")
-public record HighlyStructuredDateTime(
-        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-        Optional<HighlyStructuredDateTimeComponent> dateComponent,
-        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-        Optional<HighlyStructuredDateTimeUnixEpoch> dateUnixEpoch
-) implements HighlyStructuredLocalizableParameterValue {
+public final class HighlyStructuredDateTime implements HighlyStructuredLocalizableParameterValue {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
+    final HighlyStructuredDateTimeComponent dateComponent;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    final HighlyStructuredDateTimeUnixEpoch dateUnixEpoch;
+
+    HighlyStructuredDateTime(HighlyStructuredDateTimeComponent dateComponent, HighlyStructuredDateTimeUnixEpoch dateUnixEpoch) {
+        this.dateComponent = dateComponent;
+        this.dateUnixEpoch = dateUnixEpoch;
+    }
+
     /**
      * Constructs a new date time using a component
      *
@@ -23,13 +30,13 @@ public record HighlyStructuredDateTime(
      * @return a non-null date time
      */
     public static HighlyStructuredDateTime of(HighlyStructuredDateTimeValue dateComponent) {
-        if (dateComponent instanceof HighlyStructuredDateTimeComponent highlyStructuredDateTimeComponent) {
-            return new HighlyStructuredDateTime(Optional.of(highlyStructuredDateTimeComponent), Optional.empty());
-        } else if (dateComponent instanceof HighlyStructuredDateTimeUnixEpoch highlyStructuredDateTimeUnixEpoch) {
-            return new HighlyStructuredDateTime(Optional.empty(), Optional.of(highlyStructuredDateTimeUnixEpoch));
-        } else {
-            return new HighlyStructuredDateTime(Optional.empty(), Optional.empty());
-        }
+        return switch (dateComponent) {
+            case HighlyStructuredDateTimeComponent highlyStructuredDateTimeComponent ->
+                    new HighlyStructuredDateTime(highlyStructuredDateTimeComponent, null);
+            case HighlyStructuredDateTimeUnixEpoch highlyStructuredDateTimeUnixEpoch ->
+                    new HighlyStructuredDateTime(null, highlyStructuredDateTimeUnixEpoch);
+            case null -> new HighlyStructuredDateTime(null, null);
+        };
     }
 
     /**
@@ -48,11 +55,38 @@ public record HighlyStructuredDateTime(
      * @return a non-null date type
      */
     public Optional<? extends HighlyStructuredDateTimeValue> date() {
-        return dateComponent.isPresent() ? dateComponent : dateUnixEpoch;
+        return Optional.ofNullable(dateComponent != null ? dateComponent : dateUnixEpoch);
+    }
+
+    public Optional<HighlyStructuredDateTimeComponent> dateComponent() {
+        return Optional.ofNullable(dateComponent);
+    }
+
+    public Optional<HighlyStructuredDateTimeUnixEpoch> dateUnixEpoch() {
+        return Optional.ofNullable(dateUnixEpoch);
     }
 
     @Override
     public Type parameterType() {
         return Type.DATE_TIME;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof HighlyStructuredDateTime that
+                && Objects.equals(dateComponent, that.dateComponent)
+                && Objects.equals(dateUnixEpoch, that.dateUnixEpoch);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dateComponent, dateUnixEpoch);
+    }
+
+    @Override
+    public String toString() {
+        return "HighlyStructuredDateTime[" +
+                "dateComponent=" + dateComponent + ", " +
+                "dateUnixEpoch=" + dateUnixEpoch + ']';
     }
 }

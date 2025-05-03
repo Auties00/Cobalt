@@ -1,269 +1,195 @@
 package it.auties.whatsapp.io;
 
 import it.auties.whatsapp.model.jid.Jid;
+import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.util.Strings;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 import static it.auties.whatsapp.io.BinaryTag.*;
+import static it.auties.whatsapp.io.BinaryTokens.*;
 
-public final class BinaryEncoder implements AutoCloseable {
+public final class BinaryEncoder {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
 
-    private final ByteArrayOutputStream byteArrayOutputStream;
-    private final DataOutputStream dataOutputStream;
-    private final List<String> singleByteTokens;
-    private final List<String> doubleByteTokens;
-    private boolean closed;
+    private final byte[] output;
+    private int offset;
 
-    public BinaryEncoder() {
-        this(BinaryTokens.SINGLE_BYTE, BinaryTokens.DOUBLE_BYTE);
+    private BinaryEncoder(byte[] output, int offset) {
+        this.output = output;
+        this.offset = offset;
     }
 
-    public BinaryEncoder(List<String> singleByteTokens, List<String> doubleByteTokens) {
-        this.byteArrayOutputStream = new ByteArrayOutputStream();
-        this.dataOutputStream = new DataOutputStream(byteArrayOutputStream);
-        this.singleByteTokens = singleByteTokens;
-        this.doubleByteTokens = doubleByteTokens;
+    public static byte[] encode(Node node) {
+        var length = BinaryLength.sizeOf(node);
+        var output = new byte[length];
+        var encoder = new BinaryEncoder(output, 0);
+        encoder.writeMessage(node);
+        return output;
     }
 
-    public byte[] encode(Node node) throws IOException {
-        if(closed) {
-            throw new IllegalStateException("The encoder is closed");
-        }
-
-        dataOutputStream.write(0);
-        writeNode(node);
-        return byteArrayOutputStream.toByteArray();
+    public static void encode(Node node, byte[] output, int offset) {
+        var encoder = new BinaryEncoder(output, offset);
+        encoder.writeMessage(node);
     }
 
-    private void writeString(String input, BinaryTag token) throws IOException {
-        dataOutputStream.write(token.data());
-        writeStringLength(input);
-        for (int charCode = 0, index = 0; index < input.length(); index++) {
-            var stringCodePoint = Character.codePointAt(input, index);
-            var binaryCodePoint = getStringCodePoint(token, stringCodePoint);
-
-            if (index % 2 != 0) {
-                dataOutputStream.write(charCode |= binaryCodePoint);
-                continue;
-            }
-
-            charCode = binaryCodePoint << 4;
-            if (index != input.length() - 1) {
-                continue;
-            }
-
-            dataOutputStream.write(charCode |= 15);
-        }
+    private void writeMessage(Node input) {
+        output[offset++] = 0;
+        writeNode(input);
     }
 
-    private int getStringCodePoint(BinaryTag token, int codePoint) {
-        if (codePoint >= 48 && codePoint <= 57) {
-            return codePoint - 48;
-        }
-
-        if (token == NIBBLE_8 && codePoint == 45) {
-            return 10;
-        }
-
-        if (token == NIBBLE_8 && codePoint == 46) {
-            return 11;
-        }
-
-        if (token == HEX_8 && codePoint >= 65 && codePoint <= 70) {
-            return codePoint - 55;
-        }
-
-        throw new IllegalArgumentException("Cannot parse codepoint %s with token %s".formatted(codePoint, token));
-    }
-
-    private void writeStringLength(String input) throws IOException {
-        var roundedLength = (int) Math.ceil(input.length() / 2F);
-        if (input.length() % 2 == 1) {
-            dataOutputStream.write(roundedLength | 128);
-            return;
-        }
-
-        dataOutputStream.write(roundedLength);
-    }
-
-    private void writeLong(long input) throws IOException {
-        if (input < UNSIGNED_BYTE_MAX_VALUE) {
-            dataOutputStream.write(BINARY_8.data());
-            dataOutputStream.write((int) input);
-            return;
-        }
-
-        if (input < INT_20_MAX_VALUE) {
-            dataOutputStream.write(BINARY_20.data());
-            dataOutputStream.write((int) ((input >>> 16) & 255));
-            dataOutputStream.write((int) ((input >>> 8) & 255));
-            dataOutputStream.write((int) (255 & input));
-            return;
-        }
-
-        dataOutputStream.write(BINARY_32.data());
-        dataOutputStream.writeLong(input);
-    }
-
-    private void writeString(String input) throws IOException {
-        if (input.isEmpty()) {
-            dataOutputStream.write(BINARY_8.data());
-            dataOutputStream.write(LIST_EMPTY.data());
-            return;
-        }
-
-        var tokenIndex = singleByteTokens.indexOf(input);
-        if (tokenIndex != -1) {
-            dataOutputStream.write(tokenIndex + 1);
-            return;
-        }
-
-        if (writeDoubleByteString(input)) {
-            return;
-        }
-
-        var length = length(input);
-        if (length < 128 && !BinaryTokens.anyMatch(input, BinaryTokens.NUMBERS_REGEX)) {
-            writeString(input, NIBBLE_8);
-            return;
-        }
-
-        if (length < 128 && !BinaryTokens.anyMatch(input, BinaryTokens.HEX_REGEX)) {
-            writeString(input, HEX_8);
-            return;
-        }
-
-        writeLong(length);
-        dataOutputStream.write(input.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private boolean writeDoubleByteString(String input) throws IOException {
-        if (!doubleByteTokens.contains(input)) {
-            return false;
-        }
-
-        var index = doubleByteTokens.indexOf(input);
-        dataOutputStream.write(doubleByteStringTag(index).data());
-        dataOutputStream.write(index % (doubleByteTokens.size() / 4));
-        return true;
-    }
-
-    private BinaryTag doubleByteStringTag(int index) {
-        return switch (index / (doubleByteTokens.size() / 4)) {
-            case 0 -> DICTIONARY_0;
-            case 1 -> DICTIONARY_1;
-            case 2 -> DICTIONARY_2;
-            case 3 -> DICTIONARY_3;
-            default -> throw new IllegalArgumentException("Cannot find tag for quadrant %s".formatted(index));
-        };
-    }
-
-    private void writeNode(Node input) throws IOException {
-        if (input.description().equals("0")) {
-            dataOutputStream.write(LIST_8.data());
-            dataOutputStream.write(LIST_EMPTY.data());
-            return;
-        }
-
-        writeInt(input.size());
+    private void writeNode(Node input){
+        writeList(input.size());
         writeString(input.description());
-        writeAttributes(input);
-        if (input.hasContent()) {
-            write(input.content());
+        writeAttributes(input.attributes());
+        if(input.hasContent()) {
+            writeContent(input.content());
         }
     }
 
-    private void writeAttributes(Node input) throws IOException {
-        for (var entry : input.attributes().toMap().entrySet()) {
-            writeString(entry.getKey());
-            write(entry.getValue());
-        }
-    }
-
-    private void writeInt(int size) throws IOException {
+    private void writeList(int size) {
         if (size < UNSIGNED_BYTE_MAX_VALUE) {
-            dataOutputStream.write(LIST_8.data());
-            dataOutputStream.write(size);
-            return;
+            output[offset++] = LIST_8;
+            output[offset++] = (byte) size;
+        }else if (size < UNSIGNED_SHORT_MAX_VALUE) {
+            output[offset++] = LIST_16;
+            output[offset++] = (byte) (size >> 8);
+            output[offset++] = (byte) size;
+        }else {
+            throw new IllegalArgumentException("Cannot write list: overflow");
         }
-
-        if (size < UNSIGNED_SHORT_MAX_VALUE) {
-            dataOutputStream.write(LIST_16.data());
-            dataOutputStream.writeShort(size);
-            return;
-        }
-
-        throw new IllegalArgumentException("Cannot write int %s: overflow".formatted(size));
     }
 
-    private void write(Object input) throws IOException {
+    private void writeString(String input){
+        if (input.isEmpty()) {
+            output[offset++] = BINARY_8;
+            output[offset++] = LIST_EMPTY;
+            return;
+        }
+
+        var singleByteTokenIndex = SINGLE_BYTE_TOKENS.indexOf(input);
+        if (singleByteTokenIndex != -1) {
+            output[offset++] = (byte) singleByteTokenIndex;
+            return;
+        }
+
+        var dictionary0TokenIndex = DICTIONARY_0_TOKENS.indexOf(input);
+        if (dictionary0TokenIndex != -1) {
+            output[offset++] = DICTIONARY_0;
+            output[offset++] = (byte) dictionary0TokenIndex;
+            return;
+        }
+
+        var dictionary1TokenIndex = DICTIONARY_1_TOKENS.indexOf(input);
+        if (dictionary1TokenIndex != -1) {
+            output[offset++] = DICTIONARY_1;
+            output[offset++] = (byte) dictionary1TokenIndex;
+            return;
+        }
+
+        var dictionary2TokenIndex = DICTIONARY_2_TOKENS.indexOf(input);
+        if (dictionary2TokenIndex != -1) {
+            output[offset++] = DICTIONARY_2;
+            output[offset++] = (byte) dictionary2TokenIndex;
+            return;
+        }
+
+        var dictionary3TokenIndex = DICTIONARY_3_TOKENS.indexOf(input);
+        if (dictionary3TokenIndex != -1) {
+            output[offset++] = DICTIONARY_3;
+            output[offset++] = (byte) dictionary3TokenIndex;
+            return;
+        }
+
+        var length = Strings.utf8Length(input);
+        writeBinary(length);
+        var encoder = StandardCharsets.UTF_8.newEncoder();
+        var inputBuffer = CharBuffer.wrap(input);
+        var outputBuffer = ByteBuffer.wrap(output, offset, output.length - offset);
+        var result = encoder.encode(inputBuffer, outputBuffer, true);
+        if(result.isError()) {
+            throw new RuntimeException("Cannot encode string: " + result);
+        }
+        offset += length;
+    }
+
+    private void writeBinary(long input) {
+        if (input < UNSIGNED_BYTE_MAX_VALUE) {
+            output[offset++] = BINARY_8;
+            output[offset++] = (byte) input;
+        }else if (input < INT_20_MAX_VALUE) {
+            output[offset++] = BINARY_20;
+            output[offset++] = (byte) (input >> 16);
+            output[offset++] = (byte) (input >> 8);
+            output[offset++] = (byte) input;
+        }else {
+            output[offset++] = BINARY_32;
+            output[offset++] = (byte) (input >> 24);
+            output[offset++] = (byte) (input >> 16);
+            output[offset++] = (byte) (input >> 8);
+            output[offset++] = (byte) input;
+        }
+    }
+
+    private void writeAttributes(Attributes attributes) {
+        attributes.forEach((key, attribute) -> {
+            writeString(key);
+            writeContent(attribute);
+        });
+    }
+
+    private void writeContent(Object input){
         switch (input) {
-            case null -> dataOutputStream.write(LIST_EMPTY.data());
-            case String str -> writeString(str);
+            case null -> output[offset++] = LIST_EMPTY;
+            case String value -> writeString(value);
+            case byte[] value -> writeBytes(value);
             case Boolean bool -> writeString(Boolean.toString(bool));
             case Number number -> writeString(number.toString());
-            case byte[] bytes -> writeBytes(bytes);
-            case Jid jid -> writeJid(jid);
-            case Collection<?> collection -> writeList(collection);
-            case Enum<?> serializable -> writeString(Objects.toString(serializable));
-            case Node node ->
-                    throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
-            default ->
-                    throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
+            case Enum<?> value -> writeString(value.toString());
+            case Jid value -> writeJid(value);
+            case List<?> value -> writeChildren(value);
+            default -> throw new RuntimeException("Invalid payload type");
         }
     }
 
-    private void writeList(Collection<?> collection) throws IOException {
-        writeInt(collection.size());
-        for (var entry : collection) {
-            if (entry instanceof Node node) {
-                writeNode(node);
+    private void writeChildren(List<?> values) {
+        writeList(values.size());
+        for(var value : values) {
+            try {
+                writeNode((Node) value);
+            }catch (ClassCastException ignored) {
+                throw new RuntimeException("Invalid payload type");
             }
         }
     }
 
-    private void writeBytes(byte[] bytes) throws IOException {
-        writeLong(bytes.length);
-        dataOutputStream.write(bytes);
+    private void writeBytes(byte[] bytes){
+        var length = bytes.length;
+        writeBinary(length);
+        System.arraycopy(bytes, 0, output, offset, length);
+        offset += length;
     }
 
-    private void writeJid(Jid jid) throws IOException {
+    private void writeJid(Jid jid){
         if (jid.isCompanion()) {
-            dataOutputStream.write(COMPANION_JID.data());
-            dataOutputStream.write(jid.agent());
-            dataOutputStream.write(jid.device());
+            output[offset++] = COMPANION_JID;
+            output[offset++] = (byte) jid.agent();
+            output[offset++] = (byte) jid.device();
             writeString(jid.user());
-            return;
-        }
-
-        dataOutputStream.write(JID_PAIR.data());
-        if (jid.user() != null) {
-            writeString(jid.user());
+        }else {
+            output[offset++] = JID_PAIR;
+            if(jid.hasUser()) {
+                writeString(jid.user());
+            }else {
+                output[offset++] = LIST_EMPTY;
+            }
             writeString(jid.server().address());
-            return;
         }
-
-        dataOutputStream.write(LIST_EMPTY.data());
-        writeString(jid.server().address());
-    }
-
-    private int length(String input) {
-        return input.getBytes(StandardCharsets.UTF_8).length;
-    }
-
-    @Override
-    public void close() throws IOException {
-        this.closed = true;
-        dataOutputStream.close();
     }
 }

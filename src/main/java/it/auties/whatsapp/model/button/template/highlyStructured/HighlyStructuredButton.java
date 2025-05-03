@@ -49,9 +49,5 @@ public sealed interface HighlyStructuredButton permits HighlyStructuredCallButto
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return index;
-        }
     }
 }

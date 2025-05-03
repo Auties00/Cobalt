@@ -1,10 +1,11 @@
 package it.auties.whatsapp.model.business;
 
-import java.util.Locale;
+import it.auties.protobuf.annotation.ProtobufEnum;
 
 /**
  * An enumeration of possible ReviewStatuses.
  */
+@ProtobufEnum
 public enum BusinessReviewStatus {
     /**
      * Indicates that no review has been performed.
@@ -25,15 +26,5 @@ public enum BusinessReviewStatus {
     /**
      * Indicates that the review is outdated.
      */
-    OUTDATED;
-
-    /**
-     * Returns a ReviewStatus based on the given name.
-     *
-     * @param name the name of the ReviewStatus
-     * @return a ReviewStatus
-     */
-    public static BusinessReviewStatus of(String name) {
-        return valueOf(name.toUpperCase(Locale.ROOT));
-    }
+    OUTDATED
 }

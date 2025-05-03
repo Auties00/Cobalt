@@ -1,26 +1,42 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.util.Json;
+import io.avaje.jsonb.Json;
 
-import java.util.Optional;
+import java.util.Map;
+import java.util.OptionalLong;
 
-public record NewsletterSubscribersResponse(@JsonProperty("subscribers_count") Long subscribersCount) {
-    public static Optional<NewsletterSubscribersResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class)
-                .data()
-                .map(response -> response.result().response());
+@Json
+public final class NewsletterSubscribersResponse {
+    private static final NewsletterSubscribersResponse EMPTY = new NewsletterSubscribersResponse(null);
+
+    private final Long subscribersCount;
+
+    private NewsletterSubscribersResponse(Long subscribersCount) {
+        this.subscribersCount = subscribersCount;
     }
 
-    private record JsonResponse(Optional<JsonData> data) {
+    @Json.Creator
+    static NewsletterSubscribersResponse of(@Json.Unmapped Map<String, Object> json) {
+        if(!(json.get("data") instanceof Map<?,?> data)) {
+            return EMPTY;
+        }
 
+        if(!(data.get("xwa2_newsletter") instanceof Map<?,?> response)) {
+            return EMPTY;
+        }
+
+        if(!(response.get("thread_metadata") instanceof Map<?,?> metadata)) {
+            return EMPTY;
+        }
+
+        if(!(metadata.get("subscribers_count") instanceof Number value)) {
+            return EMPTY;
+        }
+
+        return new NewsletterSubscribersResponse(value.longValue());
     }
 
-    private record JsonData(@JsonProperty("xwa2_newsletter") WrappedResult result) {
-
-    }
-
-    private record WrappedResult(@JsonProperty("thread_metadata") NewsletterSubscribersResponse response) {
-
+    public OptionalLong subscribersCount() {
+        return subscribersCount == null ? OptionalLong.empty() : OptionalLong.of(subscribersCount);
     }
 }

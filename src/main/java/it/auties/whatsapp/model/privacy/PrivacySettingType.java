@@ -57,10 +57,6 @@ public enum PrivacySettingType {
                 .findFirst();
     }
 
-    public int index() {
-        return index;
-    }
-
     public Set<PrivacySettingValue> supportedValues() {
         return Collections.unmodifiableSet(values);
     }

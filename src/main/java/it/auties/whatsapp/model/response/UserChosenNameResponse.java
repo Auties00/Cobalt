@@ -1,27 +1,51 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import it.auties.whatsapp.util.Json;
+import io.avaje.jsonb.Json;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public record UserChosenNameResponse(Optional<String> name) {
+@Json
+public final class UserChosenNameResponse {
+    private static final UserChosenNameResponse EMPTY = new UserChosenNameResponse(null);
 
-    @SuppressWarnings("unchecked")
-    public static Optional<UserChosenNameResponse> ofJson(String json) {
-        try {
-            var parsedJson = Json.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            var data = (Map<String, ?>) parsedJson.get("data");
-            var updates = (List<?>) data.get("xwa2_users_updates_since");
-            var latestUpdate = (Map<String, ?>) updates.getFirst();
-            var updatesData = (List<?>) latestUpdate.get("updates");
-            var latestUpdateData = (Map<String, ?>) updatesData.getFirst();
-            return Optional.of(new UserChosenNameResponse(Optional.ofNullable((String) latestUpdateData.get("text"))));
-        } catch (Throwable throwable) {
-            return Optional.empty();
+    private final String name;
+
+    private UserChosenNameResponse(String name) {
+        this.name = name;
+    }
+
+    @Json.Creator
+    static UserChosenNameResponse of(@Json.Unmapped Map<String, Object> json) {
+        if(!(json.get("data") instanceof Map<?,?> data)) {
+            return EMPTY;
         }
+
+        if(!(data.get("xwa2_users_updates_since") instanceof List<?> responses) || responses.isEmpty()) {
+            return EMPTY;
+        }
+
+        if(!(responses.getFirst() instanceof Map<?,?> response)) {
+            return EMPTY;
+        }
+
+        if(!(response.get("updates") instanceof List<?> updates) || updates.isEmpty()) {
+            return EMPTY;
+        }
+
+        if(!(updates.getFirst() instanceof Map<?,?> update)) {
+            return EMPTY;
+        }
+
+        if(!(update.get("text") instanceof String name)) {
+            return EMPTY;
+        }
+
+        return new UserChosenNameResponse(name);
+    }
+
+    public Optional<String> name() {
+        return Optional.ofNullable(name);
     }
 }
