@@ -114,7 +114,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
                 .thumbnailWidth(THUMBNAIL_WIDTH)
                 .thumbnailHeight(THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-		        .caption(caption)
+                .caption(caption)
                 .build()
                 .setDecodedMedia(media);
     }
