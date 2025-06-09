@@ -8,6 +8,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+// TODO: Inline me
 public final class AesGcm {
     private static final int TAG_LENGTH = 128;
 
@@ -42,10 +43,6 @@ public final class AesGcm {
         }
     }
 
-    public static byte[] encrypt(long iv, byte[] input, byte[] key) {
-        return encrypt(iv, input, key, null);
-    }
-
     public static byte[] encrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
         return cipher(toIv(iv), input, 0, input.length, key, additionalData, true);
     }
@@ -58,27 +55,12 @@ public final class AesGcm {
         return cipher(iv, input, 0, input.length, key, null, true);
     }
 
-    public static byte[] decrypt(long iv, byte[] input, byte[] key) {
-        return decrypt(iv, input, 0, input.length, key);
-    }
-
-    public static byte[] decrypt(long iv, byte[] input, int offset, int length, byte[] key) {
-        return decrypt(iv, input, offset, length, key, null);
-    }
-
     public static byte[] decrypt(long iv, byte[] input, byte[] key, byte[] additionalData) {
-        return decrypt(iv, input, 0, input.length, key, additionalData);
-    }
-
-    public static byte[] decrypt(long iv, byte[] input, int offset, int length, byte[] key, byte[] additionalData) {
-        return cipher(toIv(iv), input, offset, length, key, additionalData, false);
+        return cipher(toIv(iv), input, 0, input.length, key, additionalData, false);
     }
 
     public static byte[] decrypt(byte[] iv, byte[] input, byte[] key, byte[] additionalData) {
-        return decrypt(iv, input, 0, input.length, key, additionalData);
+        return cipher(iv, input, 0, input.length, key, additionalData, false);
     }
 
-    public static byte[] decrypt(byte[] iv, byte[] input, int offset, int length, byte[] key, byte[] additionalData) {
-        return cipher(iv, input, offset, length, key, additionalData, false);
-    }
 }

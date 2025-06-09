@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.media;
 
+import it.auties.whatsapp.model.action.StickerAction;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.sync.ExternalBlobReference;
 import it.auties.whatsapp.model.sync.HistorySyncNotification;
@@ -11,7 +12,7 @@ import java.util.OptionalLong;
  * A sealed interface that represents a class that can provide data about a media
  */
 public sealed interface MutableAttachmentProvider<T extends MutableAttachmentProvider<T>>
-        permits MediaMessage, ExternalBlobReference, HistorySyncNotification {
+        permits StickerAction, MediaMessage, ExternalBlobReference, HistorySyncNotification {
     /**
      * Returns the url to the media
      *

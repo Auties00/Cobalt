@@ -13,7 +13,7 @@ import java.util.Objects;
  * can have in a group. Said roles can be changed using various methods in {@link Whatsapp}.
  */
 @ProtobufEnum(name = "GroupParticipant.Rank")
-public enum GroupRole {
+public enum ChatRole {
     /**
      * A participant of the group with no special powers
      */
@@ -30,12 +30,12 @@ public enum GroupRole {
     final int index;
     private final String data;
 
-    GroupRole(@ProtobufEnumIndex int index, String data) {
+    ChatRole(@ProtobufEnumIndex int index, String data) {
         this.index = index;
         this.data = data;
     }
 
-    public static GroupRole of(String input) {
+    public static ChatRole of(String input) {
         return Arrays.stream(values())
                 .filter(entry -> Objects.equals(entry.data(), input))
                 .findFirst()

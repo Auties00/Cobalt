@@ -3,43 +3,49 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
+
+import java.util.Objects;
 
 /**
  * A model clas that represents whether a user was muted
  */
 @ProtobufMessage(name = "SyncActionValue.UserStatusMuteAction")
-public record UserStatusMuteAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-        boolean muted
-) implements Action {
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+public final class UserStatusMuteAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
+    final boolean muted;
+
+    UserStatusMuteAction(boolean muted) {
+        this.muted = muted;
+    }
+
     @Override
     public String indexName() {
         return "userStatusMute";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 7;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public boolean muted() {
+        return muted;
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof UserStatusMuteAction that
+                && muted == that.muted;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(muted);
+    }
+
+    @Override
+    public String toString() {
+        return "UserStatusMuteAction[" +
+                "muted=" + muted + ']';
     }
 }

@@ -1,23 +1,40 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.util.Json;
 
+import java.util.Map;
 import java.util.Optional;
 
-public record NewsletterLeaveResponse(@JsonProperty("id") Jid jid) {
-    public static Optional<NewsletterLeaveResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class)
-                .data()
-                .map(JsonData::response);
+@Json
+public final class NewsletterLeaveResponse {
+    private static final NewsletterLeaveResponse EMPTY = new NewsletterLeaveResponse(null);
+
+    private final Jid jid;
+
+    private NewsletterLeaveResponse(Jid jid) {
+        this.jid = jid;
     }
 
-    private record JsonResponse(Optional<JsonData> data) {
+    @Json.Creator
+    static NewsletterLeaveResponse of(@Json.Unmapped Map<String, Object> json) {
+        if(!(json.get("data") instanceof Map<?,?> data)) {
+            return EMPTY;
+        }
 
+        if(!(data.get("xwa2_notify_newsletter_on_leave") instanceof Map<?,?> response)) {
+            return EMPTY;
+        }
+
+        if(!(response.get("id") instanceof String value)) {
+            return EMPTY;
+        }
+
+        var jid = Jid.of(value);
+        return new NewsletterLeaveResponse(jid);
     }
 
-    private record JsonData(@JsonProperty("xwa2_notify_newsletter_on_leave") NewsletterLeaveResponse response) {
-
+    public Optional<Jid> jid() {
+        return Optional.ofNullable(jid);
     }
 }

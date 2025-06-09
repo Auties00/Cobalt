@@ -1,12 +1,10 @@
 package it.auties.whatsapp.controller;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.util.Json;
 
 import java.util.*;
 
@@ -32,7 +30,6 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     /**
      * The serializer instance to use
      */
-    @JsonIgnore
     protected ControllerSerializer serializer;
 
     /**
@@ -42,7 +39,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     protected final ClientType clientType;
 
     /**
-     * A list of alias for the controller, can be used in place of UUID1
+     * A list of alias for the controller, can be used in place of UUID
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     protected final Collection<String> alias;
@@ -149,15 +146,6 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      */
     public void removeAlias() {
         alias.clear();
-    }
-
-    /**
-     * Converts this controller to a json. Useful when debugging.
-     *
-     * @return a non-null string
-     */
-    public String toJson() {
-        return Json.writeValueAsString(this, true);
     }
 
     /**

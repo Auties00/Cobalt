@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -14,13 +13,12 @@ import java.util.OptionalInt;
 @ProtobufMessage(name = "CommunityLinkedGroup")
 public final class CommunityLinkedGroup {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final Jid jid;
+    final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
-    private final Integer participants;
+    final Integer participants;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public CommunityLinkedGroup(Jid jid, Integer participants) {
+    CommunityLinkedGroup(Jid jid, Integer participants) {
         this.jid = jid;
         this.participants = participants;
     }

@@ -1,12 +1,9 @@
 package it.auties.whatsapp.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
+import io.avaje.jsonb.Jsonb;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.crypto.Pbkdf2;
-import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
@@ -19,7 +16,6 @@ import net.dongliu.apk.parser.bean.CertificateMeta;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -27,10 +23,14 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.time.Instant;
@@ -38,9 +38,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public final class AppMetadata {
     private static volatile Version webVersion;
@@ -48,13 +45,9 @@ public final class AppMetadata {
     private static volatile Version businessIosVersion;
     private static volatile WhatsappAndroidApp personalApk;
     private static volatile WhatsappAndroidApp businessApk;
-    private static volatile WhatsappKaiOsApp kaiOsApp;
 
     private static final Path ANDROID_CACHE = Path.of(System.getProperty("user.home") + "/.cobalt/token/android");
-    private static final Path KAI_OS_CACHE = Path.of(System.getProperty("user.home") + "/.cobalt/token/kaios");
     private static final String MOBILE_WEB_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
-    private static final URI MOBILE_KAIOS_URL = URI.create("https://api.kai.jiophone.net/v2.0/apps?cu=F90M-FBJIINA");
-    private static final String MOBILE_KAIOS_USER_AGENT = "Mozilla/5.0 (Mobile; LYF/F90M/LYF-F90M-000-03-31-121219; Android; rv:48.0) Gecko/48.0 Firefox/48.0 KAIOS/2.5";
     private static final byte[] MOBILE_ANDROID_SALT = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
     private static final Version WEB_VERSION = Version.of("2.3000.1022032575");
     private static final Version MOBILE_BUSINESS_IOS_VERSION = Version.of("2.25.10.72");
@@ -65,7 +58,6 @@ public final class AppMetadata {
     private static final String MOBILE_BUSINESS_IOS_STATIC = "USUDuDYDeQhY4RF2fCSp5m3F6kJ1M2J8wS7bbNA2";
     private static final URI MOBILE_ANDROID_URL = URI.create("https://www.whatsapp.com/android/current/WhatsApp.apk");
     private static final URI MOBILE_BUSINESS_ANDROID_URL = URI.create("https://d.cdnpure.com/b/APK/com.whatsapp.w4b?version=latest");
-    private static final String MOBILE_KAIOS_STATIC = "aa8243c465a743c488beb4645dda63edc2ca9a58";
     private static final URI MOBILE_IOS_URL = URI.create("https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp");
     private static final URI MOBILE_BUSINESS_IOS_URL = URI.create("https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB");
     private static final String MOBILE_IOS_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1";
@@ -82,9 +74,6 @@ public final class AppMetadata {
                     getIosVersion(false);
             case IOS_BUSINESS ->
                     getIosVersion(true);
-            case KAIOS ->
-                    getKaiOsData()
-                            .thenApply(WhatsappKaiOsApp::version);
             default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
@@ -136,7 +125,10 @@ public final class AppMetadata {
         }
 
         return Medias.downloadAsync(business ? MOBILE_BUSINESS_IOS_URL : MOBILE_IOS_URL, null, MOBILE_IOS_USER_AGENT).thenApplyAsync(response -> {
-            var result = Json.readValue(response, IosVersionResponse.class);
+            var result = Jsonb.builder()
+                    .build()
+                    .type(IosVersionResponse.class)
+                    .fromJson(response);
             if(result == null) {
                 return business ? MOBILE_BUSINESS_IOS_VERSION : MOBILE_PERSONAL_IOS_VERSION;
             }
@@ -157,24 +149,21 @@ public final class AppMetadata {
                             .thenApplyAsync(whatsappData -> getAndroidToken(String.valueOf(phoneNumber), whatsappData));
             case IOS, IOS_BUSINESS ->
                     getIosToken(phoneNumber, appVersion, platform.isBusiness());
-            case KAIOS ->
-                    getKaiOsData()
-                            .thenApplyAsync(kaiOsApp -> getKaiOsToken(phoneNumber, kaiOsApp));
-            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
+            default -> throw new IllegalStateException("Cannot compute token for platform " + platform);
         };
     }
 
     private static CompletableFuture<String> getIosToken(long phoneNumber, Version version, boolean business) {
-        var staticToken = business ? MOBILE_BUSINESS_IOS_STATIC : MOBILE_IOS_STATIC;
-        var token = staticToken + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
-        return CompletableFuture.completedFuture(HexFormat.of().formatHex(MD5.calculate(token)));
-    }
-
-    private static String getKaiOsToken(long phoneNumber, WhatsappKaiOsApp kaiOsApp) {
-        var staticTokenPart = HexFormat.of().parseHex(MOBILE_KAIOS_STATIC);
-        var pagePart = HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(kaiOsApp.indexHtml(), kaiOsApp.backendJs())));
-        var phonePart = String.valueOf(phoneNumber).getBytes(StandardCharsets.UTF_8);
-        return HexFormat.of().formatHex(Sha256.calculate(Bytes.concat(staticTokenPart, pagePart.getBytes(StandardCharsets.UTF_8), phonePart)));
+        try {
+            var staticToken = business ? MOBILE_BUSINESS_IOS_STATIC : MOBILE_IOS_STATIC;
+            var token = staticToken + HexFormat.of().formatHex(version.toHash()) + phoneNumber;
+            var digest = MessageDigest.getInstance("MD5");
+            digest.update(token.getBytes());
+            var result = digest.digest();
+            return CompletableFuture.completedFuture(HexFormat.of().formatHex(result));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new UnsupportedOperationException("Missing md5 implementation", exception);
+        }
     }
 
     private static String getAndroidToken(String phoneNumber, WhatsappAndroidApp whatsappData) {
@@ -219,7 +208,11 @@ public final class AppMetadata {
                 return Optional.empty();
             }
 
-            return Optional.of(Json.readValue(Files.readString(localCache), WhatsappAndroidApp.class));
+            var result = Jsonb.builder()
+                    .build()
+                    .type(WhatsappAndroidApp.class)
+                    .fromJson(Files.readString(localCache));
+            return Optional.of(result);
         } catch (Throwable throwable) {
             return Optional.empty();
         }
@@ -233,7 +226,9 @@ public final class AppMetadata {
         return Medias.downloadAsync(business ? MOBILE_BUSINESS_ANDROID_URL : MOBILE_ANDROID_URL, null, MOBILE_ANDROID_USER_AGENT).thenApplyAsync(apk -> {
             try (var apkFile = new ByteArrayApkFile(apk)) {
                 var version = Version.of(apkFile.getApkMeta().getVersionName());
-                var md5Hash = MD5.calculate(apkFile.getFileData("classes.dex"));
+                var digest = MessageDigest.getInstance("MD5");
+                digest.update(apkFile.getFileData("classes.dex"));
+                var md5Hash = digest.digest();
                 var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
                 var certificates = getCertificates(apkFile);
                 if (business) {
@@ -254,7 +249,10 @@ public final class AppMetadata {
     private static void cacheWhatsappData(WhatsappAndroidApp apk) {
         CompletableFuture.runAsync(() -> {
             try {
-                var json = Json.writeValueAsString(apk, true);
+                var json = Jsonb.builder()
+                        .build()
+                        .type(WhatsappAndroidApp.class)
+                        .toJson(apk);
                 var file = getAndroidLocalCache(apk.business());
                 Files.createDirectories(file.getParent());
                 Files.writeString(file, json);
@@ -293,95 +291,51 @@ public final class AppMetadata {
     }
 
     private static byte[] getSecretKey(String packageName, byte[] resource) throws IOException, GeneralSecurityException {
-        var password = Bytes.concat(packageName.getBytes(StandardCharsets.UTF_8), resource);
-        return Pbkdf2.hmacSha1With8Bit(password, MOBILE_ANDROID_SALT, 128, 512);
-    }
-
-    private static Path getKaiOsLocalCache() {
-        return KAI_OS_CACHE.resolve("whatsapp.json");
-    }
-
-    // https://faq.whatsapp.com/420008397294796
-    // Leaving it here just for research
-    private static CompletableFuture<WhatsappKaiOsApp> getKaiOsData() {
-        if (kaiOsApp != null) {
-            return CompletableFuture.completedFuture(kaiOsApp);
-        }
-
-        return getCachedKaiOsApp()
-                .map(CompletableFuture::completedFuture)
-                .orElseGet(AppMetadata::downloadKaiOsData);
-    }
-
-    private static Optional<WhatsappKaiOsApp> getCachedKaiOsApp() {
         try {
-            var localCache = getKaiOsLocalCache();
-            if (Files.notExists(localCache)) {
-                return Optional.empty();
+            var packageNameLength = Strings.utf8Length(packageName);
+            var password = new byte[packageNameLength + resource.length];
+            var encoder = StandardCharsets.UTF_8.newEncoder();
+            var encodeResult = encoder.encode(CharBuffer.wrap(packageName), ByteBuffer.wrap(password, 0, packageNameLength), true);
+            if(encodeResult.isError()) {
+                throw new RuntimeException("Cannot encode package name: " + encodeResult);
             }
+            System.arraycopy(resource, 0, password, packageNameLength, resource.length);
+            var mac = Mac.getInstance("HMACSHA1");
+            var key = new SecretKeySpec(password, "HMACSHA1");
+            mac.init(key);
+            var state = new byte[mac.getMacLength()];
+            var keySize = 512 / 8;
+            var blocks = (keySize + mac.getMacLength() - 1) / mac.getMacLength();
+            var iBuf = new byte[4];
+            var result = new byte[blocks * mac.getMacLength()];
+            var offset = 0;
+            for(var i = 1; i <= blocks; ++i) {
+                var pos = 3;
+                while (++iBuf[pos] == 0) {
+                    --pos;
+                }
 
-            var now = Instant.now();
-            var fileTime = Files.getLastModifiedTime(localCache);
-            if (fileTime.toInstant().until(now, ChronoUnit.DAYS) >= 1) {
-                return Optional.empty();
-            }
+                mac.update(MOBILE_ANDROID_SALT);
 
-            return Optional.of(Json.readValue(Files.readString(localCache), WhatsappKaiOsApp.class));
-        } catch (Throwable throwable) {
-            return Optional.empty();
-        }
-    }
+                mac.update(iBuf, 0, iBuf.length);
+                mac.doFinal(state, 0);
+                System.arraycopy(state, 0, result, offset, state.length);
 
-    private static CompletableFuture<WhatsappKaiOsApp> downloadKaiOsData() {
-        return Medias.downloadAsync(MOBILE_KAIOS_URL, null, MOBILE_KAIOS_USER_AGENT, Map.entry("Content-Type", "application/json")).thenComposeAsync(catalogResponse -> {
-            try (var compressedStream = new GZIPInputStream(new ByteArrayInputStream(catalogResponse))) {
-                var catalog = Json.readValue(compressedStream.readAllBytes(), KaiOsCatalogResponse.class);
-                var app = catalog.apps()
-                        .stream()
-                        .filter(entry -> Objects.equals(entry.name(), "whatsapp"))
-                        .findFirst()
-                        .orElseThrow(() -> new NoSuchElementException("Missing whatsapp from catalog"));
-                return Medias.downloadAsync(app.uri(), null, MOBILE_KAIOS_USER_AGENT).thenApplyAsync(appArchiveResponse -> {
-                    try (var zipArchive = new ZipInputStream(new ByteArrayInputStream(appArchiveResponse))) {
-                        byte[] indexHtml = null;
-                        byte[] backendJs = null;
-                        ZipEntry entry;
+                for(var count = 1; count < 128; ++count) {
+                    mac.update(state, 0, state.length);
+                    mac.doFinal(state, 0);
 
-                        while ((entry = zipArchive.getNextEntry()) != null) {
-                            switch (entry.getName()) {
-                                case "index.html" -> indexHtml = zipArchive.readAllBytes();
-                                case "backendRoot.js" -> backendJs = zipArchive.readAllBytes();
-                            }
-                        }
-
-                        var result = new WhatsappKaiOsApp(
-                                new Version(app.version().primary(), app.version().secondary(), app.version().tertiary()),
-                                Objects.requireNonNull(indexHtml, "Missing index.html"),
-                                Objects.requireNonNull(backendJs, "Missing backendRoot.js")
-                        );
-                        cacheKaiOsData(kaiOsApp = result);
-                        return result;
-                    } catch (IOException exception) {
-                        throw new RuntimeException("Cannot extract kaios metadata", exception);
+                    for(var j = 0; j != state.length; ++j) {
+                        result[offset + j] ^= state[j];
                     }
-                });
-            } catch (IOException exception) {
-                throw new RuntimeException("Cannot download kaios app", exception);
-            }
-        });
-    }
+                }
 
-    private static void cacheKaiOsData(WhatsappKaiOsApp app) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                var json = Json.writeValueAsString(app, true);
-                var file = getKaiOsLocalCache();
-                Files.createDirectories(file.getParent());
-                Files.writeString(file, json);
-            } catch (IOException exception) {
-                throw new UncheckedIOException(exception);
+                offset += mac.getMacLength();
             }
-        });
+            return Arrays.copyOf(result, keySize);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException(exception);
+        }
     }
 
     public static String generateBusinessCertificate(Keys keys) {
@@ -393,17 +347,18 @@ public final class AppMetadata {
         var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
         var certificate = new BusinessVerifiedNameCertificateBuilder()
                 .encodedDetails(encodedDetails)
-                .signature(Curve25519.sign(keys.identityKeyPair().privateKey(), encodedDetails, true))
+                .signature(Curve25519.sign(keys.identityKeyPair().privateKey(), encodedDetails))
                 .build();
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    private record IosVersionResponse(
+    @Json
+    record IosVersionResponse(
             Version version
     ) {
         @SuppressWarnings("unchecked")
-        @JsonCreator
-        public static IosVersionResponse of(Map<String, Object> json) {
+        @Json.Creator
+        static IosVersionResponse of(@Json.Unmapped Map<String, Object> json) {
             var results = (List<Map<String, Object>>) json.get("results");
             if (results.isEmpty()) {
                 return null;
@@ -422,7 +377,8 @@ public final class AppMetadata {
         }
     }
 
-    private record WhatsappAndroidApp(
+    @Json
+    record WhatsappAndroidApp(
             Version version,
             byte[] md5Hash,
             byte[] secretKey,
@@ -430,26 +386,5 @@ public final class AppMetadata {
             boolean business
     ) {
 
-    }
-
-    private record WhatsappKaiOsApp(
-            Version version,
-            byte[] indexHtml,
-            byte[] backendJs
-    ) {
-
-    }
-
-    private record KaiOsCatalogResponse(
-            List<App> apps
-    ) {
-        record App(
-                String name,
-                Version version,
-                @JsonProperty("package_path")
-                URI uri
-        ) {
-
-        }
     }
 }

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -10,23 +9,22 @@ import java.util.List;
 @ProtobufMessage(name = "SyncdPatch")
 public final class PatchSync {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    private VersionSync version;
+    VersionSync version;
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    private final List<MutationSync> mutations;
+    final List<MutationSync> mutations;
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private final ExternalBlobReference externalMutations;
+    final ExternalBlobReference externalMutations;
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private final byte[] snapshotMac;
+    final byte[] snapshotMac;
     @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
-    private final byte[] patchMac;
+    final byte[] patchMac;
     @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
-    private final KeyId keyId;
+    final KeyId keyId;
     @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
-    private final ExitCode exitCode;
+    final ExitCode exitCode;
     @ProtobufProperty(index = 8, type = ProtobufType.UINT32)
-    private final Integer deviceIndex;
+    final Integer deviceIndex;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public PatchSync(
             VersionSync version,
             List<MutationSync> mutations,

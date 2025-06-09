@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.signal.session;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -12,39 +11,38 @@ import java.util.concurrent.ConcurrentHashMap;
 @ProtobufMessage
 public final class SessionState {
     @ProtobufProperty(index = 1, type = ProtobufType.INT32)
-    private final int version;
+    final int version;
 
     @ProtobufProperty(index = 2, type = ProtobufType.INT32)
-    private final int registrationId;
+    final int registrationId;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private final byte[] baseKey;
+    final byte[] baseKey;
 
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private final byte[] remoteIdentityKey;
+    final byte[] remoteIdentityKey;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
-    private final ConcurrentHashMap<String, SessionChain> chains;
+    final ConcurrentHashMap<String, SessionChain> chains;
 
     @ProtobufProperty(index = 6, type = ProtobufType.BYTES)
-    private byte[] rootKey;
+    byte[] rootKey;
 
     @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
-    private SessionPreKey pendingPreKey;
+    SessionPreKey pendingPreKey;
 
     @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
-    private SignalKeyPair ephemeralKeyPair;
+    SignalKeyPair ephemeralKeyPair;
 
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
-    private byte[] lastRemoteEphemeralKey;
+    byte[] lastRemoteEphemeralKey;
 
     @ProtobufProperty(index = 10, type = ProtobufType.INT32)
-    private int previousCounter;
+    int previousCounter;
 
     @ProtobufProperty(index = 11, type = ProtobufType.BOOL)
-    private boolean closed;
+    boolean closed;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public SessionState(int version, int registrationId, byte[] baseKey, byte[] remoteIdentityKey, ConcurrentHashMap<String, SessionChain> chains, byte[] rootKey, SessionPreKey pendingPreKey, SignalKeyPair ephemeralKeyPair, byte[] lastRemoteEphemeralKey, int previousCounter, boolean closed) {
         this.version = version;
         this.registrationId = registrationId;
@@ -133,7 +131,7 @@ public final class SessionState {
         return this.closed;
     }
 
-    public SessionState rootKey(byte[] rootKey) {
+    public SessionState setRootKey(byte[] rootKey) {
         this.rootKey = rootKey;
         return this;
     }

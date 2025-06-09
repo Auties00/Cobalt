@@ -390,23 +390,6 @@ public interface Listener {
     }
 
     /**
-     * Called when an event regarding the underlying is fired
-     *
-     * @param whatsapp an instance to the calling api
-     * @param event    the event
-     */
-    default void onSocketEvent(Whatsapp whatsapp, SocketEvent event) {
-    }
-
-    /**
-     * Called when an event regarding the underlying is fired
-     *
-     * @param event the event
-     */
-    default void onSocketEvent(SocketEvent event) {
-    }
-
-    /**
      * Called when a message answers a previous message
      *
      * @param response the response

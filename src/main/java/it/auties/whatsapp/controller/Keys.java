@@ -1,13 +1,12 @@
 package it.auties.whatsapp.controller;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.companion.CompanionSyncKey;
+import it.auties.whatsapp.model.companion.CompanionSyncKeyBuilder;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
@@ -178,23 +177,19 @@ public final class Keys extends Controller<Keys> {
     /**
      * Write counter for IV
      */
-    @JsonIgnore
     final AtomicLong writeCounter;
 
     /**
      * Read counter for IV
      */
-    @JsonIgnore
     final AtomicLong readCounter;
 
     /**
      * Session dependent keys to write and read cyphered messages
      */
-    @JsonIgnore
     byte[] writeKey, readKey;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
@@ -223,10 +218,10 @@ public final class Keys extends Controller<Keys> {
         this.readCounter = new AtomicLong();
     }
 
-    public static Keys newKeys(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
+    public static Keys of(UUID uuid, PhoneNumber phoneNumber, Collection<String> alias, ClientType clientType) {
         return new KeysBuilder()
                 .uuid(uuid)
-                .phoneNumber(PhoneNumber.ofNullable(phoneNumber).orElse(null))
+                .phoneNumber(phoneNumber)
                 .alias(alias)
                 .clientType(clientType)
                 .noiseKeyPair(SignalKeyPair.random())
@@ -362,7 +357,7 @@ public final class Keys extends Controller<Keys> {
      * @param record  the non-null record
      * @return this
      */
-    public Keys putSession(SessionAddress address, Session record) {
+    public Keys addSession(SessionAddress address, Session record) {
         sessions.put(address, record);
         return this;
     }
@@ -374,7 +369,7 @@ public final class Keys extends Controller<Keys> {
      * @param state  the non-null hash state
      * @return this
      */
-    public Keys putState(Jid device, CompanionHashState state) {
+    public Keys addState(Jid device, CompanionHashState state) {
         hashStates.put("%s_%s".formatted(device, state.type()), state);
         return this;
     }
@@ -390,8 +385,11 @@ public final class Keys extends Controller<Keys> {
         appStateKeys.stream()
                 .filter(preKey -> Objects.equals(preKey.companion(), jid))
                 .findFirst()
-                .ifPresentOrElse(key -> key.keys().addAll(keys), () -> {
-                    var syncKey = new CompanionSyncKey(jid, new LinkedList<>(keys));
+                .ifPresentOrElse(key -> key.addKeys(keys), () -> {
+                    var syncKey = new CompanionSyncKeyBuilder()
+                            .companion(jid)
+                            .keys(new LinkedList<>(keys))
+                            .build();
                     appStateKeys.add(syncKey);
                 });
         return this;
@@ -411,7 +409,7 @@ public final class Keys extends Controller<Keys> {
      *
      * @return a non-null app key
      */
-    public LinkedList<AppStateSyncKey> getAppKeys(Jid jid) {
+    public SequencedCollection<AppStateSyncKey> getAppKeys(Jid jid) {
         return appStateKeys.stream()
                 .filter(preKey -> Objects.equals(preKey.companion(), jid))
                 .findFirst()
@@ -433,21 +431,19 @@ public final class Keys extends Controller<Keys> {
     /**
      * Returns write counter
      *
-     * @param increment whether the counter should be incremented after the call
      * @return an unsigned long
      */
-    public synchronized long nextWriteCounter(boolean increment) {
-        return increment ? writeCounter.getAndIncrement() : writeCounter.get();
+    public synchronized long nextWriteCounter() {
+        return writeCounter.getAndIncrement();
     }
 
     /**
      * Returns read counter
      *
-     * @param increment whether the counter should be incremented after the call
      * @return an unsigned long
      */
-    public synchronized long nextReadCounter(boolean increment) {
-        return increment ? readCounter.getAndIncrement() : readCounter.get();
+    public synchronized long nextReadCounter() {
+        return readCounter.getAndIncrement();
     }
 
     /**
@@ -591,14 +587,6 @@ public final class Keys extends Controller<Keys> {
 
     public boolean initialAppSync() {
         return this.initialAppSync;
-    }
-
-    public AtomicLong writeCounter() {
-        return this.writeCounter;
-    }
-
-    public AtomicLong readCounter() {
-        return this.readCounter;
     }
 
     public Optional<byte[]> writeKey() {

@@ -4,11 +4,12 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.SignalConstants;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+
+import static it.auties.whatsapp.util.SignalConstants.IV_LENGTH;
 
 @ProtobufMessage
 public record SenderMessageKey(
@@ -26,18 +27,15 @@ public record SenderMessageKey(
     }
 
     private static byte[] createIv(byte[] seed) {
-        var derivative = getDerivedSeed(seed);
-        return Arrays.copyOf(derivative[0], SignalConstants.IV_LENGTH);
+        var chunks = Hkdf.deriveSecrets(seed, "WhisperGroup".getBytes(StandardCharsets.UTF_8), 1);
+        return Arrays.copyOf(chunks[0], IV_LENGTH);
     }
 
     private static byte[] createCipherKey(byte[] seed) {
-        var derivative = getDerivedSeed(seed);
-        var data = Arrays.copyOfRange(derivative[0], SignalConstants.IV_LENGTH, derivative[0].length);
-        var concat = Bytes.concat(data, derivative[1]);
-        return Arrays.copyOf(concat, SignalConstants.KEY_LENGTH);
-    }
-
-    private static byte[][] getDerivedSeed(byte[] seed) {
-        return Hkdf.deriveSecrets(seed, "WhisperGroup".getBytes(StandardCharsets.UTF_8));
+        var derived = Hkdf.deriveSecrets(seed, "WhisperGroup".getBytes(StandardCharsets.UTF_8));
+        var result = new byte[SignalConstants.KEY_LENGTH];
+        System.arraycopy(derived[0], IV_LENGTH, result, 0, derived[0].length - IV_LENGTH);
+        System.arraycopy(derived[1], 0, result, derived[0].length - IV_LENGTH, SignalConstants.KEY_LENGTH - derived[0].length + IV_LENGTH);
+        return result;
     }
 }

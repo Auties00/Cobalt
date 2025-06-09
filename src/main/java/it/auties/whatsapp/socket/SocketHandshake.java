@@ -4,11 +4,12 @@ import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.io.BinaryTokens;
 import it.auties.whatsapp.util.Bytes;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 class SocketHandshake {
@@ -19,7 +20,7 @@ class SocketHandshake {
     private static final byte[] MOBILE_VERSION = new byte[]{5, BinaryTokens.DICTIONARY_VERSION};
     private static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
 
-    public static byte[] getPrologue(ClientType clientType) {
+    static byte[] getPrologue(ClientType clientType) {
         return switch (clientType) {
             case WEB -> WEB_PROLOGUE;
             case MOBILE -> MOBILE_PROLOGUE;
@@ -42,18 +43,26 @@ class SocketHandshake {
     }
 
     void updateHash(byte[] data) {
-        var input = Bytes.concat(hash, data);
-        this.hash = Sha256.calculate(input);
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            digest.update(hash);
+            digest.update(data);
+            this.hash = digest.digest();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new UnsupportedOperationException("Missing sha256 implementation");
+        }
     }
 
     byte[] cipher(byte[] bytes, boolean encrypt) {
-        var cyphered = encrypt ? AesGcm.encrypt(counter++, bytes, cryptoKey, hash) : AesGcm.decrypt(counter++, bytes, cryptoKey, hash);
-        if (!encrypt) {
+        if (encrypt) {
+            var ciphered = AesGcm.encrypt(counter++, bytes, cryptoKey, hash);
+            updateHash(ciphered);
+            return ciphered;
+        } else {
+            var deciphered = AesGcm.decrypt(counter++, bytes, cryptoKey, hash);
             updateHash(bytes);
-            return cyphered;
+            return deciphered;
         }
-        updateHash(cyphered);
-        return cyphered;
     }
 
     void finish() {

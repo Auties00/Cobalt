@@ -1,32 +1,69 @@
 package it.auties.whatsapp.model.newsletter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.Clock;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 @ProtobufMessage
-public record NewsletterReactionSettings(
-        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
-        Type value,
-        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        List<String> blockedCodes,
-        @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
-        OptionalLong enabledTimestampSeconds
-) {
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public NewsletterReactionSettings(Type value, @JsonProperty("blocked_codes") List<String> blockedCodes, @JsonProperty("enabled_ts_sec") Long enabledTimestampSeconds) {
-        this(
-                value,
-                Objects.requireNonNullElseGet(blockedCodes, ArrayList::new),
-                Clock.parseTimestamp(enabledTimestampSeconds)
-        );
+@Json
+public final class NewsletterReactionSettings {
+    @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
+    @Json.Property("type")
+    final Type value;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    @Json.Property("blocked_codes")
+    final List<String> blockedCodes;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
+    @Json.Property("enabled_ts_sec")
+    final long enabledTimestampSeconds;
+
+    NewsletterReactionSettings(Type value, List<String> blockedCodes, long enabledTimestampSeconds) {
+        this.value = Objects.requireNonNullElse(value, Type.UNKNOWN);
+        this.blockedCodes = Objects.requireNonNullElse(blockedCodes, List.of());
+        this.enabledTimestampSeconds = enabledTimestampSeconds;
+    }
+
+    public Type value() {
+        return value;
+    }
+
+    public List<String> blockedCodes() {
+        return Collections.unmodifiableList(blockedCodes);
+    }
+
+    public long enabledTimestampSeconds() {
+        return enabledTimestampSeconds;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof NewsletterReactionSettings that
+                && Objects.equals(value, that.value)
+                && Objects.equals(blockedCodes, that.blockedCodes)
+                && enabledTimestampSeconds == that.enabledTimestampSeconds;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value, blockedCodes, enabledTimestampSeconds);
+    }
+
+    @Override
+    public String toString() {
+        return "NewsletterReactionSettings[" +
+                "value=" + value +
+                ", blockedCodes=" + blockedCodes +
+                ", enabledTimestampSeconds=" + enabledTimestampSeconds +
+                ']';
     }
 
     @ProtobufEnum
@@ -41,17 +78,6 @@ public record NewsletterReactionSettings(
 
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
-        }
-
-        public static Type of(String name) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.name().equalsIgnoreCase(name))
-                    .findFirst()
-                    .orElse(UNKNOWN);
         }
     }
 }

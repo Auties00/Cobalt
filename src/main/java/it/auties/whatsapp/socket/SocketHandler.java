@@ -1,12 +1,13 @@
 package it.auties.whatsapp.socket;
 
+import io.avaje.jsonb.Jsonb;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.io.BinaryDecoder;
 import it.auties.whatsapp.io.BinaryEncoder;
+import it.auties.whatsapp.io.BinaryLength;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -32,13 +33,11 @@ import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
-import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest;
-import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest.Input;
-import it.auties.whatsapp.model.request.CommunityLinkedGroupsRequest.Variable;
-import it.auties.whatsapp.model.request.MessageSendRequest;
-import it.auties.whatsapp.model.request.QueryNewsletterRequest;
+import it.auties.whatsapp.model.request.CommunityRequests;
+import it.auties.whatsapp.model.request.MessageRequest;
+import it.auties.whatsapp.model.request.NewsletterRequests;
 import it.auties.whatsapp.model.response.CommunityLinkedGroupsResponse;
-import it.auties.whatsapp.model.response.ContactAboutResponse;
+import it.auties.whatsapp.model.response.UserAboutResponse;
 import it.auties.whatsapp.model.response.NewsletterResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
@@ -49,25 +48,31 @@ import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.Json;
+import it.auties.whatsapp.util.Streams;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.SocketException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @SuppressWarnings("unused")
-public class SocketHandler implements SocketListener {
+public class SocketHandler implements SocketSession.Listener {
     private static final Set<UUID> connectedUuids = ConcurrentHashMap.newKeySet();
     private static final Set<Long> connectedPhoneNumbers = ConcurrentHashMap.newKeySet();
     private static final Set<String> connectedAlias = ConcurrentHashMap.newKeySet();
@@ -94,20 +99,22 @@ public class SocketHandler implements SocketListener {
     private final ErrorHandler errorHandler;
     private final AtomicLong requestsCounter;
     private volatile ScheduledExecutorService scheduler;
-    private final ConcurrentMap<Jid, List<ChatPastParticipant>> pastParticipants;
+    private final ConcurrentMap<Jid, SequencedSet<ChatPastParticipant>> pastParticipants;
     private final Semaphore writeSemaphore;
     private final Map<Jid, ChatMetadata> chatMetadataCache;
-    private volatile SocketState state;
-    private volatile CompletableFuture<Void> loginFuture;
-    private volatile boolean pinging;
-    private Keys keys;
-    private Store store;
+    private final AtomicBoolean serializable;
+    private final AtomicReference<SocketState> state;
+    private final Cipher readCipher, writeCipher;
+    private final Keys keys;
+    private final Store store;
+    private boolean readCipherFragmented;
     private Thread shutdownHook;
     public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, ErrorHandler errorHandler, WebVerificationHandler webVerificationHandler) {
         this.whatsapp = whatsapp;
         this.store = store;
         this.keys = keys;
-        this.state = SocketState.WAITING;
+        this.state = new AtomicReference<>(SocketState.DISCONNECTED);
+        this.serializable = new AtomicBoolean(true);
         this.authHandler = new AuthHandler(this);
         this.streamHandler = new StreamHandler(this, webVerificationHandler);
         this.messageHandler = new MessageHandler(this);
@@ -117,26 +124,26 @@ public class SocketHandler implements SocketListener {
         this.writeSemaphore = new Semaphore(1, true);
         this.pastParticipants = new ConcurrentHashMap<>();
         this.chatMetadataCache = new ConcurrentHashMap<>();
+        try {
+            this.readCipher = Cipher.getInstance("AES/GCM/NoPadding");
+            this.writeCipher = Cipher.getInstance("AES/GCM/NoPadding");
+        }catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Unsupported AES cipher");
+        }
     }
 
-    private void onShutdown(boolean reconnect) {
-        if (state != SocketState.LOGGED_OUT && state != SocketState.RESTORE && state != SocketState.BANNED) {
+    private void onShutdown() {
+        if (!serializable.getAcquire()) {
             keys.dispose();
             store.dispose();
         }
 
-        scheduler.shutdownNow();
-        this.scheduler = null;
-        if (!reconnect) {
-            dispose();
+        if(scheduler != null) {
+            scheduler.shutdownNow();
+            this.scheduler = null;
         }
-    }
 
-    protected void onSocketEvent(SocketEvent event) {
-        callListenersAsync(listener -> {
-            listener.onSocketEvent(whatsapp, event);
-            listener.onSocketEvent(event);
-        });
+        dispose();
     }
 
     private void callListenersAsync(Consumer<Listener> consumer) {
@@ -147,18 +154,18 @@ public class SocketHandler implements SocketListener {
     @Override
     public void onOpen(SocketSession session) {
         this.session = session;
-        if (state == SocketState.CONNECTED) {
+        if(!state.compareAndSet(SocketState.DISCONNECTED, SocketState.HANDSHAKING)) {
             return;
         }
 
         if (shutdownHook == null) {
-            this.shutdownHook = new Thread(() -> onShutdown(false));
+            this.shutdownHook = Thread.ofPlatform()
+                    .name("CobaltShutdownHandler")
+                    .unstarted(this::onShutdown);
             Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
 
         addToKnownConnections();
-        this.state = SocketState.WAITING;
-        onSocketEvent(SocketEvent.OPEN);
         var clientHello = new ClientHelloBuilder()
                 .ephemeral(keys.ephemeralKeyPair().publicKey())
                 .build();
@@ -178,43 +185,86 @@ public class SocketHandler implements SocketListener {
     }
 
     @Override
-    public void onMessage(byte[] message) {
-        if (state == SocketState.WAITING || state == SocketState.RECONNECTING || state == SocketState.PAUSED) {
-            handshake(message); // for now copy array
-            return;
-        }
-
-        if(state == SocketState.HANDSHAKE) {
-            setState(SocketState.CONNECTED);
-        }
-
-        var readKey = keys.readKey();
-        if (readKey.isEmpty()) {
-            return;
-        }
-
-        var iv = keys.nextReadCounter(true);
-        var decipheredMessage = AesGcm.decrypt(iv, message, 0, message.length, readKey.get());
-        try(var decoder = new BinaryDecoder(decipheredMessage)) {
-            var node = decoder.decode();
-            onNodeReceived(node);
-            store.resolvePendingRequest(node, false);
-            streamHandler.digest(node);
-        } catch (Throwable throwable) {
-            handleFailure(STREAM, throwable);
-        }
-    }
-
-    private void handshake(byte[] message) {
-        authHandler.login(message).whenCompleteAsync((result, throwable) -> {
-            if (throwable == null) {
-                setState(SocketState.HANDSHAKE);
-            }else if(state != SocketState.RECONNECTING) {
-                handleFailure(LOGIN, throwable);
+    public void onMessage(ByteBuffer message, boolean last) {
+        switch (state.getAcquire()) {
+            case DISCONNECTED -> {
+                // Ignore message
             }
-        });
+
+            case HANDSHAKING -> authHandler.login(message).whenCompleteAsync((result, throwable) -> {
+                if (throwable == null) {
+                    state.compareAndSet(SocketState.HANDSHAKING, SocketState.CONNECTED);
+                }else {
+                    handleFailure(LOGIN, throwable);
+                }
+            });
+
+            case CONNECTED -> {
+                var readKey = keys.readKey();
+                if (readKey.isEmpty()) {
+                    return;
+                }
+
+                try {
+                    if(!readCipherFragmented) {
+                        readCipher.init(
+                                Cipher.DECRYPT_MODE,
+                                new SecretKeySpec(readKey.get(), "AES"),
+                                encodeIv(keys.nextReadCounter())
+                        );
+                    }
+
+                    if (last) {
+                        if (readCipherFragmented) {
+                            // If the message was fragmented, it's not possible to do it in place for two reasons:
+                            // 1. The n - 1 fragment has already been processed and deallocated
+                            // 2. Even if we saved all the fragments and then could(I say could because doFinal doesn't support outputting to an OutputStream and ByteBuffer is sealed)
+                            //    decode in place to those buffers, the memory usage would be the same as deallocating those original fragments and decoding to a new buffer
+                            var outputSize = readCipher.getOutputSize(message.remaining());
+                            var output = ByteBuffer.allocate(outputSize);
+                            readCipher.doFinal(message, output);
+                            output.flip();
+                            decodeNodes(output);
+                        } else {
+                            // In place decryption
+                            var output = message.duplicate();
+                            var outputPosition = output.position();
+                            var length = readCipher.doFinal(message, output);
+                            if(length > 0) {
+                                output.limit(outputPosition + length)
+                                        .position(outputPosition);
+                                decodeNodes(output);
+                            }
+                        }
+                        readCipherFragmented = false;
+                    } else {
+                        var output = message.duplicate();
+                        var outputPosition = output.position();
+                        var length = readCipher.update(message, output);
+                        if(length > 0) {
+                            output.limit(outputPosition + length)
+                                    .position(outputPosition);
+                            decodeNodes(output);
+                        }
+                        readCipherFragmented = true;
+                    }
+                } catch (Throwable throwable) {
+                    handleFailure(STREAM, throwable);
+                }
+            }
+        }
     }
 
+    private void decodeNodes(ByteBuffer output) throws IOException {
+        try(var stream = Streams.newInputStream(output)) {
+            while(stream.available() > 0) {
+                var node = BinaryDecoder.decode(Streams.newInputStream(output));
+                onNodeReceived(node);
+                store.resolvePendingRequest(node);
+                streamHandler.digest(node);
+            }
+        }
+    }
 
     private void onNodeReceived(Node node) {
         callListenersAsync(listener -> {
@@ -225,29 +275,17 @@ public class SocketHandler implements SocketListener {
 
     @Override
     public void onClose() {
-        if (state == SocketState.CONNECTED) {
-            disconnect(DisconnectReason.RECONNECTING);
-            return;
+        if (state.getAcquire() != SocketState.DISCONNECTED) {
+            disconnect(DisconnectReason.DISCONNECTED);
+        }else {
+            onDisconnected();
+            onShutdown();
         }
-
-        onDisconnected(state.toReason());
-        onShutdown(state == SocketState.RECONNECTING);
     }
 
     @Override
     public void onError(Throwable throwable) {
-        if(!(throwable instanceof SocketException socketException)) {
-            onSocketEvent(SocketEvent.ERROR);
-            handleFailure(UNKNOWN, throwable);
-            return;
-        }
-
-        // Shallow web socket exceptions
-        if(store.clientType() == ClientType.WEB || state() == SocketState.RECONNECTING || state() == SocketState.DISCONNECTED) {
-            return;
-        }
-
-        handleFailure(STREAM, socketException);
+        handleFailure(UNKNOWN, throwable);
     }
 
     public CompletableFuture<Node> sendNode(Node node) {
@@ -259,34 +297,32 @@ public class SocketHandler implements SocketListener {
             node.attributes().put("id", HexFormat.of().formatHex(Bytes.random(6)));
         }
 
-        return sendRequest(SocketRequest.of(node, filter), false, true);
+        var request = new SocketRequest(node.id(), filter, node);
+        return sendRequest(request, false, true);
     }
 
     public CompletableFuture<Void> sendNodeWithNoResponse(Node node) {
-        return sendRequest(SocketRequest.of(node, null), false, false)
+        var request = new SocketRequest(node.id(), null, node);
+        return sendRequest(request, false, false)
                 .thenRun(() -> {});
     }
 
     public CompletableFuture<Void> sendBinaryWithNoResponse(byte[] binary, boolean prologue) {
-        return sendRequest(SocketRequest.of(binary), prologue, false)
+        var request = new SocketRequest(null, null, binary);
+        return sendRequest(request, prologue, false)
                 .thenRun(() -> {});
     }
 
     private CompletableFuture<Node> sendRequest(SocketRequest request, boolean prologue, boolean response) {
-        if (state() == SocketState.RESTORE) {
-            return CompletableFuture.completedFuture(Node.of("error", Map.of("closed", true)));
-        }
-
         var scheduledRelease = false;
         try {
             writeSemaphore.acquire();
-            var ciphered = encryptRequest(request);
-            var message = Bytes.concat(
-                    prologue ? SocketHandshake.getPrologue(store.clientType()) : null,
-                    Bytes.intToBytes(ciphered.length >> 16, 4),
-                    Bytes.intToBytes(65535 & ciphered.length, 2),
-                    ciphered
-            );
+            if (state.getAcquire() == SocketState.DISCONNECTED) {
+                writeSemaphore.release();
+                return CompletableFuture.completedFuture(Node.empty());
+            }
+
+            var message = getRequestPayload(request, prologue);
             var future = session.sendBinary(message);
             scheduledRelease = true;
             future.whenCompleteAsync((result, error) -> {
@@ -317,116 +353,135 @@ public class SocketHandler implements SocketListener {
         }
     }
 
-
-    private byte[] encryptRequest(SocketRequest request) {
-        var body = request.toBytes();
+    private byte[] getRequestPayload(SocketRequest request, boolean prologue) {
+        var prologuePayload = prologue ? SocketHandshake.getPrologue(store.clientType()) : null;
+        var prologuePayloadLength = prologue ? prologuePayload.length : 0;
         var writeKey = keys.writeKey();
-        if(writeKey.isEmpty()) {
-            return body;
+        if (writeKey.isPresent()) {
+            if(!(request.body() instanceof Node node)) {
+                throw new IllegalArgumentException("Unexpected value: " + request.body());
+            }
+
+            try {
+                var iv = keys.nextWriteCounter();
+                writeCipher.init(
+                        Cipher.ENCRYPT_MODE,
+                        new SecretKeySpec(writeKey.get(), "AES"),
+                        encodeIv(iv)
+                );
+                var requestLength = BinaryLength.sizeOf(node);
+                var encryptedRequestLength = writeCipher.getOutputSize(requestLength);
+                var requestPayload = new byte[getRequestPayloadLength(prologuePayloadLength, encryptedRequestLength)];
+                var offset = writeRequestHeader(prologuePayload, requestPayload, prologuePayloadLength, encryptedRequestLength);
+                BinaryEncoder.encode(node, requestPayload, offset);
+                writeCipher.doFinal(requestPayload, offset, requestLength, requestPayload, offset);
+                return requestPayload;
+            } catch (Throwable throwable) {
+                throw new RuntimeException("Cannot encrypt data", throwable);
+            }
         }
 
-        var iv = keys.nextWriteCounter(true);
-        return AesGcm.encrypt(iv, body, writeKey.get());
-    }
-
-    private byte[] getBody(Object encodedBody) {
-        return switch (encodedBody) {
-            case byte[] bytes -> bytes;
-            case Node node -> {
-                try(var encoder = new BinaryEncoder()) {
-                    yield encoder.encode(node);
-                } catch (IOException exception) {
-                    throw new UncheckedIOException(exception);
-                }
+        return switch (request.body()) {
+            case byte[] bytes -> {
+                var requestLength = bytes.length;
+                var message = new byte[getRequestPayloadLength(prologuePayloadLength, requestLength)];
+                var offset = writeRequestHeader(prologuePayload, message, prologuePayloadLength, requestLength);
+                System.arraycopy(bytes, 0, message, offset, requestLength);
+                yield message;
             }
-            case null, default ->
-                    throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
+            case Node node -> {
+                var requestLength = BinaryLength.sizeOf(node);
+                var message = new byte[getRequestPayloadLength(prologuePayloadLength, requestLength)];
+                var offset = writeRequestHeader(prologuePayload, message, prologuePayloadLength, requestLength);
+                BinaryEncoder.encode(node, message, offset);
+                yield message;
+            }
+            default -> throw new IllegalArgumentException("Unexpected value: " + request.body());
         };
     }
 
-    public CompletableFuture<Void> connect() {
-        if (state == SocketState.CONNECTED) {
-            return CompletableFuture.completedFuture(null);
-        }
+    private int getRequestPayloadLength(int prologuePayloadLength, int encryptedRequestLength) {
+        return prologuePayloadLength
+                + Integer.BYTES
+                + Short.BYTES
+                + encryptedRequestLength;
+    }
 
-        if(loginFuture == null || loginFuture.isDone()) {
-            this.loginFuture = new CompletableFuture<>();
+    private int writeRequestHeader(byte[] prologuePayload, byte[] message, int prologuePayloadLength, int requestLength) {
+        if(prologuePayload != null) {
+            System.arraycopy(prologuePayload, 0, message, 0, prologuePayloadLength);
+        }
+        var a = requestLength >> 16;
+        message[prologuePayloadLength++] = (byte) (a >> 24);
+        message[prologuePayloadLength++] = (byte) (a >> 16);
+        message[prologuePayloadLength++] = (byte) (a >> 8);
+        message[prologuePayloadLength++] = (byte) a;
+        var b = requestLength & 65535;
+        message[prologuePayloadLength++] = (byte) (b >> 8);
+        message[prologuePayloadLength++] = (byte) b;
+        return prologuePayloadLength;
+    }
+
+    private GCMParameterSpec encodeIv(long value) {
+        var result = new byte[12];
+        result[4] = (byte) (value >> 56);
+        result[5] = (byte) (value >> 48);
+        result[6] = (byte) (value >> 40);
+        result[7] = (byte) (value >> 32);
+        result[8] = (byte) (value >> 24);
+        result[9] = (byte) (value >> 16);
+        result[10] = (byte) (value >> 8);
+        result[11] = (byte) value;
+        return new GCMParameterSpec(128, result);
+    }
+
+    public CompletableFuture<Void> connect(DisconnectReason reason) {
+        if (state.getAcquire() != SocketState.DISCONNECTED) {
+            return CompletableFuture.completedFuture(null);
         }
 
         this.session = SocketSession.of(store.proxy().orElse(null), store.clientType() == ClientType.WEB);
         return session.connect(this).exceptionallyCompose(throwable -> {
-            if(state == SocketState.CONNECTED || state == SocketState.RECONNECTING || state == SocketState.PAUSED) {
-                setState(SocketState.PAUSED);
-                onSocketEvent(SocketEvent.PAUSED);
-                handleFailure(Location.RECONNECT, throwable);
-                return CompletableFuture.failedFuture(throwable);
+            state.set(SocketState.DISCONNECTED);
+            if(reason == DisconnectReason.RECONNECTING) {
+                handleFailure(RECONNECT, throwable);
             }
-
-            if(loginFuture != null && !loginFuture.isDone()) {
-                loginFuture.completeExceptionally(throwable);
-            }
-
             return CompletableFuture.failedFuture(throwable);
         });
     }
 
     public CompletableFuture<Void> disconnect(DisconnectReason reason) {
-        var newState = SocketState.of(reason);
-        if (state == newState) {
+        if(!state.compareAndSet(SocketState.CONNECTED, SocketState.DISCONNECTED)) {
             return CompletableFuture.completedFuture(null);
         }
 
-        setState(newState);
+        if (session != null) {
+            return session.disconnect()
+                    .thenRun(() -> onDisconnected(reason));
+        }else {
+            return onDisconnected(reason);
+        }
+    }
+
+    private CompletableFuture<Void> onDisconnected(DisconnectReason reason) {
         keys.clearReadWriteKey();
         return switch (reason) {
-            case DISCONNECTED -> handleDisconnection();
-            case RECONNECTING -> handleReconnection();
-            case LOGGED_OUT, BANNED -> handleLoggedOut();
-            case RESTORE -> handleRestore();
+            case DISCONNECTED -> {
+                store.resolveAllPendingRequests();
+                yield CompletableFuture.completedFuture(null);
+            }
+            case RECONNECTING -> {
+                store.resolveAllPendingRequests();
+                yield connect(reason);
+            }
+            case LOGGED_OUT, BANNED -> {
+                store.deleteSession();
+                store.resolveAllPendingRequests();
+                store.resolveAllPendingRequests();
+                serializable.set(false);
+                yield CompletableFuture.completedFuture(null);
+            }
         };
-    }
-
-    private CompletableFuture<Void> handleRestore() {
-        store.deleteSession();
-        store.resolveAllPendingRequests();
-        var oldListeners = new ArrayList<>(store.listeners());
-        if (session != null) {
-            session.disconnect();
-        }
-        var uuid = UUID.randomUUID();
-        var number = store.phoneNumber()
-                .map(PhoneNumber::number)
-                .orElse(null);
-        var result = store.serializer()
-                .newStoreKeysPair(uuid, number, store.alias(), store.clientType());
-        this.keys = result.keys();
-        this.store = result.store();
-        store.addListeners(oldListeners);
-        return connect();
-    }
-
-    private CompletableFuture<Void> handleLoggedOut() {
-        store.deleteSession();
-        store.resolveAllPendingRequests();
-        return handleDisconnection();
-    }
-
-    private CompletableFuture<Void> handleReconnection() {
-        store.resolveAllPendingRequests();
-        if (session != null) {
-            session.disconnect();
-        }
-
-        return connect();
-    }
-
-    private CompletableFuture<Void> handleDisconnection() {
-        store.resolveAllPendingRequests();
-        if (session != null) {
-            session.disconnect();
-        }
-
-        return CompletableFuture.completedFuture(null);
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {
@@ -442,8 +497,8 @@ public class SocketHandler implements SocketListener {
         appStateHandler.pull(patchTypes);
     }
 
-    protected CompletableFuture<Void> pullInitialPatches() {
-        return appStateHandler.pullInitial();
+    protected void pullInitialPatches() {
+        appStateHandler.pullInitial();
     }
 
     public void decodeMessage(Node node, JidProvider chatOverride, boolean notify) {
@@ -458,7 +513,7 @@ public class SocketHandler implements SocketListener {
         var jid = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         var key = new ChatMessageKeyBuilder()
-                .id(ChatMessageKey.randomIdV2(jid, store.clientType()))
+                .id(ChatMessageKey.randomId(store.clientType()))
                 .chatJid(companion)
                 .fromMe(true)
                 .senderJid(jid)
@@ -470,11 +525,11 @@ public class SocketHandler implements SocketListener {
                 .message(MessageContainer.of(message))
                 .timestampSeconds(Clock.nowSeconds())
                 .build();
-        var request = new MessageSendRequest.Chat(info, null, false, true, null);
+        var request = new MessageRequest.Chat(info, null, false, true, null);
         return sendMessage(request);
     }
 
-    public CompletableFuture<Void> sendMessage(MessageSendRequest request) {
+    public CompletableFuture<Void> sendMessage(MessageRequest request) {
         return messageHandler.encode(request);
     }
 
@@ -498,7 +553,7 @@ public class SocketHandler implements SocketListener {
             node.attributes().put("id", store.initializationTimeStamp() + "-" + requestsCounter.incrementAndGet());
         }
 
-        return SocketRequest.of(node, filter);
+        return new SocketRequest(node.id(), filter, node);
     }
 
     private void onNodeSent(Node node) {
@@ -508,7 +563,7 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    public CompletableFuture<Optional<ContactAboutResponse>> queryAbout(JidProvider chat) {
+    public CompletableFuture<Optional<UserAboutResponse>> queryAbout(JidProvider chat) {
         var query = Node.of("status");
         var body = Node.of("user", Map.of("jid", chat.toJid()));
         return sendInteractiveQuery(List.of(query), List.of(body), List.of())
@@ -534,12 +589,12 @@ public class SocketHandler implements SocketListener {
         return Clock.nowSeconds() + "-" + ThreadLocalRandom.current().nextLong(1_000_000_000, 9_999_999_999L) + "-" + ThreadLocalRandom.current().nextInt(0, 1000);
     }
 
-    private Optional<ContactAboutResponse> parseAbout(List<Node> responses) {
+    private Optional<UserAboutResponse> parseAbout(List<Node> responses) {
         return responses.stream()
                 .map(entry -> entry.findChild("status"))
                 .flatMap(Optional::stream)
                 .findFirst()
-                .map(ContactAboutResponse::ofNode);
+                .map(UserAboutResponse::of);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body) {
@@ -677,7 +732,9 @@ public class SocketHandler implements SocketListener {
                 .map(id -> Jid.of(id, JidServer.groupOrCommunity()))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
-        var subjectAuthor = node.attributes().getOptionalJid("s_o");
+        var subjectAuthor = node.attributes()
+                .getOptionalJid("s_o")
+                .orElse(null);
         var subjectTimestampSeconds = node.attributes()
                 .getOptionalLong("s_t")
                 .orElse(0L);
@@ -685,97 +742,114 @@ public class SocketHandler implements SocketListener {
                 .getOptionalLong("creation")
                 .orElse(0L);
         var founder = node.attributes()
-                .getOptionalJid("creator");
+                .getOptionalJid("creator")
+                .orElse(null);
         var description = node.findChild("description")
                 .flatMap(parent -> parent.findChild("body"))
-                .flatMap(Node::contentAsString);
+                .flatMap(Node::contentAsString)
+                .orElse(null);
         var descriptionId = node.findChild("description")
                 .map(Node::attributes)
-                .flatMap(attributes -> attributes.getOptionalString("id"));
+                .flatMap(attributes -> attributes.getOptionalString("id"))
+                .orElse(null);
         var parentCommunityJid = node.findChild("linked_parent")
                 .flatMap(entry -> entry.attributes().getOptionalJid("jid"));
-        var ephemeral = node.findChild("ephemeral")
+        long ephemeral = node.findChild("ephemeral")
                 .map(Node::attributes)
                 .map(attributes -> attributes.getLong("expiration"))
-                .flatMap(Clock::parseSeconds);
+                .orElse(0L);
         var communityNode = node.findChild("parent")
                 .orElse(null);
-        var policies = new HashMap<ChatSetting, ChatSettingPolicy>();
-        var pastParticipants = Objects.requireNonNullElseGet(this.pastParticipants.get(groupId), List::<ChatPastParticipant>of);
+        var policies = new HashMap<Integer, ChatSettingPolicy>();
+        var pastParticipants = Objects.requireNonNullElseGet(this.pastParticipants.get(groupId), LinkedHashSet<ChatPastParticipant>::new);
         if (communityNode == null) {
-            policies.put(GroupSetting.EDIT_GROUP_INFO, ChatSettingPolicy.of(node.hasNode("announce")));
-            policies.put(GroupSetting.SEND_MESSAGES, ChatSettingPolicy.of(node.hasNode("restrict")));
+            policies.put(GroupSetting.EDIT_GROUP_INFO.index(), ChatSettingPolicy.of(node.hasNode("announce")));
+            policies.put(GroupSetting.SEND_MESSAGES.index(), ChatSettingPolicy.of(node.hasNode("restrict")));
             var addParticipantsMode = node.findChild("member_add_mode")
                     .flatMap(Node::contentAsString)
                     .orElse(null);
-            policies.put(GroupSetting.ADD_PARTICIPANTS, ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
+            policies.put(GroupSetting.ADD_PARTICIPANTS.index(), ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
             var groupJoin = node.findChild("membership_approval_mode")
                     .flatMap(entry -> entry.findChild("group_join"))
                     .map(entry -> entry.attributes().hasValue("state", "on"))
                     .orElse(false);
-            policies.put(GroupSetting.APPROVE_PARTICIPANTS, ChatSettingPolicy.of(groupJoin));
+            policies.put(GroupSetting.APPROVE_PARTICIPANTS.index(), ChatSettingPolicy.of(groupJoin));
             var participants = node.listChildren("participant")
                     .stream()
                     .map(this::parseGroupParticipant)
                     .flatMap(Optional::stream)
-                    .toList();
-            return CompletableFuture.completedFuture(new ChatMetadata(
-                    groupId,
-                    subject,
-                    subjectAuthor,
-                    Clock.parseSeconds(subjectTimestampSeconds),
-                    Clock.parseSeconds(foundationTimestampSeconds),
-                    founder,
-                    description,
-                    descriptionId,
-                    Collections.unmodifiableMap(policies),
-                    participants,
-                    pastParticipants,
-                    ephemeral,
-                    parentCommunityJid,
-                    false,
-                    List.of()
-            ));
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            var result = new ChatMetadataBuilder()
+                    .jid(groupId)
+                    .subject(subject)
+                    .subjectAuthorJid(subjectAuthor)
+                    .subjectTimestampSeconds(subjectTimestampSeconds)
+                    .foundationTimestampSeconds(foundationTimestampSeconds)
+                    .founderJid(founder)
+                    .description(description)
+                    .descriptionId(descriptionId)
+                    .settings(policies)
+                    .participants(participants)
+                    .pastParticipants(pastParticipants)
+                    .ephemeralExpirationSeconds(ephemeral)
+                    .isCommunity(false)
+                    .build();
+            return CompletableFuture.completedFuture(result);
+        }else {
+            policies.put(CommunitySetting.MODIFY_GROUPS.index(), ChatSettingPolicy.of(communityNode.hasNode("allow_non_admin_sub_group_creation")));
+            var addParticipantsMode = node.findChild("member_add_mode")
+                    .flatMap(Node::contentAsString)
+                    .orElse(null);
+            policies.put(CommunitySetting.ADD_PARTICIPANTS.index(), ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
+            return sendQuery(groupId, "get", "w:g2", Node.of("linked_groups_participants")).thenComposeAsync(participantsNode -> {
+                var participants = participantsNode.findChild("linked_groups_participants")
+                        .stream()
+                        .flatMap(participantsNodeBody -> participantsNodeBody.streamChildren("participant"))
+                        .flatMap(participantNode -> participantNode.attributes().getOptionalJid("jid").stream())
+                        .map(ChatParticipant::ofCommunity)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                var request = CommunityRequests.linkedGroups(groupId, "INTERACTIVE");
+                return sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7353258338095347"), request)).thenApplyAsync(communityResponse -> {
+                    var linkedGroups = parseLinkedGroups(communityResponse);
+                    return new ChatMetadataBuilder()
+                            .jid(groupId)
+                            .subject(subject)
+                            .subjectAuthorJid(subjectAuthor)
+                            .subjectTimestampSeconds(subjectTimestampSeconds)
+                            .foundationTimestampSeconds(foundationTimestampSeconds)
+                            .founderJid(founder)
+                            .description(description)
+                            .descriptionId(descriptionId)
+                            .settings(policies)
+                            .participants(participants)
+                            .pastParticipants(pastParticipants)
+                            .ephemeralExpirationSeconds(ephemeral)
+                            .isCommunity(true)
+                            .communityGroups(linkedGroups)
+                            .build();
+                });
+            });
+        }
+    }
+
+    @SuppressWarnings("OptionalIsPresent")
+    private SequencedSet<CommunityLinkedGroup> parseLinkedGroups(Node communityResponse) {
+        var result = communityResponse.findChild("result");
+        if(result.isEmpty()) {
+            return null;
         }
 
-        policies.put(CommunitySetting.MODIFY_GROUPS, ChatSettingPolicy.of(communityNode.hasNode("allow_non_admin_sub_group_creation")));
-        var addParticipantsMode = node.findChild("member_add_mode")
-                .flatMap(Node::contentAsString)
-                .orElse(null);
-        policies.put(CommunitySetting.ADD_PARTICIPANTS, ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
-        var mexBody = Json.writeValueAsBytes(new CommunityLinkedGroupsRequest(new Variable(new Input(groupId, "INTERACTIVE"))));
-        return sendQuery(groupId, "get", "w:g2", Node.of("linked_groups_participants")).thenComposeAsync(participantsNode -> {
-            var participants = participantsNode.findChild("linked_groups_participants")
-                    .stream()
-                    .flatMap(participantsNodeBody -> participantsNodeBody.streamChildren("participant"))
-                    .flatMap(participantNode -> participantNode.attributes().getOptionalJid("jid").stream())
-                    .map(participantJid -> (ChatParticipant) new CommunityParticipant(participantJid))
-                    .toList();
-            return sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7353258338095347"), mexBody)).thenApplyAsync(communityResponse -> {
-                var linkedGroups = communityResponse.findChild("result")
-                        .flatMap(Node::contentAsBytes)
-                        .flatMap(CommunityLinkedGroupsResponse::ofJson)
-                        .map(CommunityLinkedGroupsResponse::linkedGroups)
-                        .orElse(List.of());
-                return new ChatMetadata(
-                        groupId,
-                        subject,
-                        subjectAuthor,
-                        Clock.parseSeconds(subjectTimestampSeconds),
-                        Clock.parseSeconds(foundationTimestampSeconds),
-                        founder,
-                        description,
-                        descriptionId,
-                        Collections.unmodifiableMap(policies),
-                        participants,
-                        pastParticipants,
-                        ephemeral,
-                        parentCommunityJid,
-                        true,
-                        linkedGroups
-                );
-            });
-        });
+        var content = result.get()
+                .contentAsBytes();
+        if(content.isEmpty()) {
+            return null;
+        }
+
+        return Jsonb.builder()
+                .build()
+                .type(CommunityLinkedGroupsResponse.class)
+                .fromJson(content.get())
+                .linkedGroups();
     }
 
     private Optional<ChatParticipant> parseGroupParticipant(Node node) {
@@ -784,8 +858,8 @@ public class SocketHandler implements SocketListener {
         }
 
         var id = node.attributes().getRequiredJid("jid");
-        var role = GroupRole.of(node.attributes().getString("type", null));
-        return Optional.of(new GroupParticipant(id, role));
+        var role = ChatRole.of(node.attributes().getString("type", null));
+        return Optional.of(ChatParticipant.ofGroup(id, role));
     }
 
     public CompletableFuture<Node> sendQuery(Jid to, String method, String category, Node... body) {
@@ -804,8 +878,8 @@ public class SocketHandler implements SocketListener {
         var receiptAttributes = Attributes.of()
                 .put("id", messageId)
                 .put("type", "retry")
-                .put("to", chatJid.withoutAgent())
-                .put("participant", participantJid == null ? null : participantJid.withoutAgent(), participantJid != null)
+                .put("to", chatJid.withAgent(0))
+                .put("participant", participantJid == null ? null : participantJid.withAgent(0), participantJid != null)
                 .toMap();
         var receipt = Node.of("receipt", receiptAttributes, retryNode, registrationNode);
         return sendNodeWithNoResponse(receipt);
@@ -819,11 +893,11 @@ public class SocketHandler implements SocketListener {
         var attributes = Attributes.of()
                 .put("id", messages.getFirst())
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
-                .put("to", jid.withoutAgent())
+                .put("to", jid.withAgent(0))
                 .put("type", type, Objects::nonNull);
         if (Objects.equals(type, "sender") && jid.hasServer(JidServer.whatsapp())) {
-            attributes.put("recipient", jid.withoutAgent());
-            attributes.put("to", participant.withoutAgent());
+            attributes.put("recipient", jid.withAgent(0));
+            attributes.put("to", participant.withAgent(0));
         }
 
         var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
@@ -851,8 +925,8 @@ public class SocketHandler implements SocketListener {
                 .put("id", node.id())
                 .put("to", from)
                 .put("class", node.description())
-                .put("participant", participant != null ? Jid.of(participant).withoutAgent() : null)
-                .put("recipient", recipient != null ? Jid.of(recipient).withoutAgent() : null)
+                .put("participant", participant != null ? Jid.of(participant).withAgent(0) : null)
+                .put("recipient", recipient != null ? Jid.of(recipient).withAgent(0) : null)
                 .put("type", type, Objects::nonNull)
                 .toMap();
         return sendNodeWithNoResponse(Node.of("ack", attributes));
@@ -943,25 +1017,17 @@ public class SocketHandler implements SocketListener {
         });
     }
 
-    protected void onDisconnected(DisconnectReason reason) {
-        if(state == SocketState.WAITING || state == SocketState.HANDSHAKE) {
-            handleFailure(LOGIN, new RuntimeException("Cannot login: no response from Whatsapp"));
-            return;
-        }
-
-        if (reason != DisconnectReason.RECONNECTING) {
-            connectedUuids.remove(store.uuid());
-            store.phoneNumber()
-                    .map(PhoneNumber::number)
-                    .ifPresent(connectedPhoneNumbers::remove);
-            if (shutdownHook != null) {
-                Runtime.getRuntime().removeShutdownHook(shutdownHook);
-            }
-            confirmConnection();
+    protected void onDisconnected() {
+        connectedUuids.remove(store.uuid());
+        store.phoneNumber()
+                .map(PhoneNumber::number)
+                .ifPresent(connectedPhoneNumbers::remove);
+        if (shutdownHook != null) {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
         }
         callListenersSync(listener -> {
-            listener.onDisconnected(whatsapp, reason);
-            listener.onDisconnected(reason);
+            listener.onDisconnected(whatsapp, DisconnectReason.DISCONNECTED);
+            listener.onDisconnected(DisconnectReason.DISCONNECTED);
         });
     }
 
@@ -1141,20 +1207,14 @@ public class SocketHandler implements SocketListener {
     }
 
     private void dispose() {
-        onSocketEvent(SocketEvent.CLOSE);
         streamHandler.dispose();
         messageHandler.dispose();
         appStateHandler.dispose();
-        confirmConnection();
     }
 
     protected <T> T handleFailure(Location location, Throwable throwable) {
-        if (state() == SocketState.RESTORE || state() == SocketState.LOGGED_OUT || state() == SocketState.BANNED) {
-            return null;
-        }
         var result = errorHandler.handleError(whatsapp, location, throwable);
         switch (result) {
-            case RESTORE -> disconnect(DisconnectReason.RESTORE);
             case LOG_OUT -> disconnect(DisconnectReason.LOGGED_OUT);
             case DISCONNECT -> disconnect(DisconnectReason.DISCONNECTED);
             case RECONNECT -> disconnect(DisconnectReason.RECONNECTING);
@@ -1186,8 +1246,8 @@ public class SocketHandler implements SocketListener {
                 .toList();
     }
 
-    public SocketState state() {
-        return this.state;
+    public boolean isConnected() {
+        return state.getAcquire() == SocketState.CONNECTED;
     }
 
     public Keys keys() {
@@ -1198,32 +1258,26 @@ public class SocketHandler implements SocketListener {
         return this.store;
     }
 
-    protected void setState(SocketState state) {
-        this.state = state;
-    }
-
     public CompletableFuture<Void> changeAbout(String newAbout) {
         return sendQuery("set", "status", Node.of("status", newAbout.getBytes(StandardCharsets.UTF_8)))
                 .thenRun(() -> store().setAbout(newAbout));
     }
 
-    void confirmConnection() {
-        if (loginFuture == null || loginFuture.isDone()) {
-            return;
-        }
-
-        loginFuture.complete(null);
-    }
-
     @SuppressWarnings("SameParameterValue")
     protected void scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
-        createScheduler();
-        scheduler.scheduleAtFixedRate(command, initialDelay, period, TimeUnit.SECONDS);
+        if(state.getAcquire() == SocketState.CONNECTED) {
+            createScheduler();
+            scheduler.scheduleAtFixedRate(command, initialDelay, period, SECONDS);
+        }
     }
 
     protected ScheduledFuture<?> scheduleDelayed(Runnable command, long delay) {
-        createScheduler();
-        return scheduler.schedule(command, delay, TimeUnit.SECONDS);
+        if(state.getAcquire() == SocketState.CONNECTED) {
+            createScheduler();
+            return scheduler.schedule(command, delay, SECONDS);
+        }else {
+            return null;
+        }
     }
 
     private void createScheduler() {
@@ -1237,11 +1291,6 @@ public class SocketHandler implements SocketListener {
     }
 
     protected void sendPing() {
-        if(pinging) {
-            return;
-        }
-
-        pinging = true;
         var attributes = Attributes.of()
                 .put("xmlns", "w:p")
                 .put("to", JidServer.whatsapp().toJid())
@@ -1252,23 +1301,17 @@ public class SocketHandler implements SocketListener {
         var future = new CompletableFuture<Node>()
                 .orTimeout(PING_TIMEOUT, SECONDS);
         var request = new SocketRequest(node.id(), node, future, null);
-        sendRequest(request, false, true)
-                .thenApply(result -> {
-                    pinging = false;
-                    return result;
-                })
-                .exceptionally(throwable -> {
-                    pinging = false;
-                    disconnect(DisconnectReason.RECONNECTING);
-                    return null;
-                });
+        sendRequest(request, false, true).exceptionally(throwable -> {
+            disconnect(DisconnectReason.RECONNECTING);
+            return null;
+        });
     }
 
     public CompletableFuture<Void> updateBusinessCertificate(String newName) {
         return streamHandler.updateBusinessCertificate(newName);
     }
 
-    public ConcurrentMap<Jid, List<ChatPastParticipant>> pastParticipants() {
+    public ConcurrentMap<Jid, SequencedSet<ChatPastParticipant>> pastParticipants() {
         return pastParticipants;
     }
 
@@ -1276,11 +1319,11 @@ public class SocketHandler implements SocketListener {
         var pastParticipants = pastParticipants().get(jid);
         if(pastParticipants != null) {
             pastParticipants.add(pastParticipant);
-            pastParticipants().put(jid, pastParticipants);
+            this.pastParticipants.put(jid, pastParticipants);
         }else {
-            pastParticipants().put(jid, new ArrayList<>(){{
-                add(pastParticipant);
-            }});
+            var values = new LinkedHashSet<ChatPastParticipant>();
+            values.add(pastParticipant);
+            this.pastParticipants.put(jid, values);
         }
     }
 
@@ -1290,17 +1333,28 @@ public class SocketHandler implements SocketListener {
     }
 
     public CompletableFuture<Optional<Newsletter>> queryNewsletter(Jid newsletterJid, NewsletterViewerRole role) {
-        var key = new QueryNewsletterRequest.Input(newsletterJid, "JID", role);
-        var request = new QueryNewsletterRequest(new QueryNewsletterRequest.Variable(key, true, false, true));
-        return sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6620195908089573"), Json.writeValueAsBytes(request)))
+        var request = NewsletterRequests.queryNewsletter(newsletterJid, "JID", role, true, false, true);
+        return sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6620195908089573"), request))
                 .thenApplyAsync(this::parseNewsletterQuery);
     }
 
+    @SuppressWarnings("OptionalIsPresent")
     private Optional<Newsletter> parseNewsletterQuery(Node response) {
-        return response.findChild("result")
-                .flatMap(Node::contentAsString)
-                .flatMap(NewsletterResponse::ofJson)
-                .map(NewsletterResponse::newsletter);
-    }
+        var result = response.findChild("result");
+        if(result.isEmpty()) {
+            return Optional.empty();
+        }
 
+        var content = result.get()
+                .contentAsBytes();
+        if(content.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Jsonb.builder()
+                .build()
+                .type(NewsletterResponse.class)
+                .fromJson(content.get())
+                .newsletter();
+    }
 }

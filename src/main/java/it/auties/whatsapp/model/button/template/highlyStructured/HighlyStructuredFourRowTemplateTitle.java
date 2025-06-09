@@ -54,9 +54,5 @@ public sealed interface HighlyStructuredFourRowTemplateTitle permits DocumentMes
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return index;
-        }
     }
 }

@@ -67,10 +67,10 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * If a session with the given phone number already exists, it will be retrieved.
      * Otherwise, a new one will be created.
      *
-     * @param phoneNumber the nullable uuid to use to create the connection
+     * @param phoneNumber the nullable phone number to use to create the connection
      * @return a non-null options selector
      */
-    public T newConnection(long phoneNumber) {
+    public T newConnection(PhoneNumber phoneNumber) {
         var sessionStoreAndKeys = serializer.deserializeStoreKeysPair(null, phoneNumber, null, clientType)
                 .orElseGet(() -> serializer.newStoreKeysPair(UUID.randomUUID(), phoneNumber, null, clientType));
         return createConnection(sessionStoreAndKeys);
@@ -114,9 +114,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
                 .build();
         keys.setSerializer(serializer);
         var phoneNumber = keys.phoneNumber()
-                .map(PhoneNumber::number)
                 .orElse(null);
-        var store = Store.newStore(uuid, phoneNumber, null, ClientType.MOBILE);
+        var store = Store.of(uuid, phoneNumber, null, ClientType.MOBILE);
         store.setSerializer(serializer);
         return createConnection(new StoreKeysPair(store, keys));
     }

@@ -8,14 +8,34 @@ import java.util.Objects;
 import java.util.Optional;
 
 @ProtobufMessage
-public record CountryLocale(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        String languageValue,
-        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        String languageCode,
-        @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-        String separator
-) {
+public final class CountryLocale {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String languageValue;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final String languageCode;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+    final String separator;
+
+    CountryLocale(String languageValue, String languageCode, String separator) {
+        this.languageValue = Objects.requireNonNull(languageValue, "languageValue cannot be null");
+        this.languageCode = Objects.requireNonNull(languageCode, "languageCode cannot be null");
+        this.separator = Objects.requireNonNull(separator, "separator cannot be null");
+    }
+
+    public String languageValue() {
+        return languageValue;
+    }
+
+    public String languageCode() {
+        return languageCode;
+    }
+
+    public String separator() {
+        return separator;
+    }
+
     public static Optional<CountryLocale> of(String encoded) {
         return of(encoded, "-")
                 .or(() -> of(encoded, "_"));
@@ -28,7 +48,23 @@ public record CountryLocale(
     }
 
     @Override
+    public boolean equals(Object o) {
+        return o instanceof CountryLocale that
+                && Objects.equals(languageValue, that.languageValue)
+                && Objects.equals(languageCode, that.languageCode)
+                && Objects.equals(separator, that.separator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(languageValue, languageCode, separator);
+    }
+
+    @Override
     public String toString() {
-        return languageValue + separator + languageCode;
+        return "CountryLocale[" +
+                "languageValue=" + languageValue + ", " +
+                "languageCode=" + languageCode + ", " +
+                "separator=" + separator + ']';
     }
 }

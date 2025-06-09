@@ -20,23 +20,23 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 abstract sealed class SocketSession {
     private static final URI WEB_SOCKET = URI.create("wss://web.whatsapp.com/ws/chat");
     private static final InetSocketAddress MOBILE_SOCKET_ENDPOINT = new InetSocketAddress("g.whatsapp.net", 443);
-    private static final int MESSAGE_LENGTH = 3;
+    private static final int MAX_MESSAGE_LENGTH = 1048576;
 
     final URI proxy;
-    SocketListener listener;
+    Listener listener;
 
     private SocketSession(URI proxy) {
         this.proxy = proxy;
     }
 
-    public CompletableFuture<Void> connect(SocketListener listener) {
+    CompletableFuture<Void> connect(Listener listener) {
         this.listener = listener;
         return CompletableFuture.completedFuture(null);
     }
 
-    abstract void disconnect();
+    abstract CompletableFuture<?> disconnect();
 
-    public abstract CompletableFuture<?> sendBinary(byte[] bytes);
+    abstract CompletableFuture<?> sendBinary(byte[] bytes);
 
     static SocketSession of(URI proxy, boolean webSocket) {
         if (webSocket) {
@@ -48,8 +48,10 @@ abstract sealed class SocketSession {
 
     private static final class WebSocketSession extends SocketSession implements WebSocket.Listener {
         private WebSocket session;
-        private byte[] message;
-        private int messageOffset;
+        private Integer messageLengthInt20;
+        private Integer messageLengthMsb;
+        private Integer messageLengthMb;
+        private Integer messageLengthLsb;
 
         WebSocketSession(URI proxy) {
             super(proxy);
@@ -57,7 +59,7 @@ abstract sealed class SocketSession {
 
         @SuppressWarnings("resource") // Not needed
         @Override
-        public CompletableFuture<Void> connect(SocketListener listener) {
+        CompletableFuture<Void> connect(Listener listener) {
             if (session != null) {
                 return CompletableFuture.completedFuture(null);
             }
@@ -78,16 +80,16 @@ abstract sealed class SocketSession {
         }
 
         @Override
-        void disconnect() {
-            if (session == null) {
-                return;
+        CompletableFuture<?> disconnect() {
+            if (session == null || session.isOutputClosed()) {
+                return CompletableFuture.completedFuture(null);
             }
 
-            session.sendClose(WebSocket.NORMAL_CLOSURE, "");
+            return session.sendClose(WebSocket.NORMAL_CLOSURE, "");
         }
 
         @Override
-        public CompletableFuture<?> sendBinary(byte[] bytes) {
+        CompletableFuture<?> sendBinary(byte[] bytes) {
             if (session == null) {
                 return CompletableFuture.completedFuture(null);
             }
@@ -98,11 +100,10 @@ abstract sealed class SocketSession {
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
             if(session != null) {
-                message = null;
                 listener.onClose();
                 session = null;
             }
-            return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+            return null;
         }
 
         @Override
@@ -111,39 +112,63 @@ abstract sealed class SocketSession {
         }
 
         @Override
-        public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
-            try {
-                while (data.hasRemaining()) {
-                    if(messageOffset == 0) {
-                        if(data.remaining() < MESSAGE_LENGTH) {
-                            break;
-                        }
-
-                        var messageLength = (data.get() << 16) | Short.toUnsignedInt(data.getShort());
-                        if (messageLength < 0) {
-                            disconnect();
-                            break;
-                        }
-
-                        message = new byte[messageLength];
-                    }
-
-                    var remaining = Math.min(message.length - messageOffset, data.remaining());
-                    data.get(message, messageOffset, remaining);
-                    messageOffset += remaining;
-                    if (messageOffset == message.length) {
-                        messageOffset = 0;
-                        listener.onMessage(message);
-                    }
-                }
-            } catch (Throwable throwable) {
-                listener.onError(throwable);
+        public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean ignored) {
+            if(data.remaining() < 3) {
+                disconnect();
+                return null;
             }
 
-            return WebSocket.Listener.super.onBinary(webSocket, data, last);
+            while (data.hasRemaining()) {
+                if(messageLengthInt20 == null) {
+                    if(messageLengthMsb == null) {
+                        // Implicit hasRemaining check from while loop
+                        messageLengthMsb = (data.get() & 0xFF) << 16;
+                    }
+
+                    if(messageLengthMb == null) {
+                        if(!data.hasRemaining()) {
+                            break;
+                        }
+
+                        messageLengthMb = (data.get() & 0xFF) << 8;
+                    }
+
+                    if(messageLengthLsb == null) {
+                        if(!data.hasRemaining()) {
+                            break;
+                        }
+
+                        messageLengthLsb = data.get() & 0xFF;
+                    }
+
+                    messageLengthInt20 = messageLengthMsb | messageLengthMb | messageLengthLsb;
+                    messageLengthMsb = messageLengthMb = messageLengthLsb = null;
+                    if (messageLengthInt20 < 0 || messageLengthInt20 > MAX_MESSAGE_LENGTH) {
+                        disconnect();
+                        return null;
+                    }
+                }
+
+                var available = data.remaining();
+                if(messageLengthInt20 <= available) {
+                    var limit = data.limit();
+                    data.limit(data.position() + messageLengthInt20);
+                    listener.onMessage(data, true);
+                    data.limit(limit);
+                    messageLengthInt20 = null;
+                }else {
+                    listener.onMessage(data, false);
+                    messageLengthInt20 -= available;
+                    break;
+                }
+            }
+
+            webSocket.request(1);
+            return null;
         }
     }
 
+    // TODO: Refactor me
     private static final class RawSocketSession extends SocketSession {
         private SocketChannel channel;
 
@@ -152,7 +177,7 @@ abstract sealed class SocketSession {
         }
 
         @Override
-        public CompletableFuture<Void> connect(SocketListener listener) {
+        public CompletableFuture<Void> connect(Listener listener) {
             super.connect(listener);
             if (isOpen()) {
                 return CompletableFuture.completedFuture(null);
@@ -183,15 +208,16 @@ abstract sealed class SocketSession {
         }
 
         @Override
-        void disconnect() {
+        CompletableFuture<?> disconnect() {
             try {
-                if (channel == null) {
-                    return;
+                if (channel != null) {
+                    channel.close();
+                    listener.onClose();
                 }
-                channel.close();
-                listener.onClose();
-            } catch (Throwable ignored) {
 
+                return CompletableFuture.completedFuture(null);
+            } catch (Throwable throwable) {
+                return CompletableFuture.failedFuture(throwable);
             }
         }
 
@@ -346,11 +372,9 @@ abstract sealed class SocketSession {
                     }
 
                     ctx.payloadBuffer.flip();
-                    byte[] message = new byte[ctx.payloadBuffer.remaining()];
-                    ctx.payloadBuffer.get(message);
                     ctx.lengthBuffer.clear();
+                    ctx.listener.onMessage(ctx.payloadBuffer, true);
                     ctx.payloadBuffer = null;
-                    ctx.listener.onMessage(message);
                 }
                 return true;
             }
@@ -374,16 +398,26 @@ abstract sealed class SocketSession {
 
         private static final class ConnectionContext {
             private final RawSocketSession session;
-            private final SocketListener listener;
+            private final Listener listener;
             private final CompletableFuture<Void> connectFuture;
             private final Queue<ByteBuffer> pendingWrites = new ConcurrentLinkedQueue<>();
             private final ByteBuffer lengthBuffer = ByteBuffer.allocate(3);
             private ByteBuffer payloadBuffer = null;
-            private ConnectionContext(RawSocketSession session, SocketListener listener, CompletableFuture<Void> connectFuture) {
+            private ConnectionContext(RawSocketSession session, Listener listener, CompletableFuture<Void> connectFuture) {
                 this.session = session;
                 this.listener = listener;
                 this.connectFuture = connectFuture;
             }
         }
+    }
+
+    interface Listener {
+        void onOpen(SocketSession session);
+
+        void onMessage(ByteBuffer message, boolean last);
+
+        void onClose();
+
+        void onError(Throwable throwable);
     }
 }

@@ -100,8 +100,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     private Optional<PhoneNumber> parsePathAsPhoneNumber(Path file) {
         try {
-            var longValue = Long.parseLong(file.getFileName().toString());
-            return PhoneNumber.ofNullable(longValue);
+            return PhoneNumber.of(file.getFileName().toString());
         } catch (IllegalArgumentException ignored) {
             return Optional.empty();
         }
@@ -217,8 +216,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, long phoneNumber) {
-        var file = getSessionDirectory(type, String.valueOf(phoneNumber));
+    public Optional<Keys> deserializeKeys(ClientType type, PhoneNumber phoneNumber) {
+        var file = getSessionDirectory(type, phoneNumber.toString());
         if (Files.notExists(file)) {
             return Optional.empty();
         }
@@ -265,8 +264,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, long phoneNumber) {
-        var file = getSessionDirectory(type, String.valueOf(phoneNumber));
+    public Optional<Store> deserializeStore(ClientType type, PhoneNumber phoneNumber) {
+        var file = getSessionDirectory(type, phoneNumber.toString());
         if (Files.notExists(file)) {
             return Optional.empty();
         }

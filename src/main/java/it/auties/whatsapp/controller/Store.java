@@ -1,12 +1,7 @@
 package it.auties.whatsapp.controller;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.model.business.BusinessCategory;
@@ -16,6 +11,7 @@ import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactBuilder;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageStatusInfo;
@@ -50,7 +46,6 @@ import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -189,7 +184,6 @@ public final class Store extends Controller<Store> {
     /**
      * The non-null map of chats
      */
-    @JsonIgnore
     final ConcurrentHashMap<Jid, Chat> chats;
 
     /**
@@ -207,7 +201,6 @@ public final class Store extends Controller<Store> {
     /**
      * The non-null map of newsletters
      */
-    @JsonIgnore
     final ConcurrentHashMap<Jid, Newsletter> newsletters;
 
     /**
@@ -238,25 +231,21 @@ public final class Store extends Controller<Store> {
      * The non-null list of requests that were sent to Whatsapp. They might or might not be waiting
      * for a newsletters
      */
-    @JsonIgnore
     final ConcurrentHashMap<String, SocketRequest> requests;
 
     /**
      * The non-null list of replies waiting to be fulfilled
      */
-    @JsonIgnore
     final ConcurrentHashMap<String, CompletableFuture<ChatMessageInfo>> replyHandlers;
 
     /**
      * The non-null list of listeners
      */
-    @JsonIgnore
     final KeySetView<Listener, Boolean> listeners;
 
     /**
      * The request tag, used to create messages
      */
-    @JsonIgnore
     final String tag;
 
     /**
@@ -268,13 +257,11 @@ public final class Store extends Controller<Store> {
     /**
      * The media connection associated with this store
      */
-    @JsonIgnore
     MediaConnection mediaConnection;
 
     /**
      * The media connection latch associated with this store
      */
-    @JsonIgnore
     final CountDownLatch mediaConnectionLatch;
 
     /**
@@ -331,11 +318,7 @@ public final class Store extends Controller<Store> {
     @ProtobufProperty(index = 42, type = ProtobufType.ENUM)
     MediaProxySetting mediaProxySetting;
 
-    /**
-     * All args constructor
-     */
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistorySetting historyLength, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, MediaProxySetting mediaProxySetting) {
+    Store(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, TextPreviewSetting textPreviewSetting, WebHistorySetting historyLength, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, MediaProxySetting mediaProxySetting) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.proxy = proxy;
         this.online = online;
@@ -381,15 +364,15 @@ public final class Store extends Controller<Store> {
         this.mediaProxySetting = Objects.requireNonNullElse(mediaProxySetting, MediaProxySetting.ALL);
     }
 
-    public static Store newStore(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
+    public static Store of(UUID uuid, PhoneNumber phoneNumber, Collection<String> alias, ClientType clientType) {
         return new StoreBuilder()
                 .uuid(uuid)
                 .initializationTimeStamp(Clock.nowSeconds())
-                .phoneNumber(phoneNumber != null ? PhoneNumber.of(phoneNumber) : null)
+                .phoneNumber(phoneNumber)
                 .device(clientType == ClientType.MOBILE ? CompanionDevice.ios(false) : CompanionDevice.web())
                 .clientType(clientType)
                 .alias(alias)
-                .jid(phoneNumber != null ? Jid.of(phoneNumber) : null)
+                .jid(phoneNumber != null ? phoneNumber.toJid() : null)
                 .automaticPresenceUpdates(true)
                 .automaticMessageReceipts(clientType == ClientType.MOBILE)
                 .build();
@@ -698,12 +681,16 @@ public final class Store extends Controller<Store> {
      * it completes it
      *
      * @param response      the newsletters to complete the request with
-     * @param exceptionally whether the newsletters is erroneous
      * @return a boolean
      */
-    public boolean resolvePendingRequest(Node response, boolean exceptionally) {
-        return findPendingRequest(response.id()).map(request -> deleteAndComplete(request, response, exceptionally))
-                .isPresent();
+    public boolean resolvePendingRequest(Node response) {
+        var result = findPendingRequest(response.id());
+        result.ifPresent(request -> {
+            if (request.complete(response)) {
+                requests.remove(request.id());
+            }
+        });
+        return result.isPresent();
     }
 
     /**
@@ -717,19 +704,14 @@ public final class Store extends Controller<Store> {
         return id == null ? Optional.empty() : Optional.ofNullable(requests.get(id));
     }
 
-    private SocketRequest deleteAndComplete(SocketRequest request, Node response, boolean exceptionally) {
-        if (request.complete(response, exceptionally)) {
-            requests.remove(request.id());
-        }
-
-        return request;
-    }
-
     /**
      * Clears all the data that this object holds and closes the pending requests
      */
     public void resolveAllPendingRequests() {
-        requests.values().forEach(request -> request.complete(null, false));
+        for(var request : requests.values()) {
+            request.complete();
+        }
+        requests.clear();
     }
 
     /**
@@ -788,7 +770,7 @@ public final class Store extends Controller<Store> {
     public Optional<Chat> addChat(Chat chat) {
         if (chat.hasName() && chat.jid().hasServer(JidServer.whatsapp())) {
             var contact = findContactByJid(chat.jid())
-                    .orElseGet(() -> addContact(new Contact(chat.jid())));
+                    .orElseGet(() -> addContact(chat.jid()));
             contact.setFullName(chat.name());
         }
         var oldChat = chats.get(chat.jid());
@@ -832,7 +814,10 @@ public final class Store extends Controller<Store> {
      * @return the input contact
      */
     public Contact addContact(Jid jid) {
-        return addContact(new Contact(jid));
+        var newContact = new ContactBuilder()
+                .jid(jid)
+                .build();
+        return addContact(newContact);
     }
 
     /**
@@ -1290,7 +1275,6 @@ public final class Store extends Controller<Store> {
         return tag;
     }
 
-    @JsonGetter("version")
     public Version version() {
         if(version == null) {
             this.version = AppMetadata.getVersion(device.platform());
@@ -1529,43 +1513,6 @@ public final class Store extends Controller<Store> {
     public Store setAutomaticMessageReceipts(boolean automaticMessageReceipts) {
         this.automaticMessageReceipts = automaticMessageReceipts;
         return this;
-    }
-
-    private static class AsyncVersion {
-        private Version value;
-        private CompletableFuture<Version> future;
-
-        @JsonCreator
-        private AsyncVersion(Version initialValue) {
-            this.value = Objects.requireNonNull(initialValue, "Missing value");
-        }
-
-        public AsyncVersion(Version initialValue, Supplier<CompletableFuture<Version>> defaultValue) {
-            this.value = initialValue;
-            if (initialValue == null) {
-                this.future = defaultValue.get();
-            }
-        }
-
-        @ProtobufSerializer
-        @JsonValue
-        public Version value() {
-            if (future != null) {
-                this.value = future.join();
-                future = null;
-            }
-
-            return value;
-        }
-
-        public void setValue(Version value) {
-            if (future != null && !future.isDone()) {
-                future.cancel(true);
-            }
-
-            this.future = null;
-            this.value = value;
-        }
     }
 
     @Override

@@ -47,8 +47,4 @@ public enum MessageStatus {
                 .filter(entry -> name.toLowerCase().contains(entry.name().toLowerCase()))
                 .findFirst();
     }
-
-    public int index() {
-        return this.index;
-    }
 }

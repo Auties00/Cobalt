@@ -15,8 +15,4 @@ public enum CallStatus {
     CallStatus(@ProtobufEnumIndex int index) {
         this.index = index;
     }
-
-    public int index() {
-        return index;
-    }
 }

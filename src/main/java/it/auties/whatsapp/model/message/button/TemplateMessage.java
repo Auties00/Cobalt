@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.Bytes;
 
 import java.util.HexFormat;
@@ -24,17 +23,22 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.TemplateMessage")
 public final class TemplateMessage implements ContextualMessage<TemplateMessage>, ButtonMessage {
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-    private final String id;
+    final String id;
+
     @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private final HydratedFourRowTemplate content;
+    final HydratedFourRowTemplate content;
+
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    private final HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat;
+    final HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat;
+
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    private final HydratedFourRowTemplate hydratedFourRowTemplateFormat;
+    final HydratedFourRowTemplate hydratedFourRowTemplateFormat;
+
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    private final InteractiveMessage interactiveMessageFormat;
+    final InteractiveMessage interactiveMessageFormat;
+
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    ContextInfo contextInfo;
 
     public TemplateMessage(String id, HydratedFourRowTemplate content, HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat, HydratedFourRowTemplate hydratedFourRowTemplateFormat, InteractiveMessage interactiveMessageFormat, ContextInfo contextInfo) {
         this.id = id;
@@ -57,8 +61,7 @@ public final class TemplateMessage implements ContextualMessage<TemplateMessage>
             case HydratedFourRowTemplate hydratedFourRowTemplate ->
                     builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
             case InteractiveMessage interactiveMessage -> builder.interactiveMessageFormat(interactiveMessage);
-            case null -> {
-            }
+            case null -> {}
         }
         return builder.build();
     }
@@ -81,18 +84,18 @@ public final class TemplateMessage implements ContextualMessage<TemplateMessage>
     public Optional<? extends TemplateFormatter> format() {
         if (highlyStructuredFourRowTemplateFormat != null) {
             return Optional.of(highlyStructuredFourRowTemplateFormat);
-        }
-
-        if (hydratedFourRowTemplateFormat != null) {
+        }else if (hydratedFourRowTemplateFormat != null) {
             return Optional.of(hydratedFourRowTemplateFormat);
+        }else if(interactiveMessageFormat != null){
+            return Optional.of(interactiveMessageFormat);
+        }else {
+            return Optional.empty();
         }
-
-        return Optional.ofNullable(interactiveMessageFormat);
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.TEMPLATE;
+    public Type type() {
+        return Type.TEMPLATE;
     }
 
     public String id() {

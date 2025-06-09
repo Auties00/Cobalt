@@ -30,8 +30,4 @@ public enum BusinessPrivacyStatus {
     BusinessPrivacyStatus(@ProtobufEnumIndex int index) {
         this.index = index;
     }
-
-    public int index() {
-        return index;
-    }
 }

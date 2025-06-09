@@ -3,43 +3,49 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
+
+import java.util.Objects;
 
 /**
  * A model clas that represents a new pin status for a chat
  */
 @ProtobufMessage(name = "SyncActionValue.PinAction")
-public record PinAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-        boolean pinned
-) implements Action {
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+public final class PinAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
+    final boolean pinned;
+
+    PinAction(boolean pinned) {
+        this.pinned = pinned;
+    }
+
     @Override
     public String indexName() {
         return "pin_v1";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 5;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public boolean pinned() {
+        return pinned;
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof PinAction pinAction
+                && pinned == pinAction.pinned;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(pinned);
+    }
+
+    @Override
+    public String toString() {
+        return "PinAction[" +
+                "pinned=" + pinned + ']';
     }
 }

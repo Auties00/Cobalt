@@ -1,31 +1,40 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.util.Json;
 
 import java.util.Map;
 import java.util.Optional;
 
-public record RevokeAdminInviteNewsletterResponse(@JsonProperty("id") Jid jid) {
-    @JsonCreator
-    RevokeAdminInviteNewsletterResponse(Map<String, String> json) {
-        this(Jid.of(json.get("id")));
+@Json
+public final class RevokeAdminInviteNewsletterResponse {
+    private static final RevokeAdminInviteNewsletterResponse EMPTY = new RevokeAdminInviteNewsletterResponse(null);
+
+    private final Jid jid;
+
+    private RevokeAdminInviteNewsletterResponse(Jid jid) {
+        this.jid = jid;
     }
 
-    public static Optional<RevokeAdminInviteNewsletterResponse> ofJson(String json) {
-        return Json.readValue(json, JsonData.class)
-                .data()
-                .map(JsonResponse::response);
+    @Json.Creator
+    static RevokeAdminInviteNewsletterResponse of(@Json.Unmapped Map<String, Object> json) {
+        if(!(json.get("data") instanceof Map<?,?> data)) {
+            return EMPTY;
+        }
+
+        if(!(data.get("xwa2_newsletter_admin_invite_revoke") instanceof Map<?,?> response)) {
+            return EMPTY;
+        }
+
+        if(!(response.get("id") instanceof String value)) {
+            return EMPTY;
+        }
+
+        var jid = Jid.of(value);
+        return new RevokeAdminInviteNewsletterResponse(jid);
     }
 
-    private record JsonData(Optional<JsonResponse> data) {
-
-    }
-
-    private record JsonResponse(
-            @JsonProperty("xwa2_newsletter_admin_invite_revoke") RevokeAdminInviteNewsletterResponse response) {
-
+    public Optional<Jid> jid() {
+        return Optional.ofNullable(jid);
     }
 }

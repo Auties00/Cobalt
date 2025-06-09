@@ -7,8 +7,23 @@ import it.auties.protobuf.annotation.ProtobufMessage;
  * {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage} Currently empty
  */
 @ProtobufMessage(name = "Message.PollUpdateMessageMetadata")
-public record PollUpdateMessageMetadata(
+public final class PollUpdateMessageMetadata {
+    PollUpdateMessageMetadata() {
 
-) {
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof PollUpdateMessageMetadata;
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    public String toString() {
+        return "PollUpdateMessageMetadata[]";
+    }
 }

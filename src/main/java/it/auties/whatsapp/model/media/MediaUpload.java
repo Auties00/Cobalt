@@ -1,8 +1,12 @@
 package it.auties.whatsapp.model.media;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.avaje.jsonb.Json;
 
-public record MediaUpload(@JsonProperty("direct_path") String directPath, @JsonProperty("url") String url,
-                          @JsonProperty("handle") String handle) {
+@Json
+public record MediaUpload(
+        @Json.Property("direct_path") String directPath,
+        @Json.Property("url") String url,
+        @Json.Property("handle") String handle
+) {
 
 }

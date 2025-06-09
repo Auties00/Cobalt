@@ -1,7 +1,5 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.util.Bytes;
-
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
@@ -10,6 +8,7 @@ import java.util.Arrays;
 
 import static it.auties.whatsapp.util.SignalConstants.KEY_LENGTH;
 
+// TODO: Switch out for JDK implementation
 public final class Hkdf {
     private static final int ITERATION_START_OFFSET = 1; // v3
     private static final int HASH_OUTPUT_SIZE = 32;
@@ -34,7 +33,9 @@ public final class Hkdf {
         }
 
         var prk = Hmac.calculateSha256(input, salt);
-        var result = Bytes.concat(new byte[KEY_LENGTH], info, new byte[]{1});
+        var result = new byte[KEY_LENGTH + info.length + 1];
+        System.arraycopy(info, 0, result, KEY_LENGTH, info.length);
+        result[result.length - 1] = 1;
         var signed = new byte[chunks][];
         var key = Arrays.copyOfRange(result, KEY_LENGTH, result.length);
         var first = Hmac.calculateSha256(key, prk);

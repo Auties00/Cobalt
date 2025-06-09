@@ -1,8 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
 import it.auties.whatsapp.model.message.model.Message;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
 
 /**
  * A model class that represents an empty message. Used to prevent NPEs from empty messages sent by
@@ -10,12 +8,12 @@ import it.auties.whatsapp.model.message.model.MessageType;
  */
 public final class EmptyMessage implements Message {
     @Override
-    public MessageType type() {
-        return MessageType.EMPTY;
+    public Type type() {
+        return Type.EMPTY;
     }
 
     @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
+    public Category category() {
+        return Category.STANDARD;
     }
 }

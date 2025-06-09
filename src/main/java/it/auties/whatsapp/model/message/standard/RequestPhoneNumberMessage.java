@@ -5,8 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
 
 import java.util.Optional;
 
@@ -17,20 +15,20 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.RequestPhoneNumberMessage")
 public final class RequestPhoneNumberMessage implements ContextualMessage<RequestPhoneNumberMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    ContextInfo contextInfo;
 
-    public RequestPhoneNumberMessage(ContextInfo contextInfo) {
+    RequestPhoneNumberMessage(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.REQUEST_PHONE_NUMBER;
+    public Type type() {
+        return Type.REQUEST_PHONE_NUMBER;
     }
 
     @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
+    public Category category() {
+        return Category.STANDARD;
     }
 
     @Override

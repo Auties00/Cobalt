@@ -1,35 +1,45 @@
 package it.auties.whatsapp.model.newsletter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
+@Json
 @ProtobufMessage
 public final class NewsletterViewerMetadata {
+    private static final Map<String, NewsletterViewerRole> PRETTY_NAME_TO_ROLE = Arrays.stream(NewsletterViewerRole.values())
+            .collect(Collectors.toMap(entry -> entry.name().toLowerCase(), role -> role));
+
     @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-    private boolean mute;
+    boolean mute;
+
     @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
-    private NewsletterViewerRole role;
+    NewsletterViewerRole role;
 
     public NewsletterViewerMetadata(boolean mute, NewsletterViewerRole role) {
         this.mute = mute;
-        this.role = role;
+        this.role = Objects.requireNonNullElse(role, NewsletterViewerRole.UNKNOWN);
     }
 
-    @JsonCreator
-    NewsletterViewerMetadata(Map<String, ?> json) {
+    @Json.Creator
+    NewsletterViewerMetadata(@Json.Unmapped Map<String, Object> json) {
         this.mute = switch (json.get("mute")) {
             case Boolean bool -> bool;
-            case String string -> Objects.equals(string, "ON");
+            case String string -> string.equals("ON");
             default -> false;
         };
         this.role = switch (json.get("role")) {
-            case String string -> NewsletterViewerRole.of(string);
-            case Integer index -> NewsletterViewerRole.of(index);
+            case String string -> PRETTY_NAME_TO_ROLE.getOrDefault(string.toLowerCase(), NewsletterViewerRole.UNKNOWN);
+            case Integer index -> {
+                var values = NewsletterViewerRole.values();
+                yield index >= values.length ? NewsletterViewerRole.UNKNOWN : values[index];
+            }
             default -> NewsletterViewerRole.UNKNOWN;
         };
     }

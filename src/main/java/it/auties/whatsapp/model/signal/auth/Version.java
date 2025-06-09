@@ -1,19 +1,16 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.crypto.MD5;
 
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import static java.lang.Integer.parseInt;
 
-
+@Json
 @ProtobufMessage(name = "ClientPayload.UserAgent.AppVersion")
 public record Version(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
@@ -35,7 +32,7 @@ public record Version(
         this(primary, secondary, tertiary, null, null);
     }
 
-    @JsonCreator
+    @Json.Creator
     public static Version of(String version) {
         var tokens = version.split("\\.", 5);
         if (tokens.length > 5) {
@@ -51,15 +48,46 @@ public record Version(
     }
 
     public byte[] toHash() {
-        return MD5.calculate(toString());
+        try {
+            var digest = MessageDigest.getInstance("MD5");
+            digest.update(toString().getBytes());
+            return digest.digest();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new UnsupportedOperationException("Missing md5 implementation", exception);
+        }
     }
 
     @Override
-    @JsonValue
+    @Json.Value
     public String toString() {
-        return Stream.of(primary, secondary, tertiary, quaternary, quinary)
-                .filter(Objects::nonNull)
-                .map(String::valueOf)
-                .collect(Collectors.joining("."));
+        var result = new StringBuilder();
+        if(primary != null) {
+            result.append(primary);
+        }
+        if(secondary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(secondary);
+        }
+        if(tertiary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(tertiary);
+        }
+        if(quaternary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(quaternary);
+        }
+        if(quinary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(quinary);
+        }
+        return result.toString();
     }
 }

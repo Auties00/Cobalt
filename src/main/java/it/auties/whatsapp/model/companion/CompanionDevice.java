@@ -53,28 +53,28 @@ public final class CompanionDevice {
     );
 
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String model;
+    final String model;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String manufacturer;
+    final String manufacturer;
 
     @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
-    private final PlatformType platform;
+    final PlatformType platform;
 
     @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private final Version appVersion;
+    final Version appVersion;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    private final Version osVersion;
+    final Version osVersion;
 
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-    private final String osBuildNumber;
+    final String osBuildNumber;
 
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-    private final String modelId;
+    final String modelId;
 
     @ProtobufProperty(index = 9, type = ProtobufType.ENUM)
-    private final ClientType clientType;
+    final ClientType clientType;
 
     CompanionDevice(
             String model,
@@ -278,7 +278,15 @@ public final class CompanionDevice {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof CompanionDevice that && Objects.equals(model, that.model) && Objects.equals(manufacturer, that.manufacturer) && platform == that.platform && Objects.equals(appVersion, that.appVersion) && Objects.equals(osVersion, that.osVersion) && Objects.equals(osBuildNumber, that.osBuildNumber) && Objects.equals(modelId, that.modelId) && clientType == that.clientType;
+        return o instanceof CompanionDevice that
+                && Objects.equals(model, that.model)
+                && Objects.equals(manufacturer, that.manufacturer)
+                && platform == that.platform
+                && Objects.equals(appVersion, that.appVersion)
+                && Objects.equals(osVersion, that.osVersion)
+                && Objects.equals(osBuildNumber, that.osBuildNumber)
+                && Objects.equals(modelId, that.modelId)
+                && clientType == that.clientType;
     }
 
     @Override
@@ -288,7 +296,7 @@ public final class CompanionDevice {
 
     @Override
     public String toString() {
-        return "CompanionDevice{" +
+        return "CompanionDevice[" +
                 "model='" + model + '\'' +
                 ", manufacturer='" + manufacturer + '\'' +
                 ", platform=" + platform +
@@ -297,6 +305,6 @@ public final class CompanionDevice {
                 ", osBuildNumber='" + osBuildNumber + '\'' +
                 ", modelId='" + modelId + '\'' +
                 ", clientType=" + clientType +
-                '}';
+                ']';
     }
 }

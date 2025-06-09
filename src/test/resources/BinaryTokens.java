@@ -1,7 +1,5 @@
 package it.auties.whatsapp.io;
 
-import it.auties.whatsapp.model.companion.CompanionProperty;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -22,15 +20,6 @@ public final class BinaryTokens {
     public static final String NUMBERS_REGEX = "[^0-9.-]+?";
 
     public static final String HEX_REGEX = "[^0-9A-F]+?";
-
-    public static final Map<Integer, CompanionProperty> PROPERTIES;
-
-    static {
-        var properties = new HashMap<Integer, CompanionProperty>();
-%s
-        //noinspection Java9CollectionFactory
-        PROPERTIES = Collections.unmodifiableMap(properties);
-    }
 
     public static boolean anyMatch(String input, String regex) {
         return Pattern.compile(regex)

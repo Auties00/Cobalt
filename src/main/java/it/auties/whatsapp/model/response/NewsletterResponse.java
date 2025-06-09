@@ -1,27 +1,40 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import io.avaje.jsonb.Json;
+import io.avaje.jsonb.Jsonb;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.util.Json;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public record NewsletterResponse(Newsletter newsletter) {
-    @JsonCreator
-    NewsletterResponse(Map<String, Newsletter> json) {
-        this(json.values()
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter")));
+@Json
+public final class NewsletterResponse {
+    private static final NewsletterResponse EMPTY = new NewsletterResponse(null);
+
+    private final Newsletter newsletter;
+
+    private NewsletterResponse(Newsletter newsletter) {
+        this.newsletter = newsletter;
     }
 
-    public static Optional<NewsletterResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class).data();
+    @Json.Creator
+    static NewsletterResponse of(@Json.Unmapped Map<String, Object> json) {
+        if(!(json.get("data") instanceof Map<?,?> data)) {
+            return EMPTY;
+        }
+
+        if(!(data.get("newsletter") instanceof Map<?,?> response)) {
+            return EMPTY;
+        }
+
+        var newsletter = Jsonb.builder()
+                .build()
+                .type(Newsletter.class)
+                .fromObject(response);
+        return new NewsletterResponse(newsletter);
     }
 
-    private record JsonResponse(Optional<NewsletterResponse> data) {
-
+    public Optional<Newsletter> newsletter() {
+        return Optional.ofNullable(newsletter);
     }
 }

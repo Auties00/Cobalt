@@ -3,46 +3,50 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * A model clas that represents the assignment of a chat
  */
 @ProtobufMessage(name = "SyncActionValue.ChatAssignmentAction")
-public record ChatAssignmentAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        Optional<String> deviceAgentId
-) implements Action {
+public final class ChatAssignmentAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String deviceAgentId;
 
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+    ChatAssignmentAction(String deviceAgentId) {
+        this.deviceAgentId = deviceAgentId;
+    }
+
     @Override
     public String indexName() {
         return "agentChatAssignment";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 7;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public Optional<String> deviceAgentId() {
+        return Optional.ofNullable(deviceAgentId);
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof ChatAssignmentAction that
+                && Objects.equals(deviceAgentId, that.deviceAgentId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(deviceAgentId);
+    }
+
+    @Override
+    public String toString() {
+        return "ChatAssignmentAction[" +
+                "deviceAgentId=" + deviceAgentId + ']';
     }
 }

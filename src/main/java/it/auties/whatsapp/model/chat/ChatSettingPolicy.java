@@ -1,8 +1,11 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
+
 /**
  * The constants of this enumerated type describe the various policies that can be enforced for a {@link GroupSetting} or {@link CommunitySetting} in a {@link Chat}
  */
+@ProtobufEnum
 public enum ChatSettingPolicy {
     /**
      * Allows both admins and users

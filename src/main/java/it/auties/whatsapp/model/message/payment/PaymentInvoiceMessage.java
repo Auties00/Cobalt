@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.payment;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -22,30 +21,39 @@ import java.util.OptionalLong;
 @ProtobufMessage
 public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMessage> implements PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String note;
-    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String token;
-    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
-    private final PaymentAttachmentType paymentAttachmentType;
-    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private final String mimeType;
-    @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
-    private byte[] mediaKey;
-    @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
-    private Long mediaKeyTimestampSeconds;
-    @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
-    private byte[] mediaSha256;
-    @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
-    private byte[] mediaEncryptedSha256;
-    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-    private String mediaDirectPath;
-    @ProtobufProperty(index = 10, type = ProtobufType.BYTES)
-    private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    final String note;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public PaymentInvoiceMessage(String note, String token, PaymentAttachmentType paymentAttachmentType, String mimeType, byte[] mediaKey, Long mediaKeyTimestampSeconds, byte[] mediaSha256, byte[] mediaEncryptedSha256, String mediaDirectPath, byte[] thumbnail, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final String token;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
+    final PaymentAttachmentType paymentAttachmentType;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+    final String mimeType;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
+    byte[] mediaKey;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
+    Long mediaKeyTimestampSeconds;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
+    byte[] mediaSha256;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
+    byte[] mediaEncryptedSha256;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    String mediaDirectPath;
+
+    @ProtobufProperty(index = 10, type = ProtobufType.BYTES)
+    final byte[] thumbnail;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    PaymentInvoiceMessage(String note, String token, PaymentAttachmentType paymentAttachmentType, String mimeType, byte[] mediaKey, Long mediaKeyTimestampSeconds, byte[] mediaSha256, byte[] mediaEncryptedSha256, String mediaDirectPath, byte[] thumbnail, ContextInfo contextInfo) {
         this.note = note;
         this.token = token;
         this.paymentAttachmentType = paymentAttachmentType;
@@ -160,8 +168,8 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.PAYMENT_INVOICE;
+    public Message.Type type() {
+        return Message.Type.PAYMENT_INVOICE;
     }
 
     @Override
@@ -170,9 +178,12 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public MediaMessageType mediaType() {
-        return paymentAttachmentType().map(PaymentAttachmentType::toMediaType)
-                .orElse(MediaMessageType.NONE);
+    public MediaMessage.Type mediaType() {
+        return switch (paymentAttachmentType) {
+            case null -> MediaMessage.Type.NONE;
+            case IMAGE -> MediaMessage.Type.IMAGE;
+            case PDF -> MediaMessage.Type.DOCUMENT;
+        };
     }
 
     @Override
@@ -181,8 +192,8 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public MessageCategory category() {
-        return MessageCategory.PAYMENT;
+    public Category category() {
+        return Category.PAYMENT;
     }
 
     @Override
@@ -210,17 +221,6 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
 
         PaymentAttachmentType(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
-        }
-
-        public MediaMessageType toMediaType() {
-            return switch (this) {
-                case IMAGE -> MediaMessageType.IMAGE;
-                case PDF -> MediaMessageType.DOCUMENT;
-            };
         }
     }
 }

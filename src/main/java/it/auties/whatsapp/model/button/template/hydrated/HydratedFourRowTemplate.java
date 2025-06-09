@@ -11,6 +11,7 @@ import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoOrGifMessage;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -18,26 +19,48 @@ import java.util.stream.IntStream;
  * A model class that represents a hydrated four row template
  */
 @ProtobufMessage(name = "Message.TemplateMessage.HydratedFourRowTemplate")
-public record HydratedFourRowTemplate(
-        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-        Optional<DocumentMessage> titleDocument,
-        @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-        Optional<HydratedFourRowTemplateTextTitle> titleText,
-        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-        Optional<ImageMessage> titleImage,
-        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-        Optional<VideoOrGifMessage> titleVideo,
-        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-        Optional<LocationMessage> titleLocation,
-        @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-        String body,
-        @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-        Optional<String> footer,
-        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
-        List<HydratedTemplateButton> hydratedButtons,
-        @ProtobufProperty(index = 9, type = ProtobufType.STRING)
-        String templateId
-) implements TemplateFormatter {
+public final class HydratedFourRowTemplate implements TemplateFormatter {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
+    final DocumentMessage titleDocument;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final HydratedFourRowTemplateTextTitle titleText;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    final ImageMessage titleImage;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    final VideoOrGifMessage titleVideo;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
+    final LocationMessage titleLocation;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    final String body;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+    final String footer;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
+    final List<HydratedTemplateButton> hydratedButtons;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    final String templateId;
+
+    HydratedFourRowTemplate(DocumentMessage titleDocument, HydratedFourRowTemplateTextTitle titleText,
+                            ImageMessage titleImage, VideoOrGifMessage titleVideo, LocationMessage titleLocation,
+                            String body, String footer, List<HydratedTemplateButton> hydratedButtons, String templateId) {
+        this.titleDocument = titleDocument;
+        this.titleText = titleText;
+        this.titleImage = titleImage;
+        this.titleVideo = titleVideo;
+        this.titleLocation = titleLocation;
+        this.body = Objects.requireNonNull(body, "body cannot be null");
+        this.footer = footer;
+        this.hydratedButtons = Objects.requireNonNullElse(hydratedButtons, List.of());
+        this.templateId = Objects.requireNonNull(templateId, "templateId cannot be null");
+    }
+
     @ProtobufBuilder(className = "HydratedFourRowTemplateSimpleBuilder")
     static HydratedFourRowTemplate customBuilder(HydratedFourRowTemplateTitle title, String body, String footer, List<HydratedTemplateButton> buttons, String templateId) {
         var builder = new HydratedFourRowTemplateBuilder()
@@ -65,6 +88,42 @@ public record HydratedFourRowTemplate(
         }).toList();
     }
 
+    public Optional<DocumentMessage> titleDocument() {
+        return Optional.ofNullable(titleDocument);
+    }
+
+    public Optional<HydratedFourRowTemplateTextTitle> titleText() {
+        return Optional.ofNullable(titleText);
+    }
+
+    public Optional<ImageMessage> titleImage() {
+        return Optional.ofNullable(titleImage);
+    }
+
+    public Optional<VideoOrGifMessage> titleVideo() {
+        return Optional.ofNullable(titleVideo);
+    }
+
+    public Optional<LocationMessage> titleLocation() {
+        return Optional.ofNullable(titleLocation);
+    }
+
+    public String body() {
+        return body;
+    }
+
+    public Optional<String> footer() {
+        return Optional.ofNullable(footer);
+    }
+
+    public List<HydratedTemplateButton> hydratedButtons() {
+        return hydratedButtons;
+    }
+
+    public String templateId() {
+        return templateId;
+    }
+
     /**
      * Returns the type of title that this template wraps
      *
@@ -81,27 +140,57 @@ public record HydratedFourRowTemplate(
      * @return an optional
      */
     public Optional<? extends HydratedFourRowTemplateTitle> title() {
-        if (titleDocument.isPresent()) {
-            return titleDocument;
+        if (titleDocument != null) {
+            return Optional.of(titleDocument);
+        }else if (titleText != null) {
+            return Optional.of(titleText);
+        }else if (titleImage != null) {
+            return Optional.of(titleImage);
+        }else if (titleVideo != null) {
+            return Optional.of(titleVideo);
+        }else if(titleLocation != null){
+            return Optional.of(titleLocation);
+        }else {
+            return Optional.empty();
         }
-
-        if (titleText.isPresent()) {
-            return titleText;
-        }
-
-        if (titleImage.isPresent()) {
-            return titleImage;
-        }
-
-        if (titleVideo.isPresent()) {
-            return titleVideo;
-        }
-
-        return titleLocation;
     }
 
     @Override
     public Type templateType() {
         return Type.HYDRATED_FOUR_ROW;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof HydratedFourRowTemplate that
+                && Objects.equals(titleDocument, that.titleDocument)
+                && Objects.equals(titleText, that.titleText)
+                && Objects.equals(titleImage, that.titleImage)
+                && Objects.equals(titleVideo, that.titleVideo)
+                && Objects.equals(titleLocation, that.titleLocation)
+                && Objects.equals(body, that.body)
+                && Objects.equals(footer, that.footer)
+                && Objects.equals(hydratedButtons, that.hydratedButtons)
+                && Objects.equals(templateId, that.templateId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(titleDocument, titleText, titleImage, titleVideo, titleLocation,
+                body, footer, hydratedButtons, templateId);
+    }
+
+    @Override
+    public String toString() {
+        return "HydratedFourRowTemplate[" +
+                "titleDocument=" + titleDocument +
+                ", titleText=" + titleText +
+                ", titleImage=" + titleImage +
+                ", titleVideo=" + titleVideo +
+                ", titleLocation=" + titleLocation +
+                ", body=" + body +
+                ", footer=" + footer +
+                ", hydratedButtons=" + hydratedButtons +
+                ", templateId=" + templateId + ']';
     }
 }

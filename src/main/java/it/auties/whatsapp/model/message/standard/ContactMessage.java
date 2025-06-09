@@ -6,8 +6,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
 
 import java.util.Optional;
 
@@ -17,30 +15,28 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.ContactMessage")
 public final class ContactMessage implements ContextualMessage<ContactMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String name;
-    @ProtobufProperty(index = 16, type = ProtobufType.STRING)
-    private final ContactCard vcard;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    final String name;
 
-    public ContactMessage(String name, ContactCard vcard, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 16, type = ProtobufType.STRING)
+    final ContactCard vcard;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    ContactMessage(String name, ContactCard vcard, ContextInfo contextInfo) {
         this.name = name;
         this.vcard = vcard;
         this.contextInfo = contextInfo;
     }
 
-    public static ContactMessage of(String name, ContactCard vcard) {
-        return new ContactMessage(name, vcard, null);
+    @Override
+    public Type type() {
+        return Type.CONTACT;
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.CONTACT;
-    }
-
-    @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
+    public Category category() {
+        return Category.STANDARD;
     }
 
     public String name() {
@@ -69,5 +65,4 @@ public final class ContactMessage implements ContextualMessage<ContactMessage> {
                 "vcard=" + vcard + ", " +
                 "contextInfo=" + contextInfo + ']';
     }
-
 }

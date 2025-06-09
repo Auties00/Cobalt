@@ -48,10 +48,6 @@ public enum PrivacySettingValue {
                 .findFirst();
     }
 
-    public int index() {
-        return index;
-    }
-
     public String data() {
         return this.data;
     }

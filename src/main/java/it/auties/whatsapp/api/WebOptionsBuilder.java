@@ -65,7 +65,9 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
      */
     public Whatsapp unregistered(long phoneNumber, PairingCodeHandler pairingCodeHandler) {
         if (whatsapp == null) {
-            store.setPhoneNumber(PhoneNumber.of(phoneNumber));
+            var parsedPhoneNumber = PhoneNumber.of(phoneNumber)
+                    .orElseThrow(() -> new IllegalArgumentException(phoneNumber + " is not a valid phone number"));
+            store.setPhoneNumber(parsedPhoneNumber);
             this.whatsapp = Whatsapp.customBuilder()
                     .store(store)
                     .keys(keys)

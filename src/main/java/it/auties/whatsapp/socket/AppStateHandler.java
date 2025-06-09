@@ -1,5 +1,6 @@
 package it.auties.whatsapp.socket;
 
+import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
@@ -25,7 +26,12 @@ import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.SignalConstants;
 
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -113,10 +119,7 @@ class AppStateHandler {
         newState.setIndexValueMap(result.indexValueMap());
         newState.setVersion(newState.version() + 1);
         var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(), request.type(), mutationKeys.snapshotMacKey());
-        var concatValueMac = mutations.stream()
-                .map(MutationResult::valueMac)
-                .toArray(byte[][]::new);
-        var patchMac = generatePatchMac(snapshotMac, concatValueMac, newState.version(), request.type(), mutationKeys.patchMacKey());
+        var patchMac = generatePatchMac(snapshotMac, mutations, newState.version(), request.type(), mutationKeys.patchMacKey());
         var syncs = mutations.stream()
                 .map(MutationResult::sync)
                 .toList();
@@ -130,30 +133,42 @@ class AppStateHandler {
     }
 
     private MutationResult createMutationSync(PatchEntry patch, MutationKeys mutationKeys, AppStateSyncKey key, KeyId syncId) {
-        var index = patch.index().getBytes(StandardCharsets.UTF_8);
-        var version = patch.sync()
-                .version()
-                .orElseThrow(() -> new IllegalArgumentException("Empty patch sync"));
-        var actionData = new ActionDataSyncBuilder()
-                .index(index)
-                .value(patch.sync())
-                .padding(new byte[0])
-                .version(version)
-                .build();
-        var encoded = ActionDataSyncSpec.encode(actionData);
-        var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());
-        var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
-        var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
-        var record = new RecordSyncBuilder()
-                .index(new IndexSync(indexMac))
-                .value(new ValueSync(Bytes.concat(encrypted, valueMac)))
-                .keyId(syncId)
-                .build();
-        var sync = new MutationSyncBuilder()
-                .operation(patch.operation())
-                .record(record)
-                .build();
-        return new MutationResult(sync, indexMac, valueMac, patch.operation());
+        try {
+            var index = patch.index()
+                    .getBytes(StandardCharsets.UTF_8);
+            var version = patch.sync()
+                    .version()
+                    .orElseThrow(() -> new IllegalArgumentException("Empty patch sync"));
+            var actionData = new ActionDataSyncBuilder()
+                    .index(index)
+                    .value(patch.sync())
+                    .padding(new byte[0])
+                    .version(version)
+                    .build();
+            var encoded = ActionDataSyncSpec.encode(actionData);
+            var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            var keySpec = new SecretKeySpec(mutationKeys.encKey(), "AES");
+            var iv = Bytes.random(16);
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
+            var encryptedLength = cipher.getOutputSize(encoded.length);
+            var encrypted = new byte[iv.length + encryptedLength];
+            System.arraycopy(iv, 0, encrypted, 0, iv.length);
+            cipher.doFinal(encoded, 0, encoded.length, encrypted, iv.length);
+            var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
+            var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
+            var record = new RecordSyncBuilder()
+                    .index(new IndexSync(indexMac))
+                    .value(new ValueSync(Bytes.concat(encrypted, valueMac)))
+                    .keyId(syncId)
+                    .build();
+            var sync = new MutationSyncBuilder()
+                    .operation(patch.operation())
+                    .record(record)
+                    .build();
+            return new MutationResult(sync, indexMac, valueMac, patch.operation());
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot encrypt data", exception);
+        }
     }
 
     private Node createPushRequestNode(PushRequest request, boolean mobile) {
@@ -169,7 +184,7 @@ class AppStateHandler {
 
     private void onPush(Jid jid, List<PushRequest> requests, boolean readPatches) {
         requests.forEach(request -> {
-            socketHandler.keys().putState(jid, request.newState());
+            socketHandler.keys().addState(jid, request.newState());
             if (!readPatches) {
                 return;
             }
@@ -311,18 +326,18 @@ class AppStateHandler {
                 snapshot.ifPresent(decodedSnapshot -> {
                     results.addAll(decodedSnapshot.records());
                     tempStates.put(record.patchType(), decodedSnapshot.state());
-                    socketHandler.keys().putState(jid, decodedSnapshot.state());
+                    socketHandler.keys().addState(jid, decodedSnapshot.state());
                 });
             }
             if (record.hasPatches()) {
                 var decodedPatches = decodePatches(jid, record.patchType(), record.patches(), tempStates.get(record.patchType()));
                 results.addAll(decodedPatches.records());
-                socketHandler.keys().putState(jid, decodedPatches.state());
+                socketHandler.keys().addState(jid, decodedPatches.state());
             }
             return new PatchChunk(record.patchType(), results, record.hasMore());
         } catch (Throwable throwable) {
             var hashState = new CompanionHashState(record.patchType());
-            socketHandler.keys().putState(jid, hashState);
+            socketHandler.keys().addState(jid, hashState);
             attempts.put(record.patchType(), attempts.getOrDefault(record.patchType(), 0) + 1);
             if (attempts.get(record.patchType()) >= PULL_ATTEMPTS) {
                 throw new RuntimeException("Cannot parse patch(%s tries)".formatted(PULL_ATTEMPTS), throwable);
@@ -363,16 +378,30 @@ class AppStateHandler {
     }
 
     private Optional<SnapshotSync> decodeSnapshot(Node snapshot) {
-        var proxy = switch (socketHandler.store().mediaProxySetting()) {
-            case NONE, UPLOADS -> null;
-            case DOWNLOADS, ALL -> socketHandler.store().proxy().orElse(null);
-        };
-        return snapshot == null ? Optional.empty() : snapshot.contentAsBytes()
-                .map(ExternalBlobReferenceSpec::decode)
-                .map(blob -> Medias.downloadAsync(blob, proxy))
-                .flatMap(CompletableFuture::join)
-                .map(SnapshotSyncSpec::decode);
+        if (snapshot == null) {
+            return Optional.empty();
+        }
+
+        var externalBlobPayload = snapshot.contentAsBytes()
+                .orElse(null);
+        if (externalBlobPayload == null) {
+            return Optional.empty();
+        }
+
+        var proxy = socketHandler.store()
+                .proxy()
+                .filter(ignored -> socketHandler.store().mediaProxySetting().allowsDownloads())
+                .orElse(null);
+        var blob = ExternalBlobReferenceSpec.decode(externalBlobPayload);
+        return Optional.of(Medias.downloadAsync(blob, proxy, stream -> {
+            try(var protobufStream = ProtobufInputStream.fromStream(stream)) {
+                return SnapshotSyncSpec.decode(protobufStream);
+            }catch (Throwable throwable) {
+                throw new RuntimeException("Cannot decode snapshot", throwable);
+            }
+        }).join());
     }
+
 
     private Optional<PatchSync> decodePatch(Node patch, long versionCode) {
         if (!patch.hasContent()) {
@@ -460,7 +489,7 @@ class AppStateHandler {
                 chat.setUnreadMessagesCount(read);
             });
             case MuteAction muteAction -> targetChat.ifPresent(chat -> {
-                var timestamp = muteAction.muteEndTimestampSeconds().orElse(0L);
+                var timestamp = muteAction.muteEndTimestampSeconds();
                 chat.setMute(ChatMute.muted(timestamp));
             });
             case PinAction pinAction -> targetChat.ifPresent(chat -> {
@@ -534,18 +563,24 @@ class AppStateHandler {
 
     private MutationsRecord decodePatch(Jid jid, PatchType patchType, CompanionHashState newState, PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            var proxy = switch (socketHandler.store().mediaProxySetting()) {
-                case NONE, UPLOADS -> null;
-                case DOWNLOADS, ALL -> socketHandler.store().proxy().orElse(null);
-            };
-            Medias.downloadAsync(patch.externalMutations(), proxy)
-                    .join()
-                    .ifPresent(blob -> handleExternalMutation(patch, blob));
+            var proxy = socketHandler.store()
+                    .proxy()
+                    .filter(ignored -> socketHandler.store().mediaProxySetting().allowsDownloads())
+                    .orElse(null);
+            var mutationsSync = Medias.downloadAsync(patch.externalMutations(), proxy, stream -> {
+                        try(var protobufStream = ProtobufInputStream.fromStream(stream)) {
+                            return MutationsSyncSpec.decode(protobufStream);
+                        }catch (Exception exception) {
+                            throw new RuntimeException("Cannot decode mutations", exception);
+                        }
+                    })
+                    .join();
+            patch.mutations().addAll(mutationsSync.mutations());
         }
 
         newState.setVersion(patch.encodedVersion());
         if(socketHandler.store().checkPatchMacs()) {
-            var patchMac = calculatePatchMac(jid, patch, patchType);
+            var patchMac = generatePatchMac(jid, patch, patchType);
             if(patchMac.isPresent() && !Arrays.equals(patchMac.get(), patch.patchMac())) {
                 throw new HmacValidationException("sync_mac");
             }
@@ -555,36 +590,14 @@ class AppStateHandler {
         newState.setHash(mutations.result().hash());
         newState.setIndexValueMap(mutations.result().indexValueMap());
         if(socketHandler.store().checkPatchMacs()) {
-            var snapshotMac = calculateSnapshotMac(jid, patchType, newState, patch);
+            var snapshotMac = getMutationKeys(jid, patch.keyId())
+                    .map(mutationKeys -> generateSnapshotMac(newState.hash(), newState.version(), patchType, mutationKeys.snapshotMacKey()));
             if(snapshotMac.isPresent() && !Arrays.equals(snapshotMac.get(), patch.snapshotMac())) {
                 throw new HmacValidationException("snapshot_mac");
             }
         }
 
         return mutations;
-    }
-
-    private void handleExternalMutation(PatchSync patch, byte[] blob) {
-        var mutationsSync = MutationsSyncSpec.decode(blob);
-        patch.mutations().addAll(mutationsSync.mutations());
-    }
-
-    private Optional<byte[]> calculateSnapshotMac(Jid jid, PatchType name, CompanionHashState newState, PatchSync patch) {
-        return getMutationKeys(jid, patch.keyId())
-                .map(mutationKeys -> generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey()));
-    }
-
-    private Optional<byte[]> calculatePatchMac(Jid jid, PatchSync patch, PatchType patchType) {
-        return getMutationKeys(jid, patch.keyId())
-                .map(mutationKeys -> generatePatchMac(patch.snapshotMac(), getSyncMutationMac(patch), patch.encodedVersion(), patchType, mutationKeys.patchMacKey()));
-    }
-
-    private byte[][] getSyncMutationMac(PatchSync patch) {
-        return patch.mutations()
-                .stream()
-                .map(mutation -> mutation.record().value().blob())
-                .map(entry -> Arrays.copyOfRange(entry, entry.length - SignalConstants.KEY_LENGTH, entry.length))
-                .toArray(byte[][]::new);
     }
 
     private Optional<SyncRecord> decodeSnapshot(Jid jid, PatchType name, SnapshotSync snapshot) {
@@ -649,31 +662,72 @@ class AppStateHandler {
     }
 
     private byte[] generateMac(RecordSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {
-        var keyData = Bytes.concat(operation.content(), keyId);
-        var last = new byte[SignalConstants.MAC_LENGTH];
-        last[last.length - 1] = (byte) keyData.length;
-        var total = Bytes.concat(keyData, data, last);
+        var total = new byte[1 + keyId.length + data.length + SignalConstants.MAC_LENGTH];
+        total[0] = operation.content();
+        System.arraycopy(keyId, 0, total, 1, keyId.length);
+        System.arraycopy(data, 0, total, 1 + keyId.length, data.length);
+        total[total.length - 1] = (byte) (keyId.length + 1);
         var sha512 = Hmac.calculateSha512(total, key);
         return Arrays.copyOfRange(sha512, 0, SignalConstants.KEY_LENGTH);
     }
 
     private byte[] generateSnapshotMac(byte[] ltHash, long version, PatchType patchType, byte[] key) {
-        var total = Bytes.concat(
-                ltHash,
-                Bytes.longToBytes(version),
-                patchType.toString().getBytes(StandardCharsets.UTF_8)
-        );
-        return Hmac.calculateSha256(total, key);
+        try {
+            var localMac = Mac.getInstance("HmacSHA256");
+            localMac.init(new SecretKeySpec(key, "HmacSHA256"));
+            localMac.update(ltHash);
+            digestLong(localMac, version);
+            localMac.update(patchType.toString().getBytes());
+            return localMac.doFinal();
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot calculate hmac", exception);
+        }
     }
 
-    private byte[] generatePatchMac(byte[] snapshotMac, byte[][] valueMac, long version, PatchType patchType, byte[] key) {
-        var total = Bytes.concat(
-                snapshotMac,
-                Bytes.concat(valueMac),
-                Bytes.longToBytes(version),
-                patchType.toString().getBytes(StandardCharsets.UTF_8)
-        );
-        return Hmac.calculateSha256(total, key);
+    private byte[] generatePatchMac(byte[] snapshotMac, List<MutationResult> mutations, long version, PatchType patchType, byte[] key) {
+        try {
+            var localMac = Mac.getInstance("HmacSHA256");
+            localMac.init(new SecretKeySpec(key, "HmacSHA256"));
+            localMac.update(snapshotMac);
+            for(var mutation : mutations) {
+                localMac.update(mutation.valueMac());
+            }
+            digestLong(localMac, version);
+            localMac.update(patchType.toString().getBytes());
+            return localMac.doFinal();
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot calculate hmac", exception);
+        }
+    }
+
+    private Optional<byte[]> generatePatchMac(Jid jid, PatchSync patch, PatchType patchType) {
+        return getMutationKeys(jid, patch.keyId()).map(mutationKeys -> {
+            try {
+                var localMac = Mac.getInstance("HmacSHA256");
+                localMac.init(new SecretKeySpec(mutationKeys.patchMacKey(), "HmacSHA256"));
+                localMac.update(patch.snapshotMac());
+                for(var mutation : patch.mutations()) {
+                    var blob = mutation.record().value().blob();
+                    localMac.update(blob, blob.length - SignalConstants.KEY_LENGTH, SignalConstants.KEY_LENGTH);
+                }
+                digestLong(localMac, patch.encodedVersion());
+                localMac.update(patchType.toString().getBytes());
+                return localMac.doFinal();
+            } catch (GeneralSecurityException exception) {
+                throw new IllegalArgumentException("Cannot calculate hmac", exception);
+            }
+        });
+    }
+
+    private void digestLong(Mac mac, long n) {
+        mac.update((byte) (n >> 56));
+        mac.update((byte) (n >> 48));
+        mac.update((byte) (n >> 40));
+        mac.update((byte) (n >> 32));
+        mac.update((byte) (n >> 24));
+        mac.update((byte) (n >> 16));
+        mac.update((byte) (n >> 8));
+        mac.update((byte) n);
     }
 
     protected void dispose() {

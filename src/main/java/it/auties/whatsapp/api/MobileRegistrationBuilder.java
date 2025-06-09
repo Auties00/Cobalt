@@ -87,7 +87,8 @@ public sealed class MobileRegistrationBuilder {
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
             Objects.requireNonNull(verificationCodeMethod, "Expected a valid verification method");
             if (!keys.registered()) {
-                var number = PhoneNumber.of(phoneNumber);
+                var number = PhoneNumber.of(phoneNumber)
+                        .orElseThrow(() -> new IllegalArgumentException(phoneNumber + " is not a valid phone number"));
                 keys.setPhoneNumber(number);
                 store.setPhoneNumber(number);
                 var registration = new MobileRegistration(
@@ -126,7 +127,8 @@ public sealed class MobileRegistrationBuilder {
                 return CompletableFuture.completedFuture(unregisteredResult);
             }
 
-            var number = PhoneNumber.of(phoneNumber);
+            var number = PhoneNumber.of(phoneNumber)
+                    .orElseThrow(() -> new IllegalArgumentException(phoneNumber + " is not a valid phone number"));
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             if (!keys.registered()) {
@@ -184,7 +186,8 @@ public sealed class MobileRegistrationBuilder {
          * @return the same instance for chaining
          */
         public CompletableFuture<RegisteredResult> verify(long phoneNumber) {
-            var number = PhoneNumber.of(phoneNumber);
+            var number = PhoneNumber.of(phoneNumber)
+                    .orElseThrow(() -> new IllegalArgumentException(phoneNumber + " is not a valid phone number"));
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             return verify();

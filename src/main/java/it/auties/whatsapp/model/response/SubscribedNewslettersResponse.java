@@ -1,28 +1,44 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import io.avaje.jsonb.Json;
+import io.avaje.jsonb.Jsonb;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.util.Json;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 
-public record SubscribedNewslettersResponse(List<Newsletter> newsletters) {
-    @JsonCreator
-    SubscribedNewslettersResponse(Map<String, List<Newsletter>> json) {
-        this(json.values()
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletters")));
+@Json
+public final class SubscribedNewslettersResponse {
+    private static final SubscribedNewslettersResponse EMPTY = new SubscribedNewslettersResponse(List.of());
+
+    private final List<Newsletter> newsletters;
+
+    private SubscribedNewslettersResponse(List<Newsletter> newsletters) {
+        this.newsletters = newsletters;
     }
 
-    public static Optional<SubscribedNewslettersResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class).data();
+    @Json.Creator
+    static SubscribedNewslettersResponse of(@Json.Unmapped Map<String, Object> json) {
+        if(!(json.get("data") instanceof Map<?,?> data)) {
+            return EMPTY;
+        }
+
+        var newsletterJsonType = Jsonb.builder()
+                .build()
+                .type(Newsletter.class);
+        var newsletters = new ArrayList<Newsletter>(data.size());
+        for(var entry : data.entrySet()) {
+            if(entry instanceof Map<?,?> newsletterSource) {
+                var newsletter = newsletterJsonType.fromObject(newsletterSource);
+                newsletters.add(newsletter);
+            }
+        }
+        return new SubscribedNewslettersResponse(newsletters);
     }
 
-    private record JsonResponse(Optional<SubscribedNewslettersResponse> data) {
-
+    public List<Newsletter> newsletters() {
+        return Collections.unmodifiableList(newsletters);
     }
 }
