@@ -6,12 +6,10 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
+import it.auties.whatsapp.model.info.MessageIndexInfoBuilder;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @ProtobufMessage(name = "SyncActionData")
 public record ActionDataSync(

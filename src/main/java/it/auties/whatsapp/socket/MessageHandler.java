@@ -901,15 +901,15 @@ class MessageHandler {
                     .map(MessageContainerSpec::decode)
                     .map(messageContainer -> {
                         var readStatus = notify ? MessageStatus.DELIVERED : MessageStatus.READ;
-                        var message = new NewsletterMessageInfo(
-                                messageId,
-                                serverId,
-                                timestamp,
-                                views,
-                                reactions,
-                                messageContainer,
-                                readStatus
-                        );
+                        var message = new NewsletterMessageInfoBuilder()
+                                .id(messageId)
+                                .serverId(serverId)
+                                .timestampSeconds(timestamp)
+                                .views(views)
+                                .reactions(reactions)
+                                .message(messageContainer)
+                                .status(readStatus)
+                                .build();
                         message.setNewsletter(newsletter.get());
                         return message;
                     });
@@ -1438,7 +1438,7 @@ class MessageHandler {
 
     private void handleNonBlockingData(HistorySync history) {
         for (var pastParticipants : history.pastParticipants()) {
-            socketHandler.pastParticipants().put(pastParticipants.groupJid(), pastParticipants.pastParticipants());
+            socketHandler.addPastParticipant(pastParticipants.groupJid(), pastParticipants.pastParticipants());
         }
     }
 

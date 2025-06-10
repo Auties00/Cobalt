@@ -178,7 +178,7 @@
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <zxing.version>3.5.1</zxing.version>
-        <json.version>3.5-RC2</json.version>
+        <json.version>2.0.57</json.version>
         <protoc.version>3.4.3</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
         <jackson.version>2.15.2</jackson.version>
@@ -208,21 +208,12 @@
                     <target>${java.version}</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
-                        <dependency>
-                            <groupId>io.avaje</groupId>
-                            <artifactId>avaje-jsonb-generator</artifactId>
-                            <version>${json.version}</version>
-                        </dependency>
                         <annotationProcessorPath>
                             <groupId>com.github.auties00</groupId>
                             <artifactId>protobuf-serialization-plugin</artifactId>
                             <version>${protoc.version}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
-                    <failOnError>true</failOnError>
                 </configuration>
             </plugin>
 
@@ -269,10 +260,10 @@
             <version>${protoc.version}</version>
         </dependency>
 
-        <!-- Json serialization (used by Whatsapp) -->
+        <!-- JSON serialization (used by Whatsapp) -->
         <dependency>
-            <groupId>io.avaje</groupId>
-            <artifactId>avaje-jsonb</artifactId>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
             <version>${json.version}</version>
         </dependency>
 

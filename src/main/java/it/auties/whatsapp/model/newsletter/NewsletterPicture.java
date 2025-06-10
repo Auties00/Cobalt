@@ -10,7 +10,6 @@ import java.util.Objects;
 @ProtobufMessage
 @Json
 public final class NewsletterPicture {
-
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     @Json.Property("id")
     final String id;

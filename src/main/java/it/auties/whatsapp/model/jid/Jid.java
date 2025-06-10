@@ -15,10 +15,10 @@ import java.util.Optional;
  */
 @Json
 public final class Jid implements JidProvider { // How can string parsing get so complicated?
-    private final String user;
-    private final JidServer server;
-    private final int device;
-    private final int agent;
+    final String user;
+    final JidServer server;
+    final int device;
+    final int agent;
 
     private Jid(String user, JidServer server, int device, int agent) {
         this.user = user;

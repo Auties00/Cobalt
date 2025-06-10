@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.newsletter;
 
+import com.alibaba.fastjson2.JSONObject;
 import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
@@ -7,6 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
+import it.auties.whatsapp.model.response.NewsletterResponse;
 import it.auties.whatsapp.util.ConcurrentLinkedSet;
 
 import java.util.Collection;
@@ -18,19 +20,17 @@ import java.util.Optional;
 @Json
 public final class Newsletter implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Json.Property("id")
     final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    @Json.Property("state")
     NewsletterState state;
 
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    @Json.Property("thread_metadata")
+    @Json.Ignore
     NewsletterMetadata metadata;
 
     @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    @Json.Property("viewer_metadata")
+    @Json.Ignore
     final NewsletterViewerMetadata viewerMetadata;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
@@ -43,6 +43,10 @@ public final class Newsletter implements JidProvider {
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
         this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedSet::new);
+    }
+
+    public static Optional<Newsletter> ofJson(JSONObject newsletter) {
+        return Optional.empty();
     }
 
     public void addMessage(NewsletterMessageInfo message) {
@@ -74,10 +78,12 @@ public final class Newsletter implements JidProvider {
         return jid;
     }
 
+    @Json.Property("id")
     public Jid jid() {
         return jid;
     }
 
+    @Json.Property("state")
     public Optional<NewsletterState> state() {
         return Optional.ofNullable(state);
     }
@@ -92,10 +98,12 @@ public final class Newsletter implements JidProvider {
         return this;
     }
 
+    @Json.Property("thread_metadata")
     public Optional<NewsletterMetadata> metadata() {
         return Optional.ofNullable(metadata);
     }
 
+    @Json.Property("viewer_metadata")
     public Optional<NewsletterViewerMetadata> viewerMetadata() {
         return Optional.ofNullable(viewerMetadata);
     }

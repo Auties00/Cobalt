@@ -1,40 +1,48 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.util.Map;
 import java.util.Optional;
 
-@Json
 public final class NewsletterLeaveResponse {
-    private static final NewsletterLeaveResponse EMPTY = new NewsletterLeaveResponse(null);
-
     private final Jid jid;
 
     private NewsletterLeaveResponse(Jid jid) {
         this.jid = jid;
     }
 
-    @Json.Creator
-    static NewsletterLeaveResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<NewsletterLeaveResponse> ofJson(String json) {
+        if (json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("xwa2_notify_newsletter_on_leave") instanceof Map<?,?> response)) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if (jsonObject == null) {
+            return Optional.empty();
         }
 
-        if(!(response.get("id") instanceof String value)) {
-            return EMPTY;
+        var data = jsonObject.getJSONObject("data");
+        if (data == null) {
+            return Optional.empty();
         }
 
-        var jid = Jid.of(value);
-        return new NewsletterLeaveResponse(jid);
+        var response = data.getJSONObject("xwa2_notify_newsletter_on_leave");
+        if (response == null) {
+            return Optional.empty();
+        }
+
+        var id = response.getString("id");
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(id);
+        var result = new NewsletterLeaveResponse(jid);
+        return Optional.of(result);
     }
 
-    public Optional<Jid> jid() {
-        return Optional.ofNullable(jid);
+    public Jid jid() {
+        return jid;
     }
 }

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.chat.CommunityLinkedGroup;
 import it.auties.whatsapp.model.chat.CommunityLinkedGroupBuilder;
 import it.auties.whatsapp.model.jid.Jid;
@@ -8,53 +8,56 @@ import it.auties.whatsapp.model.jid.Jid;
 import java.util.*;
 
 public final class CommunityLinkedGroupsResponse {
-    private static final CommunityLinkedGroupsResponse EMPTY = new CommunityLinkedGroupsResponse(List.of());
-
     private final SequencedSet<CommunityLinkedGroup> linkedGroups;
 
     private CommunityLinkedGroupsResponse(SequencedSet<CommunityLinkedGroup> linkedGroups) {
         this.linkedGroups = linkedGroups;
     }
 
-    @Json.Creator
-    static CommunityLinkedGroupsResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<CommunityLinkedGroupsResponse> of(String json) {
+        if(json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("xwa2_group_query_by_id") instanceof Map<?,?> response)) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
         }
 
-        if(!(response.get("sub_groups") instanceof Map<?,?> subGroups)) {
-            return EMPTY;
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
         }
 
-        if(!(subGroups.get("edges") instanceof List<?> edges)) {
-            return EMPTY;
+        var response = data.getJSONObject("xwa2_group_query_by_id");
+        if(response == null) {
+            return Optional.empty();
         }
 
-        var links = new LinkedHashSet<CommunityLinkedGroup>(edges.size());
-        for(var edge : edges) {
-            if(!(edge instanceof Map<?,?> map)) {
-                continue;
-            }
+        var subGroups = response.getJSONObject("sub_groups");
+        if(subGroups == null) {
+            return Optional.empty();
+        }
 
-            if(!(map.get("id") instanceof String id)) {
-                continue;
-            }
+        var edges = subGroups.getJSONArray("edges");
+        if(edges == null) {
+            return Optional.empty();
+        }
 
-            if(!(map.get("total_participants_count") instanceof Number totalParticipantsCount)) {
-                continue;
-            }
-
+        var length = edges.size();
+        var links = new LinkedHashSet<CommunityLinkedGroup>(length);
+        for (var i = 0; i < length; i++) {
+            var edge = edges.getJSONObject(i);
+            var id = edge.getString("id");
+            var totalParticipantsCount = edge.getInteger("total_participants_count");
             var link = new CommunityLinkedGroupBuilder()
                     .jid(Jid.of(id))
-                    .participants(totalParticipantsCount.intValue())
+                    .participants(totalParticipantsCount)
                     .build();
             links.add(link);
         }
-        return new CommunityLinkedGroupsResponse(links);
+        var result = new CommunityLinkedGroupsResponse(links);
+        return Optional.of(result);
     }
 
     public SequencedSet<CommunityLinkedGroup> linkedGroups() {

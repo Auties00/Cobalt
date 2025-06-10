@@ -1327,6 +1327,17 @@ public class SocketHandler implements SocketSession.Listener {
         }
     }
 
+    public void addPastParticipant(Jid jid, Collection<? extends ChatPastParticipant> pastParticipant) {
+        var pastParticipants = pastParticipants().get(jid);
+        if(pastParticipants != null) {
+            pastParticipants.addAll(pastParticipant);
+            this.pastParticipants.put(jid, pastParticipants);
+        }else {
+            var values = new LinkedHashSet<ChatPastParticipant>(pastParticipant);
+            this.pastParticipants.put(jid, values);
+        }
+    }
+
     protected void queryNewsletters() {
         streamHandler.queryNewsletters()
                 .exceptionallyAsync(throwable -> handleFailure(HISTORY_SYNC, throwable));

@@ -13,6 +13,8 @@ import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Json
 @ProtobufMessage
@@ -36,17 +38,28 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     MessageContainer message;
 
     @Json.Ignore
-    private Newsletter newsletter;
+    Newsletter newsletter;
 
     @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     MessageStatus status;
 
-    public NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
+    NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
         this.id = id;
         this.serverId = serverId;
         this.timestampSeconds = timestampSeconds;
         this.views = views;
         this.reactions = reactions;
+        this.message = message;
+        this.status = status;
+    }
+
+    NewsletterMessageInfo(String id, int serverId, OptionalLong timestampSeconds, OptionalLong views, Collection<NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
+        this.id = id;
+        this.serverId = serverId;
+        this.timestampSeconds = timestampSeconds.orElse(0);
+        this.views = views.orElse(0);
+        this.reactions = reactions.stream()
+                .collect(Collectors.toMap(NewsletterReaction::content, Function.identity()));
         this.message = message;
         this.status = status;
     }
@@ -83,10 +96,12 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
+    @Json.Property("timestampSeconds")
     public OptionalLong timestampSeconds() {
         return timestampSeconds == null ? OptionalLong.empty() : OptionalLong.of(timestampSeconds);
     }
 
+    @Json.Property("views")
     public OptionalLong views() {
         return views == null ? OptionalLong.empty() : OptionalLong.of(views);
     }
@@ -116,6 +131,7 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
         return this;
     }
 
+    @Json.Property("reactions")
     public Collection<NewsletterReaction> reactions() {
         return Collections.unmodifiableCollection(reactions.values());
     }

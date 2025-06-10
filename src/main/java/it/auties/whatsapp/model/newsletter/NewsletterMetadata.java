@@ -9,31 +9,26 @@ import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 @ProtobufMessage
 public final class NewsletterMetadata {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    @Json.Property("name")
     final NewsletterName name;
 
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    @Json.Property("description")
     final NewsletterDescription description;
 
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    @Json.Property("picture")
-
     final NewsletterPicture picture;
+
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    @Json.Property("handle")
     final String handle;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    @Json.Property("settings")
     final NewsletterSettings settings;
 
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-    @Json.Property("invite")
     final String invite;
 
     @ProtobufProperty(index = 7, type = ProtobufType.STRING)
@@ -41,10 +36,9 @@ public final class NewsletterMetadata {
     final String verification;
 
     @ProtobufProperty(index = 8, type = ProtobufType.UINT64)
-    @Json.Property("creation_time")
+    @Json.Ignore
     final long creationTimestampSeconds;
 
-    @Json.Creator
     NewsletterMetadata(NewsletterName name, NewsletterDescription description, NewsletterPicture picture, String handle, NewsletterSettings settings, String invite, String verification, long creationTimestampSeconds) {
         this.name = name;
         this.description = description;
@@ -67,36 +61,43 @@ public final class NewsletterMetadata {
         this.creationTimestampSeconds = creationTimestampSeconds;
     }
 
-    public long creationTimestampSeconds() {
-        return creationTimestampSeconds;
+    @Json.Property("creation_time")
+    public OptionalLong creationTimestampSeconds() {
+        return Clock.parseTimestamp(creationTimestampSeconds);
     }
 
     public Optional<ZonedDateTime> creationTimestamp() {
         return Clock.parseSeconds(creationTimestampSeconds);
     }
 
+    @Json.Property("name")
     public Optional<NewsletterName> name() {
         return Optional.ofNullable(name);
     }
 
+    @Json.Property("description")
     public Optional<NewsletterDescription> description() {
         return Optional.ofNullable(description);
     }
 
+    @Json.Property("picture")
     public Optional<NewsletterPicture> picture() {
         return Optional.ofNullable(picture);
     }
 
+    @Json.Property("handle")
     public Optional<String> handle() {
-        return handle.describeConstable();
+        return Optional.ofNullable(handle);
     }
 
+    @Json.Property("settings")
     public Optional<NewsletterSettings> settings() {
         return Optional.ofNullable(settings);
     }
 
+    @Json.Property("invite")
     public Optional<String> invite() {
-        return invite.describeConstable();
+        return Optional.ofNullable(invite);
     }
 
     public boolean verification() {

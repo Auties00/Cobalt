@@ -1,44 +1,45 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
-import io.avaje.jsonb.Jsonb;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-@Json
 public final class SubscribedNewslettersResponse {
-    private static final SubscribedNewslettersResponse EMPTY = new SubscribedNewslettersResponse(List.of());
-
     private final List<Newsletter> newsletters;
 
     private SubscribedNewslettersResponse(List<Newsletter> newsletters) {
         this.newsletters = newsletters;
     }
 
-    @Json.Creator
-    static SubscribedNewslettersResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<SubscribedNewslettersResponse> of(String json) {
+        if(json == null) {
+            return Optional.empty();
         }
 
-        var newsletterJsonType = Jsonb.builder()
-                .build()
-                .type(Newsletter.class);
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
+        }
+
         var newsletters = new ArrayList<Newsletter>(data.size());
-        for(var entry : data.entrySet()) {
-            if(entry instanceof Map<?,?> newsletterSource) {
-                var newsletter = newsletterJsonType.fromObject(newsletterSource);
-                newsletters.add(newsletter);
+        for(var key : data.keySet()) {
+            var object = data.getJSONObject(key);
+            if(object != null) {
+                Newsletter.ofJson(object)
+                        .ifPresent(newsletters::add);
             }
         }
-        return new SubscribedNewslettersResponse(newsletters);
+        var result = new SubscribedNewslettersResponse(newsletters);
+        return Optional.of(result);
     }
 
-    public List<Newsletter> newsletters() {
-        return Collections.unmodifiableList(newsletters);
+    public SequencedCollection<Newsletter> newsletters() {
+        return Collections.unmodifiableSequencedCollection(newsletters);
     }
 }

@@ -456,25 +456,20 @@ class StreamHandler {
     private void handleNewsletterStateUpdate(Node update) {
         var updatePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing state update payload"));
-        var updateJson = Jsonb.builder()
-                .build()
-                .type(NewsletterStateResponse.class)
-                .fromJson(updatePayload);
-        updateJson.jid().ifPresent(newsletterJid -> {
-            var newsletter = socketHandler.store()
-                    .findNewsletterByJid(newsletterJid)
-                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-            newsletter.setState(updateJson.state());
-        });
+        NewsletterStateResponse.ofJson(updatePayload)
+                .jid()
+                .ifPresent(newsletterJid -> {
+                    var newsletter = socketHandler.store()
+                            .findNewsletterByJid(newsletterJid)
+                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+                    newsletter.setState(updateJson.state());
+                });
     }
 
     private void handleNewsletterMetadataUpdate(Node update) {
         var updatePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing update payload"));
-        Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(updatePayload)
+        NewsletterResponse.ofJson(updatePayload)
                 .newsletter()
                 .ifPresent(updatedNewsletter -> {
                     var newsletter = socketHandler.store()
@@ -528,10 +523,7 @@ class StreamHandler {
     private void handleNewsletterJoin(Node update) {
         var joinPayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing join payload"));
-        Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(joinPayload)
+        NewsletterResponse.ofJson(joinPayload)
                 .newsletter()
                 .ifPresent(newsletter -> {
                     socketHandler.store().addNewsletter(newsletter);
@@ -544,10 +536,7 @@ class StreamHandler {
     private void handleNewsletterMute(Node update) {
         var mutePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing mute payload"));
-        var response = Jsonb.builder()
-                .build()
-                .type(NewsletterMuteResponse.class)
-                .fromJson(mutePayload);
+        var response = NewsletterMuteResponse.ofJson(mutePayload);
         response.jid().ifPresent(newsletterJid -> {
             var newsletter = socketHandler.store()
                     .findNewsletterByJid(newsletterJid)
@@ -560,12 +549,8 @@ class StreamHandler {
     private void handleNewsletterLeave(Node update) {
         var leavePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing leave payload"));
-        var response = Jsonb.builder()
-                .build()
-                .type(NewsletterLeaveResponse.class)
-                .fromJson(leavePayload);
-        response.jid()
-                .ifPresent(newsletterJid -> socketHandler.store().removeNewsletter(newsletterJid));
+        NewsletterLeaveResponse.ofJson(leavePayload)
+                .ifPresent(response -> socketHandler.store().removeNewsletter(response.jid()));
     }
 
     private void handleCompanionRegistration(Node node) {

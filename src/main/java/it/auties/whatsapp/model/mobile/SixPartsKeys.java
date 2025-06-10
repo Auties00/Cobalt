@@ -17,7 +17,8 @@ public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, 
         if (parts.length != 6) {
             throw new IllegalArgumentException("Malformed six parts: " + sixParts);
         }
-        var phoneNumber = PhoneNumber.of(parts[0]);
+        var phoneNumber = PhoneNumber.of(parts[0])
+                .orElseThrow(() -> new IllegalArgumentException("Invalid phone number: " + parts[0]));
         var noisePublicKey = Base64.getDecoder().decode(parts[1]);
         var noisePrivateKey = Base64.getDecoder().decode(parts[2]);
         var identityPublicKey = Base64.getDecoder().decode(parts[3]);

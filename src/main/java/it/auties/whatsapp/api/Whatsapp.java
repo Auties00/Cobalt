@@ -803,15 +803,13 @@ public class Whatsapp {
         var oldServerId = newsletter.newestMessage()
                 .map(NewsletterMessageInfo::serverId)
                 .orElse(0);
-        var info = new NewsletterMessageInfo(
-                ChatMessageKey.randomId(store().clientType()),
-                oldServerId + 1,
-                Clock.nowSeconds(),
-                null,
-                new ConcurrentHashMap<>(),
-                message,
-                MessageStatus.PENDING
-        );
+        var info = new NewsletterMessageInfoBuilder()
+                .id(ChatMessageKey.randomId(store().clientType()))
+                .serverId(oldServerId + 1)
+                .timestampSeconds(Clock.nowSeconds())
+                .message(message)
+                .status(MessageStatus.PENDING)
+                .build();
         info.setNewsletter(newsletter);
         return sendMessage(info);
     }
@@ -831,15 +829,13 @@ public class Whatsapp {
         }
         return switch (oldMessage) {
             case NewsletterMessageInfo oldNewsletterInfo -> {
-                var info = new NewsletterMessageInfo(
-                        oldNewsletterInfo.id(),
-                        oldNewsletterInfo.serverId(),
-                        Clock.nowSeconds(),
-                        null,
-                        new ConcurrentHashMap<>(),
-                        MessageContainer.ofEditedMessage(newMessage),
-                        MessageStatus.PENDING
-                );
+                var info = new NewsletterMessageInfoBuilder()
+                        .id(oldNewsletterInfo.id())
+                        .serverId(oldNewsletterInfo.serverId())
+                        .timestampSeconds(Clock.nowSeconds())
+                        .message(MessageContainer.ofEditedMessage(newMessage))
+                        .status(MessageStatus.PENDING)
+                        .build();
                 info.setNewsletter(oldNewsletterInfo.newsletter());
                 var request = new MessageRequest.Newsletter(info, Map.of("edit", getEditBit(info)));
                 yield socketHandler.sendMessage(request)
@@ -1096,23 +1092,12 @@ public class Whatsapp {
 
     private Map<Jid, Boolean> parseHasWhatsappResponse(List<Jid> contacts, List<Node> nodes) {
         var result = nodes.stream()
-                .map(this::parseHasWhatsappResponse)
+                .map(HasWhatsappResponse::ofNode)
                 .collect(Collectors.toMap(HasWhatsappResponse::contact, HasWhatsappResponse::hasWhatsapp, (first, second) -> first, HashMap::new));
         contacts.stream()
                 .filter(contact -> !result.containsKey(contact))
                 .forEach(contact -> result.put(contact, false));
         return result;
-    }
-
-    private HasWhatsappResponse parseHasWhatsappResponse(Node node) {
-        var jid = node.attributes()
-                .getRequiredJid("jid");
-        var in = node.findChild("contact")
-                .orElseThrow(() -> new NoSuchElementException("Missing contact in HasWhatsappResponse"))
-                .attributes()
-                .getRequiredString("type")
-                .equals("in");
-        return new HasWhatsappResponse(jid, in);
     }
 
     /**
@@ -2175,15 +2160,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> deleteMessage(NewsletterMessageInfo messageInfo) {
-        var revokeInfo = new NewsletterMessageInfo(
-                messageInfo.id(),
-                messageInfo.serverId(),
-                Clock.nowSeconds(),
-                null,
-                new ConcurrentHashMap<>(),
-                MessageContainer.empty(),
-                MessageStatus.PENDING
-        );
+        var revokeInfo = new NewsletterMessageInfoBuilder()
+                .id(messageInfo.id())
+                .serverId(messageInfo.serverId())
+                .timestampSeconds(Clock.nowSeconds())
+                .message(MessageContainer.empty())
+                .status(MessageStatus.PENDING)
+                .build();
         revokeInfo.setNewsletter(messageInfo.newsletter());
         var attrs = Map.of("edit", getDeleteBit(messageInfo));
         var request = new MessageRequest.Newsletter(revokeInfo, attrs);

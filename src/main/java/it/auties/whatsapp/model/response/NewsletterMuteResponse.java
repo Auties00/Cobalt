@@ -1,15 +1,11 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.util.Map;
 import java.util.Optional;
 
-@Json
 public final class NewsletterMuteResponse {
-    private static final NewsletterMuteResponse EMPTY = new NewsletterMuteResponse(null, false);
-
     private final Jid jid;
     private final boolean mute;
 
@@ -18,27 +14,39 @@ public final class NewsletterMuteResponse {
         this.mute = mute;
     }
 
-    @Json.Creator
-    static NewsletterMuteResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<NewsletterMuteResponse> ofJson(String json) {
+        if (json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("xwa2_notify_newsletter_on_mute_change") instanceof Map<?,?> response)) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if (jsonObject == null) {
+            return Optional.empty();
         }
 
-        if(!(response.get("id") instanceof String value)) {
-            return EMPTY;
+        var data = jsonObject.getJSONObject("data");
+        if (data == null) {
+            return Optional.empty();
         }
 
-        var jid = Jid.of(value);
-        var mute = response.get("mute") instanceof Boolean muteValue ? muteValue : false;
-        return new NewsletterMuteResponse(jid, mute);
+        var response = data.getJSONObject("xwa2_notify_newsletter_on_mute_change");
+        if (response == null) {
+            return Optional.empty();
+        }
+
+        var id = response.getString("id");
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(id);
+        var mute = response.getBooleanValue("mute", false);
+        var result = new NewsletterMuteResponse(jid, mute);
+        return Optional.of(result);
     }
 
-    public Optional<Jid> jid() {
-        return Optional.ofNullable(jid);
+    public Jid jid() {
+        return jid;
     }
 
     public boolean mute() {
