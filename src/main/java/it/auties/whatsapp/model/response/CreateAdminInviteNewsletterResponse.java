@@ -15,7 +15,7 @@ public final class CreateAdminInviteNewsletterResponse {
         this.expirationTime = expirationTime;
     }
 
-    public static Optional<CreateAdminInviteNewsletterResponse> of(String json) {
+    public static Optional<CreateAdminInviteNewsletterResponse> ofJson(byte[] json) {
         if(json == null) {
             return Optional.empty();
         }

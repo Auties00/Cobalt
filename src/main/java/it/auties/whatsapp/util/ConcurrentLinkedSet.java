@@ -1,8 +1,5 @@
 package it.auties.whatsapp.util;
 
-
-import io.avaje.jsonb.Json;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -16,7 +13,6 @@ public final class ConcurrentLinkedSet<E> extends AbstractCollection<E> implemen
     private final ReentrantLock lock;
     private final Set<Integer> hashes;
 
-    @Json.Creator
     public ConcurrentLinkedSet() {
         this.hashes = ConcurrentHashMap.newKeySet();
         this.lock = new ReentrantLock(true);

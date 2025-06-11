@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.info;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -13,10 +13,7 @@ import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-@Json
 @ProtobufMessage
 public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessageInfo>, MessageStatusInfo<NewsletterMessageInfo> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
@@ -37,14 +34,13 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     MessageContainer message;
 
-    @Json.Ignore
-    Newsletter newsletter;
-
     @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     MessageStatus status;
 
+    Newsletter newsletter;
+
     NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
-        this.id = id;
+        this.id = Objects.requireNonNull(id, "id cannot be null");
         this.serverId = serverId;
         this.timestampSeconds = timestampSeconds;
         this.views = views;
@@ -53,15 +49,31 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
         this.status = status;
     }
 
-    NewsletterMessageInfo(String id, int serverId, OptionalLong timestampSeconds, OptionalLong views, Collection<NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
-        this.id = id;
-        this.serverId = serverId;
-        this.timestampSeconds = timestampSeconds.orElse(0);
-        this.views = views.orElse(0);
-        this.reactions = reactions.stream()
-                .collect(Collectors.toMap(NewsletterReaction::content, Function.identity()));
-        this.message = message;
-        this.status = status;
+    public static Optional<NewsletterMessageInfo> ofJson(JSONObject jsonObject) {
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var id = jsonObject.getString("id");
+        if(id == null) {
+            return Optional.empty();
+        }
+
+        var serverId = jsonObject.getIntValue("serverId", -1);
+        var timestampSeconds = jsonObject.getLongValue("timestampSeconds", 0);
+        var views = jsonObject.getLongValue("views", 0);
+        var reactionsJsonObject = jsonObject.getJSONObject("reactions");
+        Map<String, NewsletterReaction> reactions = HashMap.newHashMap(reactionsJsonObject.size());
+        for(var reactionKey : reactionsJsonObject.sequencedKeySet()) {
+            var reactionJsonObject = reactionsJsonObject.getJSONObject(reactionKey);
+            NewsletterReaction.ofJson(reactionJsonObject)
+                    .ifPresent(reaction -> reactions.put(reactionKey, reaction));
+        }
+        var message = MessageContainer.ofJson(jsonObject.getJSONObject("message"))
+                .orElse(MessageContainer.empty());
+        var status = MessageStatus.of(jsonObject.getString("status"))
+                .orElse(MessageStatus.ERROR);
+        return Optional.of(new NewsletterMessageInfo(id, serverId, timestampSeconds, views, reactions, message, status));
     }
 
     public NewsletterMessageInfo setNewsletter(Newsletter newsletter) {
@@ -96,12 +108,10 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
-    @Json.Property("timestampSeconds")
     public OptionalLong timestampSeconds() {
         return timestampSeconds == null ? OptionalLong.empty() : OptionalLong.of(timestampSeconds);
     }
 
-    @Json.Property("views")
     public OptionalLong views() {
         return views == null ? OptionalLong.empty() : OptionalLong.of(views);
     }
@@ -131,7 +141,6 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
         return this;
     }
 
-    @Json.Property("reactions")
     public Collection<NewsletterReaction> reactions() {
         return Collections.unmodifiableCollection(reactions.values());
     }

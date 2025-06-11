@@ -12,7 +12,7 @@ public final class RecommendedNewslettersResponse {
         this.newsletters = newsletters;
     }
 
-    public static Optional<RecommendedNewslettersResponse> of(String json) {
+    public static Optional<RecommendedNewslettersResponse> of(byte[] json) {
         if(json == null) {
             return Optional.empty();
         }

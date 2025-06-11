@@ -14,7 +14,7 @@ public final class CommunityLinkedGroupsResponse {
         this.linkedGroups = linkedGroups;
     }
 
-    public static Optional<CommunityLinkedGroupsResponse> of(String json) {
+    public static Optional<CommunityLinkedGroupsResponse> ofJson(byte[] json) {
         if(json == null) {
             return Optional.empty();
         }

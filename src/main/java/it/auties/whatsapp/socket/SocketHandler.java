@@ -1,6 +1,5 @@
 package it.auties.whatsapp.socket;
 
-import io.avaje.jsonb.Jsonb;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.controller.Keys;
@@ -845,11 +844,9 @@ public class SocketHandler implements SocketSession.Listener {
             return null;
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(CommunityLinkedGroupsResponse.class)
-                .fromJson(content.get())
-                .linkedGroups();
+        return CommunityLinkedGroupsResponse.ofJson(content.get())
+                .map(CommunityLinkedGroupsResponse::linkedGroups)
+                .orElse(null);
     }
 
     private Optional<ChatParticipant> parseGroupParticipant(Node node) {
@@ -1362,10 +1359,7 @@ public class SocketHandler implements SocketSession.Listener {
             return Optional.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(content.get())
-                .newsletter();
+        return NewsletterResponse.ofJson(content.get())
+                .map(NewsletterResponse::newsletter);
     }
 }

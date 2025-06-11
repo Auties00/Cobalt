@@ -11,7 +11,7 @@ public final class UserChosenNameResponse {
         this.name = name;
     }
 
-    public static Optional<UserChosenNameResponse> ofJson(String json) {
+    public static Optional<UserChosenNameResponse> ofJson(byte[] json) {
         if(json == null) {
             return Optional.empty();
         }

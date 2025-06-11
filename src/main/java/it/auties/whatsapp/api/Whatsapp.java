@@ -1,8 +1,6 @@
 package it.auties.whatsapp.api;
 
-import io.avaje.jsonb.Json;
-import io.avaje.jsonb.Jsonb;
-import io.avaje.jsonb.Types;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGcm;
@@ -1140,11 +1138,8 @@ public class Whatsapp {
             return Optional.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(UserChosenNameResponse.class)
-                .fromJson(content.get())
-                .name();
+        return UserChosenNameResponse.ofJson(content.get())
+                .flatMap(UserChosenNameResponse::name);
     }
 
     /**
@@ -2739,11 +2734,8 @@ public class Whatsapp {
                         throw new IllegalArgumentException("Cannot change community setting: " + result);
                     }
 
-                    var resultJson = (Map<?, ?>) Jsonb.builder()
-                            .build()
-                            .type(Types.mapOf(Object.class))
-                            .fromObject(resultJsonSource);
-                    if (resultJson.get("errors") != null) {
+                    var resultJson = JSON.parseObject(resultJsonSource);
+                    if (resultJson.containsKey("errors")) {
                         throw new IllegalArgumentException("Cannot change community setting: " + resultJsonSource);
                     }
                 });
@@ -3195,11 +3187,9 @@ public class Whatsapp {
             return List.of();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(RecommendedNewslettersResponse.class)
-                .fromJson(content.get())
-                .newsletters();
+        return RecommendedNewslettersResponse.of(content.get())
+                .map(RecommendedNewslettersResponse::newsletters)
+                .orElse(List.of());
     }
 
     /**
@@ -3271,11 +3261,8 @@ public class Whatsapp {
             return Optional.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(content.get())
-                .newsletter();
+        return NewsletterResponse.ofJson(content.get())
+                .map(NewsletterResponse::newsletter);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -3353,10 +3340,12 @@ public class Whatsapp {
             return OptionalLong.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(NewsletterSubscribersResponse.class)
-                .fromJson(content.get())
+        var response = NewsletterSubscribersResponse.ofJson(content.get());
+        if(response.isEmpty()) {
+            return OptionalLong.empty();
+        }
+
+        return response.get()
                 .subscribersCount();
     }
 
@@ -3415,10 +3404,12 @@ public class Whatsapp {
             return 0;
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(CreateAdminInviteNewsletterResponse.class)
-                .fromJson(content.get())
+        var response = CreateAdminInviteNewsletterResponse.ofJson(content.get());
+        if(response.isEmpty()) {
+            return 0;
+        }
+
+        return response.get()
                 .expirationTime();
     }
 
@@ -3472,11 +3463,8 @@ public class Whatsapp {
             return false;
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(RevokeAdminInviteNewsletterResponse.class)
-                .fromJson(content.get())
-                .jid()
+        return RevokeAdminInviteNewsletterResponse.ofJson(content.get())
+                .map(RevokeAdminInviteNewsletterResponse::jid)
                 .isPresent();
     }
 
@@ -3504,11 +3492,8 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(false);
         }
 
-        var jid = Jsonb.builder()
-                .build()
-                .type(AcceptAdminInviteNewsletterResponse.class)
-                .fromJson(content.get())
-                .jid();
+        var jid = AcceptAdminInviteNewsletterResponse.ofJson(content.get())
+                .map(AcceptAdminInviteNewsletterResponse::jid);
         if(jid.isEmpty()) {
             return CompletableFuture.completedFuture(false);
         }

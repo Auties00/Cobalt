@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.newsletter;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -32,14 +32,12 @@ public final class NewsletterMetadata {
     final String invite;
 
     @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-    @Json.Property("verification")
-    final String verification;
+    final NewsletterVerification verification;
 
     @ProtobufProperty(index = 8, type = ProtobufType.UINT64)
-    @Json.Ignore
     final long creationTimestampSeconds;
 
-    NewsletterMetadata(NewsletterName name, NewsletterDescription description, NewsletterPicture picture, String handle, NewsletterSettings settings, String invite, String verification, long creationTimestampSeconds) {
+    NewsletterMetadata(NewsletterName name, NewsletterDescription description, NewsletterPicture picture, String handle, NewsletterSettings settings, String invite, NewsletterVerification verification, long creationTimestampSeconds) {
         this.name = name;
         this.description = description;
         this.picture = picture;
@@ -50,18 +48,28 @@ public final class NewsletterMetadata {
         this.creationTimestampSeconds = creationTimestampSeconds;
     }
 
-    public NewsletterMetadata(NewsletterName name, NewsletterDescription description, NewsletterPicture picture, String handle, NewsletterSettings settings, String invite, boolean verification, long creationTimestampSeconds) {
-        this.name = name;
-        this.description = description;
-        this.picture = picture;
-        this.handle = handle;
-        this.settings = settings;
-        this.invite = invite;
-        this.verification = verification ? "ON" : "OFF";
-        this.creationTimestampSeconds = creationTimestampSeconds;
+    public static Optional<NewsletterMetadata> ofJson(JSONObject jsonObject) {
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var name = NewsletterName.ofJson(jsonObject.getJSONObject("name"))
+                .orElse(null);
+        var description = NewsletterDescription.ofJson(jsonObject.getJSONObject("description"))
+                .orElse(null);
+        var picture = NewsletterPicture.ofJson(jsonObject.getJSONObject("picture"))
+                .orElse(null);
+        var handle = jsonObject.getString("handle");
+        var settings = NewsletterSettings.ofJson(jsonObject.getJSONObject("settings"))
+                .orElse(null);
+        var invite = jsonObject.getString("invite");
+        var verification = NewsletterVerification.ofJson(jsonObject.getString("verification"))
+                .orElse(null);
+        var creationTimestampSeconds = jsonObject.getLongValue("creation_timestamp", 0);
+        var result = new NewsletterMetadata(name, description, picture, handle, settings, invite, verification, creationTimestampSeconds);
+        return Optional.of(result);
     }
 
-    @Json.Property("creation_time")
     public OptionalLong creationTimestampSeconds() {
         return Clock.parseTimestamp(creationTimestampSeconds);
     }
@@ -70,38 +78,32 @@ public final class NewsletterMetadata {
         return Clock.parseSeconds(creationTimestampSeconds);
     }
 
-    @Json.Property("name")
     public Optional<NewsletterName> name() {
         return Optional.ofNullable(name);
     }
 
-    @Json.Property("description")
     public Optional<NewsletterDescription> description() {
         return Optional.ofNullable(description);
     }
 
-    @Json.Property("picture")
     public Optional<NewsletterPicture> picture() {
         return Optional.ofNullable(picture);
     }
 
-    @Json.Property("handle")
     public Optional<String> handle() {
         return Optional.ofNullable(handle);
     }
 
-    @Json.Property("settings")
     public Optional<NewsletterSettings> settings() {
         return Optional.ofNullable(settings);
     }
 
-    @Json.Property("invite")
     public Optional<String> invite() {
         return Optional.ofNullable(invite);
     }
 
-    public boolean verification() {
-        return Objects.equals(verification, "VERIFIED");
+    public Optional<NewsletterVerification> verification() {
+        return Optional.ofNullable(verification);
     }
 
     @Override

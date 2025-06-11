@@ -8,7 +8,6 @@ import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.PipeInput;
 import com.github.kokorin.jaffree.ffmpeg.PipeOutput;
 import com.github.kokorin.jaffree.ffprobe.FFprobe;
-import io.avaje.jsonb.Jsonb;
 import it.auties.whatsapp.model.media.*;
 
 import javax.crypto.Cipher;
@@ -117,10 +116,8 @@ public final class Medias {
                 .build();
         try(var client = createHttpClient(proxy)) {
             return client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
-                var upload = Jsonb.builder()
-                        .build()
-                        .type(MediaUpload.class)
-                        .fromJson(response.body());
+                var upload = MediaUpload.ofJson(response.body())
+                        .orElseThrow(() -> new IllegalArgumentException("Cannot parse upload response: " + new String(response.body())));
                 return new MediaFile(
                         mediaFile.encryptedFile(),
                         mediaFile.fileSha256(),

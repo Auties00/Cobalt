@@ -55,10 +55,10 @@ public final class HydratedFourRowTemplate implements TemplateFormatter {
         this.titleImage = titleImage;
         this.titleVideo = titleVideo;
         this.titleLocation = titleLocation;
-        this.body = Objects.requireNonNull(body, "body cannot be null");
+        this.body = body;
         this.footer = footer;
         this.hydratedButtons = Objects.requireNonNullElse(hydratedButtons, List.of());
-        this.templateId = Objects.requireNonNull(templateId, "templateId cannot be null");
+        this.templateId = templateId;
     }
 
     @ProtobufBuilder(className = "HydratedFourRowTemplateSimpleBuilder")

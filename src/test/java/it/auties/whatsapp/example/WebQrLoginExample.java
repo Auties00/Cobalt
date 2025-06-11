@@ -13,7 +13,7 @@ public class WebQrLoginExample {
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
-                .addNewChatMessageListener((api, message) -> System.out.println(message.toJson()))
+                .addNewChatMessageListener((api, message) -> System.out.println(message))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener((api, chats) -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNewslettersListener((api, newsletters) -> System.out.printf("Newsletters: %s%n", newsletters.size()))

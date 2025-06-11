@@ -12,7 +12,7 @@ public final class SubscribedNewslettersResponse {
         this.newsletters = newsletters;
     }
 
-    public static Optional<SubscribedNewslettersResponse> of(String json) {
+    public static Optional<SubscribedNewslettersResponse> ofJson(String json) {
         if(json == null) {
             return Optional.empty();
         }
@@ -39,7 +39,7 @@ public final class SubscribedNewslettersResponse {
         return Optional.of(result);
     }
 
-    public SequencedCollection<Newsletter> newsletters() {
-        return Collections.unmodifiableSequencedCollection(newsletters);
+    public List<Newsletter> newsletters() {
+        return Collections.unmodifiableList(newsletters);
     }
 }

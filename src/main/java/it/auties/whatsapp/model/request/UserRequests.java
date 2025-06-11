@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.request;
 
-import io.avaje.jsonb.Jsonb;
+import com.alibaba.fastjson2.JSONWriter;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -8,28 +8,26 @@ import java.io.StringWriter;
 @SuppressWarnings("UnusedLabel")
 public class UserRequests {
     public static String chosenName(String user) {
-        try(
-                var result = new StringWriter();
-                var writer = Jsonb.builder()
-                        .build()
-                        .writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginArray();
+                    writer.startArray();
                     variable: {
-                        writer.beginObject();
-                        writer.name("user_id");
-                        writer.value(user);
+                        writer.startObject();
+                        writer.writeName("user_id");
+                        writer.writeString(user);
                         writer.endObject();
                     }
                     writer.endArray();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

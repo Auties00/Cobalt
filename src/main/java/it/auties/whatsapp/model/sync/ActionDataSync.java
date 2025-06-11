@@ -1,15 +1,12 @@
 package it.auties.whatsapp.model.sync;
 
-import io.avaje.jsonb.Jsonb;
-import io.avaje.jsonb.Types;
+import com.alibaba.fastjson2.JSON;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageIndexInfoBuilder;
 import it.auties.whatsapp.model.jid.Jid;
-
-import java.util.List;
 
 @ProtobufMessage(name = "SyncActionData")
 public record ActionDataSync(
@@ -22,12 +19,9 @@ public record ActionDataSync(
         @ProtobufProperty(index = 4, type = ProtobufType.INT32)
         Integer version
 ) {
-    @SuppressWarnings("unchecked")
     public MessageIndexInfo messageIndex() {
-        var array = (List<String>) Jsonb.builder()
-                .build()
-                .type(Types.listOf(String.class))
-                .fromJson(index);
+        var array = JSON.parseArray(index)
+                .toJavaList(String.class);
         var iterator = array.iterator();
         var type = iterator.hasNext() ? iterator.next() : null;
         var chatJid = iterator.hasNext() ? Jid.of(iterator.next()) : null;

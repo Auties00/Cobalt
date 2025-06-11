@@ -7,8 +7,6 @@ import it.auties.whatsapp.model.newsletter.NewsletterState;
 import java.util.Optional;
 
 public final class NewsletterStateResponse {
-    private static final NewsletterState NO_STATE = new NewsletterState(null);
-
     private final Jid jid;
 
     private final boolean requestor;
@@ -49,20 +47,20 @@ public final class NewsletterStateResponse {
         var jid = Jid.of(id);
         var requestor = response.getBooleanValue("is_requestor", false);
         var stateObject = response.getJSONObject("state");
-        var state = stateObject != null ? NewsletterState.ofJson(stateObject) : NO_STATE;
+        var state = stateObject != null ? NewsletterState.ofJson(stateObject).orElse(null) : null;
         var result = new NewsletterStateResponse(jid, requestor, state);
         return Optional.of(result);
     }
 
-    public Optional<Jid> jid() {
-        return Optional.ofNullable(jid);
+    public Jid jid() {
+        return jid;
     }
 
     public boolean requestor() {
         return requestor;
     }
 
-    public NewsletterState state() {
-        return state;
+    public Optional<NewsletterState> state() {
+        return Optional.ofNullable(state);
     }
 }

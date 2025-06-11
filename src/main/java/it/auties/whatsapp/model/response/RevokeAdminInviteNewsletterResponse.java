@@ -12,7 +12,7 @@ public final class RevokeAdminInviteNewsletterResponse {
         this.jid = jid;
     }
 
-    public static Optional<RevokeAdminInviteNewsletterResponse> of(String json) {
+    public static Optional<RevokeAdminInviteNewsletterResponse> ofJson(byte[] json) {
         if(json == null) {
             return Optional.empty();
         }

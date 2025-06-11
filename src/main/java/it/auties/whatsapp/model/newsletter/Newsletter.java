@@ -1,14 +1,12 @@
 package it.auties.whatsapp.model.newsletter;
 
 import com.alibaba.fastjson2.JSONObject;
-import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
-import it.auties.whatsapp.model.response.NewsletterResponse;
 import it.auties.whatsapp.util.ConcurrentLinkedSet;
 
 import java.util.Collection;
@@ -17,7 +15,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 @ProtobufMessage
-@Json
 public final class Newsletter implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
@@ -26,15 +23,12 @@ public final class Newsletter implements JidProvider {
     NewsletterState state;
 
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    @Json.Ignore
     NewsletterMetadata metadata;
 
     @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    @Json.Ignore
     final NewsletterViewerMetadata viewerMetadata;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    @Json.Property("messages")
     final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
 
     Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, ConcurrentLinkedSet<NewsletterMessageInfo> messages) {
@@ -46,7 +40,35 @@ public final class Newsletter implements JidProvider {
     }
 
     public static Optional<Newsletter> ofJson(JSONObject newsletter) {
-        return Optional.empty();
+        if(newsletter == null) {
+            return Optional.empty();
+        }
+
+        var jidValue = newsletter.getString("id");
+        if(jidValue == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(jidValue);
+        var stateJsonObject = newsletter.getJSONObject("state");
+        var state = NewsletterState.ofJson(stateJsonObject)
+                .orElse(null);
+        var metadataJsonObject = newsletter.getJSONObject("thread_metadata");
+        var metadata = NewsletterMetadata.ofJson(metadataJsonObject)
+                .orElse(null);
+        var viewerMetadataJsonObject = newsletter.getJSONObject("viewer_metadata");
+        var viewerMetadata = NewsletterViewerMetadata.ofJson(viewerMetadataJsonObject)
+                .orElse(null);
+        var messagesJsonObjects = newsletter.getJSONArray("messages");
+        var messages = new ConcurrentLinkedSet<NewsletterMessageInfo>();
+        for(var i = 0; i < messagesJsonObjects.size(); i++) {
+            var messageJsonObject = messagesJsonObjects.getJSONObject(i);
+            NewsletterMessageInfo.ofJson(messageJsonObject)
+                    .ifPresent(messages::add);
+        }
+
+        var result = new Newsletter(jid, state, metadata, viewerMetadata, messages);
+        return Optional.of(result);
     }
 
     public void addMessage(NewsletterMessageInfo message) {
@@ -78,12 +100,10 @@ public final class Newsletter implements JidProvider {
         return jid;
     }
 
-    @Json.Property("id")
     public Jid jid() {
         return jid;
     }
 
-    @Json.Property("state")
     public Optional<NewsletterState> state() {
         return Optional.ofNullable(state);
     }
@@ -98,12 +118,10 @@ public final class Newsletter implements JidProvider {
         return this;
     }
 
-    @Json.Property("thread_metadata")
     public Optional<NewsletterMetadata> metadata() {
         return Optional.ofNullable(metadata);
     }
 
-    @Json.Property("viewer_metadata")
     public Optional<NewsletterViewerMetadata> viewerMetadata() {
         return Optional.ofNullable(viewerMetadata);
     }

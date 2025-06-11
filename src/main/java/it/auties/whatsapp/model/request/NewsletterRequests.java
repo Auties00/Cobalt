@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.request;
 
-import io.avaje.jsonb.Jsonb;
+import com.alibaba.fastjson2.JSONWriter;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 
@@ -12,302 +12,302 @@ import java.util.List;
 @SuppressWarnings("UnusedLabel")
 public final class NewsletterRequests {
     public static String createAdminInviteNewsletter(Jid newsletterJid, Jid adminJid) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("newsletter_id");
-                    writer.value(newsletterJid.toString());
-                    writer.name("user_id");
-                    writer.value(adminJid.toString());
+                    writer.startObject();
+                    writer.writeName("newsletter_id");
+                    writer.writeString(newsletterJid.toString());
+                    writer.writeName("user_id");
+                    writer.writeString(adminJid.toString());
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String createNewsletter(String name, String description, String picture) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("input");
+                    writer.startObject();
+                    writer.writeName("input");
                     input: {
-                        writer.beginObject();
-                        writer.name("name");
-                        writer.value(name);
-                        writer.name("description");
-                        writer.value(description);
-                        writer.name("picture");
-                        writer.value(picture);
+                        writer.startObject();
+                        writer.writeName("name");
+                        writer.writeString(name);
+                        writer.writeName("description");
+                        writer.writeString(description);
+                        writer.writeName("picture");
+                        writer.writeString(picture);
                         writer.endObject();
                     }
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String joinNewsletter(Jid newsletterJid) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("newsletter_id");
-                    writer.value(newsletterJid.toString());
+                    writer.startObject();
+                    writer.writeName("newsletter_id");
+                    writer.writeString(newsletterJid.toString());
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String leaveNewsletter(Jid newsletterJid) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("newsletter_id");
-                    writer.value(newsletterJid.toString());
+                    writer.startObject();
+                    writer.writeName("newsletter_id");
+                    writer.writeString(newsletterJid.toString());
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String newsletterSubscribers(Jid key, String type, NewsletterViewerRole role) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("input");
+                    writer.startObject();
+                    writer.writeName("input");
                     input: {
-                        writer.beginObject();
-                        writer.name("key");
-                        writer.value(key.toString());
-                        writer.name("type");
-                        writer.value(type);
-                        writer.name("role");
-                        writer.value(role.name());
+                        writer.startObject();
+                        writer.writeName("key");
+                        writer.writeString(key.toString());
+                        writer.writeName("type");
+                        writer.writeString(type);
+                        writer.writeName("role");
+                        writer.writeString(role.name());
                         writer.endObject();
                     }
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String queryNewsletter(Jid key, String type, NewsletterViewerRole viewRole, boolean fetchViewerMetadata, boolean fetchFullImage, boolean fetchCreationTime) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("input");
+                    writer.startObject();
+                    writer.writeName("input");
                     input: {
-                        writer.beginObject();
-                        writer.name("key");
-                        writer.value(key.toString());
-                        writer.name("type");
-                        writer.value(type);
-                        writer.name("view_role");
-                        writer.value(viewRole.name());
+                        writer.startObject();
+                        writer.writeName("key");
+                        writer.writeString(key.toString());
+                        writer.writeName("type");
+                        writer.writeString(type);
+                        writer.writeName("view_role");
+                        writer.writeString(viewRole.name());
                         writer.endObject();
                     }
-                    writer.name("fetch_viewer_metadata");
-                    writer.value(fetchViewerMetadata);
-                    writer.name("fetch_full_image");
-                    writer.value(fetchFullImage);
-                    writer.name("fetch_creation_time");
-                    writer.value(fetchCreationTime);
+                    writer.writeName("fetch_viewer_metadata");
+                    writer.writeBool(fetchViewerMetadata);
+                    writer.writeName("fetch_full_image");
+                    writer.writeBool(fetchFullImage);
+                    writer.writeName("fetch_creation_time");
+                    writer.writeBool(fetchCreationTime);
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String recommendedNewsletters(String view, List<String> countryCodes, int limit) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("input");
+                    writer.startObject();
+                    writer.writeName("input");
                     input: {
-                        writer.beginObject();
-                        writer.name("view");
-                        writer.value(view);
-                        writer.name("filters");
+                        writer.startObject();
+                        writer.writeName("view");
+                        writer.writeString(view);
+                        writer.writeName("filters");
                         filters: {
-                            writer.beginObject();
-                            writer.name("country_codes");
-                            writer.beginArray();
+                            writer.startObject();
+                            writer.writeName("country_codes");
+                            writer.startArray();
                             for (String code : countryCodes) {
-                                writer.value(code);
+                                writer.writeString(code);
                             }
                             writer.endArray();
                             writer.endObject();
                         }
-                        writer.name("limit");
-                        writer.value(limit);
+                        writer.writeName("limit");
+                        writer.writeInt32(limit);
                         writer.endObject();
                     }
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String revokeAdminInviteNewsletter(Jid newsletterJid, Jid adminJid) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("newsletter_id");
-                    writer.value(newsletterJid.toString());
-                    writer.name("user_id");
-                    writer.value(adminJid.toString());
+                    writer.startObject();
+                    writer.writeName("newsletter_id");
+                    writer.writeString(newsletterJid.toString());
+                    writer.writeName("user_id");
+                    writer.writeString(adminJid.toString());
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String subscribedNewsletters() {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
+                    writer.startObject();
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String updateNewsletter(Jid newsletterJid, String description) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("newsletter_id");
-                    writer.value(newsletterJid.toString());
-                    writer.name("updates");
+                    writer.startObject();
+                    writer.writeName("newsletter_id");
+                    writer.writeString(newsletterJid.toString());
+                    writer.writeName("updates");
                     updates: {
-                        writer.beginObject();
-                        writer.name("description");
-                        writer.value(description);
+                        writer.startObject();
+                        writer.writeName("description");
+                        writer.writeString(description);
                         writer.endObject();
                     }
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
     public static String acceptAdminInviteNewsletter(Jid newsletterJid) {
-        try (
-                var result = new StringWriter();
-                var writer = Jsonb.builder().build().writer(result)
-        ) {
+        try(var writer = JSONWriter.ofUTF8()) {
             request: {
-                writer.beginObject();
-                writer.name("variables");
+                writer.startObject();
+                writer.writeName("variables");
                 variables: {
-                    writer.beginObject();
-                    writer.name("newsletter_id");
-                    writer.value(newsletterJid.toString());
+                    writer.startObject();
+                    writer.writeName("newsletter_id");
+                    writer.writeString(newsletterJid.toString());
                     writer.endObject();
                 }
                 writer.endObject();
             }
-            return result.toString();
+            try(var output = new StringWriter()) {
+                writer.flushTo(output);
+                return output.toString();
+            }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }

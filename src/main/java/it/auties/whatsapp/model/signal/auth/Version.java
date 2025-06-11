@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -10,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 
 import static java.lang.Integer.parseInt;
 
-@Json
 @ProtobufMessage(name = "ClientPayload.UserAgent.AppVersion")
 public record Version(
         @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
@@ -32,7 +30,6 @@ public record Version(
         this(primary, secondary, tertiary, null, null);
     }
 
-    @Json.Creator
     public static Version of(String version) {
         var tokens = version.split("\\.", 5);
         if (tokens.length > 5) {
@@ -58,7 +55,6 @@ public record Version(
     }
 
     @Override
-    @Json.Value
     public String toString() {
         var result = new StringBuilder();
         if(primary != null) {

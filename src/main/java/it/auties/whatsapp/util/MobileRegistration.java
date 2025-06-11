@@ -1,6 +1,5 @@
 package it.auties.whatsapp.util;
 
-import io.avaje.jsonb.Jsonb;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.AsyncVerificationCodeSupplier;
 import it.auties.whatsapp.controller.Keys;
@@ -85,10 +84,8 @@ public final class MobileRegistration {
                 false
         );
         return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
-            var response = Jsonb.builder()
-                    .build()
-                    .type(RegistrationResponse.class)
-                    .fromJson(result);
+            var response = RegistrationResponse.ofJson(result)
+                    .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
             if (response.errorReason() == VerificationCodeError.INCORRECT) {
                 return CompletableFuture.completedFuture(response);
             }
@@ -164,10 +161,8 @@ public final class MobileRegistration {
     }
 
     private CompletionStage<RegistrationResponse> onCodeRequestSent(RegistrationResponse existsResponse, VerificationCodeError lastError, String result) {
-        var response = Jsonb.builder()
-                .build()
-                .type(RegistrationResponse.class)
-                .fromJson(result);
+        var response = RegistrationResponse.ofJson(result)
+                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
         if (response.status() == VerificationCodeStatus.SUCCESS) {
             return CompletableFuture.completedFuture(response);
         }
@@ -193,10 +188,8 @@ public final class MobileRegistration {
                 ))
                 .thenComposeAsync(attrs -> sendRequest("/register", attrs))
                 .thenComposeAsync(result -> {
-                    var response = Jsonb.builder()
-                            .build()
-                            .type(RegistrationResponse.class)
-                            .fromJson(result);
+                    var response = RegistrationResponse.ofJson(result)
+                            .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
                     if (response.status() == VerificationCodeStatus.SUCCESS) {
                         saveRegistrationStatus(store, keys, true);
                         return CompletableFuture.completedFuture(response);

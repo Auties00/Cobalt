@@ -1,7 +1,5 @@
 package it.auties.whatsapp.socket;
 
-import io.avaje.jsonb.Jsonb;
-import io.avaje.jsonb.Types;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.crypto.AesGcm;
@@ -31,8 +29,9 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
+import it.auties.whatsapp.model.newsletter.NewsletterMetadataBuilder;
 import it.auties.whatsapp.model.newsletter.NewsletterReaction;
+import it.auties.whatsapp.model.newsletter.NewsletterVerification;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -238,22 +237,24 @@ class StreamHandler {
     }
 
     private void updateReceipt(MessageStatus status, Chat chat, Contact participant, ChatMessageInfo message) {
-        var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
-        container.add(participant != null ? participant.jid() : message.senderJid());
-        if(chat == null) {
-            return;
+        var target = participant != null ? participant.jid() : message.senderJid();
+        if(status == MessageStatus.READ) {
+            message.receipt().addReadJid(target);
+        }else {
+            message.receipt().addDeliveredJid(target);
         }
 
-        socketHandler.queryGroupMetadata(chat.jid()).thenAcceptAsync(metadata -> {
-            if (participant != null && metadata.participants().size() != container.size()) {
-                return;
-            }
-
-            switch (status) {
-                case READ -> message.receipt().setReadTimestampSeconds(Clock.nowSeconds());
-                case PLAYED -> message.receipt().setPlayedTimestampSeconds(Clock.nowSeconds());
-            }
-        });
+        if(chat != null && chat.jid().hasServer(JidServer.groupOrCommunity())) {
+            socketHandler.queryGroupMetadata(chat.jid()).thenAcceptAsync(metadata -> {
+                var jids = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
+                if (participant == null || metadata.participants().size() == jids.size()) {
+                    switch (status) {
+                        case READ -> message.receipt().setReadTimestampSeconds(Clock.nowSeconds());
+                        case PLAYED -> message.receipt().setPlayedTimestampSeconds(Clock.nowSeconds());
+                    }
+                }
+            });
+        }
     }
 
     private List<String> getReceiptsMessageIds(Node node) {
@@ -456,90 +457,88 @@ class StreamHandler {
     private void handleNewsletterStateUpdate(Node update) {
         var updatePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing state update payload"));
-        NewsletterStateResponse.ofJson(updatePayload)
-                .jid()
-                .ifPresent(newsletterJid -> {
-                    var newsletter = socketHandler.store()
-                            .findNewsletterByJid(newsletterJid)
-                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-                    newsletter.setState(updateJson.state());
-                });
+        NewsletterStateResponse.ofJson(updatePayload).ifPresent(response -> {
+            var newsletter = socketHandler.store()
+                    .findNewsletterByJid(response.jid())
+                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+            response.state()
+                    .ifPresent(newsletter::setState);
+        });
     }
 
     private void handleNewsletterMetadataUpdate(Node update) {
-        var updatePayload = update.contentAsString()
+        var updatePayload = update.contentAsBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing update payload"));
-        NewsletterResponse.ofJson(updatePayload)
-                .newsletter()
-                .ifPresent(updatedNewsletter -> {
-                    var newsletter = socketHandler.store()
-                            .findNewsletterByJid(updatedNewsletter.jid())
-                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-                    var updatedMetadata = updatedNewsletter.metadata()
-                            .orElse(null);
-                    var oldMetadata = newsletter.metadata()
-                            .orElse(null);
-                    if(oldMetadata == null) {
-                        newsletter.setMetadata(updatedMetadata);
-                    }else if (updatedMetadata != null) {
-                        var name = updatedMetadata.name()
-                                .or(oldMetadata::name)
-                                .orElse(null);
-                        var description = updatedMetadata.description()
-                                .or(oldMetadata::description)
-                                .orElse(null);
-                        var picture = updatedMetadata.picture()
-                                .or(oldMetadata::picture)
-                                .orElse(null);
-                        var handle = updatedMetadata.handle()
-                                .or(oldMetadata::handle)
-                                .orElse(null);
-                        var settings = updatedMetadata.settings()
-                                .or(oldMetadata::settings)
-                                .orElse(null);
-                        var invite = updatedMetadata.invite()
-                                .or(oldMetadata::invite)
-                                .orElse(null);
-                        var verification = updatedMetadata.verification() || oldMetadata.verification();
-                        var creationTimestamp = updatedMetadata.creationTimestamp()
-                                .or(oldMetadata::creationTimestamp)
-                                .map(ChronoZonedDateTime::toEpochSecond)
-                                .orElse(0L);
-                        var mergedMetadata = new NewsletterMetadata(
-                                name,
-                                description,
-                                picture,
-                                handle,
-                                settings,
-                                invite,
-                                verification,
-                                creationTimestamp
-                        );
-                        newsletter.setMetadata(mergedMetadata);
-                    }
-                });
+        NewsletterResponse.ofJson(updatePayload).ifPresent(response -> {
+            var updatedNewsletter = response.newsletter();
+            var newsletter = socketHandler.store()
+                    .findNewsletterByJid(updatedNewsletter.jid())
+                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+            var updatedMetadata = updatedNewsletter.metadata()
+                    .orElse(null);
+            var oldMetadata = newsletter.metadata()
+                    .orElse(null);
+            if(oldMetadata == null) {
+                newsletter.setMetadata(updatedMetadata);
+            }else if (updatedMetadata != null) {
+                var name = updatedMetadata.name()
+                        .or(oldMetadata::name)
+                        .orElse(null);
+                var description = updatedMetadata.description()
+                        .or(oldMetadata::description)
+                        .orElse(null);
+                var picture = updatedMetadata.picture()
+                        .or(oldMetadata::picture)
+                        .orElse(null);
+                var handle = updatedMetadata.handle()
+                        .or(oldMetadata::handle)
+                        .orElse(null);
+                var settings = updatedMetadata.settings()
+                        .or(oldMetadata::settings)
+                        .orElse(null);
+                var invite = updatedMetadata.invite()
+                        .or(oldMetadata::invite)
+                        .orElse(null);
+                var verification = updatedMetadata.verification().filter(NewsletterVerification::verified).isPresent() || oldMetadata.verification().filter(NewsletterVerification::verified).isPresent()
+                        ? NewsletterVerification.enabled()
+                        : NewsletterVerification.disabled();
+                var creationTimestamp = updatedMetadata.creationTimestamp()
+                        .or(oldMetadata::creationTimestamp)
+                        .map(ChronoZonedDateTime::toEpochSecond)
+                        .orElse(0L);
+                var mergedMetadata = new NewsletterMetadataBuilder()
+                        .name(name)
+                        .description(description)
+                        .picture(picture)
+                        .handle(handle)
+                        .settings(settings)
+                        .invite(invite)
+                        .verification(verification)
+                        .creationTimestampSeconds(creationTimestamp)
+                        .build();
+                newsletter.setMetadata(mergedMetadata);
+            }
+        });
     }
 
     private void handleNewsletterJoin(Node update) {
-        var joinPayload = update.contentAsString()
+        var joinPayload = update.contentAsBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing join payload"));
-        NewsletterResponse.ofJson(joinPayload)
-                .newsletter()
-                .ifPresent(newsletter -> {
-                    socketHandler.store().addNewsletter(newsletter);
-                    if(!socketHandler.store().webHistorySetting().isZero()) {
-                        socketHandler.queryNewsletterMessages(newsletter.jid(), DEFAULT_NEWSLETTER_MESSAGES);
-                    }
-                });
+        NewsletterResponse.ofJson(joinPayload).ifPresent(response -> {
+            var newsletter = response.newsletter();
+            socketHandler.store().addNewsletter(newsletter);
+            if(!socketHandler.store().webHistorySetting().isZero()) {
+                socketHandler.queryNewsletterMessages(newsletter.jid(), DEFAULT_NEWSLETTER_MESSAGES);
+            }
+        });
     }
 
     private void handleNewsletterMute(Node update) {
         var mutePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing mute payload"));
-        var response = NewsletterMuteResponse.ofJson(mutePayload);
-        response.jid().ifPresent(newsletterJid -> {
+        NewsletterMuteResponse.ofJson(mutePayload).ifPresent(response -> {
             var newsletter = socketHandler.store()
-                    .findNewsletterByJid(newsletterJid)
+                    .findNewsletterByJid(response.jid())
                     .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
             newsletter.viewerMetadata()
                     .ifPresent(viewerMetadata -> viewerMetadata.setMute(response.mute()));
@@ -733,24 +732,17 @@ class StreamHandler {
 
     private List<String> getStubTypeParameters(Node metadata) {
         var attributes = new ArrayList<String>();
-        attributes.add(toJson(metadata.attributes()));
+        attributes.add(metadata.attributes().toJson());
         for (var child : metadata.children()) {
             var data = child.attributes();
             if (data.isEmpty()) {
                 continue;
             }
 
-            attributes.add(toJson(data));
+            attributes.add(data.toJson());
         }
 
         return Collections.unmodifiableList(attributes);
-    }
-
-    private String toJson(Attributes attributes) {
-        return Jsonb.builder()
-                .build()
-                .type(Types.mapOf(Object.class))
-                .toJson(attributes);
     }
 
     private void handleEncryptNotification(Node node) {
@@ -1229,30 +1221,28 @@ class StreamHandler {
             return;
         }
 
-        var result = Jsonb.builder()
-                .build()
-                .type(SubscribedNewslettersResponse.class)
-                .fromJson(newslettersPayload.get());
-        var noMessages = socketHandler.store().webHistorySetting().isZero();
-        var data = result.newsletters();
-        var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
-        for (var index = 0; index < data.size(); index++) {
-            var newsletter = data.get(index);
-            socketHandler.store().addNewsletter(newsletter);
-            if(!noMessages) {
-                futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES)
-                        .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+        SubscribedNewslettersResponse.ofJson(newslettersPayload.get()).ifPresent(result -> {
+            var noMessages = socketHandler.store().webHistorySetting().isZero();
+            var data = result.newsletters();
+            var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
+            for (var index = 0; index < data.size(); index++) {
+                var newsletter = data.get(index);
+                socketHandler.store().addNewsletter(newsletter);
+                if(!noMessages) {
+                    futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES)
+                            .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+                }
             }
-        }
 
-        if(noMessages) {
-            socketHandler.onNewsletters();
-            return;
-        }
+            if(noMessages) {
+                socketHandler.onNewsletters();
+                return;
+            }
 
-        CompletableFuture.allOf(futures)
-                .thenRun(socketHandler::onNewsletters)
-                .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+            CompletableFuture.allOf(futures)
+                    .thenRun(socketHandler::onNewsletters)
+                    .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+        });
     }
 
     private CompletableFuture<Void> queryGroups() {
