@@ -26,7 +26,7 @@ public final class InteractiveNativeFlow implements InteractiveMessageContent {
 
     InteractiveNativeFlow(List<InteractiveButton> buttons, String parameters, int version) {
         this.buttons = Objects.requireNonNullElse(buttons, List.of());
-        this.parameters = Objects.requireNonNull(parameters, "parameters cannot be null");
+        this.parameters = parameters;
         this.version = version;
     }
 

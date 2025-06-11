@@ -2,7 +2,6 @@ package it.auties.whatsapp.socket;
 
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.LTHash;
 import it.auties.whatsapp.exception.HmacValidationException;
@@ -154,7 +153,7 @@ class AppStateHandler {
             var encrypted = new byte[iv.length + encryptedLength];
             System.arraycopy(iv, 0, encrypted, 0, iv.length);
             cipher.doFinal(encoded, 0, encoded.length, encrypted, iv.length);
-            var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
+            var valueMac = generateMac(patch.operation(), encrypted, encrypted.length, key.keyId().keyId(), mutationKeys.macKey());
             var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
             var record = new RecordSyncBuilder()
                     .index(new IndexSync(indexMac))
@@ -636,36 +635,45 @@ class AppStateHandler {
     }
 
     private Optional<ActionDataSync> decodeMutation(Jid jid, RecordSync.Operation operation, RecordSync sync, LTHash generator) {
-        var mutationKeys = getMutationKeys(jid, sync.keyId());
-        if (mutationKeys.isEmpty()) {
-            return Optional.empty();
-        }
-        var blob = sync.value().blob();
-        var encryptedBlob = Arrays.copyOfRange(blob, 0, blob.length - SignalConstants.KEY_LENGTH);
-        var encryptedMac = Arrays.copyOfRange(blob, blob.length - SignalConstants.KEY_LENGTH, blob.length);
-        if(socketHandler.store().checkPatchMacs()) {
-            var expectedMac = generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.get().macKey());
-            if(!Arrays.equals(encryptedMac, expectedMac)) {
-                throw new HmacValidationException("decode_mutation");
+        try {
+            var mutationKeys = getMutationKeys(jid, sync.keyId());
+            if (mutationKeys.isEmpty()) {
+                return Optional.empty();
             }
-        }
-        var result = AesCbc.decrypt(encryptedBlob, mutationKeys.get().encKey());
-        var actionSync = ActionDataSyncSpec.decode(result);
-        if(socketHandler.store().checkPatchMacs()) {
-            var expectedMac = Hmac.calculateSha256(actionSync.index(), mutationKeys.get().indexKey());
-            if(!Arrays.equals(sync.index().blob(), expectedMac)) {
-                throw new HmacValidationException("decode_mutation");
+
+            var blob = sync.value().blob();
+            if(socketHandler.store().checkPatchMacs()) {
+                var expectedMac = generateMac(operation, blob, blob.length - SignalConstants.KEY_LENGTH, sync.keyId().id(), mutationKeys.get().macKey());
+                if(!Arrays.equals(
+                        blob, blob.length - SignalConstants.KEY_LENGTH, blob.length,
+                        expectedMac, 0, SignalConstants.KEY_LENGTH
+                )) {
+                    throw new HmacValidationException("decode_mutation");
+                }
             }
+            var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            var keySpec = new SecretKeySpec(mutationKeys.get().encKey(), "AES");
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(blob, 0, 16));
+            var result = cipher.doFinal(blob, 16, blob.length - SignalConstants.KEY_LENGTH - 16);
+            var actionSync = ActionDataSyncSpec.decode(result);
+            if(socketHandler.store().checkPatchMacs()) {
+                var expectedMac = Hmac.calculateSha256(actionSync.index(), mutationKeys.get().indexKey());
+                if(!Arrays.equals(sync.index().blob(), expectedMac)) {
+                    throw new HmacValidationException("decode_mutation");
+                }
+            }
+            generator.mix(sync.index().blob(), Arrays.copyOfRange(blob, blob.length - SignalConstants.KEY_LENGTH, blob.length), operation);
+            return Optional.of(actionSync);
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot decrypt data", exception);
         }
-        generator.mix(sync.index().blob(), encryptedMac, operation);
-        return Optional.of(actionSync);
     }
 
-    private byte[] generateMac(RecordSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {
-        var total = new byte[1 + keyId.length + data.length + SignalConstants.MAC_LENGTH];
+    private byte[] generateMac(RecordSync.Operation operation, byte[] data, int dataLength, byte[] keyId, byte[] key) {
+        var total = new byte[1 + keyId.length + dataLength + SignalConstants.MAC_LENGTH];
         total[0] = operation.content();
         System.arraycopy(keyId, 0, total, 1, keyId.length);
-        System.arraycopy(data, 0, total, 1 + keyId.length, data.length);
+        System.arraycopy(data, 0, total, 1 + keyId.length, dataLength);
         total[total.length - 1] = (byte) (keyId.length + 1);
         var sha512 = Hmac.calculateSha512(total, key);
         return Arrays.copyOfRange(sha512, 0, SignalConstants.KEY_LENGTH);

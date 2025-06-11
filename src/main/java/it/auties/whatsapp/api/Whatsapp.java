@@ -3,7 +3,6 @@ package it.auties.whatsapp.api;
 import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.model.action.*;
@@ -41,9 +40,13 @@ import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -2555,46 +2558,68 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> requireMediaReupload(ChatMessageInfo info) {
-        if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
-            throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
-        }
+        try {
+            if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
+                throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
+            }
 
-        var mediaKey = mediaMessage.mediaKey()
-                .orElseThrow(() -> new NoSuchElementException("Missing media key"));
-        var retryKey = Hkdf.extractAndExpand(mediaKey, "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
-        var retryIv = Bytes.random(12);
-        var retryIdData = info.key().id().getBytes(StandardCharsets.UTF_8);
-        var receipt = ServerErrorReceiptSpec.encode(new ServerErrorReceipt(info.id()));
-        var ciphertext = AesGcm.encrypt(retryIv, receipt, retryKey, retryIdData);
-        var rmrAttributes = Attributes.of()
-                .put("jid", info.chatJid())
-                .put("from_me", String.valueOf(info.fromMe()))
-                .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
-                .toMap();
-        var node = Node.of("receipt", Map.of("id", info.key().id(), "to", jidOrThrowError()
-                .toSimpleJid(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.of("rmr", rmrAttributes));
-        return socketHandler.sendNode(node, result -> result.hasDescription("notification"))
-                .thenAcceptAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
+            var mediaKey = mediaMessage.mediaKey()
+                    .orElseThrow(() -> new NoSuchElementException("Missing media key"));
+            var retryKey = Hkdf.extractAndExpand(mediaKey, "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
+            var receipt = ServerErrorReceiptSpec.encode(new ServerErrorReceipt(info.id()));
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(retryKey, "AES"),
+                    new GCMParameterSpec(128, Bytes.random(12))
+            );
+            cipher.updateAAD(info.key().id().getBytes(StandardCharsets.UTF_8));
+            var ciphertext = cipher.update(receipt);
+            var rmrAttributes = Attributes.of()
+                    .put("jid", info.chatJid())
+                    .put("from_me", String.valueOf(info.fromMe()))
+                    .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
+                    .toMap();
+            var node = Node.of("receipt", Map.of("id", info.key().id(), "to", jidOrThrowError()
+                    .toSimpleJid(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", Bytes.random(12))), Node.of("rmr", rmrAttributes));
+            return socketHandler.sendNode(node, result -> result.hasDescription("notification"))
+                    .thenAcceptAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, info.key().id().getBytes(StandardCharsets.UTF_8), result));
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot encrypt media reupload", exception);
+        }
     }
 
     private void parseMediaReupload(ChatMessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
-        if (node.hasNode("error")) {
-            throw new IllegalArgumentException("Erroneous response from media reupload: " + node.attributes().getInt("code"));
+        try {
+            if (node.hasNode("error")) {
+                throw new IllegalArgumentException("Erroneous response from media reupload: " + node.attributes().getInt("code"));
+            }
+            var encryptNode = node.findChild("encrypt")
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
+            var mediaPayload = encryptNode.findChild("enc_p")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypted payload node in media reupload"));
+            var mediaIv = encryptNode.findChild("enc_iv")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(retryKey, "AES"),
+                    new GCMParameterSpec(128, mediaIv)
+            );
+            if(retryIdData != null) {
+                cipher.updateAAD(retryIdData);
+            }
+            var mediaRetryNotificationData = cipher.doFinal(mediaPayload);
+            var mediaRetryNotification = MediaRetryNotificationSpec.decode(mediaRetryNotificationData);
+            var directPath = mediaRetryNotification.directPath()
+                    .orElseThrow(() -> new RuntimeException("Media reupload failed"));
+            mediaMessage.setMediaUrl(Medias.createMediaUrl(directPath));
+            mediaMessage.setMediaDirectPath(directPath);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot decrypt media reupload", exception);
         }
-        var encryptNode = node.findChild("encrypt")
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
-        var mediaPayload = encryptNode.findChild("enc_p")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypted payload node in media reupload"));
-        var mediaIv = encryptNode.findChild("enc_iv")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
-        var mediaRetryNotificationData = AesGcm.decrypt(mediaIv, mediaPayload, retryKey, retryIdData);
-        var mediaRetryNotification = MediaRetryNotificationSpec.decode(mediaRetryNotificationData);
-        var directPath = mediaRetryNotification.directPath()
-                .orElseThrow(() -> new RuntimeException("Media reupload failed"));
-        mediaMessage.setMediaUrl(Medias.createMediaUrl(directPath));
-        mediaMessage.setMediaDirectPath(directPath);
     }
 
     /**

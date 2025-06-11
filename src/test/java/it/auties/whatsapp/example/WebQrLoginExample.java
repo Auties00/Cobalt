@@ -9,7 +9,7 @@ public class WebQrLoginExample {
     public static void main(String[] args) {
         Whatsapp.webBuilder()
                 .newConnection()
-                .historySetting(WebHistorySetting.standard(false))
+                .historySetting(WebHistorySetting.extended(false))
                 .unregistered(QrHandler.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))

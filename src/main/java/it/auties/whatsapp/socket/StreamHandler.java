@@ -2,7 +2,6 @@ package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
-import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
@@ -51,6 +50,7 @@ import it.auties.whatsapp.util.Clock;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -553,39 +553,48 @@ class StreamHandler {
     }
 
     private void handleCompanionRegistration(Node node) {
-        var phoneNumber = getPhoneNumberAsJid();
-        var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
-                .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
-        var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
-        var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
-        var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
-        var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
-        var companionSharedKey = Curve25519.sharedKey(codePairingPublicKey, socketHandler.keys().companionKeyPair().privateKey());
-        var random = Bytes.random(32);
-        var linkCodeSalt = Bytes.random(32);
-        var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
-        var encryptPayload = Bytes.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
-        var encryptIv = Bytes.random(12);
-        var encrypted = AesGcm.encrypt(encryptIv, encryptPayload, linkCodePairingExpanded);
-        var encryptedPayload = Bytes.concat(linkCodeSalt, encryptIv, encrypted);
-        var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
-        var identityPayload = Bytes.concat(companionSharedKey, identitySharedKey, random);
-        var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
-        socketHandler.keys().setCompanionKeyPair(new SignalKeyPair(advSecretPublicKey, socketHandler.keys().companionKeyPair().privateKey()));
-        var confirmation = Node.of(
-                "link_code_companion_reg",
-                Map.of("jid", phoneNumber, "stage", "companion_finish"),
-                Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
-                Node.of("companion_identity_public", socketHandler.keys().identityKeyPair().publicKey()),
-                Node.of("link_code_pairing_ref", ref)
-        );
-        socketHandler.sendQuery("set", "md", confirmation);
+        try {
+            var phoneNumber = getPhoneNumberAsJid();
+            var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
+                    .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
+            var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
+            var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
+            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
+            var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
+            var companionSharedKey = Curve25519.sharedKey(codePairingPublicKey, socketHandler.keys().companionKeyPair().privateKey());
+            var random = Bytes.random(32);
+            var linkCodeSalt = Bytes.random(32);
+            var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
+            var encryptPayload = Bytes.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(linkCodePairingExpanded, "AES"),
+                    new GCMParameterSpec(128, Bytes.random(12))
+            );
+            var encrypted = cipher.doFinal(encryptPayload);
+            var encryptedPayload = Bytes.concat(linkCodeSalt, Bytes.random(12), encrypted);
+            var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
+            var identityPayload = Bytes.concat(companionSharedKey, identitySharedKey, random);
+            var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
+            socketHandler.keys().setCompanionKeyPair(new SignalKeyPair(advSecretPublicKey, socketHandler.keys().companionKeyPair().privateKey()));
+            var confirmation = Node.of(
+                    "link_code_companion_reg",
+                    Map.of("jid", phoneNumber, "stage", "companion_finish"),
+                    Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
+                    Node.of("companion_identity_public", socketHandler.keys().identityKeyPair().publicKey()),
+                    Node.of("link_code_pairing_ref", ref)
+            );
+            socketHandler.sendQuery("set", "md", confirmation);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot encrypt companion registration", exception);
+        }
     }
 
     private byte[] decipherLinkPublicKey(byte[] primaryEphemeralPublicKeyWrapped) {

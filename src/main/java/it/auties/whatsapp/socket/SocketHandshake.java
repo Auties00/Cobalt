@@ -2,12 +2,15 @@ package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.io.BinaryTokens;
 import it.auties.whatsapp.util.Bytes;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -54,15 +57,34 @@ class SocketHandshake {
     }
 
     byte[] cipher(byte[] bytes, boolean encrypt) {
-        if (encrypt) {
-            var ciphered = AesGcm.encrypt(counter++, bytes, cryptoKey, hash);
-            updateHash(ciphered);
-            return ciphered;
-        } else {
-            var deciphered = AesGcm.decrypt(counter++, bytes, cryptoKey, hash);
-            updateHash(bytes);
-            return deciphered;
+        try {
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(cryptoKey, "AES"),
+                    makeIv()
+            );
+            cipher.updateAAD(hash);
+            var result = cipher.doFinal(bytes);
+            updateHash(encrypt ? result : bytes);
+            return result;
+        }catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot encrypt data", exception);
         }
+    }
+
+    private GCMParameterSpec makeIv() {
+        var counter = this.counter++;
+        var iv = new byte[12];
+        iv[4] = (byte) (counter >> 56);
+        iv[5] = (byte) (counter >> 48);
+        iv[6] = (byte) (counter >> 40);
+        iv[7] = (byte) (counter >> 32);
+        iv[8] = (byte) (counter >> 24);
+        iv[9] = (byte) (counter >> 16);
+        iv[10] = (byte) (counter >> 8);
+        iv[11] = (byte) (counter);
+        return new GCMParameterSpec(128, iv);
     }
 
     void finish() {

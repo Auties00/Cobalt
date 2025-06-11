@@ -4,7 +4,6 @@ import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.AsyncVerificationCodeSupplier;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.exception.RegistrationException;
 import it.auties.whatsapp.model.mobile.VerificationCodeError;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
@@ -12,11 +11,15 @@ import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -215,26 +218,36 @@ public final class MobileRegistration {
     }
 
     private CompletableFuture<String> sendRequest(String path, String params) {
-        var keypair = SignalKeyPair.random();
-        var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey());
-        var buffer = AesGcm.encrypt(new byte[12], params.getBytes(StandardCharsets.UTF_8), key);
-        var encoder = Base64.getUrlEncoder();
-        var cipheredParameters = encoder.encodeToString(keypair.publicKey()) + encoder.encodeToString(buffer);
-        var userAgent = store.device()
-                .toUserAgent(store.version())
-                .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create("%s%s?ENC=%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
-                .GET()
-                .header("User-Agent", userAgent);
-        if(store.device().platform().isAndroid()) {
-            request.header("Accept", "text/json")
-                    .header("WaMsysRequest", "1")
-                    .header("request_token", UUID.randomUUID().toString())
-                    .header("Content-Type", "application/x-www-form-urlencoded");
+        try {
+            var keypair = SignalKeyPair.random();
+            var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey());
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(key, "AES"),
+                    new GCMParameterSpec(128, new byte[12])
+            );
+            var result = cipher.doFinal(params.getBytes(StandardCharsets.UTF_8));
+            var encoder = Base64.getUrlEncoder();
+            var cipheredParameters = encoder.encodeToString(keypair.publicKey()) + encoder.encodeToString(result);
+            var userAgent = store.device()
+                    .toUserAgent(store.version())
+                    .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create("%s%s?ENC=%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
+                    .GET()
+                    .header("User-Agent", userAgent);
+            if(store.device().platform().isAndroid()) {
+                request.header("Accept", "text/json")
+                        .header("WaMsysRequest", "1")
+                        .header("request_token", UUID.randomUUID().toString())
+                        .header("Content-Type", "application/x-www-form-urlencoded");
+            }
+            return httpClient.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot encrypt request", exception);
         }
-        return httpClient.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body);
     }
 
     private CompletableFuture<String> getRegistrationOptions(Store store, Keys keys, boolean useToken, String... attributes) {
