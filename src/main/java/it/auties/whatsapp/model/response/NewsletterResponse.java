@@ -27,12 +27,12 @@ public final class NewsletterResponse {
             return Optional.empty();
         }
 
-        var newsletterJsonObject = data.getJSONObject("newsletter");
-        if(newsletterJsonObject == null) {
+        var dataKeys = data.sequencedKeySet();
+        if(dataKeys.isEmpty()) {
             return Optional.empty();
         }
 
-        var newsletter = Newsletter.ofJson(newsletterJsonObject);
+        var newsletter = Newsletter.ofJson(data.getJSONObject(dataKeys.getFirst()));
         if(newsletter.isEmpty()) {
             return Optional.empty();
         }

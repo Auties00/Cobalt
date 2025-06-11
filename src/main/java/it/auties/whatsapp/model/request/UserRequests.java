@@ -12,11 +12,13 @@ public class UserRequests {
             request: {
                 writer.startObject();
                 writer.writeName("variables");
+                writer.writeColon();
                 variables: {
                     writer.startArray();
                     variable: {
                         writer.startObject();
                         writer.writeName("user_id");
+                        writer.writeColon();
                         writer.writeString(user);
                         writer.endObject();
                     }

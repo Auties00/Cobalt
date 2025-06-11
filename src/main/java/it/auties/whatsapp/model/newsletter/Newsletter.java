@@ -61,12 +61,13 @@ public final class Newsletter implements JidProvider {
                 .orElse(null);
         var messagesJsonObjects = newsletter.getJSONArray("messages");
         var messages = new ConcurrentLinkedSet<NewsletterMessageInfo>();
-        for(var i = 0; i < messagesJsonObjects.size(); i++) {
-            var messageJsonObject = messagesJsonObjects.getJSONObject(i);
-            NewsletterMessageInfo.ofJson(messageJsonObject)
-                    .ifPresent(messages::add);
+        if(messagesJsonObjects != null) {
+            for (var i = 0; i < messagesJsonObjects.size(); i++) {
+                var messageJsonObject = messagesJsonObjects.getJSONObject(i);
+                NewsletterMessageInfo.ofJson(messageJsonObject)
+                        .ifPresent(messages::add);
+            }
         }
-
         var result = new Newsletter(jid, state, metadata, viewerMetadata, messages);
         return Optional.of(result);
     }

@@ -14,14 +14,18 @@ public final class CommunityRequests {
             request: {
                 writer.startObject();
                 writer.writeName("variables");
+                writer.writeColon();
                 variables: {
                     writer.startObject();
                     writer.writeName("input");
+                    writer.writeColon();
                     input: {
                         writer.startObject();
                         writer.writeName("group_jid");
+                        writer.writeColon();
                         writer.writeString(community.toString());
                         writer.writeName("query_context");
+                        writer.writeColon();
                         writer.writeString(context);
                         writer.endObject();
                     }
@@ -43,11 +47,14 @@ public final class CommunityRequests {
             request: {
                 writer.startObject();
                 writer.writeName("variables");
+                writer.writeColon();
                 variables: {
                     writer.startObject();
                     writer.writeName("allow_non_admin_sub_group_creation");
+                    writer.writeColon();
                     writer.writeBool(anyone);
                     writer.writeName("id");
+                    writer.writeColon();
                     writer.writeString(community.toString());
                     writer.endObject();
                 }

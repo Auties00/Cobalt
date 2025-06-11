@@ -1556,8 +1556,7 @@ public class Whatsapp {
     }
 
     private Jid checkGroupParticipantJid(Jid jid, String errorMessage) {
-        var self = Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid());
-        if (self) {
+        if (Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid())) {
             throw new IllegalArgumentException(errorMessage);
         }
 
@@ -1651,18 +1650,19 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> changeProfilePicture(ByteBuffer image) {
-        var profilePic = image != null ? Medias.getProfilePic(image) : null;
+        byte[] data = null;
+        if(image != null) {
+            if(!image.hasRemaining()) {
+                throw new IllegalArgumentException("Empty image is not allowed");
+            }
+            data = Medias.getProfilePic(image);
+        }
+        var body = Node.of("picture", Map.of("type", "image"), data);
         return switch (store().clientType()) {
-            case WEB -> {
-                var body = Node.of("picture", Map.of("type", "image"), profilePic);
-                yield socketHandler.sendQuery("set", "w:profile:picture", Map.of("target", jidOrThrowError().toSimpleJid()), body)
-                        .thenRun(() -> {});
-            }
-            case MOBILE -> {
-                var body = Node.of("picture", Map.of("type", "image"), profilePic);
-                yield socketHandler.sendQuery(jidOrThrowError(), "set", "w:profile:picture", body)
-                        .thenRun(() -> {});
-            }
+            case WEB -> socketHandler.sendQuery("set", "w:profile:picture", body)
+                    .thenRun(() -> {});
+            case MOBILE -> socketHandler.sendQuery(jidOrThrowError(), "set", "w:profile:picture", body)
+                    .thenRun(() -> {});
         };
     }
 
@@ -3281,7 +3281,8 @@ public class Whatsapp {
             return Optional.empty();
         }
 
-        var content = result.get().contentAsBytes();
+        var content = result.get()
+                .contentAsBytes();
         if(content.isEmpty()) {
             return Optional.empty();
         }

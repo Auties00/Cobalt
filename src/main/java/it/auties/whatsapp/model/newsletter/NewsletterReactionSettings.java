@@ -35,9 +35,11 @@ public final class NewsletterReactionSettings {
 
         var value = Type.of(jsonObject.getString("type"));
         var blockedCodesJsonValues = jsonObject.getJSONArray("blocked_codes");
-        var blockedCodes = new ArrayList<String>(blockedCodesJsonValues.size());
-        for(var i = 0; i < blockedCodesJsonValues.size(); i++) {
-            blockedCodes.set(i, blockedCodesJsonValues.getString(i));
+        var blockedCodes = blockedCodesJsonValues == null ? new ArrayList<String>() : new ArrayList<String>(blockedCodesJsonValues.size());
+        if(blockedCodesJsonValues != null) {
+            for (var i = 0; i < blockedCodesJsonValues.size(); i++) {
+                blockedCodes.add(blockedCodesJsonValues.getString(i));
+            }
         }
         var enabledTimestampSeconds = jsonObject.getLongValue("enabled_ts_sec", 0);
         var result = new NewsletterReactionSettings(value, blockedCodes, enabledTimestampSeconds);

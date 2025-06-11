@@ -10,7 +10,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public record SocketRequest(String id, Object body, CompletableFuture<Node> future, Function<Node, Boolean> filter) {
     private static final int TIMEOUT = 60;
-    private static final Node DEFAULT_RESPONSE = Node.of("xmlstreamend");
 
     SocketRequest(String id, Function<Node, Boolean> filter, Object body) {
         this(id, body, futureOrTimeout(body), filter);
@@ -24,12 +23,8 @@ public record SocketRequest(String id, Object body, CompletableFuture<Node> futu
                 });
     }
 
-    public boolean complete() {
-        return complete(DEFAULT_RESPONSE);
-    }
-
     public boolean complete(Node response) {
-        var acceptable =  response == DEFAULT_RESPONSE
+        var acceptable = response == Node.empty()
                 || filter == null
                 || filter.apply(response);
         if(acceptable) {

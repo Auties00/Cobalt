@@ -49,7 +49,7 @@ public final class Medias {
     private static final int THUMBNAIL_SIZE = 32;
     private static final int MAC_LENGTH = 10;
 
-    public static ByteBuffer getProfilePic(ByteBuffer file) {
+    public static byte[] getProfilePic(ByteBuffer file) {
         try {
             try (var inputStream = Streams.newInputStream(file)) {
                 var inputImage = ImageIO.read(inputStream);
@@ -60,11 +60,11 @@ public final class Medias {
                 graphics2D.dispose();
                 try (var outputStream = Streams.newByteArrayOutputStream()) {
                     ImageIO.write(outputImage, "jpg", outputStream);
-                    return ByteBuffer.wrap(outputStream.toByteArray());
+                    return outputStream.toByteArray();
                 }
             }
         } catch (Throwable exception) {
-            return file;
+            throw new RuntimeException("Cannot get profile pic", exception);
         }
     }
 
@@ -185,7 +185,6 @@ public final class Medias {
             mac.update(encrypted.position(0).limit(encryptedLengthNoMac));
             var hmacSha256 = mac.doFinal();
             encrypted.put(encryptedLengthNoMac, hmacSha256);
-
 
             digest.update(encrypted.position(0)
                     .limit(encrypted.capacity()));
