@@ -10,12 +10,7 @@ module it.auties.cobalt {
 
     // Serialization (Protobuf, JSON)
     requires it.auties.protobuf.base;
-    requires io.avaje.jsonb;
-    provides io.avaje.jsonb.spi.JsonbExtension
-            with it.auties.whatsapp.jsonb.GeneratedJsonComponent,
-                    it.auties.whatsapp.model.newsletter.NewsletterJsonComponent,
-                    it.auties.whatsapp.model.response.ResponseJsonComponent,
-                    it.auties.whatsapp.util.UtilJsonComponent;
+    requires com.alibaba.fastjson2;
 
     // Generate message previews
     requires it.auties.linkpreview;

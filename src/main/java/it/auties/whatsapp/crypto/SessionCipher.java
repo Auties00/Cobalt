@@ -121,28 +121,34 @@ public record SessionCipher(SessionAddress address, Keys keys) {
     }
 
     private byte[] decrypt(SignalMessage message, SessionState state) {
-        maybeStepRatchet(message, state);
-        var chain = state.findChain(message.ephemeralPublicKey())
-                .orElseThrow(() -> new NoSuchElementException("Invalid chain"));
-        fillMessageKeys(chain, message.counter());
-        if (!chain.hasMessageKey(message.counter())) {
-            throw new IllegalArgumentException("Key used already or never filled");
+        try {
+            maybeStepRatchet(message, state);
+            var chain = state.findChain(message.ephemeralPublicKey())
+                    .orElseThrow(() -> new NoSuchElementException("Invalid chain"));
+            fillMessageKeys(chain, message.counter());
+            if (!chain.hasMessageKey(message.counter())) {
+                throw new IllegalArgumentException("Key used already or never filled");
+            }
+            var messageKeyCounter = message.counter();
+            var messageKey = chain.getMessageKey(messageKeyCounter)
+                    .orElseThrow(() -> new NoSuchElementException("Missing key in chain for counter " + messageKeyCounter));
+            var secrets = Hkdf.deriveSecrets(messageKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+            var expectedSignature = message.signature();
+            var remoteIdentityKey = state.remoteIdentityKey();
+            var identityPublicKey = keys.identityKeyPair().signalPublicKey();
+            var actualSignature = computeDecryptionMac(message, remoteIdentityKey, identityPublicKey, secrets[1]);
+            if(!Arrays.equals(expectedSignature, 0, MAC_LENGTH, actualSignature, 0, MAC_LENGTH)) {
+                throw new HmacValidationException("message_decryption");
+            }
+            var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            var keySpec = new SecretKeySpec(secrets[0], "AES");
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(secrets[2], 0, IV_LENGTH));
+            var plaintext = cipher.doFinal(message.ciphertext());
+            state.pendingPreKey(null);
+            return plaintext;
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot decrypt data", exception);
         }
-        var messageKeyCounter = message.counter();
-        var messageKey = chain.getMessageKey(messageKeyCounter)
-                .orElseThrow(() -> new NoSuchElementException("Missing key in chain for counter " + messageKeyCounter));
-        var secrets = Hkdf.deriveSecrets(messageKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
-        var expectedSignature = message.signature();
-        var remoteIdentityKey = state.remoteIdentityKey();
-        var identityPublicKey = keys.identityKeyPair().signalPublicKey();
-        var actualSignature = computeDecryptionMac(message, remoteIdentityKey, identityPublicKey, secrets[1]);
-        if(!Arrays.equals(expectedSignature, 0, MAC_LENGTH, actualSignature, 0, MAC_LENGTH)) {
-            throw new HmacValidationException("message_decryption");
-        }
-        var iv = Arrays.copyOf(secrets[2], IV_LENGTH);
-        var plaintext = AesCbc.decrypt(iv, message.ciphertext(), secrets[0]);
-        state.pendingPreKey(null);
-        return plaintext;
     }
 
     private byte[] computeDecryptionMac(SignalMessage message, byte[] signalRemoteIdentityKey, byte[] signalIdentityPublicKey, byte[] hmacKey) {

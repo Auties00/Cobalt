@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.node;
 
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.*;
@@ -429,5 +430,9 @@ public record Attributes(LinkedHashMap<String, Object> toMap) {
 
     public Stream<Map.Entry<String, Object>> stream() {
         return toMap.entrySet().stream();
+    }
+
+    public String toJson() {
+        return JSON.toJSONString(toMap);
     }
 }

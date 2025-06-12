@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.mobile;
 
-import io.avaje.jsonb.Json;
-
 import java.util.Arrays;
 
 public enum VerificationCodeError {
@@ -42,8 +40,7 @@ public enum VerificationCodeError {
         this.data = data;
     }
 
-    @Json.Creator
-    static VerificationCodeError of(String name) {
+    public static VerificationCodeError of(String name) {
         return Arrays.stream(values())
                 .filter(entry -> entry.data.equalsIgnoreCase(name))
                 .findFirst()

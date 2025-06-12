@@ -51,7 +51,7 @@ public final class GlobalSettings {
                    boolean showIndividualNotificationsPreview, boolean showGroupNotificationsPreview,
                    int disappearingModeDuration, long disappearingModeTimestampSeconds, AvatarUserSettings avatarUserSettings) {
         this.lightThemeWallpaper = lightThemeWallpaper;
-        this.mediaVisibility = Objects.requireNonNull(mediaVisibility, "mediaVisibility cannot be null");
+        this.mediaVisibility = mediaVisibility;
         this.darkThemeWallpaper = darkThemeWallpaper;
         this.autoDownloadWiFi = autoDownloadWiFi;
         this.autoDownloadCellular = autoDownloadCellular;
@@ -60,7 +60,7 @@ public final class GlobalSettings {
         this.showGroupNotificationsPreview = showGroupNotificationsPreview;
         this.disappearingModeDuration = disappearingModeDuration;
         this.disappearingModeTimestampSeconds = disappearingModeTimestampSeconds;
-        this.avatarUserSettings = Objects.requireNonNull(avatarUserSettings, "avatarUserSettings cannot be null");
+        this.avatarUserSettings = avatarUserSettings;
     }
 
     public Optional<ChatWallpaper> lightThemeWallpaper() {

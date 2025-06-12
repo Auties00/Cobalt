@@ -1,16 +1,13 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.util.Map;
 import java.util.Optional;
 
-@Json
 public final class CreateAdminInviteNewsletterResponse {
-    private static final CreateAdminInviteNewsletterResponse EMPTY = new CreateAdminInviteNewsletterResponse(null, 0);
-
     private final Jid jid;
+
     private final long expirationTime;
 
     private CreateAdminInviteNewsletterResponse(Jid jid, long expirationTime) {
@@ -18,27 +15,39 @@ public final class CreateAdminInviteNewsletterResponse {
         this.expirationTime = expirationTime;
     }
 
-    @Json.Creator
-    static CreateAdminInviteNewsletterResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<CreateAdminInviteNewsletterResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("xwa2_newsletter_admin_invite_create") instanceof Map<?,?> response)) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
         }
 
-        if(!(response.get("id") instanceof String value)) {
-            return EMPTY;
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
         }
 
-        var jid = Jid.of(value);
-        var mute = response.get("invite_expiration_time") instanceof Number number ? number.longValue() : 0;
-        return new CreateAdminInviteNewsletterResponse(jid, mute);
+        var response = data.getJSONObject("xwa2_newsletter_admin_invite_create");
+        if(response == null) {
+            return Optional.empty();
+        }
+
+        var id = response.getString("id");
+        if(id == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(id);
+        var inviteExpirationTime = response.getLongValue("invite_expiration_time", 0);
+        var result = new CreateAdminInviteNewsletterResponse(jid, inviteExpirationTime);
+        return Optional.of(result);
     }
 
-    public Optional<Jid> jid() {
-        return Optional.ofNullable(jid);
+    public Jid jid() {
+        return jid;
     }
 
     public long expirationTime() {

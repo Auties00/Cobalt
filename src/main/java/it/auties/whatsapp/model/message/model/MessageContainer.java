@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -346,6 +347,10 @@ public final class MessageContainer {
      */
     public static MessageContainer empty() {
         return new MessageContainerBuilder().build();
+    }
+
+    public static Optional<MessageContainer> ofJson(JSONObject jsonObject) {
+        return Optional.empty();
     }
 
     /**

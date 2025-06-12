@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.jid;
 
-import io.avaje.jsonb.Json;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufString;
@@ -13,12 +12,11 @@ import java.util.Optional;
  * A model class that represents a jid.
  * This class is only a model: this means that changing its values will have no real effect on WhatsappWeb's servers.
  */
-@Json
 public final class Jid implements JidProvider { // How can string parsing get so complicated?
-    private final String user;
-    private final JidServer server;
-    private final int device;
-    private final int agent;
+    final String user;
+    final JidServer server;
+    final int device;
+    final int agent;
 
     private Jid(String user, JidServer server, int device, int agent) {
         this.user = user;
@@ -211,7 +209,6 @@ public final class Jid implements JidProvider { // How can string parsing get so
      * @param jid    the nullable jid of the user
      * @return a non-null contact jid
      */
-    @Json.Creator
     public static Jid of(String jid) {
         var serverSeparatorIndex = jid.indexOf("@");
         if (serverSeparatorIndex == -1) {
@@ -456,7 +453,6 @@ public final class Jid implements JidProvider { // How can string parsing get so
      *
      * @return a non-null String
      */
-    @Json.Value
     @ProtobufSerializer
     @Override
     public String toString() {

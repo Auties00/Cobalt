@@ -1,21 +1,34 @@
 package it.auties.whatsapp.model.newsletter;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @ProtobufMessage
-@Json
 public final class NewsletterSettings {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    @Json.Property("reaction_codes")
     final NewsletterReactionSettings reactionCodes;
 
     NewsletterSettings(NewsletterReactionSettings reactionCodes) {
         this.reactionCodes = Objects.requireNonNull(reactionCodes, "reactionCodes cannot be null");
+    }
+
+    public static Optional<NewsletterSettings> ofJson(JSONObject jsonObject) {
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var reactionCodes = NewsletterReactionSettings.ofJson(jsonObject.getJSONObject("reaction_codes"));
+        if(reactionCodes.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var result = new NewsletterSettings(reactionCodes.get());
+        return Optional.of(result);
     }
 
     public NewsletterReactionSettings reactionCodes() {

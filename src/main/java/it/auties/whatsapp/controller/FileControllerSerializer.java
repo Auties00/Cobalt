@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterBuilder;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.ImmutableLinkedList;
 
@@ -471,7 +472,9 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         var newsletterName = entry.getFileName().toString()
                 .replaceFirst(CHAT_PREFIX, "")
                 .replace(fileExtension(), "");
-        return new Newsletter(Jid.of(newsletterName), null, null, null);
+        return new NewsletterBuilder()
+                .jid(Jid.of(newsletterName))
+                .build();
     }
 
     private Path getHome(ClientType type) {

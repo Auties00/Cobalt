@@ -1,6 +1,5 @@
 package it.auties.whatsapp.socket;
 
-import io.avaje.jsonb.Jsonb;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.controller.Keys;
@@ -37,8 +36,8 @@ import it.auties.whatsapp.model.request.CommunityRequests;
 import it.auties.whatsapp.model.request.MessageRequest;
 import it.auties.whatsapp.model.request.NewsletterRequests;
 import it.auties.whatsapp.model.response.CommunityLinkedGroupsResponse;
-import it.auties.whatsapp.model.response.UserAboutResponse;
 import it.auties.whatsapp.model.response.NewsletterResponse;
+import it.auties.whatsapp.model.response.UserAboutResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessageBuilder;
@@ -285,7 +284,9 @@ public class SocketHandler implements SocketSession.Listener {
 
     @Override
     public void onError(Throwable throwable) {
-        handleFailure(UNKNOWN, throwable);
+        if(isConnected()) {
+            disconnect(DisconnectReason.RECONNECTING);
+        }
     }
 
     public CompletableFuture<Node> sendNode(Node node) {
@@ -317,9 +318,9 @@ public class SocketHandler implements SocketSession.Listener {
         var scheduledRelease = false;
         try {
             writeSemaphore.acquire();
-            if (state.getAcquire() == SocketState.DISCONNECTED) {
+            if (state.getAcquire() != SocketState.CONNECTED) {
                 writeSemaphore.release();
-                return CompletableFuture.completedFuture(Node.empty());
+                return CompletableFuture.failedFuture(new IllegalStateException("Instance is not connected"));
             }
 
             var message = getRequestPayload(request, prologue);
@@ -675,17 +676,17 @@ public class SocketHandler implements SocketSession.Listener {
                 .findFirst();
     }
 
+    @SuppressWarnings("OptionalIsPresent")
     public CompletableFuture<Void> queryNewsletterMessages(JidProvider newsletterJid, int count) {
         return store.findNewsletterByJid(newsletterJid)
                 .map(entry -> CompletableFuture.completedFuture(Optional.of(entry)))
                 .orElseGet(() -> queryNewsletter(newsletterJid.toJid(), NewsletterViewerRole.GUEST))
                 .thenCompose(newsletter -> {
-                    var newsletterInvite = newsletter.orElseThrow(() -> new NoSuchElementException("Cannot querty newsletter " + newsletterJid))
-                            .metadata()
-                            .orElseThrow(() -> new NoSuchElementException("Cannot query newsletter messages: missing metadata " + newsletterJid))
-                            .invite()
-                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter key"));
-                    return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterInvite)))
+                    if(newsletter.isEmpty()) {
+                        return CompletableFuture.failedFuture(new IllegalStateException("No newsletter found for jid: " + newsletterJid));
+                    }
+
+                    return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "jid", "jid", newsletterJid)))
                             .thenAcceptAsync(result -> onNewsletterMessages(newsletter.get(), result));
                 });
     }
@@ -845,11 +846,9 @@ public class SocketHandler implements SocketSession.Listener {
             return null;
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(CommunityLinkedGroupsResponse.class)
-                .fromJson(content.get())
-                .linkedGroups();
+        return CommunityLinkedGroupsResponse.ofJson(content.get())
+                .map(CommunityLinkedGroupsResponse::linkedGroups)
+                .orElse(null);
     }
 
     private Optional<ChatParticipant> parseGroupParticipant(Node node) {
@@ -1327,6 +1326,17 @@ public class SocketHandler implements SocketSession.Listener {
         }
     }
 
+    public void addPastParticipant(Jid jid, Collection<? extends ChatPastParticipant> pastParticipant) {
+        var pastParticipants = pastParticipants().get(jid);
+        if(pastParticipants != null) {
+            pastParticipants.addAll(pastParticipant);
+            this.pastParticipants.put(jid, pastParticipants);
+        }else {
+            var values = new LinkedHashSet<ChatPastParticipant>(pastParticipant);
+            this.pastParticipants.put(jid, values);
+        }
+    }
+
     protected void queryNewsletters() {
         streamHandler.queryNewsletters()
                 .exceptionallyAsync(throwable -> handleFailure(HISTORY_SYNC, throwable));
@@ -1351,10 +1361,7 @@ public class SocketHandler implements SocketSession.Listener {
             return Optional.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(content.get())
-                .newsletter();
+        return NewsletterResponse.ofJson(content.get())
+                .map(NewsletterResponse::newsletter);
     }
 }

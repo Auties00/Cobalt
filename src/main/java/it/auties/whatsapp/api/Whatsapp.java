@@ -1,11 +1,8 @@
 package it.auties.whatsapp.api;
 
-import io.avaje.jsonb.Json;
-import io.avaje.jsonb.Jsonb;
-import io.avaje.jsonb.Types;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.model.action.*;
@@ -43,9 +40,13 @@ import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -803,15 +804,13 @@ public class Whatsapp {
         var oldServerId = newsletter.newestMessage()
                 .map(NewsletterMessageInfo::serverId)
                 .orElse(0);
-        var info = new NewsletterMessageInfo(
-                ChatMessageKey.randomId(store().clientType()),
-                oldServerId + 1,
-                Clock.nowSeconds(),
-                null,
-                new ConcurrentHashMap<>(),
-                message,
-                MessageStatus.PENDING
-        );
+        var info = new NewsletterMessageInfoBuilder()
+                .id(ChatMessageKey.randomId(store().clientType()))
+                .serverId(oldServerId + 1)
+                .timestampSeconds(Clock.nowSeconds())
+                .message(message)
+                .status(MessageStatus.PENDING)
+                .build();
         info.setNewsletter(newsletter);
         return sendMessage(info);
     }
@@ -831,15 +830,13 @@ public class Whatsapp {
         }
         return switch (oldMessage) {
             case NewsletterMessageInfo oldNewsletterInfo -> {
-                var info = new NewsletterMessageInfo(
-                        oldNewsletterInfo.id(),
-                        oldNewsletterInfo.serverId(),
-                        Clock.nowSeconds(),
-                        null,
-                        new ConcurrentHashMap<>(),
-                        MessageContainer.ofEditedMessage(newMessage),
-                        MessageStatus.PENDING
-                );
+                var info = new NewsletterMessageInfoBuilder()
+                        .id(oldNewsletterInfo.id())
+                        .serverId(oldNewsletterInfo.serverId())
+                        .timestampSeconds(Clock.nowSeconds())
+                        .message(MessageContainer.ofEditedMessage(newMessage))
+                        .status(MessageStatus.PENDING)
+                        .build();
                 info.setNewsletter(oldNewsletterInfo.newsletter());
                 var request = new MessageRequest.Newsletter(info, Map.of("edit", getEditBit(info)));
                 yield socketHandler.sendMessage(request)
@@ -1096,23 +1093,12 @@ public class Whatsapp {
 
     private Map<Jid, Boolean> parseHasWhatsappResponse(List<Jid> contacts, List<Node> nodes) {
         var result = nodes.stream()
-                .map(this::parseHasWhatsappResponse)
+                .map(HasWhatsappResponse::ofNode)
                 .collect(Collectors.toMap(HasWhatsappResponse::contact, HasWhatsappResponse::hasWhatsapp, (first, second) -> first, HashMap::new));
         contacts.stream()
                 .filter(contact -> !result.containsKey(contact))
                 .forEach(contact -> result.put(contact, false));
         return result;
-    }
-
-    private HasWhatsappResponse parseHasWhatsappResponse(Node node) {
-        var jid = node.attributes()
-                .getRequiredJid("jid");
-        var in = node.findChild("contact")
-                .orElseThrow(() -> new NoSuchElementException("Missing contact in HasWhatsappResponse"))
-                .attributes()
-                .getRequiredString("type")
-                .equals("in");
-        return new HasWhatsappResponse(jid, in);
     }
 
     /**
@@ -1155,11 +1141,8 @@ public class Whatsapp {
             return Optional.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(UserChosenNameResponse.class)
-                .fromJson(content.get())
-                .name();
+        return UserChosenNameResponse.ofJson(content.get())
+                .flatMap(UserChosenNameResponse::name);
     }
 
     /**
@@ -1573,8 +1556,7 @@ public class Whatsapp {
     }
 
     private Jid checkGroupParticipantJid(Jid jid, String errorMessage) {
-        var self = Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid());
-        if (self) {
+        if (Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid())) {
             throw new IllegalArgumentException(errorMessage);
         }
 
@@ -1667,19 +1649,14 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<Void> changeProfilePicture(ByteBuffer image) {
-        var profilePic = image != null ? Medias.getProfilePic(image) : null;
+    public CompletableFuture<Void> changeProfilePicture(byte[] image) {
+        var data = image != null ? Medias.getProfilePic(image) : null;
+        var body = Node.of("picture", Map.of("type", "image"), data);
         return switch (store().clientType()) {
-            case WEB -> {
-                var body = Node.of("picture", Map.of("type", "image"), profilePic);
-                yield socketHandler.sendQuery("set", "w:profile:picture", Map.of("target", jidOrThrowError().toSimpleJid()), body)
-                        .thenRun(() -> {});
-            }
-            case MOBILE -> {
-                var body = Node.of("picture", Map.of("type", "image"), profilePic);
-                yield socketHandler.sendQuery(jidOrThrowError(), "set", "w:profile:picture", body)
-                        .thenRun(() -> {});
-            }
+            case WEB -> socketHandler.sendQuery("set", "w:profile:picture", body)
+                    .thenRun(() -> {});
+            case MOBILE -> socketHandler.sendQuery(jidOrThrowError(), "set", "w:profile:picture", body)
+                    .thenRun(() -> {});
         };
     }
 
@@ -1697,8 +1674,8 @@ public class Whatsapp {
         var proxy = store().proxy()
                 .filter(ignored -> store().mediaProxySetting().allowsDownloads())
                 .orElse(null);
-        var imageFuture = Medias.downloadAsync(image, proxy);
-        return imageFuture.thenComposeAsync(imageResult -> changeGroupPicture(group, ByteBuffer.wrap(imageResult)));
+        return Medias.downloadAsync(image, proxy)
+                .thenComposeAsync(imageResult -> changeGroupPicture(group, imageResult));
     }
 
     /**
@@ -1708,7 +1685,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<Void> changeGroupPicture(JidProvider group, ByteBuffer image) {
+    public CompletableFuture<Void> changeGroupPicture(JidProvider group, byte[] image) {
         if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
             throw new IllegalArgumentException("Expected a group/community");
         }
@@ -2175,15 +2152,13 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> deleteMessage(NewsletterMessageInfo messageInfo) {
-        var revokeInfo = new NewsletterMessageInfo(
-                messageInfo.id(),
-                messageInfo.serverId(),
-                Clock.nowSeconds(),
-                null,
-                new ConcurrentHashMap<>(),
-                MessageContainer.empty(),
-                MessageStatus.PENDING
-        );
+        var revokeInfo = new NewsletterMessageInfoBuilder()
+                .id(messageInfo.id())
+                .serverId(messageInfo.serverId())
+                .timestampSeconds(Clock.nowSeconds())
+                .message(MessageContainer.empty())
+                .status(MessageStatus.PENDING)
+                .build();
         revokeInfo.setNewsletter(messageInfo.newsletter());
         var attrs = Map.of("edit", getDeleteBit(messageInfo));
         var request = new MessageRequest.Newsletter(revokeInfo, attrs);
@@ -2521,7 +2496,7 @@ public class Whatsapp {
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<ByteBuffer> downloadMedia(ChatMessageInfo info) {
+    public CompletableFuture<byte[]> downloadMedia(ChatMessageInfo info) {
         if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
@@ -2539,7 +2514,7 @@ public class Whatsapp {
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<ByteBuffer> downloadMedia(NewsletterMessageInfo info) {
+    public CompletableFuture<byte[]> downloadMedia(NewsletterMessageInfo info) {
         if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
@@ -2555,7 +2530,7 @@ public class Whatsapp {
      * @param mediaMessage the non-null media
      * @return a CompletableFuture
      */
-    public CompletableFuture<ByteBuffer> downloadMedia(MediaMessage<?> mediaMessage) {
+    public CompletableFuture<byte[]> downloadMedia(MediaMessage<?> mediaMessage) {
         var decodedMedia = mediaMessage.decodedMedia();
         if (decodedMedia.isPresent()) {
             return CompletableFuture.completedFuture(decodedMedia.get());
@@ -2577,46 +2552,68 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Void> requireMediaReupload(ChatMessageInfo info) {
-        if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
-            throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
-        }
+        try {
+            if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
+                throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
+            }
 
-        var mediaKey = mediaMessage.mediaKey()
-                .orElseThrow(() -> new NoSuchElementException("Missing media key"));
-        var retryKey = Hkdf.extractAndExpand(mediaKey, "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
-        var retryIv = Bytes.random(12);
-        var retryIdData = info.key().id().getBytes(StandardCharsets.UTF_8);
-        var receipt = ServerErrorReceiptSpec.encode(new ServerErrorReceipt(info.id()));
-        var ciphertext = AesGcm.encrypt(retryIv, receipt, retryKey, retryIdData);
-        var rmrAttributes = Attributes.of()
-                .put("jid", info.chatJid())
-                .put("from_me", String.valueOf(info.fromMe()))
-                .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
-                .toMap();
-        var node = Node.of("receipt", Map.of("id", info.key().id(), "to", jidOrThrowError()
-                .toSimpleJid(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)), Node.of("rmr", rmrAttributes));
-        return socketHandler.sendNode(node, result -> result.hasDescription("notification"))
-                .thenAcceptAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
+            var mediaKey = mediaMessage.mediaKey()
+                    .orElseThrow(() -> new NoSuchElementException("Missing media key"));
+            var retryKey = Hkdf.extractAndExpand(mediaKey, "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
+            var receipt = ServerErrorReceiptSpec.encode(new ServerErrorReceipt(info.id()));
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(retryKey, "AES"),
+                    new GCMParameterSpec(128, Bytes.random(12))
+            );
+            cipher.updateAAD(info.key().id().getBytes(StandardCharsets.UTF_8));
+            var ciphertext = cipher.update(receipt);
+            var rmrAttributes = Attributes.of()
+                    .put("jid", info.chatJid())
+                    .put("from_me", String.valueOf(info.fromMe()))
+                    .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
+                    .toMap();
+            var node = Node.of("receipt", Map.of("id", info.key().id(), "to", jidOrThrowError()
+                    .toSimpleJid(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", Bytes.random(12))), Node.of("rmr", rmrAttributes));
+            return socketHandler.sendNode(node, result -> result.hasDescription("notification"))
+                    .thenAcceptAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, info.key().id().getBytes(StandardCharsets.UTF_8), result));
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot encrypt media reupload", exception);
+        }
     }
 
     private void parseMediaReupload(ChatMessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
-        if (node.hasNode("error")) {
-            throw new IllegalArgumentException("Erroneous response from media reupload: " + node.attributes().getInt("code"));
+        try {
+            if (node.hasNode("error")) {
+                throw new IllegalArgumentException("Erroneous response from media reupload: " + node.attributes().getInt("code"));
+            }
+            var encryptNode = node.findChild("encrypt")
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
+            var mediaPayload = encryptNode.findChild("enc_p")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypted payload node in media reupload"));
+            var mediaIv = encryptNode.findChild("enc_iv")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(retryKey, "AES"),
+                    new GCMParameterSpec(128, mediaIv)
+            );
+            if(retryIdData != null) {
+                cipher.updateAAD(retryIdData);
+            }
+            var mediaRetryNotificationData = cipher.doFinal(mediaPayload);
+            var mediaRetryNotification = MediaRetryNotificationSpec.decode(mediaRetryNotificationData);
+            var directPath = mediaRetryNotification.directPath()
+                    .orElseThrow(() -> new RuntimeException("Media reupload failed"));
+            mediaMessage.setMediaUrl(Medias.createMediaUrl(directPath));
+            mediaMessage.setMediaDirectPath(directPath);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot decrypt media reupload", exception);
         }
-        var encryptNode = node.findChild("encrypt")
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
-        var mediaPayload = encryptNode.findChild("enc_p")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypted payload node in media reupload"));
-        var mediaIv = encryptNode.findChild("enc_iv")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
-        var mediaRetryNotificationData = AesGcm.decrypt(mediaIv, mediaPayload, retryKey, retryIdData);
-        var mediaRetryNotification = MediaRetryNotificationSpec.decode(mediaRetryNotificationData);
-        var directPath = mediaRetryNotification.directPath()
-                .orElseThrow(() -> new RuntimeException("Media reupload failed"));
-        mediaMessage.setMediaUrl(Medias.createMediaUrl(directPath));
-        mediaMessage.setMediaDirectPath(directPath);
     }
 
     /**
@@ -2705,7 +2702,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<Void> changeCommunityPicture(JidProvider community, ByteBuffer image) {
+    public CompletableFuture<Void> changeCommunityPicture(JidProvider community, byte[] image) {
         return changeGroupPicture(community, image);
     }
 
@@ -2756,11 +2753,8 @@ public class Whatsapp {
                         throw new IllegalArgumentException("Cannot change community setting: " + result);
                     }
 
-                    var resultJson = (Map<?, ?>) Jsonb.builder()
-                            .build()
-                            .type(Types.mapOf(Object.class))
-                            .fromObject(resultJsonSource);
-                    if (resultJson.get("errors") != null) {
+                    var resultJson = JSON.parseObject(resultJsonSource);
+                    if (resultJson.containsKey("errors")) {
                         throw new IllegalArgumentException("Cannot change community setting: " + resultJsonSource);
                     }
                 });
@@ -3212,11 +3206,9 @@ public class Whatsapp {
             return List.of();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(RecommendedNewslettersResponse.class)
-                .fromJson(content.get())
-                .newsletters();
+        return RecommendedNewslettersResponse.of(content.get())
+                .map(RecommendedNewslettersResponse::newsletters)
+                .orElse(List.of());
     }
 
     /**
@@ -3283,16 +3275,14 @@ public class Whatsapp {
             return Optional.empty();
         }
 
-        var content = result.get().contentAsBytes();
+        var content = result.get()
+                .contentAsBytes();
         if(content.isEmpty()) {
             return Optional.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(content.get())
-                .newsletter();
+        return NewsletterResponse.ofJson(content.get())
+                .map(NewsletterResponse::newsletter);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -3370,10 +3360,12 @@ public class Whatsapp {
             return OptionalLong.empty();
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(NewsletterSubscribersResponse.class)
-                .fromJson(content.get())
+        var response = NewsletterSubscribersResponse.ofJson(content.get());
+        if(response.isEmpty()) {
+            return OptionalLong.empty();
+        }
+
+        return response.get()
                 .subscribersCount();
     }
 
@@ -3432,10 +3424,12 @@ public class Whatsapp {
             return 0;
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(CreateAdminInviteNewsletterResponse.class)
-                .fromJson(content.get())
+        var response = CreateAdminInviteNewsletterResponse.ofJson(content.get());
+        if(response.isEmpty()) {
+            return 0;
+        }
+
+        return response.get()
                 .expirationTime();
     }
 
@@ -3489,11 +3483,8 @@ public class Whatsapp {
             return false;
         }
 
-        return Jsonb.builder()
-                .build()
-                .type(RevokeAdminInviteNewsletterResponse.class)
-                .fromJson(content.get())
-                .jid()
+        return RevokeAdminInviteNewsletterResponse.ofJson(content.get())
+                .map(RevokeAdminInviteNewsletterResponse::jid)
                 .isPresent();
     }
 
@@ -3521,11 +3512,8 @@ public class Whatsapp {
             return CompletableFuture.completedFuture(false);
         }
 
-        var jid = Jsonb.builder()
-                .build()
-                .type(AcceptAdminInviteNewsletterResponse.class)
-                .fromJson(content.get())
-                .jid();
+        var jid = AcceptAdminInviteNewsletterResponse.ofJson(content.get())
+                .map(AcceptAdminInviteNewsletterResponse::jid);
         if(jid.isEmpty()) {
             return CompletableFuture.completedFuture(false);
         }

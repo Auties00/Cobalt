@@ -97,7 +97,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public T newConnection(SixPartsKeys sixParts) {
-        var serialized = serializer.deserializeStoreKeysPair(null, sixParts.phoneNumber().number(), null, ClientType.MOBILE);
+        var serialized = serializer.deserializeStoreKeysPair(null, sixParts.phoneNumber(), null, ClientType.MOBILE);
         if(serialized.isPresent()) {
             return createConnection(serialized.get());
         }
@@ -159,7 +159,8 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
      * @return a non-null options selector
      */
     public Optional<T> newOptionalConnection(Long phoneNumber) {
-        return serializer.deserializeStoreKeysPair(null, phoneNumber, null, clientType)
+        return PhoneNumber.of(phoneNumber)
+                .flatMap(number -> serializer.deserializeStoreKeysPair(null, number, null, clientType))
                 .map(this::createConnection);
     }
 

@@ -108,6 +108,7 @@ abstract sealed class SocketSession {
 
         @Override
         public void onError(WebSocket webSocket, Throwable error) {
+            System.err.println("Is connected? " + (session != null && session.isOutputClosed()));
             listener.onError(error);
         }
 

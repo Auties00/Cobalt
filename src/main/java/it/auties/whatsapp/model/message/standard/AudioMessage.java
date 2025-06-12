@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
-import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -79,7 +78,7 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @ProtobufBuilder(className = "AudioMessageSimpleBuilder")
-    static AudioMessage customBuilder(ByteBuffer media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+    static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
         return new AudioMessageBuilder()
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .duration(Medias.getDuration(media))
@@ -90,7 +89,7 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
                 .setDecodedMedia(media);
     }
 
-    private static String getMimeType(ByteBuffer media, String mimeType) {
+    private static String getMimeType(byte[] media, String mimeType) {
         return Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(media))
                 .orElseGet(Type.AUDIO::mimeType);

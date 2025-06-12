@@ -1,10 +1,7 @@
 package it.auties.whatsapp.socket;
 
-import io.avaje.jsonb.Jsonb;
-import io.avaje.jsonb.Types;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
-import it.auties.whatsapp.crypto.AesGcm;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
@@ -31,8 +28,9 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.message.model.ChatMessageKeyBuilder;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
+import it.auties.whatsapp.model.newsletter.NewsletterMetadataBuilder;
 import it.auties.whatsapp.model.newsletter.NewsletterReaction;
+import it.auties.whatsapp.model.newsletter.NewsletterVerification;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
@@ -52,6 +50,7 @@ import it.auties.whatsapp.util.Clock;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -238,22 +237,24 @@ class StreamHandler {
     }
 
     private void updateReceipt(MessageStatus status, Chat chat, Contact participant, ChatMessageInfo message) {
-        var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
-        container.add(participant != null ? participant.jid() : message.senderJid());
-        if(chat == null) {
-            return;
+        var target = participant != null ? participant.jid() : message.senderJid();
+        if(status == MessageStatus.READ) {
+            message.receipt().addReadJid(target);
+        }else {
+            message.receipt().addDeliveredJid(target);
         }
 
-        socketHandler.queryGroupMetadata(chat.jid()).thenAcceptAsync(metadata -> {
-            if (participant != null && metadata.participants().size() != container.size()) {
-                return;
-            }
-
-            switch (status) {
-                case READ -> message.receipt().setReadTimestampSeconds(Clock.nowSeconds());
-                case PLAYED -> message.receipt().setPlayedTimestampSeconds(Clock.nowSeconds());
-            }
-        });
+        if(chat != null && chat.jid().hasServer(JidServer.groupOrCommunity())) {
+            socketHandler.queryGroupMetadata(chat.jid()).thenAcceptAsync(metadata -> {
+                var jids = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
+                if (participant == null || metadata.participants().size() == jids.size()) {
+                    switch (status) {
+                        case READ -> message.receipt().setReadTimestampSeconds(Clock.nowSeconds());
+                        case PLAYED -> message.receipt().setPlayedTimestampSeconds(Clock.nowSeconds());
+                    }
+                }
+            });
+        }
     }
 
     private List<String> getReceiptsMessageIds(Node node) {
@@ -456,101 +457,88 @@ class StreamHandler {
     private void handleNewsletterStateUpdate(Node update) {
         var updatePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing state update payload"));
-        var updateJson = Jsonb.builder()
-                .build()
-                .type(NewsletterStateResponse.class)
-                .fromJson(updatePayload);
-        updateJson.jid().ifPresent(newsletterJid -> {
+        NewsletterStateResponse.ofJson(updatePayload).ifPresent(response -> {
             var newsletter = socketHandler.store()
-                    .findNewsletterByJid(newsletterJid)
+                    .findNewsletterByJid(response.jid())
                     .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-            newsletter.setState(updateJson.state());
+            response.state()
+                    .ifPresent(newsletter::setState);
         });
     }
 
     private void handleNewsletterMetadataUpdate(Node update) {
-        var updatePayload = update.contentAsString()
+        var updatePayload = update.contentAsBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing update payload"));
-        Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(updatePayload)
-                .newsletter()
-                .ifPresent(updatedNewsletter -> {
-                    var newsletter = socketHandler.store()
-                            .findNewsletterByJid(updatedNewsletter.jid())
-                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
-                    var updatedMetadata = updatedNewsletter.metadata()
-                            .orElse(null);
-                    var oldMetadata = newsletter.metadata()
-                            .orElse(null);
-                    if(oldMetadata == null) {
-                        newsletter.setMetadata(updatedMetadata);
-                    }else if (updatedMetadata != null) {
-                        var name = updatedMetadata.name()
-                                .or(oldMetadata::name)
-                                .orElse(null);
-                        var description = updatedMetadata.description()
-                                .or(oldMetadata::description)
-                                .orElse(null);
-                        var picture = updatedMetadata.picture()
-                                .or(oldMetadata::picture)
-                                .orElse(null);
-                        var handle = updatedMetadata.handle()
-                                .or(oldMetadata::handle)
-                                .orElse(null);
-                        var settings = updatedMetadata.settings()
-                                .or(oldMetadata::settings)
-                                .orElse(null);
-                        var invite = updatedMetadata.invite()
-                                .or(oldMetadata::invite)
-                                .orElse(null);
-                        var verification = updatedMetadata.verification() || oldMetadata.verification();
-                        var creationTimestamp = updatedMetadata.creationTimestamp()
-                                .or(oldMetadata::creationTimestamp)
-                                .map(ChronoZonedDateTime::toEpochSecond)
-                                .orElse(0L);
-                        var mergedMetadata = new NewsletterMetadata(
-                                name,
-                                description,
-                                picture,
-                                handle,
-                                settings,
-                                invite,
-                                verification,
-                                creationTimestamp
-                        );
-                        newsletter.setMetadata(mergedMetadata);
-                    }
-                });
+        NewsletterResponse.ofJson(updatePayload).ifPresent(response -> {
+            var updatedNewsletter = response.newsletter();
+            var newsletter = socketHandler.store()
+                    .findNewsletterByJid(updatedNewsletter.jid())
+                    .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
+            var updatedMetadata = updatedNewsletter.metadata()
+                    .orElse(null);
+            var oldMetadata = newsletter.metadata()
+                    .orElse(null);
+            if(oldMetadata == null) {
+                newsletter.setMetadata(updatedMetadata);
+            }else if (updatedMetadata != null) {
+                var name = updatedMetadata.name()
+                        .or(oldMetadata::name)
+                        .orElse(null);
+                var description = updatedMetadata.description()
+                        .or(oldMetadata::description)
+                        .orElse(null);
+                var picture = updatedMetadata.picture()
+                        .or(oldMetadata::picture)
+                        .orElse(null);
+                var handle = updatedMetadata.handle()
+                        .or(oldMetadata::handle)
+                        .orElse(null);
+                var settings = updatedMetadata.settings()
+                        .or(oldMetadata::settings)
+                        .orElse(null);
+                var invite = updatedMetadata.invite()
+                        .or(oldMetadata::invite)
+                        .orElse(null);
+                var verification = updatedMetadata.verification().filter(NewsletterVerification::verified).isPresent() || oldMetadata.verification().filter(NewsletterVerification::verified).isPresent()
+                        ? NewsletterVerification.enabled()
+                        : NewsletterVerification.disabled();
+                var creationTimestamp = updatedMetadata.creationTimestamp()
+                        .or(oldMetadata::creationTimestamp)
+                        .map(ChronoZonedDateTime::toEpochSecond)
+                        .orElse(0L);
+                var mergedMetadata = new NewsletterMetadataBuilder()
+                        .name(name)
+                        .description(description)
+                        .picture(picture)
+                        .handle(handle)
+                        .settings(settings)
+                        .invite(invite)
+                        .verification(verification)
+                        .creationTimestampSeconds(creationTimestamp)
+                        .build();
+                newsletter.setMetadata(mergedMetadata);
+            }
+        });
     }
 
     private void handleNewsletterJoin(Node update) {
-        var joinPayload = update.contentAsString()
+        var joinPayload = update.contentAsBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing join payload"));
-        Jsonb.builder()
-                .build()
-                .type(NewsletterResponse.class)
-                .fromJson(joinPayload)
-                .newsletter()
-                .ifPresent(newsletter -> {
-                    socketHandler.store().addNewsletter(newsletter);
-                    if(!socketHandler.store().webHistorySetting().isZero()) {
-                        socketHandler.queryNewsletterMessages(newsletter.jid(), DEFAULT_NEWSLETTER_MESSAGES);
-                    }
-                });
+        NewsletterResponse.ofJson(joinPayload).ifPresent(response -> {
+            var newsletter = response.newsletter();
+            socketHandler.store().addNewsletter(newsletter);
+            if(!socketHandler.store().webHistorySetting().isZero()) {
+                socketHandler.queryNewsletterMessages(newsletter.jid(), DEFAULT_NEWSLETTER_MESSAGES);
+            }
+        });
     }
 
     private void handleNewsletterMute(Node update) {
         var mutePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing mute payload"));
-        var response = Jsonb.builder()
-                .build()
-                .type(NewsletterMuteResponse.class)
-                .fromJson(mutePayload);
-        response.jid().ifPresent(newsletterJid -> {
+        NewsletterMuteResponse.ofJson(mutePayload).ifPresent(response -> {
             var newsletter = socketHandler.store()
-                    .findNewsletterByJid(newsletterJid)
+                    .findNewsletterByJid(response.jid())
                     .orElseThrow(() -> new NoSuchElementException("Missing newsletter"));
             newsletter.viewerMetadata()
                     .ifPresent(viewerMetadata -> viewerMetadata.setMute(response.mute()));
@@ -560,48 +548,53 @@ class StreamHandler {
     private void handleNewsletterLeave(Node update) {
         var leavePayload = update.contentAsString()
                 .orElseThrow(() -> new NoSuchElementException("Missing leave payload"));
-        var response = Jsonb.builder()
-                .build()
-                .type(NewsletterLeaveResponse.class)
-                .fromJson(leavePayload);
-        response.jid()
-                .ifPresent(newsletterJid -> socketHandler.store().removeNewsletter(newsletterJid));
+        NewsletterLeaveResponse.ofJson(leavePayload)
+                .ifPresent(response -> socketHandler.store().removeNewsletter(response.jid()));
     }
 
     private void handleCompanionRegistration(Node node) {
-        var phoneNumber = getPhoneNumberAsJid();
-        var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
-                .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
-        var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
-        var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
-        var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
-        var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
-        var companionSharedKey = Curve25519.sharedKey(codePairingPublicKey, socketHandler.keys().companionKeyPair().privateKey());
-        var random = Bytes.random(32);
-        var linkCodeSalt = Bytes.random(32);
-        var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
-        var encryptPayload = Bytes.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
-        var encryptIv = Bytes.random(12);
-        var encrypted = AesGcm.encrypt(encryptIv, encryptPayload, linkCodePairingExpanded);
-        var encryptedPayload = Bytes.concat(linkCodeSalt, encryptIv, encrypted);
-        var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
-        var identityPayload = Bytes.concat(companionSharedKey, identitySharedKey, random);
-        var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
-        socketHandler.keys().setCompanionKeyPair(new SignalKeyPair(advSecretPublicKey, socketHandler.keys().companionKeyPair().privateKey()));
-        var confirmation = Node.of(
-                "link_code_companion_reg",
-                Map.of("jid", phoneNumber, "stage", "companion_finish"),
-                Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
-                Node.of("companion_identity_public", socketHandler.keys().identityKeyPair().publicKey()),
-                Node.of("link_code_pairing_ref", ref)
-        );
-        socketHandler.sendQuery("set", "md", confirmation);
+        try {
+            var phoneNumber = getPhoneNumberAsJid();
+            var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
+                    .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
+            var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
+            var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
+            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
+                    .flatMap(Node::contentAsBytes)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
+            var codePairingPublicKey = decipherLinkPublicKey(primaryEphemeralPublicKeyWrapped);
+            var companionSharedKey = Curve25519.sharedKey(codePairingPublicKey, socketHandler.keys().companionKeyPair().privateKey());
+            var random = Bytes.random(32);
+            var linkCodeSalt = Bytes.random(32);
+            var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
+            var encryptPayload = Bytes.concat(socketHandler.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(linkCodePairingExpanded, "AES"),
+                    new GCMParameterSpec(128, Bytes.random(12))
+            );
+            var encrypted = cipher.doFinal(encryptPayload);
+            var encryptedPayload = Bytes.concat(linkCodeSalt, Bytes.random(12), encrypted);
+            var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketHandler.keys().identityKeyPair().privateKey());
+            var identityPayload = Bytes.concat(companionSharedKey, identitySharedKey, random);
+            var advSecretPublicKey = Hkdf.extractAndExpand(identityPayload, "adv_secret".getBytes(StandardCharsets.UTF_8), 32);
+            socketHandler.keys().setCompanionKeyPair(new SignalKeyPair(advSecretPublicKey, socketHandler.keys().companionKeyPair().privateKey()));
+            var confirmation = Node.of(
+                    "link_code_companion_reg",
+                    Map.of("jid", phoneNumber, "stage", "companion_finish"),
+                    Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
+                    Node.of("companion_identity_public", socketHandler.keys().identityKeyPair().publicKey()),
+                    Node.of("link_code_pairing_ref", ref)
+            );
+            socketHandler.sendQuery("set", "md", confirmation);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot encrypt companion registration", exception);
+        }
     }
 
     private byte[] decipherLinkPublicKey(byte[] primaryEphemeralPublicKeyWrapped) {
@@ -748,24 +741,17 @@ class StreamHandler {
 
     private List<String> getStubTypeParameters(Node metadata) {
         var attributes = new ArrayList<String>();
-        attributes.add(toJson(metadata.attributes()));
+        attributes.add(metadata.attributes().toJson());
         for (var child : metadata.children()) {
             var data = child.attributes();
             if (data.isEmpty()) {
                 continue;
             }
 
-            attributes.add(toJson(data));
+            attributes.add(data.toJson());
         }
 
         return Collections.unmodifiableList(attributes);
-    }
-
-    private String toJson(Attributes attributes) {
-        return Jsonb.builder()
-                .build()
-                .type(Types.mapOf(Object.class))
-                .toJson(attributes);
     }
 
     private void handleEncryptNotification(Node node) {
@@ -1244,30 +1230,28 @@ class StreamHandler {
             return;
         }
 
-        var result = Jsonb.builder()
-                .build()
-                .type(SubscribedNewslettersResponse.class)
-                .fromJson(newslettersPayload.get());
-        var noMessages = socketHandler.store().webHistorySetting().isZero();
-        var data = result.newsletters();
-        var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
-        for (var index = 0; index < data.size(); index++) {
-            var newsletter = data.get(index);
-            socketHandler.store().addNewsletter(newsletter);
-            if(!noMessages) {
-                futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES)
-                        .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+        SubscribedNewslettersResponse.ofJson(newslettersPayload.get()).ifPresent(result -> {
+            var noMessages = socketHandler.store().webHistorySetting().isZero();
+            var data = result.newsletters();
+            var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
+            for (var index = 0; index < data.size(); index++) {
+                var newsletter = data.get(index);
+                socketHandler.store().addNewsletter(newsletter);
+                if(!noMessages) {
+                    futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES)
+                            .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+                }
             }
-        }
 
-        if(noMessages) {
-            socketHandler.onNewsletters();
-            return;
-        }
+            if(noMessages) {
+                socketHandler.onNewsletters();
+                return;
+            }
 
-        CompletableFuture.allOf(futures)
-                .thenRun(socketHandler::onNewsletters)
-                .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+            CompletableFuture.allOf(futures)
+                    .thenRun(socketHandler::onNewsletters)
+                    .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+        });
     }
 
     private CompletableFuture<Void> queryGroups() {

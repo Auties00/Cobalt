@@ -5,7 +5,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
 
-// TODO: Inline me
 public final class Hmac {
     private static final String HMAC_SHA_256 = "HmacSHA256";
     private static final String HMAC_SHA_512 = "HmacSHA512";

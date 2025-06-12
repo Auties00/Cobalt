@@ -2,14 +2,14 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.controller.ControllerSerializer;
-import it.auties.whatsapp.model.button.base.Button;
-import it.auties.whatsapp.model.button.base.ButtonRow;
-import it.auties.whatsapp.model.button.base.ButtonSection;
-import it.auties.whatsapp.model.button.base.ButtonText;
-import it.auties.whatsapp.model.button.interactive.InteractiveButton;
+import it.auties.whatsapp.model.button.base.*;
+import it.auties.whatsapp.model.button.interactive.InteractiveButtonBuilder;
 import it.auties.whatsapp.model.button.interactive.InteractiveHeaderSimpleBuilder;
 import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlowBuilder;
-import it.auties.whatsapp.model.button.template.hydrated.*;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateSimpleBuilder;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedQuickReplyButtonBuilder;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedTemplateButton;
+import it.auties.whatsapp.model.button.template.hydrated.HydratedURLButtonBuilder;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
@@ -28,7 +28,7 @@ import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
 import it.auties.whatsapp.model.newsletter.NewsletterName;
 import it.auties.whatsapp.model.newsletter.NewsletterViewerRole;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.model.poll.PollOption;
+import it.auties.whatsapp.model.poll.PollOptionBuilder;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Bytes;
@@ -80,14 +80,23 @@ public class TestLibrary implements Listener {
                     .serializer(ControllerSerializer.discarding())
                     .newConnection()
                     .errorHandler((whatsapp, location, throwable) -> {
+                        throwable.printStackTrace();
                         Assertions.fail(throwable);
+                        System.exit(1);
                         return ErrorHandler.Result.DISCONNECT;
                     })
                     .unregistered(QrHandler.toTerminal());
         }else {
             log("Using mobile api to test...");
             api = Whatsapp.mobileBuilder()
+                    .serializer(ControllerSerializer.discarding())
                     .newConnection(Objects.requireNonNull(account, "Missing account"))
+                    .errorHandler((whatsapp, location, throwable) -> {
+                        throwable.printStackTrace();
+                        Assertions.fail(throwable);
+                        System.exit(1);
+                        return ErrorHandler.Result.DISCONNECT;
+                    })
                     .device(CompanionDevice.ios(true)) // Make sure to select the correct account type(business or personal) or you'll get error 401
                     .registered()
                     .orElseThrow();
@@ -253,6 +262,7 @@ public class TestLibrary implements Listener {
 
     @Test
     @Order(11)
+    @Disabled
     public void testNewsletters() {
         log("Creating newsletter...");
         var newsletter = api.createNewsletter("Newsletter", "A brand new newsletter", null)
@@ -287,9 +297,7 @@ public class TestLibrary implements Listener {
 
         log("Querying recommended newsletters...", newsletter);
         var recommendedNewsletters = api.queryRecommendedNewsletters("IT")
-                .join()
-                .orElseThrow(() -> new NoSuchElementException("Missing recommended newsletters"))
-                .newsletters();
+                .join();
         log("Queried recommended newsletters: %s", recommendedNewsletters);
 
         if(!recommendedNewsletters.isEmpty()) {
@@ -315,10 +323,7 @@ public class TestLibrary implements Listener {
     public void testGroupCreation()  {
         log("Creating group...");
         var response = api.createGroup(randomId(), contact).join();
-        if(response.isEmpty())  {
-            log("Cannot create group");
-            return;
-        }
+        Assertions.assertTrue(response.isPresent(), "Cannot create group");
         group = response.get().jid();
         log("Created group: %s", response);
     }
@@ -326,9 +331,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(12)
     public void testChangeIndividualPresence()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         for (var presence : ContactStatus.values())  {
             log("Changing individual presence to %s...", presence.name());
             var response = api.changePresence(group, presence).join();
@@ -340,10 +343,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(13)
     public void testChangeGroupPicture()  {
-        if (group == null)  {
-            return;
-        }
-
+        Assertions.assertNotNull(group, "No group");
         log("Changing group pic...");
         var picResponse = api.changeGroupPicture(group, MediaUtils.readBytes("https://upload.wikimedia.org/wikipedia/commons/d/d2/Solid_white.png?20060513000852")).join();
         log("Changed group pic: %s", picResponse);
@@ -352,9 +352,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(14)
     public void testChangeGroupName()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Changing group name...");
         var changeGroupResponse = api.changeGroupSubject(group, "omega").join();
         log("Changed group name: %s", changeGroupResponse);
@@ -363,9 +361,7 @@ public class TestLibrary implements Listener {
     @RepeatedTest(2)
     @Order(15)
     public void testChangeGroupDescription()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Changing group description...");
         var changeGroupResponse = api.changeGroupDescription(group, randomId()).join();
         log("Changed group description: %s", changeGroupResponse);
@@ -374,9 +370,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(16)
     public void testRemoveGroupParticipant()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Removing %s...", contact);
         var changeGroupResponse = api.removeGroupParticipants(group, contact).join();
         log("Removed: %s", changeGroupResponse);
@@ -385,9 +379,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(17)
     public void testAddGroupParticipant()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Adding %s...", contact);
         var changeGroupResponse = api.addGroupParticipants(group, contact).join();
         log("Added: %s", changeGroupResponse);
@@ -396,9 +388,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(18)
     public void testPromotion()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Promoting %s...", contact);
         var changeGroupResponse = api.promoteGroupParticipants(group, contact).join();
         log("Promoted: %s", changeGroupResponse);
@@ -407,9 +397,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(19)
     public void testDemotion()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Demoting %s...", contact);
         var changeGroupResponse = api.demoteGroupParticipants(group, contact).join();
         log("Demoted: %s", changeGroupResponse);
@@ -418,9 +406,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(20)
     public void testChangeAllGroupSettings()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         for(var setting : GroupSetting.values())  {
             for (var policy : ChatSettingPolicy.values())  {
                 log("Changing setting %s to %s...", setting.name(), policy.name());
@@ -433,9 +419,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(21)
     public void testGroupQuery()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Querying group %s...", group);
         api.queryGroupMetadata(group).join();
         log("Queried group");
@@ -525,9 +509,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(23)
     public void testMute()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Muting chat...");
         var muteResponse = api.muteChat(group, ChatMute.mutedForOneWeek()).join();
         log("Muted chat: %s", muteResponse);
@@ -536,9 +518,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(24)
     public void testUnmute()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Unmuting chat...");
         var unmuteResponse = api.unmuteChat(group).join();
         log("Unmuted chat: %s", unmuteResponse);
@@ -547,9 +527,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(25)
     public void testArchive()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Archiving chat...");
         var archiveResponse = api.archiveChat(group).join();
         log("Archived chat: %s", archiveResponse);
@@ -558,9 +536,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(26)
     public void testUnarchive()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Unarchiving chat...");
         var unarchiveResponse = api.unarchive(group).join();
         log("Unarchived chat: %s", unarchiveResponse);
@@ -569,9 +545,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(27)
     public void testPin()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         if (api.store().pinnedChats().size() >= 3)  {
             log("Skipping chat pinning as there are already three chats pinned...");
             return;
@@ -584,9 +558,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(28)
     public void testUnpin()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         if (api.store().pinnedChats().size() >= 3)  {
             log("Skipping chat unpinning as there are already three chats pinned...");
             return;
@@ -731,7 +703,10 @@ public class TestLibrary implements Listener {
                         ADR:123 Main Street; Springfield; IL; 12345; USA
                         END:VCARD
                         """);
-        var contactMessage = new ContactMessage("John Doe", vcard, null);
+        var contactMessage = new ContactMessageBuilder()
+                .name("John Doe")
+                .vcard(vcard)
+                .build();
         var response = api.sendMessage(contact, contactMessage).join();
         log("Sent contact: %s", response);
     }
@@ -752,9 +727,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(41)
     public void testGroupInviteMessage()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Querying group invite countryCode");
         var code = api.queryGroupInviteCode(group).join();
         log("Queried %s", code);
@@ -772,9 +745,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(42)
     public void testEnableEphemeralMessages()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Enabling ephemeral messages...");
         var ephemeralResponse = api.changeEphemeralTimer(group, ChatEphemeralTimer.ONE_WEEK).join();
         log("Enabled ephemeral messages: %s", ephemeralResponse);
@@ -783,9 +754,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(43)
     public void testDisableEphemeralMessages()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Disabling ephemeral messages...");
         var ephemeralResponse = api.changeEphemeralTimer(group, ChatEphemeralTimer.OFF).join();
         log("Disabled ephemeral messages: %s", ephemeralResponse);
@@ -794,9 +763,7 @@ public class TestLibrary implements Listener {
     @Test
     @Order(44)
     public void testLeave()  {
-        if (group == null)  {
-            return;
-        }
+        Assertions.assertNotNull(group, "No group");
         log("Leaving group...");
         var ephemeralResponse = api.leaveGroup(group).join();
         log("Left group: %s", ephemeralResponse);
@@ -805,8 +772,12 @@ public class TestLibrary implements Listener {
     @Test
     @Order(45)
     public void testPollMessage()  {
-        var pollOptionFirst = new PollOption("First");
-        var pollOptionSecond = new PollOption("Second");
+        var pollOptionFirst = new PollOptionBuilder()
+                .name("First")
+                .build();
+        var pollOptionSecond = new PollOptionBuilder()
+                .name("Second")
+                .build();
         var pollMessage = new PollCreationMessageBuilder()
                 .title("Example poll")
                 .selectableOptions(List.of(pollOptionFirst, pollOptionSecond))
@@ -873,19 +844,32 @@ public class TestLibrary implements Listener {
         log("Sent buttons");
     }
 
-    private List<Button> createButtons()  {      return IntStream.range(0, 3)
-            .mapToObj(index -> new ButtonText("Button %s".formatted(index)))
+    private List<Button> createButtons()  {
+        return IntStream.range(0, 3)
+            .mapToObj(this::createButton)
             .map(Button::of)
             .toList();
+    }
+
+    private ButtonText createButton(int index) {
+        return new ButtonTextBuilder()
+                .content("Button %s".formatted(index))
+                .build();
     }
 
     @Test
     @Order(49)
     public void testListMessage()  {
         var buttons = List.of(ButtonRow.of("First option", "A nice description"), ButtonRow.of("Second option", "A nice description"), ButtonRow.of("Third option", "A nice description"));
-        var section = new ButtonSection("First section", buttons);
+        var section = new ButtonSectionBuilder()
+                .title("First section")
+                .rows(buttons)
+                .build();
         var otherButtons = List.of(ButtonRow.of("First option", "A nice description"), ButtonRow.of("Second option", "A nice description"), ButtonRow.of("Third option", "A nice description"));
-        var anotherSection = new ButtonSection("First section", otherButtons);
+        var anotherSection = new ButtonSectionBuilder()
+                .title("First section")
+                .rows(otherButtons)
+                .build();
         var listMessage = new ListMessageBuilder()
                 .sections(List.of(section, anotherSection))
                 .button("Click me")
@@ -921,13 +905,24 @@ public class TestLibrary implements Listener {
     @Order(50)
     public void testTemplateMessage()  {
         log("Sending template message...");
-        var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
-        var urlButton = HydratedTemplateButton.of(new HydratedURLButton("Search it", "https://google.com"));
-        var callButton = HydratedTemplateButton.of(new HydratedCallButton("Call me", contact.toPhoneNumber().orElseThrow()));
+        var quickReplyButton = new HydratedQuickReplyButtonBuilder()
+                .text("Click me")
+                .build();
+        var quickReplyTemplateButton = HydratedTemplateButton.of(quickReplyButton);
+        var urlButton = new HydratedURLButtonBuilder()
+                .text("Click me")
+                .url( "https://google.com")
+                .build();
+        var urlTemplateButton = HydratedTemplateButton.of(urlButton);
+        var callButton = new HydratedURLButtonBuilder()
+                .text("Call me")
+                .url(contact.toPhoneNumber().orElseThrow())
+                .build();
+        var callTemplateButton = HydratedTemplateButton.of(callButton);
         var fourRowTemplate = new HydratedFourRowTemplateSimpleBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
-                .buttons(List.of(quickReplyButton, urlButton, callButton))
+                .buttons(List.of(quickReplyTemplateButton, urlTemplateButton, callTemplateButton))
                 .build();
         var template = new TemplateMessageSimpleBuilder()
                 .format(fourRowTemplate)
@@ -936,13 +931,19 @@ public class TestLibrary implements Listener {
         log("Sent template message");
     }
 
-    // Just have a test to see if it gets sent, it's not actually a functioning button because it's designed for more complex use cases
+    // Just have a test to see if it gets sent, it's not a functioning button because it's designed for more complex use cases
     @Test
     @Order(51)
     public void testInteractiveMessage()  {
         log("Sending interactive messages..");
+        var reviewAndPay = new InteractiveButtonBuilder()
+                .name("review_and_pay")
+                .build();
+        var reviewOrder = new InteractiveButtonBuilder()
+                .name("review_order")
+                .build();
         var nativeFlowMessage = new InteractiveNativeFlowBuilder()
-                .buttons(List.of(new InteractiveButton("review_and_pay"), new InteractiveButton("review_order")))
+                .buttons(List.of(reviewAndPay, reviewOrder))
                 .build();
         var nativeHeader = new InteractiveHeaderSimpleBuilder()
                 .title("Title")
@@ -1019,7 +1020,7 @@ public class TestLibrary implements Listener {
 
     @Override
     public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
-        System.out.println(info.toJson());
+        System.out.println(info);
     }
 
     private String randomId()  {

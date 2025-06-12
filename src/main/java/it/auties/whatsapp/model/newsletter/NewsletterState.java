@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.newsletter;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -9,14 +9,32 @@ import java.util.Objects;
 import java.util.Optional;
 
 @ProtobufMessage
-@Json
 public final class NewsletterState {
+    private static final NewsletterState UNKNOWN = new NewsletterState(null);
+
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    @Json.Property("type")
     String type;
 
-    public NewsletterState(String type) {
+    NewsletterState(String type) {
         this.type = type;
+    }
+
+    public static NewsletterState unknown() {
+        return UNKNOWN;
+    }
+
+    public static Optional<NewsletterState> ofJson(JSONObject jsonObject) {
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var type = jsonObject.getString("type");
+        if(type != null) {
+            return Optional.empty();
+        }
+
+        var result = new NewsletterState(type);
+        return Optional.of(result);
     }
 
     public Optional<String> type() {

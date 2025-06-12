@@ -1,40 +1,48 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.util.Map;
 import java.util.Optional;
 
-@Json
 public final class AcceptAdminInviteNewsletterResponse {
-    private static final AcceptAdminInviteNewsletterResponse EMPTY = new AcceptAdminInviteNewsletterResponse(null);
-
     private final Jid jid;
 
     private AcceptAdminInviteNewsletterResponse(Jid jid) {
         this.jid = jid;
     }
 
-    @Json.Creator
-    static AcceptAdminInviteNewsletterResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<AcceptAdminInviteNewsletterResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("xwa2_newsletter_admin_invite_accept") instanceof Map<?,?> response)) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
         }
 
-        if(!(response.get("id") instanceof String value)) {
-            return EMPTY;
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
         }
 
-        var jid = Jid.of(value);
-        return new AcceptAdminInviteNewsletterResponse(jid);
+        var response = data.getJSONObject("xwa2_newsletter_admin_invite_accept");
+        if(response == null) {
+            return Optional.empty();
+        }
+
+        var id = response.getString("id");
+        if(id == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(id);
+        var result = new AcceptAdminInviteNewsletterResponse(jid);
+        return Optional.of(result);
     }
 
-    public Optional<Jid> jid() {
-        return Optional.ofNullable(jid);
+    public Jid jid() {
+        return jid;
     }
 }

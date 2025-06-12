@@ -8,7 +8,6 @@ import java.util.Arrays;
 
 import static it.auties.whatsapp.util.SignalConstants.KEY_LENGTH;
 
-// TODO: Switch out for JDK implementation
 public final class Hkdf {
     private static final int ITERATION_START_OFFSET = 1; // v3
     private static final int HASH_OUTPUT_SIZE = 32;

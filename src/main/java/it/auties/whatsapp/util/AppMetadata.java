@@ -1,7 +1,6 @@
 package it.auties.whatsapp.util;
 
-import io.avaje.jsonb.Json;
-import io.avaje.jsonb.Jsonb;
+import com.alibaba.fastjson2.JSON;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
@@ -125,10 +124,7 @@ public final class AppMetadata {
         }
 
         return Medias.downloadAsync(business ? MOBILE_BUSINESS_IOS_URL : MOBILE_IOS_URL, null, MOBILE_IOS_USER_AGENT).thenApplyAsync(response -> {
-            var result = Jsonb.builder()
-                    .build()
-                    .type(IosVersionResponse.class)
-                    .fromJson(response);
+            var result = IosVersionResponse.of(response);
             if(result == null) {
                 return business ? MOBILE_BUSINESS_IOS_VERSION : MOBILE_PERSONAL_IOS_VERSION;
             }
@@ -208,10 +204,7 @@ public final class AppMetadata {
                 return Optional.empty();
             }
 
-            var result = Jsonb.builder()
-                    .build()
-                    .type(WhatsappAndroidApp.class)
-                    .fromJson(Files.readString(localCache));
+            var result = WhatsappAndroidApp.of(Files.readAllBytes(localCache));
             return Optional.of(result);
         } catch (Throwable throwable) {
             return Optional.empty();
@@ -249,10 +242,7 @@ public final class AppMetadata {
     private static void cacheWhatsappData(WhatsappAndroidApp apk) {
         CompletableFuture.runAsync(() -> {
             try {
-                var json = Jsonb.builder()
-                        .build()
-                        .type(WhatsappAndroidApp.class)
-                        .toJson(apk);
+                var json = apk.toJson();
                 var file = getAndroidLocalCache(apk.business());
                 Files.createDirectories(file.getParent());
                 Files.writeString(file, json);
@@ -352,32 +342,34 @@ public final class AppMetadata {
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    @Json
     record IosVersionResponse(
             Version version
     ) {
-        @SuppressWarnings("unchecked")
-        @Json.Creator
-        static IosVersionResponse of(@Json.Unmapped Map<String, Object> json) {
-            var results = (List<Map<String, Object>>) json.get("results");
-            if (results.isEmpty()) {
+        static IosVersionResponse of(byte[] json) {
+            if(json == null) {
                 return null;
             }
 
-            var result = (String) results.getFirst().get("version");
-            if (result == null) {
+            var jsonObject = JSON.parseObject(json);
+            var results = jsonObject.getJSONArray("results");
+            if (results == null || results.isEmpty()) {
                 return null;
             }
 
-            if (!result.startsWith("2.")) {
-                result = "2." + result;
+            var result = results.getJSONObject(0);
+            var version = result.getString("version");
+            if (version == null) {
+                return null;
             }
 
-            return new IosVersionResponse(Version.of(result));
+            if (!version.startsWith("2.")) {
+                version = "2." + result;
+            }
+
+            return new IosVersionResponse(Version.of(version));
         }
     }
 
-    @Json
     record WhatsappAndroidApp(
             Version version,
             byte[] md5Hash,
@@ -385,6 +377,31 @@ public final class AppMetadata {
             List<byte[]> certificates,
             boolean business
     ) {
+        static WhatsappAndroidApp of(byte[] json) {
+            if(json == null) {
+                return null;
+            }
 
+            var jsonObject = JSON.parseObject(json);
+            if(jsonObject == null) {
+                return null;
+            }
+
+            var versionValue = jsonObject.getString("version");
+            var version = Version.of(versionValue);
+            var md5Hash = Base64.getDecoder().decode(jsonObject.getString("md5Hash"));
+            var secretKey = Base64.getDecoder().decode(jsonObject.getString("secretKey"));
+            var certificatesJsonObjects = jsonObject.getJSONArray("certificates");
+            var certificates = new ArrayList<byte[]>(certificatesJsonObjects.size());
+            for(var i = 0; i < certificatesJsonObjects.size(); i++) {
+                certificates.set(i, Base64.getDecoder().decode(certificatesJsonObjects.getString(i)));
+            }
+            var business = jsonObject.getBooleanValue("business");
+            return new WhatsappAndroidApp(version, md5Hash, secretKey, certificates, business);
+        }
+
+        public String toJson() {
+            return JSON.toJSONString(this);
+        }
     }
 }

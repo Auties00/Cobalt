@@ -13,6 +13,8 @@ import java.util.stream.Stream;
  * @param content     a nullable object: a List of {@link Node}, a {@link String} or a {@link Number}
  */
 public record Node(String description, Attributes attributes, Object content) {
+    private static final Node EMPTY = new Node("xmlstreamend", Attributes.of(), null);
+
     /**
      * Constructs a Node that only provides a non-null tag
      *
@@ -170,7 +172,7 @@ public record Node(String description, Attributes attributes, Object content) {
     }
 
     public static Node empty() {
-        return null;
+        return EMPTY;
     }
 
     /**

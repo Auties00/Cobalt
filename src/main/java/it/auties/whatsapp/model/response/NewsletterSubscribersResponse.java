@@ -1,39 +1,45 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSON;
 
-import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 
-@Json
 public final class NewsletterSubscribersResponse {
-    private static final NewsletterSubscribersResponse EMPTY = new NewsletterSubscribersResponse(null);
-
     private final Long subscribersCount;
 
     private NewsletterSubscribersResponse(Long subscribersCount) {
         this.subscribersCount = subscribersCount;
     }
 
-    @Json.Creator
-    static NewsletterSubscribersResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<NewsletterSubscribersResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("xwa2_newsletter") instanceof Map<?,?> response)) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
         }
 
-        if(!(response.get("thread_metadata") instanceof Map<?,?> metadata)) {
-            return EMPTY;
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
         }
 
-        if(!(metadata.get("subscribers_count") instanceof Number value)) {
-            return EMPTY;
+        var newsletter = data.getJSONObject("xwa2_newsletter");
+        if(newsletter == null) {
+            return Optional.empty();
         }
 
-        return new NewsletterSubscribersResponse(value.longValue());
+        var metadata = newsletter.getJSONObject("thread_metadata");
+        if(metadata == null) {
+            return Optional.empty();
+        }
+
+        var subscribersCount = metadata.getLong("subscribers_count");
+        var result = new NewsletterSubscribersResponse(subscribersCount);
+        return Optional.of(result);
     }
 
     public OptionalLong subscribersCount() {

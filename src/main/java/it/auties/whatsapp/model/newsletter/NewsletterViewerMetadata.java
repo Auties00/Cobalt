@@ -1,21 +1,15 @@
 package it.auties.whatsapp.model.newsletter;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
-import java.util.Arrays;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Json
 @ProtobufMessage
 public final class NewsletterViewerMetadata {
-    private static final Map<String, NewsletterViewerRole> PRETTY_NAME_TO_ROLE = Arrays.stream(NewsletterViewerRole.values())
-            .collect(Collectors.toMap(entry -> entry.name().toLowerCase(), role -> role));
-
     @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
     boolean mute;
 
@@ -27,21 +21,19 @@ public final class NewsletterViewerMetadata {
         this.role = Objects.requireNonNullElse(role, NewsletterViewerRole.UNKNOWN);
     }
 
-    @Json.Creator
-    NewsletterViewerMetadata(@Json.Unmapped Map<String, Object> json) {
-        this.mute = switch (json.get("mute")) {
+    public static Optional<NewsletterViewerMetadata> ofJson(JSONObject object) {
+        var mute = switch (object.get("mute")) {
             case Boolean bool -> bool;
             case String string -> string.equals("ON");
-            default -> false;
+            case null, default -> false;
         };
-        this.role = switch (json.get("role")) {
-            case String string -> PRETTY_NAME_TO_ROLE.getOrDefault(string.toLowerCase(), NewsletterViewerRole.UNKNOWN);
-            case Integer index -> {
-                var values = NewsletterViewerRole.values();
-                yield index >= values.length ? NewsletterViewerRole.UNKNOWN : values[index];
-            }
+        var role = switch (object.get("role")) {
+            case String string -> NewsletterViewerRole.of(string);
+            case Integer index -> NewsletterViewerRole.of(index);
             default -> NewsletterViewerRole.UNKNOWN;
         };
+        var result = new NewsletterViewerMetadata(mute, role);
+        return Optional.of(result);
     }
 
     public boolean mute() {

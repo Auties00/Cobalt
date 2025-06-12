@@ -20,7 +20,7 @@ public record SessionBuilder(SessionAddress address, Keys keys) {
         if (!keys.hasTrust(address, identityKey)) {
             throw new IllegalArgumentException("Untrusted key");
         }
-        if (!Curve25519.verifySignature(identityKey, signedPreKey.signalPublicKey(), signedPreKey.signature())) {
+        if (!Curve25519.verifySignature(SignalConstants.createCurveKey(identityKey), signedPreKey.signalPublicKey(), signedPreKey.signature())) {
             throw new IllegalArgumentException("Signature mismatch");
         }
         var baseKey = SignalKeyPair.random();

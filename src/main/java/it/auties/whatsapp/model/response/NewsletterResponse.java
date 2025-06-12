@@ -1,40 +1,47 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
-import io.avaje.jsonb.Jsonb;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 
-import java.util.Map;
 import java.util.Optional;
 
-@Json
 public final class NewsletterResponse {
-    private static final NewsletterResponse EMPTY = new NewsletterResponse(null);
-
     private final Newsletter newsletter;
 
     private NewsletterResponse(Newsletter newsletter) {
         this.newsletter = newsletter;
     }
 
-    @Json.Creator
-    static NewsletterResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<NewsletterResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("newsletter") instanceof Map<?,?> response)) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
         }
 
-        var newsletter = Jsonb.builder()
-                .build()
-                .type(Newsletter.class)
-                .fromObject(response);
-        return new NewsletterResponse(newsletter);
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
+        }
+
+        var dataKeys = data.sequencedKeySet();
+        if(dataKeys.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var newsletter = Newsletter.ofJson(data.getJSONObject(dataKeys.getFirst()));
+        if(newsletter.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var result = new NewsletterResponse(newsletter.get());
+        return Optional.of(result);
     }
 
-    public Optional<Newsletter> newsletter() {
-        return Optional.ofNullable(newsletter);
+    public Newsletter newsletter() {
+        return newsletter;
     }
 }

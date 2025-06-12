@@ -1,48 +1,54 @@
 package it.auties.whatsapp.model.response;
 
-import io.avaje.jsonb.Json;
+import com.alibaba.fastjson2.JSON;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
-@Json
 public final class UserChosenNameResponse {
-    private static final UserChosenNameResponse EMPTY = new UserChosenNameResponse(null);
-
     private final String name;
 
     private UserChosenNameResponse(String name) {
         this.name = name;
     }
 
-    @Json.Creator
-    static UserChosenNameResponse of(@Json.Unmapped Map<String, Object> json) {
-        if(!(json.get("data") instanceof Map<?,?> data)) {
-            return EMPTY;
+    public static Optional<UserChosenNameResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
         }
 
-        if(!(data.get("xwa2_users_updates_since") instanceof List<?> responses) || responses.isEmpty()) {
-            return EMPTY;
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
         }
 
-        if(!(responses.getFirst() instanceof Map<?,?> response)) {
-            return EMPTY;
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
         }
 
-        if(!(response.get("updates") instanceof List<?> updates) || updates.isEmpty()) {
-            return EMPTY;
+        var responses = data.getJSONArray("xwa2_users_updates_since");
+        if(responses == null || responses.isEmpty()) {
+            return Optional.empty();
         }
 
-        if(!(updates.getFirst() instanceof Map<?,?> update)) {
-            return EMPTY;
+        var response = responses.getJSONObject(0);
+        if(response == null) {
+            return Optional.empty();
         }
 
-        if(!(update.get("text") instanceof String name)) {
-            return EMPTY;
+        var updates = response.getJSONArray("updates");
+        if(updates == null || updates.isEmpty()) {
+            return Optional.empty();
         }
 
-        return new UserChosenNameResponse(name);
+        var update = updates.getJSONObject(0);
+        if(update == null) {
+            return Optional.empty();
+        }
+
+        var text = update.getString("text");
+        var result = new UserChosenNameResponse(text);
+        return Optional.of(result);
     }
 
     public Optional<String> name() {

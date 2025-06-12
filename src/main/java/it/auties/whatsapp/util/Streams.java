@@ -50,5 +50,10 @@ public final class Streams {
             buffer.get(bytes, off, len);
             return len;
         }
+
+        @Override
+        public int available() {
+            return buffer.hasRemaining() ? buffer.remaining() : -1;
+        }
     }
 }

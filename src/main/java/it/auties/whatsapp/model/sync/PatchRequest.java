@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
-import io.avaje.jsonb.Jsonb;
-import io.avaje.jsonb.Types;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 
 import java.util.ArrayList;
@@ -10,10 +9,7 @@ import java.util.List;
 public record PatchRequest(PatchType type, List<PatchEntry> entries) {
     public record PatchEntry(ActionValueSync sync, String index, Operation operation) {
         public static PatchEntry of(ActionValueSync sync, Operation operation, String... args) {
-            var index = Jsonb.builder()
-                    .build()
-                    .type(Types.listOf(String.class))
-                    .toJson(toJsonArgs(sync, args));
+            var index = JSON.toJSONString(toJsonArgs(sync, args));
             return new PatchEntry(sync, index, operation);
         }
 

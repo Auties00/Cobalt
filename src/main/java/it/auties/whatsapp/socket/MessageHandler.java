@@ -50,10 +50,14 @@ import it.auties.whatsapp.model.sync.HistorySyncSpec;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -75,6 +79,7 @@ import static it.auties.whatsapp.util.SignalConstants.*;
 
 class MessageHandler {
     private static final int HISTORY_SYNC_MAX_TIMEOUT = 25;
+    private static final Set<HistorySync.Type> REQUIRED_HISTORY_SYNC_TYPES = Set.of(HistorySync.Type.INITIAL_BOOTSTRAP, HistorySync.Type.PUSH_NAME, HistorySync.Type.NON_BLOCKING_DATA);
 
     private final SocketHandler socketHandler;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
@@ -82,12 +87,14 @@ class MessageHandler {
     private final ReentrantLock lock;
     private final HistorySyncProgressTracker recentHistorySyncTracker;
     private final HistorySyncProgressTracker fullHistorySyncTracker;
+    private final Set<HistorySync.Type> historySyncTypes;
     private ScheduledFuture<?> historySyncTask;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.devicesCache = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
+        this.historySyncTypes = ConcurrentHashMap.newKeySet();
         this.lock = new ReentrantLock(true);
         this.recentHistorySyncTracker = new HistorySyncProgressTracker();
         this.fullHistorySyncTracker = new HistorySyncProgressTracker();
@@ -293,44 +300,54 @@ class MessageHandler {
     }
 
     private CompletableFuture<Void> attributePollUpdateMessage(ChatMessageInfo info, PollUpdateMessage pollUpdateMessage) {
-        if (pollUpdateMessage.encryptedMetadata().isPresent()) {
-            return CompletableFuture.completedFuture(null);
-        }
+        try {
+            if (pollUpdateMessage.encryptedMetadata().isPresent()) {
+                return CompletableFuture.completedFuture(null);
+            }
 
-        var me = socketHandler.store().jid();
-        if (me.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
-        }
+            var me = socketHandler.store().jid();
+            if (me.isEmpty()) {
+                return CompletableFuture.completedFuture(null);
+            }
 
-        var pollCreationId = pollUpdateMessage.pollCreationMessageKey().id();
-        var additionalData = "%s\0%s".formatted(pollCreationId, me.get().toSimpleJid());
-        var encryptedOptions = pollUpdateMessage.votes()
-                .stream()
-                .map(this::getPollUpdateOptionHash)
-                .toList();
-        var pollUpdateEncryptedOptions = new PollUpdateEncryptedOptionsBuilder()
-                .selectedOptions(encryptedOptions)
-                .build();
-        var encryptedPollUpdateEncryptedOptions = PollUpdateEncryptedOptionsSpec.encode(pollUpdateEncryptedOptions);
-        var originalPollInfo = socketHandler.store()
-                .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
-                .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
-        var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
-        var modificationSenderJid = info.senderJid().toSimpleJid();
-        pollUpdateMessage.setVoter(modificationSenderJid);
-        var originalPollSenderJid = originalPollInfo.senderJid().toSimpleJid();
-        var useSecretPayload = pollCreationId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
-        var encryptionKey = originalPollMessage.encryptionKey()
-                .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
-        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload.getBytes(), 32);
-        var iv = Bytes.random(12);
-        var pollUpdateEncryptedPayload = AesGcm.encrypt(iv, encryptedPollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
-        var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadataBuilder()
-                .payload(pollUpdateEncryptedPayload)
-                .iv(iv)
-                .build();
-        pollUpdateMessage.setEncryptedMetadata(pollUpdateEncryptedMetadata);
-        return CompletableFuture.completedFuture(null);
+            var pollCreationId = pollUpdateMessage.pollCreationMessageKey().id();
+            var additionalData = "%s\0%s".formatted(pollCreationId, me.get().toSimpleJid());
+            var encryptedOptions = pollUpdateMessage.votes()
+                    .stream()
+                    .map(this::getPollUpdateOptionHash)
+                    .toList();
+            var pollUpdateEncryptedOptions = new PollUpdateEncryptedOptionsBuilder()
+                    .selectedOptions(encryptedOptions)
+                    .build();
+            var encryptedPollUpdateEncryptedOptions = PollUpdateEncryptedOptionsSpec.encode(pollUpdateEncryptedOptions);
+            var originalPollInfo = socketHandler.store()
+                    .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
+                    .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
+            var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
+            var modificationSenderJid = info.senderJid().toSimpleJid();
+            pollUpdateMessage.setVoter(modificationSenderJid);
+            var originalPollSenderJid = originalPollInfo.senderJid().toSimpleJid();
+            var useSecretPayload = pollCreationId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
+            var encryptionKey = originalPollMessage.encryptionKey()
+                    .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
+            var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload.getBytes(), 32);
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(useCaseSecret, "AES"),
+                    new GCMParameterSpec(128, Bytes.random(12))
+            );
+            cipher.updateAAD(additionalData.getBytes(StandardCharsets.UTF_8));
+            var pollUpdateEncryptedPayload = cipher.doFinal(encryptedPollUpdateEncryptedOptions);
+            var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadataBuilder()
+                    .payload(pollUpdateEncryptedPayload)
+                    .iv(Bytes.random(12))
+                    .build();
+            pollUpdateMessage.setEncryptedMetadata(pollUpdateEncryptedMetadata);
+            return CompletableFuture.completedFuture(null);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot encrypt poll update", exception);
+        }
     }
 
     private byte[] getPollUpdateOptionHash(PollOption entry) {
@@ -901,15 +918,15 @@ class MessageHandler {
                     .map(MessageContainerSpec::decode)
                     .map(messageContainer -> {
                         var readStatus = notify ? MessageStatus.DELIVERED : MessageStatus.READ;
-                        var message = new NewsletterMessageInfo(
-                                messageId,
-                                serverId,
-                                timestamp,
-                                views,
-                                reactions,
-                                messageContainer,
-                                readStatus
-                        );
+                        var message = new NewsletterMessageInfoBuilder()
+                                .id(messageId)
+                                .serverId(serverId)
+                                .timestampSeconds(timestamp)
+                                .views(views)
+                                .reactions(reactions)
+                                .message(messageContainer)
+                                .status(readStatus)
+                                .build();
                         message.setNewsletter(newsletter.get());
                         return message;
                     });
@@ -1226,22 +1243,10 @@ class MessageHandler {
 
     private void onHistorySyncNotification(ChatMessageInfo info, ProtocolMessage protocolMessage) {
         scheduleHistorySyncTimeout();
-
-        if(isHistorySyncIgnorable(protocolMessage)) {
-            return;
-        }
-
         downloadHistorySync(protocolMessage)
                 .thenAcceptAsync(this::onHistoryNotification)
                 .exceptionallyAsync(throwable -> socketHandler.handleFailure(HISTORY_SYNC, throwable))
                 .thenRunAsync(() -> socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync"));
-    }
-
-    private boolean isHistorySyncIgnorable(ProtocolMessage protocolMessage) {
-        return socketHandler.store().webHistorySetting().isZero()
-                && protocolMessage.historySyncNotification()
-                    .filter(entry -> entry.syncType() == HistorySync.Type.RECENT)
-                    .isPresent();
     }
 
     private boolean isTyping(Contact sender) {
@@ -1249,7 +1254,14 @@ class MessageHandler {
                 || sender.lastKnownPresence() == ContactStatus.RECORDING;
     }
 
+
     private CompletableFuture<HistorySync> downloadHistorySync(ProtocolMessage protocolMessage) {
+        if(socketHandler.store().webHistorySetting().isZero() && historySyncTypes.containsAll(REQUIRED_HISTORY_SYNC_TYPES)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        protocolMessage.historySyncNotification()
+                .ifPresent(historySyncNotification -> historySyncTypes.add(historySyncNotification.syncType()));
         return protocolMessage.historySyncNotification()
                 .map(this::downloadHistorySyncNotification)
                 .orElseGet(() -> CompletableFuture.completedFuture(null));
@@ -1282,6 +1294,10 @@ class MessageHandler {
     }
 
     private void onHistoryNotification(HistorySync history) {
+        if(history == null) {
+            return;
+        }
+
         handleHistorySync(history);
         if (history.progress() == null) {
             return;
@@ -1438,7 +1454,7 @@ class MessageHandler {
 
     private void handleNonBlockingData(HistorySync history) {
         for (var pastParticipants : history.pastParticipants()) {
-            socketHandler.pastParticipants().put(pastParticipants.groupJid(), pastParticipants.pastParticipants());
+            socketHandler.addPastParticipant(pastParticipants.groupJid(), pastParticipants.pastParticipants());
         }
     }
 
@@ -1520,47 +1536,59 @@ class MessageHandler {
     }
 
     private void handlePollUpdate(ChatMessageInfo info, PollUpdateMessage pollUpdateMessage) {
-        var originalPollInfo = socketHandler.store().findMessageByKey(pollUpdateMessage.pollCreationMessageKey());
-        if(originalPollInfo.isEmpty()) {
-            return;
-        }
+        try {
+            var originalPollInfo = socketHandler.store().findMessageByKey(pollUpdateMessage.pollCreationMessageKey());
+            if(originalPollInfo.isEmpty()) {
+                return;
+            }
 
-        if(!(originalPollInfo.get().message().content() instanceof  PollCreationMessage originalPollMessage)) {
-            return;
-        }
+            if(!(originalPollInfo.get().message().content() instanceof  PollCreationMessage originalPollMessage)) {
+                return;
+            }
 
-        pollUpdateMessage.setPollCreationMessage(originalPollMessage);
-        var originalPollSenderJid = originalPollInfo.get()
-                .senderJid()
-                .toSimpleJid();
-        var modificationSenderJid = info.senderJid().toSimpleJid();
-        pollUpdateMessage.setVoter(modificationSenderJid);
-        var originalPollId = originalPollInfo.get().id();
-        var useSecretPayload = originalPollId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
-        var encryptionKey = originalPollMessage.encryptionKey()
-                .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
-        var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload.getBytes(), 32);
-        var additionalData = "%s\0%s".formatted(
-                originalPollId,
-                modificationSenderJid
-        );
-        var metadata = pollUpdateMessage.encryptedMetadata()
-                .orElseThrow(() -> new NoSuchElementException("Missing encrypted metadata"));
-        var decrypted = AesGcm.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
-        var pollVoteMessage = PollUpdateEncryptedOptionsSpec.decode(decrypted);
-        var selectedOptions = pollVoteMessage.selectedOptions()
-                .stream()
-                .map(sha256 -> originalPollMessage.getSelectableOption(HexFormat.of().formatHex(sha256)))
-                .flatMap(Optional::stream)
-                .toList();
-        originalPollMessage.addSelectedOptions(modificationSenderJid, selectedOptions);
-        pollUpdateMessage.setVotes(selectedOptions);
-        var update = new PollUpdateBuilder()
-                .pollUpdateMessageKey(info.key())
-                .vote(pollVoteMessage)
-                .senderTimestampMilliseconds(Clock.nowMilliseconds())
-                .build();
-        info.pollUpdates().add(update);
+            pollUpdateMessage.setPollCreationMessage(originalPollMessage);
+            var originalPollSenderJid = originalPollInfo.get()
+                    .senderJid()
+                    .toSimpleJid();
+            var modificationSenderJid = info.senderJid().toSimpleJid();
+            pollUpdateMessage.setVoter(modificationSenderJid);
+            var originalPollId = originalPollInfo.get().id();
+            var useSecretPayload = originalPollId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
+            var encryptionKey = originalPollMessage.encryptionKey()
+                    .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
+            var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload.getBytes(), 32);
+            var additionalData = "%s\0%s".formatted(
+                    originalPollId,
+                    modificationSenderJid
+            );
+            var metadata = pollUpdateMessage.encryptedMetadata()
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypted metadata"));
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(useCaseSecret, "AES"),
+                    new GCMParameterSpec(128, metadata.iv())
+            );
+            cipher.updateAAD(additionalData.getBytes(StandardCharsets.UTF_8));
+            var decrypted = cipher.doFinal(metadata.payload());
+            var pollVoteMessage = PollUpdateEncryptedOptionsSpec.decode(decrypted);
+            var selectedOptions = pollVoteMessage.selectedOptions()
+                    .stream()
+                    .map(sha256 -> originalPollMessage.getSelectableOption(HexFormat.of().formatHex(sha256)))
+                    .flatMap(Optional::stream)
+                    .toList();
+            originalPollMessage.addSelectedOptions(modificationSenderJid, selectedOptions);
+            pollUpdateMessage.setVotes(selectedOptions);
+            var update = new PollUpdateBuilder()
+                    .pollUpdateMessageKey(info.key())
+                    .vote(pollVoteMessage)
+                    .senderTimestampMilliseconds(Clock.nowMilliseconds())
+                    .build();
+            info.pollUpdates()
+                    .add(update);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot decrypt poll update", exception);
+        }
     }
 
     private void handleReactionMessage(ChatMessageInfo info, ReactionMessage reactionMessage) {
@@ -1577,6 +1605,7 @@ class MessageHandler {
         }
         recentHistorySyncTracker.clear();
         fullHistorySyncTracker.clear();
+        historySyncTypes.clear();
     }
 
     private static class HistorySyncProgressTracker {

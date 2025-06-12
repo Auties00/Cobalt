@@ -31,7 +31,7 @@ public final class ReactionMessage implements Message {
 
     ReactionMessage(ChatMessageKey key, String content, String groupingKey, long timestampSeconds) {
         this.key = Objects.requireNonNull(key, "key cannot be null");
-        this.content = Objects.requireNonNull(content, "content cannot be null");
+        this.content = content;
         this.groupingKey = groupingKey;
         this.timestampSeconds = timestampSeconds;
     }

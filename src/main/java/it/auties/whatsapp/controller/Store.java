@@ -709,7 +709,7 @@ public final class Store extends Controller<Store> {
      */
     public void resolveAllPendingRequests() {
         for(var request : requests.values()) {
-            request.complete();
+            request.complete(Node.empty());
         }
         requests.clear();
     }
