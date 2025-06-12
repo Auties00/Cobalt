@@ -1649,14 +1649,8 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<Void> changeProfilePicture(ByteBuffer image) {
-        byte[] data = null;
-        if(image != null) {
-            if(!image.hasRemaining()) {
-                throw new IllegalArgumentException("Empty image is not allowed");
-            }
-            data = Medias.getProfilePic(image);
-        }
+    public CompletableFuture<Void> changeProfilePicture(byte[] image) {
+        var data = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), data);
         return switch (store().clientType()) {
             case WEB -> socketHandler.sendQuery("set", "w:profile:picture", body)
@@ -1680,8 +1674,8 @@ public class Whatsapp {
         var proxy = store().proxy()
                 .filter(ignored -> store().mediaProxySetting().allowsDownloads())
                 .orElse(null);
-        var imageFuture = Medias.downloadAsync(image, proxy);
-        return imageFuture.thenComposeAsync(imageResult -> changeGroupPicture(group, ByteBuffer.wrap(imageResult)));
+        return Medias.downloadAsync(image, proxy)
+                .thenComposeAsync(imageResult -> changeGroupPicture(group, imageResult));
     }
 
     /**
@@ -1691,7 +1685,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<Void> changeGroupPicture(JidProvider group, ByteBuffer image) {
+    public CompletableFuture<Void> changeGroupPicture(JidProvider group, byte[] image) {
         if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
             throw new IllegalArgumentException("Expected a group/community");
         }
@@ -2502,7 +2496,7 @@ public class Whatsapp {
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<ByteBuffer> downloadMedia(ChatMessageInfo info) {
+    public CompletableFuture<byte[]> downloadMedia(ChatMessageInfo info) {
         if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
@@ -2520,7 +2514,7 @@ public class Whatsapp {
      * @param info the non-null message info wrapping the media
      * @return a CompletableFuture
      */
-    public CompletableFuture<ByteBuffer> downloadMedia(NewsletterMessageInfo info) {
+    public CompletableFuture<byte[]> downloadMedia(NewsletterMessageInfo info) {
         if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
@@ -2536,7 +2530,7 @@ public class Whatsapp {
      * @param mediaMessage the non-null media
      * @return a CompletableFuture
      */
-    public CompletableFuture<ByteBuffer> downloadMedia(MediaMessage<?> mediaMessage) {
+    public CompletableFuture<byte[]> downloadMedia(MediaMessage<?> mediaMessage) {
         var decodedMedia = mediaMessage.decodedMedia();
         if (decodedMedia.isPresent()) {
             return CompletableFuture.completedFuture(decodedMedia.get());
@@ -2708,7 +2702,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<Void> changeCommunityPicture(JidProvider community, ByteBuffer image) {
+    public CompletableFuture<Void> changeCommunityPicture(JidProvider community, byte[] image) {
         return changeGroupPicture(community, image);
     }
 

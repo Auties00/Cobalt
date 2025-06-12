@@ -6,7 +6,6 @@ import it.auties.whatsapp.model.media.MutableAttachmentProvider;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 
-import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -16,14 +15,14 @@ import java.util.OptionalLong;
  * Read its content using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(ChatMessageInfo)}
  */
 public sealed abstract class MediaMessage<T extends MediaMessage<T>> implements ContextualMessage<T>, MutableAttachmentProvider<T> permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
-    private ByteBuffer decodedMedia;
+    private byte[] decodedMedia;
     private String handle;
 
     public Optional<String> handle() {
         return Optional.ofNullable(handle);
     }
 
-    public Optional<ByteBuffer> decodedMedia() {
+    public Optional<byte[]> decodedMedia() {
         return Optional.ofNullable(decodedMedia);
     }
 
@@ -64,7 +63,7 @@ public sealed abstract class MediaMessage<T extends MediaMessage<T>> implements 
     }
 
     @SuppressWarnings("unchecked")
-    public T setDecodedMedia(ByteBuffer decodedMedia) {
+    public T setDecodedMedia(byte[] decodedMedia) {
         this.decodedMedia = decodedMedia;
         return (T) this;
     }

@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.newsletter;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class NewsletterVerification {
@@ -47,5 +48,22 @@ public class NewsletterVerification {
 
     public boolean verified() {
         return verified;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof NewsletterVerification that && verified == that.verified;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(verified);
+    }
+
+    @Override
+    public String toString() {
+        return "NewsletterVerification{" +
+                "verified=" + verified +
+                '}';
     }
 }

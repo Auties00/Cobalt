@@ -5,13 +5,13 @@ import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 
-import javax.crypto.CipherInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
 import java.util.zip.InflaterInputStream;
 
 import static it.auties.whatsapp.io.BinaryTag.*;
@@ -204,34 +204,5 @@ public final class BinaryDecoder {
             case DICTIONARY_3 -> readDictionaryToken(DICTIONARY_3_TOKENS);
             default -> readSingleByteToken(tag);
         };
-    }
-
-    private static final class ByteBufferInputStream extends InputStream {
-        private final ByteBuffer buffer;
-
-        private ByteBufferInputStream(ByteBuffer buf) {
-            this.buffer = buf;
-        }
-
-        @Override
-        public int available() {
-            return -1; // Don't need this
-        }
-
-        @Override
-        public int read() {
-            return this.buffer.hasRemaining() ? (this.buffer.get() & 0xFF) : -1;
-        }
-
-        @Override
-        public int read(byte[] bytes, int off, int len) {
-            if (!this.buffer.hasRemaining()) {
-                return -1;
-            } else {
-                len = Math.min(len, this.buffer.remaining());
-                this.buffer.get(bytes, off, len);
-                return len;
-            }
-        }
     }
 }

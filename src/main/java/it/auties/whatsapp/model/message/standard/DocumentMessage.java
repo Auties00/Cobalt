@@ -14,7 +14,6 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
-import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -116,7 +115,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @ProtobufBuilder(className = "DocumentMessageSimpleBuilder")
-    static DocumentMessage customBuilder(ByteBuffer media, String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
+    static DocumentMessage customBuilder(byte[] media, String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
         var extensionIndex = fileName.lastIndexOf(".");
         if (extensionIndex == -1 || extensionIndex + 1 >= fileName.length()) {
             throw new IllegalArgumentException("Expected fileName to be formatted as name.extension");
@@ -135,7 +134,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
                 .setDecodedMedia(media);
     }
 
-    private static String getMimeType(ByteBuffer media, String fileName, String mimeType) {
+    private static String getMimeType(byte[] media, String fileName, String mimeType) {
         return Optional.ofNullable(mimeType)
                 .or(() -> Medias.getMimeType(fileName))
                 .or(() -> Medias.getMimeType(media))

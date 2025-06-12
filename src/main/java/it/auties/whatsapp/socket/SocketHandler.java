@@ -36,8 +36,8 @@ import it.auties.whatsapp.model.request.CommunityRequests;
 import it.auties.whatsapp.model.request.MessageRequest;
 import it.auties.whatsapp.model.request.NewsletterRequests;
 import it.auties.whatsapp.model.response.CommunityLinkedGroupsResponse;
-import it.auties.whatsapp.model.response.UserAboutResponse;
 import it.auties.whatsapp.model.response.NewsletterResponse;
+import it.auties.whatsapp.model.response.UserAboutResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessageBuilder;
@@ -284,7 +284,9 @@ public class SocketHandler implements SocketSession.Listener {
 
     @Override
     public void onError(Throwable throwable) {
-        handleFailure(UNKNOWN, throwable);
+        if(isConnected()) {
+            disconnect(DisconnectReason.RECONNECTING);
+        }
     }
 
     public CompletableFuture<Node> sendNode(Node node) {
@@ -316,9 +318,9 @@ public class SocketHandler implements SocketSession.Listener {
         var scheduledRelease = false;
         try {
             writeSemaphore.acquire();
-            if (state.getAcquire() == SocketState.DISCONNECTED) {
+            if (state.getAcquire() != SocketState.CONNECTED) {
                 writeSemaphore.release();
-                return CompletableFuture.completedFuture(Node.empty());
+                return CompletableFuture.failedFuture(new IllegalStateException("Instance is not connected"));
             }
 
             var message = getRequestPayload(request, prologue);
@@ -674,17 +676,17 @@ public class SocketHandler implements SocketSession.Listener {
                 .findFirst();
     }
 
+    @SuppressWarnings("OptionalIsPresent")
     public CompletableFuture<Void> queryNewsletterMessages(JidProvider newsletterJid, int count) {
         return store.findNewsletterByJid(newsletterJid)
                 .map(entry -> CompletableFuture.completedFuture(Optional.of(entry)))
                 .orElseGet(() -> queryNewsletter(newsletterJid.toJid(), NewsletterViewerRole.GUEST))
                 .thenCompose(newsletter -> {
-                    var newsletterInvite = newsletter.orElseThrow(() -> new NoSuchElementException("Cannot querty newsletter " + newsletterJid))
-                            .metadata()
-                            .orElseThrow(() -> new NoSuchElementException("Cannot query newsletter messages: missing metadata " + newsletterJid))
-                            .invite()
-                            .orElseThrow(() -> new NoSuchElementException("Missing newsletter key"));
-                    return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "invite", "key", newsletterInvite)))
+                    if(newsletter.isEmpty()) {
+                        return CompletableFuture.failedFuture(new IllegalStateException("No newsletter found for jid: " + newsletterJid));
+                    }
+
+                    return sendQuery("get", "newsletter", Node.of("messages", Map.of("count", count, "type", "jid", "jid", newsletterJid)))
                             .thenAcceptAsync(result -> onNewsletterMessages(newsletter.get(), result));
                 });
     }

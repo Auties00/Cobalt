@@ -48,8 +48,17 @@ public final class CommunityLinkedGroupsResponse {
         var links = new LinkedHashSet<CommunityLinkedGroup>(length);
         for (var i = 0; i < length; i++) {
             var edge = edges.getJSONObject(i);
-            var id = edge.getString("id");
-            var totalParticipantsCount = edge.getInteger("total_participants_count");
+            var node = edge.getJSONObject("node");
+            if (node == null) {
+                continue;
+            }
+
+            var id = node.getString("id");
+            if (id == null) {
+                continue;
+            }
+
+            var totalParticipantsCount = node.getInteger("total_participants_count");
             var link = new CommunityLinkedGroupBuilder()
                     .jid(Jid.of(id))
                     .participants(totalParticipantsCount)

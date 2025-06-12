@@ -15,7 +15,6 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
-import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -124,7 +123,7 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @ProtobufBuilder(className = "VideoMessageSimpleBuilder")
-    static VideoOrGifMessage videoBuilder(ByteBuffer media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+    static VideoOrGifMessage videoBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
         return new VideoOrGifMessageBuilder()
@@ -140,7 +139,7 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @ProtobufBuilder(className = "GifMessageSimpleBuilder")
-    static VideoOrGifMessage gifBuilder(ByteBuffer media, String mimeType, String caption, Attribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
+    static VideoOrGifMessage gifBuilder(byte[] media, String mimeType, String caption, Attribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
         if (!isNotGif(media, mimeType)) {
             throw new IllegalArgumentException("Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
         }
@@ -160,7 +159,7 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
                 .setDecodedMedia(media);
     }
 
-    private static boolean isNotGif(ByteBuffer media, String mimeType) {
+    private static boolean isNotGif(byte[] media, String mimeType) {
         return Medias.getMimeType(media)
                 .filter("image/gif"::equals)
                 .isEmpty() && (!Objects.equals(mimeType, "image/gif"));

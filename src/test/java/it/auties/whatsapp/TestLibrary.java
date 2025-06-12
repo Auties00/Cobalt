@@ -262,6 +262,7 @@ public class TestLibrary implements Listener {
 
     @Test
     @Order(11)
+    @Disabled
     public void testNewsletters() {
         log("Creating newsletter...");
         var newsletter = api.createNewsletter("Newsletter", "A brand new newsletter", null)

@@ -149,7 +149,7 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
      * @return a non-null new message
      */
     @ProtobufBuilder(className = "ImageMessageSimpleBuilder")
-    static ImageMessage simpleBuilder(ByteBuffer media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+    static ImageMessage simpleBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         return new ImageMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, IMAGE.mimeType()))

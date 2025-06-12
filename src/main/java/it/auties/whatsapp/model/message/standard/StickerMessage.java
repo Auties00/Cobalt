@@ -96,7 +96,7 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
-    static StickerMessage simpleBuilder(ByteBuffer media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
+    static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         return new StickerMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, STICKER.mimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, false))

@@ -69,10 +69,10 @@ public final class SignalMessage {
 
     public byte[] serialized() {
         var messageLength = SignalMessageSpec.sizeOf(this);
-        var serialized = new byte[1 + messageLength + SIGNATURE_LENGTH];
+        var serialized = new byte[1 + messageLength + MAC_LENGTH];
         serialized[0] = serializedVersion();
         SignalMessageSpec.encode(this, ProtobufOutputStream.toBytes(serialized, 1));
-        if(signature == null || signature.length != SIGNATURE_LENGTH) {
+        if(signature == null || signature.length != MAC_LENGTH) {
             throw new InternalError();
         }
 
