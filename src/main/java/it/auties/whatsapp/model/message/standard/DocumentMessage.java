@@ -115,7 +115,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @ProtobufBuilder(className = "DocumentMessageSimpleBuilder")
-    static DocumentMessage customBuilder(byte[] media, String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo) {
+    static DocumentMessage customBuilder(byte[] media, String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo, String caption) {
         var extensionIndex = fileName.lastIndexOf(".");
         if (extensionIndex == -1 || extensionIndex + 1 >= fileName.length()) {
             throw new IllegalArgumentException("Expected fileName to be formatted as name.extension");
@@ -130,6 +130,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
                 .thumbnailWidth(THUMBNAIL_WIDTH)
                 .thumbnailHeight(THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
+                .caption(caption)
                 .build()
                 .setDecodedMedia(media);
     }
