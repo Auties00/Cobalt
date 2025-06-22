@@ -31,8 +31,8 @@ public final class BusinessCategory {
         return new BusinessCategory(id, name);
     }
 
-    public Optional<String> id() {
-        return Optional.ofNullable(id);
+    public String id() {
+        return id;
     }
 
     public Optional<String> name() {

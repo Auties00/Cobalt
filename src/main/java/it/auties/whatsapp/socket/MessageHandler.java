@@ -270,8 +270,7 @@ class MessageHandler {
             mediaMessage.setHandle(upload.handle());
         }
 
-        attachmentProvider
-                .setMediaSha256(upload.fileSha256())
+        attachmentProvider.setMediaSha256(upload.fileSha256())
                 .setMediaEncryptedSha256(upload.fileEncSha256())
                 .setMediaKey(upload.mediaKey())
                 .setMediaUrl(upload.url())

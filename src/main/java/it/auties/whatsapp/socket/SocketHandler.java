@@ -318,7 +318,7 @@ public class SocketHandler implements SocketSession.Listener {
         var scheduledRelease = false;
         try {
             writeSemaphore.acquire();
-            if (state.getAcquire() != SocketState.CONNECTED) {
+            if (state.getAcquire() == SocketState.DISCONNECTED) {
                 writeSemaphore.release();
                 return CompletableFuture.failedFuture(new IllegalStateException("Instance is not connected"));
             }

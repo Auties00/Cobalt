@@ -363,7 +363,7 @@ public final class AppMetadata {
             }
 
             if (!version.startsWith("2.")) {
-                version = "2." + result;
+                version = "2." + version;
             }
 
             return new IosVersionResponse(Version.of(version));
