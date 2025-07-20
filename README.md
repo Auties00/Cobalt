@@ -45,7 +45,7 @@ In short, if you use this library without a malicious intent, you will never get
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>cobalt</artifactId>
-    <version>0.0.9</version>
+    <version>0.0.10</version>
 </dependency>
 ```
 
@@ -53,17 +53,17 @@ In short, if you use this library without a malicious intent, you will never get
 
 - Groovy DSL
     ```groovy
-    implementation 'com.github.auties00:cobalt:0.0.9'
+    implementation 'com.github.auties00:cobalt:0.0.10'
     ```
 
 - Kotlin DSL
     ```groovy
-    implementation("com.github.auties00:cobalt:0.0.9")
+    implementation("com.github.auties00:cobalt:0.0.10")
     ```
 
 ### Javadocs & Documentation
 
-Javadocs for Cobalt are available [here](https://www.javadoc.io/doc/com.github.auties00/cobalt/0.0.9).
+Javadocs for Cobalt are available [here](https://www.javadoc.io/doc/com.github.auties00/cobalt/0.0.10).
 The documentation for this project reaches most of the publicly available APIs(i.e. public members in exported packages), but sometimes the Javadoc may be incomplete
 or some methods could be absent from the project's README. If you find any of the latter, know that even small contributions are welcomed!
 

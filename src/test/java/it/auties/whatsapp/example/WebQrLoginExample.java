@@ -12,16 +12,9 @@ public class WebQrLoginExample {
     public static void main(String[] args) {
         Whatsapp.webBuilder()
                 .newConnection()
-                .historySetting(WebHistorySetting.extended(false))
+                .historySetting(WebHistorySetting.standard(true))
                 .unregistered(QrHandler.toTerminal())
-                .addLoggedInListener(api -> {
-                    var contact = Jid.of(393495089819L);
-                    var image = new ImageMessageSimpleBuilder()
-                            .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
-                            .caption("Image test")
-                            .build();
-                    var textResponse = api.sendMessage(contact, image).join();
-                })
+                .addLoggedInListener(() -> System.out.println("Logged in!"))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewChatMessageListener((api, message) -> System.out.println(message))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
