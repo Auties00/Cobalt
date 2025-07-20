@@ -9,7 +9,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
- * The constants of this enumerated type describe the various roles that a {@link GroupParticipant}
+ * The constants of this enumerated type describe the various roles that a {@link ChatParticipant}
  * can have in a group. Said roles can be changed using various methods in {@link Whatsapp}.
  */
 @ProtobufEnum(name = "GroupParticipant.Rank")
