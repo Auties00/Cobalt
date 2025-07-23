@@ -127,14 +127,14 @@
 
                     <!-- Deploy the artifact -->
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${maven.nexus.plugin.version}</version>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${maven.staging.plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -176,12 +176,11 @@
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
-        <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
+        <maven.staging.plugin.version>0.8.0</maven.staging.plugin.version>
         <zxing.version>3.5.1</zxing.version>
         <json.version>2.0.57</json.version>
         <protoc.version>3.4.3</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
-        <jackson.version>2.15.2</jackson.version>
         <curve25519.version>2.0</curve25519.version>
         <lazysodium.version>5.1.4</lazysodium.version>
         <linkpreview.version>2.3</linkpreview.version>
