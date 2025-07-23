@@ -43,7 +43,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -58,7 +57,6 @@ public class TestLibrary implements Listener {
     private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 
     private static Whatsapp api;
-    private static CompletableFuture<?> future;
     private static CountDownLatch latch;
     private static Jid contact;
     private static SixPartsKeys account;
@@ -76,34 +74,30 @@ public class TestLibrary implements Listener {
         log("Initializing api to start testing...");
         if(account == null) {
             log("Using web api to test...");
-            api = Whatsapp.webBuilder()
-                    .serializer(ControllerSerializer.discarding())
-                    .newConnection()
-                    .errorHandler((whatsapp, location, throwable) -> {
-                        throwable.printStackTrace();
-                        Assertions.fail(throwable);
-                        System.exit(1);
-                        return ErrorHandler.Result.DISCONNECT;
-                    })
+            api = configureApi(Whatsapp.webBuilder())
                     .unregistered(QrHandler.toTerminal());
         }else {
             log("Using mobile api to test...");
-            api = Whatsapp.mobileBuilder()
-                    .serializer(ControllerSerializer.discarding())
-                    .newConnection(Objects.requireNonNull(account, "Missing account"))
-                    .errorHandler((whatsapp, location, throwable) -> {
-                        throwable.printStackTrace();
-                        Assertions.fail(throwable);
-                        System.exit(1);
-                        return ErrorHandler.Result.DISCONNECT;
-                    })
+            api = configureApi(Whatsapp.mobileBuilder())
                     .device(CompanionDevice.ios(true)) // Make sure to select the correct account type(business or personal) or you'll get error 401
                     .registered()
-                    .orElseThrow();
+                    .orElse(null);
         }
-        future = api.addListener(this)
-                .connect()
-                .exceptionally(Assertions::fail);
+        if(api != null) {
+            api.addListener(this)
+                    .connect()
+                    .exceptionally(Assertions::fail);
+        }
+    }
+
+    private <T extends OptionsBuilder<T>> T configureApi(ConnectionBuilder<T> optionsBuilder) {
+        return optionsBuilder.serializer(ControllerSerializer.discarding())
+                .newConnection(Objects.requireNonNull(account, "Missing account"))
+                .errorHandler((whatsapp, location, throwable) -> {
+                    Assertions.fail(throwable);
+                    System.exit(1);
+                    return ErrorHandler.Result.DISCONNECT;
+                });
     }
 
     private void loadConfig() throws IOException  {
@@ -962,8 +956,7 @@ public class TestLibrary implements Listener {
     @AfterAll
     public void testDisconnect()  {
         log("Logging off...");
-        CompletableFuture.delayedExecutor(5, TimeUnit.MINUTES).execute(api::disconnect);
-        future.join();
+        api.disconnect().join();
         log("Logged off");
     }
 
