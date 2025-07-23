@@ -1,4 +1,3 @@
-const request = require('request-promise-native')
 const acorn = require('acorn')
 const walk = require('acorn-walk')
 const fs = require('fs/promises')
@@ -21,42 +20,49 @@ const extractAllExpressions = (node) => {
 	return expressions
 }
 
+const sendRequest = async (url, headers) => {
+	let response = await fetch(url, {
+		headers: headers
+	})
+	if (!response.ok) {
+		throw new Error(`HTTP request to ${url} returned status code ${response.status}`);
+	}
+	return await response.text()
+}
+
 async function findAppModules() {
-	const ua = {
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0',
-			'Sec-Fetch-Dest': 'script',
-			'Sec-Fetch-Mode': 'no-cors',
-			'Sec-Fetch-Site': 'same-origin',
-			'Referer': 'https://web.whatsapp.com/',
-			'Accept': '*/*',
-			'Accept-Language': 'Accept-Language: en-US,en;q=0.5',
-		}
+	const headers = {
+		'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+		'Sec-Fetch-Dest': 'script',
+		'Sec-Fetch-Mode': 'no-cors',
+		'Sec-Fetch-Site': 'same-origin',
+		"Sec-Fetch-User": "?1",
+		'Referer': 'https://web.whatsapp.com/',
+		'Accept': '*/*',
+		'Accept-Language': 'Accept-Language: en-US,en;q=0.5',
 	}
 	const baseURL = 'https://web.whatsapp.com'
-	const serviceworker = await request.get(`${baseURL}/serviceworker.js`, ua)
+	const serviceworker = await sendRequest(`${baseURL}/serviceworker.js`, headers)
 
 	const versions = [...serviceworker.matchAll(/assets-manifest-([\d\.]+).json/g)].map(r => r[1])
 	const version = versions[0]
 
 	let bootstrapQRURL = ''
 	if(version) {
-		const asset = await request.get(`${baseURL}/assets-manifest-${version}.json`, ua)
+		const asset = await sendRequest(`${baseURL}/assets-manifest-${version}.json`, headers)
 		const hashFiles = JSON.parse(asset)
 		const files = Object.keys(hashFiles)
 		const app = files.find(f => /^app\./.test(f))
 		bootstrapQRURL = `${baseURL}/${app}`
 	} else {
-		const index = await request.get(baseURL, ua)
+		const index = await sendRequest(baseURL, headers)
 		const bootstrapQRID = index.match(/src="\/app.([0-9a-z]{10,}).js"/)[1]
 		bootstrapQRURL = baseURL + '/app.' + bootstrapQRID + '.js'
 	}
 
 	console.error('Found source JS URL:', bootstrapQRURL)
 
-	const qrData = await request.get(bootstrapQRURL, ua)
-	const waVersion = qrData.match(/(?:appVersion:|VERSION_STR=)"(\d\.\d+\.\d+)"/)[1]
-	console.log('Current version:', waVersion)
+	const qrData = await sendRequest(bootstrapQRURL, headers)
 	// This one list of types is so long that it's split into two JavaScript declarations.
 	// The module finder below can't handle it, so just patch it manually here.
 	const patchedQrData = qrData.replace('t.ActionLinkSpec=void 0,t.TemplateButtonSpec', 't.ActionLinkSpec=t.TemplateButtonSpec')
