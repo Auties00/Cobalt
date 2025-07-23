@@ -40,7 +40,7 @@ public final class InteractiveHeader {
     InteractiveHeader(String title, String subtitle, DocumentMessage attachmentDocument,
                       ImageMessage attachmentImage, boolean mediaAttachment,
                       InteractiveHeaderThumbnail attachmentThumbnail, VideoOrGifMessage attachmentVideo) {
-        this.title = Objects.requireNonNull(title, "title cannot be null");
+        this.title = title;
         this.subtitle = subtitle;
         this.attachmentDocument = attachmentDocument;
         this.attachmentImage = attachmentImage;
@@ -66,8 +66,8 @@ public final class InteractiveHeader {
         return builder.build();
     }
 
-    public String title() {
-        return title;
+    public Optional<String>  title() {
+        return Optional.ofNullable(title);
     }
 
     public Optional<String> subtitle() {
