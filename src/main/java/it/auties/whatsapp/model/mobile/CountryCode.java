@@ -176,6 +176,7 @@ public enum CountryCode {
     SIERRA_LEONE("232", 619, "en", "SL"),
     SINGAPORE("65", 525, "en", "SG"),
     SLOVENIA("386", 293, "sl", "SI"),
+    SLOVAKIA("421", 231, "sk", "SK"),
     SOLOMON_ISLANDS("677", 540, "en", "SB"),
     SOUTH_AFRICA("27", 655, "en", "ZA"),
     SOUTH_SUDAN("211", 659, "en", "SS"),
