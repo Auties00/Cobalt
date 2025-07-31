@@ -741,16 +741,15 @@ class StreamHandler {
 
     private List<String> getStubTypeParameters(Node metadata) {
         var attributes = new ArrayList<String>();
-        attributes.add(metadata.attributes().toJson());
-        for (var child : metadata.children()) {
-            var data = child.attributes();
-            if (data.isEmpty()) {
-                continue;
-            }
+        List<Node> heads = new LinkedList<>();
+        heads.add(metadata); //janjan
 
-            attributes.add(data.toJson());
+        while(!heads.isEmpty()){
+            var current = heads.getFirst();
+            heads.addAll(current.children());
+            attributes.add(current.attributes().toJson());
+            heads.removeFirst();
         }
-
         return Collections.unmodifiableList(attributes);
     }
 

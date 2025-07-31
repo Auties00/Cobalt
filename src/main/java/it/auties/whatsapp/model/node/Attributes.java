@@ -433,6 +433,25 @@ public record Attributes(LinkedHashMap<String, Object> toMap) {
     }
 
     public String toJson() {
+        //check if value is json too instead of primtive. Recursvely. And if a value is neither json nor string, convert to string.
+        toMap.forEach((key, value) -> {
+            if (value instanceof Map<?, ?> map) {
+                toMap.put(key, Attributes.of((Entry<String, ?>) map).toJson());
+            } else if (value instanceof Collection<?> collection) {
+                var list = collection.stream()
+                        .map(element -> {
+                            if (element instanceof Map<?, ?> elementMap) {
+                                return Attributes.of((Entry<String, ?>) elementMap).toJson();
+                            }
+                            return element.toString();
+                        })
+                        .toList();
+                toMap.put(key, JSON.toJSONString(list));
+            } else if (!(value instanceof String)) {
+                toMap.put(key, value.toString());
+            }
+        });
+
         return JSON.toJSONString(toMap);
     }
 }
