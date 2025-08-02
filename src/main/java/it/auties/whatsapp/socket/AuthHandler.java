@@ -47,12 +47,6 @@ final class AuthHandler {
         handshake.finish();
     }
 
-    private WebInfo createWebInfo() {
-        return new WebInfoBuilder()
-                .webSubPlatform(WebInfo.Platform.WEB_BROWSER)
-                .build();
-    }
-
     private UserAgent createUserAgent() {
         var mobile = socketHandler.store().clientType() == WhatsappClientType.MOBILE;
         return new UserAgentBuilder()
@@ -101,7 +95,6 @@ final class AuthHandler {
                             .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                             .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                             .userAgent(agent)
-                            .webInfo(createWebInfo())
                             .username(Long.parseLong(jid.get().user()))
                             .passive(true)
                             .pull(true)
@@ -113,7 +106,6 @@ final class AuthHandler {
                         .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                         .userAgent(agent)
-                        .webInfo(createWebInfo())
                         .regData(createRegisterData())
                         .passive(false)
                         .pull(false)
@@ -151,19 +143,12 @@ final class AuthHandler {
                         .storageQuotaMb(historyLength.size())
                         .fullSyncSizeMbLimit(historyLength.size())
                         .build();
-
-                // Extended history sync won't work if we don't have a Desktop device
-                if(socketHandler.store().webHistorySetting().isExtended() && !socketHandler.store().device().platform().isDesktop()) {
-                    socketHandler.store().setDevice(socketHandler.store().device().withPlatform(UserAgent.PlatformType.WINDOWS));
-                }
-
                 var platformType = switch (socketHandler.store().device().platform()) {
                     case UNKNOWN, KAIOS -> CompanionProperties.PlatformType.UNKNOWN;
                     case IOS, IOS_BUSINESS -> CompanionProperties.PlatformType.IOS_PHONE;
                     case ANDROID, ANDROID_BUSINESS -> CompanionProperties.PlatformType.ANDROID_PHONE;
                     case WINDOWS -> CompanionProperties.PlatformType.UWP;
                     case MACOS -> CompanionProperties.PlatformType.CATALINA;
-                    case WEB -> CompanionProperties.PlatformType.CHROME;
                 };
                 yield new CompanionPropertiesBuilder()
                         .os(socketHandler.store().name())

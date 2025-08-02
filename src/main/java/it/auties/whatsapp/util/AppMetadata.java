@@ -60,7 +60,7 @@ public final class AppMetadata {
 
     public static Version getVersion(PlatformType platform) {
         return switch (platform) {
-            case WEB, WINDOWS, MACOS ->
+            case WINDOWS, MACOS ->
                     getWebVersion();
             case ANDROID ->
                     getPersonalAndroidData().version();

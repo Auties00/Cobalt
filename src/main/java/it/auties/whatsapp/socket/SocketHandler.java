@@ -57,6 +57,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -137,26 +138,34 @@ public final class SocketHandler {
         }
     }
 
+    // FIXME: Temp
+    private final ReentrantLock lock = new ReentrantLock(true);
     private void handleMessage(ByteBuffer message)  {
         var readKey = keys.readKey();
         if (readKey.isEmpty()) {
             return;
         }
 
+        var output = message.duplicate();
         try {
+            lock.lock();
             readCipher.init(
                     Cipher.DECRYPT_MODE,
                     new SecretKeySpec(readKey.get(), "AES"),
                     encodeIv(keys.nextReadCounter())
             );
-            var output = message.duplicate();
             var outputPosition = output.position();
             var length = readCipher.doFinal(message, output);
-            if (length > 0) {
-                output.limit(outputPosition + length)
-                        .position(outputPosition);
-                decodeNodes(output);
-            }
+            output.limit(outputPosition + length)
+                    .position(outputPosition);
+        } catch (Throwable throwable) {
+            handleFailure(STREAM, throwable);
+        }finally {
+            lock.unlock();
+        }
+
+        try {
+            decodeNodes(output);
         } catch (Throwable throwable) {
             handleFailure(STREAM, throwable);
         }

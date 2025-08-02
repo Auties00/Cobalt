@@ -355,11 +355,9 @@ public final class Keys extends Controller {
      *
      * @param address the non-null address
      * @param record  the non-null record
-     * @return this
      */
-    public Keys addSession(SessionAddress address, Session record) {
+    public void addSession(SessionAddress address, Session record) {
         sessions.put(address, record);
-        return this;
     }
 
     /**
@@ -367,11 +365,9 @@ public final class Keys extends Controller {
      *
      * @param device the non-null device
      * @param state  the non-null hash state
-     * @return this
      */
-    public Keys addState(Jid device, CompanionHashState state) {
+    public void addState(Jid device, CompanionHashState state) {
         hashStates.put("%s_%s".formatted(device, state.type()), state);
-        return this;
     }
 
     /**
@@ -379,9 +375,8 @@ public final class Keys extends Controller {
      *
      * @param jid  the non-null jid of the app key
      * @param keys the keys to add
-     * @return this
      */
-    public Keys addAppKeys(Jid jid, Collection<AppStateSyncKey> keys) {
+    public void addAppKeys(Jid jid, Collection<AppStateSyncKey> keys) {
         appStateKeys.stream()
                 .filter(preKey -> Objects.equals(preKey.companion(), jid))
                 .findFirst()
@@ -392,7 +387,6 @@ public final class Keys extends Controller {
                             .build();
                     appStateKeys.add(syncKey);
                 });
-        return this;
     }
 
     /**
@@ -421,11 +415,9 @@ public final class Keys extends Controller {
      * Adds the provided pre key to the pre keys
      *
      * @param preKey the key to add
-     * @return this
      */
-    public Keys addPreKey(SignalPreKeyPair preKey) {
+    public void addPreKey(SignalPreKeyPair preKey) {
         preKeys.add(preKey);
-        return this;
     }
 
     /**
@@ -456,24 +448,12 @@ public final class Keys extends Controller {
     }
 
     /**
-     * This function sets the companionIdentity field to the value of the companionIdentity parameter,
-     * serializes the object, and returns the object.
-     *
-     * @param companionIdentity The identity of the companion device.
-     * @return The object itself.
-     */
-    public Keys companionIdentity(SignedDeviceIdentity companionIdentity) {
-        this.companionIdentity = companionIdentity;
-        return this;
-    }
-
-    /**
      * Returns the companion identity of this session
      * Only available for web sessions
      *
      * @return an optional
      */
-    public Optional<SignedDeviceIdentity> companionIdentity() {
+    public Optional<SignedDeviceIdentity> setCompanionIdentity() {
         return Optional.ofNullable(companionIdentity);
     }
 
@@ -601,49 +581,40 @@ public final class Keys extends Controller {
         this.signedKeyPair = signedKeyPair;
     }
 
-    public Keys setCompanionKeyPair(SignalKeyPair companionKeyPair) {
+    public void setCompanionKeyPair(SignalKeyPair companionKeyPair) {
         this.companionKeyPair = companionKeyPair;
-        return this;
     }
 
-    public Keys setSignedKeyIndex(byte[] signedKeyIndex) {
+    public void setSignedKeyIndex(byte[] signedKeyIndex) {
         this.signedKeyIndex = signedKeyIndex;
-        return this;
     }
 
-    public Keys setSignedKeyIndexTimestamp(Long signedKeyIndexTimestamp) {
+    public void setSignedKeyIndexTimestamp(Long signedKeyIndexTimestamp) {
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
-        return this;
     }
 
-    public Keys setCompanionIdentity(SignedDeviceIdentity companionIdentity) {
+    public void setCompanionIdentity(SignedDeviceIdentity companionIdentity) {
         this.companionIdentity = companionIdentity;
-        return this;
     }
 
-    public Keys setRegistered(boolean registered) {
+    public void setRegistered(boolean registered) {
         this.registered = registered;
-        return this;
     }
 
-    public Keys setBusinessCertificate(boolean businessCertificate) {
+    public void setBusinessCertificate(boolean businessCertificate) {
         this.businessCertificate = businessCertificate;
-        return this;
     }
 
-    public Keys setInitialAppSync(boolean initialAppSync) {
+    public void setInitialAppSync(boolean initialAppSync) {
         this.initialAppSync = initialAppSync;
-        return this;
     }
 
-    public Keys setWriteKey(byte[] writeKey) {
+    public void setWriteKey(byte[] writeKey) {
         this.writeKey = writeKey;
-        return this;
     }
 
-    public Keys setReadKey(byte[] readKey) {
+    public void setReadKey(byte[] readKey) {
         this.readKey = readKey;
-        return this;
     }
 
     /**

@@ -11,7 +11,8 @@ public class AppMetadataTests {
     private static final Long PHONE_NUMBER_MOCK = 3934751869223L;
     @Test
     public void testWebVersion() {
-        assertDoesNotThrow(() -> AppMetadata.getVersion(PlatformType.WEB));
+        assertDoesNotThrow(() -> AppMetadata.getVersion(PlatformType.WINDOWS));
+        assertDoesNotThrow(() -> AppMetadata.getVersion(PlatformType.MACOS));
     }
     
     @Test

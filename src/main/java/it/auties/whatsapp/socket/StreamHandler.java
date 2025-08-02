@@ -1676,7 +1676,7 @@ final class StreamHandler {
                         outgoingDeviceIdentity
                 )
         );
-        socketHandler.keys().companionIdentity(result);
+        socketHandler.keys().setCompanionIdentity(result);
         var device = socketHandler.store().device();
         var platform = getWebPlatform(node);
         socketHandler.store().setDevice(device.withPlatform(platform));

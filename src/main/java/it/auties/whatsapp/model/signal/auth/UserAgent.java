@@ -33,8 +33,7 @@ public record UserAgent(@ProtobufProperty(index = 1, type = ENUM) PlatformType p
         KAIOS("KaiOS", 11),
         IOS_BUSINESS("iOS", 12),
         WINDOWS("Windows", 13),
-        MACOS("MacOS", 24),
-        WEB("Web", 14);
+        MACOS("MacOS", 24);
 
         PlatformType(String platformName, @ProtobufEnumIndex int index) {
             this.platformName = platformName;
@@ -70,10 +69,6 @@ public record UserAgent(@ProtobufProperty(index = 1, type = ENUM) PlatformType p
 
         public boolean isDesktop() {
             return this == WINDOWS || this == MACOS;
-        }
-
-        public boolean isWeb() {
-            return this == WEB;
         }
 
         public boolean isMobile() {

@@ -101,10 +101,11 @@ public final class CompanionDevice {
     }
 
     public static CompanionDevice web(Version appVersion) {
+        var osName = System.getProperty("os.name", "generic").toLowerCase();
         return new CompanionDevice(
                 "Chrome",
                 "Google",
-                PlatformType.WEB,
+                osName.contains("mac") ? PlatformType.MACOS : PlatformType.WINDOWS,
                 appVersion,
                 Version.of("1.0"),
                 null,

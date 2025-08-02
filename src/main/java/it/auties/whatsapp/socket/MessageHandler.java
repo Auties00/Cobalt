@@ -562,7 +562,7 @@ final class MessageHandler {
         }
 
         if (!request.peer() && hasPreKeyMessage(preKeys)) {
-            socketHandler.keys().companionIdentity()
+            socketHandler.keys().setCompanionIdentity()
                     .ifPresent(companionIdentity -> body.add(Node.of("device-identity", SignedDeviceIdentitySpec.encode(companionIdentity))));
         }
 
