@@ -1,11 +1,11 @@
-package it.auties.whatsapp.api;
+package it.auties.whatsapp.model.message.model;
 
 /**
  * A list of all emojis supported by Whatsapp
  * <a href="https://unicode.org/emoji/charts/full-emoji-list.html">Source</a>
  */
 @SuppressWarnings("SpellCheckingInspection")
-public enum Emoji {
+public enum ReactionEmoji {
     GRINNING_FACE("😀"),
     GRINNING_FACE_WITH_BIG_EYES("😃"),
     GRINNING_FACE_WITH_SMILING_EYES("😄"),
@@ -1883,7 +1883,7 @@ public enum Emoji {
 
     private final String value;
 
-    Emoji(String value) {
+    ReactionEmoji(String value) {
         this.value = value;
     }
 

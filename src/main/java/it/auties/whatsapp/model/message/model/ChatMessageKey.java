@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.model;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Bytes;
@@ -42,10 +42,10 @@ public final class ChatMessageKey {
      *
      * @return a non-null String
      */
-    public static String randomId(ClientType clientType) {
+    public static String randomId(WhatsappClientType clientType) {
         return switch (clientType) {
-            case ClientType.WEB -> "3EB0" + Bytes.randomHex(13);
-            case ClientType.MOBILE -> Bytes.randomHex(16);
+            case WhatsappClientType.WEB -> "3EB0" + Bytes.randomHex(13);
+            case WhatsappClientType.MOBILE -> Bytes.randomHex(16);
         };
     }
     

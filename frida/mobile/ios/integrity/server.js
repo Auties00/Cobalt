@@ -161,16 +161,16 @@ setTimeout(() => {
     console.log("[*] All server components are ready")
     const server = http.createServer((req, res) => {
         let parsedRequest = url.parse(req.url, true)
-                    switch (parsedRequest.pathname) {
-                        case "/integrity":
-                            res.writeHead(200, {"Content-Type": "application/json"});
-                            onIntegrity(parsedRequest.query, res)
-                            break;
-                        default:
-                            res.writeHead(404, {"Content-Type": "application/json"});
-                            res.end(JSON.stringify({"error": "Unknown method"}))
-                            break;
-                    }
+        switch (parsedRequest.pathname) {
+            case "/integrity":
+                res.writeHead(200, {"Content-Type": "application/json"});
+                onIntegrity(parsedRequest.query, res)
+                break;
+            default:
+                res.writeHead(404, {"Content-Type": "application/json"});
+                res.end(JSON.stringify({"error": "Unknown method"}))
+                break;
+        }
     })
 
     const serverPort = bundleName === personalBundleName ? personalServerPort : businessServerPort

@@ -27,13 +27,13 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.zip.Deflater;
 
@@ -66,31 +66,35 @@ public final class Medias {
     }
 
     @SafeVarargs
-    public static CompletableFuture<byte[]> downloadAsync(URI uri, URI proxy, Map.Entry<String, String>... headers) {
-        return downloadAsync(uri, proxy, MOBILE_ANDROID_USER_AGENT, headers);
+    public static byte[] download(URI uri, URI proxy, Map.Entry<String, String>... headers) {
+        return download(uri, proxy, MOBILE_ANDROID_USER_AGENT, headers);
     }
 
+    // TODO: Delete this method
     @SafeVarargs
-    public static CompletableFuture<byte[]> downloadAsync(URI uri, URI proxy, String userAgent, Map.Entry<String, String>... headers) {
+    public static byte[] download(URI uri, URI proxy, String userAgent, Map.Entry<String, String>... headers) {
         if (uri == null) {
-            return CompletableFuture.completedFuture(null);
+            return null;
         }
 
-        var request = HttpRequest.newBuilder()
+        var requestBuilder = HttpRequest.newBuilder()
                 .uri(uri);
-        if(userAgent != null) {
-            request.header("User-Agent", userAgent);
+        if (userAgent != null) {
+            requestBuilder.header("User-Agent", userAgent);
         }
-        for(var header : headers) {
-            request.header(header.getKey(), header.getValue());
+        for (var header : headers) {
+            requestBuilder.header(header.getKey(), header.getValue());
         }
-        try(var client = createHttpClient(proxy)) {
-            return client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray())
-                    .thenApplyAsync(HttpResponse::body);
+        var request = requestBuilder.build();
+        try (var client = createHttpClient(proxy)) {
+            var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            return response.body();
+        } catch (IOException | InterruptedException exception) {
+            throw new RuntimeException("Cannot download media", exception);
         }
     }
 
-    public static CompletableFuture<MediaFile> upload(byte[] file, AttachmentType type, MediaConnection mediaConnection, URI proxy, String userAgent) {
+    public static MediaFile upload(byte[] file, AttachmentType type, MediaConnection mediaConnection, URI proxy, String userAgent) {
         var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
         var uploadData = compressUpload(file, type);
         var mediaFile = prepareMediaFile(type, uploadData);
@@ -101,44 +105,45 @@ public final class Medias {
                 .encodeToString(Objects.requireNonNullElse(mediaFile.fileEncSha256(), mediaFile.fileSha256()));
         var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, path, token, auth, token));
         var body = Objects.requireNonNullElse(mediaFile.encryptedFile(), file);
-        var request = HttpRequest.newBuilder()
+        var requestBuilder = HttpRequest.newBuilder()
                 .uri(uri)
                 .POST(HttpRequest.BodyPublishers.ofInputStream(() -> Streams.newInputStream(body)));
-        if(userAgent != null) {
-            request.header("User-Agent", userAgent);
+        if (userAgent != null) {
+            requestBuilder.header("User-Agent", userAgent);
         }
-        request.header("Content-Type", "application/octet-stream")
+        var request = requestBuilder.header("Content-Type", "application/octet-stream")
                 .header("Accept", "application/json")
                 .headers("Origin", WEB_ORIGIN)
                 .build();
-        try(var client = createHttpClient(proxy)) {
-            return client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofByteArray()).thenApplyAsync(response -> {
-                var upload = MediaUpload.ofJson(response.body())
-                        .orElseThrow(() -> new IllegalArgumentException("Cannot parse upload response: " + new String(response.body())));
-                return new MediaFile(
-                        mediaFile.encryptedFile(),
-                        mediaFile.fileSha256(),
-                        mediaFile.fileEncSha256(),
-                        mediaFile.mediaKey(),
-                        mediaFile.fileLength(),
-                        upload.directPath(),
-                        upload.url(),
-                        upload.handle(),
-                        mediaFile.timestamp()
-                );
-            });
+        try (var client = createHttpClient(proxy)) {
+            var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            var upload = MediaUpload.ofJson(response.body())
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot parse upload response: " + new String(response.body())));
+            return new MediaFile(
+                    mediaFile.encryptedFile(),
+                    mediaFile.fileSha256(),
+                    mediaFile.fileEncSha256(),
+                    mediaFile.mediaKey(),
+                    mediaFile.fileLength(),
+                    upload.directPath(),
+                    upload.url(),
+                    upload.handle(),
+                    mediaFile.timestamp()
+            );
+        } catch (IOException | InterruptedException exception) {
+            throw new RuntimeException("Cannot upload media", exception);
         }
     }
 
     private static byte[] compressUpload(byte[] uncompressed, AttachmentType type) {
-        if(!type.inflatable()) {
+        if (!type.inflatable()) {
             return uncompressed;
         }
 
         var deflater = new Deflater();
         deflater.setInput(uncompressed);
         deflater.finish();
-        try(var result = Streams.newByteArrayOutputStream()) {
+        try (var result = Streams.newByteArrayOutputStream()) {
             var buffer = new byte[8192];
             while (!deflater.finished()) {
                 var count = deflater.deflate(buffer);
@@ -146,7 +151,7 @@ public final class Medias {
             }
             deflater.end();
             return result.toByteArray();
-        }catch (IOException exception) {
+        } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
@@ -159,7 +164,7 @@ public final class Medias {
 
             var keyName = type.keyName()
                     .orElse(null);
-            if(keyName == null) {
+            if (keyName == null) {
                 return new MediaFile(null, fileSha256, null, null, uploadData.length, null, null, null, null);
             }
 
@@ -170,7 +175,7 @@ public final class Medias {
 
             var encryptedLength = cipher.getOutputSize(uploadData.length);
             var encrypted = new byte[encryptedLength + MAC_LENGTH];
-            if(cipher.doFinal(uploadData, 0, uploadData.length, encrypted, 0) != encryptedLength) {
+            if (cipher.doFinal(uploadData, 0, uploadData.length, encrypted, 0) != encryptedLength) {
                 throw new IllegalArgumentException("Ciphertext length mismatch");
             }
 
@@ -190,152 +195,148 @@ public final class Medias {
         }
     }
 
-    public static CompletableFuture<byte[]> downloadAsync(MutableAttachmentProvider<?> provider, URI proxy) {
-       var url = provider.mediaUrl()
-                .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
-               .orElse(null);
-       if(url == null) {
-           return CompletableFuture.failedFuture(new IllegalArgumentException("Missing url or direct path from media"));
-       }
-
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .build();
-        try(var client = createHttpClient(proxy)) {
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream()).thenComposeAsync(response -> {
-                var payloadLength = (int) response.headers()
-                        .firstValueAsLong("Content-Length")
-                        .orElseThrow(() -> new IllegalArgumentException("Unknown content length"));
-                try(var payload = response.body()) {
-                    var ciphertext = payload.readNBytes(payloadLength - MAC_LENGTH);
-                    if(provider.mediaEncryptedSha256().isEmpty()) {
-                        var expectedCiphertextSha256 = provider.mediaEncryptedSha256().get();
-                        var sha256Digest = MessageDigest.getInstance("SHA-256");
-                        var actualCiphertextSha256 = sha256Digest.digest(ciphertext);
-                        if(!Arrays.equals(expectedCiphertextSha256, actualCiphertextSha256)) {
-                            throw new HmacValidationException("media_decryption");
-                        }
-                    }
-
-                    var keyName = provider.attachmentType().keyName();
-                    if (keyName.isEmpty()) {
-                        return CompletableFuture.completedFuture(ciphertext);
-                    }
-
-                    var mediaKey = provider.mediaKey();
-                    if (mediaKey.isEmpty()) {
-                        return CompletableFuture.completedFuture(ciphertext);
-                    }
-
-                    var keys = MediaKeys.of(mediaKey.get(), keyName.get());
-                    var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    var keySpec = new SecretKeySpec(keys.cipherKey(), "AES");
-                    cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(keys.iv()));
-                    if(cipher.doFinal(ciphertext, 0, ciphertext.length, ciphertext, 0) != ciphertext.length) {
-                        throw new IllegalStateException("Unexpected plaintext length");
-                    }
-
-                    try {
-                        var expectedCiphertextMac = payload.readNBytes(MAC_LENGTH);
-                        var localMac = Mac.getInstance("HmacSHA256");
-                        localMac.init(new SecretKeySpec(keys.macKey(), "HmacSHA256"));
-                        localMac.update(keys.iv());
-                        localMac.update(ciphertext);
-                        var actualCiphertextMac = localMac.doFinal();
-                        if(!Arrays.equals(expectedCiphertextMac, 0, MAC_LENGTH, actualCiphertextMac, 0, MAC_LENGTH)) {
-                            throw new HmacValidationException("media_decryption");
-                        }
-                    } catch (GeneralSecurityException exception) {
-                        throw new IllegalArgumentException("Cannot calculate hmac", exception);
-                    }
-
-                    return CompletableFuture.completedFuture(ciphertext);
-                } catch (Throwable throwable) {
-                    return CompletableFuture.failedFuture(throwable);
-                }
-            });
-        }
-    }
-
-    public static <T> CompletableFuture<T> downloadAsync(MutableAttachmentProvider<?> provider, URI proxy, Function<InputStream, T> decoder) {
+    public static byte[] download(MutableAttachmentProvider<?> provider, URI proxy) {
         var url = provider.mediaUrl()
                 .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
                 .orElse(null);
-        if(url == null) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("Missing url or direct path from media"));
+        if (url == null) {
+            throw new RuntimeException(new IllegalArgumentException("Missing url or direct path from media"));
+        }
+
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .build();
+        try (var client = createHttpClient(proxy)) {
+            var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            var payloadLength = (int) response.headers()
+                    .firstValueAsLong("Content-Length")
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown content length"));
+            try (var payload = response.body()) {
+                var ciphertext = payload.readNBytes(payloadLength - MAC_LENGTH);
+                if (provider.mediaEncryptedSha256().isEmpty()) {
+                    var expectedCiphertextSha256 = provider.mediaEncryptedSha256().get();
+                    var sha256Digest = MessageDigest.getInstance("SHA-256");
+                    var actualCiphertextSha256 = sha256Digest.digest(ciphertext);
+                    if (!Arrays.equals(expectedCiphertextSha256, actualCiphertextSha256)) {
+                        throw new HmacValidationException("media_decryption");
+                    }
+                }
+
+                var keyName = provider.attachmentType().keyName();
+                if (keyName.isEmpty()) {
+                    return ciphertext;
+                }
+
+                var mediaKey = provider.mediaKey();
+                if (mediaKey.isEmpty()) {
+                    return ciphertext;
+                }
+
+                var keys = MediaKeys.of(mediaKey.get(), keyName.get());
+                var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                var keySpec = new SecretKeySpec(keys.cipherKey(), "AES");
+                cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(keys.iv()));
+                if (cipher.doFinal(ciphertext, 0, ciphertext.length, ciphertext, 0) != ciphertext.length) {
+                    throw new IllegalStateException("Unexpected plaintext length");
+                }
+
+                var expectedCiphertextMac = payload.readNBytes(MAC_LENGTH);
+                var localMac = Mac.getInstance("HmacSHA256");
+                localMac.init(new SecretKeySpec(keys.macKey(), "HmacSHA256"));
+                localMac.update(keys.iv());
+                localMac.update(ciphertext);
+                var actualCiphertextMac = localMac.doFinal();
+                if (!Arrays.equals(expectedCiphertextMac, 0, MAC_LENGTH, actualCiphertextMac, 0, MAC_LENGTH)) {
+                    throw new HmacValidationException("media_decryption");
+                }
+
+                return ciphertext;
+            }
+        }catch (Throwable throwable) {
+            throw new RuntimeException("Cannot download media", throwable);
+        }
+    }
+
+    public static <T> T download(MutableAttachmentProvider<?> provider, URI proxy, Function<InputStream, T> decoder) {
+        var url = provider.mediaUrl()
+                .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
+                .orElse(null);
+        if (url == null) {
+            throw new RuntimeException(new IllegalArgumentException("Missing url or direct path from media"));
         }
 
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .build();
 
-        try(var client = createHttpClient(proxy)) {
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream()).thenApplyAsync(response -> {
-                var length = (int) response.headers()
-                        .firstValueAsLong("Content-Length")
-                        .orElseThrow(() -> new IllegalArgumentException("Unknown content length"));
-                try(var inputStream = response.body()) {
-                    var keyName = provider.attachmentType()
-                            .keyName()
-                            .orElseThrow(() -> new IllegalArgumentException("Missing key name for media"));
-                    var mediaKey = provider.mediaKey()
-                            .orElseThrow(() -> new IllegalArgumentException("Missing media key for media"));
-                    var keys = MediaKeys.of(mediaKey, keyName);
-                    var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    var keySpec = new SecretKeySpec(keys.cipherKey(), "AES");
-                    cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(keys.iv()));
+        try (var client = createHttpClient(proxy)) {
+            var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            var length = (int) response.headers()
+                    .firstValueAsLong("Content-Length")
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown content length"));
+            try (var inputStream = response.body()) {
+                var keyName = provider.attachmentType()
+                        .keyName()
+                        .orElseThrow(() -> new IllegalArgumentException("Missing key name for media"));
+                var mediaKey = provider.mediaKey()
+                        .orElseThrow(() -> new IllegalArgumentException("Missing media key for media"));
+                var keys = MediaKeys.of(mediaKey, keyName);
+                var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                var keySpec = new SecretKeySpec(keys.cipherKey(), "AES");
+                cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(keys.iv()));
 
-                    // Marvel of optimization
-                    final class AttachmentDecipherInputStream extends InputStream {
-                        private final byte[] buffer;
-                        private int offset, limit;
-                        private long remaining;
+                // Marvel of optimization
+                final class AttachmentDecipherInputStream extends InputStream {
+                    private final byte[] buffer;
+                    private int offset, limit;
+                    private long remaining;
 
-                        private AttachmentDecipherInputStream() {
-                            this.buffer = new byte[8192];
-                            this.remaining = length - MAC_LENGTH;
-                        }
-
-                        @Override
-                        public int read() throws IOException {
-                            if(ensureDataAvailable()) {
-                                return -1;
-                            }
-
-                            return buffer[offset++] & 0xFF;
-                        }
-
-                        private boolean ensureDataAvailable() throws IOException {
-                            try {
-                                while (offset >= limit) {
-                                    if(remaining == -1) {
-                                        return true;
-                                    }else {
-                                        this.offset = 0;
-                                        if (remaining == 0) {
-                                            this.limit = cipher.doFinal(buffer, 0);
-                                            this.remaining = -1;
-                                        } else {
-                                            var readable = (int) Math.min(this.remaining, buffer.length);
-                                            this.limit = inputStream.readNBytes(buffer, 0, readable);
-                                            this.remaining -= limit;
-                                            this.limit = cipher.update(buffer, 0, limit, buffer, 0);
-                                        }
-                                    }
-                                }
-
-                                return false;
-                            }catch (GeneralSecurityException exception) {
-                                throw new IOException("Cannot decipher data", exception);
-                            }
-                        }
+                    private AttachmentDecipherInputStream() {
+                        this.buffer = new byte[8192];
+                        this.remaining = length - MAC_LENGTH;
                     }
 
-                    return decoder.apply(new AttachmentDecipherInputStream());
-                } catch (Throwable exception) {
-                    throw new IllegalArgumentException("Cannot decipher media", exception);
+                    @Override
+                    public int read() throws IOException {
+                        if (ensureDataAvailable()) {
+                            return -1;
+                        }
+
+                        return buffer[offset++] & 0xFF;
+                    }
+
+                    private boolean ensureDataAvailable() throws IOException {
+                        try {
+                            while (offset >= limit) {
+                                if (remaining == -1) {
+                                    return true;
+                                } else {
+                                    this.offset = 0;
+                                    if (remaining == 0) {
+                                        this.limit = cipher.doFinal(buffer, 0);
+                                        this.remaining = -1;
+                                    } else {
+                                        var readable = (int) Math.min(this.remaining, buffer.length);
+                                        this.limit = inputStream.readNBytes(buffer, 0, readable);
+                                        this.remaining -= limit;
+                                        this.limit = cipher.update(buffer, 0, limit, buffer, 0);
+                                    }
+                                }
+                            }
+
+                            return false;
+                        } catch (GeneralSecurityException exception) {
+                            throw new IOException("Cannot decipher data", exception);
+                        }
+                    }
                 }
-            });
+
+                return decoder.apply(new AttachmentDecipherInputStream());
+            } catch (Throwable exception) {
+                throw new IllegalArgumentException("Cannot decipher media", exception);
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -369,7 +370,7 @@ public final class Medias {
     }
 
     public static Optional<String> getMimeType(byte[] file) {
-        try(var inputStream = Streams.newInputStream(file)) {
+        try (var inputStream = Streams.newInputStream(file)) {
             return Optional.ofNullable(URLConnection.guessContentTypeFromStream(inputStream));
         } catch (Throwable exception) {
             return Optional.empty();
@@ -377,7 +378,7 @@ public final class Medias {
     }
 
     public static int getPagesCount(byte[] file) {
-        try(var inputStream = Streams.newInputStream(file)) {
+        try (var inputStream = Streams.newInputStream(file)) {
             var document = new Document(inputStream);
             return Math.max(document.getPageCount(), 1);
         } catch (Throwable ignored) {
@@ -386,20 +387,20 @@ public final class Medias {
     }
 
     public static int getDuration(byte[] file) {
-        try(var inputStream = Streams.newInputStream(file)) {
+        try (var inputStream = Streams.newInputStream(file)) {
             var result = FFprobe.atPath()
                     .setShowEntries("format=duration")
                     .setSelectStreams(StreamType.VIDEO)
                     .setInput(inputStream)
                     .execute();
             return Math.round(result.getFormat().getDuration());
-        }catch (Throwable throwable) {
+        } catch (Throwable throwable) {
             return 0;
         }
     }
 
     public static MediaDimensions getDimensions(byte[] file, boolean video) {
-        try(var inputStream = Streams.newInputStream(file)) {
+        try (var inputStream = Streams.newInputStream(file)) {
             if (!video) {
                 var originalImage = ImageIO.read(inputStream);
                 return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
@@ -422,7 +423,7 @@ public final class Medias {
     }
 
     public static byte[] getDocumentThumbnail(byte[] file) {
-        try(
+        try (
                 var inputStream = Streams.newInputStream(file);
                 var outputStream = Streams.newByteArrayOutputStream()
         ) {
@@ -436,7 +437,7 @@ public final class Medias {
     }
 
     public static byte[] getImageThumbnail(byte[] file, boolean jpg) {
-        try(
+        try (
                 var inputStream = Streams.newInputStream(file);
                 var outputStream = Streams.newByteArrayOutputStream()
         ) {
@@ -462,7 +463,7 @@ public final class Medias {
     }
 
     public static byte[] getVideoThumbnail(byte[] file) {
-        try(
+        try (
                 var inputStream = Streams.newInputStream(file);
                 var outputStream = Streams.newByteArrayOutputStream()
         ) {
@@ -481,9 +482,31 @@ public final class Medias {
         }
     }
 
-    // TODO: Reimplement this
     public static byte[] getAudioWaveForm(byte[] audioData) {
-        return null;
+        var rawDataBuffer = ByteBuffer.wrap(audioData)
+                .asFloatBuffer();
+        var rawSampleCount = rawDataBuffer.remaining();
+        var blockSize = rawSampleCount / WAVEFORM_SAMPLES;
+        var averagedAmplitudes = new float[WAVEFORM_SAMPLES];
+        var maxAmplitude = 0f;
+        for (var i = 0; i < WAVEFORM_SAMPLES; i++) {
+            var blockStart = i * blockSize;
+            var blockSum = 0.0;
+            for (int j = 0; j < blockSize; j++) {
+                blockSum += Math.abs(rawDataBuffer.get(blockStart + j));
+            }
+            averagedAmplitudes[i] = (float) (blockSum / blockSize);
+            if (averagedAmplitudes[i] > maxAmplitude) {
+                maxAmplitude = averagedAmplitudes[i];
+            }
+        }
+
+        var waveform = new byte[WAVEFORM_SAMPLES];
+        var multiplier = (maxAmplitude > 0f) ? 1.0f / maxAmplitude : 0f;
+        for (var i = 0; i < WAVEFORM_SAMPLES; i++) {
+            waveform[i] = (byte) (averagedAmplitudes[i] * multiplier * 100);
+        }
+        return waveform;
     }
 
     private static HttpClient createHttpClient(URI proxy) {

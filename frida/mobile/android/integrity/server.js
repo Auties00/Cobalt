@@ -24,7 +24,7 @@ function semaphore(capacity) {
         queue: [],
         firstHere: false,
 
-        take: function() {
+        take: function () {
             if (semaphore.firstHere === false) {
                 semaphore.current++;
                 semaphore.firstHere = true;
@@ -32,7 +32,7 @@ function semaphore(capacity) {
             } else {
                 var isFirst = 0;
             }
-            var item = { n: 1 };
+            var item = {n: 1};
 
             if (typeof arguments[0] == 'function') {
                 item.task = arguments[0];
@@ -40,13 +40,15 @@ function semaphore(capacity) {
                 item.n = arguments[0];
             }
 
-            if (arguments.length >= 2)  {
+            if (arguments.length >= 2) {
                 if (typeof arguments[1] == 'function') item.task = arguments[1];
                 else item.n = arguments[1];
             }
 
             var task = item.task;
-            item.task = function() { task(semaphore.leave); };
+            item.task = function () {
+                task(semaphore.leave);
+            };
 
             if (semaphore.current + item.n - isFirst > semaphore.capacity) {
                 if (isFirst === 1) {
@@ -61,7 +63,7 @@ function semaphore(capacity) {
             if (isFirst === 1) semaphore.firstHere = false;
         },
 
-        leave: function(n) {
+        leave: function (n) {
             n = n || 1;
 
             semaphore.current -= n;
@@ -86,9 +88,9 @@ function semaphore(capacity) {
             nextTick(item.task);
         },
 
-        available: function(n) {
+        available: function (n) {
             n = n || 1;
-            return(semaphore.current + n <= semaphore.capacity);
+            return (semaphore.current + n <= semaphore.capacity);
         }
     };
 
@@ -538,48 +540,30 @@ Java.perform(function () {
         }
     }
 
-    function convertToHex(str) {
-        let hex = "";
-        for (let i = 0; i < str.length; i++) {
-            hex += str.charCodeAt(i).toString(16) + " ";
-        }
-        return hex.slice(0, -1);
-    }
-
-    function convertArrayBufferToHex(buffer) {
-        let hex = "";
-        const view = new DataView(buffer);
-        for (let i = 0; i < buffer.byteLength; i++) {
-            hex += view.getUint8(i).toString(16).padStart(2, "0") + " ";
-        }
-        return hex.slice(0, -1);
-    }
-
-
     console.log("[*] Initializing server components...")
     setupLatch.onSuccess(() => {
         console.log("[*] All server components are ready")
         const serverPort = infoData["packageName"] === personalPackageId ? personalServerPort : businessServerPort
         const server = http.createServer((req, res) => {
             let parsedRequest = url.parse(req.url, true)
-                            switch (parsedRequest.pathname) {
-                                case "/integrity":
-                                    res.writeHead(200, {"Content-Type": "application/json"});
-                                    onIntegrity(parsedRequest.query, res)
-                                    break;
-                                case "/cert":
-                                    res.writeHead(200, {"Content-Type": "application/json"});
-                                    onCert(parsedRequest.query, res)
-                                    break;
-                                case "/info":
-                                    res.writeHead(200, {"Content-Type": "application/json"});
-                                    onInfo(res)
-                                    break;
-                                default:
-                                    res.writeHead(404, {"Content-Type": "application/json"});
-                                    res.end(JSON.stringify({"error": "Unknown method"}))
-                                    break;
-                            }
+            switch (parsedRequest.pathname) {
+                case "/integrity":
+                    res.writeHead(200, {"Content-Type": "application/json"});
+                    onIntegrity(parsedRequest.query, res)
+                    break;
+                case "/cert":
+                    res.writeHead(200, {"Content-Type": "application/json"});
+                    onCert(parsedRequest.query, res)
+                    break;
+                case "/info":
+                    res.writeHead(200, {"Content-Type": "application/json"});
+                    onInfo(res)
+                    break;
+                default:
+                    res.writeHead(404, {"Content-Type": "application/json"});
+                    res.end(JSON.stringify({"error": "Unknown method"}))
+                    break;
+            }
         })
 
         server.listen(serverPort, () => {

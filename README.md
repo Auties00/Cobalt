@@ -153,9 +153,9 @@ You can now customize the API with these options:
   ```java
   .autodetectListeners(true)
   ```
-- textPreviewSetting - Whether a media preview should be generated for text messages containing links
+- whatsappTextPreviewPolicy - Whether a media preview should be generated for text messages containing links
   ```java
-  .textPreviewSetting(TextPreviewSetting.ENABLED_WITH_INFERENCE)
+  .whatsappTextPreviewPolicy(TextPreviewSetting.ENABLED_WITH_INFERENCE)
   ```
 - checkPatchMacs - Whether patch macs coming from app state pulls should be validated
   ```java
@@ -353,9 +353,9 @@ Listeners can be used either as:
    To create a new concrete listener, declare a class or record that implements the Listener interface:
 
    ```java
-   import it.auties.whatsapp.api.Listener;
+   import it.auties.whatsapp.api.WhatsappListener;
 
-   public class MyListener implements Listener {
+   public class MyListener implements WhatsappListener {
     @Override
     public void onLoggedIn() {
         System.out.println("Hello :)");
@@ -426,10 +426,10 @@ These are the three reasons that can cause a disconnect:
    The client was logged out by itself or by its companion.
    By default, no error is thrown if this happens, though this behaviour can be changed easily:
     ```java
-    import it.auties.whatsapp.api.DisconnectReason;
-    import it.auties.whatsapp.api.Listener;import it.auties.whatsapp.api.WhatsappListener;
+    import it.auties.whatsapp.api.WhatsappDisconnectReason;
+    import it.auties.whatsapp.api.WhatsappListener;
 
-    class ThrowOnLogOut implements Listener {
+    class ThrowOnLogOut implements WhatsappListener {
         @Override
         public void onDisconnected(DisconnectReason reason) {
             if (reason != SocketEvent.LOGGED_OUT) {

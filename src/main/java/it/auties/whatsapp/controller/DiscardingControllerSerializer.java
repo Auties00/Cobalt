@@ -1,13 +1,12 @@
 package it.auties.whatsapp.controller;
 
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.ImmutableLinkedList;
 
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 class DiscardingControllerSerializer implements ControllerSerializer {
     private static final DiscardingControllerSerializer SINGLETON = new DiscardingControllerSerializer();
@@ -17,62 +16,72 @@ class DiscardingControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public LinkedList<UUID> listIds(ClientType type) {
+    public LinkedList<UUID> listIds(WhatsappClientType type) {
         return ImmutableLinkedList.empty();
     }
 
     @Override
-    public LinkedList<PhoneNumber> listPhoneNumbers(ClientType type) {
+    public LinkedList<PhoneNumber> listPhoneNumbers(WhatsappClientType type) {
         return ImmutableLinkedList.empty();
     }
 
     @Override
-    public Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, PhoneNumber phoneNumber, String alias, ClientType clientType) {
+    public Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, PhoneNumber phoneNumber, String alias, WhatsappClientType clientType) {
         return Optional.empty();
     }
 
     @Override
-    public CompletableFuture<Void> serializeKeys(Keys keys, boolean async) {
-        return CompletableFuture.completedFuture(null);
+    public void serializeKeys(Keys keys) {
+  
     }
 
     @Override
-    public CompletableFuture<Void> serializeStore(Store store, boolean async) {
-        return CompletableFuture.completedFuture(null);
+    public void serializeStore(Store store) {
+        
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, UUID id) {
+    public Optional<Keys> deserializeKeys(WhatsappClientType type, UUID id) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, PhoneNumber phoneNumber) {
+    public Optional<Keys> deserializeKeys(WhatsappClientType type, PhoneNumber phoneNumber) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, String alias) {
+    public Optional<Keys> deserializeKeys(WhatsappClientType type, String alias) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, UUID id) {
+    public Optional<Store> deserializeStore(WhatsappClientType type, UUID id) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, PhoneNumber phoneNumber) {
+    public Optional<Store> deserializeStore(WhatsappClientType type, PhoneNumber phoneNumber) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, String alias) {
+    public Optional<Store> deserializeStore(WhatsappClientType type, String alias) {
         return Optional.empty();
     }
 
     @Override
-    public void deleteSession(Controller<?> controller) {
+    public void deleteSession(Controller controller) {
+
+    }
+
+    @Override
+    public void linkMetadata(Controller controller) {
+        
+    }
+
+    @Override
+    public void attributeStore(Store store) {
 
     }
 }

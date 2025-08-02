@@ -3,7 +3,7 @@ package it.auties.whatsapp.controller;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.companion.CompanionSyncKey;
 import it.auties.whatsapp.model.companion.CompanionSyncKeyBuilder;
@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNullElseGet;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 @ProtobufMessage
-public final class Keys extends Controller<Keys> {
+public final class Keys extends Controller {
     /**
      * The client id
      */
@@ -189,7 +189,7 @@ public final class Keys extends Controller<Keys> {
      */
     byte[] writeKey, readKey;
 
-    Keys(UUID uuid, PhoneNumber phoneNumber, ClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
+    Keys(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
@@ -218,7 +218,7 @@ public final class Keys extends Controller<Keys> {
         this.readCounter = new AtomicLong();
     }
 
-    public static Keys of(UUID uuid, PhoneNumber phoneNumber, Collection<String> alias, ClientType clientType) {
+    public static Keys of(UUID uuid, PhoneNumber phoneNumber, Collection<String> alias, WhatsappClientType clientType) {
         return new KeysBuilder()
                 .uuid(uuid)
                 .phoneNumber(phoneNumber)
@@ -517,12 +517,12 @@ public final class Keys extends Controller<Keys> {
 
     @Override
     public void dispose() {
-        serialize(false);
+        serialize();
     }
 
     @Override
-    public void serialize(boolean async) {
-        serializer.serializeKeys(this, async);
+    public void serialize() {
+        serializer.serializeKeys(this);
     }
 
     public int registrationId() {

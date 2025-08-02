@@ -1,6 +1,6 @@
 package it.auties.whatsapp.routine;
 
-import it.auties.whatsapp.api.Listener;
+import it.auties.whatsapp.api.WhatsappListener;
 
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
@@ -8,10 +8,10 @@ import java.util.stream.Collectors;
 
 public class GenerateListenersLambdas {
     public static void main(String[] args) {
-        for(var method : Listener.class.getMethods()) {
+        for(var method : WhatsappListener.class.getMethods()) {
             var params = method.getParameters();
             var methodName = "add%sListener".formatted(method.getName().substring(2));
-            var signature = "ListenerConsumer." + switch (params.length) {
+            var signature = "Listener.Consumer." + switch (params.length) {
                 case 0 -> "Empty consumer";
                 case 1 -> "Unary<%s> consumer".formatted(params[0].getType().getSimpleName());
                 case 2 -> "Binary<%s, %s> consumer".formatted(params[0].getType().getSimpleName(), params[1].getType().getSimpleName());

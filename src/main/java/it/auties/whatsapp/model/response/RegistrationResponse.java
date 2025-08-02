@@ -2,9 +2,6 @@ package it.auties.whatsapp.model.response;
 
 import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.mobile.VerificationCodeError;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 
 import java.util.Optional;
 
@@ -14,9 +11,9 @@ import java.util.Optional;
 public final class RegistrationResponse {
     private final PhoneNumber number;
     private final long lid;
-    private final VerificationCodeStatus status;
-    private final VerificationCodeError errorReason;
-    private final VerificationCodeMethod method;
+    private final String status;
+    private final String errorReason;
+    private final String method;
     private final int codeLength;
     private final int notifyAfter;
     private final long retryAfter;
@@ -35,7 +32,7 @@ public final class RegistrationResponse {
     private final boolean autoConfigure;
     private final String wipeToken;
 
-    private RegistrationResponse(PhoneNumber number, long lid, VerificationCodeStatus status, VerificationCodeError errorReason, VerificationCodeMethod method, int codeLength, int notifyAfter, long retryAfter, long voiceLength, long callWait, long smsWait, boolean flashType, long whatsappWait, boolean securityCodeSet, String imageCaptcha, String audioCaptcha, String cert, boolean otpEligible, boolean smsEligible, boolean possibleMigration, boolean autoConfigure, String wipeToken) {
+    private RegistrationResponse(PhoneNumber number, long lid, String status, String errorReason, String method, int codeLength, int notifyAfter, long retryAfter, long voiceLength, long callWait, long smsWait, boolean flashType, long whatsappWait, boolean securityCodeSet, String imageCaptcha, String audioCaptcha, String cert, boolean otpEligible, boolean smsEligible, boolean possibleMigration, boolean autoConfigure, String wipeToken) {
         this.number = number;
         this.lid = lid;
         this.status = status;
@@ -81,9 +78,9 @@ public final class RegistrationResponse {
         }
 
         var lid = jsonObject.getLongValue("lid", 0);
-        var status = VerificationCodeStatus.of(jsonObject.getString("status"));
-        var errorReason = VerificationCodeError.of(jsonObject.getString("reason"));
-        var method = VerificationCodeMethod.of(jsonObject.getString("method"));
+        var status = jsonObject.getString("status");
+        var errorReason = jsonObject.getString("reason");
+        var method = jsonObject.getString("method");
         var codeLength = jsonObject.getIntValue("length", 0);
         var notifyAfter = jsonObject.getIntValue("notify_after", 0);
         var retryAfter = jsonObject.getLongValue("retry_after", 0);
@@ -113,15 +110,15 @@ public final class RegistrationResponse {
         return lid;
     }
 
-    public VerificationCodeStatus status() {
+    public String status() {
         return status;
     }
 
-    public VerificationCodeError errorReason() {
+    public String errorReason() {
         return errorReason;
     }
 
-    public VerificationCodeMethod method() {
+    public String method() {
         return method;
     }
 

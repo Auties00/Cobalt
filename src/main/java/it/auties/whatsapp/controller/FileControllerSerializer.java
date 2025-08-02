@@ -1,6 +1,6 @@
 package it.auties.whatsapp.controller;
 
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatBuilder;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -18,12 +18,12 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+@SuppressWarnings("preview")
 abstract class FileControllerSerializer implements ControllerSerializer {
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";
@@ -52,7 +52,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     abstract Newsletter decodeNewsletter(Path newsletter) throws IOException;
 
     @Override
-    public LinkedList<UUID> listIds(ClientType type) {
+    public LinkedList<UUID> listIds(WhatsappClientType type) {
         var directory = getHome(type);
         if (Files.notExists(directory)) {
             return ImmutableLinkedList.empty();
@@ -68,7 +68,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public LinkedList<PhoneNumber> listPhoneNumbers(ClientType type) {
+    public LinkedList<PhoneNumber> listPhoneNumbers(WhatsappClientType type) {
         var directory = getHome(type);
         if (Files.notExists(directory)) {
             return ImmutableLinkedList.empty();
@@ -108,102 +108,83 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public CompletableFuture<Void> serializeKeys(Keys keys, boolean async) {
+    public void serializeKeys(Keys keys) {
         var newHashCode = keys.hashCode();
         if(newHashCode == keysHashCode) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         this.keysHashCode = newHashCode;
         var keysName = "keys" + fileExtension();
         var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), keysName);
-        if (async) {
-            return CompletableFuture.runAsync(() -> encodeKeys(keys, outputFile))
-                    .exceptionallyAsync(error -> onError(outputFile, error));
-        }
-
         encodeKeys(keys, outputFile);
-        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public CompletableFuture<Void> serializeStore(Store store, boolean async) {
+    public void serializeStore(Store store) {
         var newHashCode = store.hashCode();
         if(newHashCode == storeHashCode) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         this.storeHashCode = newHashCode;
-        var chatsFutures = serializeChatsAsync(store);
-        var newslettersFutures = serializeNewslettersAsync(store);
-        var dependableFutures = Stream.of(chatsFutures, newslettersFutures)
-                .flatMap(Arrays::stream)
-                .toArray(CompletableFuture[]::new);
-        var result = CompletableFuture.allOf(dependableFutures).thenRunAsync(() -> {
-            var storeName = "store" + fileExtension();
-            var storePath = getSessionFile(store, storeName);
-            encodeStore(store, storePath);
-        });
-        if (async) {
-            return result;
+        try(var scope = new StructuredTaskScope<>()) {
+            store.chats().forEach(chat -> scope.fork(() -> {
+                serializeChatAsync(store, chat);
+                return null;
+            }));
+            store.newsletters().forEach(newsletter -> scope.fork(() -> {
+                serializeNewsletterAsync(store, newsletter);
+                return null;
+            }));
+            scope.join();
+        } catch (InterruptedException exception) {
+            throw new RuntimeException("Cannot serialize store", exception);
         }
-
-        result.join();
-        return CompletableFuture.completedFuture(null);
+        var storePath = getSessionFile(store, "store" + fileExtension());
+        encodeStore(store, storePath);
     }
 
-    private CompletableFuture<?>[] serializeChatsAsync(Store store) {
-        return store.chats()
-                .stream()
-                .map(chat -> serializeChatAsync(store, chat))
-                .toArray(CompletableFuture[]::new);
-    }
-
-    private CompletableFuture<Void> serializeChatAsync(Store store, Chat chat) {
+    private void serializeChatAsync(Store store, Chat chat) {
         var newHashCode = chat.hashCode();
         if(newHashCode == jidsHashCodes.getOrDefault(chat.jid(), -1)) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         jidsHashCodes.put(chat.jid(), newHashCode);
         var fileName = CHAT_PREFIX + chat.jid().user() + fileExtension();
         var outputFile = getSessionFile(store, fileName);
-        return CompletableFuture.runAsync(() -> encodeChat(chat, outputFile))
-                .exceptionallyAsync(error -> onError(outputFile, error));
+        try {
+            encodeChat(chat, outputFile);
+        }catch (Throwable throwable) {
+            onError(outputFile, throwable);
+        }
     }
 
-    private Void onError(Path path, Throwable error) {
+    private void onError(Path path, Throwable error) {
         var logger = System.getLogger("FileSerializer - " + path);
         logger.log(System.Logger.Level.ERROR, error);
-        return null;
     }
 
-    private CompletableFuture<?>[] serializeNewslettersAsync(Store store) {
-        return store.newsletters()
-                .stream()
-                .map(newsletter -> serializeNewsletterAsync(store, newsletter))
-                .toArray(CompletableFuture[]::new);
-    }
-
-    private CompletableFuture<Void> serializeNewsletterAsync(Store store, Newsletter newsletter) {
+    private void serializeNewsletterAsync(Store store, Newsletter newsletter) {
         var newHashCode = newsletter.hashCode();
         if(newHashCode == jidsHashCodes.getOrDefault(newsletter.jid(), -1)) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         jidsHashCodes.put(newsletter.jid(), newHashCode);
         var fileName = NEWSLETTER_PREFIX + newsletter.jid().user() + fileExtension();
         var outputFile = getSessionFile(store, fileName);
-        return CompletableFuture.runAsync(() -> encodeNewsletter(newsletter, outputFile));
+        encodeNewsletter(newsletter, outputFile);
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, UUID id) {
+    public Optional<Keys> deserializeKeys(WhatsappClientType type, UUID id) {
         return deserializeKeysFromId(type, id.toString());
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, String alias) {
+    public Optional<Keys> deserializeKeys(WhatsappClientType type, String alias) {
         var file = getSessionDirectory(type, alias);
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -217,7 +198,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Keys> deserializeKeys(ClientType type, PhoneNumber phoneNumber) {
+    public Optional<Keys> deserializeKeys(WhatsappClientType type, PhoneNumber phoneNumber) {
         var file = getSessionDirectory(type, phoneNumber.toString());
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -230,7 +211,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         }
     }
 
-    private Optional<Keys> deserializeKeysFromId(ClientType type, String id) {
+    private Optional<Keys> deserializeKeysFromId(WhatsappClientType type, String id) {
         var path = getSessionFile(type, id, "keys.proto");
         if(Files.notExists(path)) {
             return Optional.empty();
@@ -246,12 +227,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, UUID id) {
+    public Optional<Store> deserializeStore(WhatsappClientType type, UUID id) {
         return deserializeStoreFromId(type, id.toString());
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, String alias) {
+    public Optional<Store> deserializeStore(WhatsappClientType type, String alias) {
         var file = getSessionDirectory(type, alias);
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -265,7 +246,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public Optional<Store> deserializeStore(ClientType type, PhoneNumber phoneNumber) {
+    public Optional<Store> deserializeStore(WhatsappClientType type, PhoneNumber phoneNumber) {
         var file = getSessionDirectory(type, phoneNumber.toString());
         if (Files.notExists(file)) {
             return Optional.empty();
@@ -278,7 +259,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         }
     }
 
-    private Optional<Store> deserializeStoreFromId(ClientType type, String id) {
+    private Optional<Store> deserializeStoreFromId(WhatsappClientType type, String id) {
         var path = getSessionFile(type, id, "store.proto");
         if (Files.notExists(path)) {
             return Optional.empty();
@@ -294,19 +275,31 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public CompletableFuture<Void> attributeStore(Store store) {
+    public void attributeStore(Store store) {
         var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
         if (Files.notExists(directory)) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
-        try (var walker = Files.walk(directory)) {
-            var futures = walker.map(entry -> handleStoreFile(store, entry))
-                    .filter(Objects::nonNull)
-                    .toArray(CompletableFuture[]::new);
-            return CompletableFuture.allOf(futures)
-                    .thenRun(() -> attributeStoreContextualMessages(store));
-        } catch (IOException exception) {
-            return CompletableFuture.failedFuture(exception);
+
+        try (
+                var walker = Files.walk(directory);
+                var scope = new StructuredTaskScope<>()
+        ) {
+            walker.forEach(path -> scope.fork(() -> {
+                try {
+                    switch (FileType.of(path)) {
+                        case NEWSLETTER -> deserializeNewsletter(store, path);
+                        case CHAT -> deserializeChat(store, path);
+                        case UNKNOWN -> {}
+                    }
+                }catch (Throwable throwable) {
+                    onError(path, throwable);
+                }
+                return null;
+            }));
+            scope.join();
+        } catch (IOException | InterruptedException exception) {
+            throw new RuntimeException("Cannot attribute store", exception);
         }
     }
 
@@ -335,16 +328,6 @@ abstract class FileControllerSerializer implements ControllerSerializer {
                 .ifPresent(contextInfo::setQuotedMessageSender);
     }
 
-    private CompletableFuture<Void> handleStoreFile(Store store, Path entry) {
-        return switch (FileType.of(entry)) {
-            case NEWSLETTER -> CompletableFuture.runAsync(() -> deserializeNewsletter(store, entry))
-                    .exceptionallyAsync(error -> onError(entry, error));
-            case CHAT -> CompletableFuture.runAsync(() -> deserializeChat(store, entry))
-                    .exceptionallyAsync(error -> onError(entry, error));
-            case UNKNOWN -> null;
-        };
-    }
-
     private enum FileType {
         UNKNOWN(null),
         CHAT(CHAT_PREFIX),
@@ -369,7 +352,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public void deleteSession(Controller<?> controller) {
+    public void deleteSession(Controller controller) {
         try {
             var folderPath = getSessionDirectory(controller.clientType(), controller.uuid().toString());
             delete(folderPath);
@@ -405,14 +388,14 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public void linkMetadata(Controller<?> controller) {
+    public void linkMetadata(Controller controller) {
         controller.phoneNumber()
                 .ifPresent(phoneNumber -> linkToUuid(controller.clientType(), controller.uuid(), phoneNumber.toString()));
         controller.alias()
                 .forEach(alias -> linkToUuid(controller.clientType(), controller.uuid(), alias));
     }
 
-    private void linkToUuid(ClientType type, UUID uuid, String string) {
+    private void linkToUuid(WhatsappClientType type, UUID uuid, String string) {
         try {
             var link = getSessionDirectory(type, string);
             Files.writeString(link, uuid.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
@@ -477,11 +460,11 @@ abstract class FileControllerSerializer implements ControllerSerializer {
                 .build();
     }
 
-    private Path getHome(ClientType type) {
-        return baseDirectory.resolve(type == ClientType.MOBILE ? "mobile" : "web");
+    private Path getHome(WhatsappClientType type) {
+        return baseDirectory.resolve(type == WhatsappClientType.MOBILE ? "mobile" : "web");
     }
 
-    private Path getSessionDirectory(ClientType clientType, String path) {
+    private Path getSessionDirectory(WhatsappClientType clientType, String path) {
         try {
             var result = getHome(clientType).resolve(path);
             Files.createDirectories(result.getParent());
@@ -501,7 +484,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         }
     }
 
-    private Path getSessionFile(ClientType clientType, String uuid, String fileName) {
+    private Path getSessionFile(WhatsappClientType clientType, String uuid, String fileName) {
         try {
             var result = getSessionDirectory(clientType, uuid).resolve(fileName);
             Files.createDirectories(result.getParent());

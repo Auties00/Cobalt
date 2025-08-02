@@ -1,7 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.protobuf.stream.ProtobufInputStream;
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.LTHash;
 import it.auties.whatsapp.exception.HmacValidationException;
@@ -32,14 +32,15 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.*;
+import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.*;
 
-class AppStateHandler {
-    private static final int TIMEOUT = 120;
+final class AppStateHandler {
     private static final int PULL_ATTEMPTS = 3;
 
     private final SocketHandler socketHandler;
@@ -47,22 +48,19 @@ class AppStateHandler {
     private final Semaphore pullSemaphore;
     private final Semaphore pushSemaphore;
 
-    protected AppStateHandler(SocketHandler socketHandler) {
+    AppStateHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.attempts = new ConcurrentHashMap<>();
         this.pullSemaphore = new Semaphore(1, true);
         this.pushSemaphore = new Semaphore(1, true);
     }
 
-    protected CompletableFuture<Void> push(Jid jid, List<PatchRequest> patches) {
+    void push(Jid jid, List<PatchRequest> patches) {
         var clientType = socketHandler.store().clientType();
-        var pullOperation = switch (clientType) {
-            case MOBILE -> CompletableFuture.completedFuture(null);
-            case WEB -> pull(jid, getPatchesTypes(patches));
-        };
-        return pullOperation.thenComposeAsync(ignored -> sendPush(jid, patches, clientType != ClientType.MOBILE))
-                .orTimeout(TIMEOUT, TimeUnit.SECONDS)
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(PUSH_APP_STATE, throwable));
+        if (clientType == WhatsappClientType.WEB) {
+            pull(jid, getPatchesTypes(patches));
+        }
+        sendPush(jid, patches, clientType != WhatsappClientType.MOBILE);
     }
 
     private Set<PatchType> getPatchesTypes(List<PatchRequest> patches) {
@@ -71,13 +69,13 @@ class AppStateHandler {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private CompletableFuture<Void> sendPush(Jid jid, List<PatchRequest> patches, boolean readPatches) {
+    private void sendPush(Jid jid, List<PatchRequest> patches, boolean readPatches) {
         try {
             pushSemaphore.acquire();
             var requests = patches.stream()
                     .map(entry -> createPushRequest(jid, entry))
                     .toList();
-            var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
+            var mobile = socketHandler.store().clientType() == WhatsappClientType.MOBILE;
             var body = requests.stream()
                     .map(request -> createPushRequestNode(request, mobile))
                     .toList();
@@ -85,17 +83,13 @@ class AppStateHandler {
                     .put("data_namespace", 3, mobile)
                     .toMap();
             var sync = Node.of("sync", syncAttributes, body);
-            return socketHandler.sendQuery("set", "w:sync:app:state", sync)
-                    .thenAcceptAsync(this::parseSyncRequest)
-                    .thenRunAsync(() -> onPush(jid, requests, readPatches))
-                    .thenRun(pushSemaphore::release)
-                    .exceptionallyCompose(throwable -> {
-                        pushSemaphore.release();
-                        return CompletableFuture.failedFuture(throwable);
-                    });
-        }catch (Throwable throwable) {
+            var resultNode = socketHandler.sendQuery("set", "w:sync:app:state", sync);
+            parseSyncRequest(resultNode);
+            onPush(jid, requests, readPatches);
+        } catch (Throwable throwable) {
+            socketHandler.handleFailure(PUSH_APP_STATE, throwable);
+        } finally {
             pushSemaphore.release();
-            return CompletableFuture.failedFuture(throwable);
         }
     }
 
@@ -203,7 +197,7 @@ class AppStateHandler {
         });
     }
 
-    protected void pull(PatchType... patchTypes) {
+    void pull(PatchType... patchTypes) {
         if (patchTypes == null || patchTypes.length == 0) {
             return;
         }
@@ -213,21 +207,28 @@ class AppStateHandler {
             return;
         }
 
-        pull(jid.get(), Set.of(patchTypes))
-                .thenAcceptAsync(success -> onPull(false, success))
-                .exceptionallyAsync(exception -> onPullError(false, exception));
+        try {
+            var success = pull(jid.get(), Set.of(patchTypes));
+            onPull(false, success);
+        } catch (Throwable exception) {
+            onPullError(false, exception);
+        }
     }
 
-    protected CompletableFuture<Void> pullInitial() {
+    void pullInitial() {
         if (socketHandler.keys().initialAppSync()) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         var jid = socketHandler.store().jid();
-        return jid.map(value -> pull(value, Set.of(PatchType.values()))
-                        .thenAcceptAsync(success -> onPull(true, success))
-                        .exceptionallyAsync(exception -> onPullError(true, exception)))
-                .orElseGet(() -> CompletableFuture.completedFuture(null));
+        if (jid.isPresent()) {
+            try {
+                var success = pull(jid.get(), Set.of(PatchType.values()));
+                onPull(true, success);
+            } catch (Throwable exception) {
+                onPullError(true, exception);
+            }
+        }
     }
 
     private void onPull(boolean initial, boolean success) {
@@ -255,40 +256,33 @@ class AppStateHandler {
                 .isPresent();
     }
 
-    private Void onPullError(boolean initial, Throwable exception) {
+    private void onPullError(boolean initial, Throwable exception) {
         attempts.clear();
         if (initial) {
-            return socketHandler.handleFailure(INITIAL_APP_STATE_SYNC, exception);
+            socketHandler.handleFailure(INITIAL_APP_STATE_SYNC, exception);
+            return;
         }
-        return socketHandler.handleFailure(PULL_APP_STATE, exception);
+        socketHandler.handleFailure(PULL_APP_STATE, exception);
     }
 
-    private CompletableFuture<Boolean> pull(Jid jid, Set<PatchType> patchTypes) {
+    private boolean pull(Jid jid, Set<PatchType> patchTypes) {
         try {
             pullSemaphore.acquire();
             var tempStates = new HashMap<PatchType, CompanionHashState>();
             var nodes = getPullNodes(jid, patchTypes, tempStates);
-            return socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync", nodes))
-                    .thenApplyAsync(this::parseSyncRequest)
-                    .thenApplyAsync(records -> decodeSyncs(jid, tempStates, records))
-                    .thenComposeAsync(remaining -> handlePullResult(jid, remaining))
-                    .orTimeout(TIMEOUT, TimeUnit.SECONDS)
-                    .thenApply(result -> {
-                        pullSemaphore.release();
-                        return result;
-                    })
-                    .exceptionallyCompose(throwable -> {
-                        pullSemaphore.release();
-                        return CompletableFuture.failedFuture(throwable);
-                    });
-        }catch (Throwable throwable) {
+            var resultNode = socketHandler.sendQuery("set", "w:sync:app:state", Node.of("sync", nodes));
+            var records = parseSyncRequest(resultNode);
+            var remaining = decodeSyncs(jid, tempStates, records);
+            return handlePullResult(jid, remaining);
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        } finally {
             pullSemaphore.release();
-            return CompletableFuture.failedFuture(throwable);
         }
     }
 
-    private CompletableFuture<Boolean> handlePullResult(Jid jid, Set<PatchType> remaining) {
-        return remaining.isEmpty() ? CompletableFuture.completedFuture(true) : pull(jid, remaining);
+    private boolean handlePullResult(Jid jid, Set<PatchType> remaining) {
+        return remaining.isEmpty() || pull(jid, remaining);
     }
 
     private List<Node> getPullNodes(Jid jid, Set<PatchType> patchTypes, Map<PatchType, CompanionHashState> tempStates) {
@@ -392,13 +386,14 @@ class AppStateHandler {
                 .filter(ignored -> socketHandler.store().mediaProxySetting().allowsDownloads())
                 .orElse(null);
         var blob = ExternalBlobReferenceSpec.decode(externalBlobPayload);
-        return Optional.of(Medias.downloadAsync(blob, proxy, stream -> {
-            try(var protobufStream = ProtobufInputStream.fromStream(stream)) {
+        var decodeSnapshot = Medias.download(blob, proxy, stream -> {
+            try (var protobufStream = ProtobufInputStream.fromStream(stream)) {
                 return SnapshotSyncSpec.decode(protobufStream);
-            }catch (Throwable throwable) {
+            } catch (Throwable throwable) {
                 throw new RuntimeException("Cannot decode snapshot", throwable);
             }
-        }).join());
+        });
+        return Optional.of(decodeSnapshot);
     }
 
 
@@ -566,14 +561,13 @@ class AppStateHandler {
                     .proxy()
                     .filter(ignored -> socketHandler.store().mediaProxySetting().allowsDownloads())
                     .orElse(null);
-            var mutationsSync = Medias.downloadAsync(patch.externalMutations(), proxy, stream -> {
-                        try(var protobufStream = ProtobufInputStream.fromStream(stream)) {
-                            return MutationsSyncSpec.decode(protobufStream);
-                        }catch (Exception exception) {
-                            throw new RuntimeException("Cannot decode mutations", exception);
-                        }
-                    })
-                    .join();
+            var mutationsSync = Medias.download(patch.externalMutations(), proxy, stream -> {
+                try(var protobufStream = ProtobufInputStream.fromStream(stream)) {
+                    return MutationsSyncSpec.decode(protobufStream);
+                }catch (Exception exception) {
+                    throw new RuntimeException("Cannot decode mutations", exception);
+                }
+            });
             patch.mutations().addAll(mutationsSync.mutations());
         }
 
@@ -738,7 +732,7 @@ class AppStateHandler {
         mac.update((byte) n);
     }
 
-    protected void dispose() {
+    void dispose() {
         attempts.clear();
     }
 

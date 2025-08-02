@@ -23,10 +23,10 @@ import java.util.Map;
 
 /**
  * This interface can be used to listen for events fired when new information is sent by
- * WhatsappWeb's socket. A listener can be registered using {@link Whatsapp#addListener(Listener)}.
+ * WhatsappWeb's socket. A listener can be registered using {@link Whatsapp#addListener(WhatsappListener)}.
  */
 @SuppressWarnings("unused")
-public interface Listener {
+public interface WhatsappListener {
     /**
      * Called when the socket sends a node to Whatsapp
      *
@@ -64,8 +64,8 @@ public interface Listener {
     /**
      * Called when the socket successfully establishes a connection and logs in into an account. When
      * this event is called, any data, including chats and contact, is not guaranteed to be already in
-     * memory. Instead, {@link Listener#onChats(Whatsapp, Collection)} ()} and
-     * {@link Listener#onContacts(Whatsapp, Collection)} ()} should be used.
+     * memory. Instead, {@link WhatsappListener#onChats(Whatsapp, Collection)} ()} and
+     * {@link WhatsappListener#onContacts(Whatsapp, Collection)} ()} should be used.
      *
      * @param whatsapp an instance to the calling api
      */
@@ -75,8 +75,8 @@ public interface Listener {
     /**
      * Called when the socket successfully establishes a connection and logs in into an account. When
      * this event is called, any data, including chats and contact, is not guaranteed to be already in
-     * memory. Instead, {@link Listener#onChats(Collection)} and
-     * {@link Listener#onContacts(Collection)} should be used.
+     * memory. Instead, {@link WhatsappListener#onChats(Collection)} and
+     * {@link WhatsappListener#onContacts(Collection)} should be used.
      */
     default void onLoggedIn() {
     }
@@ -110,7 +110,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param reason   the errorReason why the session was disconnected
      */
-    default void onDisconnected(Whatsapp whatsapp, DisconnectReason reason) {
+    default void onDisconnected(Whatsapp whatsapp, WhatsappDisconnectReason reason) {
     }
 
 
@@ -119,7 +119,7 @@ public interface Listener {
      *
      * @param reason the errorReason why the session was disconnected
      */
-    default void onDisconnected(DisconnectReason reason) {
+    default void onDisconnected(WhatsappDisconnectReason reason) {
     }
 
     /**
@@ -215,9 +215,9 @@ public interface Listener {
     /**
      * Called when the socket receives all the chats from WhatsappWeb's Socket. When this event is
      * fired, it is guaranteed that all metadata excluding messages will be present. If you also need
-     * the messages to be loaded, please refer to {@link Listener#onChatMessagesSync(Chat, boolean)}.
+     * the messages to be loaded, please refer to {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}.
      * Particularly old chats may come later through
-     * {@link Listener#onChatMessagesSync(Chat, boolean)}
+     * {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}
      *
      * @param whatsapp an instance to the calling api
      * @param chats    the chats
@@ -229,8 +229,8 @@ public interface Listener {
      * Called when the socket receives all the chats from WhatsappWeb's Socket. When this event is
      * fired, it is guaranteed that all metadata excluding messages will be present. To access this
      * data use {@link Store#chats()}. If you also need the messages to be loaded, please refer to
-     * {@link Listener#onChatMessagesSync(Chat, boolean)}. Particularly old chats may come later
-     * through {@link Listener#onChatMessagesSync(Chat, boolean)}.
+     * {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}. Particularly old chats may come later
+     * through {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}.
      *
      * @param chats the chats
      */

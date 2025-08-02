@@ -1,19 +1,17 @@
 package it.auties.whatsapp.util;
 
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.api.AsyncVerificationCodeSupplier;
+import it.auties.whatsapp.api.WhatsappVerification;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.exception.RegistrationException;
-import it.auties.whatsapp.model.mobile.VerificationCodeError;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -21,8 +19,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 public final class MobileRegistration {
     public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
@@ -31,105 +27,96 @@ public final class MobileRegistration {
     private final HttpClient httpClient;
     private final Store store;
     private final Keys keys;
-    private final AsyncVerificationCodeSupplier codeHandler;
-    private final VerificationCodeMethod method;
+    private final WhatsappVerification.Mobile verification;
 
-    public MobileRegistration(Store store, Keys keys, AsyncVerificationCodeSupplier codeHandler, VerificationCodeMethod method) {
+    public MobileRegistration(Store store, Keys keys, WhatsappVerification.Mobile verification) {
         this.store = store;
         this.keys = keys;
-        this.codeHandler = codeHandler;
-        this.method = method;
+        this.verification = verification;
         this.httpClient = HttpClient.newHttpClient();
     }
 
-    public CompletableFuture<RegistrationResponse> registerPhoneNumber() {
-        return requestVerificationCode(false)
-                .thenCompose(ignored -> sendVerificationCode())
-                .thenApply(result -> {
-                    dispose();
-                    return result;
-                })
-                .exceptionallyCompose(throwable -> {
-                    dispose();
-                    return CompletableFuture.failedFuture(throwable);
-                });
+    public void registerPhoneNumber() {
+        try {
+            requestVerificationCode(false);
+            sendVerificationCode();
+        } catch (IOException | InterruptedException exception) {
+            throw new RuntimeException("Cannot register phone number", exception);
+        } finally {
+            dispose();
+        }
     }
 
-    public CompletableFuture<RegistrationResponse> requestVerificationCode() {
-        return requestVerificationCode(true);
+    public Optional<RegistrationResponse> requestVerificationCode() {
+        try {
+            return requestVerificationCode(true);
+        }catch (IOException | InterruptedException exception){
+            throw new RuntimeException("Cannot request verification code", exception);
+        }
     }
 
-    private CompletableFuture<RegistrationResponse> requestVerificationCode(boolean closeResources) {
-        if(method == VerificationCodeMethod.NONE) {
-            return CompletableFuture.completedFuture(null);
+    private Optional<RegistrationResponse> requestVerificationCode(boolean closeResources) throws IOException, InterruptedException {
+        if (verification.requestMethod().isEmpty()) {
+            return Optional.empty();
         }
 
-        return exists(null)
-                .thenComposeAsync(response -> requestVerificationCode(response, null))
-                .thenApply(result -> {
-                    if(closeResources) {
-                        dispose();
-                    }
-                    return result;
-                })
-                .exceptionallyCompose(throwable -> {
-                    if(closeResources) {
-                        dispose();
-                    }
-                    return CompletableFuture.failedFuture(throwable);
-                });
+        try {
+            var response = exists(null);
+            var result = requestVerificationCode(response, null);
+            saveRegistrationStatus(store, keys, false);
+            return Optional.of(result);
+        } finally {
+            if (closeResources) {
+                dispose();
+            }
+        }
     }
 
-    private CompletableFuture<RegistrationResponse> exists(VerificationCodeError lastError) {
-        var options = getRegistrationOptions(
-                store,
-                keys,
-                false
-        );
-        return options.thenComposeAsync(attrs -> sendRequest("/exist", attrs)).thenComposeAsync(result -> {
-            var response = RegistrationResponse.ofJson(result)
-                    .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
-            if (response.errorReason() == VerificationCodeError.INCORRECT) {
-                return CompletableFuture.completedFuture(response);
-            }
+    private RegistrationResponse exists(String lastError) throws IOException, InterruptedException {
+        var attrs = getRegistrationOptions(store, keys, false);
+        var result = sendRequest("/exist", attrs);
+        var response = RegistrationResponse.ofJson(result)
+                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
 
-            if (lastError == null) {
-                return exists(response.errorReason());
-            }
+        if (Objects.equals(response.errorReason(), "incorrect")) {
+            return response;
+        }
 
-            throw new RegistrationException(response, result);
-        });
+        if (lastError == null) {
+            return exists(response.errorReason());
+        }
+
+        throw new RegistrationException(response, result);
     }
 
-    private CompletableFuture<RegistrationResponse> requestVerificationCode(RegistrationResponse existsResponse, VerificationCodeError lastError) {
-        var options = getRegistrationOptions(
+    private RegistrationResponse requestVerificationCode(RegistrationResponse existsResponse, String lastError) throws IOException, InterruptedException {
+        var params = getRequestVerificationCodeParameters(existsResponse);
+        var attrs = getRegistrationOptions(
                 store,
                 keys,
                 true,
-                getRequestVerificationCodeParameters(existsResponse)
+                params
         );
-        return options.thenComposeAsync(attrs -> sendRequest("/code", attrs))
-                .thenComposeAsync(result -> onCodeRequestSent(existsResponse, lastError, result))
-                .thenApplyAsync(response -> {
-                    saveRegistrationStatus(store, keys, false);
-                    return response;
-                });
+        var result = sendRequest("/code", attrs);
+        return onCodeRequestSent(existsResponse, lastError, result);
     }
 
     private String[] getRequestVerificationCodeParameters(RegistrationResponse existsResponse) {
+        var method = verification.requestMethod()
+                .orElseThrow();
         var countryCode = store.phoneNumber()
                 .orElseThrow()
                 .countryCode();
-        return switch(store.device().platform()) {
+        return switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> new String[]{
-                    "method", method.data(),
+                    "method", method,
                     "sim_mcc", existsResponse.flashType() ? countryCode.mcc() : "000",
                     "sim_mnc", "000",
                     "reason", "",
                     "cellular_strength", "1"
             };
             case ANDROID, ANDROID_BUSINESS -> new String[]{
-                    "method", method.data(),
+                    "method", method,
                     "sim_mcc", "000",
                     "sim_mnc", "000",
                     "reason", "",
@@ -155,7 +142,7 @@ public final class MobileRegistration {
                     "cellular_strength", "5",
                     "_gg", "",
                     "_gi", "",
-                    "_gp","",
+                    "_gp", "",
                     "backup_token", toUrlHex(keys.backupToken()),
                     "hasav", "2"
             };
@@ -163,19 +150,21 @@ public final class MobileRegistration {
         };
     }
 
-    private CompletionStage<RegistrationResponse> onCodeRequestSent(RegistrationResponse existsResponse, VerificationCodeError lastError, String result) {
+    private RegistrationResponse onCodeRequestSent(RegistrationResponse existsResponse, String lastError, String result) throws IOException, InterruptedException {
         var response = RegistrationResponse.ofJson(result)
                 .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
-        if (response.status() == VerificationCodeStatus.SUCCESS) {
-            return CompletableFuture.completedFuture(response);
+        if (isSuccessful(response.status())) {
+            return response;
         }
 
         return switch (response.errorReason()) {
-            case TOO_RECENT, TOO_MANY, TOO_MANY_GUESSES, TOO_MANY_ALL_METHODS -> throw new RegistrationException(response, "Please wait before trying to register this phone number again");
-            case NO_ROUTES -> throw new RegistrationException(response, "You can only register numbers that are already on Whatsapp (for further support contact me on telegram @Auties00)");
+            case "too_recent", "too_many", "too_many_guesses", "too_many_all_methods" ->
+                    throw new RegistrationException(response, "Please wait before trying to register this phone number again");
+            case "no_routes" ->
+                    throw new RegistrationException(response, "You can only register numbers that are already on Whatsapp");
             default -> {
                 var newErrorReason = response.errorReason();
-                if(newErrorReason == lastError) {
+                if (newErrorReason.equals(lastError)) {
                     throw new RegistrationException(response, result);
                 }
                 yield requestVerificationCode(existsResponse, newErrorReason);
@@ -183,23 +172,16 @@ public final class MobileRegistration {
         };
     }
 
-    public CompletableFuture<RegistrationResponse> sendVerificationCode() {
-        return codeHandler.get()
-                .thenComposeAsync(code -> getRegistrationOptions(
-                        store, keys, true,
-                        "code", normalizeCodeResult(code)
-                ))
-                .thenComposeAsync(attrs -> sendRequest("/register", attrs))
-                .thenComposeAsync(result -> {
-                    var response = RegistrationResponse.ofJson(result)
-                            .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
-                    if (response.status() == VerificationCodeStatus.SUCCESS) {
-                        saveRegistrationStatus(store, keys, true);
-                        return CompletableFuture.completedFuture(response);
-                    }
-
-                    throw new RegistrationException(response, result);
-                });
+    public void sendVerificationCode() throws IOException, InterruptedException {
+        var code = verification.verificationCode();
+        var attrs = getRegistrationOptions(store, keys, true, "code", normalizeCodeResult(code));
+        var result = sendRequest("/register", attrs);
+        var response = RegistrationResponse.ofJson(result)
+                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
+        if (!isSuccessful(response.status())) {
+            throw new RegistrationException(response, result);
+        }
+        saveRegistrationStatus(store, keys, true);
     }
 
     private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
@@ -209,15 +191,22 @@ public final class MobileRegistration {
             store.setJid(jid);
             store.addLinkedDevice(jid, 0);
         }
-        keys.serialize(true);
-        store.serialize(true);
+        keys.serialize();
+        store.serialize();
     }
 
-    private String normalizeCodeResult(String captcha) {
-        return captcha.replaceAll("-", "").trim();
+    private String normalizeCodeResult(String code) {
+        return code.replaceAll("-", "")
+                .trim();
     }
 
-    private CompletableFuture<String> sendRequest(String path, String params) {
+    private boolean isSuccessful(String status) {
+        return status.equalsIgnoreCase("ok")
+                || status.equalsIgnoreCase("sent")
+                || status.equalsIgnoreCase("verified");
+    }
+
+    private String sendRequest(String path, String params) throws IOException, InterruptedException {
         try {
             var keypair = SignalKeyPair.random();
             var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey());
@@ -233,60 +222,59 @@ public final class MobileRegistration {
             var userAgent = store.device()
                     .toUserAgent(store.version())
                     .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
-            var request = HttpRequest.newBuilder()
+            var requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create("%s%s?ENC=%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
                     .GET()
                     .header("User-Agent", userAgent);
-            if(store.device().platform().isAndroid()) {
-                request.header("Accept", "text/json")
+            if (store.device().platform().isAndroid()) {
+                requestBuilder.header("Accept", "text/json")
                         .header("WaMsysRequest", "1")
                         .header("request_token", UUID.randomUUID().toString())
                         .header("Content-Type", "application/x-www-form-urlencoded");
             }
-            return httpClient.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body);
+
+            var httpResponse = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            return httpResponse.body();
         } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot encrypt request", exception);
         }
     }
 
-    private CompletableFuture<String> getRegistrationOptions(Store store, Keys keys, boolean useToken, String... attributes) {
+    private String getRegistrationOptions(Store store, Keys keys, boolean useToken, String... attributes) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var tokenFuture = useToken ? AppMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version()) : CompletableFuture.<String>completedFuture(null);
-        return tokenFuture.thenApplyAsync(token -> {
-            var certificate = store.device().platform().isBusiness() ? AppMetadata.generateBusinessCertificate(keys) : null;
-            var fdid = switch (store.device().platform()) {
-                case IOS, IOS_BUSINESS -> keys.fdid().toUpperCase(Locale.ROOT);
-                case ANDROID, ANDROID_BUSINESS -> keys.fdid().toLowerCase(Locale.ROOT);
-                default -> null;
-            };
-            var registrationParams = toFormParams(
-                    "cc", phoneNumber.countryCode().prefix(),
-                    "in", String.valueOf(phoneNumber.numberWithoutPrefix()),
-                    "rc", String.valueOf(store.releaseChannel().index()),
-                    "lg", phoneNumber.countryCode().lg(),
-                    "lc", phoneNumber.countryCode().lc(),
-                    "authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()),
-                    "vname", certificate,
-                    "e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()),
-                    "e_keytype", Base64.getUrlEncoder().encodeToString(SignalConstants.KEY_BUNDLE_TYPE),
-                    "e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()),
-                    "e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()),
-                    "e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()),
-                    "e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()),
-                    "fdid", fdid,
-                    "expid", Base64.getUrlEncoder().encodeToString(keys.deviceId()),
-                    "id", toUrlHex(keys.identityId()),
-                    "token", useToken ? token : null
-            );
-            var additionalParams = toFormParams(attributes);
-            if(additionalParams.isEmpty()) {
-                return registrationParams;
-            }else {
-                return registrationParams + additionalParams;
-            }
-        });
+        var token = useToken ? AppMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version()) : null;
+        var certificate = store.device().platform().isBusiness() ? AppMetadata.generateBusinessCertificate(keys) : null;
+        var fdid = switch (store.device().platform()) {
+            case IOS, IOS_BUSINESS -> keys.fdid().toUpperCase(Locale.ROOT);
+            case ANDROID, ANDROID_BUSINESS -> keys.fdid().toLowerCase(Locale.ROOT);
+            default -> null;
+        };
+        var registrationParams = toFormParams(
+                "cc", phoneNumber.countryCode().prefix(),
+                "in", String.valueOf(phoneNumber.numberWithoutPrefix()),
+                "rc", String.valueOf(store.releaseChannel().index()),
+                "lg", phoneNumber.countryCode().lg(),
+                "lc", phoneNumber.countryCode().lc(),
+                "authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()),
+                "vname", certificate,
+                "e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()),
+                "e_keytype", Base64.getUrlEncoder().encodeToString(SignalConstants.KEY_BUNDLE_TYPE),
+                "e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()),
+                "e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()),
+                "e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()),
+                "e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()),
+                "fdid", fdid,
+                "expid", Base64.getUrlEncoder().encodeToString(keys.deviceId()),
+                "id", toUrlHex(keys.identityId()),
+                "token", useToken ? token : null
+        );
+        var additionalParams = toFormParams(attributes);
+        if (additionalParams.isEmpty()) {
+            return registrationParams;
+        } else {
+            return registrationParams + additionalParams;
+        }
     }
 
     private String toUrlHex(byte[] buffer) {
@@ -297,31 +285,24 @@ public final class MobileRegistration {
         return id.toString().toUpperCase(Locale.ROOT);
     }
 
-    // For every pair of entries we need a = to separate them and a & to join the pair to the next one
-    // Then we need to factor in the length of the entry itself (either the key or value)
-    // Exclude the last &
-    // Then write the result
     private String toFormParams(String... entries) {
+        if (entries == null) {
+            return "";
+        }
+
         var length = entries.length;
-        if((length & 1) != 0) {
+        if ((length & 1) != 0) {
             throw new IllegalArgumentException("Odd form entries");
         }
-        
-        var resultLength = entries.length - 1;
-        for(var entry : entries) {
-            resultLength += entry.length();
-        }
-        
-        var result = new StringBuilder(resultLength);
-        var i = 0;
-        while (i < entries.length) {
-            result.append(entries[i++])
-                    .append('=')
-                    .append(entries[i++]);
-            if(result.length() < result.capacity()) {
-                result.append('&');
+
+        var result = new StringJoiner("&");
+        for (int i = 0; i < length; i += 2) {
+            if (entries[i + 1] == null) {
+                continue;
             }
+            result.add(entries[i] + "=" + entries[i + 1]);
         }
+
         return result.toString();
     }
 

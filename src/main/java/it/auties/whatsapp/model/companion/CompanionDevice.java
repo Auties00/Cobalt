@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.companion;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
 import it.auties.whatsapp.model.signal.auth.Version;
 
@@ -74,7 +74,7 @@ public final class CompanionDevice {
     final String modelId;
 
     @ProtobufProperty(index = 9, type = ProtobufType.ENUM)
-    final ClientType clientType;
+    final WhatsappClientType clientType;
 
     CompanionDevice(
             String model,
@@ -84,7 +84,7 @@ public final class CompanionDevice {
             Version osVersion,
             String osBuildNumber,
             String modelId,
-            ClientType clientType
+            WhatsappClientType clientType
     ) {
         this.model = model;
         this.modelId = modelId;
@@ -109,7 +109,7 @@ public final class CompanionDevice {
                 Version.of("1.0"),
                 null,
                 null,
-                ClientType.WEB
+                WhatsappClientType.WEB
         );
     }
 
@@ -136,7 +136,7 @@ public final class CompanionDevice {
                 Version.of(version.getKey()),
                 version.getValue(),
                 model.getValue(),
-                ClientType.MOBILE
+                WhatsappClientType.MOBILE
         );
     }
 
@@ -162,7 +162,7 @@ public final class CompanionDevice {
                 Version.of(String.valueOf(ThreadLocalRandom.current().nextInt(11, 16))),
                 null,
                 model,
-                ClientType.MOBILE
+                WhatsappClientType.MOBILE
         );
     }
 
@@ -179,7 +179,7 @@ public final class CompanionDevice {
                 Version.of("2.5.4"),
                 null,
                 "8110",
-                ClientType.MOBILE
+                WhatsappClientType.MOBILE
         );
     }
 
@@ -272,7 +272,7 @@ public final class CompanionDevice {
         return osVersion;
     }
 
-    public ClientType clientType() {
+    public WhatsappClientType clientType() {
         return clientType;
     }
 

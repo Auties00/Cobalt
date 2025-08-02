@@ -2,7 +2,7 @@ package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.stream.ProtobufInputStream;
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.signal.auth.*;
@@ -12,7 +12,6 @@ import it.auties.whatsapp.util.SignalConstants;
 
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
-import java.util.concurrent.CompletableFuture;
 
 final class AuthHandler {
     private final SocketHandler socketHandler;
@@ -21,36 +20,31 @@ final class AuthHandler {
         this.socketHandler = socketHandler;
     }
 
-    CompletableFuture<Void> login(ByteBuffer message) {
-        try {
-            var serverHandshake = HandshakeMessageSpec.decode(ProtobufInputStream.fromBuffer(message));
-            var serverHello = serverHandshake.serverHello();
-            var handshake = new SocketHandshake(socketHandler.keys(), SocketHandshake.getPrologue(socketHandler.store().clientType()));
-            handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
-            handshake.updateHash(serverHello.ephemeral());
-            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys().ephemeralKeyPair().privateKey());
-            handshake.mixIntoKey(sharedEphemeral);
-            var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys().ephemeralKeyPair().privateKey());
-            handshake.mixIntoKey(sharedStatic);
-            handshake.cipher(serverHello.payload(), false);
-            var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
-            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys().noiseKeyPair().privateKey());
-            handshake.mixIntoKey(sharedPrivate);
-            var payload = createUserClientPayload();
-            var encodedPayload = handshake.cipher(ClientPayloadSpec.encode(payload), true);
-            var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-            var clientHandshake = new HandshakeMessageBuilder()
-                    .clientFinish(clientFinish)
-                    .build();
-            return socketHandler.sendBinaryWithNoResponse(HandshakeMessageSpec.encode(clientHandshake), false).thenRunAsync(() -> {
-                socketHandler.keys()
-                        .clearReadWriteKey();
-                handshake.finish();
-            });
-        } catch (Throwable throwable) {
-            return CompletableFuture.failedFuture(throwable);
-        }
+    void login(ByteBuffer message) {
+        var serverHandshake = HandshakeMessageSpec.decode(ProtobufInputStream.fromBuffer(message));
+        var serverHello = serverHandshake.serverHello();
+        var handshake = new SocketHandshake(socketHandler.keys(), SocketHandshake.getPrologue(socketHandler.store().clientType()));
+        handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
+        handshake.updateHash(serverHello.ephemeral());
+        var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys().ephemeralKeyPair().privateKey());
+        handshake.mixIntoKey(sharedEphemeral);
+        var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
+        var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys().ephemeralKeyPair().privateKey());
+        handshake.mixIntoKey(sharedStatic);
+        handshake.cipher(serverHello.payload(), false);
+        var encodedKey = handshake.cipher(socketHandler.keys().noiseKeyPair().publicKey(), true);
+        var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys().noiseKeyPair().privateKey());
+        handshake.mixIntoKey(sharedPrivate);
+        var payload = createUserClientPayload();
+        var encodedPayload = handshake.cipher(ClientPayloadSpec.encode(payload), true);
+        var clientFinish = new ClientFinish(encodedKey, encodedPayload);
+        var clientHandshake = new HandshakeMessageBuilder()
+                .clientFinish(clientFinish)
+                .build();
+        socketHandler.sendBinaryWithNoResponse(HandshakeMessageSpec.encode(clientHandshake), false);
+        socketHandler.keys()
+                .clearReadWriteKey();
+        handshake.finish();
     }
 
     private WebInfo createWebInfo() {
@@ -60,7 +54,7 @@ final class AuthHandler {
     }
 
     private UserAgent createUserAgent() {
-        var mobile = socketHandler.store().clientType() == ClientType.MOBILE;
+        var mobile = socketHandler.store().clientType() == WhatsappClientType.MOBILE;
         return new UserAgentBuilder()
                 .platform(socketHandler.store().device().platform())
                 .appVersion(socketHandler.store().version())
@@ -137,7 +131,7 @@ final class AuthHandler {
                 .eSkeyId(socketHandler.keys().signedKeyPair().encodedId())
                 .eSkeyVal(socketHandler.keys().signedKeyPair().publicKey())
                 .eSkeySig(socketHandler.keys().signedKeyPair().signature());
-        if (socketHandler.store().clientType() == ClientType.WEB) {
+        if (socketHandler.store().clientType() == WhatsappClientType.WEB) {
             var props = createCompanionProps();
             var encodedProps = props == null ? null : CompanionPropertiesSpec.encode(props);
             companion.companionProps(encodedProps);

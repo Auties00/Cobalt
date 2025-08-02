@@ -18,42 +18,40 @@ public final class BinaryEncoder {
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
 
-    private final byte[] output;
-    private int offset;
-
-    private BinaryEncoder(byte[] output, int offset) {
-        this.output = output;
-        this.offset = offset;
+    private BinaryEncoder() {
+        // Utility class
     }
 
     public static byte[] encode(Node node) {
         var length = BinaryLength.sizeOf(node);
         var output = new byte[length];
-        var encoder = new BinaryEncoder(output, 0);
-        encoder.writeMessage(node);
+        var offset = writeMessage(node, output, 0);
+        if(offset != length) {
+            throw new InternalError("Unexpected mismatch between write position and message length");
+        }
         return output;
     }
 
     public static void encode(Node node, byte[] output, int offset) {
-        var encoder = new BinaryEncoder(output, offset);
-        encoder.writeMessage(node);
+        writeMessage(node, output, offset);
     }
 
-    private void writeMessage(Node input) {
+    private static int writeMessage(Node input, byte[] output, int offset) {
         output[offset++] = 0;
-        writeNode(input);
+        return writeNode(input, output, offset);
     }
 
-    private void writeNode(Node input){
-        writeList(input.size());
-        writeString(input.description());
-        writeAttributes(input.attributes());
+    private static int writeNode(Node input, byte[] output, int offset){
+        offset = writeList(input.size(), output, offset);
+        offset = writeString(input.description(), output, offset);
+        offset = writeAttributes(input.attributes(), output, offset);
         if(input.hasContent()) {
-            writeContent(input.content());
+            offset = writeContent(input.content(), output, offset);
         }
+        return offset;
     }
 
-    private void writeList(int size) {
+    private static int writeList(int size, byte[] output, int offset) {
         if (size < UNSIGNED_BYTE_MAX_VALUE) {
             output[offset++] = LIST_8;
             output[offset++] = (byte) size;
@@ -64,51 +62,52 @@ public final class BinaryEncoder {
         }else {
             throw new IllegalArgumentException("Cannot write list: overflow");
         }
+        return offset;
     }
 
-    private void writeString(String input){
+    private static int writeString(String input, byte[] output, int offset){
         if (input.isEmpty()) {
             output[offset++] = BINARY_8;
             output[offset++] = LIST_EMPTY;
-            return;
+            return offset;
         }
 
         var singleByteTokenIndex = SINGLE_BYTE_TOKENS.indexOf(input);
         if (singleByteTokenIndex != -1) {
             output[offset++] = (byte) singleByteTokenIndex;
-            return;
+            return offset;
         }
 
         var dictionary0TokenIndex = DICTIONARY_0_TOKENS.indexOf(input);
         if (dictionary0TokenIndex != -1) {
             output[offset++] = DICTIONARY_0;
             output[offset++] = (byte) dictionary0TokenIndex;
-            return;
+            return offset;
         }
 
         var dictionary1TokenIndex = DICTIONARY_1_TOKENS.indexOf(input);
         if (dictionary1TokenIndex != -1) {
             output[offset++] = DICTIONARY_1;
             output[offset++] = (byte) dictionary1TokenIndex;
-            return;
+            return offset;
         }
 
         var dictionary2TokenIndex = DICTIONARY_2_TOKENS.indexOf(input);
         if (dictionary2TokenIndex != -1) {
             output[offset++] = DICTIONARY_2;
             output[offset++] = (byte) dictionary2TokenIndex;
-            return;
+            return offset;
         }
 
         var dictionary3TokenIndex = DICTIONARY_3_TOKENS.indexOf(input);
         if (dictionary3TokenIndex != -1) {
             output[offset++] = DICTIONARY_3;
             output[offset++] = (byte) dictionary3TokenIndex;
-            return;
+            return offset;
         }
 
         var length = Strings.utf8Length(input);
-        writeBinary(length);
+        offset = writeBinary(length, output, offset);
         var encoder = StandardCharsets.UTF_8.newEncoder();
         var inputBuffer = CharBuffer.wrap(input);
         var outputBuffer = ByteBuffer.wrap(output, offset, output.length - offset);
@@ -117,9 +116,10 @@ public final class BinaryEncoder {
             throw new RuntimeException("Cannot encode string: " + result);
         }
         offset += length;
+        return offset;
     }
 
-    private void writeBinary(long input) {
+    private static int writeBinary(int input, byte[] output, int offset) {
         if (input < UNSIGNED_BYTE_MAX_VALUE) {
             output[offset++] = BINARY_8;
             output[offset++] = (byte) input;
@@ -135,61 +135,69 @@ public final class BinaryEncoder {
             output[offset++] = (byte) (input >> 8);
             output[offset++] = (byte) input;
         }
+        return offset;
     }
 
-    private void writeAttributes(Attributes attributes) {
-        attributes.forEach((key, attribute) -> {
-            writeString(key);
-            writeContent(attribute);
-        });
-    }
-
-    private void writeContent(Object input){
-        switch (input) {
-            case null -> output[offset++] = LIST_EMPTY;
-            case String value -> writeString(value);
-            case byte[] value -> writeBytes(value);
-            case Boolean bool -> writeString(Boolean.toString(bool));
-            case Number number -> writeString(number.toString());
-            case Enum<?> value -> writeString(value.toString());
-            case Jid value -> writeJid(value);
-            case List<?> value -> writeChildren(value);
-            default -> throw new RuntimeException("Invalid payload type");
+    private static int writeAttributes(Attributes attributes, byte[] output, int offset) {
+        for (var entry : attributes.toEntries()) {
+            offset = writeString(entry.getKey(), output, offset);
+            offset = writeContent(entry.getValue(), output, offset);
         }
+        return offset;
     }
 
-    private void writeChildren(List<?> values) {
-        writeList(values.size());
+    private static int writeContent(Object input, byte[] output, int offset){
+        return switch (input) {
+            case null -> {
+                output[offset++] = LIST_EMPTY;
+                yield offset;
+            }
+            case String value -> writeString(value, output, offset);
+            case byte[] value -> writeBytes(value, output, offset);
+            case Boolean bool -> writeString(Boolean.toString(bool), output, offset);
+            case Number number -> writeString(number.toString(), output, offset);
+            case Enum<?> value -> writeString(value.toString(), output, offset);
+            case Jid value -> writeJid(value, output, offset);
+            case List<?> value -> writeChildren(value, output, offset);
+            default -> throw new RuntimeException("Invalid payload type");
+        };
+    }
+
+    private static int writeChildren(List<?> values, byte[] output, int offset) {
+        offset = writeList(values.size(), output, offset);
         for(var value : values) {
             try {
-                writeNode((Node) value);
+                offset = writeNode((Node) value, output, offset);
             }catch (ClassCastException ignored) {
                 throw new RuntimeException("Invalid payload type");
             }
         }
+        return offset;
     }
 
-    private void writeBytes(byte[] bytes){
+    private static int writeBytes(byte[] bytes, byte[] output, int offset){
         var length = bytes.length;
-        writeBinary(length);
+        offset = writeBinary(length, output, offset);
         System.arraycopy(bytes, 0, output, offset, length);
         offset += length;
+        return offset;
     }
 
-    private void writeJid(Jid jid){
+    private static int writeJid(Jid jid, byte[] output, int offset){
         if (jid.isCompanion()) {
             output[offset++] = COMPANION_JID;
             output[offset++] = (byte) jid.agent();
             output[offset++] = (byte) jid.device();
-            writeString(jid.user());
+            offset = writeString(jid.user(), output, offset);
         }else {
             output[offset++] = JID_PAIR;
             if(jid.hasUser()) {
-                writeString(jid.user());
+                offset = writeString(jid.user(), output, offset);
             }else {
                 output[offset++] = LIST_EMPTY;
             }
-            writeString(jid.server().address());
+            offset = writeString(jid.server().address(), output, offset);
         }
+        return offset;
     }
 }

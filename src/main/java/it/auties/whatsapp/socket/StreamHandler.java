@@ -1,7 +1,9 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.WhatsappClientType;
+import it.auties.whatsapp.api.WhatsappDisconnectReason;
+import it.auties.whatsapp.api.WhatsappVerification;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
@@ -54,14 +56,13 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.net.URI;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,10 +71,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.*;
+import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.*;
 import static it.auties.whatsapp.util.SignalConstants.KEY_BUNDLE_TYPE;
 
-class StreamHandler {
+final class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final int PRE_KEYS_UPLOAD_CHUNK = 10;
     private static final int PING_INTERVAL = 20;
@@ -89,12 +90,12 @@ class StreamHandler {
     private static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
 
     private final SocketHandler socketHandler;
-    private final WebVerificationHandler webVerificationHandler;
+    private final WhatsappVerification.Web webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
     private final AtomicBoolean retriedConnection;
 
-    protected StreamHandler(SocketHandler socketHandler, WebVerificationHandler webVerificationHandler) {
+    StreamHandler(SocketHandler socketHandler, WhatsappVerification.Web webVerificationHandler) {
         this.socketHandler = socketHandler;
         this.webVerificationHandler = webVerificationHandler;
         this.retries = new ConcurrentHashMap<>();
@@ -102,7 +103,7 @@ class StreamHandler {
         this.retriedConnection = new AtomicBoolean(false);
     }
 
-    protected void digest(Node node) {
+    void digest(Node node) throws IOException {
         switch (node.description()) {
             case "ack" -> digestAck(node);
             case "call" -> digestCall(node);
@@ -115,16 +116,16 @@ class StreamHandler {
             case "message" -> socketHandler.decodeMessage(node, null, true);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
-            case "xmlstreamend" -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            case "xmlstreamend" -> socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
         }
     }
 
     private void digestFailure(Node node) {
         var reason = node.attributes().getInt("reason");
         switch (reason) {
-            case 503, 403 -> socketHandler.disconnect(DisconnectReason.BANNED);
-            case 401, 405 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
-            default -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            case 503, 403 -> socketHandler.disconnect(WhatsappDisconnectReason.BANNED);
+            case 401, 405 -> socketHandler.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
+            default -> socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
         }
     }
 
@@ -223,17 +224,16 @@ class StreamHandler {
             return;
         }
 
-        socketHandler.querySessionsForcefully(message.senderJid()).whenCompleteAsync((result, error) -> {
-            if(error != null) {
-                return;
-            }
-
+        try {
+            socketHandler.querySessionsForcefully(message.senderJid());
             var all = message.senderJid().device() == 0;
             var recipients = all ? null : Set.of(message.senderJid());
             var request = new MessageRequest.Chat(message, recipients, !all, false, null);
             socketHandler.sendMessage(request);
             retries.put(message.id(), attempts + 1);
-        });
+        } catch (Exception ignored) {
+
+        }
     }
 
     private void updateReceipt(MessageStatus status, Chat chat, Contact participant, ChatMessageInfo message) {
@@ -245,15 +245,14 @@ class StreamHandler {
         }
 
         if(chat != null && chat.jid().hasServer(JidServer.groupOrCommunity())) {
-            socketHandler.queryGroupMetadata(chat.jid()).thenAcceptAsync(metadata -> {
-                var jids = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
-                if (participant == null || metadata.participants().size() == jids.size()) {
-                    switch (status) {
-                        case READ -> message.receipt().setReadTimestampSeconds(Clock.nowSeconds());
-                        case PLAYED -> message.receipt().setPlayedTimestampSeconds(Clock.nowSeconds());
-                    }
+            var metadata = socketHandler.queryGroupMetadata(chat.jid());
+            var jids = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
+            if (participant == null || metadata.participants().size() == jids.size()) {
+                switch (status) {
+                    case READ -> message.receipt().setReadTimestampSeconds(Clock.nowSeconds());
+                    case PLAYED -> message.receipt().setPlayedTimestampSeconds(Clock.nowSeconds());
                 }
-            });
+            }
         }
     }
 
@@ -834,29 +833,28 @@ class StreamHandler {
         socketHandler.store().setNewChatsEphemeralTimer(timer);
     }
 
-    private CompletableFuture<Void> addPrivacySetting(Node node, boolean update) {
+    private void addPrivacySetting(Node node, boolean update) {
         var privacySettingName = node.attributes().getString("name");
         var privacyType = PrivacySettingType.of(privacySettingName);
         if(privacyType.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         var privacyValueName = node.attributes().getString("value");
         var privacyValue = PrivacySettingValue.of(privacyValueName);
         if(privacyValue.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         if (!update) {
-            return queryPrivacyExcludedContacts(privacyType.get(), privacyValue.get()).thenAcceptAsync(response -> {
-                var newEntry = new PrivacySettingEntryBuilder()
-                        .type(privacyType.get())
-                        .value(privacyValue.get())
-                        .excluded(response)
-                        .build();
-                socketHandler.store()
-                        .addPrivacySetting(privacyType.get(), newEntry);
-            });
+            var response = queryPrivacyExcludedContacts(privacyType.get(), privacyValue.get());
+            var newEntry = new PrivacySettingEntryBuilder()
+                    .type(privacyType.get())
+                    .value(privacyValue.get())
+                    .excluded(response)
+                    .build();
+            socketHandler.store()
+                    .addPrivacySetting(privacyType.get(), newEntry);
         }else {
             var oldEntry = socketHandler.store().findPrivacySetting(privacyType.get());
             var newValues = getUpdatedBlockedList(node, oldEntry, privacyValue.get());
@@ -868,7 +866,6 @@ class StreamHandler {
             socketHandler.store()
                     .addPrivacySetting(privacyType.get(), newEntry);
             socketHandler.onPrivacySettingChanged(oldEntry, newEntry);
-            return CompletableFuture.completedFuture(null);
         }
     }
 
@@ -891,13 +888,13 @@ class StreamHandler {
         return newValues;
     }
 
-    private CompletableFuture<List<Jid>> queryPrivacyExcludedContacts(PrivacySettingType type, PrivacySettingValue value) {
+    private List<Jid> queryPrivacyExcludedContacts(PrivacySettingType type, PrivacySettingValue value) {
         if (value != PrivacySettingValue.CONTACTS_EXCEPT) {
-            return CompletableFuture.completedFuture(List.of());
+            return List.of();
         }
 
-        return socketHandler.sendQuery("get", "privacy", Node.of("privacy", Node.of("list", Map.of("name", type.data(), "value", value.data()))))
-                .thenApplyAsync(this::parsePrivacyExcludedContacts);
+        var result = socketHandler.sendQuery("get", "privacy", Node.of("privacy", Node.of("list", Map.of("name", type.data(), "value", value.data()))));
+        return parsePrivacyExcludedContacts(result);
     }
 
     private List<Jid> parsePrivacyExcludedContacts(Node result) {
@@ -938,9 +935,9 @@ class StreamHandler {
                 Node.of("clean", Map.of("type", type, "timestamp", timestamp)));
     }
 
-    private void digestError(Node node) {
+    private void digestError(Node node) throws IOException {
         if(node.hasNode("conflict")) {
-            socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
             return;
         }
 
@@ -951,16 +948,16 @@ class StreamHandler {
 
         var statusCode = node.attributes().getInt("code");
         switch (statusCode) {
-            case 403, 503 -> socketHandler.disconnect(retriedConnection.getAndSet(true) ? DisconnectReason.BANNED : DisconnectReason.RECONNECTING);
-            case 500 -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
+            case 403, 503 -> socketHandler.disconnect(retriedConnection.getAndSet(true) ? WhatsappDisconnectReason.BANNED : WhatsappDisconnectReason.RECONNECTING);
+            case 500 -> socketHandler.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
             case 401 -> handleStreamError(node);
-            case 515 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
+            case 515 -> socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
             default -> node.children()
-                    .forEach(error -> socketHandler.store().resolvePendingRequest(error));
+                    .forEach(socketHandler::resolvePendingRequest);
         }
     }
 
-    private void handleStreamError(Node node) {
+    private void handleStreamError(Node node) throws IOException {
         var child = node.children().getFirst();
         var type = child.attributes().getString("type");
         var reason = child.attributes().getString("reason", type);
@@ -969,7 +966,7 @@ class StreamHandler {
             return;
         }
 
-        socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
+        socketHandler.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
     }
 
     private void digestSuccess(Node node) {
@@ -978,11 +975,14 @@ class StreamHandler {
         finishLogin();
     }
 
-    private CompletableFuture<Void> attributeStore() {
-        return socketHandler.store()
-                .serializer()
-                .attributeStore(socketHandler.store())
-                .exceptionallyAsync(exception -> socketHandler.handleFailure(MESSAGE, exception));
+    private void attributeStore() {
+        try {
+            socketHandler.store()
+                    .serializer()
+                    .attributeStore(socketHandler.store());
+        } catch (Exception exception) {
+            socketHandler.handleFailure(MESSAGE, exception);
+        }
     }
 
     private void finishLogin() {
@@ -993,35 +993,42 @@ class StreamHandler {
     }
 
     private void finishWebLogin() {
-        var loginFuture = CompletableFuture.allOf(
-                        setActiveConnection(),
-                        queryRequiredWebInfo(),
-                        sendInitialPreKeys(),
-                        scheduleMediaConnectionUpdate(),
-                        updateSelfPresence(),
-                        queryInitial2fa(),
-                        queryInitialAboutPrivacy(),
-                        queryInitialPrivacySettings(),
-                        queryInitialDisappearingMode(),
-                        queryInitialBlockList()
-                )
-                .thenRunAsync(this::onInitialInfo)
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
-        CompletableFuture.allOf(loginFuture, attributeStore())
-                .thenComposeAsync(result -> socketHandler.keys().initialAppSync() ? CompletableFuture.completedFuture(null) : queryGroups())
-                .thenRunAsync(this::notifyChatsAndNewsletters);
-    }
-
-    private CompletableFuture<Node> setActiveConnection() {
-        return socketHandler.sendQuery("set", "passive", Node.of("active"));
-    }
-
-    private CompletableFuture<?> sendInitialPreKeys() {
-        if (socketHandler.keys().hasPreKeys()) {
-            return CompletableFuture.completedFuture(null);
+        try {
+            setActiveConnection();
+            queryRequiredWebInfo();
+            sendInitialPreKeys();
+            scheduleMediaConnectionUpdate();
+            updateSelfPresence();
+            queryInitial2fa();
+            queryInitialAboutPrivacy();
+            queryInitialPrivacySettings();
+            queryInitialDisappearingMode();
+            queryInitialBlockList();
+            onInitialInfo();
+        } catch (Exception throwable) {
+            socketHandler.handleFailure(LOGIN, throwable);
+            return;
         }
-        
-        return sendPreKeys(PRE_KEYS_UPLOAD_CHUNK);
+
+        attributeStore();
+
+        if (!socketHandler.keys().initialAppSync()){
+            queryGroups();
+        }
+
+        notifyChatsAndNewsletters();
+    }
+
+    private void setActiveConnection() {
+        socketHandler.sendQuery("set", "passive", Node.of("active"));
+    }
+
+    private void sendInitialPreKeys() {
+        if (socketHandler.keys().hasPreKeys()) {
+            return;
+        }
+
+        sendPreKeys(PRE_KEYS_UPLOAD_CHUNK);
     }
 
     private void finishMobileLogin() {
@@ -1030,129 +1037,125 @@ class StreamHandler {
             return;
         }
 
-        var loginFuture = CompletableFuture.allOf(
-                        setupRescueToken(),
-                        setActiveConnection(),
-                        queryMobileSessionMex(),
-                        acceptDynamicTermsOfService(),
-                        setPushEndpoint(),
-                        updateSelfPresence(),
-                        scheduleMediaConnectionUpdate(),
-                        sendWam2()
-                )
-                .thenRunAsync(this::onInitialInfo);
-        CompletableFuture.allOf(loginFuture, attributeStore())
-                .thenRunAsync(this::notifyChatsAndNewsletters)
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+        try {
+            setupRescueToken();
+            setActiveConnection();
+            queryMobileSessionMex();
+            acceptDynamicTermsOfService();
+            setPushEndpoint();
+            updateSelfPresence();
+            scheduleMediaConnectionUpdate();
+            sendWam2();
+            onInitialInfo();
+            attributeStore();
+            notifyChatsAndNewsletters();
+        } catch (Exception throwable) {
+            socketHandler.handleFailure(LOGIN, throwable);
+        }
     }
 
-    private CompletableFuture<Void> acceptDynamicTermsOfService() {
-        return socketHandler.sendQuery("get", "tos", Node.of("get_user_disclosures", Map.of("t", 0))).thenComposeAsync(result -> {
-            var notices = result.listChildren("notice")
-                    .stream()
-                    .map(notice -> Node.of("notice", Map.of("id", notice.attributes().getRequiredString("id"))))
-                    .map(notice -> socketHandler.sendQuery("get", "tos", Node.of("request", notice)))
-                    .toArray(CompletableFuture[]::new);
-            return CompletableFuture.allOf(notices);
-        });
+    private void acceptDynamicTermsOfService() {
+        var result = socketHandler.sendQuery("get", "tos", Node.of("get_user_disclosures", Map.of("t", 0)));
+        result.listChildren("notice")
+                .stream()
+                .map(notice -> Node.of("notice", Map.of("id", notice.attributes().getRequiredString("id"))))
+                .forEach(notice -> socketHandler.sendQuery("get", "tos", Node.of("request", notice)));
     }
 
-    private CompletableFuture<Void> queryMobileSessionMex() {
-        return CompletableFuture.allOf(
-                socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7561558900567547"), HexFormat.of().parseHex("7b227661726961626c6573223a7b7d7d"))),
-                socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7480997188628461"), HexFormat.of().parseHex("7b227661726961626c6573223a7b22696e707574223a22454d41494c227d7d")))
-        );
+    private void queryMobileSessionMex() {
+        socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7561558900567547"), HexFormat.of().parseHex("7b227661726961626c6573223a7b7d7d")));
+        socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7480997188628461"), HexFormat.of().parseHex("7b227661726961626c6573223a7b22696e707574223a22454d41494c227d7d")));
     }
 
     private void initMobileSession() {
-        initMobileSessionPresence(false)
-                .thenComposeAsync(result -> CompletableFuture.allOf(
-                        setPushEndpoint(),
-                        queryProtocolV2(),
-                        queryGroups(),
-                        queryLists(),
-                        updateUserPicture(false),
-                        updateUserAbout(false),
-                        sendInitialPreKeys(),
-                        setActiveConnection(),
-                        setDefaultStatus(),
-                        queryInitial2fa(),
-                        queryInitialAboutPrivacy(),
-                        queryInitialPrivacySettings(),
-                        queryInitialDisappearingMode(),
-                        queryInitialBlockList(),
-                        acceptTermsOfService(),
-                        sendWam1(),
-                        queryProtocolV1(),
-                        setupGoogleCrypto(),
-                        resetCompanionDevices(),
-                        checkBusinessStatus(),
-                        setupGoogleCrypto(),
-                        cleanGroups(),
-                        sendWam2(),
-                        initMobileSessionPresence(true),
-                        getInviteSender(),
-                        queryMobileSessionInitMex()
-                ))
-                .thenComposeAsync(ignored -> {
-                    socketHandler.keys().setInitialAppSync(true);
-                    return socketHandler.disconnect(DisconnectReason.RECONNECTING);
-                })
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+        try {
+            initMobileSessionPresence(false);
+            setPushEndpoint();
+            queryProtocolV2();
+            queryGroups();
+            queryLists();
+            updateUserPicture(false);
+            updateUserAbout(false);
+            sendInitialPreKeys();
+            setActiveConnection();
+            setDefaultStatus();
+            queryInitial2fa();
+            queryInitialAboutPrivacy();
+            queryInitialPrivacySettings();
+            queryInitialDisappearingMode();
+            queryInitialBlockList();
+            acceptTermsOfService();
+            sendWam1();
+            queryProtocolV1();
+            setupGoogleCrypto();
+            resetCompanionDevices();
+            checkBusinessStatus();
+            setupGoogleCrypto();
+            cleanGroups();
+            sendWam2();
+            initMobileSessionPresence(true);
+            getInviteSender();
+            queryMobileSessionInitMex();
+            socketHandler.keys().setInitialAppSync(true);
+            socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
+        } catch (Exception throwable) {
+            socketHandler.handleFailure(LOGIN, throwable);
+        }
     }
 
-    private CompletableFuture<Void> initMobileSessionPresence(boolean done) {
+    private void initMobileSessionPresence(boolean done) {
         if(!done) {
-            return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("type", "unavailable")));
+            socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("type", "unavailable")));
+            return;
         }
 
-        return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("type", "available", "name", socketHandler.store().name())));
+        socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("type", "available", "name", socketHandler.store().name())));
     }
 
-    private CompletableFuture<Node> queryMobileSessionInitMex() {
-        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7561558900567547"), HexFormat.of().parseHex("7b227661726961626c6573223a7b7d7d")));
+    private void queryMobileSessionInitMex() {
+        socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7561558900567547"), HexFormat.of().parseHex("7b227661726961626c6573223a7b7d7d")));
     }
 
-    private CompletableFuture<Node> cleanGroups() {
-        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("type", "groups")));
+    private void cleanGroups() {
+        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty", Node.of("clean", Map.of("type", "groups")));
     }
 
-    private CompletableFuture<Node> resetCompanionDevices() {
-        return socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")));
+    private void resetCompanionDevices() {
+        socketHandler.sendQuery("set", "md", Node.of("remove-companion-device", Map.of("all", true, "reason", "user_initiated")));
     }
 
-    private CompletableFuture<Node> queryProtocolV1() {
-        return socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", 1)));
+    private void queryProtocolV1() {
+        socketHandler.sendQuery("get", "abt", Node.of("props", Map.of("protocol", 1)));
     }
 
-    private CompletableFuture<Node> queryLists() {
-        return socketHandler.sendQuery("get", "w:b", Node.of("lists"));
+    private void queryLists() {
+        socketHandler.sendQuery("get", "w:b", Node.of("lists"));
     }
 
-    private CompletableFuture<Node> queryProtocolV2() {
-        return socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")));
+    private void queryProtocolV2() {
+        socketHandler.sendQuery("get", "w", Node.of("props", Map.of("protocol", "2", "hash", "")));
     }
 
-    private CompletableFuture<?> getInviteSender() {
-        return socketHandler.sendQuery("get", "w:growth", Node.of("invite", Node.of("get_sender")));
+    private void getInviteSender() {
+        socketHandler.sendQuery("get", "w:growth", Node.of("invite", Node.of("get_sender")));
     }
 
-    private CompletableFuture<Void> setDefaultStatus() {
-        return socketHandler.changeAbout("Hey there! I am using WhatsApp.");
+    private void setDefaultStatus() {
+        socketHandler.changeAbout("Hey there! I am using WhatsApp.");
     }
 
-    private CompletableFuture<?> sendWam1() {
-        var wamBinary = "57414d0501010000200b800d086950686f6e652037800f0631352e372e3380110a322e32342e31372e373810152017502f2de6d266206928830138790604387b0602186b1818a71c88911e063139483330378879240431372e3418ed3318ab3888fb3c09363335333637323531294e04760100c0efd24da66540192e0b220252017cdac7063603ff192e0b22025201a5145b033603ff502f3ce6d26629fa01360104502f4de6d266294e0476010000b2f244752940502f4ee6d2662946047202000040f14db197407203000040f14db190407204000000b8be557a4072010000409fbd4697402205160c502f54e6d26629e80412031204120a120612071208720186eb51b81e408f402609502f55e6d26629e80412031204120a12061207120872014d62105839408f402609502f56e6d26629e80412031204120a1206120712087201a69bc420b03a8f402609502f57e6d26629e80412031204120a12061207120872014a0c022b87458f402609502f58e6d26629101442018a003203023205524604de00502f59e6d26639ee10ff22023203084204d00256055f5f6f67502f5ae6d266290813720100000033888c974086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f5fe6d26629e80412031204120a1206120712087201355eba490c3e8f402609502f61e6d26629e80412031204120a1206120712087201c876be9f1a418f402609502f64e6d26629e80412031204120a1206120712087201e4a59bc420428f402609502f65e6d26629e80412031204120a1206120712087201b29defa7c63f8f402609502f66e6d26629e80412031204120a12061207120872013f355eba493e8f402609502f68e6d26629e80412031204120a1206120712087201fed478e926398f402609502f69e6d26629e80412031204120a1206120712087201dbf97e6abc478f402609502f6ae6d26629e80412031204120a1206120712087201ec51b81e853f8f402609502f6be6d26629e80412031204120a12061207120872015b643bdf4f398f402609502f6de6d26629e80412031204120a1206120712087201d7a3703d0a408f402609502f6ee6d26629e80412031204120a12061207120872016de7fba9f13f8f402609502f6fe6d26629e80412031204120a1206120712087201986e1283c03b8f402609502f72e6d26629e80412031204120a12061207120872017d3f355eba408f402609502f73e6d26629e80412031204120a120612071208720191ed7c3f35428f402609502f74e6d26629e80412031204120a1206120712087201d9cef753e3408f402609502f75e6d26629e80412031204120a1206120712087201068195438b3f8f402609502f77e6d26629e80412031204120a120612071208720139b4c876be3f8f402609502f78e6d26629e80412031204120a120612071208720174931804563f8f402609502f79e6d26629e80412031204120a1206120712087201a01a2fdd24408f402609502f7ae6d26629e80412031204120a1206120712087201490c022b873f8f402609502f7ce6d26629e80412031204120a12061207120872012fdd2406813e8f402609502f7de6d26629e80412031204120a12061207120872011804560e2d418f402609502f7ee6d26629e80412031204120a1206120712087201a4703d0ad73e8f402609502f7fe6d26629e80412031204120a120612071208720104560e2db23f8f402609502f8be6d26629e80412031204120a1206120712087201736891ed7c3f8f402609502f8ce6d26629e80412031204120a1206120712087201a245b6f3fd3f8f402609502f8ee6d26629e80412031204120a12061207120872010e2db29def3f8f402609502f91e6d26629e80412031204120a120612071208720109ac1c5a646882402609502f92e6d26629e80412031204120a1206120712084201e8032609502f95e6d26629e80412031204120a12061207120872019cc420b072408f402609502f96e6d26629e80412031204120a120612071208720145b6f3fdd43f8f402609502f97e6d26629e80412031204120a12061207120872018fc2f5285c1d85402609502f98e6d26629e80412031204120a12061207120872012cb29defa7408f402609502f9ae6d26639ec10ff520193ff010032021b220332040e1205120656075f5f6f67502f9ce6d26629e80412031204120a1206120712087201a245b6f3fdc284402609502f9de6d26629e80412031204120a1206120712087201dcf97e6abc3f8f402609502f9fe6d26629e80412031204120a12061207120872017f6abc74931d8e402609502fa1e6d26629081372010000009cc6eb5f4086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502fa2e6d26629760882031c4d7a457a4d5451334d4455334d637a3554414a6a317a784b4b38383d82011c4d5463784f5445794f5463354e737a3554414a6a317a784b4b38383d72049a1fb74e7d1a794266055eead4a791010000298a042601502fa6e6d26629e80412031204120a1206120712087201fa7e6abc748284402609502fa9e6d26629081372010000003455de5f4086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502faae6d26629e80412031204120a1206120712087201fed478e926417e402609502fabe6d26629e80412031204120a120612071208720122dbf97e6a667e402609502face6d26629e80412031204120a12061207120872013e0ad7a3706e86402609502faee6d26629e80412031204120a12061207120872015a643bdf4fff79402609502fafe6d26629e80412031204120a1206120712087201a4703d0ad7f579402609502fb0e6d26629e80412031204120a1206120712087201d122dbf97e0a7a402609502fb1e6d26629e80412031204120a12061207120872014260e5d022357a402609502fb4e6d26629e80412031204120a1206120712087201a8c64b37894b7a402609502fb5e6d26629e80412031204120a1206120712087201b29defa7c6f979402609502fb6e6d26629e80412031204120a12061207120872011904560e2d087a402609502fb8e6d26629e80412031204120a1206120712087201cba145b6f3117a402609502fb9e6d26629e80412031204120a1206120712087201e6d022dbf9007a402609502fbae6d26629e80412031204120a120612071208720140355eba490c7a402609502fbde6d26629e80412031204120a12061207120872012506819543ff79402609502fbee6d26629e80412031204120a1206120712087201295c8fc2f5027a402609502fbfe6d26629e80412031204120a1206120712087201931804560efb79402609502fc0e6d26629e80412031204120a12061207120872016991ed7c3f0f7a402609502fc2e6d26629e80412031204120a1206120712087201d7a3703d0a0b7a402609502fc6e6d266293805220a7206000000d9eb8c5e405202a0c4b7035601a004a20339ec10ff220132021b520301c30000320414520541000100220656075f5f6f6739ee10ff320208220352041bab010056055f5f6f67293805320a02720600000080108e5e405202a0c4b7035601a0c4a003502ff6e6d266294e04760100007498273e3f402946047202000080e5ca578f407203000000cb954f7840720400000030356f824072010000801500978e402205160c39ee10ff220232030852045569020056055f5f6f67502ff9e6d26629081372010000008081eb124086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502ffee6d26629e80412031204120a12061207120872019cc420b072a685402609502f00e7d266293805320a02720600000088efcc2640520278444a0356017804c302502f01e7d266294e0476010000cd1f3e3330402946047202000000be6ea5894072030000007cddba73407204000000080ad57d407201000000c2f3c788402205160c39ee10ff220232030852048193020056055f5f6f67502f07e7d26629101432011c3203264205a3004604e500502f08e7d26629081372010000000078eb144086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f09e7d26629e80412031204120a12061207120872015eba490c02ff72402609502f10e7d26629e80412031204120a1206120712087201f6285c8fc2488f402609502f12e7d26629e80412031204120a120612071208720185eb51b81e4776402609502f13e7d26629e80412031204120a1206120712087201713d0ad7a30b89402609502f14e7d26629e80412031204120a1206120712087201295c8fc2f53f8f402609502f15e7d26629e80412031204120a12061207120872017d3f355eba6480402609502f19e7d26629e80412031204120a1206120712087201986e1283c03f8f402609502f1de7d26629081372010000001cef1f614086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f1ee7d26629e80412031204120a1206120712087201dbf97e6abc7277402609502f1fe7d26629e80412031204120a12061207120872016766666666418f402609502f26e7d26629e80412031204120a12061207120872017e6abc7493428f402609502f2be7d26629e80412031204120a120612071208720199999999990380402609502f2ce7d26629e80412031204120a120612071208720154e3a59bc43e8f402609502f2de7d26629e80412031204120a12061207120872011804560e2d418f402609502f2ee7d26629e80412031204120a120612071208720139b4c876be3f8f402609293805320a0272060000006686234740520278049603560178c40a03294e0476010000527bcd0d2b40502f2fe7d2662946047202000080e41a4188407203000000c9357276407204000000849d6178407201000080a6e96987402205160c39ee10ff220232030852048b46030056055f5f6f67502f30e7d26629101432014b32030c32054f4604a6002908137201000000c045df1a4086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f3ce7d26639ee10ff32026422035204217b030056055f5f6f67502f3fe7d26639ee10ff22023203645204fc86030056055f5f6f67502f42e7d26629e80412031204120a120612071208720115ae47e17a418f402609502f43e7d26629e80412031204120a12061207120872015eba490c021a84402609502f44e7d2662908137201000000345200604086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f45e7d26629e80412031204120a1206120712087201986e1283c0b27b4026092976088203204d5449774d6a6b304e7a63344f515057426538444b4e505a4252636668513d3d8201204d5451784f5441304f5441774d675057426538444b4e505a4252636668513d3d720456a063767d1a794266054f65d7a791010000298a042601502f46e7d26629e80412031204120a12061207120872016666666666298a402609502f47e7d26629e80412031204120a1206120712087201cccccccccc3f8f402609502f4ae7d26629e80412031204120a1206120712087201d34d6210583f8f402609502f4be7d26629e80412031204120a1206120712087201a245b6f3fd408f402609502f4ce7d26629e80412031204120a1206120712087201105839b4c83f8f402609502f4de7d26629e80412031204120a1206120712087201b0726891ed3f8f402609502f4fe7d26629e80412031204120a12061207120872014f8d976e12408f402609502f51e7d26629e80412031204120a1206120712087201022b8716d93f8f402609502f54e7d26629e80412031204120a12061207120872014f8d976e12408f402609502f55e7d26629e80412031204120a12061207120872019eefa7c64b408f402609502f56e7d26629e80412031204120a12061207120872014b37894160408f402609502f57e7d26629e80412031204120a1206120712087201be9f1a2fdd3f8f402609502f59e7d26629e80412031204120a1206120712087201f2d24d6210408f402609502f5ae7d26629e80412031204120a12061207120872016de7fba9f13f8f402609502f5be7d26629e80412031204120a1206120712087201e6d022dbf93f8f402609502f5ce7d26629e80412031204120a1206120712087201a4703d0ad73f8f402609502f5ee7d26629e80412031204120a12061207120872016766666666408f402609502f5fe7d2662908137201000000da0e61604086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f83e7d266293805320a0272060000008c2e7955405202a0c4b5035601a0842503502f84e7d266294e04760100000daaf1e63040294604720200008025b4a08e4072030000004b68617840720400000081e79e81407201000080a69bcf8d402205160c502f85e7d26639ee10ff220232030852041795040056055f5f6f67502f8ce7d26629e80412031204120a12061207120872018716d9cef73c8f402609502f8de7d26629e80412031204120a1206120712087201a8c64b3789408f402609502f8ee7d26629e80412031204120a12061207120872019f1a2fdd24428f402609502f91e7d26629e80412031204120a12061207120872019cc420b072408f402609502f93e7d26629e80412031204120a12061207120872011a2fdd2406408f402609502f98e7d26629e80412031204120a12061207120872016f1283c0ca3f8f402609502f9be7d26629e80412031204120a120612071208720178e9263108408f402609502f9fe7d26629e80412031204120a1206120712087201e17a14ae47408f402609502fa1e7d26629e80412031204120a12061207120872014f8d976e12438f402609502fa2e7d26629e80412031204120a12061207120872010c022b8716408f402609502fa4e7d26629e80412031204120a1206120712087201931804560e498f402609502fa5e7d26629e80412031204120a1206120712087201b4c876be9f408f402609502fa6e7d26629e80412031204120a1206120712087201ec51b81e853f8f402609502fa9e7d26629e80412031204120a12061207120872014d62105839408f402609502faae7d26629e80412031204120a1206120712087201941804560e408f402609502fabe7d266293805320a027206000000d49d434440520228040d03560150447702502face7d266294e047601000006508d5b314029460472020000800cb0878c40720300000019605f734072040000805f9901824072010000006c49b18b402205160c39ee10ff22023203085204a92f050056055f5f6f67502fb4e7d26629e80412031204120a12061207120872013108ac1c5a3c8f402609502fb5e7d26629e80412031204120a1206120712087201c3f5285c8f438f402609502fb6e7d26629e80412031204120a1206120712087201cef753e3a53f8f402609502fbae7d26629e80412031204120a1206120712084201e8032609502fbfe7d26639ee10ff320208220352043d77050056055f5f6f67293805320a027206000000c4cb073440520228840e03560128447802294e0476010000e2c4d9af3040502fc0e7d26629460472020000003831e58c4072030000007062ba7340720400008070eb2082407201000080a81cfe8b402205160c39ee10ff22023203085204097c050056055f5f6f67502fc4e7d2662908137201000000804c62124086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502fd0e7d26629e80412031204120a1206120712087201105839b4c81488402609502fd1e7d26629e80412031204120a1206120712087201be9f1a2fdd0988402609502fd2e7d26629e80412031204120a12061207120872010c022b87160d88402609502fd3e7d26629e80412031204120a12061207120872011804560e2d0d88402609502fd5e7d26629e80412031204120a120612071208720175931804560d88402609502fd6e7d26629e80412031204120a120612071208720154e3a59bc40c88402609502fd7e7d26629e80412031204120a12061207120872015a643bdf4f0c88402609502fd8e7d26629e80412031204120a1206120712087201bb490c022b0d88402609502fdae7d26629e80412031204120a1206120712087201ac1c5a643b0b88402609502fdbe7d26629e80412031204120a1206120712087201d9cef753e30788402609502fdce7d26629e80412031204120a120612071208720174931804560c88402609502fdde7d26629e80412031204120a1206120712087201986e1283c00c88402609502fe0e7d26629e80412031204120a120612071208720179e92631081588402609502fe1e7d26629e80412031204120a12061207120872014a0c022b871288402609502fe4e7d26629e80412031204120a1206120712087201f6285c8fc21888402609502fe5e7d26629e80412031204120a1206120712087201c420b072681488402609502fe6e7d26629e80412031204120a1206120712087201be9f1a2fdd1288402609502fe7e7d26629e80412031204120a12061207120872014260e5d0221488402609502fe9e7d26629e80412031204120a1206120712087201c420b072681488402609502feae7d26629e80412031204120a1206120712087201105839b4c81888402609502febe7d26629e80412031204120a1206120712087201d7a3703d0a1388402609502fece7d26629e80412031204120a1206120712087201c2f5285c8f6180402609502feee7d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502fefe7d26629e80412031204120a120612071208720146b6f3fdd41388402609502ff0e7d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502ff1e7d26629e80412031204120a12061207120872016991ed7c3f1588402609502ff8e7d26629e80412031204120a120612071208720145b6f3fdd41488402609502ff9e7d26629e80412031204120a12061207120872016de7fba9f11488402609502ffae7d26629e80412031204120a12061207120872012b8716d9ce1488402609502ffbe7d26629e80412031204120a12061207120872019f1a2fdd241588402609502ffde7d26629e80412031204120a1206120712087201508d976e121488402609502ffee7d26629e80412031204120a1206120712087201c976be9f1a1588402609502fffe7d26629e80412031204120a12061207120872017b14ae47e11488402609502f00e8d26629e80412031204120a120612071208720145b6f3fdd41488402609502f02e8d26629e80412031204120a1206120712087201e8fba9f1d21488402609502f03e8d26629e80412031204120a120612071208720145b6f3fdd41488402609502f04e8d26629e80412031204120a1206120712087201df4f8d976e1588402609502f05e8d26629e80412031204120a1206120712087201bb490c022b1588402609502f07e8d26629e80412031204120a1206120712087201fa7e6abc741588402609502f08e8d26629e80412031204120a1206120712087201cba145b6f31488402609502f09e8d26629e80412031204120a12061207120872015839b4c8761588402609502f0ae8d26629e80412031204120a1206120712087201bf9f1a2fdd1388402609502f0ce8d26629e80412031204120a1206120712087201643bdf4f8d1588402609502f0de8d26629e80412031204120a12061207120872016bbc7493181588402609502f0ee8d26629e80412031204120a12061207120872018195438b6c1588402609502f0fe8d26629e80412031204120a1206120712087201f5285c8fc21588402609502f11e8d26629e80412031204120a1206120712087201f0a7c64b371588402609502f12e8d26629e80412031204120a1206120712087201273108ac1c1488402609502f14e8d26629e80412031204120a1206120712087201caa145b6f31a88402609502f17e8d26629e80412031204120a1206120712087201f753e3a59b1288402609502f18e8d26629e80412031204120a1206120712087201894160e5d01488402609502f19e8d26629e80412031204120a12061207120872015eba490c021588402609502f1ce8d26629e80412031204120a12061207120872018fc2f5285c1388402609502f1de8d26629e80412031204120a120612071208720195438b6ce71388402609502f1ee8d26629e80412031204120a1206120712087201d7a3703d0a1588402609502f21e8d26629e80412031204120a1206120712087201ee7c3f355e1388402609502f22e8d26629e80412031204120a1206120712087201022b8716d91488402609502f23e8d26629e80412031204120a1206120712087201ae47e17a141588402609502f27e8d26629e80412031204120a12061207120872015a643bdf4f1488402609502f2ae8d26629e80412031204120a1206120712087201736891ed7c1588402609502f2be8d26629e80412031204120a1206120712087201a69bc420b01688402609502f2ce8d26629e80412031204120a12061207120872016f1283c0ca1488402609502f2de8d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502f2fe8d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502f30e8d26629e80412031204120a1206120712087201d122dbf97e1488402609502f31e8d266293805320a027206000000fa29a65c4052025004500356015044a902502f32e8d266294e04760100009e33ec222a402946047202000080c324258c40720300000087494a72407204000000558f1d8240720100008018b4428b402205160c39ee10ff220232030852044d3b070056055f5f6f67502f35e8d266290813720100000000dd78234086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f43e8d266293805320a027206000000809fa93240520278845203560178c4ab02502f44e8d266294e0476010000a90d747e3040294604720200000061933d8b407203000000c226ab71407204000000180e918140720100000079a1668a402205160c39ee10ff22023203085204b381070056055f5f6f67502f46e8d266290813720100000000fce7214086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f51e8d266293805320a0272060000006081112c4052022844530356012884b702294e047601000066671fa6274029460472020000803ab42c8a40720300000075686973407204000000fad81c7f407201000080b7204389402205160c502f52e8d26639ee10ff220232030852047fb6070056055f5f6f67502f53e8d26629101432012b3203174205cb0046040d01502f54e8d266290813720100000000454a214086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f55e8d26629e80412031204120a1206120712087201c1caa145b6408f402609502f59e8d26629e80412031204120a12061207120872017f6abc74933f8f402609502f5ae8d26629e80412031204120a120612071208720138b4c876be408f402609502f5be8d26629e80412031204120a1206120712087201bd749318043f8f402609502f5ee8d26629e80412031204120a12061207120872016766666666418f402609502f5fe8d26629e80412031204120a1206120712087201448b6ce7fb3f8f402609502f60e8d26629e80412031204120a1206120712087201a4703d0ad7388f402609502f62e8d26629e80412031204120a1206120712087201c520b07268388f402609502f63e8d26629e80412031204120a1206120712087201941804560e478f402609502f64e8d26629e80412031204120a120612071208720139b4c876be428f402609502f65e8d26629e80412031204120a1206120712087201d34d621058388f402609502f67e8d26629e80412031204120a120612071208720195438b6ce73c8f402609502f68e8d26629e80412031204120a1206120712087201a245b6f3fd408f402609502f69e8d26629e80412031204120a1206120712087201ec51b81e85468f402609502f6ae8d26629e80412031204120a12061207120872018b6ce7fba93b8f402609502f6de8d26629e80412031204120a12061207120872010d022b87163f8f402609502f6ee8d26629e80412031204120a1206120712087201c0caa145b63f8f402609502f6fe8d26629e80412031204120a12061207120872014b37894160408f402609502f71e8d26629e80412031204120a120612071208720154e3a59bc43d8f402609502f72e8d26629e80412031204120a12061207120872017d3f355eba418f402609502f76e8d26629e80412031204120a1206120712087201df4f8d976e3e8f402609502f77e8d26629e80412031204120a120612071208720139b4c876be3f8f402609502f78e8d26629e80412031204120a1206120712087201b7f3fdd478408f402609502f79e8d26629e80412031204120a1206120712087201c520b07268408f402609502f7ee8d26629e80412031204120a1206120712087201a01a2fdd24408f402609502f80e8d26629e80412031204120a12061207120872015b8fc2f528408f402609502f81e8d26629e80412031204120a1206120712087201b29defa7c63d8f402609502f87e8d26629e80412031204120a1206120712087201cff753e3a50778402609502f88e8d26629e80412031204120a1206120712087201448b6ce7fb3f8f402609502f8ae8d26629e80412031204120a1206120712087201976e1283c0418f402609502f8de8d26629e80412031204120a12061207120872017493180456428f402609502f8ee8d266293805320a0272060000003835844e4052027804890356017884ec02294e0476010000f131c1433440294604720200008055e3fc86407203000000abc64972407204000000ddb5d57940720100000044be0f86402205160c502f8fe8d26639ee10ff2202320308520470a4080056055f5f6f67502f93e8d26629e80412031204120a12061207120872012b8716d9ce3b8f402609502f98e8d26629e80412031204120a1206120712087201d122dbf97e408f402609502fa6e8d26629101432015232030232055c4604b0002908137201000000808494164086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502fa9e8d26629e80412031204120a1206120712087201f853e3a59b907b402609502faae8d26629e80412031204120a1206120712087201c3f5285c8f3b8f402609502fabe8d26629e80412031204120a1206120712087201cccccccccc448f402609502fb0e8d26629e80412031204120a1206120712087201726891ed7c0d80402609502fb3e8d26629e80412031204120a12061207120872017b14ae47e14b84402609502fb4e8d26629e80412031204120a1206120712087201dd240681953f8f402609502fb6e8d26629e80412031204120a120612071208720147e17a14ae3f8f402609502fbbe8d26629e80412031204120a120612071208720117d9cef7533f8f402609502fbde8d26629e80412031204120a1206120712087201c0caa145b6418f402609502fc2e8d266290813720100000064a0e55f4086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502fc4e8d26629e80412031204120a1206120712087201ad1c5a643b408f402609502fc7e8d26629e80412031204120a1206120712087201c520b072683d8f402609502fc8e8d26629e80412031204120a1206120712087201eb51b81e85438f402609502fc9e8d26629e80412031204120a1206120712087201a8c64b3789408f402609502fcbe8d266290813720100000050f568604086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502fcce8d26629e80412031204120a120612071208720152b81e85eb8381402609502fd2e8d26629e80412031204120a1206120712087201fca9f1d24df67a402609502fd3e8d26629e80412031204120a12061207120872013bdf4f8d97fa7a402609502fd4e8d26629e80412031204120a12061207120872010c022b8716fb7a402609502fd6e8d26629e80412031204120a1206120712087201dcf97e6abcfa7a402609502fd7e8d26629e80412031204120a12061207120872018716d9cef7e77a402609502fd8e8d26629e80412031204120a12061207120872016abc749318027b402609502fdbe8d26629e80412031204120a12061207120872016991ed7c3ff97a402609502fdce8d26629e80412031204120a12061207120872018195438b6cfb7a402609502fdde8d26629e80412031204120a1206120712087201df4f8d976e007b402609502fe0e8d26629e80412031204120a12061207120872011a2fdd2406fd7a402609502fe1e8d26629e80412031204120a120612071208720154e3a59bc4f67a402609502fe2e8d26629e80412031204120a1206120712087201115839b4c8007b402609502fe6e8d26629e80412031204120a12061207120872019cc420b072fc7a402609502fe7e8d26629e80412031204120a1206120712087201941804560e0f7b402609502feae8d26629e80412031204120a1206120712087201713d0ad7a3f67a402609502febe8d26629e80412031204120a120612071208720177be9f1a2ff77a402609502fece8d26629e80412031204120a12061207120872012db29defa7c07b402609502fefe8d26629e80412031204120a1206120712087201a01a2fdd24fa7a402609502ff0e8d26629e80412031204120a12061207120872016e1283c0caf37a402609502ff1e8d26629e80412031204120a1206120712087201c3f5285c8ff87a402609502ff4e8d26629e80412031204120a1206120712087201f2d24d6210f47a402609502ff5e8d26629e80412031204120a1206120712087201c3f5285c8ff87a402609502ff6e8d26629e80412031204120a12061207120872010c022b8716197b402609502ff7e8d26629e80412031204120a120612071208720162105839b4fc7a402609502ff9e8d26629e80412031204120a1206120712087201fca9f1d24dfa7a402609502ffae8d26629e80412031204120a1206120712087201b0726891edf87a402609502ffbe8d26629e80412031204120a1206120712087201cef753e3a5f77a402609502ffee8d26629e80412031204120a1206120712087201eb51b81e85fb7a402609502fffe8d26629e80412031204120a120612071208720179e9263108f87a402609502f00e9d26629e80412031204120a1206120712087201f853e3a59bfa7a402609502f03e9d26629e80412031204120a1206120712087201ee7c3f355efc7a402609502f04e9d26629e80412031204120a120612071208720184c0caa145fa7a402609502f05e9d26629e80412031204120a1206120712087201d7a3703d0af77a402609502f08e9d26629e80412031204120a1206120712087201a245b6f3fdfa7a402609502f09e9d26629e80412031204120a1206120712087201b91e85eb51f87a402609502f0ae9d26639ec10ff220132022252031f46381032044b520574fe080032060356075f5f6f67502f0be9d26629e80412031204120a1206120712087201be9f1a2fdd7876402609502f0de9d26629081372010000000c1d7a614086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f12e9d26688eb0a03636c6e18fb2e29e80412031204120a12061207120872010d022b87161b79402609192e0b220252019870620b36031e192e0b2202520158dc8302360307192e0b22025201bc1c420236035a192e0b3202025201a5145b033603ff192e0b32020252017cdac7063603ff192e0b220252014390d10e2603502f13e9d26629e80412031204120a120612071208720166666666663f8f402609502f15e9d26629e80412031204120a1206120712087201986e1283c0408f402609502f17e9d26629e80412031204120a1206120712087201653bdf4f8d3f8f402609502f18e9d26629e80412031204120a12061207120872011804560e2d408f402609502f19e9d26629e80412031204120a1206120712087201fa7e6abc743f8f402609502f1ee9d26629f601220122021607502f1fe9d2662950033201047203000000d8bc8c6a40360202502f22e9d26629500332010372030000c04b0916a140360202";
+    private void sendWam1() {
+        var wamBinary = "57414d0501010000200b800d086950686f6e652037800f0631352e372e3380110a322e32342e31372e373810152017502f2de6d266206928830138790604387b0602186b1818a71c88911e063139483330378879240431372e3418ed3318ab3888fb3c09363335333637323531294e04760100c0efd24da66540192e0b220252017cdac7063603ff192e0b22025201a5145b033603ff502f3ce6d26629fa01360104502f4de6d266294e0476010000b2f244752940502f4ee6d2662946047202000040f14db197407203000040f14db190407204000000b8be557a4072010000409fbd4697402205160c502f54e6d26629e80412031204120a120612071208720186eb51b81e408f402609502f55e6d26629e80412031204120a12061207120872014d62105839408f402609502f56e6d26629e80412031204120a1206120712087201a69bc420b03a8f402609502f57e6d26629e80412031204120a12061207120872014a0c022b87458f402609502f58e6d26629101442018a003203023205524604de00502f59e6d26639ee10ff22023203084204d00256055f5f6f67502f5ae6d266290813720100000033888c974086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f5fe6d26629e80412031204120a1206120712087201355eba490c3e8f402609502f61e6d26629e80412031204120a1206120712087201c876be9f1a418f402609502f64e6d26629e80412031204120a1206120712087201e4a59bc420428f402609502f65e6d26629e80412031204120a1206120712087201b29defa7c63f8f402609502f66e6d26629e80412031204120a12061207120872013f355eba493e8f402609502f68e6d26629e80412031204120a1206120712087201fed478e926398f402609502f69e6d26629e80412031204120a1206120712087201dbf97e6abc478f402609502f6ae6d26629e80412031204120a1206120712087201ec51b81e853f8f402609502f6be6d26629e80412031204120a12061207120872015b643bdf4f398f402609502f6de6d26629e80412031204120a1206120712087201d7a3703d0a408f402609502f6ee6d26629e80412031204120a12061207120872016de7fba9f13f8f402609502f6fe6d26629e80412031204120a1206120712087201986e1283c03b8f402609502f72e6d26629e80412031204120a12061207120872017d3f355eba408f402609502f73e6d26629e80412031204120a120612071208720191ed7c3f35428f402609502f74e6d26629e80412031204120a1206120712087201d9cef753e3408f402609502f75e6d26629e80412031204120a1206120712087201068195438b3f8f402609502f77e6d26629e80412031204120a120612071208720139b4c876be3f8f402609502f78e6d26629e80412031204120a120612071208720174931804563f8f402609502f79e6d26629e80412031204120a1206120712087201a01a2fdd24408f402609502f7ae6d26629e80412031204120a1206120712087201490c022b873f8f402609502f7ce6d26629e80412031204120a12061207120872012fdd2406813e8f402609502f7de6d26629e80412031204120a12061207120872011804560e2d418f402609502f7ee6d26629e80412031204120a1206120712087201a4703d0ad73e8f402609502f7fe6d26629e80412031204120a120612071208720104560e2db23f8f402609502f8be6d26629e80412031204120a1206120712087201736891ed7c3f8f402609502f8ce6d26629e80412031204120a1206120712087201a245b6f3fd3f8f402609502f8ee6d26629e80412031204120a12061207120872010e2db29def3f8f402609502f91e6d26629e80412031204120a120612071208720109ac1c5a646882402609502f92e6d26629e80412031204120a1206120712084201e8032609502f95e6d26629e80412031204120a12061207120872019cc420b072408f402609502f96e6d26629e80412031204120a120612071208720145b6f3fdd43f8f402609502f97e6d26629e80412031204120a12061207120872018fc2f5285c1d85402609502f98e6d26629e80412031204120a12061207120872012cb29defa7408f402609502f9ae6d26639ec10ff520193ff010032021b220332040e1205120656075f5f6f67502f9ce6d26629e80412031204120a1206120712087201a245b6f3fdc284402609502f9de6d26629e80412031204120a1206120712087201dcf97e6abc3f8f402609502f9fe6d26629e80412031204120a12061207120872017f6abc74931d8e402609502fa1e6d26629081372010000009cc6eb5f4086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502fa2e6d26629760882031c4d7a457a4d5451334d4455334d637a3554414a6a317a784b4b38383d82011c4d5463784f5445794f5463354e737a3554414a6a317a784b4b38383d72049a1fb74e7d1a794266055eead4a791010000298a042601502fa6e6d26629e80412031204120a1206120712087201fa7e6abc748284402609502fa9e6d26629081372010000003455de5f4086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502faae6d26629e80412031204120a1206120712087201fed478e926417e402609502fabe6d26629e80412031204120a120612071208720122dbf97e6a667e402609502face6d26629e80412031204120a12061207120872013e0ad7a3706e86402609502faee6d26629e80412031204120a12061207120872015a643bdf4fff79402609502fafe6d26629e80412031204120a1206120712087201a4703d0ad7f579402609502fb0e6d26629e80412031204120a1206120712087201d122dbf97e0a7a402609502fb1e6d26629e80412031204120a12061207120872014260e5d022357a402609502fb4e6d26629e80412031204120a1206120712087201a8c64b37894b7a402609502fb5e6d26629e80412031204120a1206120712087201b29defa7c6f979402609502fb6e6d26629e80412031204120a12061207120872011904560e2d087a402609502fb8e6d26629e80412031204120a1206120712087201cba145b6f3117a402609502fb9e6d26629e80412031204120a1206120712087201e6d022dbf9007a402609502fbae6d26629e80412031204120a120612071208720140355eba490c7a402609502fbde6d26629e80412031204120a12061207120872012506819543ff79402609502fbee6d26629e80412031204120a1206120712087201295c8fc2f5027a402609502fbfe6d26629e80412031204120a1206120712087201931804560efb79402609502fc0e6d26629e80412031204120a12061207120872016991ed7c3f0f7a402609502fc2e6d26629e80412031204120a1206120712087201d7a3703d0a0b7a402609502fc6e6d266293805220a7206000000d9eb8c5e405202a0c4b7035601a004a20339ec10ff220132021b520301c30000320414520541000100220656075f5f6f6739ee10ff320208220352041bab010056055f5f6f67293805320a02720600000080108e5e405202a0c4b7035601a0c4a003502ff6e6d266294e04760100007498273e3f402946047202000080e5ca578f407203000000cb954f7840720400000030356f824072010000801500978e402205160c39ee10ff220232030852045569020056055f5f6f67502ff9e6d26629081372010000008081eb124086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502ffee6d26629e80412031204120a12061207120872019cc420b072a685402609502f00e7d266293805320a02720600000088efcc2640520278444a0356017804c302502f01e7d266294e0476010000cd1f3e3330402946047202000000be6ea5894072030000007cddba73407204000000080ad57d407201000000c2f3c788402205160c39ee10ff220232030852048193020056055f5f6f67502f07e7d26629101432011c3203264205a3004604e500502f08e7d26629081372010000000078eb144086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f09e7d26629e80412031204120a12061207120872015eba490c02ff72402609502f10e7d26629e80412031204120a1206120712087201f6285c8fc2488f402609502f12e7d26629e80412031204120a120612071208720185eb51b81e4776402609502f13e7d26629e80412031204120a1206120712087201713d0ad7a30b89402609502f14e7d26629e80412031204120a1206120712087201295c8fc2f53f8f402609502f15e7d26629e80412031204120a12061207120872017d3f355eba6480402609502f19e7d26629e80412031204120a1206120712087201986e1283c03f8f402609502f1de7d26629081372010000001cef1f614086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f1ee7d26629e80412031204120a1206120712087201dbf97e6abc7277402609502f1fe7d26629e80412031204120a12061207120872016766666666418f402609502f26e7d26629e80412031204120a12061207120872017e6abc7493428f402609502f2be7d26629e80412031204120a120612071208720199999999990380402609502f2ce7d26629e80412031204120a120612071208720154e3a59bc43e8f402609502f2de7d26629e80412031204120a12061207120872011804560e2d418f402609502f2ee7d26629e80412031204120a120612071208720139b4c876be3f8f402609293805320a0272060000006686234740520278049603560178c40a03294e0476010000527bcd0d2b40502f2fe7d2662946047202000080e41a4188407203000000c9357276407204000000849d6178407201000080a6e96987402205160c39ee10ff220232030852048b46030056055f5f6f67502f30e7d26629101432014b32030c32054f4604a6002908137201000000c045df1a4086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f3ce7d26639ee10ff32026422035204217b030056055f5f6f67502f3fe7d26639ee10ff22023203645204fc86030056055f5f6f67502f42e7d26629e80412031204120a120612071208720115ae47e17a418f402609502f43e7d26629e80412031204120a12061207120872015eba490c021a84402609502f44e7d2662908137201000000345200604086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f45e7d26629e80412031204120a1206120712087201986e1283c0b27b4026092976088203204d5449774d6a6b304e7a63344f5157426538444b4e505a4252636668513d3d8201204d5451784f5441304f5441774d675057426538444b4e505a4252636668513d3d720456a063767d1a794266054f65d7a791010000298a042601502f46e7d26629e80412031204120a12061207120872016666666666298a402609502f47e7d26629e80412031204120a1206120712087201cccccccccc3f8f402609502f4ae7d26629e80412031204120a1206120712087201d34d6210583f8f402609502f4be7d26629e80412031204120a1206120712087201a245b6f3fd408f402609502f4ce7d26629e80412031204120a1206120712087201105839b4c83f8f402609502f4de7d26629e80412031204120a1206120712087201b0726891ed3f8f402609502f4fe7d26629e80412031204120a12061207120872014f8d976e12408f402609502f51e7d26629e80412031204120a1206120712087201022b8716d93f8f402609502f54e7d26629e80412031204120a12061207120872014f8d976e12408f402609502f55e7d26629e80412031204120a12061207120872019eefa7c64b408f402609502f56e7d26629e80412031204120a12061207120872014b37894160408f402609502f57e7d26629e80412031204120a1206120712087201be9f1a2fdd3f8f402609502f59e7d26629e80412031204120a1206120712087201f2d24d6210408f402609502f5ae7d26629e80412031204120a12061207120872016de7fba9f13f8f402609502f5be7d26629e80412031204120a1206120712087201e6d022dbf93f8f402609502f5ce7d26629e80412031204120a1206120712087201a4703d0ad73f8f402609502f5ee7d26629e80412031204120a12061207120872016766666666408f402609502f5fe7d2662908137201000000da0e61604086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f83e7d266293805320a0272060000008c2e7955405202a0c4b5035601a0842503502f84e7d266294e04760100000daaf1e63040294604720200008025b4a08e4072030000004b68617840720400000081e79e81407201000080a69bcf8d402205160c502f85e7d26639ee10ff220232030852041795040056055f5f6f67502f8ce7d26629e80412031204120a12061207120872018716d9cef73c8f402609502f8de7d26629e80412031204120a1206120712087201a8c64b3789408f402609502f8ee7d26629e80412031204120a12061207120872019f1a2fdd24428f402609502f91e7d26629e80412031204120a12061207120872019cc420b072408f402609502f93e7d26629e80412031204120a12061207120872011a2fdd2406408f402609502f98e7d26629e80412031204120a12061207120872016f1283c0ca3f8f402609502f9be7d26629e80412031204120a120612071208720178e9263108408f402609502f9fe7d26629e80412031204120a1206120712087201e17a14ae47408f402609502fa1e7d26629e80412031204120a12061207120872014f8d976e12438f402609502fa2e7d26629e80412031204120a12061207120872010c022b8716408f402609502fa4e7d26629e80412031204120a1206120712087201931804560e498f402609502fa5e7d26629e80412031204120a1206120712087201b4c876be9f408f402609502fa6e7d26629e80412031204120a1206120712087201ec51b81e853f8f402609502fa9e7d26629e80412031204120a12061207120872014d62105839408f402609502faae7d26629e80412031204120a1206120712087201941804560e408f402609502fabe7d266293805320a027206000000d49d434440520228040d03560150447702502face7d266294e047601000006508d5b314029460472020000800cb0878c40720300000019605f734072040000805f9901824072010000006c49b18b402205160c39ee10ff22023203085204a92f050056055f5f6f67502fb4e7d26629e80412031204120a12061207120872013108ac1c5a3c8f402609502fb5e7d26629e80412031204120a1206120712087201c3f5285c8f438f402609502fb6e7d26629e80412031204120a1206120712087201cef753e3a53f8f402609502fbae7d26629e80412031204120a1206120712084201e8032609502fbfe7d26639ee10ff320208220352043d77050056055f5f6f67293805320a027206000000c4cb073440520228840e03560128447802294e0476010000e2c4d9af3040502fc0e7d26629460472020000003831e58c4072030000007062ba7340720400008070eb2082407201000080a81cfe8b402205160c39ee10ff22023203085204097c050056055f5f6f67502fc4e7d2662908137201000000804c62124086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502fd0e7d26629e80412031204120a1206120712087201105839b4c81488402609502fd1e7d26629e80412031204120a1206120712087201be9f1a2fdd0988402609502fd2e7d26629e80412031204120a12061207120872010c022b87160d88402609502fd3e7d26629e80412031204120a12061207120872011804560e2d0d88402609502fd5e7d26629e80412031204120a120612071208720175931804560d88402609502fd6e7d26629e80412031204120a120612071208720154e3a59bc40c88402609502fd7e7d26629e80412031204120a12061207120872015a643bdf4f0c88402609502fd8e7d26629e80412031204120a1206120712087201bb490c022b0d88402609502fdae7d26629e80412031204120a1206120712087201ac1c5a643b0b88402609502fdbe7d26629e80412031204120a1206120712087201d9cef753e30788402609502fdce7d26629e80412031204120a120612071208720174931804560c88402609502fdde7d26629e80412031204120a1206120712087201986e1283c00c88402609502fe0e7d26629e80412031204120a120612071208720179e92631081588402609502fe1e7d26629e80412031204120a12061207120872014a0c022b871288402609502fe4e7d26629e80412031204120a1206120712087201f6285c8fc21888402609502fe5e7d26629e80412031204120a1206120712087201c420b072681488402609502fe6e7d26629e80412031204120a1206120712087201be9f1a2fdd1288402609502fe7e7d26629e80412031204120a12061207120872014260e5d0221488402609502fe9e7d26629e80412031204120a1206120712087201c420b072681488402609502feae7d26629e80412031204120a1206120712087201105839b4c81888402609502febe7d26629e80412031204120a1206120712087201d7a3703d0a1388402609502fece7d26629e80412031204120a1206120712087201c2f5285c8f6180402609502feee7d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502fefe7d26629e80412031204120a120612071208720146b6f3fdd41388402609502ff0e7d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502ff1e7d26629e80412031204120a12061207120872016991ed7c3f1588402609502ff8e7d26629e80412031204120a120612071208720145b6f3fdd41488402609502ff9e7d26629e80412031204120a12061207120872016de7fba9f11488402609502ffae7d26629e80412031204120a12061207120872012b8716d9ce1488402609502ffbe7d26629e80412031204120a12061207120872019f1a2fdd241588402609502ffde7d26629e80412031204120a1206120712087201508d976e121488402609502ffee7d26629e80412031204120a1206120712087201c976be9f1a1588402609502fffe7d26629e80412031204120a12061207120872017b14ae47e11488402609502f00e8d26629e80412031204120a120612071208720145b6f3fdd41488402609502f02e8d26629e80412031204120a1206120712087201e8fba9f1d21488402609502f03e8d26629e80412031204120a120612071208720145b6f3fdd41488402609502f04e8d26629e80412031204120a1206120712087201df4f8d976e1588402609502f05e8d26629e80412031204120a1206120712087201bb490c022b1588402609502f07e8d26629e80412031204120a1206120712087201fa7e6abc741588402609502f08e8d26629e80412031204120a1206120712087201cba145b6f31488402609502f09e8d26629e80412031204120a12061207120872015839b4c8761588402609502f0ae8d26629e80412031204120a1206120712087201bf9f1a2fdd1388402609502f0ce8d26629e80412031204120a1206120712087201643bdf4f8d1588402609502f0de8d26629e80412031204120a12061207120872016bbc7493181588402609502f0ee8d26629e80412031204120a12061207120872018195438b6c1588402609502f0fe8d26629e80412031204120a1206120712087201f5285c8fc21588402609502f11e8d26629e80412031204120a1206120712087201f0a7c64b371588402609502f12e8d26629e80412031204120a1206120712087201273108ac1c1488402609502f14e8d26629e80412031204120a1206120712087201caa145b6f31a88402609502f17e8d26629e80412031204120a1206120712087201f753e3a59b1288402609502f18e8d26629e80412031204120a1206120712087201894160e5d01488402609502f19e8d26629e80412031204120a12061207120872015eba490c021588402609502f1ce8d26629e80412031204120a12061207120872018fc2f5285c1388402609502f1de8d26629e80412031204120a120612071208720195438b6ce71388402609502f1ee8d26629e80412031204120a1206120712087201d7a3703d0a1588402609502f21e8d26629e80412031204120a1206120712087201ee7c3f355e1388402609502f22e8d26629e80412031204120a1206120712087201022b8716d91488402609502f23e8d26629e80412031204120a1206120712087201ae47e17a141588402609502f27e8d26629e80412031204120a12061207120872015a643bdf4f1488402609502f2ae8d26629e80412031204120a1206120712087201736891ed7c1588402609502f2be8d26629e80412031204120a1206120712087201a69bc420b01688402609502f2ce8d26629e80412031204120a12061207120872016f1283c0ca1488402609502f2de8d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502f2fe8d26629e80412031204120a1206120712087201be9f1a2fdd1488402609502f30e8d26629e80412031204120a1206120712087201d122dbf97e1488402609502f31e8d266293805320a027206000000fa29a65c4052025004500356015044a902502f32e8d266294e04760100009e33ec222a402946047202000080c324258c40720300000087494a72407204000000558f1d8240720100008018b4428b402205160c39ee10ff220232030852044d3b070056055f5f6f67502f35e8d266290813720100000000dd78234086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f43e8d266293805320a027206000000809fa93240520278845203560178c4ab02502f44e8d266294e0476010000a90d747e3040294604720200000061933d8b407203000000c226ab71407204000000180e918140720100000079a1668a402205160c39ee10ff22023203085204b381070056055f5f6f67502f46e8d266290813720100000000fce7214086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f51e8d266293805320a0272060000006081112c4052022844530356012884b702294e047601000066671fa6274029460472020000803ab42c8a40720300000075686973407204000000fad81c7f407201000080b7204389402205160c502f52e8d26639ee10ff220232030852047fb6070056055f5f6f67502f53e8d26629101432012b3203174205cb0046040d01502f54e8d266290813720100000000454a214086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502f55e8d26629e80412031204120a1206120712087201c1caa145b6408f402609502f59e8d26629e80412031204120a12061207120872017f6abc74933f8f402609502f5ae8d26629e80412031204120a120612071208720138b4c876be408f402609502f5be8d26629e80412031204120a1206120712087201bd749318043f8f402609502f5ee8d26629e80412031204120a12061207120872016766666666418f402609502f5fe8d26629e80412031204120a1206120712087201448b6ce7fb3f8f402609502f60e8d26629e80412031204120a1206120712087201a4703d0ad7388f402609502f62e8d26629e80412031204120a1206120712087201c520b07268388f402609502f63e8d26629e80412031204120a1206120712087201941804560e478f402609502f64e8d26629e80412031204120a120612071208720139b4c876be428f402609502f65e8d26629e80412031204120a1206120712087201d34d621058388f402609502f67e8d26629e80412031204120a120612071208720195438b6ce73c8f402609502f68e8d26629e80412031204120a1206120712087201a245b6f3fd408f402609502f69e8d26629e80412031204120a1206120712087201ec51b81e85468f402609502f6ae8d26629e80412031204120a12061207120872018b6ce7fba93b8f402609502f6de8d26629e80412031204120a12061207120872010d022b87163f8f402609502f6ee8d26629e80412031204120a1206120712087201c0caa145b63f8f402609502f6fe8d26629e80412031204120a12061207120872014b37894160408f402609502f71e8d26629e80412031204120a120612071208720154e3a59bc43d8f402609502f72e8d26629e80412031204120a12061207120872017d3f355eba418f402609502f76e8d26629e80412031204120a1206120712087201df4f8d976e3e8f402609502f77e8d26629e80412031204120a120612071208720139b4c876be3f8f402609502f78e8d26629e80412031204120a1206120712087201b7f3fdd478408f402609502f79e8d26629e80412031204120a1206120712087201c520b07268408f402609502f7ee8d26629e80412031204120a1206120712087201a01a2fdd24408f402609502f80e8d26629e80412031204120a12061207120872015b8fc2f528408f402609502f81e8d26629e80412031204120a1206120712087201b29defa7c63d8f402609502f87e8d26629e80412031204120a1206120712087201cff753e3a50778402609502f88e8d26629e80412031204120a1206120712087201448b6ce7fb3f8f402609502f8ae8d26629e80412031204120a1206120712087201976e1283c0418f402609502f8de8d26629e80412031204120a12061207120872017493180456428f402609502f8ee8d266293805320a0272060000003835844e4052027804890356017884ec02294e0476010000f131c1433440294604720200008055e3fc86407203000000abc64972407204000000ddb5d57940720100000044be0f86402205160c502f8fe8d26639ee10ff2202320308520470a4080056055f5f6f67502f93e8d26629e80412031204120a12061207120872012b8716d9ce3b8f402609502f98e8d26629e80412031204120a1206120712087201d122dbf97e408f402609502fa6e8d26629101432015232030232055c4604b0002908137201000000808494164086031f6170702d6174746573746174696f6e5f7265672d6174746573746174696f6e502fa9e8d26629e80412031204120a1206120712087201f853e3a59b907b402609502faae8d26629e80412031204120a1206120712087201c3f5285c8f3b8f402609502fabe8d26629e80412031204120a1206120712087201cccccccccc448f402609502fb0e8d26629e80412031204120a1206120712087201726891ed7c0d80402609502fb3e8d26629e80412031204120a12061207120872017b14ae47e14b84402609502fb4e8d26629e80412031204120a1206120712087201dd240681953f8f402609502fb6e8d26629e80412031204120a120612071208720147e17a14ae3f8f402609502fbbe8d26629e80412031204120a120612071208720117d9cef7533f8f402609502fbde8d26629e80412031204120a1206120712087201c0caa145b6418f402609502fc2e8d266290813720100000064a0e55f4086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502fc4e8d26629e80412031204120a1206120712087201ad1c5a643b408f402609502fc7e8d26629e80412031204120a1206120712087201c520b072683d8f402609502fc8e8d26629e80412031204120a1206120712087201eb51b81e85438f402609502fc9e8d26629e80412031204120a1206120712087201a8c64b3789408f402609502fcbe8d266290813720100000050f568604086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502fcce8d26629e80412031204120a120612071208720152b81e85eb8381402609502fd2e8d26629e80412031204120a1206120712087201fca9f1d24df67a402609502fd3e8d26629e80412031204120a12061207120872013bdf4f8d97fa7a402609502fd4e8d26629e80412031204120a12061207120872010c022b8716fb7a402609502fd6e8d26629e80412031204120a1206120712087201dcf97e6abcfa7a402609502fd7e8d26629e80412031204120a12061207120872018716d9cef7e77a402609502fd8e8d26629e80412031204120a12061207120872016abc749318027b402609502fdbe8d26629e80412031204120a12061207120872016991ed7c3ff97a402609502fdce8d26629e80412031204120a12061207120872018195438b6cfb7a402609502fdde8d26629e80412031204120a1206120712087201df4f8d976e007b402609502fe0e8d26629e80412031204120a12061207120872011a2fdd2406fd7a402609502fe1e8d26629e80412031204120a120612071208720154e3a59bc4f67a402609502fe2e8d26629e80412031204120a1206120712087201115839b4c8007b402609502fe6e8d26629e80412031204120a12061207120872019cc420b072fc7a402609502fe7e8d26629e80412031204120a1206120712087201941804560e0f7b402609502feae8d26629e80412031204120a1206120712087201713d0ad7a3f67a402609502febe8d26629e80412031204120a120612071208720177be9f1a2ff77a402609502fece8d26629e80412031204120a12061207120872012db29defa7c07b402609502fefe8d26629e80412031204120a1206120712087201a01a2fdd24fa7a402609502ff0e8d26629e80412031204120a12061207120872016e1283c0caf37a402609502ff1e8d26629e80412031204120a1206120712087201c3f5285c8ff87a402609502ff4e8d26629e80412031204120a1206120712087201f2d24d6210f47a402609502ff5e8d26629e80412031204120a1206120712087201c3f5285c8ff87a402609502ff6e8d26629e80412031204120a12061207120872010c022b8716197b402609502ff7e8d26629e80412031204120a120612071208720162105839b4fc7a402609502ff9e8d26629e80412031204120a1206120712087201fca9f1d24dfa7a402609502ffae8d26629e80412031204120a1206120712087201b0726891edf87a402609502ffbe8d26629e80412031204120a1206120712087201cef753e3a5f77a402609502ffee8d26629e80412031204120a1206120712087201eb51b81e85fb7a402609502fffe8d26629e80412031204120a120612071208720179e9263108f87a402609502f00e9d26629e80412031204120a1206120712087201f853e3a59bfa7a402609502f03e9d26629e80412031204120a1206120712087201ee7c3f355efc7a402609502f04e9d26629e80412031204120a120612071208720184c0caa145fa7a402609502f05e9d26629e80412031204120a1206120712087201d7a3703d0af77a402609502f08e9d26629e80412031204120a1206120712087201a245b6f3fdfa7a402609502f09e9d26629e80412031204120a1206120712087201b91e85eb51f87a402609502f0ae9d26639ec10ff220132022252031f46381032044b520574fe080032060356075f5f6f67502f0be9d26629e80412031204120a1206120712087201be9f1a2fdd7876402609502f0de9d26629081372010000000c1d7a614086031d6170702d6174746573746174696f6e5f7265672d617373657274696f6e502f12e9d26688eb0a03636c6e18fb2e29e80412031204120a12061207120872010d022b87161b79402609192e0b220252019870620b36031e192e0b2202520158dc8302360307192e0b22025201bc1c420236035a192e0b3202025201a5145b033603ff192e0b32020252017cdac7063603ff192e0b220252014390d10e2603502f13e9d26629e80412031204120a120612071208720166666666663f8f402609502f15e9d26629e80412031204120a1206120712087201986e1283c0408f402609502f17e9d26629e80412031204120a1206120712087201653bdf4f8d3f8f402609502f18e9d26629e80412031204120a12061207120872011804560e2d408f402609502f19e9d26629e80412031204120a1206120712087201fa7e6abc743f8f402609502f1ee9d26629f601220122021607502f1fe9d2662950033201047203000000d8bc8c6a40360202502f22e9d26629500332010372030000c04b0916a140360202";
         var wamData = new String(HexFormat.of().parseHex(wamBinary))
                 .replace("iPhone 7", socketHandler.store().device().model().replaceAll("_", " "))
                 .replace("15.7.3", socketHandler.store().device().osVersion().toString())
                 .replace("2.24.17.78", socketHandler.store().version().toString())
                 .getBytes();
         var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
-        return socketHandler.sendQuery("set", "w:stats", addNode);
+        socketHandler.sendQuery("set", "w:stats", addNode);
     }
 
-    private CompletableFuture<?> sendWam2() {
+    private void sendWam2() {
         var wamBinary = "57414d0501010001200b800d086950686f6e652037800f0631352e372e3380110a322e32342e31372e373810152017502f23e9d266206928830138790604387b060288eb0a03636c6e186b1818a71c88911e063139483330378879240431372e3418fb2e18ed3318ab3888fb3c09363335333637323531290c1476020038dd48bab4d941";
         var wamData = new String(HexFormat.of().parseHex(wamBinary))
                 .replace("iPhone 7", socketHandler.store().device().model().replaceAll("_", " "))
@@ -1160,10 +1163,10 @@ class StreamHandler {
                 .replace("2.24.17.78", socketHandler.store().version().toString())
                 .getBytes();
         var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
-        return socketHandler.sendQuery("set", "w:stats", addNode);
+        socketHandler.sendQuery("set", "w:stats", addNode);
     }
 
-    private CompletableFuture<?> setPushEndpoint() {
+    private void setPushEndpoint() {
         var configAttributes = Attributes.of()
                 .put("background_location", 1)
                 .put("call", "Opening.m4r")
@@ -1183,44 +1186,45 @@ class StreamHandler {
                 .put("voip", HexFormat.of().formatHex(Bytes.random(32)))
                 .put("voip_payload_type", 2)
                 .toMap();
-        return socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes));
-    }
-    
-    private CompletableFuture<?> setupRescueToken() {
-        return socketHandler.sendQuery("set", "w:auth:token", Node.of("token", HexFormat.of().parseHex("20292dbd11e06094feb1908737ca76e6")));
+        socketHandler.sendQuery("set", "urn:xmpp:whatsapp:push", Node.of("config", configAttributes));
     }
 
-    private CompletableFuture<?> setupGoogleCrypto() {
+    private void setupRescueToken() {
+        socketHandler.sendQuery("set", "w:auth:token", Node.of("token", HexFormat.of().parseHex("20292dbd11e06094feb1908737ca76e6")));
+    }
+
+    private void setupGoogleCrypto() {
         var firstCrypto = Node.of("crypto", Map.of("action", "create"), Node.of("google", HexFormat.of().parseHex("7d7ce52cde18aa4854bf522bc72899074e06b60b1bf51864de82e8576b759d12")));
         var secondCrypto = Node.of("crypto", Map.of("action", "create"), Node.of("google", HexFormat.of().parseHex("2f39184f8feb97d57493a69bf5558507472c6bfb633b1c2d369f3409210401c6")));
-        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", firstCrypto)
-                .thenCompose(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", secondCrypto));
+        socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", firstCrypto);
+        socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", secondCrypto);
     }
 
-    private CompletableFuture<?> acceptTermsOfService() {
+    private void acceptTermsOfService() {
         var notices = Stream.of("20230901", "20240729", "20230902", "20231027")
                 .map(id ->  Node.of("notice", Map.of("id", id)))
                 .toList();
-        return socketHandler.sendQuery("get", "tos", Node.of("request", notices))
-                .thenComposeAsync(ignored -> socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("accept")));
+        socketHandler.sendQuery("get", "tos", Node.of("request", notices));
+        socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("accept"));
     }
 
     private void notifyChatsAndNewsletters() {
-        if(socketHandler.store().clientType() != ClientType.WEB || socketHandler.keys().initialAppSync()) {
+        if(socketHandler.store().clientType() != WhatsappClientType.WEB || socketHandler.keys().initialAppSync()) {
             socketHandler.onChats();
             socketHandler.onNewsletters();
         }
     }
 
-    protected CompletableFuture<Void> queryNewsletters() {
+    void queryNewsletters() {
         var request = NewsletterRequests.subscribedNewsletters();
-        return socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), request))
-                .thenAcceptAsync(result -> {
-                    if(socketHandler.store().webHistorySetting().hasNewsletters()) {
-                        parseNewsletters(result);
-                    }
-                })
-                .exceptionallyAsync(throwable -> socketHandler.handleFailure(LOGIN, throwable));
+        try {
+            var result = socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), request));
+            if(socketHandler.store().webHistorySetting().hasNewsletters()) {
+                parseNewsletters(result);
+            }
+        } catch (Exception throwable) {
+            socketHandler.handleFailure(LOGIN, throwable);
+        }
     }
 
     private void parseNewsletters(Node node) {
@@ -1233,30 +1237,24 @@ class StreamHandler {
         SubscribedNewslettersResponse.ofJson(newslettersPayload.get()).ifPresent(result -> {
             var noMessages = socketHandler.store().webHistorySetting().isZero();
             var data = result.newsletters();
-            var futures = noMessages ? null : new CompletableFuture<?>[data.size()];
-            for (var index = 0; index < data.size(); index++) {
-                var newsletter = data.get(index);
+            for (var newsletter : data) {
                 socketHandler.store().addNewsletter(newsletter);
-                if(!noMessages) {
-                    futures[index] = socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES)
-                            .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+                if (!noMessages) {
+                    try {
+                        socketHandler.queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES);
+                    } catch (Throwable throwable) {
+                        socketHandler.handleFailure(MESSAGE, throwable);
+                    }
                 }
             }
 
-            if(noMessages) {
-                socketHandler.onNewsletters();
-                return;
-            }
-
-            CompletableFuture.allOf(futures)
-                    .thenRun(socketHandler::onNewsletters)
-                    .exceptionally(throwable -> socketHandler.handleFailure(MESSAGE, throwable));
+            socketHandler.onNewsletters();
         });
     }
 
-    private CompletableFuture<Void> queryGroups() {
-        return socketHandler.sendQuery(JidServer.groupOrCommunity().toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")))
-                .thenAcceptAsync(this::onGroupsQuery);
+    private void queryGroups() {
+        var result = socketHandler.sendQuery(JidServer.groupOrCommunity().toJid(), "get", "w:g2", Node.of("participating", Node.of("participants"), Node.of("description")));
+        onGroupsQuery(result);
     }
 
     private void onGroupsQuery(Node result) {
@@ -1270,7 +1268,7 @@ class StreamHandler {
                 .forEach(socketHandler::handleGroupMetadata);
     }
 
-    protected CompletableFuture<Void> updateBusinessCertificate(String name) {
+    void updateBusinessCertificate(String name) {
         var details = new BusinessVerifiedNameDetailsBuilder()
                 .name(Objects.requireNonNullElse(name, socketHandler.store().name()))
                 .issuer("smb:wa")
@@ -1281,15 +1279,14 @@ class StreamHandler {
                 .encodedDetails(encodedDetails)
                 .signature(Curve25519.sign(socketHandler.keys().identityKeyPair().privateKey(), encodedDetails))
                 .build();
-        return socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate))).thenAccept(result -> {
-            var verifiedName = result.findChild("verified_name")
-                    .map(node -> node.attributes().getString("id"))
-                    .orElse("");
-            socketHandler.store().setVerifiedName(verifiedName);
-        });
+        var result = socketHandler.sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate)));
+        var verifiedName = result.findChild("verified_name")
+                .map(node -> node.attributes().getString("id"))
+                .orElse("");
+        socketHandler.store().setVerifiedName(verifiedName);
     }
 
-    private CompletableFuture<Node> setBusinessProfile() {
+    private void setBusinessProfile() {
         var version = socketHandler.store().properties().getOrDefault("biz_profile_options", "2");
         var body = new ArrayList<Node>();
         socketHandler.store()
@@ -1310,28 +1307,29 @@ class StreamHandler {
         socketHandler.store()
                 .businessEmail()
                 .ifPresent(value -> body.add(Node.of("email", value)));
-        return getBusinessCategoryNode().thenComposeAsync(result -> {
-            body.add(Node.of("categories", Node.of("category", Map.of("id", result.id()))));
-            return socketHandler.sendQuery("set", "w:biz", Node.of("business_profile", Map.of("v", version), body));
-        });
+        var result = getBusinessCategoryNode();
+        body.add(Node.of("categories", Node.of("category", Map.of("id", result.id()))));
+        socketHandler.sendQuery("set", "w:biz", Node.of("business_profile", Map.of("v", version), body));
     }
 
-    private CompletableFuture<Node> getBusinessCategoryNode() {
+    private Node getBusinessCategoryNode() {
         return socketHandler.store()
                 .businessCategory()
-                .map(businessCategory -> CompletableFuture.completedFuture(Node.of("category", Map.of("id", businessCategory.id()))))
-                .orElseGet(() -> socketHandler.queryBusinessCategories()
-                        .thenApplyAsync(entries -> Node.of("category", Map.of("id", entries.getFirst().id()))));
+                .map(businessCategory -> Node.of("category", Map.of("id", businessCategory.id())))
+                .orElseGet(() -> {
+                    var entries = socketHandler.queryBusinessCategories();
+                    return Node.of("category", Map.of("id", entries.getFirst().id()));
+                });
     }
 
     private void onInitialInfo() {
         if(!socketHandler.keys().registered()) {
             socketHandler.keys().setRegistered(true);
-            socketHandler.store().serialize(true);
-            socketHandler.keys().serialize(true);
+            socketHandler.store().serialize();
+            socketHandler.keys().serialize();
         }
 
-        if(socketHandler.store().clientType() == ClientType.MOBILE) {
+        if(socketHandler.store().clientType() == WhatsappClientType.MOBILE) {
             socketHandler.store()
                     .jid()
                     .map(Jid::toSimpleJid)
@@ -1349,57 +1347,62 @@ class StreamHandler {
         }
     }
 
-    private CompletableFuture<Void> queryRequiredWebInfo() {
-        return socketHandler.sendQuery("get", "w", Node.of("props"))
-                .thenAcceptAsync(this::parseProps)
-                .exceptionallyAsync(exception -> socketHandler.handleFailure(LOGIN, exception));
+    private void queryRequiredWebInfo() {
+        try {
+            var result = socketHandler.sendQuery("get", "w", Node.of("props"));
+            parseProps(result);
+        } catch (Exception exception) {
+            socketHandler.handleFailure(LOGIN, exception);
+        }
     }
 
-    private CompletableFuture<Void> checkBusinessStatus() {
+    private void checkBusinessStatus() {
         if (!socketHandler.store().device().platform().isBusiness() || socketHandler.keys().businessCertificate()) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
-        return CompletableFuture.allOf(updateBusinessCertificate(null), setBusinessProfile())
-                .thenRunAsync(() -> socketHandler.keys().setBusinessCertificate(true));
+        updateBusinessCertificate(null);
+        setBusinessProfile();
+        socketHandler.keys().setBusinessCertificate(true);
     }
 
-    private CompletableFuture<Void> queryInitial2fa() {
-        return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("2fa"))
-                .thenAcceptAsync(result -> { /* TODO: Handle 2FA */ });
+    private void queryInitial2fa() {
+        socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("2fa"));
     }
 
-    private CompletableFuture<Void> queryInitialAboutPrivacy() {
-        return socketHandler.sendQuery("get", "status", Node.of("privacy"))
-                .thenAcceptAsync(result -> { /* TODO: Handle about privacy */ });
+    private void queryInitialAboutPrivacy() {
+        socketHandler.sendQuery("get", "status", Node.of("privacy"));
     }
 
-    private CompletableFuture<Void> queryInitialPrivacySettings() {
-        return socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
-                .thenComposeAsync(this::parsePrivacySettings);
+    private void queryInitialPrivacySettings() {
+        var result = socketHandler.sendQuery("get", "privacy", Node.of("privacy"));
+        parsePrivacySettings(result);
     }
 
-    private CompletableFuture<Void> queryInitialDisappearingMode() {
-        return socketHandler.sendQuery("get", "disappearing_mode")
-                .thenAcceptAsync(result -> { /* TODO: Handle disappearing mode */ });
+    private void queryInitialDisappearingMode() {
+        socketHandler.sendQuery("get", "disappearing_mode");
     }
 
-    private CompletableFuture<Void> queryInitialBlockList() {
-        return socketHandler.queryBlockList()
-                .thenAcceptAsync(entry -> entry.forEach(this::markBlocked));
+    private void queryInitialBlockList() {
+        for (var jid : socketHandler.queryBlockList()) {
+            markBlocked(jid);
+        }
     }
 
-    private CompletableFuture<Void> updateSelfPresence() {
+    private void updateSelfPresence() {
         if (!socketHandler.store().automaticPresenceUpdates()) {
             if(!socketHandler.store().online()) {  // Just to be sure
                 socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("name", socketHandler.store().name(), "type", "unavailable")));
             }
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
-        return socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("name", socketHandler.store().name(), "type", "available")))
-                .thenRun(this::onPresenceUpdated)
-                .exceptionally(exception -> socketHandler.handleFailure(STREAM, exception));
+        try {
+            socketHandler.sendNodeWithNoResponse(Node.of("presence", Map.of("name", socketHandler.store().name(), "type", "available")));
+            onPresenceUpdated();
+        } catch (Exception exception) {
+            socketHandler.handleFailure(STREAM, exception);
+        }
     }
 
     private void onPresenceUpdated() {
@@ -1410,12 +1413,13 @@ class StreamHandler {
                 .ifPresent(entry -> entry.setLastKnownPresence(ContactStatus.AVAILABLE).setLastSeen(ZonedDateTime.now()));
     }
 
-    private CompletableFuture<Void> updateUserAbout(boolean update) {
-        return socketHandler.store()
+    private void updateUserAbout(boolean update) {
+        socketHandler.store()
                 .jid()
-                .map(value -> socketHandler.queryAbout(value.toSimpleJid())
-                        .thenAcceptAsync(result -> parseNewAbout(result.orElse(null), update)))
-                .orElseGet(() -> CompletableFuture.completedFuture(null));
+                .ifPresent(value -> {
+                    var result = socketHandler.queryAbout(value.toSimpleJid());
+                    parseNewAbout(result.orElse(null), update);
+                });
     }
 
     private void parseNewAbout(UserAboutResponse result, boolean update) {
@@ -1434,24 +1438,18 @@ class StreamHandler {
         });
     }
 
-    private CompletableFuture<Void> updateUserPicture(boolean update) {
-        return socketHandler.store()
+    private void updateUserPicture(boolean update) {
+        socketHandler.store()
                 .jid()
-                .map(value -> socketHandler.queryPicture(value.toSimpleJid())
-                        .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update)))
-                .orElseGet(() -> CompletableFuture.completedFuture(null));
-    }
+                .ifPresent(user -> {
+                    var result = socketHandler.queryPicture(user.toSimpleJid());
+                    socketHandler.store().setProfilePicture(result.orElse(null));
+                    if (!update) {
+                        return;
+                    }
 
-    private void handleUserPictureChange(URI newPicture, boolean update) {
-        var oldStatus = socketHandler.store()
-                .profilePicture()
-                .orElse(null);
-        socketHandler.store().setProfilePicture(newPicture);
-        if (!update) {
-            return;
-        }
-
-        socketHandler.onUserPictureChanged(newPicture, oldStatus);
+                    socketHandler.onUserPictureChanged();
+                });
     }
 
     private void markBlocked(Jid entry) {
@@ -1462,13 +1460,11 @@ class StreamHandler {
         }).setBlocked(true);
     }
 
-    private CompletableFuture<Void> parsePrivacySettings(Node result) {
-        var privacy = result.listChildren("privacy")
+    private void parsePrivacySettings(Node result) {
+        result.listChildren("privacy")
                 .stream()
                 .flatMap(entry -> entry.children().stream())
-                .map(entry -> addPrivacySetting(entry, false))
-                .toArray(CompletableFuture[]::new);
-        return CompletableFuture.allOf(privacy);
+                .forEach(entry -> addPrivacySetting(entry, false));
     }
 
     private void parseProps(Node result) {
@@ -1485,20 +1481,20 @@ class StreamHandler {
     private void schedulePing() {
         socketHandler.scheduleAtFixedInterval(() -> {
             socketHandler.sendPing();
-            socketHandler.store().serialize(true);
+            socketHandler.store().serialize();
             socketHandler.store().serializer().linkMetadata(socketHandler.store());
-            socketHandler.keys().serialize(true);
+            socketHandler.keys().serialize();
         }, PING_INTERVAL / 2, PING_INTERVAL);
     }
 
-    private CompletableFuture<Void> scheduleMediaConnectionUpdate() {
-        return socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
-                .thenAcceptAsync(this::onMediaConnection)
-                .exceptionallyAsync(throwable -> {
-                    socketHandler.store().setMediaConnection(null);
-                    socketHandler.handleFailure(MEDIA_CONNECTION, throwable);
-                    return null;
-                });
+    private void scheduleMediaConnectionUpdate() {
+        try {
+            var node = socketHandler.sendQuery("set", "w:m", Node.of("media_conn"));
+            onMediaConnection(node);
+        } catch (Exception throwable) {
+            socketHandler.store().setMediaConnection(null);
+            socketHandler.handleFailure(MEDIA_CONNECTION, throwable);
+        }
     }
 
     private void onMediaConnection(Node node) {
@@ -1534,14 +1530,14 @@ class StreamHandler {
         }
     }
 
-    private CompletableFuture<?> sendPreKeys(int size) {
+    private void sendPreKeys(int size) {
         var startId = socketHandler.keys().lastPreKeyId() + 1;
         var preKeys = IntStream.range(startId, startId + size)
                 .mapToObj(SignalPreKeyPair::random)
                 .peek(socketHandler.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        return socketHandler.sendQuery(
+        socketHandler.sendQuery(
                 "set",
                 "encrypt",
                 Node.of("registration", socketHandler.keys().encodedRegistrationId()),
@@ -1554,18 +1550,20 @@ class StreamHandler {
 
     private void startPairing(Node node, Node container) {
         switch (webVerificationHandler) {
-            case QrHandler qrHandler -> {
+            case WhatsappVerification.Web.QrCode qrHandler -> {
                 printQrCode(qrHandler, container);
                 sendConfirmNode(node, null);
                 schedulePing();
             }
-            case PairingCodeHandler codeHandler -> askPairingCode(codeHandler)
-                    .thenRun(this::schedulePing);
+            case WhatsappVerification.Web.PairingCode codeHandler -> {
+                askPairingCode(codeHandler);
+                this.schedulePing();
+            }
             default -> throw new IllegalArgumentException("Cannot verify account: unknown verification method");
         }
     }
 
-    private CompletableFuture<Void> askPairingCode(PairingCodeHandler codeHandler) {
+    private void askPairingCode(WhatsappVerification.Web.PairingCode codeHandler) {
         var code = Bytes.randomHex(5);
         var registration = Node.of(
                 "link_code_companion_reg",
@@ -1576,10 +1574,9 @@ class StreamHandler {
                 Node.of("companion_platform_display", "Chrome (Linux)".getBytes(StandardCharsets.UTF_8)),
                 Node.of("link_code_pairing_nonce", 0)
         );
-        return socketHandler.sendQuery("set", "md", registration).thenAccept(result -> {
-            lastLinkCodeKey.set(code);
-            codeHandler.accept(code);
-        });
+        socketHandler.sendQuery("set", "md", registration);
+        lastLinkCodeKey.set(code);
+        codeHandler.handle(code);
     }
 
     private byte[] cipherLinkPublicKey(String linkCodeKey) {
@@ -1621,7 +1618,7 @@ class StreamHandler {
         }
     }
 
-    private void printQrCode(QrHandler qrHandler, Node container) {
+    private void printQrCode(WhatsappVerification.Web.QrCode qrHandler, Node container) {
         var ref = container.findChild("ref")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
@@ -1633,7 +1630,7 @@ class StreamHandler {
                 Base64.getEncoder().encodeToString(socketHandler.keys().companionKeyPair().publicKey()),
                 "1"
         );
-        qrHandler.accept(qr);
+        qrHandler.handle(qr);
     }
 
     private void confirmPairing(Node node, Node container) {
@@ -1706,8 +1703,11 @@ class StreamHandler {
                 .put("to", JidServer.whatsapp().toJid())
                 .toMap();
         var request = Node.of("iq", attributes, content);
-        socketHandler.sendNodeWithNoResponse(request)
-                .exceptionally(throwable -> socketHandler.handleFailure(STREAM, throwable));
+        try {
+            socketHandler.sendNodeWithNoResponse(request);
+        } catch (Exception throwable) {
+            socketHandler.handleFailure(STREAM, throwable);
+        }
     }
 
     private void saveCompanion(Node container) {
@@ -1719,7 +1719,6 @@ class StreamHandler {
         socketHandler.store().setJid(companion);
         PhoneNumber.of(companion.user())
                 .ifPresent(phoneNumber -> socketHandler.store().setPhoneNumber(phoneNumber));
-        socketHandler.addToKnownConnections();
         var me = buildMe(companion.toSimpleJid());
         socketHandler.store().addContact(me);
     }
@@ -1734,7 +1733,7 @@ class StreamHandler {
                 .build();
     }
 
-    protected void dispose() {
+    void dispose() {
         retries.clear();
         lastLinkCodeKey.set(null);
     }

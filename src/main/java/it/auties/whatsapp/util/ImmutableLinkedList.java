@@ -7,7 +7,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-public class ImmutableLinkedList<E> extends LinkedList<E> {
+public final class ImmutableLinkedList<E> extends LinkedList<E> {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static final ImmutableLinkedList EMPTY = new ImmutableLinkedList(new LinkedList());
 

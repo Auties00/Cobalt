@@ -7,7 +7,7 @@ import it.auties.whatsapp.util.Exceptions;
 import java.nio.file.Path;
 import java.util.function.BiConsumer;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.*;
+import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.*;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
 
@@ -15,7 +15,7 @@ import static java.lang.System.Logger.Level.WARNING;
  * This interface allows to handle a socket error and provides a default way to do so
  */
 @SuppressWarnings("unused")
-public interface ErrorHandler {
+public interface WhatsappErrorHandler {
     /**
      * Handles an error that occurred inside the api
      *
@@ -32,7 +32,7 @@ public interface ErrorHandler {
      * @return a non-null error handler
      */
     @SuppressWarnings("CallToPrintStackTrace")
-    static ErrorHandler toTerminal() {
+    static WhatsappErrorHandler toTerminal() {
         return defaultErrorHandler((api, error) -> error.printStackTrace());
     }
 
@@ -42,7 +42,7 @@ public interface ErrorHandler {
      *
      * @return a non-null error handler
      */
-    static ErrorHandler toFile() {
+    static WhatsappErrorHandler toFile() {
         return defaultErrorHandler((api, error) -> Exceptions.save(error));
     }
 
@@ -53,7 +53,7 @@ public interface ErrorHandler {
      * @param directory the directory where the error should be saved
      * @return a non-null error handler
      */
-    static ErrorHandler toFile(Path directory) {
+    static WhatsappErrorHandler toFile(Path directory) {
         return defaultErrorHandler((api, error) -> Exceptions.save(directory, error));
     }
 
@@ -63,7 +63,7 @@ public interface ErrorHandler {
      * @param printer a consumer that handles the printing of the throwable, can be null
      * @return a non-null error handler
      */
-    private static ErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {
+    private static WhatsappErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {
         return (whatsapp, location, throwable) -> {
             var logger = System.getLogger("ErrorHandler");
             var jid = whatsapp.store()

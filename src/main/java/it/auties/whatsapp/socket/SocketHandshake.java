@@ -1,6 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.io.BinaryTokens;
@@ -23,7 +23,7 @@ class SocketHandshake {
     private static final byte[] MOBILE_VERSION = new byte[]{5, BinaryTokens.DICTIONARY_VERSION};
     private static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
 
-    static byte[] getPrologue(ClientType clientType) {
+    static byte[] getPrologue(WhatsappClientType clientType) {
         return switch (clientType) {
             case WEB -> WEB_PROLOGUE;
             case MOBILE -> MOBILE_PROLOGUE;

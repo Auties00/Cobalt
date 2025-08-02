@@ -3,7 +3,7 @@ package it.auties.whatsapp.controller;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 
 import java.util.*;
@@ -14,7 +14,7 @@ import java.util.*;
  */
 @SuppressWarnings("unused")
 @ProtobufMessage
-public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
+public abstract sealed class Controller permits Store, Keys {
     /**
      * The id of this controller
      */
@@ -36,7 +36,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * The client type
      */
     @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
-    protected final ClientType clientType;
+    protected final WhatsappClientType clientType;
 
     /**
      * A list of alias for the controller, can be used in place of UUID
@@ -44,7 +44,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     protected final Collection<String> alias;
 
-    public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias) {
+    public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, WhatsappClientType clientType, Collection<String> alias) {
         this.uuid = Objects.requireNonNull(uuid, "Missing uuid");
         this.phoneNumber = phoneNumber;
         this.serializer = serializer;
@@ -54,10 +54,8 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
 
     /**
      * Serializes this object
-     *
-     * @param async whether the operation should be executed asynchronously
      */
-    public abstract void serialize(boolean async);
+    public abstract void serialize();
 
     /**
      * Disposes this object
@@ -68,7 +66,7 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
         return uuid;
     }
 
-    public ClientType clientType() {
+    public WhatsappClientType clientType() {
         return this.clientType;
     }
 
@@ -83,14 +81,10 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
 
     /**
      * Sets the phone number used by this session
-     *
-     * @return the same instance
      */
-    @SuppressWarnings("unchecked")
-    public T setPhoneNumber(PhoneNumber phoneNumber) {
+    public void setPhoneNumber(PhoneNumber phoneNumber) {
         this.phoneNumber = phoneNumber;
         serializer.linkMetadata(this);
-        return (T) this;
     }
 
     /**
@@ -106,12 +100,9 @@ public abstract sealed class Controller<T extends Controller<T>> permits Store, 
      * Sets the serializer of this controller
      *
      * @param serializer a serializer
-     * @return the same instance
      */
-    @SuppressWarnings("unchecked")
-    public T setSerializer(ControllerSerializer serializer) {
+    public void setSerializer(ControllerSerializer serializer) {
         this.serializer = serializer;
-        return (T) this;
     }
 
     /**
