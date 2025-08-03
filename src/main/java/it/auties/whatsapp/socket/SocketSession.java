@@ -455,6 +455,7 @@ abstract sealed class SocketSession {
         private void unregister(SocketChannel channel) {
             var key = channel.keyFor(selector);
             if(key != null) {
+                ((ConnectionContext) key.attachment()).disposed = true;
                 key.cancel();
                 selector.wakeup();
             }
@@ -566,7 +567,10 @@ abstract sealed class SocketSession {
                 ctx.messageBuffer.flip();
                 ctx.messageLengthBuffer.clear();
                 var buffer = ctx.messageBuffer;
-                Thread.startVirtualThread(() -> ctx.onMessage.accept(buffer));
+                Thread.startVirtualThread(() -> {
+                    var e = channel;
+                    ctx.onMessage.accept(buffer);
+                });
                 ctx.messageBuffer = null;
                 return true;
             }
@@ -590,6 +594,7 @@ abstract sealed class SocketSession {
     private static final class ConnectionContext {
         private final Object connectionLock;
         private final ByteBuffer messageLengthBuffer;
+        public boolean disposed;
         private ByteBuffer messageBuffer;
         private final Queue<ByteBuffer> pendingWrites;
         private final Consumer<ByteBuffer> onMessage;

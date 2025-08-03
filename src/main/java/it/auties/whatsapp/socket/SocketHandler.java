@@ -157,8 +157,9 @@ public final class SocketHandler {
     }
 
     public void sendNodeWithNoResponse(Node node) {
-        encryptionHandler.sendCiphered(node);
-        onNodeSent(node);
+        if(encryptionHandler.sendCiphered(node)) {
+            onNodeSent(node);
+        }
     }
 
     public Node sendNode(Node node) {
@@ -170,16 +171,20 @@ public final class SocketHandler {
             node.attributes().put("id", HexFormat.of().formatHex(Bytes.random(6)));
         }
 
-        encryptionHandler.sendCiphered(node);
+        if(!encryptionHandler.sendCiphered(node)) {
+            return Node.empty();
+        }
+
         onNodeSent(node);
         var request = new SocketRequest(node.id(), filter, node);
         if(requests.put(node.id(), request) != null) {
             throw new IllegalStateException("Request with id " + node.id() + " already exists");
         }
+
         try {
             return request.waitForResponse(TIMEOUT);
-        }catch (InterruptedException exception) {
-            throw new RuntimeException("Failed to wait for response", exception);
+        }catch (InterruptedException ignored) {
+            return Node.empty();
         }
     }
 
@@ -961,7 +966,7 @@ public final class SocketHandler {
         }
     }
 
-    void sendPing()  {
+    Node sendPing()  {
         try {
             var attributes = Attributes.of()
                     .put("xmlns", "w:p")
@@ -970,9 +975,9 @@ public final class SocketHandler {
                     .put("id", HexFormat.of().formatHex(Bytes.random(6)))
                     .toMap();
             var node = Node.of("iq", attributes, Node.of("ping"));
-            sendNode(node);
+            return sendNode(node);
         }catch (Throwable throwable) {
-            disconnect(WhatsappDisconnectReason.RECONNECTING);
+            return Node.empty();
         }
     }
 

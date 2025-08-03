@@ -1462,8 +1462,12 @@ final class StreamHandler {
 
     private void schedulePing() {
         socketHandler.scheduleAtFixedInterval(() -> {
-            socketHandler.sendPing();
-            serializeSession();
+            var result = socketHandler.sendPing();
+            if(result == Node.empty()) {
+                socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
+            }else {
+                serializeSession();
+            }
         }, PING_INTERVAL / 2, PING_INTERVAL);
     }
 

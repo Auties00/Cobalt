@@ -38,7 +38,7 @@ final class EncryptionHandler {
     private static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
     public static final int HEADER_LENGTH = Integer.BYTES + Short.BYTES;
 
-    private static GCMParameterSpec makeIv(long counter) {
+    private static GCMParameterSpec createGcmIv(long counter) {
         var iv = new byte[12];
         iv[4] = (byte) (counter >> 56);
         iv[5] = (byte) (counter >> 48);
@@ -63,8 +63,8 @@ final class EncryptionHandler {
         this.socketHandler = socketHandler;
         this.readCounter = new AtomicLong();
         this.writeCounter = new AtomicLong();
-        this.readCipherLock = new ReentrantLock();
-        this.writeCipherLock = new ReentrantLock();
+        this.readCipherLock = new ReentrantLock(true);
+        this.writeCipherLock = new ReentrantLock(true);
     }
 
     synchronized void startHandshake(byte[] publicKey) {
@@ -130,24 +130,20 @@ final class EncryptionHandler {
         };
     }
 
-    void sendCiphered(Node node) {
+    boolean sendCiphered(Node node) {
         var writeKey = this.writeKey;
         if(writeKey == null) {
-           throw new IllegalStateException("Handshake has not been completed yet");
+            return false;
         }
 
         var releasedLock = false;
         try {
             writeCipherLock.lock();
-            if(this.writeKey != writeKey) {
-                // Session changed, don't send the message
-                return;
-            }
             var writeCipher = Cipher.getInstance("AES/GCM/NoPadding");
             writeCipher.init(
                     Cipher.ENCRYPT_MODE,
                     writeKey,
-                    makeIv(writeCounter.getAndIncrement())
+                    createGcmIv(writeCounter.getAndIncrement())
             );
             var plaintextLength = BinaryNodeLength.sizeOf(node);
             var ciphertextLength = writeCipher.getOutputSize(plaintextLength);
@@ -157,7 +153,12 @@ final class EncryptionHandler {
             writeCipher.doFinal(ciphertext, offset, plaintextLength, ciphertext, offset);
             writeCipherLock.unlock();
             releasedLock = true;
+            if (this.writeKey != writeKey) {
+                // Session changed
+                return false;
+            }
             socketHandler.sendBinary(ciphertext);
+            return true;
         } catch (Throwable throwable) {
             throw new RuntimeException("Cannot encrypt data", throwable);
         }finally {
@@ -182,22 +183,18 @@ final class EncryptionHandler {
     ByteBuffer receiveDeciphered(ByteBuffer message) {
         var readKey = this.readKey;
         if(readKey == null) {
-            return message;
+            return null;
         }
 
         var releasedLock = false;
         try {
             readCipherLock.lock();
-            if(this.readKey != readKey) {
-                // Session changed, don't send the message
-                return null;
-            }
             var output = message.duplicate();
             var readCipher = Cipher.getInstance("AES/GCM/NoPadding");
             readCipher.init(
                     Cipher.DECRYPT_MODE,
                     readKey,
-                    makeIv(readCounter.getAndIncrement())
+                    createGcmIv(readCounter.getAndIncrement())
             );
             readCipher.doFinal(message, output);
             readCipherLock.unlock();
@@ -205,7 +202,7 @@ final class EncryptionHandler {
             output.flip();
             return output;
         } catch (GeneralSecurityException exception) {
-            throw new RuntimeException("Cannot decrypt data", exception);
+            return null;
         } finally {
             if(!releasedLock) {
                 readCipherLock.unlock();
@@ -327,27 +324,20 @@ final class EncryptionHandler {
     }
 
     synchronized void reset() {
-        try {
-            readCipherLock.lock();
-            writeCipherLock.lock();
-            this.readKey = null;
-            this.writeKey = null;
-        }finally {
-            readCipherLock.unlock();
-            writeCipherLock.unlock();
-        }
+        this.readKey = null;
+        this.writeKey = null;
     }
 
     private static final class Handshake implements AutoCloseable {
         private byte[] hash;
         private byte[] salt;
-        private byte[] cryptoKey;
+        private SecretKeySpec cryptoKey;
         private long counter;
 
         private Handshake(byte[] prologue) {
             this.hash = NOISE_PROTOCOL;
             this.salt = NOISE_PROTOCOL;
-            this.cryptoKey = NOISE_PROTOCOL;
+            this.cryptoKey = new SecretKeySpec(NOISE_PROTOCOL, 0, 32, "AES");
             this.counter = 0;
             updateHash(prologue);
         }
@@ -368,8 +358,8 @@ final class EncryptionHandler {
                 var cipher = Cipher.getInstance("AES/GCM/NoPadding");
                 cipher.init(
                         encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE,
-                        new SecretKeySpec(cryptoKey, "AES"),
-                        makeIv(counter++)
+                        cryptoKey,
+                        createGcmIv(counter++)
                 );
                 cipher.updateAAD(hash);
                 var result = cipher.doFinal(bytes);
@@ -387,7 +377,7 @@ final class EncryptionHandler {
         private void mixIntoKey(byte[] bytes) {
             var expanded = Hkdf.extractAndExpand(bytes, salt, null, 64);
             this.salt = Arrays.copyOfRange(expanded, 0, 32);
-            this.cryptoKey = Arrays.copyOfRange(expanded, 32, 64);
+            this.cryptoKey = new SecretKeySpec(expanded, 32, 32, "AES");
             this.counter = 0;
         }
 

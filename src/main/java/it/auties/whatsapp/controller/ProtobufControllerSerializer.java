@@ -35,7 +35,6 @@ class ProtobufControllerSerializer extends FileControllerSerializer {
             var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
             try(var stream = Files.newOutputStream(tempFile)) {
                 KeysSpec.encode(keys, ProtobufOutputStream.toStream(stream));
-                stream.flush();
             }
             Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
         }catch (IOException exception) {
@@ -49,7 +48,6 @@ class ProtobufControllerSerializer extends FileControllerSerializer {
             var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
             try(var stream = Files.newOutputStream(tempFile)) {
                 StoreSpec.encode(store, ProtobufOutputStream.toStream(stream));
-                stream.flush();
             }
             Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
         }catch (IOException exception) {
@@ -63,7 +61,6 @@ class ProtobufControllerSerializer extends FileControllerSerializer {
             var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
             try(var stream = Files.newOutputStream(tempFile)) {
                 ChatSpec.encode(chat, ProtobufOutputStream.toStream(stream));
-                stream.flush();
             }
             Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
         }catch (IOException exception) {
@@ -77,7 +74,6 @@ class ProtobufControllerSerializer extends FileControllerSerializer {
             var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
             try(var stream = Files.newOutputStream(tempFile)) {
                 NewsletterSpec.encode(newsletter, ProtobufOutputStream.toStream(stream));
-                stream.flush();
             }
             Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
         }catch (IOException exception) {

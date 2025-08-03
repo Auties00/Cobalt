@@ -10,7 +10,7 @@ public class WebQrLoginExample {
         Whatsapp.builder()
                 .webClient()
                 .newConnection()
-                .historySetting(WhatsappWebHistoryPolicy.discard(true))
+                .historySetting(WhatsappWebHistoryPolicy.standard(true))
                 .unregistered(WhatsappVerificationHandler.Web.QrCode.toTerminal())
                 .addLoggedInListener(() -> System.out.println("Logged in!"))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
