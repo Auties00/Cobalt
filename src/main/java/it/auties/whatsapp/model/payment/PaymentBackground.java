@@ -141,8 +141,5 @@ public final class PaymentBackground {
             this.index = index;
         }
 
-        public int index() {
-            return index;
-        }
     }
 }

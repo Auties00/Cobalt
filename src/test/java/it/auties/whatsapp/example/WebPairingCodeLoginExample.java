@@ -1,6 +1,6 @@
 package it.auties.whatsapp.example;
 
-import it.auties.whatsapp.api.WhatsappVerification;
+import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.api.WhatsappWebHistoryPolicy;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -15,7 +15,7 @@ public class WebPairingCodeLoginExample {
                 .webClient()
                 .newConnection()
                 .historySetting(WhatsappWebHistoryPolicy.standard(true))
-                .unregistered(phoneNumber, WhatsappVerification.Web.PairingCode.toTerminal())
+                .unregistered(phoneNumber, WhatsappVerificationHandler.Web.PairingCode.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewChatMessageListener((api, message) -> System.out.println(message))

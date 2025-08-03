@@ -5,25 +5,28 @@ import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.util.Strings;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import static it.auties.whatsapp.io.BinaryTag.*;
-import static it.auties.whatsapp.io.BinaryTokens.*;
+import static it.auties.whatsapp.io.BinaryNodeTag.*;
+import static it.auties.whatsapp.io.BinaryNodeTokens.*;
 
-public final class BinaryEncoder {
+public final class BinaryNodeEncoder {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
 
-    private BinaryEncoder() {
+    private BinaryNodeEncoder() {
         // Utility class
     }
 
     public static byte[] encode(Node node) {
-        var length = BinaryLength.sizeOf(node);
+        var length = BinaryNodeLength.sizeOf(node);
         var output = new byte[length];
         var offset = writeMessage(node, output, 0);
         if(offset != length) {
@@ -53,15 +56,24 @@ public final class BinaryEncoder {
 
     private static int writeList(int size, byte[] output, int offset) {
         if (size < UNSIGNED_BYTE_MAX_VALUE) {
-            output[offset++] = LIST_8;
-            output[offset++] = (byte) size;
+            return writeList8((byte) size, output, offset);
         }else if (size < UNSIGNED_SHORT_MAX_VALUE) {
-            output[offset++] = LIST_16;
-            output[offset++] = (byte) (size >> 8);
-            output[offset++] = (byte) size;
+            return writeList16(size, output, offset);
         }else {
             throw new IllegalArgumentException("Cannot write list: overflow");
         }
+    }
+
+    private static int writeList8(byte size, byte[] output, int offset) {
+        output[offset++] = LIST_8;
+        output[offset++] = size;
+        return offset;
+    }
+
+    private static int writeList16(int size, byte[] output, int offset) {
+        output[offset++] = LIST_16;
+        output[offset++] = (byte) (size >> 8);
+        output[offset++] = (byte) size;
         return offset;
     }
 
@@ -115,26 +127,39 @@ public final class BinaryEncoder {
         if(result.isError()) {
             throw new RuntimeException("Cannot encode string: " + result);
         }
-        offset += length;
-        return offset;
+        return offset + length;
     }
 
     private static int writeBinary(int input, byte[] output, int offset) {
         if (input < UNSIGNED_BYTE_MAX_VALUE) {
-            output[offset++] = BINARY_8;
-            output[offset++] = (byte) input;
+            return writeBinary8((byte) input, output, offset);
         }else if (input < INT_20_MAX_VALUE) {
-            output[offset++] = BINARY_20;
-            output[offset++] = (byte) (input >> 16);
-            output[offset++] = (byte) (input >> 8);
-            output[offset++] = (byte) input;
+            return writeBinary20(input, output, offset);
         }else {
-            output[offset++] = BINARY_32;
-            output[offset++] = (byte) (input >> 24);
-            output[offset++] = (byte) (input >> 16);
-            output[offset++] = (byte) (input >> 8);
-            output[offset++] = (byte) input;
+            return writeBinary32(input, output, offset);
         }
+    }
+
+    private static int writeBinary8(byte input, byte[] output, int offset) {
+        output[offset++] = BINARY_8;
+        output[offset++] = input;
+        return offset;
+    }
+
+    private static int writeBinary20(int input, byte[] output, int offset) {
+        output[offset++] = BINARY_20;
+        output[offset++] = (byte) (input >> 16);
+        output[offset++] = (byte) (input >> 8);
+        output[offset++] = (byte) input;
+        return offset;
+    }
+
+    private static int writeBinary32(int input, byte[] output, int offset) {
+        output[offset++] = BINARY_32;
+        output[offset++] = (byte) (input >> 24);
+        output[offset++] = (byte) (input >> 16);
+        output[offset++] = (byte) (input >> 8);
+        output[offset++] = (byte) input;
         return offset;
     }
 
@@ -148,12 +173,10 @@ public final class BinaryEncoder {
 
     private static int writeContent(Object input, byte[] output, int offset){
         return switch (input) {
-            case null -> {
-                output[offset++] = LIST_EMPTY;
-                yield offset;
-            }
+            case null -> writeNull(output, offset);
             case String value -> writeString(value, output, offset);
             case byte[] value -> writeBytes(value, output, offset);
+            case InputStream inputStream -> writeInputStream(inputStream, output, offset);
             case Boolean bool -> writeString(Boolean.toString(bool), output, offset);
             case Number number -> writeString(number.toString(), output, offset);
             case Enum<?> value -> writeString(value.toString(), output, offset);
@@ -161,6 +184,28 @@ public final class BinaryEncoder {
             case List<?> value -> writeChildren(value, output, offset);
             default -> throw new RuntimeException("Invalid payload type");
         };
+    }
+
+    private static int writeNull(byte[] output, int offset) {
+        output[offset++] = LIST_EMPTY;
+        return offset;
+    }
+
+    private static int writeInputStream(InputStream inputStream, byte[] output, int offset) {
+        try {
+            var lengthOffset = offset;
+            offset = writeBinary32(Integer.MAX_VALUE, output, offset); // Can't trust InputStream#available
+            var dataOffset = offset;
+            int read;
+            while ((read = inputStream.read(output, offset, output.length - offset)) != -1) {
+                offset += read;
+            }
+            var length = offset - dataOffset;
+            writeBinary32(length, output, lengthOffset);
+            return offset;
+        }catch (IOException exception) {
+            throw new UncheckedIOException("Cannot read input stream", exception);
+        }
     }
 
     private static int writeChildren(List<?> values, byte[] output, int offset) {
@@ -188,7 +233,7 @@ public final class BinaryEncoder {
             output[offset++] = COMPANION_JID;
             output[offset++] = (byte) jid.agent();
             output[offset++] = (byte) jid.device();
-            offset = writeString(jid.user(), output, offset);
+            return writeString(jid.user(), output, offset);
         }else {
             output[offset++] = JID_PAIR;
             if(jid.hasUser()) {
@@ -196,8 +241,7 @@ public final class BinaryEncoder {
             }else {
                 output[offset++] = LIST_EMPTY;
             }
-            offset = writeString(jid.server().address(), output, offset);
+            return writeString(jid.server().address(), output, offset);
         }
-        return offset;
     }
 }

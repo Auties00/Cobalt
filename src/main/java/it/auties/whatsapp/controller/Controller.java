@@ -84,7 +84,6 @@ public abstract sealed class Controller permits Store, Keys {
      */
     public void setPhoneNumber(PhoneNumber phoneNumber) {
         this.phoneNumber = phoneNumber;
-        serializer.linkMetadata(this);
     }
 
     /**

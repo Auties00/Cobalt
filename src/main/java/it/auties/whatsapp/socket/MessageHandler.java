@@ -220,22 +220,19 @@ final class MessageHandler {
         textMessage.setDescription(match.result().siteDescription());
         textMessage.setTitle(match.result().title());
         textMessage.setPreviewType(videoUri.isPresent() ? TextMessage.PreviewType.VIDEO : TextMessage.PreviewType.NONE);
-        var proxy = socketHandler.store()
-                .proxy()
-                .filter(ignored -> socketHandler.store().mediaProxySetting().allowsDownloads())
-                .orElse(null);
         imageThumbnail.ifPresent(data -> {
-            try {
-                var thumbnailData = Medias.download(data.uri(), proxy);
-                textMessage.setThumbnail(thumbnailData);
-            } catch (Exception ignored) {
+            try(var stream = data.uri().toURL().openStream()) {
+                textMessage.setThumbnail(stream.readAllBytes());
+            } catch (Throwable ignored) {
 
             }
         });
     }
 
     private LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {
-        return first.width() * first.height() > second.width() * second.height() ? first : second;
+        return first.width() * first.height() > second.width() * second.height()
+                ? first
+                : second;
     }
 
     private void attributeMediaMessage(Jid chatJid, MediaMessage<?> mediaMessage) {

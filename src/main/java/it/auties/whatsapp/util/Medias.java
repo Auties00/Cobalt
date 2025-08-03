@@ -20,6 +20,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLConnection;
@@ -39,58 +40,27 @@ import java.util.zip.Deflater;
 
 public final class Medias {
     private static final String WEB_ORIGIN = "https://web.whatsapp.com";
-    private static final String MOBILE_ANDROID_USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.57 Mobile Safari/537.36";
     private static final int WAVEFORM_SAMPLES = 64;
     private static final int PROFILE_PIC_SIZE = 640;
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
     private static final int MAC_LENGTH = 10;
 
-    public static byte[] getProfilePic(byte[] file) {
+    public static OutputStream getProfilePic(InputStream inputStream) {
         try {
-            try (var inputStream = Streams.newInputStream(file)) {
+            try (inputStream) {
                 var inputImage = ImageIO.read(inputStream);
                 var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
                 var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
                 var graphics2D = outputImage.createGraphics();
                 graphics2D.drawImage(scaledImage, 0, 0, null);
                 graphics2D.dispose();
-                try (var outputStream = Streams.newByteArrayOutputStream()) {
-                    ImageIO.write(outputImage, "jpg", outputStream);
-                    return outputStream.toByteArray();
-                }
+                var outputStream = Streams.newByteArrayOutputStream();
+                ImageIO.write(outputImage, "jpg", outputStream);
+                return outputStream;
             }
         } catch (Throwable exception) {
             throw new RuntimeException("Cannot get profile pic", exception);
-        }
-    }
-
-    @SafeVarargs
-    public static byte[] download(URI uri, URI proxy, Map.Entry<String, String>... headers) {
-        return download(uri, proxy, MOBILE_ANDROID_USER_AGENT, headers);
-    }
-
-    // TODO: Delete this method
-    @SafeVarargs
-    public static byte[] download(URI uri, URI proxy, String userAgent, Map.Entry<String, String>... headers) {
-        if (uri == null) {
-            return null;
-        }
-
-        var requestBuilder = HttpRequest.newBuilder()
-                .uri(uri);
-        if (userAgent != null) {
-            requestBuilder.header("User-Agent", userAgent);
-        }
-        for (var header : headers) {
-            requestBuilder.header(header.getKey(), header.getValue());
-        }
-        var request = requestBuilder.build();
-        try (var client = createHttpClient(proxy)) {
-            var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            return response.body();
-        } catch (IOException | InterruptedException exception) {
-            throw new RuntimeException("Cannot download media", exception);
         }
     }
 

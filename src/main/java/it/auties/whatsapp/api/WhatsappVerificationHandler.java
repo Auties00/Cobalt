@@ -21,11 +21,11 @@ import static com.google.zxing.client.j2se.MatrixToImageWriter.writeToPath;
 import static java.lang.System.Logger.Level.INFO;
 import static java.nio.file.Files.createTempFile;
 
-public sealed interface WhatsappVerification {
+public sealed interface WhatsappVerificationHandler {
     /**
      * A utility sealed interface to represent methods that can be used to verify a WhatsApp Web Client
      */
-    sealed interface Web extends WhatsappVerification {
+    sealed interface Web extends WhatsappVerificationHandler {
         void handle(String value);
     
         /**
@@ -146,7 +146,7 @@ public sealed interface WhatsappVerification {
     /**
      * A utility sealed interface to represent methods that can be used to verify a WhatsApp Mobile Client
      */
-    non-sealed interface Mobile extends WhatsappVerification {
+    non-sealed interface Mobile extends WhatsappVerificationHandler {
         Optional<String> requestMethod();
         String verificationCode();
     

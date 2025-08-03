@@ -7,9 +7,9 @@ import it.auties.whatsapp.util.Strings;
 
 import java.util.List;
 
-import static it.auties.whatsapp.io.BinaryTokens.*;
+import static it.auties.whatsapp.io.BinaryNodeTokens.*;
 
-public final class BinaryLength {
+public final class BinaryNodeLength {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;

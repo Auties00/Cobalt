@@ -687,7 +687,7 @@ public final class Store extends Controller {
             }
             joinMessages(chat, oldChat);
         }
-        return addChatDirect(chat);
+        return Optional.ofNullable(chats.put(chat.jid(), chat));
     }
 
     private void joinMessages(Chat chat, Chat oldChat) {
@@ -702,16 +702,6 @@ public final class Store extends Controller {
             return;
         }
         chat.addOldMessages(chat.messages());
-    }
-
-    /**
-     * Adds a chat in memory without executing any check
-     *
-     * @param chat the chat to add
-     * @return the old chat, if present
-     */
-    public Optional<Chat> addChatDirect(Chat chat) {
-        return Optional.ofNullable(chats.put(chat.jid(), chat));
     }
 
     /**
@@ -1097,7 +1087,6 @@ public final class Store extends Controller {
 
     public void dispose() {
         serialize();
-        serializer.linkMetadata(this);
         mediaConnectionLatch.countDown();
     }
 

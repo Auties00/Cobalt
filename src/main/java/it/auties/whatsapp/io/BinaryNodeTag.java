@@ -1,6 +1,6 @@
 package it.auties.whatsapp.io;
 
-public final class BinaryTag {
+public final class BinaryNodeTag {
     public static final byte LIST_EMPTY = 0;
     public static final byte STREAM_END = 2;
     public static final byte DICTIONARY_0 = (byte) 236;

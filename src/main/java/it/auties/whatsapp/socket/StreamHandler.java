@@ -3,7 +3,7 @@ package it.auties.whatsapp.socket;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.api.WhatsappDisconnectReason;
-import it.auties.whatsapp.api.WhatsappVerification;
+import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.HmacValidationException;
@@ -90,12 +90,12 @@ final class StreamHandler {
     private static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
 
     private final SocketHandler socketHandler;
-    private final WhatsappVerification.Web webVerificationHandler;
+    private final WhatsappVerificationHandler.Web webVerificationHandler;
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
     private final AtomicBoolean retriedConnection;
 
-    StreamHandler(SocketHandler socketHandler, WhatsappVerification.Web webVerificationHandler) {
+    StreamHandler(SocketHandler socketHandler, WhatsappVerificationHandler.Web webVerificationHandler) {
         this.socketHandler = socketHandler;
         this.webVerificationHandler = webVerificationHandler;
         this.retries = new ConcurrentHashMap<>();
@@ -979,7 +979,7 @@ final class StreamHandler {
         try {
             socketHandler.store()
                     .serializer()
-                    .attributeStore(socketHandler.store());
+                    .finishDeserializeStore(socketHandler.store());
         } catch (Exception exception) {
             socketHandler.handleFailure(MESSAGE, exception);
         }
@@ -1005,18 +1005,17 @@ final class StreamHandler {
             queryInitialDisappearingMode();
             queryInitialBlockList();
             onInitialInfo();
+            attributeStore();
+            if (!socketHandler.keys().initialAppSync()){
+                queryGroups();
+            }else {
+                socketHandler.onChats();
+                socketHandler.onContacts();
+                socketHandler.onNewsletters();
+            }
         } catch (Exception throwable) {
             socketHandler.handleFailure(LOGIN, throwable);
-            return;
         }
-
-        attributeStore();
-
-        if (!socketHandler.keys().initialAppSync()){
-            queryGroups();
-        }
-
-        notifyChatsAndNewsletters();
     }
 
     private void setActiveConnection() {
@@ -1032,23 +1031,52 @@ final class StreamHandler {
     }
 
     private void finishMobileLogin() {
-        if (!socketHandler.keys().initialAppSync()) {
-            initMobileSession();
-            return;
-        }
-
         try {
-            setupRescueToken();
-            setActiveConnection();
-            queryMobileSessionMex();
-            acceptDynamicTermsOfService();
-            setPushEndpoint();
-            updateSelfPresence();
-            scheduleMediaConnectionUpdate();
-            sendWam2();
-            onInitialInfo();
-            attributeStore();
-            notifyChatsAndNewsletters();
+            if (!socketHandler.keys().initialAppSync()) {
+                initMobileSessionPresence(false);
+                setPushEndpoint();
+                queryProtocolV2();
+                queryGroups();
+                queryLists();
+                updateUserPicture(false);
+                updateUserAbout(false);
+                sendInitialPreKeys();
+                setActiveConnection();
+                setDefaultStatus();
+                queryInitial2fa();
+                queryInitialAboutPrivacy();
+                queryInitialPrivacySettings();
+                queryInitialDisappearingMode();
+                queryInitialBlockList();
+                acceptTermsOfService();
+                sendWam1();
+                queryProtocolV1();
+                setupGoogleCrypto();
+                resetCompanionDevices();
+                checkBusinessStatus();
+                setupGoogleCrypto();
+                cleanGroups();
+                sendWam2();
+                initMobileSessionPresence(true);
+                getInviteSender();
+                queryMobileSessionInitMex();
+                socketHandler.keys().setInitialAppSync(true);
+                socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
+            }else {
+                setupRescueToken();
+                setActiveConnection();
+                queryMobileSessionMex();
+                acceptDynamicTermsOfService();
+                setPushEndpoint();
+                updateSelfPresence();
+                scheduleMediaConnectionUpdate();
+                sendWam2();
+                onInitialInfo();
+                attributeStore();
+                socketHandler.onChats();
+                socketHandler.onContacts();
+                socketHandler.onNewsletters();
+            }
         } catch (Exception throwable) {
             socketHandler.handleFailure(LOGIN, throwable);
         }
@@ -1065,42 +1093,6 @@ final class StreamHandler {
     private void queryMobileSessionMex() {
         socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7561558900567547"), HexFormat.of().parseHex("7b227661726961626c6573223a7b7d7d")));
         socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7480997188628461"), HexFormat.of().parseHex("7b227661726961626c6573223a7b22696e707574223a22454d41494c227d7d")));
-    }
-
-    private void initMobileSession() {
-        try {
-            initMobileSessionPresence(false);
-            setPushEndpoint();
-            queryProtocolV2();
-            queryGroups();
-            queryLists();
-            updateUserPicture(false);
-            updateUserAbout(false);
-            sendInitialPreKeys();
-            setActiveConnection();
-            setDefaultStatus();
-            queryInitial2fa();
-            queryInitialAboutPrivacy();
-            queryInitialPrivacySettings();
-            queryInitialDisappearingMode();
-            queryInitialBlockList();
-            acceptTermsOfService();
-            sendWam1();
-            queryProtocolV1();
-            setupGoogleCrypto();
-            resetCompanionDevices();
-            checkBusinessStatus();
-            setupGoogleCrypto();
-            cleanGroups();
-            sendWam2();
-            initMobileSessionPresence(true);
-            getInviteSender();
-            queryMobileSessionInitMex();
-            socketHandler.keys().setInitialAppSync(true);
-            socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
-        } catch (Exception throwable) {
-            socketHandler.handleFailure(LOGIN, throwable);
-        }
     }
 
     private void initMobileSessionPresence(boolean done) {
@@ -1208,22 +1200,11 @@ final class StreamHandler {
         socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account", Node.of("accept"));
     }
 
-    private void notifyChatsAndNewsletters() {
-        if(socketHandler.store().clientType() != WhatsappClientType.WEB || socketHandler.keys().initialAppSync()) {
-            socketHandler.onChats();
-            socketHandler.onNewsletters();
-        }
-    }
-
     void queryNewsletters() {
         var request = NewsletterRequests.subscribedNewsletters();
-        try {
-            var result = socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), request));
-            if(socketHandler.store().webHistorySetting().hasNewsletters()) {
-                parseNewsletters(result);
-            }
-        } catch (Exception throwable) {
-            socketHandler.handleFailure(LOGIN, throwable);
+        var result = socketHandler.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), request));
+        if(socketHandler.store().webHistorySetting().hasNewsletters()) {
+            parseNewsletters(result);
         }
     }
 
@@ -1325,8 +1306,7 @@ final class StreamHandler {
     private void onInitialInfo() {
         if(!socketHandler.keys().registered()) {
             socketHandler.keys().setRegistered(true);
-            socketHandler.store().serialize();
-            socketHandler.keys().serialize();
+            serializeSession();
         }
 
         if(socketHandler.store().clientType() == WhatsappClientType.MOBILE) {
@@ -1342,9 +1322,11 @@ final class StreamHandler {
         schedulePing();
         retriedConnection.set(false);
         socketHandler.onLoggedIn();
-        if (socketHandler.keys().initialAppSync()) {
-            socketHandler.onContacts();
-        }
+    }
+
+    private void serializeSession() {
+        Thread.startVirtualThread(() -> socketHandler.store().serialize());
+        Thread.startVirtualThread(() -> socketHandler.keys().serialize());
     }
 
     private void queryRequiredWebInfo() {
@@ -1481,9 +1463,7 @@ final class StreamHandler {
     private void schedulePing() {
         socketHandler.scheduleAtFixedInterval(() -> {
             socketHandler.sendPing();
-            socketHandler.store().serialize();
-            socketHandler.store().serializer().linkMetadata(socketHandler.store());
-            socketHandler.keys().serialize();
+            serializeSession();
         }, PING_INTERVAL / 2, PING_INTERVAL);
     }
 
@@ -1550,12 +1530,12 @@ final class StreamHandler {
 
     private void startPairing(Node node, Node container) {
         switch (webVerificationHandler) {
-            case WhatsappVerification.Web.QrCode qrHandler -> {
+            case WhatsappVerificationHandler.Web.QrCode qrHandler -> {
                 printQrCode(qrHandler, container);
                 sendConfirmNode(node, null);
                 schedulePing();
             }
-            case WhatsappVerification.Web.PairingCode codeHandler -> {
+            case WhatsappVerificationHandler.Web.PairingCode codeHandler -> {
                 askPairingCode(codeHandler);
                 this.schedulePing();
             }
@@ -1563,7 +1543,7 @@ final class StreamHandler {
         }
     }
 
-    private void askPairingCode(WhatsappVerification.Web.PairingCode codeHandler) {
+    private void askPairingCode(WhatsappVerificationHandler.Web.PairingCode codeHandler) {
         var code = Bytes.randomHex(5);
         var registration = Node.of(
                 "link_code_companion_reg",
@@ -1618,7 +1598,7 @@ final class StreamHandler {
         }
     }
 
-    private void printQrCode(WhatsappVerification.Web.QrCode qrHandler, Node container) {
+    private void printQrCode(WhatsappVerificationHandler.Web.QrCode qrHandler, Node container) {
         var ref = container.findChild("ref")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));

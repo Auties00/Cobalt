@@ -41,6 +41,7 @@ import it.auties.whatsapp.util.*;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -66,7 +67,7 @@ public class Whatsapp {
 
     private final SocketHandler socketHandler;
     private final Set<Jid> trustedContacts;
-    protected Whatsapp(Store store, Keys keys, WhatsappErrorHandler errorHandler, WhatsappVerification.Web webVerificationHandler) {
+    protected Whatsapp(Store store, Keys keys, WhatsappErrorHandler errorHandler, WhatsappVerificationHandler.Web webVerificationHandler) {
         this.socketHandler = new SocketHandler(this, store, keys, errorHandler, webVerificationHandler);
         this.trustedContacts = ConcurrentHashMap.newKeySet();
     }
@@ -1502,7 +1503,7 @@ public class Whatsapp {
      *
      * @param image the new image, can be null if you want to remove it
      */
-    public void changeProfilePicture(byte[] image) {
+    public void changeProfilePicture(InputStream image) {
         var data = image != null ? Medias.getProfilePic(image) : null;
         var body = Node.of("picture", Map.of("type", "image"), data);
         switch (store().clientType()) {
@@ -1517,24 +1518,7 @@ public class Whatsapp {
      * @param group the target group
      * @param image the new image, can be null if you want to remove it
      */
-    public void changeGroupPicture(JidProvider group, URI image) {
-        if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
-            throw new IllegalArgumentException("Expected a group/community");
-        }
-        var proxy = store().proxy()
-                .filter(ignored -> store().mediaProxySetting().allowsDownloads())
-                .orElse(null);
-        var imageResult = Medias.download(image, proxy);
-        changeGroupPicture(group, imageResult);
-    }
-
-    /**
-     * Changes the picture of a group
-     *
-     * @param group the target group
-     * @param image the new image, can be null if you want to remove it
-     */
-    public void changeGroupPicture(JidProvider group, byte[] image) {
+    public void changeGroupPicture(JidProvider group, InputStream image) {
         if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
             throw new IllegalArgumentException("Expected a group/community");
         }
@@ -2506,17 +2490,7 @@ public class Whatsapp {
      * @param community the target community
      * @param image the new image, can be null if you want to remove it
      */
-    public void changeCommunityPicture(JidProvider community, URI image) {
-        changeGroupPicture(community, image);
-    }
-
-    /**
-     * Changes the picture of a community
-     *
-     * @param community the target community
-     * @param image the new image, can be null if you want to remove it
-     */
-    public void changeCommunityPicture(JidProvider community, byte[] image) {
+    public void changeCommunityPicture(JidProvider community, InputStream image) {
         changeGroupPicture(community, image);
     }
 

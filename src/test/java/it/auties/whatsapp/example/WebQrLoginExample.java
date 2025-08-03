@@ -1,6 +1,6 @@
 package it.auties.whatsapp.example;
 
-import it.auties.whatsapp.api.WhatsappVerification;
+import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.api.WhatsappWebHistoryPolicy;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -10,8 +10,8 @@ public class WebQrLoginExample {
         Whatsapp.builder()
                 .webClient()
                 .newConnection()
-                .historySetting(WhatsappWebHistoryPolicy.standard(true))
-                .unregistered(WhatsappVerification.Web.QrCode.toTerminal())
+                .historySetting(WhatsappWebHistoryPolicy.discard(true))
+                .unregistered(WhatsappVerificationHandler.Web.QrCode.toTerminal())
                 .addLoggedInListener(() -> System.out.println("Logged in!"))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
                 .addNewChatMessageListener((api, message) -> System.out.println(message))

@@ -552,27 +552,24 @@ abstract sealed class SocketSession {
                 }
 
                 ctx.messageBuffer = ByteBuffer.allocate(length);
-            }
+                return true;
+            }else {
+                var bytesRead = channel.read(ctx.messageBuffer);
+                if (bytesRead == -1) {
+                    return false;
+                }
 
-            if (ctx.messageBuffer == null || !ctx.messageBuffer.hasRemaining()) {
+                if (ctx.messageBuffer.hasRemaining()) {
+                    return true;
+                }
+
+                ctx.messageBuffer.flip();
+                ctx.messageLengthBuffer.clear();
+                var buffer = ctx.messageBuffer;
+                Thread.startVirtualThread(() -> ctx.onMessage.accept(buffer));
+                ctx.messageBuffer = null;
                 return true;
             }
-
-            var bytesRead = channel.read(ctx.messageBuffer);
-            if (bytesRead == -1) {
-                return false;
-            }
-
-            if (ctx.messageBuffer.hasRemaining()) {
-                return true;
-            }
-
-            ctx.messageBuffer.flip();
-            ctx.messageLengthBuffer.clear();
-            var buffer = ctx.messageBuffer;
-            Thread.startVirtualThread(() -> ctx.onMessage.accept(buffer));
-            ctx.messageBuffer = null;
-            return true;
         }
 
         private boolean processWrite(SocketChannel channel, ConnectionContext ctx) throws IOException {

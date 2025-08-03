@@ -41,15 +41,11 @@ public record CompanionProperties(@ProtobufProperty(index = 1, type = STRING) St
         AR_DEVICE(20),
         UWP(21),
         VR(22);
-
+        
         PlatformType(@ProtobufEnumIndex int index) {
             this.index = index;
         }
 
         final int index;
-
-        public int index() {
-            return index;
-        }
     }
 }

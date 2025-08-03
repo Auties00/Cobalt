@@ -13,14 +13,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.zip.InflaterInputStream;
 
-import static it.auties.whatsapp.io.BinaryTag.*;
-import static it.auties.whatsapp.io.BinaryTokens.*;
+import static it.auties.whatsapp.io.BinaryNodeTag.*;
+import static it.auties.whatsapp.io.BinaryNodeTokens.*;
 
-public final class BinaryDecoder {
+public final class BinaryNodeDecoder {
     private static final List<Character> NIBBLE_ALPHABET = List.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.', '�', '�', '�', '�');
     private static final List<Character> HEX_ALPHABET = List.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
 
-    private BinaryDecoder() {
+    private BinaryNodeDecoder() {
         // Utility class
     }
 
@@ -89,7 +89,7 @@ public final class BinaryDecoder {
         return inputStream.readNBytes(size);
     }
 
-    private static String readDictionaryToken(InputStream inputStream, BinaryTokens dictionary) throws IOException {
+    private static String readDictionaryToken(InputStream inputStream, BinaryNodeTokens dictionary) throws IOException {
         var index = inputStream.read() & 0xFF;
         return dictionary.get(index);
     }

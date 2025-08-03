@@ -76,12 +76,7 @@ class DiscardingControllerSerializer implements ControllerSerializer {
     }
 
     @Override
-    public void linkMetadata(Controller controller) {
-        
-    }
-
-    @Override
-    public void attributeStore(Store store) {
+    public void finishDeserializeStore(Store store) {
 
     }
 }

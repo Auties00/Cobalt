@@ -4,9 +4,7 @@ import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.WhatsappErrorHandler.Location;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.io.BinaryDecoder;
-import it.auties.whatsapp.io.BinaryEncoder;
-import it.auties.whatsapp.io.BinaryLength;
+import it.auties.whatsapp.io.BinaryNodeDecoder;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -32,9 +30,6 @@ import it.auties.whatsapp.model.response.CommunityLinkedGroupsResponse;
 import it.auties.whatsapp.model.response.NewsletterResponse;
 import it.auties.whatsapp.model.response.UserAboutResponse;
 import it.auties.whatsapp.model.setting.Setting;
-import it.auties.whatsapp.model.signal.auth.ClientHelloBuilder;
-import it.auties.whatsapp.model.signal.auth.HandshakeMessageBuilder;
-import it.auties.whatsapp.model.signal.auth.HandshakeMessageSpec;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
@@ -42,22 +37,15 @@ import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Streams;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -70,7 +58,7 @@ public final class SocketHandler {
 
     private SocketSession session;
     private final Whatsapp whatsapp;
-    private final AuthHandler authHandler;
+    private final EncryptionHandler encryptionHandler;
     private final StreamHandler streamHandler;
     private final MessageHandler messageHandler;
     private final AppStateHandler appStateHandler;
@@ -78,36 +66,27 @@ public final class SocketHandler {
     private volatile ScheduledExecutorService scheduler;
     private final ConcurrentHashMap<String, SocketRequest> requests;
     private final ConcurrentMap<Jid, SequencedSet<ChatPastParticipant>> pastParticipants;
-    private final Semaphore writeSemaphore;
     private final Map<Jid, ChatMetadata> chatMetadataCache;
     private final AtomicBoolean serializable;
     private final AtomicReference<State> state;
-    private final Cipher readCipher, writeCipher;
     private final Keys keys;
     private final Store store;
     private Thread shutdownHook;
 
-    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, WhatsappErrorHandler errorHandler, WhatsappVerification.Web webVerificationHandler) {
+    public SocketHandler(Whatsapp whatsapp, Store store, Keys keys, WhatsappErrorHandler errorHandler, WhatsappVerificationHandler.Web webVerificationHandler) {
         this.whatsapp = whatsapp;
         this.store = store;
         this.keys = keys;
         this.state = new AtomicReference<>(State.DISCONNECTED);
         this.serializable = new AtomicBoolean(true);
-        this.authHandler = new AuthHandler(this);
+        this.encryptionHandler = new EncryptionHandler(this);
         this.streamHandler = new StreamHandler(this, webVerificationHandler);
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = Objects.requireNonNullElse(errorHandler, WhatsappErrorHandler.toTerminal());
-        this.writeSemaphore = new Semaphore(1, true);
         this.pastParticipants = new ConcurrentHashMap<>();
         this.chatMetadataCache = new ConcurrentHashMap<>();
         this.requests = new ConcurrentHashMap<>();
-        try {
-            this.readCipher = Cipher.getInstance("AES/GCM/NoPadding");
-            this.writeCipher = Cipher.getInstance("AES/GCM/NoPadding");
-        } catch (GeneralSecurityException exception) {
-            throw new RuntimeException("Unsupported AES cipher");
-        }
     }
 
     private void onShutdown() {
@@ -138,58 +117,35 @@ public final class SocketHandler {
         }
     }
 
-    // FIXME: Temp
-    private final ReentrantLock lock = new ReentrantLock(true);
     private void handleMessage(ByteBuffer message)  {
-        var readKey = keys.readKey();
-        if (readKey.isEmpty()) {
+        try {
+            message = encryptionHandler.receiveDeciphered(message);
+            if (message == null) {
+                return;
+            }
+        }catch (Throwable throwable) {
+            handleFailure(CRYPTOGRAPHY, throwable);
             return;
         }
 
-        var output = message.duplicate();
-        try {
-            lock.lock();
-            readCipher.init(
-                    Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(readKey.get(), "AES"),
-                    encodeIv(keys.nextReadCounter())
-            );
-            var outputPosition = output.position();
-            var length = readCipher.doFinal(message, output);
-            output.limit(outputPosition + length)
-                    .position(outputPosition);
-        } catch (Throwable throwable) {
-            handleFailure(STREAM, throwable);
-        }finally {
-            lock.unlock();
-        }
-
-        try {
-            decodeNodes(output);
-        } catch (Throwable throwable) {
+        try (var stream = Streams.newInputStream(message)) {
+            while (stream.available() > 0) {
+                var node = BinaryNodeDecoder.decode(stream);
+                onNodeReceived(node);
+                resolvePendingRequest(node);
+                streamHandler.digest(node);
+            }
+        }catch (Throwable throwable) {
             handleFailure(STREAM, throwable);
         }
     }
 
     private void handleHandshake(ByteBuffer message)  {
         try {
-            authHandler.login(message);
+            encryptionHandler.finishHandshake(message);
             state.compareAndSet(State.HANDSHAKING, State.CONNECTED);
         } catch (Throwable throwable) {
             handleFailure(LOGIN, throwable);
-        }
-    }
-
-    private void decodeNodes(ByteBuffer output)  {
-        try (var stream = Streams.newInputStream(output)) {
-            while (stream.available() > 0) {
-                var node = BinaryDecoder.decode(stream);
-                onNodeReceived(node);
-                resolvePendingRequest(node);
-                streamHandler.digest(node);
-            }
-        } catch (IOException exception) {
-            throw new UncheckedIOException(exception);
         }
     }
 
@@ -198,6 +154,11 @@ public final class SocketHandler {
             listener.onNodeReceived(whatsapp, node);
             listener.onNodeReceived(node);
         });
+    }
+
+    public void sendNodeWithNoResponse(Node node) {
+        encryptionHandler.sendCiphered(node);
+        onNodeSent(node);
     }
 
     public Node sendNode(Node node) {
@@ -209,129 +170,25 @@ public final class SocketHandler {
             node.attributes().put("id", HexFormat.of().formatHex(Bytes.random(6)));
         }
 
+        encryptionHandler.sendCiphered(node);
+        onNodeSent(node);
         var request = new SocketRequest(node.id(), filter, node);
-        return sendRequest(request, false, true);
-    }
-
-    public void sendNodeWithNoResponse(Node node) {
-        var request = new SocketRequest(node.id(), null, node);
-        sendRequest(request, false, false);
-    }
-
-    public void sendBinaryWithNoResponse(byte[] binary, boolean prologue) {
-        var request = new SocketRequest(null, null, binary);
-        sendRequest(request, prologue, false);
-    }
-
-    private Node sendRequest(SocketRequest request, boolean prologue, boolean response) {
+        if(requests.put(node.id(), request) != null) {
+            throw new IllegalStateException("Request with id " + node.id() + " already exists");
+        }
         try {
-            writeSemaphore.acquire();
-            if (state.getAcquire() == State.DISCONNECTED) {
-                writeSemaphore.release();
-                throw new IllegalStateException("Instance is not connected");
-            }
-
-            var message = getRequestPayload(request, prologue);
-            session.sendBinary(message);
-            if (request.body() instanceof Node body) {
-                onNodeSent(body);
-            }
-            if (response) {
-                if(requests.put(request.id(), request) != null) {
-                    throw new IllegalStateException("Request with id " + request.id() + " already exists");
-                }
-
-                return request.waitForResponse(TIMEOUT);
-            } else {
-                return null;
-            }
-        } catch (InterruptedException exception) {
-            throw new RuntimeException("Cannot acquire write lock", exception);
-        } finally {
-            writeSemaphore.release();
+            return request.waitForResponse(TIMEOUT);
+        }catch (InterruptedException exception) {
+            throw new RuntimeException("Failed to wait for response", exception);
         }
     }
 
-    private byte[] getRequestPayload(SocketRequest request, boolean prologue) {
-        var prologuePayload = prologue ? SocketHandshake.getPrologue(store.clientType()) : null;
-        var prologuePayloadLength = prologue ? prologuePayload.length : 0;
-        var writeKey = keys.writeKey();
-        if (writeKey.isPresent()) {
-            if (!(request.body() instanceof Node node)) {
-                throw new IllegalArgumentException("Unexpected value: " + request.body());
-            }
-
-            try {
-                var iv = keys.nextWriteCounter();
-                writeCipher.init(
-                        Cipher.ENCRYPT_MODE,
-                        new SecretKeySpec(writeKey.get(), "AES"),
-                        encodeIv(iv)
-                );
-                var requestLength = BinaryLength.sizeOf(node);
-                var encryptedRequestLength = writeCipher.getOutputSize(requestLength);
-                var requestPayload = new byte[getRequestPayloadLength(prologuePayloadLength, encryptedRequestLength)];
-                var offset = writeRequestHeader(prologuePayload, requestPayload, prologuePayloadLength, encryptedRequestLength);
-                BinaryEncoder.encode(node, requestPayload, offset);
-                writeCipher.doFinal(requestPayload, offset, requestLength, requestPayload, offset);
-                return requestPayload;
-            } catch (Throwable throwable) {
-                throw new RuntimeException("Cannot encrypt data", throwable);
-            }
+    public void sendBinary(byte[] binary) {
+        if (state.getAcquire() == State.DISCONNECTED) {
+            throw new IllegalStateException("Instance is not connected");
         }
 
-        return switch (request.body()) {
-            case byte[] bytes -> {
-                var requestLength = bytes.length;
-                var message = new byte[getRequestPayloadLength(prologuePayloadLength, requestLength)];
-                var offset = writeRequestHeader(prologuePayload, message, prologuePayloadLength, requestLength);
-                System.arraycopy(bytes, 0, message, offset, requestLength);
-                yield message;
-            }
-            case Node node -> {
-                var requestLength = BinaryLength.sizeOf(node);
-                var message = new byte[getRequestPayloadLength(prologuePayloadLength, requestLength)];
-                var offset = writeRequestHeader(prologuePayload, message, prologuePayloadLength, requestLength);
-                BinaryEncoder.encode(node, message, offset);
-                yield message;
-            }
-            default -> throw new IllegalArgumentException("Unexpected value: " + request.body());
-        };
-    }
-
-    private int getRequestPayloadLength(int prologuePayloadLength, int encryptedRequestLength) {
-        return prologuePayloadLength
-                + Integer.BYTES
-                + Short.BYTES
-                + encryptedRequestLength;
-    }
-
-    private int writeRequestHeader(byte[] prologuePayload, byte[] message, int prologuePayloadLength, int requestLength) {
-        if (prologuePayload != null) {
-            System.arraycopy(prologuePayload, 0, message, 0, prologuePayloadLength);
-        }
-        var a = requestLength >> 16;
-        message[prologuePayloadLength++] = (byte) (a >> 24);
-        message[prologuePayloadLength++] = (byte) (a >> 16);
-        message[prologuePayloadLength++] = (byte) (a >> 8);
-        message[prologuePayloadLength++] = (byte) a;
-        var b = requestLength & 65535;
-        message[prologuePayloadLength++] = (byte) (b >> 8);
-        message[prologuePayloadLength++] = (byte) b;
-        return prologuePayloadLength;
-    }
-
-    private GCMParameterSpec encodeIv(long value) {
-        var result = new byte[12];
-        result[4] = (byte) (value >> 56);
-        result[5] = (byte) (value >> 48);
-        result[6] = (byte) (value >> 40);
-        result[7] = (byte) (value >> 32);
-        result[8] = (byte) (value >> 24);
-        result[9] = (byte) (value >> 16);
-        result[10] = (byte) (value >> 8);
-        result[11] = (byte) value;
-        return new GCMParameterSpec(128, result);
+        session.sendBinary(binary);
     }
 
     public void connect(WhatsappDisconnectReason reason)  {
@@ -356,17 +213,7 @@ public final class SocketHandler {
             Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
 
-        var clientHello = new ClientHelloBuilder()
-                .ephemeral(keys.ephemeralKeyPair().publicKey())
-                .build();
-        var handshakeMessage = new HandshakeMessageBuilder()
-                .clientHello(clientHello)
-                .build();
-        try {
-            sendBinaryWithNoResponse(HandshakeMessageSpec.encode(handshakeMessage), true);
-        } catch (Throwable throwable) {
-            handleFailure(LOGIN, throwable);
-        }
+        encryptionHandler.startHandshake(keys.ephemeralKeyPair().publicKey());
     }
 
     public void disconnect(WhatsappDisconnectReason reason)  {
@@ -382,7 +229,7 @@ public final class SocketHandler {
     }
 
     private void onDisconnected(WhatsappDisconnectReason reason) {
-        keys.clearReadWriteKey();
+        encryptionHandler.reset();
         requests.forEach((_, request) -> request.complete(Node.empty()));
         requests.clear();
         if (reason == WhatsappDisconnectReason.LOGGED_OUT || reason == WhatsappDisconnectReason.BANNED) {

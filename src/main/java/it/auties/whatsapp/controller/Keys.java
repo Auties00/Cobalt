@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -174,21 +173,6 @@ public final class Keys extends Controller {
     @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
     boolean initialAppSync;
 
-    /**
-     * Write counter for IV
-     */
-    final AtomicLong writeCounter;
-
-    /**
-     * Read counter for IV
-     */
-    final AtomicLong readCounter;
-
-    /**
-     * Session dependent keys to write and read cyphered messages
-     */
-    byte[] writeKey, readKey;
-
     Keys(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate, boolean initialAppSync) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
@@ -214,8 +198,6 @@ public final class Keys extends Controller {
         this.registered = registered;
         this.businessCertificate = businessCertificate;
         this.initialAppSync = initialAppSync;
-        this.writeCounter = new AtomicLong();
-        this.readCounter = new AtomicLong();
     }
 
     public static Keys of(UUID uuid, PhoneNumber phoneNumber, Collection<String> alias, WhatsappClientType clientType) {
@@ -237,15 +219,6 @@ public final class Keys extends Controller {
      */
     public byte[] encodedRegistrationId() {
         return Bytes.intToBytes(registrationId(), 4);
-    }
-
-    /**
-     * Clears the signal keys associated with this object
-     */
-    public void clearReadWriteKey() {
-        this.writeKey = null;
-        this.writeCounter.set(0);
-        this.readCounter.set(0);
     }
 
     /**
@@ -421,24 +394,6 @@ public final class Keys extends Controller {
     }
 
     /**
-     * Returns write counter
-     *
-     * @return an unsigned long
-     */
-    public synchronized long nextWriteCounter() {
-        return writeCounter.getAndIncrement();
-    }
-
-    /**
-     * Returns read counter
-     *
-     * @return an unsigned long
-     */
-    public synchronized long nextReadCounter() {
-        return readCounter.getAndIncrement();
-    }
-
-    /**
      * Returns the id of the last available pre key
      *
      * @return an integer
@@ -569,14 +524,6 @@ public final class Keys extends Controller {
         return this.initialAppSync;
     }
 
-    public Optional<byte[]> writeKey() {
-        return Optional.ofNullable(this.writeKey);
-    }
-
-    public Optional<byte[]> readKey() {
-        return Optional.ofNullable(this.readKey);
-    }
-
     public void setSignedKeyPair(SignalSignedKeyPair signedKeyPair) {
         this.signedKeyPair = signedKeyPair;
     }
@@ -607,14 +554,6 @@ public final class Keys extends Controller {
 
     public void setInitialAppSync(boolean initialAppSync) {
         this.initialAppSync = initialAppSync;
-    }
-
-    public void setWriteKey(byte[] writeKey) {
-        this.writeKey = writeKey;
-    }
-
-    public void setReadKey(byte[] readKey) {
-        this.readKey = readKey;
     }
 
     /**

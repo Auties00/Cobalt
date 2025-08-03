@@ -38,9 +38,6 @@ public record RecordSync(
             this.content = content;
         }
 
-        public int index() {
-            return index;
-        }
 
         public byte content() {
             return content;

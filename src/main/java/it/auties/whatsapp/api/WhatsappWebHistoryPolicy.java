@@ -34,6 +34,7 @@ public final class WhatsappWebHistoryPolicy {
      * Discards history
      * This will save a lot of system resources, but you won't have access to messages sent before the session creation
      *
+     * @param newsletters whether newsletters should be synced
      */
     public static WhatsappWebHistoryPolicy discard(boolean newsletters) {
         return newsletters ? ZERO_WITH_NEWSLETTERS : ZERO;
@@ -42,6 +43,8 @@ public final class WhatsappWebHistoryPolicy {
     /**
      * This is the default setting for the web client
      * This is also the recommended setting
+     *
+     * @param newsletters whether newsletters should be synced
      */
     public static WhatsappWebHistoryPolicy standard(boolean newsletters) {
         return newsletters ? STANDARD_WITH_NEWSLETTERS : STANDARD;
@@ -49,8 +52,9 @@ public final class WhatsappWebHistoryPolicy {
 
     /**
      * This will contain most of your messages
-     * Unless you 100% know what you are doing don't use this
-     * It consumes a lot of system resources
+     * Uses more resources
+     *
+     * @param newsletters whether newsletters should be synced
      */
     public static WhatsappWebHistoryPolicy extended(boolean newsletters) {
         return newsletters ? EXTENDED_WITH_NEWSLETTERS : EXTENDED;

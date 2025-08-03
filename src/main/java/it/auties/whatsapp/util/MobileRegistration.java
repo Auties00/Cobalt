@@ -1,7 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.api.WhatsappVerification;
+import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.exception.RegistrationException;
@@ -27,9 +27,9 @@ public final class MobileRegistration {
     private final HttpClient httpClient;
     private final Store store;
     private final Keys keys;
-    private final WhatsappVerification.Mobile verification;
+    private final WhatsappVerificationHandler.Mobile verification;
 
-    public MobileRegistration(Store store, Keys keys, WhatsappVerification.Mobile verification) {
+    public MobileRegistration(Store store, Keys keys, WhatsappVerificationHandler.Mobile verification) {
         this.store = store;
         this.keys = keys;
         this.verification = verification;

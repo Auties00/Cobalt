@@ -29,13 +29,15 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private static final String NEWSLETTER_PREFIX = "newsletter_";
     
     private final Path baseDirectory;
-    private int keysHashCode;
-    private int storeHashCode;
-    private final ConcurrentMap<Jid, Integer> jidsHashCodes;
+    private final ConcurrentMap<UUID, Integer> keysHashCodes;
+    private final ConcurrentMap<UUID, Integer> storesHashCodes;
+    private final ConcurrentMap<UUID, Thread> storesAttributions;
+    private final ConcurrentMap<StoreJidPair, Integer> jidsHashCodes;
     FileControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
-        this.keysHashCode = -1;
-        this.storeHashCode = -1;
+        this.keysHashCodes = new ConcurrentHashMap<>();
+        this.storesHashCodes = new ConcurrentHashMap<>();
+        this.storesAttributions = new ConcurrentHashMap<>();
         this.jidsHashCodes = new ConcurrentHashMap<>();
     }
 
@@ -109,12 +111,13 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @Override
     public void serializeKeys(Keys keys) {
+        var oldHashCode = keysHashCodes.getOrDefault(keys.uuid(), -1);
         var newHashCode = keys.hashCode();
-        if(newHashCode == keysHashCode) {
+        if(oldHashCode == newHashCode) {
             return;
         }
 
-        this.keysHashCode = newHashCode;
+        keysHashCodes.put(keys.uuid(), newHashCode);
         var keysName = "keys" + fileExtension();
         var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), keysName);
         encodeKeys(keys, outputFile);
@@ -122,21 +125,22 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @Override
     public void serializeStore(Store store) {
+        var oldHashCode = storesHashCodes.getOrDefault(store.uuid(), -1);
         var newHashCode = store.hashCode();
-        if(newHashCode == storeHashCode) {
+        if(oldHashCode == newHashCode) {
             return;
         }
 
-        this.storeHashCode = newHashCode;
+        keysHashCodes.put(store.uuid(), newHashCode);
         try(var scope = new StructuredTaskScope<>()) {
-            store.chats().forEach(chat -> scope.fork(() -> {
-                serializeChatAsync(store, chat);
-                return null;
-            }));
-            store.newsletters().forEach(newsletter -> scope.fork(() -> {
-                serializeNewsletterAsync(store, newsletter);
-                return null;
-            }));
+            store.chats()
+                    .forEach(chat -> scope.fork(() -> serializeChat(store, chat)));
+            store.newsletters()
+                    .forEach(newsletter -> scope.fork(() -> serializeNewsletter(store, newsletter)));
+            store.phoneNumber()
+                    .ifPresent(phoneNumber -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), phoneNumber.toString())));
+            store.alias()
+                    .forEach(alias -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), alias)));
             scope.join();
         } catch (InterruptedException exception) {
             throw new RuntimeException("Cannot serialize store", exception);
@@ -145,37 +149,51 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         encodeStore(store, storePath);
     }
 
-    private void serializeChatAsync(Store store, Chat chat) {
-        var newHashCode = chat.hashCode();
-        if(newHashCode == jidsHashCodes.getOrDefault(chat.jid(), -1)) {
-            return;
+    @SuppressWarnings("SameReturnValue")
+    private Object serializeChat(Store store, Chat chat) {
+        var outputFile = getMessagesContainerPath(store, chat.jid(), chat.hashCode(), CHAT_PREFIX);
+        if (outputFile == null) {
+            return null;
         }
 
-        jidsHashCodes.put(chat.jid(), newHashCode);
-        var fileName = CHAT_PREFIX + chat.jid().user() + fileExtension();
-        var outputFile = getSessionFile(store, fileName);
         try {
             encodeChat(chat, outputFile);
         }catch (Throwable throwable) {
-            onError(outputFile, throwable);
+            handleSerializeError(outputFile, throwable);
         }
+        return null;
     }
 
-    private void onError(Path path, Throwable error) {
+    @SuppressWarnings("SameReturnValue")
+    private Object serializeNewsletter(Store store, Newsletter newsletter) {
+        var outputFile = getMessagesContainerPath(store, newsletter.jid(), newsletter.hashCode(), NEWSLETTER_PREFIX);
+        if (outputFile == null) {
+            return null;
+        }
+
+        try {
+            encodeNewsletter(newsletter, outputFile);
+        }catch (Throwable throwable) {
+            handleSerializeError(outputFile, throwable);
+        }
+        return null;
+    }
+
+    private Path getMessagesContainerPath(Store store, Jid jid, int hashCode, String filePrefix) {
+        var identifier = new StoreJidPair(store.uuid(), jid);
+        var oldHashCode = jidsHashCodes.getOrDefault(identifier, -1);
+        if (oldHashCode == hashCode) {
+            return null;
+        }
+
+        jidsHashCodes.put(identifier, hashCode);
+        var fileName = filePrefix + jid.user() + fileExtension();
+        return getSessionFile(store, fileName);
+    }
+
+    private void handleSerializeError(Path path, Throwable error) {
         var logger = System.getLogger("FileSerializer - " + path);
         logger.log(System.Logger.Level.ERROR, error);
-    }
-
-    private void serializeNewsletterAsync(Store store, Newsletter newsletter) {
-        var newHashCode = newsletter.hashCode();
-        if(newHashCode == jidsHashCodes.getOrDefault(newsletter.jid(), -1)) {
-            return;
-        }
-
-        jidsHashCodes.put(newsletter.jid(), newHashCode);
-        var fileName = NEWSLETTER_PREFIX + newsletter.jid().user() + fileExtension();
-        var outputFile = getSessionFile(store, fileName);
-        encodeNewsletter(newsletter, outputFile);
     }
 
     @Override
@@ -219,7 +237,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
         try {
             var keys = decodeKeys(path);
-            keysHashCode = keys.hashCode();
+            keysHashCodes.put(keys.uuid(), keys.hashCode());
             return Optional.of(keys);
         } catch (IOException e) {
             return Optional.empty();
@@ -267,48 +285,119 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
         try {
             var store = decodeStore(path);
-            storeHashCode = store.hashCode();
+            startAttribute(store);
+            storesHashCodes.put(store.uuid(), store.hashCode());
             return Optional.of(store);
         } catch (IOException exception) {
             return Optional.empty();
         }
     }
 
-    @Override
-    public void attributeStore(Store store) {
-        var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
-        if (Files.notExists(directory)) {
-            return;
-        }
+    private void startAttribute(Store store) {
+        var task = Thread.startVirtualThread(() -> deserializeChatsAndNewsletters(store));
+        storesAttributions.put(store.uuid(), task);
+    }
 
+    private void deserializeChatsAndNewsletters(Store store) {
+        var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
         try (
                 var walker = Files.walk(directory);
                 var scope = new StructuredTaskScope<>()
         ) {
-            walker.forEach(path -> scope.fork(() -> {
-                try {
-                    switch (FileType.of(path)) {
-                        case NEWSLETTER -> deserializeNewsletter(store, path);
-                        case CHAT -> deserializeChat(store, path);
-                        case UNKNOWN -> {}
-                    }
-                }catch (Throwable throwable) {
-                    onError(path, throwable);
-                }
-                return null;
-            }));
+            walker.forEach(path -> scope.fork(() -> deserializeChatOrNewsletter(store, path)));
+            scope.join();
+            scope.fork(() -> attributeStoreContextualMessages(store));
             scope.join();
         } catch (IOException | InterruptedException exception) {
             throw new RuntimeException("Cannot attribute store", exception);
         }
     }
 
+    private Object deserializeChatOrNewsletter(Store store, Path path) {
+        try {
+            var fileName = path.getFileName().toString();
+            if(fileName.startsWith(CHAT_PREFIX)) {
+                deserializeChat(store, path);
+            }else if(fileName.startsWith(NEWSLETTER_PREFIX)) {
+                deserializeNewsletter(store, path);
+            }
+        }catch (Throwable throwable) {
+            handleSerializeError(path, throwable);
+        }
+        return null;
+    }
+
+    private void deserializeChat(Store store, Path chatFile) {
+        try {
+            var chat = decodeChat(chatFile);
+            var storeJidPair = new StoreJidPair(store.uuid(), chat.jid());
+            jidsHashCodes.put(storeJidPair, chat.hashCode());
+            for (var message : chat.messages()) {
+                message.messageInfo().setChat(chat);
+                store.findContactByJid(message.messageInfo().senderJid())
+                        .ifPresent(message.messageInfo()::setSender);
+            }
+            store.addChat(chat);
+        } catch (IOException exception) {
+            try {
+                Files.deleteIfExists(chatFile);
+            } catch (IOException ignored) {
+
+            }
+            var chatName = chatFile.getFileName().toString()
+                    .replaceFirst(CHAT_PREFIX, "")
+                    .replace(fileExtension(), "");
+            store.addChat(new ChatBuilder()
+                    .jid(Jid.of(chatName))
+                    .build());
+        }
+    }
+
+    private void deserializeNewsletter(Store store, Path newsletterFile) {
+        try {
+            var newsletter = decodeNewsletter(newsletterFile);
+            var storeJidPair = new StoreJidPair(store.uuid(), newsletter.jid());
+            jidsHashCodes.put(storeJidPair, newsletter.hashCode());
+            for (var message : newsletter.messages()) {
+                message.setNewsletter(newsletter);
+            }
+            store.addNewsletter(newsletter);
+        } catch (IOException exception) {
+            try {
+                Files.deleteIfExists(newsletterFile);
+            } catch (IOException ignored) {
+
+            }
+            var newsletterName = newsletterFile.getFileName().toString()
+                    .replaceFirst(CHAT_PREFIX, "")
+                    .replace(fileExtension(), "");
+            store.addNewsletter(new NewsletterBuilder()
+                    .jid(Jid.of(newsletterName))
+                    .build());
+        }
+    }
+
+    @Override
+    public void finishDeserializeStore(Store store) {
+        var task = storesAttributions.get(store.uuid());
+        if(task == null) {
+            return;
+        }
+
+        try {
+            task.join();
+        }catch (InterruptedException exception) {
+            throw new RuntimeException("Cannot finish deserializing store", exception);
+        }
+    }
+
     // Do this after we have all the chats, or it won't work for obvious reasons
-    private void attributeStoreContextualMessages(Store store) {
+    private Object attributeStoreContextualMessages(Store store) {
         store.chats()
                 .stream()
                 .flatMap(chat -> chat.messages().stream())
                 .forEach(message -> attributeStoreContextualMessage(store, message));
+        return null;
     }
 
     private void attributeStoreContextualMessage(Store store, HistorySyncMessage message) {
@@ -326,29 +415,6 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         contextInfo.quotedMessageSenderJid()
                 .flatMap(store::findContactByJid)
                 .ifPresent(contextInfo::setQuotedMessageSender);
-    }
-
-    private enum FileType {
-        UNKNOWN(null),
-        CHAT(CHAT_PREFIX),
-        NEWSLETTER(NEWSLETTER_PREFIX);
-
-        private final String prefix;
-
-        FileType(String prefix) {
-            this.prefix = prefix;
-        }
-
-        private static FileType of(Path path) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.prefix() != null && path.getFileName().toString().startsWith(entry.prefix()))
-                    .findFirst()
-                    .orElse(UNKNOWN);
-        }
-
-        private String prefix() {
-            return prefix;
-        }
     }
 
     @Override
@@ -387,77 +453,14 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         });
     }
 
-    @Override
-    public void linkMetadata(Controller controller) {
-        controller.phoneNumber()
-                .ifPresent(phoneNumber -> linkToUuid(controller.clientType(), controller.uuid(), phoneNumber.toString()));
-        controller.alias()
-                .forEach(alias -> linkToUuid(controller.clientType(), controller.uuid(), alias));
-    }
-
-    private void linkToUuid(WhatsappClientType type, UUID uuid, String string) {
+    private Object linkToUuid(WhatsappClientType type, UUID uuid, String string) {
         try {
             var link = getSessionDirectory(type, string);
             Files.writeString(link, uuid.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException ignored) {
 
         }
-    }
-
-    private void deserializeChat(Store store, Path chatFile) {
-        try {
-            var chat = decodeChat(chatFile);
-            jidsHashCodes.put(chat.jid(), chat.hashCode());
-            for (var message : chat.messages()) {
-                message.messageInfo().setChat(chat);
-                store.findContactByJid(message.messageInfo().senderJid())
-                        .ifPresent(message.messageInfo()::setSender);
-            }
-            store.addChatDirect(chat);
-        } catch (IOException exception) {
-            store.addChatDirect(rescueChat(chatFile));
-        }
-    }
-
-    private Chat rescueChat(Path entry) {
-        try {
-            Files.deleteIfExists(entry);
-        } catch (IOException ignored) {
-
-        }
-        var chatName = entry.getFileName().toString()
-                .replaceFirst(CHAT_PREFIX, "")
-                .replace(fileExtension(), "");
-        return new ChatBuilder()
-                .jid(Jid.of(chatName))
-                .build();
-    }
-
-    private void deserializeNewsletter(Store store, Path newsletterFile) {
-        try {
-            var newsletter = decodeNewsletter(newsletterFile);
-            jidsHashCodes.put(newsletter.jid(), newsletter.hashCode());
-            for (var message : newsletter.messages()) {
-                message.setNewsletter(newsletter);
-            }
-            store.addNewsletter(newsletter);
-        } catch (IOException exception) {
-            store.addNewsletter(rescueNewsletter(newsletterFile));
-        }
-    }
-
-    private Newsletter rescueNewsletter(Path entry) {
-        try {
-            Files.deleteIfExists(entry);
-        } catch (IOException ignored) {
-
-        }
-        var newsletterName = entry.getFileName().toString()
-                .replaceFirst(CHAT_PREFIX, "")
-                .replace(fileExtension(), "");
-        return new NewsletterBuilder()
-                .jid(Jid.of(newsletterName))
-                .build();
+        return null;
     }
 
     private Path getHome(WhatsappClientType type) {
@@ -492,5 +495,9 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot create directory", exception);
         }
+    }
+
+    private record StoreJidPair(UUID storeId, Jid jid) {
+
     }
 }

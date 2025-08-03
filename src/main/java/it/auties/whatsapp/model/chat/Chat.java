@@ -772,8 +772,5 @@ public final class Chat implements JidProvider {
             this.index = index;
         }
 
-        public int index() {
-            return index;
-        }
     }
 }

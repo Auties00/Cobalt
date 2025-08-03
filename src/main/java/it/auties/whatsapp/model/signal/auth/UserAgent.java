@@ -26,12 +26,11 @@ public record UserAgent(@ProtobufProperty(index = 1, type = ENUM) PlatformType p
 
     @ProtobufEnum(name = "ClientPayload.UserAgent.Platform")
     public enum PlatformType {
-        UNKNOWN("Unknown", 999),
         ANDROID("Android", 0),
         IOS("iOS", 1),
         ANDROID_BUSINESS("Android", 10),
-        KAIOS("KaiOS", 11),
         IOS_BUSINESS("iOS", 12),
+        // Windows does not support newsletters, better choose Mac
         WINDOWS("Windows", 13),
         MACOS("MacOS", 24);
 
@@ -63,16 +62,8 @@ public record UserAgent(@ProtobufProperty(index = 1, type = ENUM) PlatformType p
             return this == ANDROID_BUSINESS || this == IOS_BUSINESS;
         }
 
-        public boolean isKaiOs() {
-            return this == KAIOS;
-        }
-
-        public boolean isDesktop() {
-            return this == WINDOWS || this == MACOS;
-        }
-
         public boolean isMobile() {
-            return isAndroid() || isIOS() || isKaiOs();
+            return isAndroid() || isIOS();
         }
 
         public PlatformType toPersonal() {

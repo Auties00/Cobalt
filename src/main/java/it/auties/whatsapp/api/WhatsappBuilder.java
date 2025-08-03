@@ -412,7 +412,7 @@ public sealed class WhatsappBuilder {
              * @param qrHandler the non-null handler to use
              * @return a Whatsapp instance
              */
-            public Whatsapp unregistered(WhatsappVerification.Web.QrCode qrHandler) {
+            public Whatsapp unregistered(WhatsappVerificationHandler.Web.QrCode qrHandler) {
                 if (whatsapp == null) {
                     this.whatsapp = Whatsapp.builder()
                             .customClient()
@@ -433,7 +433,7 @@ public sealed class WhatsappBuilder {
              * @param pairingCodeHandler the non-null handler for the pairing code
              * @return a Whatsapp instance
              */
-            public Whatsapp unregistered(long phoneNumber, WhatsappVerification.Web.PairingCode pairingCodeHandler) {
+            public Whatsapp unregistered(long phoneNumber, WhatsappVerificationHandler.Web.PairingCode pairingCodeHandler) {
                 if (whatsapp == null) {
                     var parsedPhoneNumber = PhoneNumber.of(phoneNumber)
                             .orElseThrow(() -> new IllegalArgumentException(phoneNumber + " is not a valid phone number"));
@@ -592,7 +592,7 @@ public sealed class WhatsappBuilder {
              *
              * @return a non-null selector
              */
-            public Whatsapp register(long phoneNumber, WhatsappVerification.Mobile verification) {
+            public Whatsapp register(long phoneNumber, WhatsappVerificationHandler.Mobile verification) {
                 Objects.requireNonNull(verification, "Expected a valid verification");
                 if (!keys.registered()) {
                     var number = PhoneNumber.of(phoneNumber)
@@ -627,7 +627,7 @@ public sealed class WhatsappBuilder {
         private Store store;
         private Keys keys;
         private WhatsappErrorHandler errorHandler;
-        private WhatsappVerification.Web webVerificationHandler;
+        private WhatsappVerificationHandler.Web webVerificationHandler;
 
         private Custom() {
 
@@ -648,7 +648,7 @@ public sealed class WhatsappBuilder {
             return this;
         }
 
-        public Custom webVerificationSupport(WhatsappVerification.Web webVerificationHandler) {
+        public Custom webVerificationSupport(WhatsappVerificationHandler.Web webVerificationHandler) {
             this.webVerificationHandler = webVerificationHandler;
             return this;
         }
@@ -660,9 +660,9 @@ public sealed class WhatsappBuilder {
             return new Whatsapp(store, keys, errorHandler, getWebVerificationMethod(store, webVerificationHandler));
         }
 
-        private static WhatsappVerification.Web getWebVerificationMethod(Store store, WhatsappVerification.Web webVerificationHandler) {
+        private static WhatsappVerificationHandler.Web getWebVerificationMethod(Store store, WhatsappVerificationHandler.Web webVerificationHandler) {
             return switch (store.clientType()) {
-                case WEB -> Objects.requireNonNullElse(webVerificationHandler, WhatsappVerification.Web.QrCode.toTerminal());
+                case WEB -> Objects.requireNonNullElse(webVerificationHandler, WhatsappVerificationHandler.Web.QrCode.toTerminal());
                 case MOBILE -> null;
             };
         }

@@ -84,7 +84,7 @@ public interface WhatsappErrorHandler {
                     || location == INITIAL_APP_STATE_SYNC
                     || location == CRYPTOGRAPHY
                     || (location == MESSAGE && throwable instanceof HmacValidationException)) {
-                logger.log(WARNING, "[{0}] Cannot login", jid);
+                logger.log(WARNING, "[{0}] Critical failure", jid);
                 return Result.DISCONNECT;
             }
 

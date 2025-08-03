@@ -238,9 +238,6 @@ public final class PaymentInfo implements Info {
             this.index = index;
         }
 
-        public int index() {
-            return index;
-        }
     }
 
     /**

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.example;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappVerification;
+import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 
 import java.io.IOException;
@@ -23,7 +23,7 @@ public class MobileRegistrationExample {
                 .lastConnection()
                 // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
                 .device(CompanionDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
-                .register(phoneNumber, WhatsappVerification.Mobile.sms(() -> {
+                .register(phoneNumber, WhatsappVerificationHandler.Mobile.sms(() -> {
                     System.out.println("Enter the verification code: ");
                     return new Scanner(System.in)
                             .nextLine()
