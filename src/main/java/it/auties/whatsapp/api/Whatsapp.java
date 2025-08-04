@@ -812,16 +812,12 @@ public class Whatsapp {
             throw new IllegalArgumentException("Use sendNewsletterMessage to send a message in a newsletter");
         }
         var timestamp = Clock.nowSeconds();
-        List<? extends JidProvider> chatResult;
         if (recipient.hasServer(JidServer.whatsapp())) {
-            chatResult = prepareChat(timestamp, Set.of(recipient));
-        } else {
-            chatResult = List.of(recipient);
-        }
-
-        if (chatResult.isEmpty()) {
-            info.setStatus(MessageStatus.ERROR);
-            return info;
+            var chatResult = prepareChat(timestamp, Set.of(recipient));
+            if (chatResult.isEmpty()) {
+                info.setStatus(MessageStatus.ERROR);
+                return info;
+            }
         }
 
         if (compose) {

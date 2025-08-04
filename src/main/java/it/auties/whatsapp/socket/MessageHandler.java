@@ -457,10 +457,8 @@ final class MessageHandler {
         }
 
         var senderName = new SenderKeyName(request.info().chatJid().toString(), sender.toSignalAddress());
-        var groupBuilder = new GroupBuilder(socketHandler.keys());
-        var signalMessage = groupBuilder.createOutgoing(senderName);
-        var groupCipher = new GroupCipher(senderName, socketHandler.keys());
-        var groupMessage = groupCipher.encrypt(encodedMessage);
+        var signalMessage = sessionCipher.createOutgoing(senderName);
+        var groupMessage = sessionCipher.encrypt(senderName, encodedMessage);
         var messageNode = createMessageNode(request, groupMessage);
         if (request.hasRecipientOverride()) {
             var allDevices = queryDevices(request.recipients(), false);
@@ -1094,8 +1092,7 @@ final class MessageHandler {
                 case SKMSG -> {
                     Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
                     var senderName = new SenderKeyName(from.toString(), participant.toSignalAddress());
-                    var signalGroup = new GroupCipher(senderName, socketHandler.keys());
-                    yield signalGroup.decrypt(encodedMessage);
+                    yield sessionCipher.decrypt(senderName, encodedMessage);
                 }
                 case PKMSG -> {
                     var user = from.hasServer(JidServer.whatsapp()) ? from : participant;
@@ -1175,9 +1172,8 @@ final class MessageHandler {
 
     private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, Jid from) {
         var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
-        var builder = new GroupBuilder(socketHandler.keys());
         var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
-        builder.createIncoming(groupName, message);
+        sessionCipher.createIncoming(groupName, message);
     }
 
     private void handleProtocolMessage(ChatMessageInfo info, ProtocolMessage protocolMessage) {

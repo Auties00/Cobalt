@@ -7,6 +7,7 @@ import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import static it.auties.whatsapp.util.SignalConstants.CURRENT_VERSION;
 import static it.auties.whatsapp.util.SignalConstants.SIGNATURE_LENGTH;
@@ -26,12 +27,20 @@ public final class SenderKeyMessage {
 
     private byte[] signature;
 
-    public SenderKeyMessage(int version, Integer id, Integer iteration, byte[] cipherText, byte[] signature) {
+    public SenderKeyMessage(int version, Integer id, Integer iteration, byte[] cipherText, Function<byte[], byte[]> signatureFunction) {
         this.version = version;
         this.id = id;
         this.iteration = iteration;
         this.cipherText = cipherText;
-        this.signature = signature;
+        this.signature = computeSignature(signatureFunction);
+    }
+
+    private byte[] computeSignature(Function<byte[], byte[]> signatureFunction) {
+        var messageLength = SenderKeyMessageSpec.sizeOf(this);
+        var serialized = new byte[1 + messageLength];
+        serialized[0] = serializedVersion();
+        SenderKeyMessageSpec.encode(this, ProtobufOutputStream.toBytes(serialized, 1));
+        return signatureFunction.apply(serialized);
     }
 
     SenderKeyMessage(int id, int iteration, byte[] cipherText) {

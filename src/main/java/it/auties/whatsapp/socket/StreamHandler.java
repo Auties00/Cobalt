@@ -994,6 +994,13 @@ final class StreamHandler {
 
     private void finishWebLogin() {
         try {
+            if (!socketHandler.keys().initialAppSync()){
+                queryGroups();
+            }else {
+                socketHandler.onChats();
+                socketHandler.onContacts();
+                socketHandler.onNewsletters();
+            }
             setActiveConnection();
             queryRequiredWebInfo();
             sendInitialPreKeys();
@@ -1006,13 +1013,6 @@ final class StreamHandler {
             queryInitialBlockList();
             onInitialInfo();
             attributeStore();
-            if (!socketHandler.keys().initialAppSync()){
-                queryGroups();
-            }else {
-                socketHandler.onChats();
-                socketHandler.onContacts();
-                socketHandler.onNewsletters();
-            }
         } catch (Exception throwable) {
             socketHandler.handleFailure(LOGIN, throwable);
         }
@@ -1063,6 +1063,9 @@ final class StreamHandler {
                 socketHandler.keys().setInitialAppSync(true);
                 socketHandler.disconnect(WhatsappDisconnectReason.RECONNECTING);
             }else {
+                socketHandler.onChats();
+                socketHandler.onContacts();
+                socketHandler.onNewsletters();
                 setupRescueToken();
                 setActiveConnection();
                 queryMobileSessionMex();
@@ -1073,9 +1076,6 @@ final class StreamHandler {
                 sendWam2();
                 onInitialInfo();
                 attributeStore();
-                socketHandler.onChats();
-                socketHandler.onContacts();
-                socketHandler.onNewsletters();
             }
         } catch (Exception throwable) {
             socketHandler.handleFailure(LOGIN, throwable);
