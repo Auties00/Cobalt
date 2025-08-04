@@ -29,7 +29,6 @@ import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessageBuilder;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
-import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessageBuilder;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.newsletter.NewsletterReaction;
@@ -66,6 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -87,6 +87,7 @@ final class MessageHandler {
     private final HistorySyncProgressTracker fullHistorySyncTracker;
     private final Set<HistorySync.Type> historySyncTypes;
     private final SignalSessionCipher sessionCipher;
+    private final ReentrantLock sessionCipherLock;
     private ScheduledFuture<?> historySyncTask;
 
     MessageHandler(SocketHandler socketHandler) {
@@ -97,6 +98,7 @@ final class MessageHandler {
         this.recentHistorySyncTracker = new HistorySyncProgressTracker();
         this.fullHistorySyncTracker = new HistorySyncProgressTracker();
         this.sessionCipher = new SignalSessionCipher(socketHandler.keys());
+        this.sessionCipherLock = new ReentrantLock(true);
     }
 
     void encode(MessageRequest request) {
@@ -109,19 +111,14 @@ final class MessageHandler {
     private void encodeChatMessage(MessageRequest.Chat request) {
         try {
             prepareOutgoingChatMessage(request.info());
-            if (request.peer() || isConversation(request.info())) {
-                encodeConversation(request);
-            } else {
-                encodeGroup(request);
-            }
-            if (!request.peer()) {
-                saveMessage(request.info(), false);
-                attributeMessageReceipt(request.info());
-            }
+            var node = encodeRequest(request);
+            socketHandler.sendNode(node);
+            attributeMessageReceipt(request.info());
         } catch (Throwable throwable) {
             request.info().setStatus(MessageStatus.ERROR);
-            saveMessage(request.info(), false);
             socketHandler.handleFailure(MESSAGE, throwable);
+        }finally {
+            saveMessage(request.info(), false);
         }
     }
 
@@ -447,7 +444,7 @@ final class MessageHandler {
         }
     }
 
-    private void encodeGroup(MessageRequest.Chat request) {
+    private Node encodeGroup(MessageRequest.Chat request) {
         var encodedMessage = Bytes.messageToBytes(request.info().message());
         var sender = socketHandler.store()
                 .jid()
@@ -464,8 +461,7 @@ final class MessageHandler {
             var allDevices = queryDevices(request.recipients(), false);
             var preKeys = createGroupNodes(request, signalMessage, allDevices, request.force());
             var encodedMessageNode = createEncodedMessageNode(request, preKeys, messageNode);
-            socketHandler.sendNode(encodedMessageNode);
-            return;
+            return socketHandler.sendNode(encodedMessageNode);
         }
 
         if (request.info().chatJid().type() == Jid.Type.STATUS) {
@@ -477,18 +473,27 @@ final class MessageHandler {
             var allDevices = queryDevices(recipients, false);
             var preKeys = createGroupNodes(request, signalMessage, allDevices, true);
             var encodedMessageNode = createEncodedMessageNode(request, preKeys, messageNode);
-            socketHandler.sendNode(encodedMessageNode);
-            return;
+            return socketHandler.sendNode(encodedMessageNode);
         }
 
         var groupMetadata = socketHandler.queryGroupMetadata(request.info().chatJid());
         var allDevices = getGroupDevices(groupMetadata);
         var preKeys = createGroupNodes(request, signalMessage, allDevices, request.force());
-        var encodedMessageNode = createEncodedMessageNode(request, preKeys, messageNode);
-        socketHandler.sendNode(encodedMessageNode);
+        return createEncodedMessageNode(request, preKeys, messageNode);
     }
 
-    private void encodeConversation(MessageRequest.Chat request) {
+    private Node encodeRequest(MessageRequest.Chat request) {
+        try {
+            sessionCipherLock.lock();
+            return request.peer() || isConversation(request.info())
+                    ? encodeConversation(request)
+                    : encodeGroup(request);
+        }finally {
+            sessionCipherLock.unlock();
+        }
+    }
+
+    private Node encodeConversation(MessageRequest.Chat request) {
         var sender = socketHandler.store()
                 .jid()
                 .orElse(null);
@@ -500,9 +505,7 @@ final class MessageHandler {
         if (request.peer()) {
             var chatJid = request.info().chatJid();
             var peerNode = createMessageNode(request, chatJid, encodedMessage, true);
-            var encodedMessageNode = createEncodedMessageNode(request, List.of(peerNode), null);
-            socketHandler.sendNode(encodedMessageNode);
-            return;
+            return createEncodedMessageNode(request, List.of(peerNode), null);
         }
 
         var deviceMessage = new DeviceSentMessageBuilder()
@@ -513,8 +516,7 @@ final class MessageHandler {
         var recipients = getRecipients(request);
         var allDevices = queryDevices(recipients, !isMe(request.info().chatJid()));
         var sessions = createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage);
-        var encodedMessageNode = createEncodedMessageNode(request, sessions, null);
-        socketHandler.sendNode(encodedMessageNode);
+        return createEncodedMessageNode(request, sessions, null);
     }
 
     private Set<Jid> getRecipients(MessageRequest.Chat request) {
@@ -749,10 +751,15 @@ final class MessageHandler {
             return;
         }
 
-        node.findChild("list")
-                .orElseThrow(() -> new IllegalArgumentException("Cannot parse sessions: " + node))
-                .listChildren("user")
-                .forEach(this::parseSession);
+        try {
+            sessionCipherLock.lock();
+            node.findChild("list")
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot parse sessions: " + node))
+                    .listChildren("user")
+                    .forEach(this::parseSession);
+        }finally {
+            sessionCipherLock.unlock();
+        }
     }
 
     private void parseSession(Node node) {
@@ -987,12 +994,12 @@ final class MessageHandler {
             var id = infoNode.attributes().getRequiredString("id");
             var from = infoNode.attributes()
                     .getRequiredJid("from");
-            var recipient = infoNode.attributes()
-                    .getOptionalJid("recipient")
-                    .orElse(from);
             var participant = infoNode.attributes()
                     .getOptionalJid("participant")
                     .orElse(null);
+            var recipient = infoNode.attributes()
+                    .getOptionalJid("recipient")
+                    .orElse(from);
             var messageBuilder = new ChatMessageInfoBuilder()
                     .status(MessageStatus.PENDING);
             var keyBuilder = new ChatMessageKeyBuilder()
@@ -1017,7 +1024,6 @@ final class MessageHandler {
                 messageBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
             }
             var key = keyBuilder.id(id).build();
-
             var senderJid = key.senderJid()
                     .orElse(null);
             if (Objects.equals(senderJid, socketHandler.store().jid().orElse(null))) {
@@ -1025,15 +1031,30 @@ final class MessageHandler {
                 return;
             }
 
-            var messageContainer = decodeChatMessageContainer(messageNode, from, participant);
-            var info = messageBuilder.key(key)
-                    .broadcast(key.chatJid().hasServer(JidServer.broadcast()))
-                    .pushName(pushName)
-                    .status(MessageStatus.DELIVERED)
-                    .businessVerifiedName(businessName)
-                    .timestampSeconds(timestamp)
-                    .message(messageContainer)
-                    .build();
+            ChatMessageInfo info;
+            try {
+                sessionCipherLock.lock();
+                var message = decodeChatMessageContainer(messageNode, from, participant);
+                info = messageBuilder.key(key)
+                        .broadcast(key.chatJid().hasServer(JidServer.broadcast()))
+                        .pushName(pushName)
+                        .status(MessageStatus.DELIVERED)
+                        .businessVerifiedName(businessName)
+                        .timestampSeconds(timestamp)
+                        .message(message)
+                        .build();
+                var keyDistributionMessage = info.message()
+                        .senderKeyDistributionMessage()
+                        .orElse(null);
+                if(keyDistributionMessage != null) {
+                    var groupName = new SenderKeyName(keyDistributionMessage.groupId(), info.senderJid().toSignalAddress());
+                    var signalDistributionMessage = SignalDistributionMessage.ofSerialized(keyDistributionMessage.data());
+                    sessionCipher.createIncoming(groupName, signalDistributionMessage);
+                }
+            }finally {
+                sessionCipherLock.unlock();
+            }
+
             attributeMessageReceipt(info);
             attributeChatMessage(info);
             saveMessage(info, notify);
@@ -1132,10 +1153,6 @@ final class MessageHandler {
     }
 
     private void saveMessage(ChatMessageInfo info, boolean notify) {
-        info.message()
-                .senderKeyDistributionMessage()
-                .ifPresent(keyDistributionMessage -> handleDistributionMessage(keyDistributionMessage, info.senderJid()));
-
         if (info.chatJid().type() == Jid.Type.STATUS) {
             socketHandler.store().addStatus(info);
             socketHandler.onNewStatus(info);
@@ -1168,12 +1185,6 @@ final class MessageHandler {
         if (notify) {
             socketHandler.onNewMessage(info);
         }
-    }
-
-    private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, Jid from) {
-        var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
-        var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
-        sessionCipher.createIncoming(groupName, message);
     }
 
     private void handleProtocolMessage(ChatMessageInfo info, ProtocolMessage protocolMessage) {

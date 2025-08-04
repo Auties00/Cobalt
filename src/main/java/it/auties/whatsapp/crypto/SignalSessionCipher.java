@@ -34,7 +34,7 @@ public final class SignalSessionCipher {
         this.keys = keys;
     }
 
-    public synchronized CipheredMessageResult encrypt(SessionAddress address, byte[] data) {
+    public CipheredMessageResult encrypt(SessionAddress address, byte[] data) {
         try {
             var currentState = keys.findSessionByAddress(address)
                     .orElseThrow(() -> new NoSuchElementException("Missing session for " + address))
@@ -93,7 +93,7 @@ public final class SignalSessionCipher {
         }
     }
 
-    public synchronized byte[] decrypt(SessionAddress address, SignalPreKeyMessage message) {
+    public byte[] decrypt(SessionAddress address, SignalPreKeyMessage message) {
         var session = keys.findSessionByAddress(address).orElseGet(() -> {
             var newSession = new Session();
             keys.addSession(address, newSession);
@@ -222,7 +222,7 @@ public final class SignalSessionCipher {
         }
     }
 
-    public synchronized void createOutgoing(SessionAddress address, int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey) {
+    public void createOutgoing(SessionAddress address, int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey) {
         if (!keys.hasTrust(address, identityKey)) {
             throw new IllegalArgumentException("Untrusted key");
         }
@@ -285,7 +285,7 @@ public final class SignalSessionCipher {
         return state;
     }
 
-    public synchronized void createIncoming(SessionAddress address, Session session, SignalPreKeyMessage message) {
+    public void createIncoming(SessionAddress address, Session session, SignalPreKeyMessage message) {
         if (!keys.hasTrust(address, message.identityKey())) {
             throw new IllegalArgumentException("Untrusted key");
         }
@@ -353,10 +353,12 @@ public final class SignalSessionCipher {
         }
     }
 
-    public synchronized CipheredMessageResult encrypt(SenderKeyName name, byte[] data) {
+    public CipheredMessageResult encrypt(SenderKeyName name, byte[] data) {
         try {
-            var currentState = keys.findSenderKeyByName(name).firstState();
-            var messageKey = currentState.chainKey().toMessageKey();
+            var currentState = keys.findSenderKeyByName(name)
+                    .firstState();
+            var messageKey = currentState.chainKey()
+                    .toMessageKey();
             var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             var keySpec = new SecretKeySpec(messageKey.cipherKey(), "AES");
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(messageKey.iv()));
@@ -376,21 +378,18 @@ public final class SignalSessionCipher {
         }
     }
 
-    public synchronized byte[] decrypt(SenderKeyName name, byte[] data) {
+    // TODO: Not sure this is how it's supposed to be
+    public byte[] decrypt(SenderKeyName name, byte[] data) {
         var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
         var senderKeyStates = record.findStatesById(senderKeyMessage.id());
         for (var senderKeyState : senderKeyStates) {
             try {
                 var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
-                try {
-                    var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    var keySpec = new SecretKeySpec(senderKey.cipherKey(), "AES");
-                    cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(senderKey.iv()));
-                    return cipher.doFinal(senderKeyMessage.cipherText());
-                } catch (GeneralSecurityException exception) {
-                    throw new IllegalArgumentException("Cannot decrypt data", exception);
-                }
+                var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                var keySpec = new SecretKeySpec(senderKey.cipherKey(), "AES");
+                cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(senderKey.iv()));
+                return cipher.doFinal(senderKeyMessage.cipherText());
             } catch (Throwable ignored) {
 
             }
@@ -412,7 +411,7 @@ public final class SignalSessionCipher {
         return lastChainKey.toMessageKey();
     }
 
-    public synchronized byte[] createOutgoing(SenderKeyName name) {
+    public byte[] createOutgoing(SenderKeyName name) {
         var record = keys.findSenderKeyByName(name);
         if (record.isEmpty()) {
             record.addState(randomId(), SignalKeyPair.random(), 0, Bytes.random(32));
@@ -438,7 +437,7 @@ public final class SignalSessionCipher {
         }
     }
 
-    public synchronized void createIncoming(SenderKeyName name, SignalDistributionMessage message) {
+    public void createIncoming(SenderKeyName name, SignalDistributionMessage message) {
         var record = keys.findSenderKeyByName(name);
         record.addState(message.id(), message.signingKey(), message.iteration(), message.chainKey());
     }
