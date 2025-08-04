@@ -5,13 +5,11 @@ import it.auties.protobuf.stream.ProtobufOutputStream;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessageSpec;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
-import it.auties.whatsapp.model.signal.session.Session;
-import it.auties.whatsapp.model.signal.session.SessionAddress;
-import it.auties.whatsapp.model.signal.session.SessionChain;
-import it.auties.whatsapp.model.signal.session.SessionState;
+import it.auties.whatsapp.model.signal.session.*;
 import it.auties.whatsapp.util.SignalConstants;
 
 import javax.crypto.Cipher;
@@ -22,12 +20,18 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static it.auties.whatsapp.util.SignalConstants.*;
 
-public record SessionCipher(SessionAddress address, Keys keys) {
-    public CipheredMessageResult encrypt(byte[] data) {
+public final class SignalSessionCipher {
+    private final Keys keys;
+
+    public SignalSessionCipher(Keys keys) {
+        this.keys = keys;
+    }
+
+    public synchronized CipheredMessageResult encrypt(SessionAddress address, byte[] data) {
         try {
             var currentState = keys.findSessionByAddress(address)
                     .orElseThrow(() -> new NoSuchElementException("Missing session for " + address))
@@ -86,38 +90,27 @@ public record SessionCipher(SessionAddress address, Keys keys) {
         }
     }
 
-    public byte[] decrypt(SignalPreKeyMessage message) {
+    public synchronized byte[] decrypt(SessionAddress address, SignalPreKeyMessage message) {
         var session = keys.findSessionByAddress(address).orElseGet(() -> {
             var newSession = new Session();
             keys.addSession(address, newSession);
             return newSession;
         });
-        var builder = new SessionBuilder(address, keys);
-        builder.createIncoming(session, message);
+        createIncoming(address, session, message);
         var state = session.findState(message.version(), message.baseKey())
-                .orElseThrow(() -> new NoSuchElementException("Missing state"));
+                .orElseThrow(() -> new NoSuchElementException("Missing state for address " + address));
         return decrypt(message.signalMessage(), state);
     }
 
-    // FIXME: Is this the best way to do this?
-    public byte[] decrypt(SignalMessage message) {
-        return keys.findSessionByAddress(address)
+    public byte[] decrypt(SessionAddress address, SignalMessage message) {
+        var state = keys.findSessionByAddress(address)
                 .orElseThrow(() -> new NoSuchElementException("Missing session for " + address))
-                .states()
-                .stream()
-                .map(state -> {
-                    try {
-                        if (!keys.hasTrust(address, state.remoteIdentityKey())) {
-                            throw new IllegalArgumentException("Untrusted key");
-                        }
-                        return Optional.of(decrypt(message, state));
-                    } catch (Throwable throwable) {
-                        return Optional.<byte[]>empty();
-                    }
-                })
-                .flatMap(Optional::stream)
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Cannot decrypt message: no suitable session found"));
+                .currentState()
+                .orElseThrow(() -> new NoSuchElementException("Missing state for address " + address));
+        if (!keys.hasTrust(address, state.remoteIdentityKey())) {
+            throw new IllegalArgumentException("Untrusted key");
+        }
+        return decrypt(message, state);
     }
 
     private byte[] decrypt(SignalMessage message, SessionState state) {
@@ -137,7 +130,7 @@ public record SessionCipher(SessionAddress address, Keys keys) {
             var remoteIdentityKey = state.remoteIdentityKey();
             var identityPublicKey = keys.identityKeyPair().signalPublicKey();
             var actualSignature = computeDecryptionMac(message, remoteIdentityKey, identityPublicKey, secrets[1]);
-            if(!Arrays.equals(expectedSignature, 0, MAC_LENGTH, actualSignature, 0, MAC_LENGTH)) {
+            if (!Arrays.equals(expectedSignature, 0, MAC_LENGTH, actualSignature, 0, MAC_LENGTH)) {
                 throw new HmacValidationException("message_decryption");
             }
             var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -152,11 +145,11 @@ public record SessionCipher(SessionAddress address, Keys keys) {
     }
 
     private byte[] computeDecryptionMac(SignalMessage message, byte[] signalRemoteIdentityKey, byte[] signalIdentityPublicKey, byte[] hmacKey) {
-        if(signalRemoteIdentityKey == null || signalRemoteIdentityKey.length != KEY_LENGTH + 1 || signalRemoteIdentityKey[0] != KEY_TYPE) {
+        if (signalRemoteIdentityKey == null || signalRemoteIdentityKey.length != KEY_LENGTH + 1 || signalRemoteIdentityKey[0] != KEY_TYPE) {
             throw new IllegalArgumentException("Invalid signalRemoteIdentityKey");
         }
 
-        if(signalIdentityPublicKey == null || signalIdentityPublicKey.length != KEY_LENGTH + 1 || signalIdentityPublicKey[0] != KEY_TYPE) {
+        if (signalIdentityPublicKey == null || signalIdentityPublicKey.length != KEY_LENGTH + 1 || signalIdentityPublicKey[0] != KEY_TYPE) {
             throw new IllegalArgumentException("Invalid signalIdentityPublicKey");
         }
 
@@ -196,7 +189,7 @@ public record SessionCipher(SessionAddress address, Keys keys) {
     }
 
     private void calculateRatchet(SignalMessage message, SessionState state, boolean sending) {
-        var sharedSecret = Curve25519.sharedKey(SignalConstants.createCurveKey(message.ephemeralPublicKey()), state.ephemeralKeyPair().privateKey());
+        var sharedSecret = Curve25519.sharedKey(createCurveKey(message.ephemeralPublicKey()), state.ephemeralKeyPair().privateKey());
         var masterKey = Hkdf.deriveSecrets(sharedSecret, state.rootKey(), "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);
         var chainKey = sending ? state.ephemeralKeyPair().signalPublicKey() : message.ephemeralPublicKey();
         var sessionChain = new SessionChain(-1, masterKey[1]);
@@ -223,6 +216,136 @@ public record SessionCipher(SessionAddress address, Keys keys) {
             var keyHmac = Hmac.calculateSha256(new byte[]{2}, chainKey);
             chain.setKey(keyHmac);
             chain.setCounter(nextChainCounter);
+        }
+    }
+
+    public synchronized void createOutgoing(SessionAddress address, int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey) {
+        if (!keys.hasTrust(address, identityKey)) {
+            throw new IllegalArgumentException("Untrusted key");
+        }
+        if (!Curve25519.verifySignature(SignalConstants.createCurveKey(identityKey), signedPreKey.signalPublicKey(), signedPreKey.signature())) {
+            throw new IllegalArgumentException("Signature mismatch");
+        }
+        var baseKey = SignalKeyPair.random();
+        var state = createState(
+                true,
+                baseKey,
+                null,
+                identityKey,
+                preKey == null ? null : preKey.signalPublicKey(),
+                signedPreKey.signalPublicKey(),
+                id,
+                SignalConstants.CURRENT_VERSION
+        );
+        var pendingPreKey = new SessionPreKey(
+                preKey == null ? null : preKey.id(),
+                baseKey.signalPublicKey(),
+                signedPreKey.id()
+        );
+        state.pendingPreKey(pendingPreKey);
+        var session = keys.findSessionByAddress(address)
+                .orElse(null);
+        if (session != null) {
+            session.closeCurrentState();
+            session.addState(state);
+        } else {
+            var newSession = new Session();
+            keys.addSession(address, newSession);
+            newSession.addState(state);
+        }
+    }
+
+    private byte[][] computeMasterKey(boolean isInitiator, byte[] signedSecret, byte[] identitySecret, byte[] signedIdentitySecret, byte[] ephemeralSecret) {
+        var result = new byte[KEY_LENGTH + signedSecret.length + identitySecret.length + signedIdentitySecret.length + (ephemeralSecret == null ? 0 : ephemeralSecret.length)];
+        Arrays.fill(result, 0, KEY_LENGTH, (byte) 0xff);
+        if (isInitiator) {
+            System.arraycopy(signedSecret, 0, result, KEY_LENGTH, signedSecret.length);
+            System.arraycopy(identitySecret, 0, result, KEY_LENGTH + signedSecret.length, identitySecret.length);
+        } else {
+            System.arraycopy(identitySecret, 0, result, KEY_LENGTH, identitySecret.length);
+            System.arraycopy(signedSecret, 0, result, KEY_LENGTH + identitySecret.length, signedSecret.length);
+        }
+        System.arraycopy(signedIdentitySecret, 0, result, KEY_LENGTH + signedSecret.length + identitySecret.length, signedIdentitySecret.length);
+        if (ephemeralSecret != null) {
+            System.arraycopy(ephemeralSecret, 0, result, KEY_LENGTH + signedSecret.length + identitySecret.length + signedIdentitySecret.length, ephemeralSecret.length);
+        }
+        return Hkdf.deriveSecrets(result, "WhisperText".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private SessionState calculateSendingRatchet(SessionState state, byte[] theirSignedPubKey) {
+        var initSecret = Curve25519.sharedKey(SignalConstants.createCurveKey(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
+        var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(), "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
+        var key = state.ephemeralKeyPair().signalPublicKey();
+        var chain = new SessionChain(-1, initKey[1]);
+        return state.addChain(key, chain)
+                .setRootKey(initKey[0]);
+    }
+
+    public synchronized void createIncoming(SessionAddress address, Session session, SignalPreKeyMessage message) {
+        if (!keys.hasTrust(address, message.identityKey())) {
+            throw new IllegalArgumentException("Untrusted key");
+        }
+        if (session.hasState(message.version(), message.baseKey())) {
+            return;
+        }
+        var preKeyPair = keys.findPreKeyById(message.preKeyId())
+                .orElse(null);
+        var signedKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
+                .orElseThrow(() -> new NoSuchElementException("Cannot find signed key with id %s".formatted(message.signedPreKeyId())));
+        session.closeCurrentState();
+        var nextState = createState(
+                false,
+                preKeyPair == null ? null : preKeyPair.toGenericKeyPair(),
+                signedKeyPair.toGenericKeyPair(),
+                message.identityKey(),
+                message.baseKey(),
+                null,
+                message.registrationId(),
+                message.version()
+        );
+        session.addState(nextState);
+    }
+
+    private SessionState createState(
+            boolean isInitiator,
+            SignalKeyPair ourEphemeralKey,
+            SignalKeyPair ourSignedKey,
+            byte[] theirIdentityPubKey, byte[] theirEphemeralPubKey, byte[] theirSignedPubKey,
+            int registrationId, int version
+    ) {
+        if (isInitiator) {
+            if (ourSignedKey != null) {
+                throw new IllegalArgumentException("Our signed key should be null");
+            }
+            ourSignedKey = ourEphemeralKey;
+        } else {
+            if (theirSignedPubKey != null) {
+                throw new IllegalArgumentException("Their signed public key should be null");
+            }
+            theirSignedPubKey = theirEphemeralPubKey;
+        }
+        var signedSecret = Curve25519.sharedKey(SignalConstants.createCurveKey(theirSignedPubKey), keys.identityKeyPair().privateKey());
+        var identitySecret = Curve25519.sharedKey(SignalConstants.createCurveKey(theirIdentityPubKey), ourSignedKey.privateKey());
+        var signedIdentitySecret = Curve25519.sharedKey(SignalConstants.createCurveKey(theirSignedPubKey), ourSignedKey.privateKey());
+        var ephemeralSecret = theirEphemeralPubKey == null || ourEphemeralKey == null ? null : Curve25519.sharedKey(SignalConstants.createCurveKey(theirEphemeralPubKey), ourEphemeralKey.privateKey());
+        var masterKey = computeMasterKey(isInitiator, signedSecret, identitySecret, signedIdentitySecret, ephemeralSecret);
+        var state = new SessionState(
+                version,
+                registrationId,
+                isInitiator ? ourEphemeralKey.signalPublicKey() : theirEphemeralPubKey,
+                theirIdentityPubKey,
+                new ConcurrentHashMap<>(),
+                masterKey[0],
+                null,
+                isInitiator ? SignalKeyPair.random() : ourSignedKey,
+                theirSignedPubKey,
+                0,
+                false
+        );
+        if (isInitiator) {
+            return calculateSendingRatchet(state, theirSignedPubKey);
+        } else {
+            return state;
         }
     }
 }

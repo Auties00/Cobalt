@@ -64,7 +64,7 @@ public final class SocketHandler {
     private final AppStateHandler appStateHandler;
     private final WhatsappErrorHandler errorHandler;
     private volatile ScheduledExecutorService scheduler;
-    private final ConcurrentHashMap<String, SocketRequest> requests;
+    private final ConcurrentHashMap<String, Request> requests;
     private final ConcurrentMap<Jid, SequencedSet<ChatPastParticipant>> pastParticipants;
     private final Map<Jid, ChatMetadata> chatMetadataCache;
     private final AtomicBoolean serializable;
@@ -168,7 +168,7 @@ public final class SocketHandler {
 
     public Node sendNode(Node node, Function<Node, Boolean> filter) {
         if (node.id() == null) {
-            node.attributes().put("id", HexFormat.of().formatHex(Bytes.random(6)));
+            node.attributes().put("id", Bytes.randomHex(6));
         }
 
         if(!encryptionHandler.sendCiphered(node)) {
@@ -176,14 +176,11 @@ public final class SocketHandler {
         }
 
         onNodeSent(node);
-        var request = new SocketRequest(node.id(), filter, node);
-        if(requests.put(node.id(), request) != null) {
-            throw new IllegalStateException("Request with id " + node.id() + " already exists");
-        }
-
+        var request = new Request(node.id(), filter, node);
+        requests.put(node.id(), request);
         try {
             return request.waitForResponse(TIMEOUT);
-        }catch (InterruptedException ignored) {
+        }catch (Throwable ignored) {
             return Node.empty();
         }
     }
@@ -504,8 +501,8 @@ public final class SocketHandler {
                     .flatMap(Node::contentAsString)
                     .orElse(null);
             policies.put(CommunitySetting.ADD_PARTICIPANTS.index(), ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
-            var participantsNode = sendQuery(groupId, "get", "w:g2", Node.of("linked_groups_participants"));
-            var participants = participantsNode.findChild("linked_groups_participants")
+            var participants = sendQuery(groupId, "get", "w:g2", Node.of("linked_groups_participants"))
+                    .findChild("linked_groups_participants")
                     .stream()
                     .flatMap(participantsNodeBody -> participantsNodeBody.streamChildren("participant"))
                     .flatMap(participantNode -> participantNode.attributes().getOptionalJid("jid").stream())
@@ -1056,5 +1053,75 @@ public final class SocketHandler {
         DISCONNECTED,
         HANDSHAKING,
         CONNECTED
+    }
+
+    private static final class Request {
+        private final String id;
+        private final Object body;
+        private final Function<Node, Boolean> filter;
+        private volatile Node response;
+
+        Request(String id, Function<Node, Boolean> filter, Object body) {
+            this.id = id;
+            this.body = body;
+            this.filter = filter;
+        }
+
+        public boolean complete(Node response) {
+            Objects.requireNonNull(response, "Response cannot be null");
+            var acceptable = response == Node.empty()
+                    || filter == null
+                    || filter.apply(response);
+            if (acceptable) {
+                synchronized (this) {
+                    this.response = response;
+                    notifyAll();
+                }
+            }
+            return acceptable;
+        }
+
+        public String id() {
+            return id;
+        }
+
+        public Object body() {
+            return body;
+        }
+
+        public Node waitForResponse(Duration timeout) {
+            Objects.requireNonNull(timeout, "Timeout cannot be null");
+            if (response == null) {
+                synchronized (this) {
+                    if (response == null) {
+                        try {
+                            wait(timeout.toMillis());
+                        }catch (InterruptedException exception) {
+                            throw new RuntimeException("Cannot wait for response", exception);
+                        }
+                    }
+                }
+            }
+            if(response == null) {
+                throw new RuntimeException("The timeout of " + timeout + " has expired for " + body);
+            }
+            return response;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj == this
+                    || obj instanceof Request that && Objects.equals(this.id, that.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id);
+        }
+
+        @Override
+        public String toString() {
+            return "SocketRequest[" + "id=" + id + ']';
+        }
     }
 }

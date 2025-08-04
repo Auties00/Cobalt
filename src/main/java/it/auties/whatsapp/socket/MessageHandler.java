@@ -65,7 +65,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -83,10 +82,10 @@ final class MessageHandler {
     private final SocketHandler socketHandler;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
     private final Set<Jid> historyCache;
-    private final ReentrantLock lock;
     private final HistorySyncProgressTracker recentHistorySyncTracker;
     private final HistorySyncProgressTracker fullHistorySyncTracker;
     private final Set<HistorySync.Type> historySyncTypes;
+    private final SignalSessionCipher sessionCipher;
     private ScheduledFuture<?> historySyncTask;
 
     MessageHandler(SocketHandler socketHandler) {
@@ -94,9 +93,9 @@ final class MessageHandler {
         this.devicesCache = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.historySyncTypes = ConcurrentHashMap.newKeySet();
-        this.lock = new ReentrantLock(true);
         this.recentHistorySyncTracker = new HistorySyncProgressTracker();
         this.fullHistorySyncTracker = new HistorySyncProgressTracker();
+        this.sessionCipher = new SignalSessionCipher(socketHandler.keys());
     }
 
     void encode(MessageRequest request) {
@@ -109,23 +108,15 @@ final class MessageHandler {
     private void encodeChatMessage(MessageRequest.Chat request) {
         try {
             prepareOutgoingChatMessage(request.info());
-            try {
-                lock.lock();
-                if (request.peer() || isConversation(request.info())) {
-                    encodeConversation(request);
-                } else {
-                    encodeGroup(request);
-                }
-            } finally {
-                lock.unlock();
+            if (request.peer() || isConversation(request.info())) {
+                encodeConversation(request);
+            } else {
+                encodeGroup(request);
             }
-
-            if (request.peer()) {
-                return;
+            if (!request.peer()) {
+                saveMessage(request.info(), false);
+                attributeMessageReceipt(request.info());
             }
-
-            saveMessage(request.info(), false);
-            attributeMessageReceipt(request.info());
         } catch (Throwable throwable) {
             request.info().setStatus(MessageStatus.ERROR);
             saveMessage(request.info(), false);
@@ -649,8 +640,7 @@ final class MessageHandler {
     }
 
     private Node createMessageNode(MessageRequest.Chat request, Jid contact, byte[] message, boolean peer) {
-        var cipher = new SessionCipher(contact.toSignalAddress(), socketHandler.keys());
-        var encrypted = cipher.encrypt(message);
+        var encrypted = sessionCipher.encrypt(contact.toSignalAddress(), message);
         var messageNode = createMessageNode(request, encrypted);
         return peer ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
     }
@@ -785,8 +775,7 @@ final class MessageHandler {
         var key = node.findChild("key")
                 .flatMap(SignalSignedKeyPair::of)
                 .orElse(null);
-        var builder = new SessionBuilder(jid.toSignalAddress(), socketHandler.keys());
-        builder.createOutgoing(registrationId, identity, signedKey, key);
+        sessionCipher.createOutgoing(jid.toSignalAddress(), registrationId, identity, signedKey, key);
     }
 
     public void decode(Node node, JidProvider chatOverride, boolean notify) {
@@ -1098,7 +1087,6 @@ final class MessageHandler {
 
     private MessageContainer decodeMessageBytes(String type, byte[] encodedMessage, Jid from, Jid participant) {
         try {
-            lock.lock();
             var result = switch (type) {
                 case SKMSG -> {
                     Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
@@ -1109,16 +1097,14 @@ final class MessageHandler {
                 case PKMSG -> {
                     var user = from.hasServer(JidServer.whatsapp()) ? from : participant;
                     Objects.requireNonNull(user, "Cannot decipher pkmsg without user");
-                    var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
-                    yield session.decrypt(preKey);
+                    yield sessionCipher.decrypt(user.toSignalAddress(), preKey);
                 }
                 case MSG -> {
                     var user = from.hasServer(JidServer.whatsapp()) ? from : participant;
                     Objects.requireNonNull(user, "Cannot decipher msg without user");
-                    var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var signalMessage = SignalMessage.ofSerialized(encodedMessage);
-                    yield session.decrypt(signalMessage);
+                    yield sessionCipher.decrypt(user.toSignalAddress(), signalMessage);
                 }
                 default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
             };
@@ -1128,8 +1114,6 @@ final class MessageHandler {
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
             return MessageContainer.empty();
-        } finally {
-            lock.unlock();
         }
     }
 

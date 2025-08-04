@@ -3,7 +3,6 @@ package it.auties.whatsapp.api;
 import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.controller.*;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -19,7 +18,6 @@ import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
-import it.auties.whatsapp.model.message.standard.CallMessageBuilder;
 import it.auties.whatsapp.model.message.standard.NewsletterAdminInviteMessageBuilder;
 import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
 import it.auties.whatsapp.model.message.standard.TextMessage;
@@ -31,7 +29,6 @@ import it.auties.whatsapp.model.privacy.*;
 import it.auties.whatsapp.model.request.*;
 import it.auties.whatsapp.model.response.*;
 import it.auties.whatsapp.model.setting.Setting;
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
@@ -2877,14 +2874,8 @@ public class Whatsapp {
     }
 
     private Node createCallNode(JidProvider provider) {
-        var call = new CallMessageBuilder()
-                .key(SignalKeyPair.random().publicKey())
-                .build();
-        var message = MessageContainer.of(call);
-        var cipher = new SessionCipher(provider.toJid().toSignalAddress(), keys());
-        var encodedMessage = Bytes.messageToBytes(message);
-        var cipheredMessage = cipher.encrypt(encodedMessage);
-        return Node.of("enc", Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
+        // TODO: Reimplement me
+        throw new UnsupportedOperationException();
     }
 
     /**

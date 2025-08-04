@@ -9,7 +9,7 @@ public class WebQrLoginExample {
     public static void main(String[] args) {
         Whatsapp.builder()
                 .webClient()
-                .newConnection()
+                .lastConnection()
                 .historySetting(WhatsappWebHistoryPolicy.standard(true))
                 .unregistered(WhatsappVerificationHandler.Web.QrCode.toTerminal())
                 .addLoggedInListener(() -> System.out.println("Logged in!"))
