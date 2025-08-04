@@ -18,10 +18,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -108,6 +105,7 @@ public final class Medias {
         }
     }
 
+    // TODO: Explore if this can become a stream
     private static byte[] compressUpload(byte[] uncompressed, AttachmentType type) {
         if (!type.inflatable()) {
             return uncompressed;
@@ -119,8 +117,8 @@ public final class Medias {
         try (var result = Streams.newByteArrayOutputStream()) {
             var buffer = new byte[8192];
             while (!deflater.finished()) {
-                var count = deflater.deflate(buffer);
-                result.write(buffer, 0, count);
+                var length = deflater.deflate(buffer);
+                result.write(buffer, 0, length);
             }
             deflater.end();
             return result.toByteArray();
@@ -145,7 +143,6 @@ public final class Medias {
             var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             var keySpec = new SecretKeySpec(keys.cipherKey(), "AES");
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(keys.iv()));
-
             var encryptedLength = cipher.getOutputSize(uploadData.length);
             var encrypted = new byte[encryptedLength + MAC_LENGTH];
             if (cipher.doFinal(uploadData, 0, uploadData.length, encrypted, 0) != encryptedLength) {
@@ -155,6 +152,7 @@ public final class Medias {
             var mac = Mac.getInstance("HmacSHA256");
             var macKey = new SecretKeySpec(keys.macKey(), "HmacSHA256");
             mac.init(macKey);
+            mac.update(keys.iv());
             mac.update(encrypted, 0, encryptedLength);
             var encryptedMac = mac.doFinal();
             System.arraycopy(encryptedMac, 0, encrypted, encryptedLength, MAC_LENGTH);
