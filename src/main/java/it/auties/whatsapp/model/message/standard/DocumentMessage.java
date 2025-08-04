@@ -26,7 +26,7 @@ import static it.auties.whatsapp.model.message.model.MediaMessage.Type.DOCUMENT;
  * A model class that represents a message holding a document inside
  */
 @ProtobufMessage
-public final class DocumentMessage extends MediaMessage<DocumentMessage>
+public final class DocumentMessage extends MediaMessage
         implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     private static final int THUMBNAIL_WIDTH = 480;
     private static final int THUMBNAIL_HEIGHT = 339;
@@ -121,7 +121,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
             throw new IllegalArgumentException("Expected fileName to be formatted as name.extension");
         }
 
-        return new DocumentMessageBuilder()
+        var result = new DocumentMessageBuilder()
                 .mimetype(getMimeType(media, fileName, mimeType))
                 .fileName(fileName)
                 .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media))
@@ -131,8 +131,9 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
                 .thumbnailHeight(THUMBNAIL_HEIGHT)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .caption(caption)
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     private static String getMimeType(byte[] media, String fileName, String mimeType) {
@@ -168,9 +169,8 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @Override
-    public DocumentMessage setMediaUrl(String mediaUrl) {
+    public void setMediaUrl(String mediaUrl) {
         this.mediaUrl = mediaUrl;
-        return this;
     }
 
     @Override
@@ -179,9 +179,8 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @Override
-    public DocumentMessage setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -190,15 +189,13 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @Override
-    public DocumentMessage setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public DocumentMessage setMediaKeyTimestamp(Long timestamp) {
+    public void setMediaKeyTimestamp(Long timestamp) {
         this.mediaKeyTimestampSeconds = timestamp;
-        return this;
     }
 
     @Override
@@ -207,9 +204,8 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @Override
-    public DocumentMessage setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -218,9 +214,8 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @Override
-    public DocumentMessage setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -239,9 +234,8 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @Override
-    public DocumentMessage setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override
@@ -308,8 +302,7 @@ public final class DocumentMessage extends MediaMessage<DocumentMessage>
     }
 
     @Override
-    public DocumentMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 }

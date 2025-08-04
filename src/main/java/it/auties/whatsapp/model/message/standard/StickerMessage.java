@@ -9,7 +9,6 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
-import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -23,7 +22,7 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding a sticker inside
  */
 @ProtobufMessage(name = "Message.StickerMessage")
-public final class StickerMessage extends MediaMessage<StickerMessage> {
+public final class StickerMessage extends MediaMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -97,13 +96,14 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
 
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
     static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
-        return new StickerMessageBuilder()
+        var result = new StickerMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, STICKER.mimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, false))
                 .animated(animated)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     public OptionalInt height() {
@@ -128,9 +128,8 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @Override
-    public StickerMessage setMediaUrl(String mediaUrl) {
+    public void setMediaUrl(String mediaUrl) {
         this.mediaUrl = mediaUrl;
-        return this;
     }
 
     @Override
@@ -139,9 +138,8 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @Override
-    public StickerMessage setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -150,15 +148,13 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @Override
-    public StickerMessage setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public StickerMessage setMediaKeyTimestamp(Long timestamp) {
+    public void setMediaKeyTimestamp(Long timestamp) {
         this.mediaKeyTimestampSeconds = timestamp;
-        return this;
     }
 
     @Override
@@ -167,9 +163,8 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @Override
-    public StickerMessage setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -178,9 +173,8 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @Override
-    public StickerMessage setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -199,9 +193,8 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @Override
-    public StickerMessage setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override
@@ -235,8 +228,7 @@ public final class StickerMessage extends MediaMessage<StickerMessage> {
     }
 
     @Override
-    public StickerMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 }

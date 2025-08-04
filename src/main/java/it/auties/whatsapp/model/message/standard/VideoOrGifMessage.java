@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding a video inside
  */
 @ProtobufMessage(name = "Message.VideoMessage")
-public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
+public final class VideoOrGifMessage extends MediaMessage
         implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
@@ -126,7 +126,7 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     static VideoOrGifMessage videoBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
-        return new VideoOrGifMessageBuilder()
+        var result = new VideoOrGifMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
                 .caption(caption)
@@ -134,8 +134,9 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
                 .height(dimensions.height())
                 .duration(duration)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     @ProtobufBuilder(className = "GifMessageSimpleBuilder")
@@ -145,7 +146,7 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
         }
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
-        return new VideoOrGifMessageBuilder()
+        var result = new VideoOrGifMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
                 .caption(caption)
@@ -155,8 +156,9 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
                 .gifPlayback(true)
                 .gifAttribution(requireNonNullElse(gifAttribution, Attribution.NONE))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     private static boolean isNotGif(byte[] media, String mimeType) {
@@ -171,9 +173,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaUrl(String mediaUrl) {
+    public void setMediaUrl(String mediaUrl) {
         this.mediaUrl = mediaUrl;
-        return this;
     }
 
     @Override
@@ -182,9 +183,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -193,15 +193,13 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public VideoOrGifMessage setMediaKeyTimestamp(Long timestamp) {
+    public void setMediaKeyTimestamp(Long timestamp) {
         this.mediaKeyTimestampSeconds = timestamp;
-        return this;
     }
 
     @Override
@@ -210,9 +208,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -221,9 +218,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -242,9 +238,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     public Optional<String> caption() {
@@ -338,9 +333,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     /**

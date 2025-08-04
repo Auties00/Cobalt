@@ -17,7 +17,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 @ProtobufMessage(name = "Message.AudioMessage")
-public final class AudioMessage extends MediaMessage<AudioMessage> {
+public final class AudioMessage extends MediaMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -79,14 +79,15 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
 
     @ProtobufBuilder(className = "AudioMessageSimpleBuilder")
     static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
-        return new AudioMessageBuilder()
+        var result = new AudioMessageBuilder()
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .duration(Medias.getDuration(media))
                 .mimetype(getMimeType(media, mimeType))
                 .voiceMessage(voiceMessage)
                 .waveform(Medias.getAudioWaveForm(media))
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     private static String getMimeType(byte[] media, String mimeType) {
@@ -125,9 +126,8 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public AudioMessage setMediaUrl(String mediaUrl) {
+    public void setMediaUrl(String mediaUrl) {
         this.mediaUrl = mediaUrl;
-        return this;
     }
 
     @Override
@@ -136,9 +136,8 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public AudioMessage setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -147,15 +146,13 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public AudioMessage setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public AudioMessage setMediaKeyTimestamp(Long timestamp) {
+    public void setMediaKeyTimestamp(Long timestamp) {
         this.mediaKeyTimestampSeconds = timestamp;
-        return this;
     }
 
     @Override
@@ -164,9 +161,8 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public AudioMessage setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -175,9 +171,8 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public AudioMessage setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -196,9 +191,8 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public AudioMessage setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override
@@ -212,9 +206,8 @@ public final class AudioMessage extends MediaMessage<AudioMessage> {
     }
 
     @Override
-    public AudioMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

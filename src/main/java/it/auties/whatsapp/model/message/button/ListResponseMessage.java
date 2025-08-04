@@ -60,9 +60,8 @@ public final class ListResponseMessage implements ButtonReplyMessage<ListRespons
     }
 
     @Override
-    public ListResponseMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     public Optional<String> description() {

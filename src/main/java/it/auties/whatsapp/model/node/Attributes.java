@@ -406,7 +406,6 @@ public record Attributes(LinkedHashMap<String, Object> toMap) {
         for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
-
         return this;
     }
 
@@ -415,7 +414,6 @@ public record Attributes(LinkedHashMap<String, Object> toMap) {
         for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
-
         return this;
     }
 

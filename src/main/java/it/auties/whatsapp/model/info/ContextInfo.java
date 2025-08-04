@@ -210,7 +210,7 @@ public final class ContextInfo implements Info { // TODO: Check me
         this.trustBannerAction = trustBannerAction;
     }
 
-    public static ContextInfo of(MessageInfo<?> quotedMessage) {
+    public static ContextInfo of(MessageInfo quotedMessage) {
         return new ContextInfoBuilder()
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessageSenderJid(quotedMessage.senderJid())
@@ -221,7 +221,7 @@ public final class ContextInfo implements Info { // TODO: Check me
     }
 
 
-    public static ContextInfo of(ContextInfo contextInfo, MessageInfo<?> quotedMessage) {
+    public static ContextInfo of(ContextInfo contextInfo, MessageInfo quotedMessage) {
         return contextInfo == null ? of(quotedMessage) : new ContextInfoBuilder()
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessageSenderJid(quotedMessage.senderJid())
@@ -267,9 +267,8 @@ public final class ContextInfo implements Info { // TODO: Check me
         return Optional.ofNullable(quotedMessageSender);
     }
 
-    public ContextInfo setQuotedMessageSender(Contact quotedMessageSender) {
+    public void setQuotedMessageSender(Contact quotedMessageSender) {
         this.quotedMessageSender = quotedMessageSender;
-        return this;
     }
 
     /**
@@ -329,9 +328,8 @@ public final class ContextInfo implements Info { // TODO: Check me
     }
 
 
-    public ContextInfo setQuotedMessageChat(Chat quotedMessageChat) {
+    public void setQuotedMessageChat(Chat quotedMessageChat) {
         this.quotedMessageChat = quotedMessageChat;
-        return this;
     }
 
     public List<Jid> mentions() {
@@ -370,18 +368,16 @@ public final class ContextInfo implements Info { // TODO: Check me
         return ephemeralExpiration;
     }
 
-    public ContextInfo setEphemeralExpiration(int ephemeralExpiration) {
+    public void setEphemeralExpiration(int ephemeralExpiration) {
         this.ephemeralExpiration = ephemeralExpiration;
-        return this;
     }
 
     public long ephemeralSettingTimestamp() {
         return ephemeralSettingTimestamp;
     }
 
-    public ContextInfo setEphemeralSettingTimestamp(long ephemeralSettingTimestamp) {
+    public void setEphemeralSettingTimestamp(long ephemeralSettingTimestamp) {
         this.ephemeralSettingTimestamp = ephemeralSettingTimestamp;
-        return this;
     }
 
     public Optional<byte[]> ephemeralSharedSecret() {

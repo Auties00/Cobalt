@@ -20,7 +20,7 @@ import java.util.Optional;
  * A model class that represents a message that contains buttons inside
  */
 @ProtobufMessage(name = "Message.ButtonsMessage")
-public final class ButtonsMessage implements ButtonMessage, ContextualMessage<ButtonsMessage> {
+public final class ButtonsMessage implements ButtonMessage, ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final ButtonsMessageHeaderText headerText;
 
@@ -161,9 +161,8 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
     }
 
     @Override
-    public ButtonsMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

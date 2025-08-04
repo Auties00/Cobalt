@@ -67,9 +67,8 @@ public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsR
     }
 
     @Override
-    public ButtonsResponseMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     public ResponseType responseType() {

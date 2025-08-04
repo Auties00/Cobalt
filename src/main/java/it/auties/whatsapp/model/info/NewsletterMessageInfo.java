@@ -15,7 +15,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 @ProtobufMessage
-public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessageInfo>, MessageStatusInfo<NewsletterMessageInfo> {
+public final class NewsletterMessageInfo implements MessageInfo, MessageStatusInfo {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final String id;
 
@@ -76,9 +76,8 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
         return Optional.of(new NewsletterMessageInfo(id, serverId, timestampSeconds, views, reactions, message, status));
     }
 
-    public NewsletterMessageInfo setNewsletter(Newsletter newsletter) {
+    public void setNewsletter(Newsletter newsletter) {
         this.newsletter = newsletter;
-        return this;
     }
 
     public Jid newsletterJid() {
@@ -121,9 +120,8 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
-    public NewsletterMessageInfo setMessage(MessageContainer message) {
+    public void setMessage(MessageContainer message) {
         this.message = message;
-        return this;
     }
 
     public Optional<ZonedDateTime> timestamp() {
@@ -136,9 +134,8 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
-    public NewsletterMessageInfo setStatus(MessageStatus status) {
+    public void setStatus(MessageStatus status) {
         this.status = status;
-        return this;
     }
 
     public Collection<NewsletterReaction> reactions() {

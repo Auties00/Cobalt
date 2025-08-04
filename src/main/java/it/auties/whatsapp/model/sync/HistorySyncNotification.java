@@ -14,7 +14,7 @@ import java.util.OptionalLong;
 import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "Message.HistorySyncNotification")
-public final class HistorySyncNotification implements MutableAttachmentProvider<HistorySyncNotification> {
+public final class HistorySyncNotification implements MutableAttachmentProvider {
     @ProtobufProperty(index = 1, type = BYTES)
     byte[] mediaSha256;
     @ProtobufProperty(index = 2, type = UINT64)
@@ -61,8 +61,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaUrl(String mediaUrl) {
-        return this;
+    public void setMediaUrl(String mediaUrl) {
     }
 
     @Override
@@ -71,9 +70,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -82,14 +80,12 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public HistorySyncNotification setMediaKeyTimestamp(Long timestamp) {
-        return this;
+    public void setMediaKeyTimestamp(Long timestamp) {
     }
 
     @Override
@@ -98,9 +94,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -109,9 +104,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -120,9 +114,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override

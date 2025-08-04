@@ -65,9 +65,8 @@ public final class SessionState {
         return Optional.ofNullable(chains.get(HexFormat.of().formatHex(senderEphemeral)));
     }
 
-    public SessionState addChain(byte[] senderEphemeral, SessionChain chain) {
+    public void addChain(byte[] senderEphemeral, SessionChain chain) {
         chains.put(HexFormat.of().formatHex(senderEphemeral), chain);
-        return this;
     }
 
     public void removeChain(byte[] senderEphemeral) {
@@ -131,34 +130,28 @@ public final class SessionState {
         return this.closed;
     }
 
-    public SessionState setRootKey(byte[] rootKey) {
+    public void setRootKey(byte[] rootKey) {
         this.rootKey = rootKey;
-        return this;
     }
 
-    public SessionState pendingPreKey(SessionPreKey pendingPreKey) {
+    public void setPendingPreKey(SessionPreKey pendingPreKey) {
         this.pendingPreKey = pendingPreKey;
-        return this;
     }
 
-    public SessionState ephemeralKeyPair(SignalKeyPair ephemeralKeyPair) {
+    public void setEphemeralKeyPair(SignalKeyPair ephemeralKeyPair) {
         this.ephemeralKeyPair = ephemeralKeyPair;
-        return this;
     }
 
-    public SessionState lastRemoteEphemeralKey(byte[] lastRemoteEphemeralKey) {
+    public void setLastRemoteEphemeralKey(byte[] lastRemoteEphemeralKey) {
         this.lastRemoteEphemeralKey = lastRemoteEphemeralKey;
-        return this;
     }
 
-    public SessionState previousCounter(int previousCounter) {
+    public void setPreviousCounter(int previousCounter) {
         this.previousCounter = previousCounter;
-        return this;
     }
 
-    public SessionState closed(boolean closed) {
+    public void setClosed(boolean closed) {
         this.closed = closed;
-        return this;
     }
 
     public Map<String, SessionChain> chains() {

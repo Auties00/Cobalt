@@ -89,24 +89,20 @@ public final class CompanionHashState {
         return this.indexValueMap;
     }
 
-    public CompanionHashState setType(PatchType name) {
+    public void setType(PatchType name) {
         this.type = name;
-        return this;
     }
 
-    public CompanionHashState setVersion(long version) {
+    public void setVersion(long version) {
         this.version = version;
-        return this;
     }
 
-    public CompanionHashState setHash(byte[] hash) {
+    public void setHash(byte[] hash) {
         this.hash = hash;
-        return this;
     }
 
-    public CompanionHashState setIndexValueMap(Map<Integer, byte[]> indexValueMap) {
+    public void setIndexValueMap(Map<Integer, byte[]> indexValueMap) {
         this.indexValueMap = indexValueMap;
-        return this;
     }
 
 

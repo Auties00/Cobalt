@@ -305,7 +305,7 @@ public interface WhatsappListener {
      * @param whatsapp an instance to the calling api
      * @param info     the message that was sent
      */
-    default void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
+    default void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
     }
 
     /**
@@ -313,7 +313,7 @@ public interface WhatsappListener {
      *
      * @param info the message that was sent
      */
-    default void onNewMessage(MessageInfo<?> info) {
+    default void onNewMessage(MessageInfo info) {
     }
 
     /**
@@ -324,7 +324,7 @@ public interface WhatsappListener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(Whatsapp whatsapp, MessageInfo<?> info, boolean everyone) {
+    default void onMessageDeleted(Whatsapp whatsapp, MessageInfo info, boolean everyone) {
     }
 
     /**
@@ -334,7 +334,7 @@ public interface WhatsappListener {
      * @param everyone whether this message was deleted by you only for yourself or whether the
      *                 message was permanently removed
      */
-    default void onMessageDeleted(MessageInfo<?> info, boolean everyone) {
+    default void onMessageDeleted(MessageInfo info, boolean everyone) {
     }
 
     /**
@@ -343,7 +343,7 @@ public interface WhatsappListener {
      * @param whatsapp an instance to the calling api
      * @param info     the message whose status changed
      */
-    default void onMessageStatus(Whatsapp whatsapp, MessageInfo<?> info) {
+    default void onMessageStatus(Whatsapp whatsapp, MessageInfo info) {
     }
 
     /**
@@ -351,7 +351,7 @@ public interface WhatsappListener {
      *
      * @param info the message whose status changed
      */
-    default void onMessageStatus(MessageInfo<?> info) {
+    default void onMessageStatus(MessageInfo info) {
     }
 
 
@@ -395,7 +395,7 @@ public interface WhatsappListener {
      * @param response the response
      * @param quoted   the quoted message
      */
-    default void onMessageReply(ChatMessageInfo response, QuotedMessageInfo quoted) {
+    default void onMessageReply(MessageInfo response, QuotedMessageInfo quoted) {
     }
 
     /**
@@ -405,7 +405,7 @@ public interface WhatsappListener {
      * @param response the response
      * @param quoted   the quoted message
      */
-    default void onMessageReply(Whatsapp whatsapp, ChatMessageInfo response, QuotedMessageInfo quoted) {
+    default void onMessageReply(Whatsapp whatsapp, MessageInfo response, QuotedMessageInfo quoted) {
     }
 
     /**

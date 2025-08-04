@@ -678,10 +678,10 @@ public final class MessageContainer {
      *
      * @return a non-null Optional ContextualMessage
      */
-    public Optional<ContextualMessage<?>> contentWithContext() {
+    public Optional<ContextualMessage> contentWithContext() {
         return Optional.of(content())
                 .filter(entry -> entry instanceof ContextualMessage)
-                .map(entry -> (ContextualMessage<?>) entry);
+                .map(entry -> (ContextualMessage) entry);
     }
 
     /**

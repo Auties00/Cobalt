@@ -19,7 +19,7 @@ import java.util.Optional;
  * A model class that represents a message that contains a list of buttons or a list of products
  */
 @ProtobufMessage(name = "Message.ListMessage")
-public final class ListMessage implements ContextualMessage<ListMessage>, ButtonMessage {
+public final class ListMessage implements ContextualMessage, ButtonMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final String title;
 
@@ -94,9 +94,8 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
     }
 
     @Override
-    public ListMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

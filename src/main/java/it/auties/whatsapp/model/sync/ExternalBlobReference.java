@@ -11,7 +11,7 @@ import java.util.OptionalLong;
 import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "ExternalBlobReference")
-public final class ExternalBlobReference implements MutableAttachmentProvider<ExternalBlobReference> {
+public final class ExternalBlobReference implements MutableAttachmentProvider {
     @ProtobufProperty(index = 1, type = BYTES)
     byte[] mediaKey;
     @ProtobufProperty(index = 2, type = STRING)
@@ -45,8 +45,7 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaUrl(String mediaUrl) {
-        return this;
+    public void setMediaUrl(String mediaUrl) {
     }
 
     @Override
@@ -55,9 +54,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -66,14 +64,12 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public ExternalBlobReference setMediaKeyTimestamp(Long timestamp) {
-        return this;
+    public void setMediaKeyTimestamp(Long timestamp) {
     }
 
     @Override
@@ -82,9 +78,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -93,9 +88,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -104,9 +98,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override

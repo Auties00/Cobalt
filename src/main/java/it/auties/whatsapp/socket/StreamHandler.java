@@ -1392,7 +1392,10 @@ final class StreamHandler {
         socketHandler.store()
                 .jid()
                 .flatMap(socketHandler.store()::findContactByJid)
-                .ifPresent(entry -> entry.setLastKnownPresence(ContactStatus.AVAILABLE).setLastSeen(ZonedDateTime.now()));
+                .ifPresent(entry -> {
+                    entry.setLastKnownPresence(ContactStatus.AVAILABLE);
+                    entry.setLastSeen(ZonedDateTime.now());
+                });
     }
 
     private void updateUserAbout(boolean update) {

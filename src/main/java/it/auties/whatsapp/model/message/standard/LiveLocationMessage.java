@@ -14,7 +14,7 @@ import java.util.Optional;
  * A model class that represents a message holding a live location inside
  */
 @ProtobufMessage(name = "Message.LiveLocationMessage")
-public final class LiveLocationMessage implements ContextualMessage<LiveLocationMessage> {
+public final class LiveLocationMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.DOUBLE)
     final double latitude;
 
@@ -110,9 +110,8 @@ public final class LiveLocationMessage implements ContextualMessage<LiveLocation
     }
 
     @Override
-    public LiveLocationMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

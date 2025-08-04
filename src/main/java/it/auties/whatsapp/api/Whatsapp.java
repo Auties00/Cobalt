@@ -1,7 +1,8 @@
 package it.auties.whatsapp.api;
 
 import com.alibaba.fastjson2.JSON;
-import it.auties.whatsapp.controller.*;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
@@ -21,19 +22,25 @@ import it.auties.whatsapp.model.message.server.ProtocolMessageBuilder;
 import it.auties.whatsapp.model.message.standard.NewsletterAdminInviteMessageBuilder;
 import it.auties.whatsapp.model.message.standard.ReactionMessageBuilder;
 import it.auties.whatsapp.model.message.standard.TextMessage;
-import it.auties.whatsapp.model.mobile.*;
+import it.auties.whatsapp.model.mobile.AccountInfo;
+import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.newsletter.*;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.privacy.*;
-import it.auties.whatsapp.model.request.*;
+import it.auties.whatsapp.model.request.CommunityRequests;
+import it.auties.whatsapp.model.request.MessageRequest;
+import it.auties.whatsapp.model.request.NewsletterRequests;
+import it.auties.whatsapp.model.request.UserRequests;
 import it.auties.whatsapp.model.response.*;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.model.sync.PatchRequest.PatchEntry;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.socket.SocketHandler;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Medias;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -80,8 +87,6 @@ public class Whatsapp {
 
     /**
      * Connects to Whatsapp
-     *
-     * @return a future
      */
     public Whatsapp connect() {
         socketHandler.connect(null);
@@ -91,7 +96,7 @@ public class Whatsapp {
     /**
      * Waits for this session to be disconnected
      */
-    public void awaitDisconnection() {
+    public Whatsapp waitForDisconnection() {
         var future = new CompletableFuture<Void>();
         addDisconnectedListener((reason) -> {
             if(reason != WhatsappDisconnectReason.RECONNECTING) {
@@ -99,6 +104,7 @@ public class Whatsapp {
             }
         });
         future.join();
+        return this;
     }
 
     /**
@@ -300,7 +306,7 @@ public class Whatsapp {
      * @param message the non-null message
      * @return a CompletableFuture
      */
-    public MessageInfo<?> removeReaction(MessageInfo<?> message) {
+    public MessageInfo removeReaction(MessageInfo message) {
         return sendReaction(message, (String) null);
     }
 
@@ -311,7 +317,7 @@ public class Whatsapp {
      * @param reaction the reaction to send, null if you want to remove the reaction
      * @return a CompletableFuture
      */
-    public MessageInfo<?> sendReaction(MessageInfo<?> message, ReactionEmoji reaction) {
+    public MessageInfo sendReaction(MessageInfo message, ReactionEmoji reaction) {
         return sendReaction(message, Objects.toString(reaction));
     }
 
@@ -325,7 +331,7 @@ public class Whatsapp {
      * you need a typed emoji enum.
      * @return a CompletableFuture
      */
-    public MessageInfo<?> sendReaction(MessageInfo<?> message, String reaction) {
+    public MessageInfo sendReaction(MessageInfo message, String reaction) {
         var key = new ChatMessageKeyBuilder()
                 .id(ChatMessageKey.randomId(store().clientType()))
                 .chatJid(message.parentJid())
@@ -346,7 +352,6 @@ public class Whatsapp {
      *
      * @param chat the non-null chat
      * @param messageInfo the message to forward
-     * @return a future
      */
     public ChatMessageInfo forwardChatMessage(JidProvider chat, ChatMessageInfo messageInfo) {
         var message = messageInfo.message()
@@ -357,7 +362,7 @@ public class Whatsapp {
         return sendChatMessage(chat, message);
     }
 
-    private MessageContainer createForwardedMessage(ContextualMessage<?> messageWithContext) {
+    private MessageContainer createForwardedMessage(ContextualMessage messageWithContext) {
         var forwardingScore = messageWithContext.contextInfo()
                 .map(ContextInfo::forwardingScore)
                 .orElse(0);
@@ -389,7 +394,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public MessageInfo<?> sendMessage(JidProvider chat, String message) {
+    public MessageInfo sendMessage(JidProvider chat, String message) {
         return sendMessage(chat, MessageContainer.of(message));
     }
 
@@ -423,7 +428,7 @@ public class Whatsapp {
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
-    public MessageInfo<?> sendMessage(JidProvider chat, String message, MessageInfo<?> quotedMessage) {
+    public MessageInfo sendMessage(JidProvider chat, String message, MessageInfo quotedMessage) {
         return sendMessage(chat, TextMessage.of(message), quotedMessage);
     }
 
@@ -435,7 +440,7 @@ public class Whatsapp {
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
-    public ChatMessageInfo sendChatMessage(JidProvider chat, String message, MessageInfo<?> quotedMessage) {
+    public ChatMessageInfo sendChatMessage(JidProvider chat, String message, MessageInfo quotedMessage) {
         return sendChatMessage(chat, TextMessage.of(message), quotedMessage);
     }
 
@@ -447,7 +452,7 @@ public class Whatsapp {
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
-    public NewsletterMessageInfo sendNewsletterMessage(JidProvider chat, String message, MessageInfo<?> quotedMessage) {
+    public NewsletterMessageInfo sendNewsletterMessage(JidProvider chat, String message, MessageInfo quotedMessage) {
         return sendNewsletterMessage(chat, TextMessage.of(message), quotedMessage);
     }
 
@@ -459,7 +464,7 @@ public class Whatsapp {
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
-    public MessageInfo<?> sendMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo<?> quotedMessage) {
+    public MessageInfo sendMessage(JidProvider chat, ContextualMessage message, MessageInfo quotedMessage) {
         var contextInfo = ContextInfo.of(message.contextInfo().orElse(null), quotedMessage);
         message.setContextInfo(contextInfo);
         return sendMessage(chat, MessageContainer.of(message));
@@ -473,7 +478,7 @@ public class Whatsapp {
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
-    public ChatMessageInfo sendChatMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo<?> quotedMessage) {
+    public ChatMessageInfo sendChatMessage(JidProvider chat, ContextualMessage message, MessageInfo quotedMessage) {
         var contextInfo = ContextInfo.of(message.contextInfo().orElse(null), quotedMessage);
         message.setContextInfo(contextInfo);
         return sendChatMessage(chat, MessageContainer.of(message));
@@ -488,7 +493,7 @@ public class Whatsapp {
      * @param quotedMessage the message to quote
      * @return a CompletableFuture
      */
-    public NewsletterMessageInfo sendNewsletterMessage(JidProvider chat, ContextualMessage<?> message, MessageInfo<?> quotedMessage) {
+    public NewsletterMessageInfo sendNewsletterMessage(JidProvider chat, ContextualMessage message, MessageInfo quotedMessage) {
         var contextInfo = ContextInfo.of(message.contextInfo().orElse(null), quotedMessage);
         message.setContextInfo(contextInfo);
         return sendNewsletterMessage(chat, MessageContainer.of(message));
@@ -501,7 +506,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public MessageInfo<?> sendMessage(JidProvider chat, Message message) {
+    public MessageInfo sendMessage(JidProvider chat, Message message) {
         return sendMessage(chat, MessageContainer.of(message));
     }
 
@@ -512,7 +517,7 @@ public class Whatsapp {
      * @param message   the message to send
      * @return a CompletableFuture
      */
-    public MessageInfo<?> sendMessage(JidProvider recipient, MessageContainer message) {
+    public MessageInfo sendMessage(JidProvider recipient, MessageContainer message) {
         return recipient.toJid().server() == JidServer.newsletter() ? sendNewsletterMessage(recipient, message) : sendChatMessage(recipient, message);
     }
 
@@ -715,7 +720,7 @@ public class Whatsapp {
      * @param newMessage the new message's content
      * @return a CompletableFuture
      */
-    public <T extends MessageInfo<T>> T editMessage(T oldMessage, Message newMessage) {
+    public <T extends MessageInfo> T editMessage(T oldMessage, Message newMessage) {
         var oldMessageType = oldMessage.message().content().type();
         var newMessageType = newMessage.type();
         if (oldMessageType != newMessageType) {
@@ -815,7 +820,8 @@ public class Whatsapp {
         }
 
         if (chatResult.isEmpty()) {
-            return info.setStatus(MessageStatus.ERROR);
+            info.setStatus(MessageStatus.ERROR);
+            return info;
         }
 
         if (compose) {
@@ -925,8 +931,8 @@ public class Whatsapp {
      * @param info the non-null message whose newsletters is pending
      * @return a non-null newsletters
      */
-    public ChatMessageInfo awaitMessageReply(ChatMessageInfo info) {
-        return awaitMessageReply(info.id());
+    public <T extends MessageInfo> T waitForMessageReply(T info) {
+        return (T) waitForMessageReply(info.id());
     }
 
     /**
@@ -935,8 +941,8 @@ public class Whatsapp {
      * @param id the non-null id of message whose newsletters is pending
      * @return a non-null newsletters
      */
-    public ChatMessageInfo awaitMessageReply(String id) {
-        return null; // FIXME
+    public MessageInfo waitForMessageReply(String id) {
+        return socketHandler.waitForMessageReply(id);
     }
 
     /**
@@ -1894,12 +1900,12 @@ public class Whatsapp {
         return info;
     }
 
-    private String fromMeToFlag(MessageInfo<?> info) {
+    private String fromMeToFlag(MessageInfo info) {
         var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
         return booleanToInt(fromMe);
     }
 
-    private String participantToFlag(MessageInfo<?> info) {
+    private String participantToFlag(MessageInfo info) {
         var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
         return info.parentJid().hasServer(JidServer.groupOrCommunity())
                 && !fromMe ? info.senderJid().toString() : "0";
@@ -2024,7 +2030,7 @@ public class Whatsapp {
     }
 
 
-    private int getEditBit(MessageInfo<?> info) {
+    private int getEditBit(MessageInfo info) {
         if (info.parentJid().hasServer(JidServer.newsletter())) {
             return 3;
         }
@@ -2032,7 +2038,7 @@ public class Whatsapp {
         return 1;
     }
 
-    private int getDeleteBit(MessageInfo<?> info) {
+    private int getDeleteBit(MessageInfo info) {
         if (info.parentJid().hasServer(JidServer.newsletter())) {
             return 8;
         }
@@ -2298,7 +2304,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public byte[] downloadMedia(ChatMessageInfo info) {
-        if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
+        if (!(info.message().content() instanceof MediaMessage mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
 
@@ -2319,7 +2325,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public byte[] downloadMedia(NewsletterMessageInfo info) {
-        if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
+        if (!(info.message().content() instanceof MediaMessage mediaMessage)) {
             throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
         }
 
@@ -2334,7 +2340,7 @@ public class Whatsapp {
      * @param mediaMessage the non-null media
      * @return a CompletableFuture
      */
-    public byte[] downloadMedia(MediaMessage<?> mediaMessage) {
+    public byte[] downloadMedia(MediaMessage mediaMessage) {
         var decodedMedia = mediaMessage.decodedMedia();
         if (decodedMedia.isPresent()) {
             return decodedMedia.get();
@@ -2355,7 +2361,7 @@ public class Whatsapp {
      */
     public void requireMediaReupload(ChatMessageInfo info) {
         try {
-            if (!(info.message().content() instanceof MediaMessage<?> mediaMessage)) {
+            if (!(info.message().content() instanceof MediaMessage mediaMessage)) {
                 throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
             }
 
@@ -2385,7 +2391,7 @@ public class Whatsapp {
         }
     }
 
-    private void parseMediaReupload(ChatMessageInfo info, MediaMessage<?> mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
+    private void parseMediaReupload(ChatMessageInfo info, MediaMessage mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
         try {
             if (node.hasNode("error")) {
                 throw new IllegalArgumentException("Erroneous response from media reupload: " + node.attributes().getInt("code"));
@@ -2729,7 +2735,6 @@ public class Whatsapp {
      * Opens a wa.me chat link
      *
      * @param link the non-null link to open
-     * @return a future
      */
     public Optional<Jid> openChatLink(URI link) {
         var host = link.getHost();
@@ -2756,7 +2761,6 @@ public class Whatsapp {
     /**
      * Gets the verified name certificate
      *
-     * @return a future
      */
     public Optional<BusinessVerifiedNameCertificate> queryBusinessCertificate(JidProvider provider) {
         var result = socketHandler.sendQuery("get", "w:biz", Node.of("verified_name", Map.of("jid", provider.toJid())));
@@ -2785,7 +2789,6 @@ public class Whatsapp {
      *
      * @param code  the six digits non-null numeric code
      * @param email the nullable recovery email
-     * @return a future
      */
     public boolean enable2fa(String code, String email) {
         return set2fa(code, email);
@@ -2795,7 +2798,6 @@ public class Whatsapp {
      * Disables two-factor authentication
      * Mobile API only
      *
-     * @return a future
      */
     public boolean disable2fa() {
         return set2fa(null, null);
@@ -2830,7 +2832,6 @@ public class Whatsapp {
      *
      * @param contact the non-null contact
      * @param video whether it's a video call or an audio call
-     * @return a future
      */
     public Call startCall(JidProvider contact, boolean video) {
         if (store().clientType() != WhatsappClientType.MOBILE) {
@@ -2841,26 +2842,26 @@ public class Whatsapp {
         return sendCallMessage(contact, video);
     }
 
-    private Call sendCallMessage(JidProvider provider, boolean video) {
+    private Call sendCallMessage(JidProvider jid, boolean video) {
         var callId = ChatMessageKey.randomId(store().clientType());
         var description = video ? "video" : "audio";
         var audioStream = Node.of(description, Map.of("rate", 8000, "enc", "opus"));
         var audioStreamTwo = Node.of(description, Map.of("rate", 16000, "enc", "opus"));
         var net = Node.of("net", Map.of("medium", 3));
         var encopt = Node.of("encopt", Map.of("keygen", 2));
-        var enc = createCallNode(provider);
+        var enc = socketHandler.createCall(jid);
         var capability = Node.of("capability", Map.of("ver", 1), HexFormat.of().parseHex("0104ff09c4fa"));
         var callCreator = "%s:0@s.whatsapp.net".formatted(jidOrThrowError().user());
         var offer = Node.of("offer",
                 Map.of("call-creator", callCreator, "call-id", callId),
                 audioStream, audioStreamTwo, net, capability, encopt, enc);
-        var result = socketHandler.sendNode(Node.of("call", Map.of("to", provider.toJid()), offer));
-        return onCallSent(provider, callId, result);
+        var result = socketHandler.sendNode(Node.of("call", Map.of("to", jid.toJid()), offer));
+        return onCallSent(jid, callId, result);
     }
 
-    private Call onCallSent(JidProvider provider, String callId, Node result) {
+    private Call onCallSent(JidProvider jid, String callId, Node result) {
         var call = new CallBuilder()
-                .chatJid(provider.toJid())
+                .chatJid(jid.toJid())
                 .callerJid(jidOrThrowError())
                 .id(callId)
                 .timestampSeconds(Clock.nowSeconds())
@@ -2873,17 +2874,11 @@ public class Whatsapp {
         return call;
     }
 
-    private Node createCallNode(JidProvider provider) {
-        // TODO: Reimplement me
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Rejects an incoming call or stops an active call
      * Mobile API only
      *
      * @param callId the non-null id of the call to reject
-     * @return a future
      */
     public boolean stopCall(String callId) {
         if (store().clientType() != WhatsappClientType.MOBILE) {
@@ -2899,7 +2894,6 @@ public class Whatsapp {
      * Mobile API only
      *
      * @param call the non-null call to reject
-     * @return a future
      */
     public boolean stopCall(Call call) {
         if (store().clientType() != WhatsappClientType.MOBILE) {
@@ -2984,7 +2978,6 @@ public class Whatsapp {
      * Creates a newsletter
      *
      * @param name the non-null name of the newsletter
-     * @return a future
      */
     public Optional<Newsletter> createNewsletter(String name) {
         return createNewsletter(name, null, null);
@@ -2995,7 +2988,6 @@ public class Whatsapp {
      *
      * @param name        the non-null name of the newsletter
      * @param description the nullable description of the newsletter
-     * @return a future
      */
     public Optional<Newsletter> createNewsletter(String name, String description) {
         return createNewsletter(name, description, null);
@@ -3007,7 +2999,6 @@ public class Whatsapp {
      * @param name        the non-null name of the newsletter
      * @param description the nullable description of the newsletter
      * @param picture     the nullable profile picture of the newsletter
-     * @return a future
      */
     public Optional<Newsletter> createNewsletter(String name, String description, byte[] picture) {
         var request = NewsletterRequests.createNewsletter(name, description, picture != null ? Base64.getEncoder().encodeToString(picture) : null);
@@ -3271,7 +3262,7 @@ public class Whatsapp {
      *
      * @param messageInfo the message to retry
      */
-    public void sendMessageRetry(MessageInfo<?> messageInfo) {
+    public void sendMessageRetry(MessageInfo messageInfo) {
         var timestamp = messageInfo.timestampSeconds()
                 .orElse(0);
         var chatJid = messageInfo.parentJid();
@@ -3284,7 +3275,6 @@ public class Whatsapp {
      *
      * @param newsletterJid the non-null jid of the newsletter
      * @param role          the non-null role of the user executing the query
-     * @return a future
      */
     public Optional<Newsletter> queryNewsletter(Jid newsletterJid, NewsletterViewerRole role) {
         return socketHandler.queryNewsletter(newsletterJid, role);
@@ -3315,685 +3305,619 @@ public class Whatsapp {
     // Generated code from it.auties.whatsapp.routine.GenerateListenersLambda
 
     public Whatsapp addNodeSentListener(WhatsappListener.Consumer.Binary<Whatsapp, Node> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNodeSent(Whatsapp whatsapp, Node outgoing) {
                 consumer.accept(whatsapp, outgoing);
             }
         });
-        return this;
     }
 
     public Whatsapp addNodeSentListener(WhatsappListener.Consumer.Unary<Node> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNodeSent(Node outgoing) {
                 consumer.accept(outgoing);
             }
         });
-        return this;
     }
 
     public Whatsapp addNodeReceivedListener(WhatsappListener.Consumer.Unary<Node> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNodeReceived(Node incoming) {
                 consumer.accept(incoming);
             }
         });
-        return this;
     }
 
     public Whatsapp addNodeReceivedListener(WhatsappListener.Consumer.Binary<Whatsapp, Node> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNodeReceived(Whatsapp whatsapp, Node incoming) {
                 consumer.accept(whatsapp, incoming);
             }
         });
-        return this;
     }
 
     public Whatsapp addLoggedInListener(WhatsappListener.Consumer.Empty consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onLoggedIn() {
                 consumer.accept();
             }
         });
-        return this;
     }
 
     public Whatsapp addLoggedInListener(WhatsappListener.Consumer.Unary<Whatsapp> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onLoggedIn(Whatsapp whatsapp) {
                 consumer.accept(whatsapp);
             }
         });
-        return this;
     }
 
     public Whatsapp addMetadataListener(WhatsappListener.Consumer.Unary<Map<String, String>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onMetadata(Map<String, String> metadata) {
                 consumer.accept(metadata);
             }
         });
-        return this;
     }
 
     public Whatsapp addMetadataListener(WhatsappListener.Consumer.Binary<Whatsapp, Map<String, String>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onMetadata(Whatsapp whatsapp, Map<String, String> metadata) {
                 consumer.accept(whatsapp, metadata);
             }
         });
-        return this;
     }
 
     public Whatsapp addDisconnectedListener(WhatsappListener.Consumer.Unary<WhatsappDisconnectReason> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onDisconnected(WhatsappDisconnectReason reason) {
                 consumer.accept(reason);
             }
         });
-        return this;
     }
 
     public Whatsapp addDisconnectedListener(WhatsappListener.Consumer.Binary<Whatsapp, WhatsappDisconnectReason> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onDisconnected(Whatsapp whatsapp, WhatsappDisconnectReason reason) {
                 consumer.accept(whatsapp, reason);
             }
         });
-        return this;
     }
 
     public Whatsapp addActionListener(WhatsappListener.Consumer.Binary<Action, MessageIndexInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onAction(Action action, MessageIndexInfo messageIndexInfo) {
                 consumer.accept(action, messageIndexInfo);
             }
         });
-        return this;
     }
 
     public Whatsapp addActionListener(WhatsappListener.Consumer.Ternary<Whatsapp, Action, MessageIndexInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onAction(Whatsapp whatsapp, Action action, MessageIndexInfo messageIndexInfo) {
                 consumer.accept(whatsapp, action, messageIndexInfo);
             }
         });
-        return this;
     }
 
     public Whatsapp addSettingListener(WhatsappListener.Consumer.Unary<Setting> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onSetting(Setting setting) {
                 consumer.accept(setting);
             }
         });
-        return this;
     }
 
     public Whatsapp addSettingListener(WhatsappListener.Consumer.Binary<Whatsapp, Setting> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onSetting(Whatsapp whatsapp, Setting setting) {
                 consumer.accept(whatsapp, setting);
             }
         });
-        return this;
     }
 
     public Whatsapp addFeaturesListener(WhatsappListener.Consumer.Unary<List<String>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onFeatures(List<String> features) {
                 WhatsappListener.super.onFeatures(features);
             }
         });
-        return this;
     }
 
     public Whatsapp addFeaturesListener(WhatsappListener.Consumer.Binary<Whatsapp, List<String>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onFeatures(Whatsapp whatsapp, List<String> features) {
                 consumer.accept(whatsapp, features);
             }
         });
-        return this;
     }
 
     public Whatsapp addContactsListener(WhatsappListener.Consumer.Unary<Collection<Contact>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onContacts(Collection<Contact> contacts) {
                 consumer.accept(contacts);
             }
         });
-        return this;
     }
 
     public Whatsapp addContactsListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Contact>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onContacts(Whatsapp whatsapp, Collection<Contact> contacts) {
                 consumer.accept(whatsapp, contacts);
             }
         });
-        return this;
     }
 
     public Whatsapp addContactPresenceListener(WhatsappListener.Consumer.Binary<Chat, JidProvider> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onContactPresence(Chat chat, JidProvider jid) {
                 consumer.accept(chat, jid);
             }
         });
-        return this;
     }
 
     public Whatsapp addContactPresenceListener(WhatsappListener.Consumer.Ternary<Whatsapp, Chat, JidProvider> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onContactPresence(Whatsapp whatsapp, Chat chat, JidProvider jid) {
                 consumer.accept(whatsapp, chat, jid);
             }
         });
-        return this;
     }
 
     public Whatsapp addChatsListener(WhatsappListener.Consumer.Unary<Collection<Chat>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onChats(Collection<Chat> chats) {
                 consumer.accept(chats);
             }
         });
-        return this;
     }
 
     public Whatsapp addChatsListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Chat>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onChats(Whatsapp whatsapp, Collection<Chat> chats) {
                 consumer.accept(whatsapp, chats);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewslettersListener(WhatsappListener.Consumer.Unary<Collection<Newsletter>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewsletters(Collection<Newsletter> newsletters) {
                 consumer.accept(newsletters);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewslettersListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Newsletter>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewsletters(Whatsapp whatsapp, Collection<Newsletter> newsletters) {
                 consumer.accept(whatsapp, newsletters);
             }
         });
-        return this;
     }
 
     public Whatsapp addChatMessagesSyncListener(WhatsappListener.Consumer.Binary<Chat, Boolean> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onChatMessagesSync(Chat chat, boolean last) {
                 consumer.accept(chat, last);
             }
         });
-        return this;
     }
 
     public Whatsapp addChatMessagesSyncListener(WhatsappListener.Consumer.Ternary<Whatsapp, Chat, Boolean> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onChatMessagesSync(Whatsapp whatsapp, Chat chat, boolean last) {
                 consumer.accept(whatsapp, chat, last);
             }
         });
-        return this;
     }
 
     public Whatsapp addHistorySyncProgressListener(WhatsappListener.Consumer.Ternary<Whatsapp, Integer, Boolean> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent) {
                 consumer.accept(whatsapp, percentage, recent);
             }
         });
-        return this;
     }
 
     public Whatsapp addHistorySyncProgressListener(WhatsappListener.Consumer.Binary<Integer, Boolean> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onHistorySyncProgress(int percentage, boolean recent) {
                 consumer.accept(percentage, recent);
             }
         });
-        return this;
     }
 
-    public Whatsapp addNewMessageListener(WhatsappListener.Consumer.Unary<MessageInfo<?>> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addNewMessageListener(WhatsappListener.Consumer.Unary<MessageInfo> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(MessageInfo<?> info) {
+            public void onNewMessage(MessageInfo info) {
                 consumer.accept(info);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewChatMessageListener(WhatsappListener.Consumer.Unary<ChatMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(MessageInfo<?> info) {
+            public void onNewMessage(MessageInfo info) {
                 if(info instanceof ChatMessageInfo chatMessageInfo) {
                     consumer.accept(chatMessageInfo);
                 }
             }
         });
-        return this;
     }
 
     public Whatsapp addNewNewsletterMessageListener(WhatsappListener.Consumer.Unary<NewsletterMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(MessageInfo<?> info) {
+            public void onNewMessage(MessageInfo info) {
                 if(info instanceof NewsletterMessageInfo newsletterMessageInfo) {
                     consumer.accept(newsletterMessageInfo);
                 }
             }
         });
-        return this;
     }
 
-    public Whatsapp addNewMessageListener(WhatsappListener.Consumer.Binary<Whatsapp, MessageInfo<?>> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addNewMessageListener(WhatsappListener.Consumer.Binary<Whatsapp, MessageInfo> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
                 consumer.accept(whatsapp, info);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewNewsletterMessageListener(WhatsappListener.Consumer.Binary<Whatsapp, NewsletterMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
                 if(info instanceof NewsletterMessageInfo newsletterMessageInfo) {
                     consumer.accept(whatsapp, newsletterMessageInfo);
                 }
             }
         });
-        return this;
     }
 
     public Whatsapp addNewChatMessageListener(WhatsappListener.Consumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
                 if(info instanceof ChatMessageInfo chatMessageInfo) {
                     consumer.accept(whatsapp, chatMessageInfo);
                 }
             }
         });
-        return this;
     }
 
-    public Whatsapp addMessageDeletedListener(WhatsappListener.Consumer.Binary<MessageInfo<?>, Boolean> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addMessageDeletedListener(WhatsappListener.Consumer.Binary<MessageInfo, Boolean> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onMessageDeleted(MessageInfo<?> info, boolean everyone) {
+            public void onMessageDeleted(MessageInfo info, boolean everyone) {
                 consumer.accept(info, everyone);
             }
         });
-        return this;
     }
 
-    public Whatsapp addMessageDeletedListener(WhatsappListener.Consumer.Ternary<Whatsapp, MessageInfo<?>, Boolean> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addMessageDeletedListener(WhatsappListener.Consumer.Ternary<Whatsapp, MessageInfo, Boolean> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onMessageDeleted(Whatsapp whatsapp, MessageInfo<?> info, boolean everyone) {
+            public void onMessageDeleted(Whatsapp whatsapp, MessageInfo info, boolean everyone) {
                 consumer.accept(whatsapp, info, everyone);
             }
         });
-        return this;
     }
 
-    public Whatsapp addMessageStatusListener(WhatsappListener.Consumer.Unary<MessageInfo<?>> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addMessageStatusListener(WhatsappListener.Consumer.Unary<MessageInfo> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onMessageStatus(MessageInfo<?> info) {
+            public void onMessageStatus(MessageInfo info) {
                 consumer.accept(info);
             }
         });
-        return this;
     }
 
-    public Whatsapp addMessageStatusListener(WhatsappListener.Consumer.Binary<Whatsapp, MessageInfo<?>> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addMessageStatusListener(WhatsappListener.Consumer.Binary<Whatsapp, MessageInfo> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onMessageStatus(Whatsapp whatsapp, MessageInfo<?> info) {
+            public void onMessageStatus(Whatsapp whatsapp, MessageInfo info) {
                 consumer.accept(whatsapp, info);
             }
         });
-        return this;
     }
 
     public Whatsapp addStatusListener(WhatsappListener.Consumer.Unary<Collection<ChatMessageInfo>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onStatus(Collection<ChatMessageInfo> status) {
                 consumer.accept(status);
             }
         });
-        return this;
     }
 
     public Whatsapp addStatusListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<ChatMessageInfo>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onStatus(Whatsapp whatsapp, Collection<ChatMessageInfo> status) {
                 consumer.accept(whatsapp, status);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewStatusListener(WhatsappListener.Consumer.Unary<ChatMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewStatus(ChatMessageInfo status) {
                 consumer.accept(status);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewStatusListener(WhatsappListener.Consumer.Binary<Whatsapp, ChatMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewStatus(Whatsapp whatsapp, ChatMessageInfo status) {
                 consumer.accept(whatsapp, status);
             }
         });
-        return this;
     }
 
-    public Whatsapp addMessageReplyListener(WhatsappListener.Consumer.Ternary<Whatsapp, ChatMessageInfo, QuotedMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addMessageReplyListener(WhatsappListener.Consumer.Ternary<Whatsapp, MessageInfo, QuotedMessageInfo> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onMessageReply(Whatsapp whatsapp, ChatMessageInfo response, QuotedMessageInfo quoted) {
+            public void onMessageReply(Whatsapp whatsapp, MessageInfo response, QuotedMessageInfo quoted) {
                 consumer.accept(whatsapp, response, quoted);
             }
         });
-        return this;
     }
 
-    public Whatsapp addMessageReplyListener(WhatsappListener.Consumer.Binary<ChatMessageInfo, QuotedMessageInfo> consumer) {
-        addListener(new WhatsappListener() {
+    public Whatsapp addMessageReplyListener(WhatsappListener.Consumer.Binary<MessageInfo, QuotedMessageInfo> consumer) {
+        return addListener(new WhatsappListener() {
             @Override
-            public void onMessageReply(ChatMessageInfo response, QuotedMessageInfo quoted) {
+            public void onMessageReply(MessageInfo response, QuotedMessageInfo quoted) {
                 consumer.accept(response, quoted);
             }
         });
-        return this;
     }
 
     public Whatsapp addProfilePictureChangedListener(WhatsappListener.Consumer.Unary<Contact> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onProfilePictureChanged(Contact contact) {
                 consumer.accept(contact);
             }
         });
-        return this;
     }
 
     public Whatsapp addProfilePictureChangedListener(WhatsappListener.Consumer.Binary<Whatsapp, Contact> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onProfilePictureChanged(Whatsapp whatsapp, Contact contact) {
                 consumer.accept(whatsapp, contact);
             }
         });
-        return this;
     }
 
     public Whatsapp addGroupPictureChangedListener(WhatsappListener.Consumer.Binary<Whatsapp, Chat> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onGroupPictureChanged(Whatsapp whatsapp, Chat group) {
                 consumer.accept(whatsapp, group);
             }
         });
-        return this;
     }
 
     public Whatsapp addGroupPictureChangedListener(WhatsappListener.Consumer.Unary<Chat> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onGroupPictureChanged(Chat group) {
                 consumer.accept(group);
             }
         });
-        return this;
     }
 
     public Whatsapp addNameChangedListener(WhatsappListener.Consumer.Binary<String, String> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNameChanged(String oldName, String newName) {
                 consumer.accept(oldName, newName);
             }
         });
-        return this;
     }
 
     public Whatsapp addNameChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, String, String> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNameChanged(Whatsapp whatsapp, String oldName, String newName) {
                 consumer.accept(whatsapp, oldName, newName);
             }
         });
-        return this;
     }
 
     public Whatsapp addAboutChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, String, String> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onAboutChanged(Whatsapp whatsapp, String oldAbout, String newAbout) {
                 consumer.accept(whatsapp, oldAbout, newAbout);
             }
         });
-        return this;
     }
 
     public Whatsapp addAboutChangedListener(WhatsappListener.Consumer.Binary<String, String> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onAboutChanged(String oldAbout, String newAbout) {
                 consumer.accept(oldAbout, newAbout);
             }
         });
-        return this;
     }
 
     public Whatsapp addLocaleChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, CountryLocale, CountryLocale> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onLocaleChanged(Whatsapp whatsapp, CountryLocale oldLocale, CountryLocale newLocale) {
                 consumer.accept(whatsapp, oldLocale, newLocale);
             }
         });
-        return this;
     }
 
     public Whatsapp addLocaleChangedListener(WhatsappListener.Consumer.Binary<CountryLocale, CountryLocale> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onLocaleChanged(CountryLocale oldLocale, CountryLocale newLocale) {
                 consumer.accept(oldLocale, newLocale);
             }
         });
-        return this;
     }
 
     public Whatsapp addContactBlockedListener(WhatsappListener.Consumer.Binary<Whatsapp, Contact> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onContactBlocked(Whatsapp whatsapp, Contact contact) {
                 consumer.accept(whatsapp, contact);
             }
         });
-        return this;
     }
 
     public Whatsapp addContactBlockedListener(WhatsappListener.Consumer.Unary<Contact> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onContactBlocked(Contact contact) {
                 consumer.accept(contact);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewContactListener(WhatsappListener.Consumer.Unary<Contact> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewContact(Contact contact) {
                 consumer.accept(contact);
             }
         });
-        return this;
     }
 
     public Whatsapp addNewContactListener(WhatsappListener.Consumer.Binary<Whatsapp, Contact> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onNewContact(Whatsapp whatsapp, Contact contact) {
                 consumer.accept(whatsapp, contact);
             }
         });
-        return this;
     }
 
     public Whatsapp addPrivacySettingChangedListener(WhatsappListener.Consumer.Binary<PrivacySettingEntry, PrivacySettingEntry> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
                 consumer.accept(oldPrivacyEntry, newPrivacyEntry);
             }
         });
-        return this;
     }
 
     public Whatsapp addPrivacySettingChangedListener(WhatsappListener.Consumer.Ternary<Whatsapp, PrivacySettingEntry, PrivacySettingEntry> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
                 consumer.accept(whatsapp, oldPrivacyEntry, newPrivacyEntry);
             }
         });
-        return this;
     }
 
     public Whatsapp addLinkedDevicesListener(WhatsappListener.Consumer.Unary<Collection<Jid>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onLinkedDevices(Collection<Jid> devices) {
                 consumer.accept(devices);
             }
         });
-        return this;
     }
 
     public Whatsapp addLinkedDevicesListener(WhatsappListener.Consumer.Binary<Whatsapp, Collection<Jid>> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices) {
                 WhatsappListener.super.onLinkedDevices(whatsapp, devices);
             }
         });
-        return this;
     }
 
     public Whatsapp addRegistrationCodeListener(WhatsappListener.Consumer.Binary<Whatsapp, Long> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onRegistrationCode(Whatsapp whatsapp, long code) {
                 consumer.accept(whatsapp, code);
             }
         });
-        return this;
     }
 
     public Whatsapp addRegistrationCodeListener(WhatsappListener.Consumer.Unary<Long> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onRegistrationCode(long code) {
                 consumer.accept(code);
             }
         });
-        return this;
     }
 
     public Whatsapp addCallListener(WhatsappListener.Consumer.Unary<Call> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onCall(Call call) {
                 consumer.accept(call);
             }
         });
-        return this;
     }
 
     public Whatsapp addCallListener(WhatsappListener.Consumer.Binary<Whatsapp, Call> consumer) {
-        addListener(new WhatsappListener() {
+        return addListener(new WhatsappListener() {
             @Override
             public void onCall(Whatsapp whatsapp, Call call) {
                 consumer.accept(whatsapp, call);
             }
         });
-        return this;
     }
 
-    public Whatsapp addMessageReplyListener(ChatMessageInfo info, Consumer<MessageInfo<?>> onMessageReply) {
+    public Whatsapp addMessageReplyListener(ChatMessageInfo info, Consumer<MessageInfo> onMessageReply) {
         return addMessageReplyListener(info.id(), onMessageReply);
     }
 
-    public Whatsapp addMessageReplyListener(ChatMessageInfo info, BiConsumer<Whatsapp, MessageInfo<?>> onMessageReply) {
+    public Whatsapp addMessageReplyListener(ChatMessageInfo info, BiConsumer<Whatsapp, MessageInfo> onMessageReply) {
         return addMessageReplyListener(info.id(), onMessageReply);
     }
 
-    public Whatsapp addMessageReplyListener(String id, Consumer<MessageInfo<?>> consumer) {
+    public Whatsapp addMessageReplyListener(String id, Consumer<MessageInfo> consumer) {
         return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(MessageInfo<?> info) {
+            public void onNewMessage(MessageInfo info) {
                 if (!info.id().equals(id)) {
                     return;
                 }
@@ -4003,10 +3927,10 @@ public class Whatsapp {
         });
     }
 
-    public Whatsapp addMessageReplyListener(String id, BiConsumer<Whatsapp, MessageInfo<?>> consumer) {
+    public Whatsapp addMessageReplyListener(String id, BiConsumer<Whatsapp, MessageInfo> consumer) {
         return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(Whatsapp whatsapp, MessageInfo<?> info) {
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
                 if (!info.id().equals(id)) {
                     return;
                 }

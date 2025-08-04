@@ -13,7 +13,7 @@ import java.util.*;
  * A model clas that represents a sticker
  */
 @ProtobufMessage(name = "SyncActionValue.StickerAction")
-public final class StickerAction implements Action, MutableAttachmentProvider<StickerAction> {
+public final class StickerAction implements Action, MutableAttachmentProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -74,14 +74,12 @@ public final class StickerAction implements Action, MutableAttachmentProvider<St
     }
 
     @Override
-    public StickerAction setMediaKey(byte[] mediaKey) {
+    public void setMediaKey(byte[] mediaKey) {
         this.mediaKey = mediaKey;
-        return this;
     }
 
     @Override
-    public StickerAction setMediaKeyTimestamp(Long timestamp) {
-        return this;
+    public void setMediaKeyTimestamp(Long timestamp) {
     }
 
     @Override
@@ -90,8 +88,7 @@ public final class StickerAction implements Action, MutableAttachmentProvider<St
     }
 
     @Override
-    public StickerAction setMediaSha256(byte[] bytes) {
-        return this;
+    public void setMediaSha256(byte[] bytes) {
     }
 
     @Override
@@ -100,9 +97,8 @@ public final class StickerAction implements Action, MutableAttachmentProvider<St
     }
 
     @Override
-    public StickerAction setMediaEncryptedSha256(byte[] fileEncSha256) {
+    public void setMediaEncryptedSha256(byte[] fileEncSha256) {
         this.fileEncSha256 = fileEncSha256;
-        return this;
     }
 
     public Optional<String> mimetype() {
@@ -123,9 +119,8 @@ public final class StickerAction implements Action, MutableAttachmentProvider<St
     }
 
     @Override
-    public StickerAction setMediaUrl(String mediaUrl) {
+    public void setMediaUrl(String mediaUrl) {
         this.mediaUrl = mediaUrl;
-        return this;
     }
 
     @Override
@@ -134,9 +129,8 @@ public final class StickerAction implements Action, MutableAttachmentProvider<St
     }
 
     @Override
-    public StickerAction setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -145,9 +139,8 @@ public final class StickerAction implements Action, MutableAttachmentProvider<St
     }
 
     @Override
-    public StickerAction setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override

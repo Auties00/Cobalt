@@ -3,7 +3,10 @@ package it.auties.whatsapp.model.response;
 import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 public final class SubscribedNewslettersResponse {
     private final List<Newsletter> newsletters;

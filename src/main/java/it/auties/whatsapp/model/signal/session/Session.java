@@ -5,8 +5,6 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,14 +23,9 @@ public final class Session {
         this.states = states;
     }
 
-    public Session closeCurrentState() {
+    public void closeCurrentState() {
         var currentState = currentState();
-        currentState.ifPresent(value -> value.closed(true));
-        return this;
-    }
-
-    public Collection<SessionState> states() {
-        return Collections.unmodifiableCollection(states);
+        currentState.ifPresent(value -> value.setClosed(true));
     }
 
     public Optional<SessionState> currentState() {
@@ -42,7 +35,8 @@ public final class Session {
     }
 
     public boolean hasState(int version, byte[] baseKey) {
-        return states.stream().anyMatch(state -> state.contentEquals(version, baseKey));
+        return states.stream()
+                .anyMatch(state -> state.contentEquals(version, baseKey));
     }
 
     public Optional<SessionState> findState(int version, byte[] baseKey) {

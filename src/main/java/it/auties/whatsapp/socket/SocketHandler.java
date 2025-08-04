@@ -64,8 +64,9 @@ public final class SocketHandler {
     private final AppStateHandler appStateHandler;
     private final WhatsappErrorHandler errorHandler;
     private volatile ScheduledExecutorService scheduler;
-    private final ConcurrentHashMap<String, Request> requests;
+    private final ConcurrentHashMap<String, Request> pendingRequests;
     private final ConcurrentMap<Jid, SequencedSet<ChatPastParticipant>> pastParticipants;
+    private final ConcurrentMap<String, CompletableFuture<MessageInfo>> pendingMessages;
     private final Map<Jid, ChatMetadata> chatMetadataCache;
     private final AtomicBoolean serializable;
     private final AtomicReference<State> state;
@@ -86,7 +87,8 @@ public final class SocketHandler {
         this.errorHandler = Objects.requireNonNullElse(errorHandler, WhatsappErrorHandler.toTerminal());
         this.pastParticipants = new ConcurrentHashMap<>();
         this.chatMetadataCache = new ConcurrentHashMap<>();
-        this.requests = new ConcurrentHashMap<>();
+        this.pendingRequests = new ConcurrentHashMap<>();
+        this.pendingMessages = new ConcurrentHashMap<>();
     }
 
     private void onShutdown() {
@@ -168,7 +170,7 @@ public final class SocketHandler {
 
     public Node sendNode(Node node, Function<Node, Boolean> filter) {
         if (node.id() == null) {
-            node.attributes().put("id", Bytes.randomHex(6));
+            node.attributes().put("id", Bytes.randomHex(10));
         }
 
         if(!encryptionHandler.sendCiphered(node)) {
@@ -176,10 +178,10 @@ public final class SocketHandler {
         }
 
         onNodeSent(node);
-        var request = new Request(node.id(), filter, node);
-        requests.put(node.id(), request);
+        var request = new Request(node, filter);
+        pendingRequests.put(node.id(), request);
         try {
-            return request.waitForResponse(TIMEOUT);
+            return request.waitForResponse();
         }catch (Throwable ignored) {
             return Node.empty();
         }
@@ -232,8 +234,8 @@ public final class SocketHandler {
 
     private void onDisconnected(WhatsappDisconnectReason reason) {
         encryptionHandler.reset();
-        requests.forEach((_, request) -> request.complete(Node.empty()));
-        requests.clear();
+        pendingRequests.forEach((_, request) -> request.complete(Node.empty()));
+        pendingRequests.clear();
         if (reason == WhatsappDisconnectReason.LOGGED_OUT || reason == WhatsappDisconnectReason.BANNED) {
             store.deleteSession();
             serializable.set(false);
@@ -642,7 +644,7 @@ public final class SocketHandler {
         });
     }
 
-    void onMessageStatus(MessageInfo<?> message) {
+    void onMessageStatus(MessageInfo message) {
         callListenersAsync(listener -> {
             listener.onMessageStatus(whatsapp, message);
             listener.onMessageStatus(message);
@@ -664,7 +666,7 @@ public final class SocketHandler {
         });
     }
 
-    void onNewMessage(MessageInfo<?> info) {
+    void onNewMessage(MessageInfo info) {
         callListenersAsync(listener -> {
             listener.onNewMessage(whatsapp, info);
             listener.onNewMessage(info);
@@ -699,7 +701,7 @@ public final class SocketHandler {
         });
     }
 
-    void onMessageDeleted(MessageInfo<?> message, boolean everyone) {
+    void onMessageDeleted(MessageInfo message, boolean everyone) {
         callListenersAsync(listener -> {
             listener.onMessageDeleted(whatsapp, message, everyone);
             listener.onMessageDeleted(message, everyone);
@@ -769,12 +771,16 @@ public final class SocketHandler {
         });
     }
 
-    void onReply(ChatMessageInfo info) {
-        var quoted = info.quotedMessage().orElse(null);
+    void onReply(MessageInfo info) {
+        var quoted = info.quotedMessage()
+                .orElse(null);
         if (quoted == null) {
             return;
         }
-        // FIXME: store.resolvePendingReply(info);
+        var pendingMessageFuture = pendingMessages.remove(quoted.id());
+        if(pendingMessageFuture != null) {
+            pendingMessageFuture.complete(quoted);
+        }
         callListenersAsync(listener -> {
             listener.onMessageReply(whatsapp, info, quoted);
             listener.onMessageReply(info, quoted);
@@ -969,7 +975,7 @@ public final class SocketHandler {
                     .put("xmlns", "w:p")
                     .put("to", JidServer.whatsapp().toJid())
                     .put("type", "get")
-                    .put("id", HexFormat.of().formatHex(Bytes.random(6)))
+                    .put("id", HexFormat.of().formatHex(Bytes.random(10)))
                     .toMap();
             var node = Node.of("iq", attributes, Node.of("ping"));
             return sendNode(node);
@@ -1036,7 +1042,7 @@ public final class SocketHandler {
             return;
         }
 
-        var request = requests.get(id);
+        var request = pendingRequests.get(id);
         if (request == null) {
             return;
         }
@@ -1046,7 +1052,17 @@ public final class SocketHandler {
             return;
         }
 
-        requests.remove(id);
+        pendingRequests.remove(id);
+    }
+
+    public MessageInfo waitForMessageReply(String id) {
+        var future = new CompletableFuture<MessageInfo>();
+        pendingMessages.put(id, future);
+        return future.join();
+    }
+
+    public Node createCall(JidProvider jid) {
+        return messageHandler.createCall(jid);
     }
 
     private enum State {
@@ -1056,18 +1072,16 @@ public final class SocketHandler {
     }
 
     private static final class Request {
-        private final String id;
-        private final Object body;
+        private final Node body;
         private final Function<Node, Boolean> filter;
         private volatile Node response;
 
-        Request(String id, Function<Node, Boolean> filter, Object body) {
-            this.id = id;
+        private Request(Node body, Function<Node, Boolean> filter) {
             this.body = body;
             this.filter = filter;
         }
 
-        public boolean complete(Node response) {
+        private boolean complete(Node response) {
             Objects.requireNonNull(response, "Response cannot be null");
             var acceptable = response == Node.empty()
                     || filter == null
@@ -1081,47 +1095,22 @@ public final class SocketHandler {
             return acceptable;
         }
 
-        public String id() {
-            return id;
-        }
-
-        public Object body() {
-            return body;
-        }
-
-        public Node waitForResponse(Duration timeout) {
-            Objects.requireNonNull(timeout, "Timeout cannot be null");
+        private Node waitForResponse() {
             if (response == null) {
                 synchronized (this) {
                     if (response == null) {
                         try {
-                            wait(timeout.toMillis());
+                            wait(SocketHandler.TIMEOUT.toMillis());
                         }catch (InterruptedException exception) {
                             throw new RuntimeException("Cannot wait for response", exception);
                         }
                     }
+                    if(response == null) {
+                        throw new RuntimeException("The timeout of " + SocketHandler.TIMEOUT + " has expired for " + body);
+                    }
                 }
             }
-            if(response == null) {
-                throw new RuntimeException("The timeout of " + timeout + " has expired for " + body);
-            }
             return response;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            return obj == this
-                    || obj instanceof Request that && Objects.equals(this.id, that.id);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(id);
-        }
-
-        @Override
-        public String toString() {
-            return "SocketRequest[" + "id=" + id + ']';
         }
     }
 }

@@ -5,7 +5,10 @@ import it.auties.whatsapp.model.chat.CommunityLinkedGroup;
 import it.auties.whatsapp.model.chat.CommunityLinkedGroupBuilder;
 import it.auties.whatsapp.model.jid.Jid;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Optional;
+import java.util.SequencedSet;
 
 public final class CommunityLinkedGroupsResponse {
     private final SequencedSet<CommunityLinkedGroup> linkedGroups;

@@ -13,7 +13,7 @@ import java.util.Optional;
  * Still needs to be implemented by Whatsapp
  */
 @ProtobufMessage(name = "Message.RequestPhoneNumberMessage")
-public final class RequestPhoneNumberMessage implements ContextualMessage<RequestPhoneNumberMessage> {
+public final class RequestPhoneNumberMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     ContextInfo contextInfo;
 
@@ -37,9 +37,8 @@ public final class RequestPhoneNumberMessage implements ContextualMessage<Reques
     }
 
     @Override
-    public RequestPhoneNumberMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

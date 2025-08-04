@@ -16,7 +16,6 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
-import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -27,7 +26,7 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding an image inside
  */
 @ProtobufMessage(name = "Message.ImageMessage")
-public final class ImageMessage extends MediaMessage<ImageMessage>
+public final class ImageMessage extends MediaMessage
         implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
@@ -151,15 +150,16 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     @ProtobufBuilder(className = "ImageMessageSimpleBuilder")
     static ImageMessage simpleBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
-        return new ImageMessageBuilder()
+        var result = new ImageMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, IMAGE.mimeType()))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, true))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     @Override
@@ -168,9 +168,8 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     }
 
     @Override
-    public ImageMessage setMediaUrl(String mediaUrl) {
+    public void setMediaUrl(String mediaUrl) {
         this.mediaUrl = mediaUrl;
-        return this;
     }
 
     @Override
@@ -179,9 +178,8 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     }
 
     @Override
-    public ImageMessage setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -190,15 +188,13 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     }
 
     @Override
-    public ImageMessage setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public ImageMessage setMediaKeyTimestamp(Long timestamp) {
+    public void setMediaKeyTimestamp(Long timestamp) {
         this.mediaKeyTimestampSeconds = timestamp;
-        return this;
     }
 
     @Override
@@ -207,9 +203,8 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     }
 
     @Override
-    public ImageMessage setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -218,9 +213,8 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     }
 
     @Override
-    public ImageMessage setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -239,9 +233,8 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     }
 
     @Override
-    public ImageMessage setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override
@@ -347,8 +340,7 @@ public final class ImageMessage extends MediaMessage<ImageMessage>
     }
 
     @Override
-    public ImageMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 }

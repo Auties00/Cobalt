@@ -109,14 +109,12 @@ public final class Newsletter implements JidProvider {
         return Optional.ofNullable(state);
     }
 
-    public Newsletter setState(NewsletterState state) {
+    public void setState(NewsletterState state) {
         this.state = state;
-        return this;
     }
 
-    public Newsletter setMetadata(NewsletterMetadata metadata) {
+    public void setMetadata(NewsletterMetadata metadata) {
         this.metadata = metadata;
-        return this;
     }
 
     public Optional<NewsletterMetadata> metadata() {

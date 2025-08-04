@@ -21,7 +21,7 @@ import java.util.Optional;
  * buttons to choose from.
  */
 @ProtobufMessage(name = "Message.TemplateMessage")
-public final class TemplateMessage implements ContextualMessage<TemplateMessage>, ButtonMessage {
+public final class TemplateMessage implements ContextualMessage, ButtonMessage {
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
     final String id;
 
@@ -124,9 +124,8 @@ public final class TemplateMessage implements ContextualMessage<TemplateMessage>
     }
 
     @Override
-    public TemplateMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

@@ -7,7 +7,9 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
+import it.auties.whatsapp.model.message.model.EncryptedMessage;
+import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateMessageMetadata;
@@ -80,18 +82,16 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
         return Optional.ofNullable(encryptedMetadata);
     }
 
-    public PollUpdateMessage setEncryptedMetadata(PollUpdateEncryptedMetadata encryptedMetadata) {
+    public void setEncryptedMetadata(PollUpdateEncryptedMetadata encryptedMetadata) {
         this.encryptedMetadata = encryptedMetadata;
-        return this;
     }
 
     public Optional<Jid> voter() {
         return Optional.ofNullable(voter);
     }
 
-    public PollUpdateMessage setVoter(Jid voter) {
+    public void setVoter(Jid voter) {
         this.voter = voter;
-        return this;
     }
 
     public ChatMessageKey pollCreationMessageKey() {
@@ -102,18 +102,16 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
         return Optional.ofNullable(pollCreationMessage);
     }
 
-    public PollUpdateMessage setPollCreationMessage(PollCreationMessage pollCreationMessage) {
+    public void setPollCreationMessage(PollCreationMessage pollCreationMessage) {
         this.pollCreationMessage = pollCreationMessage;
-        return this;
     }
 
     public List<PollOption> votes() {
         return Collections.unmodifiableList(votes);
     }
 
-    public PollUpdateMessage setVotes(List<PollOption> votes) {
+    public void setVotes(List<PollOption> votes) {
         this.votes = votes;
-        return this;
     }
 
     public Optional<PollUpdateMessageMetadata> metadata() {

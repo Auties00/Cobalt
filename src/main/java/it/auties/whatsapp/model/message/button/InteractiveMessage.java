@@ -4,8 +4,8 @@ import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.button.interactive.*;
 import it.auties.whatsapp.model.button.base.TemplateFormatter;
+import it.auties.whatsapp.model.button.interactive.*;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -18,7 +18,7 @@ import java.util.Optional;
  * how this could be used, contributions are welcomed.
  */
 @ProtobufMessage(name = "Message.InteractiveMessage")
-public final class InteractiveMessage implements ContextualMessage<InteractiveMessage>, ButtonMessage, TemplateFormatter {
+public final class InteractiveMessage implements ContextualMessage, ButtonMessage, TemplateFormatter {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     final InteractiveHeader header;
 
@@ -145,9 +145,8 @@ public final class InteractiveMessage implements ContextualMessage<InteractiveMe
     }
 
     @Override
-    public InteractiveMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

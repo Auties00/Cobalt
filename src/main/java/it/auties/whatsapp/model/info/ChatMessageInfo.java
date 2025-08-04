@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * A model class that holds the information related to a {@link Message}.
  */
 @ProtobufMessage(name = "WebMessageInfo")
-public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, MessageStatusInfo<ChatMessageInfo> { // TODO: Check me
+public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo { // TODO: Check me
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     final ChatMessageKey key;
 
@@ -248,18 +248,6 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
     }
 
     /**
-     * Returns the message quoted by this message
-     *
-     * @return a non-empty optional {@link ChatMessageInfo} if this message quotes a message in memory
-     */
-    public Optional<QuotedMessageInfo> quotedMessage() {
-        return Optional.of(message)
-                .flatMap(MessageContainer::contentWithContext)
-                .flatMap(ContextualMessage::contextInfo)
-                .flatMap(QuotedMessageInfo::of);
-    }
-
-    /**
      * Returns the timestampSeconds for this message
      *
      * @return an optional
@@ -363,9 +351,8 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
     }
 
     @Override
-    public ChatMessageInfo setMessage(MessageContainer message) {
+    public void setMessage(MessageContainer message) {
         this.message = message;
-        return this;
     }
 
     public OptionalLong timestampSeconds() {
@@ -385,9 +372,8 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
         return ignore;
     }
 
-    public ChatMessageInfo setIgnore(boolean ignore) {
+    public void setIgnore(boolean ignore) {
         this.ignore = ignore;
-        return this;
     }
 
     public boolean starred() {
@@ -510,9 +496,8 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
         return Optional.ofNullable(pollAdditionalMetadata);
     }
 
-    public ChatMessageInfo setPollAdditionalMetadata(PollAdditionalMetadata pollAdditionalMetadata) {
+    public void setPollAdditionalMetadata(PollAdditionalMetadata pollAdditionalMetadata) {
         this.pollAdditionalMetadata = pollAdditionalMetadata;
-        return this;
     }
 
     public Optional<String> agentId() {
@@ -527,9 +512,8 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
         return Optional.ofNullable(messageSecret);
     }
 
-    public ChatMessageInfo setMessageSecret(byte[] messageSecret) {
+    public void setMessageSecret(byte[] messageSecret) {
         this.messageSecret = messageSecret;
-        return this;
     }
 
     public Optional<KeepInChat> keepInChat() {
@@ -548,34 +532,29 @@ public final class ChatMessageInfo implements MessageInfo<ChatMessageInfo>, Mess
         return Optional.ofNullable(chat);
     }
 
-    public ChatMessageInfo setChat(Chat chat) {
+    public void setChat(Chat chat) {
         this.chat = chat;
-        return this;
     }
 
     public Optional<Contact> sender() {
         return Optional.ofNullable(sender);
     }
 
-    public ChatMessageInfo setSender(Contact sender) {
+    public void setSender(Contact sender) {
         this.sender = sender;
-        return this;
     }
 
     @Override
-    public ChatMessageInfo setStatus(MessageStatus status) {
+    public void setStatus(MessageStatus status) {
         this.status = status;
-        return this;
     }
 
-    public ChatMessageInfo setStarred(boolean starred) {
+    public void setStarred(boolean starred) {
         this.starred = starred;
-        return this;
     }
 
-    public ChatMessageInfo setRevokeTimestampSeconds(long revokeTimestampSeconds) {
+    public void setRevokeTimestampSeconds(long revokeTimestampSeconds) {
         this.revokeTimestampSeconds = revokeTimestampSeconds;
-        return this;
     }
 
 

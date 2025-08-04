@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.business;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
+
 import java.util.Objects;
 import java.util.Optional;
 

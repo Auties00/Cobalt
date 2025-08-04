@@ -49,18 +49,16 @@ public final class NewsletterReaction {
         return count;
     }
 
-    public NewsletterReaction setCount(long count) {
+    public void setCount(long count) {
         this.count = count;
-        return this;
     }
 
     public boolean fromMe() {
         return fromMe;
     }
 
-    public NewsletterReaction setFromMe(boolean fromMe) {
+    public void setFromMe(boolean fromMe) {
         this.fromMe = fromMe;
-        return this;
     }
 
     @Override

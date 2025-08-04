@@ -24,9 +24,6 @@ import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
-import it.auties.whatsapp.api.WhatsappMediaPolicy;
-import it.auties.whatsapp.api.WhatsappTextPreviewPolicy;
-import it.auties.whatsapp.api.WhatsappWebHistoryPolicy;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
@@ -434,7 +431,7 @@ public final class Store extends Controller {
      * @param id       the jid to search
      * @return a non-null optional
      */
-    public Optional<? extends MessageStatusInfo<?>> findMessageById(JidProvider provider, String id) {
+    public Optional<? extends MessageStatusInfo> findMessageById(JidProvider provider, String id) {
         if (provider == null || id == null) {
             return Optional.empty();
         }

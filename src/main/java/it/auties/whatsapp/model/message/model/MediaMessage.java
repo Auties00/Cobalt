@@ -14,7 +14,7 @@ import java.util.OptionalLong;
  * A media message
  * Read its content using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(ChatMessageInfo)}
  */
-public sealed abstract class MediaMessage<T extends MediaMessage<T>> implements ContextualMessage<T>, MutableAttachmentProvider<T> permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
+public sealed abstract class MediaMessage implements ContextualMessage, MutableAttachmentProvider permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
     private byte[] decodedMedia;
     private String handle;
 
@@ -61,17 +61,13 @@ public sealed abstract class MediaMessage<T extends MediaMessage<T>> implements 
     public AttachmentType attachmentType() {
         return mediaType().toAttachmentType();
     }
-
-    @SuppressWarnings("unchecked")
-    public T setDecodedMedia(byte[] decodedMedia) {
+    
+    public void setDecodedMedia(byte[] decodedMedia) {
         this.decodedMedia = decodedMedia;
-        return (T) this;
     }
-
-    @SuppressWarnings("unchecked")
-    public T setHandle(String handle) {
+    
+    public void setHandle(String handle) {
         this.handle = handle;
-        return (T) this;
     }
 
     /**

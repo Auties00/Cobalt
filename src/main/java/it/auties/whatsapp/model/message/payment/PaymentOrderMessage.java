@@ -18,7 +18,7 @@ import java.util.Optional;
  * A model class that represents a message to pay an order.
  */
 @ProtobufMessage(name = "Message.PaymentOrderMessage")
-public final class PaymentOrderMessage implements ContextualMessage<PaymentOrderMessage>, PaymentMessage {
+public final class PaymentOrderMessage implements ContextualMessage, PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final String id;
 
@@ -125,9 +125,8 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     }
 
     @Override
-    public PaymentOrderMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

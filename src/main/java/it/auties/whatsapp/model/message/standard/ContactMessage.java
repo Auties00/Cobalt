@@ -13,7 +13,7 @@ import java.util.Optional;
  * A model class that represents a message holding a contact inside
  */
 @ProtobufMessage(name = "Message.ContactMessage")
-public final class ContactMessage implements ContextualMessage<ContactMessage> {
+public final class ContactMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final String name;
 
@@ -53,9 +53,8 @@ public final class ContactMessage implements ContextualMessage<ContactMessage> {
     }
 
     @Override
-    public ContactMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

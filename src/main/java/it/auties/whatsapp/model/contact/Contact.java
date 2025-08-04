@@ -128,34 +128,28 @@ public final class Contact implements JidProvider {
         return this.blocked;
     }
 
-    public Contact setChosenName(String chosenName) {
+    public void setChosenName(String chosenName) {
         this.chosenName = chosenName;
-        return this;
     }
 
-    public Contact setFullName(String fullName) {
+    public void setFullName(String fullName) {
         this.fullName = fullName;
-        return this;
     }
 
-    public Contact setShortName(String shortName) {
+    public void setShortName(String shortName) {
         this.shortName = shortName;
-        return this;
     }
 
-    public Contact setLastKnownPresence(ContactStatus lastKnownPresence) {
+    public void setLastKnownPresence(ContactStatus lastKnownPresence) {
         this.lastKnownPresence = lastKnownPresence;
-        return this;
     }
 
-    public Contact setLastSeen(ZonedDateTime lastSeen) {
+    public void setLastSeen(ZonedDateTime lastSeen) {
         this.lastSeenSeconds = lastSeen.toEpochSecond();
-        return this;
     }
 
-    public Contact setBlocked(boolean blocked) {
+    public void setBlocked(boolean blocked) {
         this.blocked = blocked;
-        return this;
     }
 
     @Override

@@ -16,7 +16,7 @@ import java.util.Optional;
  * A model class that represents a message holding a product inside
  */
 @ProtobufMessage(name = "Message.ProductMessage")
-public final class ProductMessage implements ContextualMessage<ProductMessage>, ButtonMessage {
+public final class ProductMessage implements ContextualMessage, ButtonMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     final Product product;
 
@@ -80,9 +80,8 @@ public final class ProductMessage implements ContextualMessage<ProductMessage>, 
     }
 
     @Override
-    public ProductMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

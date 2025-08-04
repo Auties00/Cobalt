@@ -44,14 +44,12 @@ public final class NewsletterViewerMetadata {
         return role;
     }
 
-    public NewsletterViewerMetadata setMute(boolean mute) {
+    public void setMute(boolean mute) {
         this.mute = mute;
-        return this;
     }
 
-    public NewsletterViewerMetadata setRole(NewsletterViewerRole role) {
+    public void setRole(NewsletterViewerRole role) {
         this.role = role;
-        return this;
     }
 
     @Override

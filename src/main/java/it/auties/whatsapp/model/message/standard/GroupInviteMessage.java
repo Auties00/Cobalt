@@ -20,7 +20,7 @@ import java.util.Optional;
  * A model class that represents a message holding a whatsapp group invite inside
  */
 @ProtobufMessage(name = "Message.GroupInviteMessage")
-public final class GroupInviteMessage implements ContextualMessage<GroupInviteMessage> {
+public final class GroupInviteMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid group;
 
@@ -100,9 +100,8 @@ public final class GroupInviteMessage implements ContextualMessage<GroupInviteMe
     }
 
     @Override
-    public GroupInviteMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     public Type groupType() {

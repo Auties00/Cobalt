@@ -16,7 +16,7 @@ import java.util.OptionalLong;
  * An immutable model class that represents a quoted message
  */
 @ProtobufMessage
-public final class QuotedMessageInfo implements MessageInfo<QuotedMessageInfo> {
+public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The id of the message
      */
@@ -108,9 +108,8 @@ public final class QuotedMessageInfo implements MessageInfo<QuotedMessageInfo> {
     }
 
     @Override
-    public QuotedMessageInfo setMessage(MessageContainer message) {
+    public void setMessage(MessageContainer message) {
         this.message = message;
-        return this;
     }
 
     @Override

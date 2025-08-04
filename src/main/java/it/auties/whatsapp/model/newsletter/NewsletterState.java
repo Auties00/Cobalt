@@ -41,9 +41,8 @@ public final class NewsletterState {
         return Optional.ofNullable(type);
     }
 
-    public NewsletterState setType(String type) {
+    public void setType(String type) {
         this.type = type;
-        return this;
     }
 
     @Override

@@ -137,7 +137,7 @@ public final class SignalSessionCipher {
             var keySpec = new SecretKeySpec(secrets[0], "AES");
             cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(secrets[2], 0, IV_LENGTH));
             var plaintext = cipher.doFinal(message.ciphertext());
-            state.pendingPreKey(null);
+            state.setPendingPreKey(null);
             return plaintext;
         } catch (GeneralSecurityException exception) {
             throw new IllegalArgumentException("Cannot decrypt data", exception);
@@ -180,12 +180,12 @@ public final class SignalSessionCipher {
         });
         calculateRatchet(message, state, false);
         state.findChain(state.ephemeralKeyPair().signalPublicKey()).ifPresent(chain -> {
-            state.previousCounter(chain.counter());
+            state.setPreviousCounter(chain.counter());
             state.removeChain(state.ephemeralKeyPair().signalPublicKey());
         });
-        state.ephemeralKeyPair(SignalKeyPair.random());
+        state.setEphemeralKeyPair(SignalKeyPair.random());
         calculateRatchet(message, state, true);
-        state.lastRemoteEphemeralKey(message.ephemeralPublicKey());
+        state.setLastRemoteEphemeralKey(message.ephemeralPublicKey());
     }
 
     private void calculateRatchet(SignalMessage message, SessionState state, boolean sending) {
@@ -242,7 +242,7 @@ public final class SignalSessionCipher {
                 baseKey.signalPublicKey(),
                 signedPreKey.id()
         );
-        state.pendingPreKey(pendingPreKey);
+        state.setPendingPreKey(pendingPreKey);
         var session = keys.findSessionByAddress(address)
                 .orElse(null);
         if (session != null) {
@@ -277,8 +277,9 @@ public final class SignalSessionCipher {
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(), "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var key = state.ephemeralKeyPair().signalPublicKey();
         var chain = new SessionChain(-1, initKey[1]);
-        return state.addChain(key, chain)
-                .setRootKey(initKey[0]);
+        state.addChain(key, chain);
+        state.setRootKey(initKey[0]);
+        return state;
     }
 
     public synchronized void createIncoming(SessionAddress address, Session session, SignalPreKeyMessage message) {

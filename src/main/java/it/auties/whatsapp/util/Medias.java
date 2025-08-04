@@ -34,7 +34,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.zip.Deflater;
 
@@ -165,7 +168,7 @@ public final class Medias {
         }
     }
 
-    public static byte[] download(MutableAttachmentProvider<?> provider, URI proxy) {
+    public static byte[] download(MutableAttachmentProvider provider, URI proxy) {
         var url = provider.mediaUrl()
                 .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
                 .orElse(null);
@@ -227,7 +230,7 @@ public final class Medias {
         }
     }
 
-    public static <T> T download(MutableAttachmentProvider<?> provider, URI proxy, Function<InputStream, T> decoder) {
+    public static <T> T download(MutableAttachmentProvider provider, URI proxy, Function<InputStream, T> decoder) {
         var url = provider.mediaUrl()
                 .or(() -> provider.mediaDirectPath().map(Medias::createMediaUrl))
                 .orElse(null);

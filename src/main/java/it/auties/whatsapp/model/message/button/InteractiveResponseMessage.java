@@ -10,7 +10,7 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import java.util.Optional;
 
 @ProtobufMessage(name = "Message.InteractiveResponseMessage")
-public final class InteractiveResponseMessage implements ContextualMessage<InteractiveResponseMessage> {
+public final class InteractiveResponseMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     final InteractiveBody body;
 
@@ -54,9 +54,8 @@ public final class InteractiveResponseMessage implements ContextualMessage<Inter
     }
 
     @Override
-    public InteractiveResponseMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

@@ -18,7 +18,7 @@ import java.util.Optional;
  * A model class that represents a message holding a location inside
  */
 @ProtobufMessage(name = "Message.LocationMessage")
-public final class LocationMessage implements ContextualMessage<LocationMessage>, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class LocationMessage implements ContextualMessage, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.DOUBLE)
     final double latitude;
 
@@ -145,9 +145,8 @@ public final class LocationMessage implements ContextualMessage<LocationMessage>
     }
 
     @Override
-    public LocationMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

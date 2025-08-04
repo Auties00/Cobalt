@@ -54,9 +54,8 @@ public final class TemplateReplyMessage implements ButtonReplyMessage<TemplateRe
     }
 
     @Override
-    public TemplateReplyMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     public int index() {

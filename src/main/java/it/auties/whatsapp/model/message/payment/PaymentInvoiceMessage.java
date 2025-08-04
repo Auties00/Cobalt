@@ -7,7 +7,9 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.media.AttachmentType;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.MediaMessage;
+import it.auties.whatsapp.model.message.model.Message;
+import it.auties.whatsapp.model.message.model.PaymentMessage;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
@@ -19,7 +21,7 @@ import java.util.OptionalLong;
  * A model class that represents a message to notify the invoice about a successful payment.
  */
 @ProtobufMessage
-public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMessage> implements PaymentMessage {
+public final class PaymentInvoiceMessage extends MediaMessage implements PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final String note;
 
@@ -93,15 +95,13 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public PaymentInvoiceMessage setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public PaymentInvoiceMessage setMediaKeyTimestamp(Long timestamp) {
+    public void setMediaKeyTimestamp(Long timestamp) {
         this.mediaKeyTimestampSeconds = timestamp;
-        return this;
     }
 
     @Override
@@ -120,9 +120,8 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public PaymentInvoiceMessage setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -131,9 +130,8 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public PaymentInvoiceMessage setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -142,9 +140,8 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public PaymentInvoiceMessage setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -153,8 +150,7 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public PaymentInvoiceMessage setMediaUrl(String mediaUrl) {
-        return this;
+    public void setMediaUrl(String mediaUrl) {
     }
 
     @Override
@@ -163,8 +159,7 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public PaymentInvoiceMessage setMediaSize(long mediaSize) {
-        return this;
+    public void setMediaSize(long mediaSize) {
     }
 
     @Override
@@ -197,9 +192,8 @@ public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMess
     }
 
     @Override
-    public PaymentInvoiceMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     /**

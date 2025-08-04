@@ -23,7 +23,7 @@ import java.util.*;
  * A model class that represents a message holding a poll inside
  */
 @ProtobufMessage(name = "Message.PollCreationMessage")
-public final class PollCreationMessage implements ContextualMessage<PollCreationMessage> {
+public final class PollCreationMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
     byte[] encryptionKey;
 
@@ -156,8 +156,7 @@ public final class PollCreationMessage implements ContextualMessage<PollCreation
     }
 
     @Override
-    public PollCreationMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 }

@@ -3,7 +3,9 @@ package it.auties.whatsapp.model.message.standard;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.ChatMessageKey;
+import it.auties.whatsapp.model.message.model.KeepInChat;
+import it.auties.whatsapp.model.message.model.Message;
 
 import java.util.Objects;
 

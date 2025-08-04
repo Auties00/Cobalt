@@ -39,6 +39,7 @@ import it.auties.whatsapp.model.poll.*;
 import it.auties.whatsapp.model.request.MessageRequest;
 import it.auties.whatsapp.model.setting.EphemeralSettingsBuilder;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentitySpec;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
@@ -124,9 +125,9 @@ final class MessageHandler {
         }
     }
 
-    private void prepareOutgoingChatMessage(MessageInfo<?> messageInfo) {
+    private void prepareOutgoingChatMessage(MessageInfo messageInfo) {
         switch (messageInfo.message().content()) {
-            case MediaMessage<?> mediaMessage -> attributeMediaMessage(messageInfo.parentJid(), mediaMessage);
+            case MediaMessage mediaMessage -> attributeMediaMessage(messageInfo.parentJid(), mediaMessage);
             case ButtonMessage buttonMessage -> attributeButtonMessage(messageInfo.parentJid(), buttonMessage);
             case TextMessage textMessage -> attributeTextMessage(textMessage);
             case PollCreationMessage pollCreationMessage when messageInfo instanceof ChatMessageInfo pollCreationInfo ->
@@ -226,7 +227,7 @@ final class MessageHandler {
                 : second;
     }
 
-    private void attributeMediaMessage(Jid chatJid, MediaMessage<?> mediaMessage) {
+    private void attributeMediaMessage(Jid chatJid, MediaMessage mediaMessage) {
         var media = mediaMessage.decodedMedia()
                 .orElseThrow(() -> new IllegalArgumentException("Missing media to upload"));
         var attachmentType = getAttachmentType(chatJid, mediaMessage);
@@ -243,7 +244,7 @@ final class MessageHandler {
         attributeMediaMessage(mediaMessage, upload);
     }
 
-    private AttachmentType getAttachmentType(Jid chatJid, MediaMessage<?> mediaMessage) {
+    private AttachmentType getAttachmentType(Jid chatJid, MediaMessage mediaMessage) {
         if (!chatJid.hasServer(JidServer.newsletter())) {
             return mediaMessage.attachmentType();
         }
@@ -258,18 +259,18 @@ final class MessageHandler {
         };
     }
 
-    private void attributeMediaMessage(MutableAttachmentProvider<?> attachmentProvider, MediaFile upload) {
-        if (attachmentProvider instanceof MediaMessage<?> mediaMessage) {
+    private void attributeMediaMessage(MutableAttachmentProvider attachmentProvider, MediaFile upload) {
+        if (attachmentProvider instanceof MediaMessage mediaMessage) {
             mediaMessage.setHandle(upload.handle());
         }
 
-        attachmentProvider.setMediaSha256(upload.fileSha256())
-                .setMediaEncryptedSha256(upload.fileEncSha256())
-                .setMediaKey(upload.mediaKey())
-                .setMediaUrl(upload.url())
-                .setMediaKeyTimestamp(upload.timestamp())
-                .setMediaDirectPath(upload.directPath())
-                .setMediaSize(upload.fileLength());
+        attachmentProvider.setMediaSha256(upload.fileSha256());
+        attachmentProvider.setMediaEncryptedSha256(upload.fileEncSha256());
+        attachmentProvider.setMediaKey(upload.mediaKey());
+        attachmentProvider.setMediaUrl(upload.url());
+        attachmentProvider.setMediaKeyTimestamp(upload.timestamp());
+        attachmentProvider.setMediaDirectPath(upload.directPath());
+        attachmentProvider.setMediaSize(upload.fileLength());
     }
 
     private void attributePollCreationMessage(ChatMessageInfo info, PollCreationMessage pollCreationMessage) {
@@ -352,15 +353,15 @@ final class MessageHandler {
     private void attributeButtonMessage(Jid chatJid, ButtonMessage buttonMessage) {
         switch (buttonMessage) {
             case ButtonsMessage buttonsMessage when buttonsMessage.header().isPresent()
-                    && buttonsMessage.header().get() instanceof MediaMessage<?> mediaMessage ->
+                    && buttonsMessage.header().get() instanceof MediaMessage mediaMessage ->
                     attributeMediaMessage(chatJid, mediaMessage);
             case TemplateMessage templateMessage when templateMessage.format().isPresent() -> {
                 var templateFormatter = templateMessage.format().get();
                 switch (templateFormatter) {
                     case HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplate
-                            when highlyStructuredFourRowTemplate.title().isPresent() && highlyStructuredFourRowTemplate.title().get() instanceof MediaMessage<?> fourRowMedia ->
+                            when highlyStructuredFourRowTemplate.title().isPresent() && highlyStructuredFourRowTemplate.title().get() instanceof MediaMessage fourRowMedia ->
                             attributeMediaMessage(chatJid, fourRowMedia);
-                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof MediaMessage<?> hydratedFourRowMedia ->
+                    case HydratedFourRowTemplate hydratedFourRowTemplate when hydratedFourRowTemplate.title().isPresent() && hydratedFourRowTemplate.title().get() instanceof MediaMessage hydratedFourRowMedia ->
                             attributeMediaMessage(chatJid, hydratedFourRowMedia);
                     default -> {
                     }
@@ -369,7 +370,7 @@ final class MessageHandler {
             case InteractiveMessage interactiveMessage
                     when interactiveMessage.header().isPresent()
                     && interactiveMessage.header().get().attachment().isPresent()
-                    && interactiveMessage.header().get().attachment().get() instanceof MediaMessage<?> interactiveMedia ->
+                    && interactiveMessage.header().get().attachment().get() instanceof MediaMessage interactiveMedia ->
                     attributeMediaMessage(chatJid, interactiveMedia);
             default -> {
             }
@@ -381,7 +382,7 @@ final class MessageHandler {
             prepareOutgoingChatMessage(request.info());
             var message = request.info().message();
             var messageNode = getPlainMessageNode(message);
-            var type = request.info().message().content() instanceof MediaMessage<?> ? "media" : "text";
+            var type = request.info().message().content() instanceof MediaMessage ? "media" : "text";
             var attributes = Attributes.ofNullable(request.additionalAttributes())
                     .put("id", request.info().id())
                     .put("to", request.info().parentJid())
@@ -399,7 +400,7 @@ final class MessageHandler {
 
     private String getPlainMessageHandle(MessageRequest.Newsletter request) {
         var message = request.info().message().content();
-        if (!(message instanceof MediaMessage<?> extendedMediaMessage)) {
+        if (!(message instanceof MediaMessage extendedMediaMessage)) {
             return null;
         }
 
@@ -557,7 +558,7 @@ final class MessageHandler {
         var attributes = Attributes.ofNullable(request.additionalAttributes())
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
-                .put("type", request.info().message().content() instanceof MediaMessage<?> ? "media" : "text")
+                .put("type", request.info().message().content() instanceof MediaMessage ? "media" : "text")
                 .put("verified_name", socketHandler.store().verifiedName().orElse(""), socketHandler.store().verifiedName().isPresent() && !request.peer())
                 .put("category", "peer", request.peer())
                 .put("duration", "900", request.info().message().type() == Message.Type.LIVE_LOCATION)
@@ -918,10 +919,12 @@ final class MessageHandler {
                 return;
             }
 
-            newsletter.get().addMessage(result.get());
+            newsletter.get()
+                    .addMessage(result.get());
             if (notify) {
                 socketHandler.onNewMessage(result.get());
             }
+            socketHandler.onReply(result.get());
         } catch (Throwable throwable) {
             socketHandler.handleFailure(MESSAGE, throwable);
         }
@@ -1587,6 +1590,16 @@ final class MessageHandler {
         recentHistorySyncTracker.clear();
         fullHistorySyncTracker.clear();
         historySyncTypes.clear();
+    }
+
+    public Node createCall(JidProvider jid) {
+        var call = new CallMessageBuilder()
+                .key(SignalKeyPair.random().publicKey())
+                .build();
+        var message = MessageContainer.of(call);
+        var encodedMessage = Bytes.messageToBytes(message);
+        var cipheredMessage = sessionCipher.encrypt(jid.toJid().toSignalAddress(), encodedMessage);
+        return Node.of("enc", Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
     }
 
     private static class HistorySyncProgressTracker {

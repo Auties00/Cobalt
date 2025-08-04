@@ -53,9 +53,8 @@ public final class ChatMessageKey {
         return chatJid;
     }
 
-    public ChatMessageKey setChatJid(Jid chatJid) {
+    public void setChatJid(Jid chatJid) {
         this.chatJid = chatJid;
-        return this;
     }
 
     public boolean fromMe() {
@@ -70,9 +69,8 @@ public final class ChatMessageKey {
         return Optional.ofNullable(senderJid);
     }
 
-    public ChatMessageKey setSenderJid(Jid senderJid) {
+    public void setSenderJid(Jid senderJid) {
         this.senderJid = senderJid;
-        return this;
     }
 
     @Override

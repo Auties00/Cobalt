@@ -266,114 +266,92 @@ public final class Chat implements JidProvider {
         return shareOwnPhoneNumber;
     }
 
-    public Chat setUnreadMessagesCount(int unreadMessagesCount) {
+    public void setUnreadMessagesCount(int unreadMessagesCount) {
         this.unreadMessagesCount = unreadMessagesCount;
-        return this;
     }
 
-    public Chat setEndOfHistoryTransfer(boolean endOfHistoryTransfer) {
+    public void setEndOfHistoryTransfer(boolean endOfHistoryTransfer) {
         this.endOfHistoryTransfer = endOfHistoryTransfer;
-        return this;
     }
 
-    public Chat setEphemeralMessageDuration(ChatEphemeralTimer ephemeralMessageDuration) {
+    public void setEphemeralMessageDuration(ChatEphemeralTimer ephemeralMessageDuration) {
         this.ephemeralMessageDuration = ephemeralMessageDuration;
-        return this;
     }
 
-    public Chat setEphemeralMessagesToggleTimeSeconds(long ephemeralMessagesToggleTimeSeconds) {
+    public void setEphemeralMessagesToggleTimeSeconds(long ephemeralMessagesToggleTimeSeconds) {
         this.ephemeralMessagesToggleTimeSeconds = ephemeralMessagesToggleTimeSeconds;
-        return this;
     }
 
-    public Chat setEndOfHistoryTransferType(EndOfHistoryTransferType endOfHistoryTransferType) {
+    public void setEndOfHistoryTransferType(EndOfHistoryTransferType endOfHistoryTransferType) {
         this.endOfHistoryTransferType = endOfHistoryTransferType;
-        return this;
     }
 
-    public Chat setTimestampSeconds(long timestampSeconds) {
+    public void setTimestampSeconds(long timestampSeconds) {
         this.timestampSeconds = timestampSeconds;
-        return this;
     }
 
-    public Chat setName(String name) {
+    public void setName(String name) {
         this.name = name;
-        return this;
     }
 
-    public Chat setNotSpam(boolean notSpam) {
+    public void setNotSpam(boolean notSpam) {
         this.notSpam = notSpam;
-        return this;
     }
 
-    public Chat setArchived(boolean archived) {
+    public void setArchived(boolean archived) {
         this.archived = archived;
-        return this;
     }
 
-    public Chat setDisappearInitiator(ChatDisappear disappearInitiator) {
+    public void setDisappearInitiator(ChatDisappear disappearInitiator) {
         this.disappearInitiator = disappearInitiator;
-        return this;
     }
 
-    public Chat setMarkedAsUnread(boolean markedAsUnread) {
+    public void setMarkedAsUnread(boolean markedAsUnread) {
         this.markedAsUnread = markedAsUnread;
-        return this;
     }
 
-    public Chat setPinnedTimestampSeconds(int pinnedTimestampSeconds) {
+    public void setPinnedTimestampSeconds(int pinnedTimestampSeconds) {
         this.pinnedTimestampSeconds = pinnedTimestampSeconds;
-        return this;
     }
 
-    public Chat setMute(ChatMute mute) {
+    public void setMute(ChatMute mute) {
         this.mute = mute;
-        return this;
     }
 
-    public Chat setWallpaper(ChatWallpaper wallpaper) {
+    public void setWallpaper(ChatWallpaper wallpaper) {
         this.wallpaper = wallpaper;
-        return this;
     }
 
-    public Chat setMediaVisibility(MediaVisibility mediaVisibility) {
+    public void setMediaVisibility(MediaVisibility mediaVisibility) {
         this.mediaVisibility = mediaVisibility;
-        return this;
     }
 
-    public Chat setSuspended(boolean suspended) {
+    public void setSuspended(boolean suspended) {
         this.suspended = suspended;
-        return this;
     }
 
-    public Chat setTerminated(boolean terminated) {
+    public void setTerminated(boolean terminated) {
         this.terminated = terminated;
-        return this;
     }
 
-    public Chat setSupport(boolean support) {
+    public void setSupport(boolean support) {
         this.support = support;
-        return this;
     }
 
-    public Chat setPhoneJid(Jid phoneJid) {
+    public void setPhoneJid(Jid phoneJid) {
         this.phoneJid = phoneJid;
-        return this;
     }
 
-    public Chat setShareOwnPhoneNumber(boolean shareOwnPhoneNumber) {
+    public void setShareOwnPhoneNumber(boolean shareOwnPhoneNumber) {
         this.shareOwnPhoneNumber = shareOwnPhoneNumber;
-        return this;
     }
 
-    public Chat setPhoneDuplicateLidThread(boolean phoneDuplicateLidThread) {
+    public void setPhoneDuplicateLidThread(boolean phoneDuplicateLidThread) {
         this.phoneDuplicateLidThread = phoneDuplicateLidThread;
-        return this;
     }
 
-    public Chat setLid(Jid lid) {
+    public void setLid(Jid lid) {
         this.lid = lid;
-        return this;
     }
 
     /**
