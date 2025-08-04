@@ -24,7 +24,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.StructuredTaskScope;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNullElseGet;
 
 @SuppressWarnings("preview")
 abstract class FileControllerSerializer implements ControllerSerializer {
@@ -36,12 +39,16 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private final ConcurrentMap<UUID, Integer> storesHashCodes;
     private final ConcurrentMap<UUID, Thread> storesAttributions;
     private final ConcurrentMap<StoreJidPair, Integer> jidsHashCodes;
+    private final ReentrantKeyedLock keysLock;
+    private final ReentrantKeyedLock storeLock;
     FileControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
         this.keysHashCodes = new ConcurrentHashMap<>();
         this.storesHashCodes = new ConcurrentHashMap<>();
         this.storesAttributions = new ConcurrentHashMap<>();
         this.jidsHashCodes = new ConcurrentHashMap<>();
+        this.keysLock = new ReentrantKeyedLock();
+        this.storeLock = new ReentrantKeyedLock();
     }
 
     abstract String fileExtension();
@@ -114,42 +121,52 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @Override
     public void serializeKeys(Keys keys) {
-        var oldHashCode = keysHashCodes.getOrDefault(keys.uuid(), -1);
-        var newHashCode = keys.hashCode();
-        if(oldHashCode == newHashCode) {
-            return;
-        }
+        try {
+            keysLock.lock(keys.uuid());
+            var oldHashCode = keysHashCodes.getOrDefault(keys.uuid(), -1);
+            var newHashCode = keys.hashCode();
+            if(oldHashCode == newHashCode) {
+                return;
+            }
 
-        keysHashCodes.put(keys.uuid(), newHashCode);
-        var keysName = "keys" + fileExtension();
-        var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), keysName);
-        encodeKeys(keys, outputFile);
+            keysHashCodes.put(keys.uuid(), newHashCode);
+            var keysName = "keys" + fileExtension();
+            var outputFile = getSessionFile(keys.clientType(), keys.uuid().toString(), keysName);
+            encodeKeys(keys, outputFile);
+        }finally {
+            keysLock.unlock(keys.uuid());
+        }
     }
 
     @Override
     public void serializeStore(Store store) {
-        var oldHashCode = storesHashCodes.getOrDefault(store.uuid(), -1);
-        var newHashCode = store.hashCode();
-        if(oldHashCode == newHashCode) {
-            return;
-        }
+        try {
+            storeLock.lock(store.uuid());
+            var oldHashCode = storesHashCodes.getOrDefault(store.uuid(), -1);
+            var newHashCode = store.hashCode();
+            if(oldHashCode == newHashCode) {
+                return;
+            }
 
-        keysHashCodes.put(store.uuid(), newHashCode);
-        try(var scope = new StructuredTaskScope<>()) {
-            store.chats()
-                    .forEach(chat -> scope.fork(() -> serializeChat(store, chat)));
-            store.newsletters()
-                    .forEach(newsletter -> scope.fork(() -> serializeNewsletter(store, newsletter)));
-            store.phoneNumber()
-                    .ifPresent(phoneNumber -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), phoneNumber.toString())));
-            store.alias()
-                    .forEach(alias -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), alias)));
-            scope.join();
-        } catch (InterruptedException exception) {
-            throw new RuntimeException("Cannot serialize store", exception);
+            keysHashCodes.put(store.uuid(), newHashCode);
+            try(var scope = new StructuredTaskScope<>()) {
+                store.chats()
+                        .forEach(chat -> scope.fork(() -> serializeChat(store, chat)));
+                store.newsletters()
+                        .forEach(newsletter -> scope.fork(() -> serializeNewsletter(store, newsletter)));
+                store.phoneNumber()
+                        .ifPresent(phoneNumber -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), phoneNumber.toString())));
+                store.alias()
+                        .forEach(alias -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), alias)));
+                scope.join();
+            } catch (InterruptedException exception) {
+                throw new RuntimeException("Cannot serialize store", exception);
+            }
+            var storePath = getSessionFile(store, "store" + fileExtension());
+            encodeStore(store, storePath);
+        }finally {
+            storeLock.unlock(store.uuid());
         }
-        var storePath = getSessionFile(store, "store" + fileExtension());
-        encodeStore(store, storePath);
     }
 
     @SuppressWarnings("SameReturnValue")
@@ -502,5 +519,28 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     private record StoreJidPair(UUID storeId, Jid jid) {
 
+    }
+
+    private final static class ReentrantKeyedLock {
+        private final ConcurrentMap<UUID, ReentrantLock> locks;
+        private ReentrantKeyedLock() {
+            this.locks = new ConcurrentHashMap<>();
+        }
+
+        private void lock(UUID key) {
+            var lockWrapper = locks.compute(
+                    key,
+                    (_, value) -> requireNonNullElseGet(value, () -> new ReentrantLock(true))
+            );
+            lockWrapper.lock();
+        }
+
+        private void unlock(UUID key) {
+            var lockWrapper = locks.get(key);
+            if(lockWrapper == null || !lockWrapper.isHeldByCurrentThread()){
+                throw new IllegalStateException("The lock for the key %s doesn't exist or is not held by the current thread".formatted(key));
+            }
+            lockWrapper.unlock();
+        }
     }
 }
