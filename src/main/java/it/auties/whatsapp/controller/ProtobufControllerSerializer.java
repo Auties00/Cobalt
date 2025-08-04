@@ -14,10 +14,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 class ProtobufControllerSerializer extends FileControllerSerializer {
-    private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
-
     ProtobufControllerSerializer() {
-        this(DEFAULT_SERIALIZER_PATH);
+        super();
     }
 
     ProtobufControllerSerializer(Path baseDirectory) {

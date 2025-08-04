@@ -29,11 +29,14 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNullElseGet;
 
+// FIXME: There is a memory leak in here
 @SuppressWarnings("preview")
 abstract class FileControllerSerializer implements ControllerSerializer {
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";
-    
+    private static final Path DEFAULT_SERIALIZER_PATH = Path.of(System.getProperty("user.home") + "/.cobalt/");
+
+
     private final Path baseDirectory;
     private final ConcurrentMap<UUID, Integer> keysHashCodes;
     private final ConcurrentMap<UUID, Integer> storesHashCodes;
@@ -41,6 +44,11 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private final ConcurrentMap<StoreJidPair, Integer> jidsHashCodes;
     private final ReentrantKeyedLock keysLock;
     private final ReentrantKeyedLock storeLock;
+
+    FileControllerSerializer() {
+        this(DEFAULT_SERIALIZER_PATH);
+    }
+
     FileControllerSerializer(Path baseDirectory) {
         this.baseDirectory = baseDirectory;
         this.keysHashCodes = new ConcurrentHashMap<>();
