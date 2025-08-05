@@ -57,7 +57,7 @@ public final class RegistrationResponse {
         this.wipeToken = wipeToken;
     }
 
-    public static Optional<RegistrationResponse> ofJson(String json) {
+    public static Optional<RegistrationResponse> ofJson(byte[] json) {
         if(json == null) {
             return Optional.empty();
         }

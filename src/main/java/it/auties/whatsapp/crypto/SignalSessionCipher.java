@@ -378,23 +378,20 @@ public final class SignalSessionCipher {
         }
     }
 
-    // TODO: Not sure this is how it's supposed to be
     public byte[] decrypt(SenderKeyName name, byte[] data) {
         var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
-        var senderKeyStates = record.findStatesById(senderKeyMessage.id());
-        for (var senderKeyState : senderKeyStates) {
-            try {
-                var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
-                var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                var keySpec = new SecretKeySpec(senderKey.cipherKey(), "AES");
-                cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(senderKey.iv()));
-                return cipher.doFinal(senderKeyMessage.cipherText());
-            } catch (Throwable ignored) {
-
-            }
+        var senderKeyState = record.findStateById(senderKeyMessage.id())
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key with id %s".formatted(senderKeyMessage.id())));
+        try {
+            var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
+            var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            var keySpec = new SecretKeySpec(senderKey.cipherKey(), "AES");
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(senderKey.iv()));
+            return cipher.doFinal(senderKeyMessage.cipherText());
+        } catch (Throwable throwable) {
+            throw new RuntimeException("Cannot decrypt data for " + name +  " with id " + senderKeyMessage.id(), throwable);
         }
-        throw new RuntimeException("Cannot decode message with any session");
     }
 
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {

@@ -20,7 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @ProtobufMessage
 public final class CompanionDevice {
     private static final List<Entry<String, String>> IPHONES = List.of(
-            Map.entry("iPhone_11", "iPhone12,1"),
+            Map.entry("iPhone_7", "iPhone12,1"),
             Map.entry("iPhone_11_Pro", "iPhone12,3"),
             Map.entry("iPhone_11_Pro_Max", "iPhone12,5"),
             Map.entry("iPhone_12", "iPhone13,2"),

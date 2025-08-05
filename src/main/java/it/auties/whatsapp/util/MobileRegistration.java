@@ -76,7 +76,7 @@ public final class MobileRegistration {
         var attrs = getRegistrationOptions(store, keys, false);
         var result = sendRequest("/exist", attrs);
         var response = RegistrationResponse.ofJson(result)
-                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
+                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + new String(result)));
 
         if (Objects.equals(response.errorReason(), "incorrect")) {
             return response;
@@ -86,7 +86,7 @@ public final class MobileRegistration {
             return exists(response.errorReason());
         }
 
-        throw new RegistrationException(response, result);
+        throw new RegistrationException(response, new String(result));
     }
 
     private RegistrationResponse requestVerificationCode(RegistrationResponse existsResponse, String lastError) throws IOException, InterruptedException {
@@ -150,9 +150,9 @@ public final class MobileRegistration {
         };
     }
 
-    private RegistrationResponse onCodeRequestSent(RegistrationResponse existsResponse, String lastError, String result) throws IOException, InterruptedException {
+    private RegistrationResponse onCodeRequestSent(RegistrationResponse existsResponse, String lastError, byte[] result) throws IOException, InterruptedException {
         var response = RegistrationResponse.ofJson(result)
-                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
+                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + new String(result)));
         if (isSuccessful(response.status())) {
             return response;
         }
@@ -165,7 +165,7 @@ public final class MobileRegistration {
             default -> {
                 var newErrorReason = response.errorReason();
                 if (newErrorReason.equals(lastError)) {
-                    throw new RegistrationException(response, result);
+                    throw new RegistrationException(response, new String(result));
                 }
                 yield requestVerificationCode(existsResponse, newErrorReason);
             }
@@ -177,9 +177,9 @@ public final class MobileRegistration {
         var attrs = getRegistrationOptions(store, keys, true, "code", normalizeCodeResult(code));
         var result = sendRequest("/register", attrs);
         var response = RegistrationResponse.ofJson(result)
-                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + result));
+                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + new String(result)));
         if (!isSuccessful(response.status())) {
-            throw new RegistrationException(response, result);
+            throw new RegistrationException(response, new String(result));
         }
         saveRegistrationStatus(store, keys, true);
     }
@@ -206,7 +206,7 @@ public final class MobileRegistration {
                 || status.equalsIgnoreCase("verified");
     }
 
-    private String sendRequest(String path, String params) throws IOException, InterruptedException {
+    private byte[] sendRequest(String path, String params) throws IOException, InterruptedException {
         try {
             var keypair = SignalKeyPair.random();
             var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey());
@@ -217,24 +217,25 @@ public final class MobileRegistration {
                     new GCMParameterSpec(128, new byte[12])
             );
             var result = cipher.doFinal(params.getBytes(StandardCharsets.UTF_8));
-            var encoder = Base64.getUrlEncoder();
-            var cipheredParameters = encoder.encodeToString(keypair.publicKey()) + encoder.encodeToString(result);
+            var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), result));
             var userAgent = store.device()
                     .toUserAgent(store.version())
                     .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
             var requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create("%s%s?ENC=%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path, cipheredParameters)))
-                    .GET()
-                    .header("User-Agent", userAgent);
+                    .uri(URI.create("%s%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path)))
+                    .POST(HttpRequest.BodyPublishers.ofString("ENC=" + cipheredParameters))
+                    .header("User-Agent", userAgent)
+                    .header("Content-Type", "application/x-www-form-urlencoded");
             if (store.device().platform().isAndroid()) {
                 requestBuilder.header("Accept", "text/json")
                         .header("WaMsysRequest", "1")
-                        .header("request_token", UUID.randomUUID().toString())
-                        .header("Content-Type", "application/x-www-form-urlencoded");
+                        .header("request_token", UUID.randomUUID().toString());
             }
-
-            var httpResponse = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
-            return httpResponse.body();
+            var response = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofByteArray());
+            if(response.statusCode() != 200) {
+                throw new RuntimeException("Cannot send request to " + path + ": status code" + response.statusCode());
+            }
+            return response.body();
         } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot encrypt request", exception);
         }
@@ -272,8 +273,10 @@ public final class MobileRegistration {
         var additionalParams = toFormParams(attributes);
         if (additionalParams.isEmpty()) {
             return registrationParams;
+        } else if(registrationParams.isEmpty()) {
+            return additionalParams;
         } else {
-            return registrationParams + additionalParams;
+            return registrationParams + "&" + additionalParams;
         }
     }
 
