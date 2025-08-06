@@ -25,7 +25,6 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
@@ -88,7 +87,7 @@ public final class Medias {
                 .header("Accept", "application/json")
                 .headers("Origin", WEB_ORIGIN)
                 .build();
-        try (var client = createHttpClient(proxy)) {
+        try (var client = HttpClientFactory.create(proxy)) {
             var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
             var upload = MediaUpload.ofJson(response.body())
                     .orElseThrow(() -> new IllegalArgumentException("Cannot parse upload response: " + new String(response.body())));
@@ -180,7 +179,7 @@ public final class Medias {
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .build();
-        try (var client = createHttpClient(proxy)) {
+        try (var client = HttpClientFactory.create(proxy)) {
             var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             var payloadLength = (int) response.headers()
                     .firstValueAsLong("Content-Length")
@@ -321,7 +320,7 @@ public final class Medias {
                 .uri(URI.create(url))
                 .build();
 
-        try (var client = createHttpClient(proxy)) {
+        try (var client = HttpClientFactory.create(proxy)) {
             var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             var length = (int) response.headers()
                     .firstValueAsLong("Content-Length")
@@ -559,15 +558,5 @@ public final class Medias {
             waveform[i] = (byte) (averagedAmplitudes[i] * multiplier * 100);
         }
         return waveform;
-    }
-
-    private static HttpClient createHttpClient(URI proxy) {
-        var builder = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.ALWAYS);
-        if (proxy != null) {
-            builder.proxy(Proxies.toProxySelector(proxy));
-            builder.authenticator(Proxies.toAuthenticator(proxy));
-        }
-        return builder.build();
     }
 }

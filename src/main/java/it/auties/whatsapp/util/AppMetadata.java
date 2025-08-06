@@ -19,6 +19,8 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -30,10 +32,6 @@ import java.security.cert.CertificateException;
 import java.util.*;
 
 public final class AppMetadata {
-    static {
-        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-    }
-
     private static volatile Version webVersion;
     private static final Object webVersionLock = new Object();
     private static volatile Version personalIosVersion;
@@ -58,10 +56,10 @@ public final class AppMetadata {
     private static final String MOBILE_IOS_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1";
    private static final String MOBILE_ANDROID_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
 
-    public static Version getVersion(PlatformType platform) {
+    public static Version getVersion(PlatformType platform, URI proxy) {
         return switch (platform) {
             case WINDOWS, MACOS ->
-                    getWebVersion();
+                    getWebVersion(proxy);
             case ANDROID ->
                     getPersonalAndroidData().version();
             case ANDROID_BUSINESS ->
@@ -70,15 +68,14 @@ public final class AppMetadata {
                     getPersonalIosVersion();
             case IOS_BUSINESS ->
                     getBusinessIosVersion();
-            default -> throw new IllegalStateException("Unsupported mobile os: " + platform);
         };
     }
 
-    private static Version getWebVersion() {
+    private static Version getWebVersion(URI proxy) {
         if (webVersion == null) {
             synchronized (webVersionLock) {
                 if(webVersion == null) {
-                    webVersion = queryWebVersion();
+                    webVersion = queryWebVersion(proxy);
                 }
             }
         }
@@ -87,19 +84,24 @@ public final class AppMetadata {
 
     // Optimized for speed, it's pretty much looking for the "client_revision":(\\w+) regex
     // But this doesn't need to parse the response as a string
-    private static Version queryWebVersion() {
-        HttpsURLConnection connection = null;
-        try {
-            connection = (HttpsURLConnection) WEB_UPDATE_URL.toURL().openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", MOBILE_WEB_USER_AGENT);
-            connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-            connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
-            connection.setRequestProperty("Sec-Fetch-Dest", "document");
-            connection.setRequestProperty("Sec-Fetch-Mode", "navigate");
-            connection.setRequestProperty("Sec-Fetch-Site", "none");
-            connection.setRequestProperty("Sec-Fetch-User", "?1");
-            try (var inputStream = connection.getInputStream()) {
+    private static Version queryWebVersion(URI proxy) {
+        try(var httpClient = HttpClientFactory.create(proxy)) {
+            var request = HttpRequest.newBuilder()
+                    .uri(WEB_UPDATE_URL)
+                    .GET()
+                    .header("User-Agent", MOBILE_WEB_USER_AGENT)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Sec-Fetch-Dest", "document")
+                    .header("Sec-Fetch-Mode", "navigate")
+                    .header("Sec-Fetch-Site", "none")
+                    .header("Sec-Fetch-User", "?1")
+                    .build();
+            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            if(response.statusCode() != 200) {
+                throw new IllegalStateException("Cannot query web version: status code " + response.statusCode());
+            }
+            try (var inputStream = response.body()) {
                 var patternIndex = 0;
                 int value;
                 while ((value = inputStream.read()) != -1) {
@@ -121,12 +123,8 @@ public final class AppMetadata {
                 }
                 throw new IllegalStateException("Cannot find client_revision in web update response");
             }
-        } catch (IOException exception) {
+        } catch (IOException | InterruptedException exception) {
             throw new RuntimeException("Cannot query web version", exception);
-        }finally {
-            if(connection != null) {
-                connection.disconnect();
-            }
         }
     }
 

@@ -1122,7 +1122,7 @@ public final class Store extends Controller {
     }
 
     public Version version() {
-        return Objects.requireNonNullElseGet(version, () -> version = AppMetadata.getVersion(device.platform()));
+        return Objects.requireNonNullElseGet(version, () -> version = AppMetadata.getVersion(device.platform(), proxy));
     }
 
     public boolean online() {
@@ -1304,7 +1304,7 @@ public final class Store extends Controller {
     public void setDevice(CompanionDevice device) {
         if(!Objects.equals(device(), device)) {
             this.device = Objects.requireNonNull(device, "The device cannot be null");
-            this.version = AppMetadata.getVersion(device.platform());
+            this.version = null;
         }
     }
 

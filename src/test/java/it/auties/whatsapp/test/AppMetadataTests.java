@@ -11,8 +11,8 @@ public class AppMetadataTests {
     private static final Long PHONE_NUMBER_MOCK = 3934751869223L;
     @Test
     public void testWebVersion() {
-        assertDoesNotThrow(() -> AppMetadata.getVersion(PlatformType.WINDOWS));
-        assertDoesNotThrow(() -> AppMetadata.getVersion(PlatformType.MACOS));
+        assertDoesNotThrow(() -> getVersion(PlatformType.WINDOWS));
+        assertDoesNotThrow(() -> getVersion(PlatformType.MACOS));
     }
     
     @Test
@@ -56,14 +56,14 @@ public class AppMetadataTests {
     }
 
     private static Version getVersion(PlatformType platformType) {
-        return AppMetadata.getVersion(platformType);
+        return AppMetadata.getVersion(platformType, null);
     }
 
     private static String getToken(PlatformType platformType) {
         return AppMetadata.getToken(
                 PHONE_NUMBER_MOCK,
                 platformType,
-                AppMetadata.getVersion(platformType)
+                AppMetadata.getVersion(platformType, null)
         );
     }
 }
