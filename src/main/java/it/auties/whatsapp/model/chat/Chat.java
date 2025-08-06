@@ -37,10 +37,10 @@ public final class Chat implements JidProvider {
     final ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    final Jid newJid;
+    Jid newJid;
 
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    final Jid oldJid;
+    Jid oldJid;
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
     int unreadMessagesCount;
