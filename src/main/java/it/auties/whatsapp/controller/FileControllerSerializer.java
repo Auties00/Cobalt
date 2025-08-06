@@ -20,14 +20,13 @@ import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNullElseGet;
+import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 
 // FIXME: There is a memory leak in here
-@SuppressWarnings("preview")
 abstract class FileControllerSerializer implements ControllerSerializer {
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";
@@ -154,21 +153,17 @@ abstract class FileControllerSerializer implements ControllerSerializer {
             }
 
             storesHashCodes.put(store.uuid(), newHashCode);
-            try(var scope = new StructuredTaskScope<>()) {
+            try(var executor = newVirtualThreadPerTaskExecutor()) {
+                executor.submit(() -> encodeStore(store, getSessionFile(store, "store" + fileExtension())));
                 store.chats()
-                        .forEach(chat -> scope.fork(() -> serializeChat(store, chat)));
+                        .forEach(chat -> executor.submit(() -> serializeChat(store, chat)));
                 store.newsletters()
-                        .forEach(newsletter -> scope.fork(() -> serializeNewsletter(store, newsletter)));
+                        .forEach(newsletter -> executor.submit(() -> serializeNewsletter(store, newsletter)));
                 store.phoneNumber()
-                        .ifPresent(phoneNumber -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), phoneNumber.toString())));
+                        .ifPresent(phoneNumber -> executor.submit(() -> linkToUuid(store.clientType(), store.uuid(), phoneNumber.toString())));
                 store.alias()
-                        .forEach(alias -> scope.fork(() -> linkToUuid(store.clientType(), store.uuid(), alias)));
-                scope.join();
-            } catch (InterruptedException exception) {
-                throw new RuntimeException("Cannot serialize store", exception);
+                        .forEach(alias -> executor.submit(() -> linkToUuid(store.clientType(), store.uuid(), alias)));
             }
-            var storePath = getSessionFile(store, "store" + fileExtension());
-            encodeStore(store, storePath);
         } finally {
             storeLock.unlock(store.uuid());
         }
@@ -325,17 +320,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     private void deserializeChatsAndNewsletters(Store store) {
         var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
-        try (
-                var walker = Files.walk(directory);
-                var scope = new StructuredTaskScope<>("Cobalt-Store-" + store.uuid() + "-Deserializer", Thread.ofVirtual().factory())
-        ) {
-            walker.forEach(path -> scope.fork(() -> deserializeChatOrNewsletter(store, path)));
-            scope.join();
-            scope.fork(() -> attributeStoreContextualMessages(store));
-            scope.join();
-        } catch (IOException | InterruptedException exception) {
+        try (var walker = Files.walk(directory); var executor = newVirtualThreadPerTaskExecutor()) {
+            walker.forEach(path -> executor.submit(() -> deserializeChatOrNewsletter(store, path)));
+        } catch (IOException exception) {
             throw new RuntimeException("Cannot attribute store", exception);
         }
+        attributeStoreContextualMessages(store);
     }
 
     private Object deserializeChatOrNewsletter(Store store, Path path) {
@@ -417,13 +407,12 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     // Do this after we have all the chats, or it won't work for obvious reasons
-    private Object attributeStoreContextualMessages(Store store) {
+    private void attributeStoreContextualMessages(Store store) {
         store.chats()
-                .stream()
+                .parallelStream()
                 .map(Chat::messages)
                 .flatMap(Collection::parallelStream)
                 .forEach(message -> attributeStoreContextualMessage(store, message));
-        return null;
     }
 
     private void attributeStoreContextualMessage(Store store, HistorySyncMessage message) {
@@ -536,7 +525,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         private void lock(UUID key) {
             var lockWrapper = locks.compute(
                     key,
-                    (_, value) -> requireNonNullElseGet(value, () -> new ReentrantLock(true))
+                    (ignored, value) -> requireNonNullElseGet(value, () -> new ReentrantLock(true))
             );
             lockWrapper.lock();
         }

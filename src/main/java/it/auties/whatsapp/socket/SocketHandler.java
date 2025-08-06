@@ -234,7 +234,7 @@ public final class SocketHandler {
 
     private void onDisconnected(WhatsappDisconnectReason reason) {
         encryptionHandler.reset();
-        pendingRequests.forEach((_, request) -> request.complete(Node.empty()));
+        pendingRequests.forEach((ignored, request) -> request.complete(Node.empty()));
         pendingRequests.clear();
         if (reason == WhatsappDisconnectReason.LOGGED_OUT || reason == WhatsappDisconnectReason.BANNED) {
             store.deleteSession();
