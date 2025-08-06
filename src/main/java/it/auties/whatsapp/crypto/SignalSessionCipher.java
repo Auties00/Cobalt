@@ -382,7 +382,7 @@ public final class SignalSessionCipher {
         var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
         var senderKeyState = record.findStateById(senderKeyMessage.id())
-                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key with id %s".formatted(senderKeyMessage.id())));
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for " + name + " with id " + senderKeyMessage.id()));
         try {
             var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
             var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
