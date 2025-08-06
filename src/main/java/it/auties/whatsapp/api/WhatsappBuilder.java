@@ -654,10 +654,17 @@ public sealed class WhatsappBuilder {
         }
 
         public Whatsapp build() {
+            Objects.requireNonNull(store, "Expected a valid store");
+            Objects.requireNonNull(keys, "Expected a valid keys");
             if (!Objects.equals(store.uuid(), keys.uuid())) {
                 throw new IllegalArgumentException("UUID mismatch: %s != %s".formatted(store.uuid(), keys.uuid()));
             }
-            return new Whatsapp(store, keys, errorHandler, getWebVerificationMethod(store, webVerificationHandler));
+            return new Whatsapp(
+                    store,
+                    keys,
+                    Objects.requireNonNullElse(errorHandler, WhatsappErrorHandler.toTerminal()),
+                    getWebVerificationMethod(store, webVerificationHandler)
+            );
         }
 
         private static WhatsappVerificationHandler.Web getWebVerificationMethod(Store store, WhatsappVerificationHandler.Web webVerificationHandler) {

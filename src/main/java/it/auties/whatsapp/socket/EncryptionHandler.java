@@ -178,7 +178,7 @@ final class EncryptionHandler {
     ByteBuffer receiveDeciphered(ByteBuffer message) {
         var readKey = this.readKey;
         if(readKey == null) {
-            return null;
+            throw new IllegalStateException("Handshake has not been completed");
         }
 
         var releasedLock = false;
@@ -196,8 +196,8 @@ final class EncryptionHandler {
             releasedLock = true;
             output.flip();
             return output;
-        } catch (GeneralSecurityException exception) {
-            return null;
+        }catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot decrypt data", exception);
         } finally {
             if(!releasedLock) {
                 readCipherLock.unlock();

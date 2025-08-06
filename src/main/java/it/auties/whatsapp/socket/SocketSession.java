@@ -14,6 +14,8 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 abstract sealed class SocketSession {
@@ -442,20 +444,18 @@ abstract sealed class SocketSession {
             }
         }
 
-        public void register(SocketChannel channel, int ops, ConnectionContext context) throws IOException {
-            synchronized (this) {
-                channel.register(selector, ops, context);
-                if (selectorThread == null || !selectorThread.isAlive()) {
-                    selectorThread = Thread.startVirtualThread(this);
-                }
-                selector.wakeup();
+        @SuppressWarnings("MagicConstant")
+        public synchronized void register(SocketChannel channel, int ops, ConnectionContext context) throws IOException {
+            channel.register(selector, ops, context);
+            if (selectorThread == null || !selectorThread.isAlive()) {
+                selectorThread = Thread.startVirtualThread(this);
             }
+            selector.wakeup();
         }
 
         private void unregister(SocketChannel channel) {
             var key = channel.keyFor(selector);
             if(key != null) {
-                ((ConnectionContext) key.attachment()).disposed = true;
                 key.cancel();
                 selector.wakeup();
             }
@@ -494,8 +494,8 @@ abstract sealed class SocketSession {
                         }
                     }
                 }
-            }catch (Throwable exception) {
-                exception.printStackTrace(); // Should never happen
+            }catch (Throwable ignored) {
+                // Should be safe to ignore
             }
         }
 
@@ -567,10 +567,7 @@ abstract sealed class SocketSession {
                 ctx.messageBuffer.flip();
                 ctx.messageLengthBuffer.clear();
                 var buffer = ctx.messageBuffer;
-                Thread.startVirtualThread(() -> {
-                    var e = channel;
-                    ctx.onMessage.accept(buffer);
-                });
+                ctx.dispatcher.execute(() -> ctx.onMessage.accept(buffer));
                 ctx.messageBuffer = null;
                 return true;
             }
@@ -594,15 +591,16 @@ abstract sealed class SocketSession {
     private static final class ConnectionContext {
         private final Object connectionLock;
         private final ByteBuffer messageLengthBuffer;
-        public boolean disposed;
         private ByteBuffer messageBuffer;
         private final Queue<ByteBuffer> pendingWrites;
         private final Consumer<ByteBuffer> onMessage;
+        private final Executor dispatcher;
         private ConnectionContext(Consumer<ByteBuffer> onMessage) {
             this.onMessage = onMessage;
             this.messageLengthBuffer = ByteBuffer.allocate(3);
             this.pendingWrites = new ConcurrentLinkedQueue<>();
             this.connectionLock = new Object();
+            this.dispatcher = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
         }
     }
 }
