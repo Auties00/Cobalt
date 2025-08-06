@@ -77,7 +77,7 @@ import static it.auties.whatsapp.util.SignalConstants.KEY_BUNDLE_TYPE;
 final class StreamHandler {
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final int PRE_KEYS_UPLOAD_CHUNK = 10;
-    private static final int PING_INTERVAL = 20;
+    private static final int PING_INTERVAL = 30;
     private static final int MAX_MESSAGE_RETRIES = 5;
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
     private static final byte[][] CALL_RELAY = new byte[][]{
@@ -1471,7 +1471,7 @@ final class StreamHandler {
             }else {
                 serializeSession();
             }
-        }, PING_INTERVAL / 2, PING_INTERVAL);
+        }, PING_INTERVAL, PING_INTERVAL);
     }
 
     private void scheduleMediaConnectionUpdate() {

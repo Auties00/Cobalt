@@ -14,8 +14,8 @@ import java.util.UUID;
 public final class Exceptions {
     private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.cobalt/errors");
 
-    public static RuntimeException current() {
-        var result = new RuntimeException();
+    public static RuntimeException current(String message) {
+        var result = new RuntimeException(message);
         result.setStackTrace(currentStackTrace());
         return result;
     }

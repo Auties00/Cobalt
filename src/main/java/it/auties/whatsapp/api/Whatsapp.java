@@ -2306,7 +2306,7 @@ public class Whatsapp {
 
         try {
             return downloadMedia(mediaMessage);
-        } catch (Exception ignored1) {
+        } catch (Exception ignored) {
             requireMediaReupload(info);
             return downloadMedia(mediaMessage);
         }

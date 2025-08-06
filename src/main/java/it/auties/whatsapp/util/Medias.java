@@ -18,7 +18,10 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -183,45 +186,123 @@ public final class Medias {
                     .firstValueAsLong("Content-Length")
                     .orElseThrow(() -> new IllegalArgumentException("Unknown content length"));
             try (var payload = response.body()) {
-                var ciphertext = payload.readNBytes(payloadLength - MAC_LENGTH);
-                if (provider.mediaEncryptedSha256().isEmpty()) {
-                    var expectedCiphertextSha256 = provider.mediaEncryptedSha256().get();
-                    var sha256Digest = MessageDigest.getInstance("SHA-256");
-                    var actualCiphertextSha256 = sha256Digest.digest(ciphertext);
-                    if (!Arrays.equals(expectedCiphertextSha256, actualCiphertextSha256)) {
+                var expectedPlaintextSha256 = provider.mediaSha256()
+                        .orElse(null);
+                var plaintextDigest = expectedPlaintextSha256 != null
+                        ? MessageDigest.getInstance("SHA-256")
+                        : null;
+
+                var keyName = provider.attachmentType()
+                        .keyName()
+                        .orElse(null);
+                var mediaKey = provider.mediaKey()
+                        .orElse(null);
+
+                var hasCipher = keyName != null
+                        && mediaKey != null;
+                byte[] expectedCiphertextSha256;
+                MessageDigest ciphertextDigest;
+                Mac mac;
+                Cipher cipher;
+                if (hasCipher) {
+                    var keys = MediaKeys.of(mediaKey, keyName);
+                    expectedCiphertextSha256 = provider.mediaEncryptedSha256()
+                            .orElse(null);  // TODO: Is mediaEncryptedSha256 mandatory for ciphered medias?
+                    ciphertextDigest = expectedCiphertextSha256 != null
+                            ? MessageDigest.getInstance("SHA-256")
+                            : null;
+                    mac = Mac.getInstance("HmacSHA256");
+                    var macKey = new SecretKeySpec(keys.macKey(), "HmacSHA256");
+                    mac.init(macKey);
+                    mac.update(keys.iv());
+                    cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                    var cipherKey = new SecretKeySpec(keys.cipherKey(), "AES");
+                    var cipherIv = new IvParameterSpec(keys.iv());
+                    cipher.init(Cipher.DECRYPT_MODE, cipherKey, cipherIv);
+                }else {
+                    expectedCiphertextSha256 = null;
+                    ciphertextDigest = null;
+                    mac = null;
+                    cipher = null;
+                }
+
+                byte[] plaintext;
+                var plaintextOffset = 0;
+                int read;
+                if(hasCipher) {
+                    var ciphertextLength = payloadLength - MAC_LENGTH;
+                    plaintext = new byte[cipher.getOutputSize(ciphertextLength)];
+                    var ciphertextBuffer = new byte[8192];
+                    while (ciphertextLength > 0) {
+                        read = payload.read(
+                                ciphertextBuffer,
+                                0,
+                                Math.min(ciphertextBuffer.length, ciphertextLength)
+                        );
+                        if(read == -1) {
+                            throw new IOException("Unexpected end of stream: expected " + ciphertextLength + " more bytes");
+                        }
+                        ciphertextLength -= read;
+
+                        if (ciphertextDigest != null) {
+                            ciphertextDigest.update(ciphertextBuffer, 0, read);
+                        }
+
+                        mac.update(ciphertextBuffer, 0, read);
+
+                        if (ciphertextLength > 0) {
+                            read = cipher.update(ciphertextBuffer, 0, read, plaintext, plaintextOffset);
+                        } else {
+                            read = cipher.doFinal(ciphertextBuffer, 0, read, plaintext, plaintextOffset);
+                        }
+
+                        if(plaintextDigest != null) {
+                            plaintextDigest.update(plaintext, plaintextOffset, read);
+                        }
+
+                        plaintextOffset += read;
+                    }
+                    var expectedCiphertextMac = payload.readNBytes(MAC_LENGTH);
+                    if(ciphertextDigest != null) {
+                        ciphertextDigest.update(expectedCiphertextMac);
+                        var actualCipherTextSha256 = ciphertextDigest.digest();
+                        if (!Arrays.equals(expectedCiphertextSha256, actualCipherTextSha256)) {
+                            throw new RuntimeException("Ciphertext SHA256 hash doesn't match the expected value");
+                        }
+                    }
+                    var actualCiphertextMac = mac.doFinal();
+                    if (!Arrays.equals(expectedCiphertextMac, 0, MAC_LENGTH, actualCiphertextMac, 0, MAC_LENGTH)) {
                         throw new HmacValidationException("media_decryption");
+                    }
+                }else {
+                    plaintext = new byte[payloadLength];
+                    while (payloadLength > 0) {
+                        read = payload.read(
+                                plaintext,
+                                plaintextOffset,
+                                payloadLength
+                        );
+                        if(read == -1) {
+                            throw new IOException("Unexpected end of stream: expected " + payloadLength + " more bytes");
+                        }
+
+                        if (plaintextDigest != null) {
+                            plaintextDigest.update(plaintext, plaintextOffset, read);
+                        }
+
+                        plaintextOffset += read;
+                        payloadLength -= read;
                     }
                 }
 
-                var keyName = provider.attachmentType().keyName();
-                if (keyName.isEmpty()) {
-                    return ciphertext;
+                if(plaintextDigest != null) {
+                    var actualPlaintextSha256 = plaintextDigest.digest();
+                    if (!Arrays.equals(expectedPlaintextSha256, actualPlaintextSha256)) {
+                        throw new RuntimeException("Plaintext SHA256 hash doesn't match the expected value");
+                    }
                 }
 
-                var mediaKey = provider.mediaKey();
-                if (mediaKey.isEmpty()) {
-                    return ciphertext;
-                }
-
-                var keys = MediaKeys.of(mediaKey.get(), keyName.get());
-                var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                var keySpec = new SecretKeySpec(keys.cipherKey(), "AES");
-                cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(keys.iv()));
-                if (cipher.doFinal(ciphertext, 0, ciphertext.length, ciphertext, 0) != ciphertext.length) {
-                    throw new IllegalStateException("Unexpected plaintext length");
-                }
-
-                var expectedCiphertextMac = payload.readNBytes(MAC_LENGTH);
-                var localMac = Mac.getInstance("HmacSHA256");
-                localMac.init(new SecretKeySpec(keys.macKey(), "HmacSHA256"));
-                localMac.update(keys.iv());
-                localMac.update(ciphertext);
-                var actualCiphertextMac = localMac.doFinal();
-                if (!Arrays.equals(expectedCiphertextMac, 0, MAC_LENGTH, actualCiphertextMac, 0, MAC_LENGTH)) {
-                    throw new HmacValidationException("media_decryption");
-                }
-
-                return ciphertext;
+                return plaintext;
             }
         }catch (Throwable throwable) {
             throw new RuntimeException("Cannot download media", throwable);

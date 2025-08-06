@@ -4,12 +4,11 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.model.companion.CompanionDevice;
 
-import java.io.IOException;
 import java.util.Scanner;
 
 public class MobileRegistrationExample {
-    public static void main(String[] args) throws IOException, InterruptedException {
-        System.out.println("Enter the phone number: "); // You can get a number form https://daisysms.com, do not spam registrations or you'll get banned
+    public static void main(String[] args) {
+        System.out.println("Enter the phone number: "); // You can get a number from https://daisysms.com, do not spam registrations, or you'll get banned
         var scanner = new Scanner(System.in);
         var phoneNumber = scanner.nextLong();
         System.out.println("Select if the account is business or personal:\n(1) Business (2) Personal");

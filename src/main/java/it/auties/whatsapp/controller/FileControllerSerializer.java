@@ -17,10 +17,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.StructuredTaskScope;
@@ -156,7 +153,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
                 return;
             }
 
-            keysHashCodes.put(store.uuid(), newHashCode);
+            storesHashCodes.put(store.uuid(), newHashCode);
             try(var scope = new StructuredTaskScope<>()) {
                 store.chats()
                         .forEach(chat -> scope.fork(() -> serializeChat(store, chat)));
@@ -172,14 +169,14 @@ abstract class FileControllerSerializer implements ControllerSerializer {
             }
             var storePath = getSessionFile(store, "store" + fileExtension());
             encodeStore(store, storePath);
-        }finally {
+        } finally {
             storeLock.unlock(store.uuid());
         }
     }
 
     @SuppressWarnings("SameReturnValue")
     private Object serializeChat(Store store, Chat chat) {
-        var outputFile = getMessagesContainerPath(store, chat.jid(), chat.hashCode(), CHAT_PREFIX);
+        var outputFile = getMessagesContainerPathIfUpdated(store, chat.jid(), chat.hashCode(), CHAT_PREFIX);
         if (outputFile == null) {
             return null;
         }
@@ -194,7 +191,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
 
     @SuppressWarnings("SameReturnValue")
     private Object serializeNewsletter(Store store, Newsletter newsletter) {
-        var outputFile = getMessagesContainerPath(store, newsletter.jid(), newsletter.hashCode(), NEWSLETTER_PREFIX);
+        var outputFile = getMessagesContainerPathIfUpdated(store, newsletter.jid(), newsletter.hashCode(), NEWSLETTER_PREFIX);
         if (outputFile == null) {
             return null;
         }
@@ -207,7 +204,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         return null;
     }
 
-    private Path getMessagesContainerPath(Store store, Jid jid, int hashCode, String filePrefix) {
+    private Path getMessagesContainerPathIfUpdated(Store store, Jid jid, int hashCode, String filePrefix) {
         var identifier = new StoreJidPair(store.uuid(), jid);
         var oldHashCode = jidsHashCodes.getOrDefault(identifier, -1);
         if (oldHashCode == hashCode) {
@@ -330,7 +327,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
         var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
         try (
                 var walker = Files.walk(directory);
-                var scope = new StructuredTaskScope<>()
+                var scope = new StructuredTaskScope<>("Cobalt-Store-" + store.uuid() + "-Deserializer", Thread.ofVirtual().factory())
         ) {
             walker.forEach(path -> scope.fork(() -> deserializeChatOrNewsletter(store, path)));
             scope.join();
@@ -423,7 +420,8 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     private Object attributeStoreContextualMessages(Store store) {
         store.chats()
                 .stream()
-                .flatMap(chat -> chat.messages().stream())
+                .map(Chat::messages)
+                .flatMap(Collection::parallelStream)
                 .forEach(message -> attributeStoreContextualMessage(store, message));
         return null;
     }

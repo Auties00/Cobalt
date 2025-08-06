@@ -136,7 +136,6 @@ final class EncryptionHandler {
             return false;
         }
 
-        var releasedLock = false;
         try {
             writeCipherLock.lock();
             var writeCipher = Cipher.getInstance("AES/GCM/NoPadding");
@@ -151,8 +150,6 @@ final class EncryptionHandler {
             var offset = writeRequestHeader(ciphertextLength, ciphertext, 0);
             BinaryNodeEncoder.encode(node, ciphertext, offset);
             writeCipher.doFinal(ciphertext, offset, plaintextLength, ciphertext, offset);
-            writeCipherLock.unlock();
-            releasedLock = true;
             if (this.writeKey != writeKey) {
                 // Session changed
                 return false;
@@ -162,9 +159,7 @@ final class EncryptionHandler {
         } catch (Throwable throwable) {
             throw new RuntimeException("Cannot encrypt data", throwable);
         }finally {
-            if(!releasedLock) {
-                writeCipherLock.unlock();
-            }
+            writeCipherLock.unlock();
         }
     }
 

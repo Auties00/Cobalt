@@ -78,7 +78,7 @@ class ProtobufControllerSerializer extends FileControllerSerializer {
             throw new UncheckedIOException(exception);
         }
     }
-    
+
     @Override
     Keys decodeKeys(Path keys) throws IOException {
         try(var stream = Files.newInputStream(keys)) {
