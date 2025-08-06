@@ -103,6 +103,11 @@ public final class SocketHandler {
         }
 
         dispose();
+
+        if(shutdownHook != null) {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            shutdownHook = null;
+        }
     }
 
     private void callListenersAsync(Consumer<WhatsappListener> consumer) {
@@ -237,9 +242,8 @@ public final class SocketHandler {
             store.deleteSession();
             serializable.set(false);
         }
-        if(reason != WhatsappDisconnectReason.RECONNECTING && shutdownHook != null) {
-            Runtime.getRuntime().removeShutdownHook(shutdownHook);
-            shutdownHook = null;
+        if(reason != WhatsappDisconnectReason.RECONNECTING) {
+            onShutdown();
         }
         callListenersSync(listener -> {
             listener.onDisconnected(whatsapp, reason);

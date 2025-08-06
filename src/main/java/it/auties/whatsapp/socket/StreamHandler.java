@@ -62,10 +62,7 @@ import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -95,7 +92,7 @@ final class StreamHandler {
     private final Map<String, Integer> retries;
     private final AtomicReference<String> lastLinkCodeKey;
     private final AtomicBoolean retriedConnection;
-    private final Executor executor;
+    private final ExecutorService dispatcher;
 
     StreamHandler(SocketHandler socketHandler, WhatsappVerificationHandler.Web webVerificationHandler) {
         this.socketHandler = socketHandler;
@@ -103,11 +100,11 @@ final class StreamHandler {
         this.retries = new ConcurrentHashMap<>();
         this.lastLinkCodeKey = new AtomicReference<>();
         this.retriedConnection = new AtomicBoolean(false);
-        this.executor = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
+        this.dispatcher = Executors.newSingleThreadExecutor(Thread.ofVirtual().factory());
     }
 
     void digest(Node node) {
-        executor.execute(() -> {
+        dispatcher.execute(() -> {
             switch (node.description()) {
                 case "ack" -> digestAck(node);
                 case "call" -> digestCall(node);
@@ -1724,5 +1721,7 @@ final class StreamHandler {
     void dispose() {
         retries.clear();
         lastLinkCodeKey.set(null);
+        dispatcher.shutdownNow();
+        dispatcher.close();
     }
 }

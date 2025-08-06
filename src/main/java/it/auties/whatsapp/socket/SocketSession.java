@@ -14,7 +14,7 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
@@ -456,6 +456,10 @@ abstract sealed class SocketSession {
         private void unregister(SocketChannel channel) {
             var key = channel.keyFor(selector);
             if(key != null) {
+                if(key.attachment() instanceof ConnectionContext ctx) {
+                    ctx.dispatcher.shutdownNow();
+                    ctx.dispatcher.close();
+                }
                 key.cancel();
                 selector.wakeup();
             }
@@ -594,7 +598,7 @@ abstract sealed class SocketSession {
         private ByteBuffer messageBuffer;
         private final Queue<ByteBuffer> pendingWrites;
         private final Consumer<ByteBuffer> onMessage;
-        private final Executor dispatcher;
+        private final ExecutorService dispatcher;
         private ConnectionContext(Consumer<ByteBuffer> onMessage) {
             this.onMessage = onMessage;
             this.messageLengthBuffer = ByteBuffer.allocate(3);
