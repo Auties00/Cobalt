@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.socket.message;
 
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMatch;
@@ -48,6 +48,7 @@ import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.HistorySyncNotification;
 import it.auties.whatsapp.model.sync.HistorySyncSpec;
 import it.auties.whatsapp.model.sync.PushName;
+import it.auties.whatsapp.socket.SocketConnection;
 import it.auties.whatsapp.util.*;
 
 import javax.crypto.Cipher;
@@ -76,32 +77,32 @@ import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.HISTORY_SYNC;
 import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.util.SignalConstants.*;
 
-final class MessageHandler {
+public final class MessageComponent {
     private static final int HISTORY_SYNC_MAX_TIMEOUT = 25;
     private static final Set<HistorySync.Type> REQUIRED_HISTORY_SYNC_TYPES = Set.of(HistorySync.Type.INITIAL_BOOTSTRAP, HistorySync.Type.PUSH_NAME, HistorySync.Type.NON_BLOCKING_DATA);
 
-    private final SocketHandler socketHandler;
+    private final SocketConnection socketConnection;
     private final Map<Jid, CopyOnWriteArrayList<Jid>> devicesCache;
     private final Set<Jid> historyCache;
     private final HistorySyncProgressTracker recentHistorySyncTracker;
     private final HistorySyncProgressTracker fullHistorySyncTracker;
     private final Set<HistorySync.Type> historySyncTypes;
-    private final SignalSessionCipher sessionCipher;
+    private final SignalSession sessionCipher;
     private final ReentrantLock sessionCipherLock;
     private ScheduledFuture<?> historySyncTask;
 
-    MessageHandler(SocketHandler socketHandler) {
-        this.socketHandler = socketHandler;
+    public MessageComponent(SocketConnection socketConnection) {
+        this.socketConnection = socketConnection;
         this.devicesCache = new ConcurrentHashMap<>();
         this.historyCache = ConcurrentHashMap.newKeySet();
         this.historySyncTypes = ConcurrentHashMap.newKeySet();
         this.recentHistorySyncTracker = new HistorySyncProgressTracker();
         this.fullHistorySyncTracker = new HistorySyncProgressTracker();
-        this.sessionCipher = new SignalSessionCipher(socketHandler.keys());
+        this.sessionCipher = new SignalSession(socketConnection.keys());
         this.sessionCipherLock = new ReentrantLock(true);
     }
 
-    void encode(MessageRequest request) {
+    public void encode(MessageRequest request) {
         switch (request) {
             case MessageRequest.Chat chatRequest -> encodeChatMessage(chatRequest);
             case MessageRequest.Newsletter newsletterRequest -> encodeNewsletterMessage(newsletterRequest);
@@ -112,11 +113,11 @@ final class MessageHandler {
         try {
             prepareOutgoingChatMessage(request.info());
             var node = encodeRequest(request);
-            socketHandler.sendNode(node);
+            socketConnection.sendNode(node);
             attributeMessageReceipt(request.info());
         } catch (Throwable throwable) {
             request.info().setStatus(MessageStatus.ERROR);
-            socketHandler.handleFailure(MESSAGE, throwable);
+            socketConnection.handleFailure(MESSAGE, throwable);
         }finally {
             saveMessage(request.info(), false);
         }
@@ -171,7 +172,7 @@ final class MessageHandler {
     }
 
     private void attributeTextMessage(TextMessage textMessage) {
-        if (socketHandler.store().textPreviewSetting() == WhatsappTextPreviewPolicy.DISABLED) {
+        if (socketConnection.store().textPreviewSetting() == WhatsappTextPreviewPolicy.DISABLED) {
             return;
         }
 
@@ -189,7 +190,7 @@ final class MessageHandler {
         }
 
         var uri = match.result().uri().toString();
-        if (socketHandler.store().textPreviewSetting() == WhatsappTextPreviewPolicy.ENABLED_WITH_INFERENCE
+        if (socketConnection.store().textPreviewSetting() == WhatsappTextPreviewPolicy.ENABLED_WITH_INFERENCE
                 && !Objects.equals(match.text(), uri)) {
             textMessage.setText(textMessage.text().replace(match.text(), uri));
         }
@@ -228,14 +229,14 @@ final class MessageHandler {
         var media = mediaMessage.decodedMedia()
                 .orElseThrow(() -> new IllegalArgumentException("Missing media to upload"));
         var attachmentType = getAttachmentType(chatJid, mediaMessage);
-        var mediaConnection = socketHandler.store().mediaConnection();
-        var userAgent = socketHandler.store()
+        var mediaConnection = socketConnection.store().mediaConnection();
+        var userAgent = socketConnection.store()
                 .device()
-                .toUserAgent(socketHandler.store().version())
+                .toUserAgent(socketConnection.store().version())
                 .orElse(null);
-        var proxy = socketHandler.store()
+        var proxy = socketConnection.store()
                 .proxy()
-                .filter(ignored -> socketHandler.store().mediaProxySetting().allowsUploads())
+                .filter(ignored -> socketConnection.store().mediaProxySetting().allowsUploads())
                 .orElse(null);
         var upload = Medias.upload(media, attachmentType, mediaConnection, proxy, userAgent);
         attributeMediaMessage(mediaMessage, upload);
@@ -294,7 +295,7 @@ final class MessageHandler {
                 return;
             }
 
-            var me = socketHandler.store().jid();
+            var me = socketConnection.store().jid();
             if (me.isEmpty()) {
                 return;
             }
@@ -309,7 +310,7 @@ final class MessageHandler {
                     .selectedOptions(encryptedOptions)
                     .build();
             var encryptedPollUpdateEncryptedOptions = PollUpdateEncryptedOptionsSpec.encode(pollUpdateEncryptedOptions);
-            var originalPollInfo = socketHandler.store()
+            var originalPollInfo = socketConnection.store()
                     .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
                     .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
             var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
@@ -386,12 +387,12 @@ final class MessageHandler {
                     .put("type", type)
                     .put("media_id", getPlainMessageHandle(request), Objects::nonNull)
                     .toMap();
-            socketHandler.sendNode(Node.of("message", attributes, messageNode));
+            socketConnection.sendNode(Node.of("message", attributes, messageNode));
             var newsletter = request.info().newsletter();
             newsletter.addMessage(request.info());
         } catch (Throwable throwable) {
             request.info().setStatus(MessageStatus.ERROR);
-            socketHandler.handleFailure(MESSAGE, throwable);
+            socketConnection.handleFailure(MESSAGE, throwable);
         }
     }
 
@@ -446,7 +447,7 @@ final class MessageHandler {
 
     private Node encodeGroup(MessageRequest.Chat request) {
         var encodedMessage = Bytes.messageToBytes(request.info().message());
-        var sender = socketHandler.store()
+        var sender = socketConnection.store()
                 .jid()
                 .orElse(null);
         if (sender == null) {
@@ -461,11 +462,11 @@ final class MessageHandler {
             var allDevices = queryDevices(request.recipients(), false);
             var preKeys = createGroupNodes(request, signalMessage, allDevices, request.force());
             var encodedMessageNode = createEncodedMessageNode(request, preKeys, messageNode);
-            return socketHandler.sendNode(encodedMessageNode);
+            return socketConnection.sendNode(encodedMessageNode);
         }
 
         if (request.info().chatJid().type() == Jid.Type.STATUS) {
-            var recipients = socketHandler.store()
+            var recipients = socketConnection.store()
                     .contacts()
                     .stream()
                     .map(Contact::jid)
@@ -473,10 +474,10 @@ final class MessageHandler {
             var allDevices = queryDevices(recipients, false);
             var preKeys = createGroupNodes(request, signalMessage, allDevices, true);
             var encodedMessageNode = createEncodedMessageNode(request, preKeys, messageNode);
-            return socketHandler.sendNode(encodedMessageNode);
+            return socketConnection.sendNode(encodedMessageNode);
         }
 
-        var groupMetadata = socketHandler.queryGroupMetadata(request.info().chatJid());
+        var groupMetadata = socketConnection.queryGroupMetadata(request.info().chatJid());
         var allDevices = getGroupDevices(groupMetadata);
         var preKeys = createGroupNodes(request, signalMessage, allDevices, request.force());
         return createEncodedMessageNode(request, preKeys, messageNode);
@@ -494,7 +495,7 @@ final class MessageHandler {
     }
 
     private Node encodeConversation(MessageRequest.Chat request) {
-        var sender = socketHandler.store()
+        var sender = socketConnection.store()
                 .jid()
                 .orElse(null);
         if (sender == null) {
@@ -528,7 +529,7 @@ final class MessageHandler {
             return Set.of(request.info().chatJid());
         }
 
-        return new HashSet<>(List.of(socketHandler.store().jid().orElseThrow().toSimpleJid(), request.info().chatJid()));
+        return new HashSet<>(List.of(socketConnection.store().jid().orElseThrow().toSimpleJid(), request.info().chatJid()));
     }
 
     private boolean isConversation(ChatMessageInfo info) {
@@ -551,7 +552,7 @@ final class MessageHandler {
         }
 
         if (!request.peer() && hasPreKeyMessage(preKeys)) {
-            socketHandler.keys().setCompanionIdentity()
+            socketConnection.keys().setCompanionIdentity()
                     .ifPresent(companionIdentity -> body.add(Node.of("device-identity", SignedDeviceIdentitySpec.encode(companionIdentity))));
         }
 
@@ -559,7 +560,7 @@ final class MessageHandler {
                 .put("id", request.info().id())
                 .put("to", request.info().chatJid())
                 .put("type", request.info().message().content() instanceof MediaMessage ? "media" : "text")
-                .put("verified_name", socketHandler.store().verifiedName().orElse(""), socketHandler.store().verifiedName().isPresent() && !request.peer())
+                .put("verified_name", socketConnection.store().verifiedName().orElse(""), socketConnection.store().verifiedName().isPresent() && !request.peer())
                 .put("category", "peer", request.peer())
                 .put("duration", "900", request.info().message().type() == Message.Type.LIVE_LOCATION)
                 .put("device_fanout", false, request.info().message().type() == Message.Type.BUTTONS)
@@ -584,7 +585,7 @@ final class MessageHandler {
     }
 
     private List<Node> createConversationNodes(MessageRequest.Chat request, List<Jid> contacts, byte[] message, byte[] deviceMessage) {
-        var jid = socketHandler.store()
+        var jid = socketConnection.store()
                 .jid()
                 .orElse(null);
         if (jid == null) {
@@ -602,7 +603,7 @@ final class MessageHandler {
 
     private List<Node> createGroupNodes(MessageRequest.Chat request, byte[] distributionMessage, List<Jid> participants, boolean force) {
         var missingParticipants = participants.stream()
-                .filter(participant -> force || !socketHandler.keys().hasGroupKeys(request.info().chatJid(), participant))
+                .filter(participant -> force || !socketConnection.keys().hasGroupKeys(request.info().chatJid(), participant))
                 .toList();
         if (missingParticipants.isEmpty()) {
             return List.of();
@@ -614,13 +615,13 @@ final class MessageHandler {
         var paddedMessage = Bytes.messageToBytes(MessageContainer.of(whatsappMessage));
         querySessions(missingParticipants, force);
         var results = createMessageNodes(request, missingParticipants, paddedMessage);
-        socketHandler.keys().addRecipientsWithPreKeys(request.info().chatJid(), missingParticipants);
+        socketConnection.keys().addRecipientsWithPreKeys(request.info().chatJid(), missingParticipants);
         return results;
     }
 
-    void querySessions(Collection<Jid> contacts, boolean force) {
+    public void querySessions(Collection<Jid> contacts, boolean force) {
         var missingSessions = contacts.stream()
-                .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
+                .filter(contact -> force || !socketConnection.keys().hasSession(contact.toSignalAddress()))
                 .map(contact -> Node.of("user", Map.of("jid", contact)))
                 .toList();
         if (missingSessions.isEmpty()) {
@@ -630,7 +631,7 @@ final class MessageHandler {
     }
 
     private void querySession(List<Node> children) {
-        var result = socketHandler.sendQuery("get", "encrypt", Node.of("key", children));
+        var result = socketConnection.sendQuery("get", "encrypt", Node.of("key", children));
         parseSessions(result);
     }
 
@@ -654,7 +655,7 @@ final class MessageHandler {
         return queryDevices(jids, false);
     }
 
-    List<Jid> queryDevices(Collection<Jid> contacts, boolean excludeSelf) {
+    public List<Jid> queryDevices(Collection<Jid> contacts, boolean excludeSelf) {
         var cachedDevices = contacts.stream()
                 .map(devicesCache::get)
                 .filter(Objects::nonNull)
@@ -670,10 +671,10 @@ final class MessageHandler {
         }
 
         var body = Node.of("usync",
-                Map.of("context", "message", "index", "0", "last", "true", "mode", "query", "sid", SocketHandler.randomSid()),
+                Map.of("context", "message", "index", "0", "last", "true", "mode", "query", "sid", SocketConnection.randomSid()),
                 Node.of("query", Node.of("devices", Map.of("version", "2"))),
                 Node.of("list", contactNodes));
-        var result = socketHandler.sendQuery("get", "usync", body);
+        var result = socketConnection.sendQuery("get", "usync", body);
         return toSingleList(cachedDevices, parseDevices(result, excludeSelf));
     }
 
@@ -726,7 +727,7 @@ final class MessageHandler {
     }
 
     private boolean isMe(Jid jid) {
-        var self = socketHandler.store().jid().orElse(null);
+        var self = socketConnection.store().jid().orElse(null);
         if (self == null) {
             return false;
         }
@@ -813,7 +814,7 @@ final class MessageHandler {
 
             decodeChatMessage(node, null, businessName, notify);
         } catch (Throwable throwable) {
-            socketHandler.handleFailure(MESSAGE, throwable);
+            socketConnection.handleFailure(MESSAGE, throwable);
         }
     }
 
@@ -831,7 +832,7 @@ final class MessageHandler {
                 .flatMap(certificate -> certificate.details().name());
     }
 
-    private Node createMessageNode(MessageRequest.Chat request, CipheredMessageResult groupMessage) {
+    private Node createMessageNode(MessageRequest.Chat request, SignalSession.Result groupMessage) {
         var mediaType = getMediaType(request.info().message());
         var attributes = Attributes.of()
                 .put("v", "2")
@@ -871,15 +872,9 @@ final class MessageHandler {
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
             var messageId = messageNode.attributes()
                     .getRequiredString("id");
-            if (notify) {
-                socketHandler.sendMessageAck(newsletterJid, messageNode);
-                if (socketHandler.store().automaticMessageReceipts()) {
-                    var receiptType = getReceiptType("newsletter", false);
-                    socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
-                }
-            }
+            sendPlainMessageSuccessReceipt(messageNode, notify, newsletterJid, messageId);
 
-            var newsletter = socketHandler.store()
+            var newsletter = socketConnection.store()
                     .findNewsletterByJid(newsletterJid);
             if (newsletter.isEmpty()) {
                 return;
@@ -927,11 +922,11 @@ final class MessageHandler {
             newsletter.get()
                     .addMessage(result.get());
             if (notify) {
-                socketHandler.onNewMessage(result.get());
+                socketConnection.onNewMessage(result.get());
             }
-            socketHandler.onReply(result.get());
+            socketConnection.onReply(result.get());
         } catch (Throwable throwable) {
-            socketHandler.handleFailure(MESSAGE, throwable);
+            socketConnection.handleFailure(MESSAGE, throwable);
         }
     }
 
@@ -945,21 +940,15 @@ final class MessageHandler {
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
             var isSender = messageNode.attributes()
                     .getBoolean("is_sender");
-            if (notify) {
-                socketHandler.sendMessageAck(newsletterJid, messageNode);
-                if (socketHandler.store().automaticMessageReceipts()) {
-                    var receiptType = getReceiptType("newsletter", false);
-                    socketHandler.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
-                }
-            }
+            sendPlainMessageSuccessReceipt(messageNode, notify, newsletterJid, messageId);
 
-            var newsletter = socketHandler.store()
+            var newsletter = socketConnection.store()
                     .findNewsletterByJid(newsletterJid);
             if (newsletter.isEmpty()) {
                 return;
             }
 
-            var message = socketHandler.store()
+            var message = socketConnection.store()
                     .findMessageById(newsletter.get(), messageId);
             if (message.isEmpty()) {
                 return;
@@ -983,7 +972,7 @@ final class MessageHandler {
 
             message.get().incrementReaction(code.get(), isSender);
         } catch (Throwable throwable) {
-            socketHandler.handleFailure(MESSAGE, throwable);
+            socketConnection.handleFailure(MESSAGE, throwable);
         }
     }
 
@@ -1003,8 +992,8 @@ final class MessageHandler {
             var messageBuilder = new ChatMessageInfoBuilder()
                     .status(MessageStatus.PENDING);
             var keyBuilder = new ChatMessageKeyBuilder()
-                    .id(SocketHandler.randomSid());
-            var receiver = socketHandler.store()
+                    .id(SocketConnection.randomSid());
+            var receiver = socketConnection.store()
                     .jid()
                     .map(Jid::toSimpleJid)
                     .orElse(null);
@@ -1026,7 +1015,7 @@ final class MessageHandler {
             var key = keyBuilder.id(id).build();
             var senderJid = key.senderJid()
                     .orElse(null);
-            if (Objects.equals(senderJid, socketHandler.store().jid().orElse(null))) {
+            if (Objects.equals(senderJid, socketConnection.store().jid().orElse(null))) {
                 sendEncMessageSuccessReceipt(infoNode, id, key.chatJid(), senderJid, key.fromMe());
                 return;
             }
@@ -1058,10 +1047,10 @@ final class MessageHandler {
             attributeMessageReceipt(info);
             attributeChatMessage(info);
             saveMessage(info, notify);
-            socketHandler.onReply(info);
+            socketConnection.onReply(info);
             sendEncMessageSuccessReceipt(infoNode, id, key.chatJid(), senderJid, key.fromMe());
         } catch (Throwable throwable) {
-            socketHandler.handleFailure(MESSAGE, throwable);
+            socketConnection.handleFailure(MESSAGE, throwable);
         }
     }
 
@@ -1080,15 +1069,29 @@ final class MessageHandler {
     }
 
     private void sendEncMessageSuccessReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {
-        socketHandler.sendMessageAck(chatJid, infoNode);
-        if (!socketHandler.store().automaticMessageReceipts()) {
+        socketConnection.sendMessageAck(chatJid, infoNode);
+        if (!socketConnection.store().automaticMessageReceipts()) {
             return;
         }
 
         var participant = fromMe && senderJid == null ? chatJid : senderJid;
         var category = infoNode.attributes().getString("category");
         var receiptType = getReceiptType(category, fromMe);
-        socketHandler.sendReceipt(chatJid, participant, List.of(id), receiptType);
+        socketConnection.sendReceipt(chatJid, participant, List.of(id), receiptType);
+    }
+
+    private void sendPlainMessageSuccessReceipt(Node messageNode, boolean notify, Jid newsletterJid, String messageId) {
+        if (!notify) {
+            return;
+        }
+
+        socketConnection.sendMessageAck(newsletterJid, messageNode);
+        if (!socketConnection.store().automaticMessageReceipts()) {
+            return;
+        }
+
+        var receiptType = getReceiptType("newsletter", false);
+        socketConnection.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
     }
 
     private String getReceiptType(String category, boolean fromMe) {
@@ -1100,7 +1103,7 @@ final class MessageHandler {
             return "sender";
         }
 
-        if (!socketHandler.store().online()) {
+        if (!socketConnection.store().online()) {
             return "inactive";
         }
 
@@ -1109,6 +1112,11 @@ final class MessageHandler {
 
     private MessageContainer decodeMessageBytes(String type, byte[] encodedMessage, Jid from, Jid participant) {
         try {
+            if(MSMG.equals(type)) {
+                // TODO: Support BOT
+                return MessageContainer.empty();
+            }
+
             var result = switch (type) {
                 case SKMSG -> {
                     Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
@@ -1133,13 +1141,13 @@ final class MessageHandler {
             return MessageContainerSpec.decode(ProtobufInputStream.fromBytes(result, 0, messageLength))
                     .unbox();
         } catch (Throwable throwable) {
-            socketHandler.handleFailure(MESSAGE, throwable);
+            socketConnection.handleFailure(MESSAGE, throwable);
             return MessageContainer.empty();
         }
     }
 
     private void attributeMessageReceipt(ChatMessageInfo info) {
-        var self = socketHandler.store()
+        var self = socketConnection.store()
                 .jid()
                 .map(Jid::toSimpleJid)
                 .orElse(null);
@@ -1154,8 +1162,8 @@ final class MessageHandler {
 
     private void saveMessage(ChatMessageInfo info, boolean notify) {
         if (info.chatJid().type() == Jid.Type.STATUS) {
-            socketHandler.store().addStatus(info);
-            socketHandler.onNewStatus(info);
+            socketConnection.store().addStatus(info);
+            socketConnection.onNewStatus(info);
             return;
         }
         if (info.message().hasCategory(Message.Category.SERVER)) {
@@ -1167,23 +1175,23 @@ final class MessageHandler {
         }
 
         var chat = info.chat()
-                .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
+                .orElseGet(() -> socketConnection.store().addNewChat(info.chatJid()));
         var result = chat.addNewMessage(info);
-        if (!result || info.timestampSeconds().orElse(0L) <= socketHandler.store().initializationTimeStamp()) {
+        if (!result || info.timestampSeconds().orElse(0L) <= socketConnection.store().initializationTimeStamp()) {
             return;
         }
-        if (chat.archived() && socketHandler.store().unarchiveChats()) {
+        if (chat.archived() && socketConnection.store().unarchiveChats()) {
             chat.setArchived(false);
         }
         info.sender()
                 .filter(this::isTyping)
-                .ifPresent(sender -> socketHandler.onUpdateChatPresence(ContactStatus.AVAILABLE, sender.jid(), chat));
+                .ifPresent(sender -> socketConnection.onUpdateChatPresence(ContactStatus.AVAILABLE, sender.jid(), chat));
         if (!info.ignore() && !info.fromMe()) {
             chat.setUnreadMessagesCount(chat.unreadMessagesCount() + 1);
         }
 
         if (notify) {
-            socketHandler.onNewMessage(info);
+            socketConnection.onNewMessage(info);
         }
     }
 
@@ -1209,25 +1217,25 @@ final class MessageHandler {
                 .timestampSeconds((int) protocolMessage.ephemeralExpirationSeconds())
                 .timestampSeconds(timestampSeconds)
                 .build();
-        socketHandler.onSetting(setting);
+        socketConnection.onSetting(setting);
     }
 
     private void onMessageRevoked(ChatMessageInfo info, ProtocolMessage protocolMessage) {
         var id = protocolMessage.key().orElseThrow().id();
         info.chat()
-                .flatMap(chat -> socketHandler.store().findMessageById(chat, id))
+                .flatMap(chat -> socketConnection.store().findMessageById(chat, id))
                 .ifPresent(message -> onMessageDeleted(info, message));
     }
 
     private void onAppStateSyncKeyShare(ProtocolMessage protocolMessage) {
         var data = protocolMessage.appStateSyncKeyShare()
                 .orElseThrow(() -> new NoSuchElementException("Missing app state keys"));
-        var self = socketHandler.store()
+        var self = socketConnection.store()
                 .jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
-        socketHandler.keys()
+        socketConnection.keys()
                 .addAppKeys(self, data.keys());
-        socketHandler.pullInitialPatches();
+        socketConnection.pullInitialPatches();
     }
 
     private void onHistorySyncNotification(ChatMessageInfo info, ProtocolMessage protocolMessage) {
@@ -1236,9 +1244,9 @@ final class MessageHandler {
             var historySync = downloadHistorySync(protocolMessage);
             onHistoryNotification(historySync);
         } catch (Throwable throwable) {
-            socketHandler.handleFailure(HISTORY_SYNC, throwable);
+            socketConnection.handleFailure(HISTORY_SYNC, throwable);
         } finally {
-            socketHandler.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync");
+            socketConnection.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync");
         }
     }
 
@@ -1248,7 +1256,7 @@ final class MessageHandler {
     }
 
     private HistorySync downloadHistorySync(ProtocolMessage protocolMessage) {
-        if (socketHandler.store().webHistorySetting().isZero() && historySyncTypes.containsAll(REQUIRED_HISTORY_SYNC_TYPES)) {
+        if (socketConnection.store().webHistorySetting().isZero() && historySyncTypes.containsAll(REQUIRED_HISTORY_SYNC_TYPES)) {
             return null;
         }
 
@@ -1270,9 +1278,9 @@ final class MessageHandler {
             }
         }
 
-        var proxy = socketHandler.store()
+        var proxy = socketConnection.store()
                 .proxy()
-                .filter(ignored -> socketHandler.store().mediaProxySetting().allowsDownloads())
+                .filter(ignored -> socketConnection.store().mediaProxySetting().allowsDownloads())
                 .orElse(null);
         return Medias.download(notification, proxy, mediaStream -> {
             var inflater = new Inflater();
@@ -1298,12 +1306,12 @@ final class MessageHandler {
         if (recent) {
             recentHistorySyncTracker.commit(history.chunkOrder(), history.progress() == 100);
             if (recentHistorySyncTracker.isDone()) {
-                socketHandler.onHistorySyncProgress(history.progress(), true);
+                socketConnection.onHistorySyncProgress(history.progress(), true);
             }
         } else {
             fullHistorySyncTracker.commit(history.chunkOrder(), history.progress() == 100);
             if (fullHistorySyncTracker.isDone()) {
-                socketHandler.onHistorySyncProgress(history.progress(), false);
+                socketConnection.onHistorySyncProgress(history.progress(), false);
             }
         }
     }
@@ -1311,7 +1319,7 @@ final class MessageHandler {
     private void onMessageDeleted(ChatMessageInfo info, ChatMessageInfo message) {
         info.chat().ifPresent(chat -> chat.removeMessage(message));
         message.setRevokeTimestampSeconds(Clock.nowSeconds());
-        socketHandler.onMessageDeleted(message, true);
+        socketConnection.onMessageDeleted(message, true);
     }
 
     private void handleHistorySync(HistorySync history) {
@@ -1327,21 +1335,21 @@ final class MessageHandler {
 
     private void handleInitialStatus(HistorySync history) {
         for (var messageInfo : history.statusV3Messages()) {
-            socketHandler.store().addStatus(messageInfo);
+            socketConnection.store().addStatus(messageInfo);
         }
-        socketHandler.onStatus();
+        socketConnection.onStatus();
     }
 
     private void handlePushNames(HistorySync history) {
         for (var pushName : history.pushNames()) {
             handNewPushName(pushName);
         }
-        socketHandler.onContacts();
+        socketConnection.onContacts();
     }
 
     private void handNewPushName(PushName pushName) {
         var jid = Jid.of(pushName.id());
-        var contact = socketHandler.store()
+        var contact = socketConnection.store()
                 .findContactByJid(jid)
                 .orElseGet(() -> createNewContact(jid));
         pushName.name()
@@ -1354,17 +1362,17 @@ final class MessageHandler {
                 .chatJid(jid)
                 .fromMe(true)
                 .build();
-        socketHandler.onAction(action, index);
+        socketConnection.onAction(action, index);
     }
 
     private Contact createNewContact(Jid jid) {
-        var contact = socketHandler.store().addContact(jid);
-        socketHandler.onNewContact(contact);
+        var contact = socketConnection.store().addContact(jid);
+        socketConnection.onNewContact(contact);
         return contact;
     }
 
     private void handleInitialBootstrap(HistorySync history) {
-        if (!socketHandler.store().webHistorySetting().isZero()) {
+        if (!socketConnection.store().webHistorySetting().isZero()) {
             var jids = history.conversations()
                     .stream()
                     .map(Chat::jid)
@@ -1373,11 +1381,11 @@ final class MessageHandler {
         }
 
         handleConversations(history);
-        socketHandler.onChats();
+        socketConnection.onChats();
     }
 
     private void handleChatsSync(HistorySync history, boolean recent) {
-        if (socketHandler.store().webHistorySetting().isZero()) {
+        if (socketConnection.store().webHistorySetting().isZero()) {
             return;
         }
 
@@ -1389,7 +1397,7 @@ final class MessageHandler {
     private void handleConversationsNotifications(HistorySync history, boolean recent) {
         var toRemove = new HashSet<Jid>();
         for (var cachedJid : historyCache) {
-            var chat = socketHandler.store()
+            var chat = socketConnection.store()
                     .findChatByJid(cachedJid)
                     .orElse(null);
             if (chat == null) {
@@ -1403,7 +1411,7 @@ final class MessageHandler {
                 toRemove.add(cachedJid);
             }
 
-            socketHandler.onChatRecentMessages(chat, done);
+            socketConnection.onChatRecentMessages(chat, done);
         }
 
         historyCache.removeAll(toRemove);
@@ -1414,19 +1422,19 @@ final class MessageHandler {
             historySyncTask.cancel(true);
         }
 
-        this.historySyncTask = socketHandler.scheduleDelayed(this::onForcedHistorySyncCompletion, HISTORY_SYNC_MAX_TIMEOUT);
+        this.historySyncTask = socketConnection.scheduleDelayed(this::onForcedHistorySyncCompletion, HISTORY_SYNC_MAX_TIMEOUT);
     }
 
     private void onForcedHistorySyncCompletion() {
         for (var cachedJid : historyCache) {
-            var chat = socketHandler.store()
+            var chat = socketConnection.store()
                     .findChatByJid(cachedJid)
                     .orElse(null);
             if (chat == null) {
                 continue;
             }
 
-            socketHandler.onChatRecentMessages(chat, true);
+            socketConnection.onChatRecentMessages(chat, true);
         }
 
         historyCache.clear();
@@ -1438,13 +1446,13 @@ final class MessageHandler {
                 attributeChatMessage(message.messageInfo());
             }
 
-            socketHandler.store().addChat(chat);
+            socketConnection.store().addChat(chat);
         }
     }
 
     private void handleNonBlockingData(HistorySync history) {
         for (var pastParticipants : history.pastParticipants()) {
-            socketHandler.addPastParticipant(pastParticipants.groupJid(), pastParticipants.pastParticipants());
+            socketConnection.addPastParticipant(pastParticipants.groupJid(), pastParticipants.pastParticipants());
         }
     }
 
@@ -1465,8 +1473,8 @@ final class MessageHandler {
             return;
         }
 
-        var contact = socketHandler.store().findContactByJid(senderJid)
-                .orElseGet(() -> socketHandler.store().addContact(senderJid));
+        var contact = socketConnection.store().findContactByJid(senderJid)
+                .orElseGet(() -> socketConnection.store().addContact(senderJid));
         info.setSender(contact);
     }
 
@@ -1476,22 +1484,22 @@ final class MessageHandler {
     }
 
     private void attributeContextChat(ContextInfo contextInfo, Jid chatJid) {
-        var chat = socketHandler.store().findChatByJid(chatJid)
-                .orElseGet(() -> socketHandler.store().addNewChat(chatJid));
+        var chat = socketConnection.store().findChatByJid(chatJid)
+                .orElseGet(() -> socketConnection.store().addNewChat(chatJid));
         contextInfo.setQuotedMessageChat(chat);
     }
 
     private void attributeContextSender(ContextInfo contextInfo, Jid senderJid) {
-        var contact = socketHandler.store().findContactByJid(senderJid)
-                .orElseGet(() -> socketHandler.store().addContact(senderJid));
+        var contact = socketConnection.store().findContactByJid(senderJid)
+                .orElseGet(() -> socketConnection.store().addContact(senderJid));
         contextInfo.setQuotedMessageSender(contact);
     }
 
     private void attributeChatMessage(ChatMessageInfo info) {
-        var chat = socketHandler.store().findChatByJid(info.chatJid())
-                .orElseGet(() -> socketHandler.store().addNewChat(info.chatJid()));
+        var chat = socketConnection.store().findChatByJid(info.chatJid())
+                .orElseGet(() -> socketConnection.store().addNewChat(info.chatJid()));
         info.setChat(chat);
-        var me = socketHandler.store().jid().orElse(null);
+        var me = socketConnection.store().jid().orElse(null);
         if (info.fromMe() && me != null) {
             info.key().setSenderJid(me.toSimpleJid());
         }
@@ -1528,7 +1536,7 @@ final class MessageHandler {
 
     private void handlePollUpdate(ChatMessageInfo info, PollUpdateMessage pollUpdateMessage) {
         try {
-            var originalPollInfo = socketHandler.store().findMessageByKey(pollUpdateMessage.pollCreationMessageKey());
+            var originalPollInfo = socketConnection.store().findMessageByKey(pollUpdateMessage.pollCreationMessageKey());
             if (originalPollInfo.isEmpty()) {
                 return;
             }
@@ -1584,11 +1592,11 @@ final class MessageHandler {
 
     private void handleReactionMessage(ChatMessageInfo info, ReactionMessage reactionMessage) {
         info.setIgnore(true);
-        socketHandler.store().findMessageByKey(reactionMessage.key())
+        socketConnection.store().findMessageByKey(reactionMessage.key())
                 .ifPresent(message -> message.reactions().add(reactionMessage));
     }
 
-    void dispose() {
+    public void dispose() {
         historyCache.clear();
         if (historySyncTask != null) {
             historySyncTask.cancel(true);

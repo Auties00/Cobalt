@@ -15,6 +15,7 @@ public final class JidServer implements JidProvider { // String parsing is hard 
     private static final String WHATSAPP_ADDRESS = "s.whatsapp.net";
     private static final String LID_ADDRESS = "lid";
     private static final String NEWSLETTER_ADDRESS = "newsletter";
+    private static final String BOT_ADDRESS = "bot";
 
     private static final JidServer USER = new JidServer(USER_ADDRESS, Type.USER);
     private static final JidServer GROUP_OR_COMMUNITY = new JidServer(GROUP_OR_COMMUNITY_ADDRESS, Type.GROUP_OR_COMMUNITY);
@@ -23,6 +24,7 @@ public final class JidServer implements JidProvider { // String parsing is hard 
     private static final JidServer WHATSAPP = new JidServer(WHATSAPP_ADDRESS, Type.WHATSAPP);
     private static final JidServer LID = new JidServer(LID_ADDRESS, Type.LID);
     private static final JidServer NEWSLETTER = new JidServer(NEWSLETTER_ADDRESS, Type.NEWSLETTER);
+    private static final JidServer BOT = new JidServer(BOT_ADDRESS, Type.WHATSAPP);
 
     private final String address;
     private final Type type;
@@ -59,6 +61,10 @@ public final class JidServer implements JidProvider { // String parsing is hard 
         return NEWSLETTER;
     }
 
+    public static JidServer bot() {
+        return BOT;
+    }
+
     public static JidServer unknown(String address) {
         return new JidServer(address, Type.UNKNOWN);
     }
@@ -72,6 +78,7 @@ public final class JidServer implements JidProvider { // String parsing is hard 
             case WHATSAPP_ADDRESS -> WHATSAPP;
             case LID_ADDRESS -> LID;
             case NEWSLETTER_ADDRESS -> NEWSLETTER;
+            case BOT_ADDRESS -> BOT;
             default -> new JidServer(address, Type.UNKNOWN);
         };
     }
@@ -82,6 +89,19 @@ public final class JidServer implements JidProvider { // String parsing is hard 
         }
 
         return switch (length) {
+            case 3 -> {
+                if (address.charAt(offset) == 'l'
+                        && address.charAt(offset + 1) == 'i'
+                        && address.charAt(offset + 2) == 'd') {
+                    yield LID;
+                }else if(address.charAt(offset) == 'b'
+                        && address.charAt(offset + 1) == 'o'
+                        && address.charAt(offset + 2) == 't'){
+                    yield BOT;
+                }else {
+                    yield unknown(offset == 0 ? address : address.substring(offset));
+                }
+            }
             case 4 -> {
                 if (address.charAt(offset) == 'c'
                         && address.charAt(offset + 1) == '.'
@@ -99,16 +119,7 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                         && address.charAt(offset + 3) == 's') {
                     yield GROUP_OR_COMMUNITY;
                 }else {
-                    yield unknown(address.substring(offset));
-                }
-            }
-            case 3 -> {
-                if (address.charAt(offset) == 'l'
-                        && address.charAt(offset + 1) == 'i'
-                        && address.charAt(offset + 2) == 'd') {
-                    yield LID;
-                }else {
-                    yield unknown(address.substring(offset));
+                    yield unknown(offset == 0 ? address : address.substring(offset));
                 }
             }
             case 9 -> {
@@ -123,7 +134,7 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                         && address.charAt(offset + 8) == 't') {
                     yield BROADCAST;
                 }else {
-                    yield unknown(address.substring(offset));
+                    yield unknown(offset == 0 ? address : address.substring(offset));
                 }
             }
             case 10 -> {
@@ -159,10 +170,10 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                         && address.charAt(offset + 13) == 't') {
                     yield WHATSAPP;
                 }else {
-                    yield unknown(address.substring(offset));
+                    yield unknown(offset == 0 ? address : address.substring(offset));
                 }
             }
-            default -> unknown(address.substring(offset));
+            default -> unknown(offset == 0 ? address : address.substring(offset));
         };
     }
 

@@ -352,10 +352,18 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     @Override
     public boolean equals(Object other) {
-        return other instanceof Node that
-                && Objects.equals(this.description(), that.description())
-                && Objects.equals(this.attributes(), that.attributes())
-                && (Objects.equals(this.content(), that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(theseBytes, thoseBytes));
+        return other instanceof Node(String otherDescription, Attributes otherAttributes, Object otherContent)
+                && Objects.equals(this.description, otherDescription)
+                && Objects.equals(this.attributes, otherAttributes)
+                && contentEquals(this.content, otherContent);
+    }
+
+    private boolean contentEquals(Object thisContent, Object otherContent) {
+        return thisContent == otherContent
+                || Objects.equals(thisContent, otherContent)
+                || (thisContent instanceof byte[] theseBytes
+                        && otherContent instanceof byte[] thoseBytes
+                        && Arrays.equals(theseBytes, thoseBytes));
     }
 
     /**

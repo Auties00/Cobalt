@@ -411,9 +411,9 @@ public interface WhatsappListener {
     /**
      * Called when a contact's profile picture changes
      *
-     * @param contact the contact whose pic changed
+     * @param jid the contact whose pic changed
      */
-    default void onProfilePictureChanged(Contact contact) {
+    default void onProfilePictureChanged(JidProvider jid) {
     }
 
 
@@ -421,9 +421,9 @@ public interface WhatsappListener {
      * Called when a contact's profile picture changes
      *
      * @param whatsapp an instance to the calling api
-     * @param contact  the contact whose pic changed
+     * @param jid  the contact whose pic changed
      */
-    default void onProfilePictureChanged(Whatsapp whatsapp, Contact contact) {
+    default void onProfilePictureChanged(Whatsapp whatsapp, JidProvider jid) {
     }
 
     /**

@@ -129,7 +129,7 @@ abstract sealed class SocketSession {
         private void authenticate(String host, int port) {
             try {
                 sendAuthenticationRequest(host, port);
-                handleAuthenticationResoinse();
+                handleAuthenticationResponse();
             }catch (IOException exception) {
                 throw new UncheckedIOException("Failed to authenticate with proxy", exception);
             }
@@ -159,7 +159,7 @@ abstract sealed class SocketSession {
 
         // Optimized method that just tries to confirm we got a 200 status code
         // Skips everything else
-        private void handleAuthenticationResoinse() throws IOException {
+        private void handleAuthenticationResponse() throws IOException {
             // Allocate the stuff we need
             var buffer = allocateReadBuffer();
 

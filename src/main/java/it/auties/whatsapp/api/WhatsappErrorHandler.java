@@ -1,6 +1,9 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.exception.MalformedNodeException;
+import it.auties.whatsapp.exception.SessionBadMacException;
+import it.auties.whatsapp.exception.SessionConflictException;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.util.Exceptions;
 
@@ -75,22 +78,29 @@ public interface WhatsappErrorHandler {
                 return Result.DISCARD;
             }
 
-            logger.log(ERROR, "[{0}] Socket failure at {1}", jid, location);
+            var critical = isCriticalError(location, throwable);
+            logger.log(ERROR, "[{0}] Socket failure at {1}: {2} failure", jid, location, critical ? "Critical" : "Ignored");
             if (printer != null) {
                 printer.accept(whatsapp, throwable);
             }
-
-            if(location == LOGIN
-                    || location == INITIAL_APP_STATE_SYNC
-                    || location == CRYPTOGRAPHY
-                    || (location == MESSAGE && throwable instanceof HmacValidationException)) {
-                logger.log(WARNING, "[{0}] Critical failure", jid);
-                return Result.DISCONNECT;
-            }
-
-            logger.log(WARNING, "[{0}] Ignored failure", jid);
-            return Result.DISCARD;
+            return critical ? Result.DISCONNECT : Result.DISCARD;
         };
+    }
+
+    /**
+     * Default critical error detector
+     * If an error is critical, it means the session can't continue running
+     *
+     * @param location the location of the error
+     * @param throwable the error
+     * @return true if the error is critical; false otherwise
+     */
+    private static boolean isCriticalError(Location location, Throwable throwable) {
+        return location == LOGIN // Can't log in
+                || location == INITIAL_APP_STATE_SYNC // Web app state sync failed
+                || location == CRYPTOGRAPHY // Can't encrypt/decrypt a node
+                || (location == MESSAGE && throwable instanceof HmacValidationException) // Can't validate the HMAC of a message
+                || (location == STREAM && (throwable instanceof SessionConflictException || throwable instanceof SessionBadMacException || throwable instanceof MalformedNodeException)); // Something went wrong in the stream
     }
 
     /**

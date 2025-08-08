@@ -27,14 +27,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static it.auties.whatsapp.util.SignalConstants.*;
 
-public final class SignalSessionCipher {
+public final class SignalSession {
     private final Keys keys;
 
-    public SignalSessionCipher(Keys keys) {
+    public SignalSession(Keys keys) {
         this.keys = keys;
     }
 
-    public CipheredMessageResult encrypt(SessionAddress address, byte[] data) {
+    public Result encrypt(SessionAddress address, byte[] data) {
         try {
             var currentState = keys.findSessionByAddress(address)
                     .orElseThrow(() -> new NoSuchElementException("Missing session for " + address))
@@ -69,7 +69,7 @@ public final class SignalSessionCipher {
                     secrets[1]
             );
             if (!currentState.hasPreKey()) {
-                return new CipheredMessageResult(
+                return new Result(
                         message.serialized(),
                         currentState.hasPreKey() ? PKMSG : MSG
                 );
@@ -83,7 +83,7 @@ public final class SignalSessionCipher {
                         keys.registrationId(),
                         currentState.pendingPreKey().signedKeyId()
                 );
-                return new CipheredMessageResult(
+                return new Result(
                         preKeyMessage.serialized(),
                         currentState.hasPreKey() ? PKMSG : MSG
                 );
@@ -353,7 +353,7 @@ public final class SignalSessionCipher {
         }
     }
 
-    public CipheredMessageResult encrypt(SenderKeyName name, byte[] data) {
+    public Result encrypt(SenderKeyName name, byte[] data) {
         try {
             var currentState = keys.findSenderKeyByName(name)
                     .firstState();
@@ -372,7 +372,7 @@ public final class SignalSessionCipher {
             );
             var next = currentState.chainKey().next();
             currentState.setChainKey(next);
-            return new CipheredMessageResult(senderKeyMessage.serialized(), SignalConstants.SKMSG);
+            return new Result(senderKeyMessage.serialized(), SignalConstants.SKMSG);
         } catch (GeneralSecurityException exception) {
             throw new IllegalArgumentException("Cannot encrypt data", exception);
         }
@@ -437,5 +437,23 @@ public final class SignalSessionCipher {
     public void createIncoming(SenderKeyName name, SignalDistributionMessage message) {
         var record = keys.findSenderKeyByName(name);
         record.addState(message.id(), message.signingKey(), message.iteration(), message.chainKey());
+    }
+
+    public static final class Result {
+        private final byte[] message;
+        private final String type;
+
+        Result(byte[] message, String type) {
+            this.message = message;
+            this.type = type;
+        }
+
+        public byte[] message() {
+            return message;
+        }
+
+        public String type() {
+            return type;
+        }
     }
 }

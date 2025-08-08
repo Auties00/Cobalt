@@ -4,7 +4,7 @@ import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.exception.RegistrationException;
+import it.auties.whatsapp.exception.MobileRegistrationException;
 import it.auties.whatsapp.model.response.RegistrationResponse;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
@@ -86,7 +86,7 @@ public final class MobileRegistration {
             return exists(response.errorReason());
         }
 
-        throw new RegistrationException(response, new String(result));
+        throw new MobileRegistrationException(response, new String(result));
     }
 
     private RegistrationResponse requestVerificationCode(RegistrationResponse existsResponse, String lastError) throws IOException, InterruptedException {
@@ -159,13 +159,13 @@ public final class MobileRegistration {
 
         return switch (response.errorReason()) {
             case "too_recent", "too_many", "too_many_guesses", "too_many_all_methods" ->
-                    throw new RegistrationException(response, "Please wait before trying to register this phone number again");
+                    throw new MobileRegistrationException(response, "Please wait before trying to register this phone number again");
             case "no_routes" ->
-                    throw new RegistrationException(response, "You can only register numbers that are already on Whatsapp");
+                    throw new MobileRegistrationException(response, "You can only register numbers that are already on Whatsapp");
             default -> {
                 var newErrorReason = response.errorReason();
                 if (newErrorReason.equals(lastError)) {
-                    throw new RegistrationException(response, new String(result));
+                    throw new MobileRegistrationException(response, new String(result));
                 }
                 yield requestVerificationCode(existsResponse, newErrorReason);
             }
@@ -179,7 +179,7 @@ public final class MobileRegistration {
         var response = RegistrationResponse.ofJson(result)
                 .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + new String(result)));
         if (!isSuccessful(response.status())) {
-            throw new RegistrationException(response, new String(result));
+            throw new MobileRegistrationException(response, new String(result));
         }
         saveRegistrationStatus(store, keys, true);
     }

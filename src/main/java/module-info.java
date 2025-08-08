@@ -24,6 +24,7 @@ module it.auties.cobalt {
 
     // Web api
     requires java.net.http;
+    requires java.logging;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
