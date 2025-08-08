@@ -1,6 +1,10 @@
-package it.auties.whatsapp.io;
+package it.auties.whatsapp.socket.io;
 
-public final class BinaryNodeTag {
+public final class NodeTags {
+    private NodeTags() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     public static final byte LIST_EMPTY = 0;
     public static final byte STREAM_END = 2;
     public static final byte DICTIONARY_0 = (byte) 236;

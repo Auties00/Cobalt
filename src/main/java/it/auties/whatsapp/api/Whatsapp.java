@@ -2342,10 +2342,7 @@ public class Whatsapp {
             return decodedMedia.get();
         }
 
-        var proxy = store().proxy()
-                .filter(ignored -> store().mediaProxySetting().allowsDownloads())
-                .orElse(null);
-        var result = Medias.download(mediaMessage, proxy);
+        var result = Medias.download(mediaMessage);
         mediaMessage.setDecodedMedia(result);
         return result;
     }

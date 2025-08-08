@@ -5,15 +5,15 @@ import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
 import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.io.BinaryNodeEncoder;
-import it.auties.whatsapp.io.BinaryNodeLength;
-import it.auties.whatsapp.io.BinaryNodeTokens;
+import it.auties.whatsapp.socket.io.NodeEncoder;
+import it.auties.whatsapp.socket.io.NodeTokens;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Scalar;
 import it.auties.whatsapp.util.SignalConstants;
 
 import javax.crypto.Cipher;
@@ -32,9 +32,9 @@ import java.util.concurrent.locks.ReentrantLock;
 final class SocketEncryption {
     private static final byte[] NOISE_PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
     private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] WEB_VERSION = new byte[]{6, BinaryNodeTokens.DICTIONARY_VERSION};
+    private static final byte[] WEB_VERSION = new byte[]{6, NodeTokens.DICTIONARY_VERSION};
     private static final byte[] WEB_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
-    private static final byte[] MOBILE_VERSION = new byte[]{5, BinaryNodeTokens.DICTIONARY_VERSION};
+    private static final byte[] MOBILE_VERSION = new byte[]{5, NodeTokens.DICTIONARY_VERSION};
     private static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
     public static final int HEADER_LENGTH = Integer.BYTES + Short.BYTES;
 
@@ -144,11 +144,11 @@ final class SocketEncryption {
                     writeKey,
                     createGcmIv(writeCounter.getAndIncrement())
             );
-            var plaintextLength = BinaryNodeLength.sizeOf(node);
+            var plaintextLength = NodeEncoder.sizeOf(node);
             var ciphertextLength = writeCipher.getOutputSize(plaintextLength);
             var ciphertext = new byte[HEADER_LENGTH + ciphertextLength];
             var offset = writeRequestHeader(ciphertextLength, ciphertext, 0);
-            BinaryNodeEncoder.encode(node, ciphertext, offset);
+            NodeEncoder.encode(node, ciphertext, offset);
             writeCipher.doFinal(ciphertext, offset, plaintextLength, ciphertext, offset);
             if (this.writeKey != writeKey) {
                 // Session changed
@@ -276,7 +276,7 @@ final class SocketEncryption {
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(socketConnection.store().version().toHash())
                 .eRegid(socketConnection.keys().encodedRegistrationId())
-                .eKeytype(Bytes.intToBytes(SignalConstants.KEY_TYPE, 1))
+                .eKeytype(Scalar.intToBytes(SignalConstants.KEY_TYPE, 1))
                 .eIdent(socketConnection.keys().identityKeyPair().publicKey())
                 .eSkeyId(socketConnection.keys().signedKeyPair().encodedId())
                 .eSkeyVal(socketConnection.keys().signedKeyPair().publicKey())

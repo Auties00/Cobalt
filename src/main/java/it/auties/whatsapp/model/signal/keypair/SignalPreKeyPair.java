@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.util.Bytes;
+import it.auties.whatsapp.util.Scalar;
 import it.auties.whatsapp.util.SignalConstants;
 
 @ProtobufMessage
@@ -38,7 +38,7 @@ public record SignalPreKeyPair(
     }
 
     public byte[] encodedId() {
-        return Bytes.intToBytes(id(), 3);
+        return Scalar.intToBytes(id(), 3);
     }
 
     public SignalKeyPair toGenericKeyPair() {

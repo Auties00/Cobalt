@@ -33,7 +33,9 @@ public final class MobileRegistration {
         this.store = store;
         this.keys = keys;
         this.verification = verification;
-        this.httpClient = HttpClientFactory.create(store.proxy().orElse(null));
+        this.httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build();
     }
 
     public void registerPhoneNumber() {

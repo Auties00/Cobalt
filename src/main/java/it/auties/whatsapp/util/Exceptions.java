@@ -14,6 +14,10 @@ import java.util.UUID;
 public final class Exceptions {
     private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.cobalt/errors");
 
+    private Exceptions() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     public static RuntimeException current(String message) {
         var result = new RuntimeException(message);
         result.setStackTrace(currentStackTrace());

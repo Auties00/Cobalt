@@ -61,6 +61,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -234,11 +235,7 @@ public final class MessageComponent {
                 .device()
                 .toUserAgent(socketConnection.store().version())
                 .orElse(null);
-        var proxy = socketConnection.store()
-                .proxy()
-                .filter(ignored -> socketConnection.store().mediaProxySetting().allowsUploads())
-                .orElse(null);
-        var upload = Medias.upload(media, attachmentType, mediaConnection, proxy, userAgent);
+        var upload = Medias.upload(media, attachmentType, mediaConnection, userAgent);
         attributeMediaMessage(mediaMessage, upload);
     }
 
@@ -410,7 +407,7 @@ public final class MessageComponent {
         return switch (message.content()) {
             case ReactionMessage reactionMessage -> Node.of("reaction", Map.of("code", reactionMessage.content()));
             case TextMessage textMessage when textMessage.thumbnail().isEmpty() -> {
-                var textLength = Strings.utf8Length(textMessage.text());
+                var textLength = Scalar.sizeOf(textMessage.text());
                 var encodedTextLength = ProtobufOutputStream.getVarIntSize(textLength);
                 var encodedText = new byte[1 + textLength + encodedTextLength];
                 encodedText[0] = 10;
@@ -446,7 +443,7 @@ public final class MessageComponent {
     }
 
     private Node encodeGroup(MessageRequest.Chat request) {
-        var encodedMessage = Bytes.messageToBytes(request.info().message());
+        var encodedMessage = messageToBytes(request.info().message());
         var sender = socketConnection.store()
                 .jid()
                 .orElse(null);
@@ -502,7 +499,7 @@ public final class MessageComponent {
             throw new IllegalStateException("Cannot create message: user is not signed in");
         }
 
-        var encodedMessage = Bytes.messageToBytes(request.info().message());
+        var encodedMessage = messageToBytes(request.info().message());
         if (request.peer()) {
             var chatJid = request.info().chatJid();
             var peerNode = createMessageNode(request, chatJid, encodedMessage, true);
@@ -513,7 +510,7 @@ public final class MessageComponent {
                 .destinationJid(request.info().chatJid())
                 .message(request.info().message())
                 .build();
-        var encodedDeviceMessage = Bytes.messageToBytes(MessageContainer.of(deviceMessage));
+        var encodedDeviceMessage = messageToBytes(MessageContainer.of(deviceMessage));
         var recipients = getRecipients(request);
         var allDevices = queryDevices(recipients, !isMe(request.info().chatJid()));
         var sessions = createConversationNodes(request, allDevices, encodedMessage, encodedDeviceMessage);
@@ -612,7 +609,7 @@ public final class MessageComponent {
                 .groupId(request.info().chatJid().toString())
                 .data(distributionMessage)
                 .build();
-        var paddedMessage = Bytes.messageToBytes(MessageContainer.of(whatsappMessage));
+        var paddedMessage = messageToBytes(MessageContainer.of(whatsappMessage));
         querySessions(missingParticipants, force);
         var results = createMessageNodes(request, missingParticipants, paddedMessage);
         socketConnection.keys().addRecipientsWithPreKeys(request.info().chatJid(), missingParticipants);
@@ -770,7 +767,7 @@ public final class MessageComponent {
         var jid = node.attributes()
                 .getRequiredJid("jid");
         var registrationId = node.findChild("registration")
-                .map(id -> Bytes.bytesToInt(id.contentAsBytes().orElseThrow(), 4))
+                .map(id -> Scalar.bytesToInt(id.contentAsBytes().orElseThrow(), 4))
                 .orElseThrow(() -> new NoSuchElementException("Missing id"));
         var identity = node.findChild("identity")
                 .flatMap(Node::contentAsBytes)
@@ -1278,11 +1275,7 @@ public final class MessageComponent {
             }
         }
 
-        var proxy = socketConnection.store()
-                .proxy()
-                .filter(ignored -> socketConnection.store().mediaProxySetting().allowsDownloads())
-                .orElse(null);
-        return Medias.download(notification, proxy, mediaStream -> {
+        return Medias.download(notification, mediaStream -> {
             var inflater = new Inflater();
             try (var stream = new InflaterInputStream(mediaStream, inflater, 8192)) {
                 return HistorySyncSpec.decode(ProtobufInputStream.fromStream(stream));
@@ -1612,9 +1605,27 @@ public final class MessageComponent {
                 .key(SignalKeyPair.random().publicKey())
                 .build();
         var message = MessageContainer.of(call);
-        var encodedMessage = Bytes.messageToBytes(message);
+        var encodedMessage = messageToBytes(message);
         var cipheredMessage = sessionCipher.encrypt(jid.toJid().toSignalAddress(), encodedMessage);
         return Node.of("enc", Map.of("v", 2, "type", cipheredMessage.type()), cipheredMessage.message());
+    }
+
+    private byte[] messageToBytes(MessageContainer container) {
+        try {
+            if (container.isEmpty()) {
+                return null;
+            }
+
+            var messageLength = MessageContainerSpec.sizeOf(container);
+            var padByte = (byte) SecureRandom.getInstanceStrong().nextInt();
+            var padLength = 1 + (15 & padByte);
+            var result = new byte[messageLength + padLength];
+            MessageContainerSpec.encode(container, ProtobufOutputStream.toBytes(result, 0));
+            Arrays.fill(result, messageLength, messageLength + padLength, (byte) padLength);
+            return result;
+        }catch (Throwable exception) {
+            throw new RuntimeException("Cannot encode message", exception);
+        }
     }
 
     private static class HistorySyncProgressTracker {

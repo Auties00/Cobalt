@@ -16,6 +16,10 @@ public final class SignalConstants {
     public static final String MSG = "msg";
     public static final String MSMG = "msmsg";
 
+    private SignalConstants() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     public static byte[] createSignalKey(byte[] key) {
         if (key == null) {
             return null;

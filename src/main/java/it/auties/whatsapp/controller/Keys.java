@@ -23,6 +23,7 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Scalar;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -218,7 +219,7 @@ public final class Keys extends Controller {
      * @return a non-null byte array
      */
     public byte[] encodedRegistrationId() {
-        return Bytes.intToBytes(registrationId(), 4);
+        return Scalar.intToBytes(registrationId(), 4);
     }
 
     /**

@@ -8,6 +8,10 @@ import java.util.OptionalLong;
 import java.util.function.Function;
 
 public final class Clock {
+    private Clock() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     public static long nowSeconds() {
         return Instant.now().getEpochSecond();
     }

@@ -486,14 +486,16 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
             var random = Bytes.random(32);
             var linkCodeSalt = Bytes.random(32);
             var linkCodePairingExpanded = Hkdf.extractAndExpand(companionSharedKey, linkCodeSalt, "link_code_pairing_key_bundle_encryption_key".getBytes(StandardCharsets.UTF_8), 32);
-            var encryptPayload = Bytes.concat(socketConnection.keys().identityKeyPair().publicKey(), primaryIdentityPublicKey, random);
             var cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(
                     Cipher.ENCRYPT_MODE,
                     new SecretKeySpec(linkCodePairingExpanded, "AES"),
                     new GCMParameterSpec(128, Bytes.random(12))
             );
-            var encrypted = cipher.doFinal(encryptPayload);
+            cipher.update(socketConnection.keys().identityKeyPair().publicKey());
+            cipher.update(primaryIdentityPublicKey);
+            cipher.update(random);
+            var encrypted = cipher.doFinal();
             var encryptedPayload = Bytes.concat(linkCodeSalt, Bytes.random(12), encrypted);
             var identitySharedKey = Curve25519.sharedKey(primaryIdentityPublicKey, socketConnection.keys().identityKeyPair().privateKey());
             var identityPayload = Bytes.concat(companionSharedKey, identitySharedKey, random);

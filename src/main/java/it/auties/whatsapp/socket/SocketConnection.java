@@ -7,7 +7,7 @@ import it.auties.whatsapp.api.WhatsappVerificationHandler.Web.PairingCode;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.PairingCodeSession;
-import it.auties.whatsapp.io.BinaryNodeDecoder;
+import it.auties.whatsapp.socket.io.NodeDecoder;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -208,7 +208,7 @@ public final class SocketConnection {
 
         try (var stream = Streams.newInputStream(message)) {
             while (stream.available() > 0) {
-                var node = BinaryNodeDecoder.decode(stream);
+                var node = NodeDecoder.decode(stream);
                 onNodeReceived(node);
                 resolvePendingRequest(node);
                 streamComponent.digest(node);

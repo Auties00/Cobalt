@@ -6,6 +6,10 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public final class Streams {
+    private Streams() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     public static ByteArrayOutputStream newByteArrayOutputStream() {
         return new BytesOutputStream();
     }

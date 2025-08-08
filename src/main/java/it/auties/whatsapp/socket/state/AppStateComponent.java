@@ -383,12 +383,8 @@ public final class AppStateComponent {
             return Optional.empty();
         }
 
-        var proxy = socketConnection.store()
-                .proxy()
-                .filter(ignored -> socketConnection.store().mediaProxySetting().allowsDownloads())
-                .orElse(null);
         var blob = ExternalBlobReferenceSpec.decode(externalBlobPayload);
-        var decodeSnapshot = Medias.download(blob, proxy, stream -> {
+        var decodeSnapshot = Medias.download(blob, stream -> {
             try (var protobufStream = ProtobufInputStream.fromStream(stream)) {
                 return SnapshotSyncSpec.decode(protobufStream);
             } catch (Throwable throwable) {
@@ -559,11 +555,7 @@ public final class AppStateComponent {
 
     private MutationsRecord decodePatch(Jid jid, PatchType patchType, CompanionHashState newState, PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            var proxy = socketConnection.store()
-                    .proxy()
-                    .filter(ignored -> socketConnection.store().mediaProxySetting().allowsDownloads())
-                    .orElse(null);
-            var mutationsSync = Medias.download(patch.externalMutations(), proxy, stream -> {
+            var mutationsSync = Medias.download(patch.externalMutations(), stream -> {
                 try(var protobufStream = ProtobufInputStream.fromStream(stream)) {
                     return MutationsSyncSpec.decode(protobufStream);
                 }catch (Exception exception) {
