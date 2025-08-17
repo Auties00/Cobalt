@@ -68,7 +68,7 @@ final class ReceiptHandler extends NodeHandler.Dispatcher {
                 message.receipt().addDeliveredJid(target);
             }
             if(chat.jid().hasServer(JidServer.groupOrCommunity())) {
-                var metadata = socketConnection.queryGroupMetadata(chat.jid());
+                var metadata = socketConnection.queryGroupOrCommunityMetadata(chat.jid());
                 var jids = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
                 if (participant == null || metadata.participants().size() == jids.size()) {
                     switch (status) {

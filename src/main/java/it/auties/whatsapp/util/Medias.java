@@ -20,7 +20,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLConnection;
@@ -53,7 +52,7 @@ public final class Medias {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
-    public static OutputStream getProfilePic(InputStream inputStream) {
+    public static byte[] getProfilePic(InputStream inputStream) {
         try {
             try (inputStream) {
                 var inputImage = ImageIO.read(inputStream);
@@ -62,9 +61,10 @@ public final class Medias {
                 var graphics2D = outputImage.createGraphics();
                 graphics2D.drawImage(scaledImage, 0, 0, null);
                 graphics2D.dispose();
-                var outputStream = Streams.newByteArrayOutputStream();
-                ImageIO.write(outputImage, "jpg", outputStream);
-                return outputStream;
+                try (var outputStream = Streams.newByteArrayOutputStream()) {
+                    ImageIO.write(outputImage, "jpg", outputStream);
+                    return outputStream.toByteArray();
+                }
             }
         } catch (Throwable exception) {
             throw new RuntimeException("Cannot get profile pic", exception);

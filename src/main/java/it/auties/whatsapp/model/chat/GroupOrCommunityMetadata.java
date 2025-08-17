@@ -13,7 +13,7 @@ import java.util.*;
  * This model class represents the metadata of a group or community
  */
 @ProtobufMessage
-public final class ChatMetadata {
+public final class GroupOrCommunityMetadata {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
 
@@ -44,9 +44,6 @@ public final class ChatMetadata {
     @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
     final SequencedSet<ChatParticipant> participants;
 
-    @ProtobufProperty(index = 11, type = ProtobufType.MESSAGE)
-    final SequencedSet<ChatPastParticipant> pastParticipants;
-
     @ProtobufProperty(index = 12, type = ProtobufType.INT64)
     final long ephemeralExpirationSeconds;
 
@@ -59,7 +56,7 @@ public final class ChatMetadata {
     @ProtobufProperty(index = 15, type = ProtobufType.MESSAGE)
     final SequencedSet<CommunityLinkedGroup> communityGroups;
 
-    ChatMetadata(Jid jid, String subject, Jid subjectAuthorJid, long subjectTimestampSeconds, long foundationTimestampSeconds, Jid founderJid, String description, String descriptionId, Map<Integer, ChatSettingPolicy> settings, SequencedSet<ChatParticipant> participants, SequencedSet<ChatPastParticipant> pastParticipants, long ephemeralExpirationSeconds, Jid parentCommunityJid, boolean isCommunity, SequencedSet<CommunityLinkedGroup> communityGroups) {
+    GroupOrCommunityMetadata(Jid jid, String subject, Jid subjectAuthorJid, long subjectTimestampSeconds, long foundationTimestampSeconds, Jid founderJid, String description, String descriptionId, Map<Integer, ChatSettingPolicy> settings, SequencedSet<ChatParticipant> participants, long ephemeralExpirationSeconds, Jid parentCommunityJid, boolean isCommunity, SequencedSet<CommunityLinkedGroup> communityGroups) {
         this.jid = Objects.requireNonNull(jid, "jid cannot be null");
         this.subject = Objects.requireNonNull(subject, "subject cannot be null");
         this.subjectAuthorJid = subjectAuthorJid;
@@ -70,7 +67,6 @@ public final class ChatMetadata {
         this.descriptionId = descriptionId;
         this.settings = Objects.requireNonNullElseGet(settings, HashMap::new);
         this.participants = Objects.requireNonNullElseGet(participants, LinkedHashSet::new);
-        this.pastParticipants = Objects.requireNonNullElseGet(pastParticipants, LinkedHashSet::new);
         this.ephemeralExpirationSeconds = ephemeralExpirationSeconds;
         this.parentCommunityJid = parentCommunityJid;
         this.isCommunity = isCommunity;
@@ -137,22 +133,6 @@ public final class ChatMetadata {
         return participants.removeIf(participant -> participant.jid().equals(jid));
     }
 
-    public Set<ChatPastParticipant> pastParticipants() {
-        return Collections.unmodifiableSet(pastParticipants);
-    }
-
-    public void addPastParticipant(ChatPastParticipant participant) {
-        pastParticipants.add(participant);
-    }
-
-    public boolean removePastParticipant(ChatPastParticipant participant) {
-        return pastParticipants.remove(participant);
-    }
-
-    public boolean removePastParticipant(Jid jid) {
-        return pastParticipants.removeIf(participant -> participant.jid().equals(jid));
-    }
-
     public long ephemeralExpirationSeconds() {
         return ephemeralExpirationSeconds;
     }
@@ -187,7 +167,7 @@ public final class ChatMetadata {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof ChatMetadata that
+        return o instanceof GroupOrCommunityMetadata that
                 && Objects.equals(jid, that.jid)
                 && Objects.equals(subject, that.subject)
                 && Objects.equals(subjectAuthorJid, that.subjectAuthorJid)
@@ -198,7 +178,6 @@ public final class ChatMetadata {
                 && Objects.equals(descriptionId, that.descriptionId)
                 && Objects.equals(settings, that.settings)
                 && Objects.equals(participants, that.participants)
-                && Objects.equals(pastParticipants, that.pastParticipants)
                 && Objects.equals(ephemeralExpirationSeconds, that.ephemeralExpirationSeconds)
                 && Objects.equals(parentCommunityJid, that.parentCommunityJid)
                 && isCommunity == that.isCommunity
@@ -208,7 +187,7 @@ public final class ChatMetadata {
     @Override
     public int hashCode() {
         return Objects.hash(jid, subject, subjectAuthorJid, subjectTimestampSeconds, foundationTimestampSeconds,
-                founderJid, description, descriptionId, settings, participants, pastParticipants,
+                founderJid, description, descriptionId, settings, participants,
                 ephemeralExpirationSeconds, parentCommunityJid, isCommunity, communityGroups);
     }
 
@@ -225,7 +204,6 @@ public final class ChatMetadata {
                 "descriptionId=" + descriptionId + ", " +
                 "settings=" + settings + ", " +
                 "participants=" + participants + ", " +
-                "pastParticipants=" + pastParticipants + ", " +
                 "ephemeralExpiration=" + ephemeralExpirationSeconds + ", " +
                 "parentCommunityJid=" + parentCommunityJid + ", " +
                 "isCommunity=" + isCommunity + ", " +

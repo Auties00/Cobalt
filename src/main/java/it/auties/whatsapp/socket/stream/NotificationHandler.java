@@ -4,10 +4,8 @@ import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
-import it.auties.whatsapp.model.chat.ChatPastParticipant;
-import it.auties.whatsapp.model.chat.ChatPastParticipantBuilder;
-import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ChatMessageInfoBuilder;
+import it.auties.whatsapp.model.info.ChatMessageStubType;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidServer;
@@ -125,11 +123,74 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
         }
 
         switch (update.attributes().getString("op_name")) {
+            case "MexNotificationEvent" -> {
+               // TODO MexNotificationEvent
+            }
             case "NotificationNewsletterJoin" -> handleNewsletterJoin(update);
             case "NotificationNewsletterMuteChange" -> handleNewsletterMute(update);
             case "NotificationNewsletterLeave" -> handleNewsletterLeave(update);
             case "NotificationNewsletterUpdate" -> handleNewsletterMetadataUpdate(update);
             case "NotificationNewsletterStateChange" -> handleNewsletterStateUpdate(update);
+            case "NotificationNewsletterAdminMetadataUpdate" -> {
+                // TODO MexNotificationEvent
+            }
+            case "NotificationNewsletterOwnerUpdate" -> {
+                // TODO NotificationNewsletterOwnerUpdate
+            }
+            case "NotificationNewsletterAdminPromote" -> {
+                // TODO NotificationNewsletterAdminPromote
+            }
+            case "NotificationNewsletterAdminDemote" -> {
+                // TODO NotificationNewsletterAdminDemote
+            }
+            case "NotificationNewsletterAdminInviteRevoke" -> {
+                // TODO NotificationNewsletterAdminInviteRevoke
+            }
+            case "NotificationNewsletterWamoSubStatusChange" -> {
+                // TODO NotificationNewsletterWamoSubStatusChange
+            }
+            case "TextStatusUpdateNotification" -> {
+                // TODO TextStatusUpdateNotification
+            }
+            case "TextStatusUpdateNotificationSideSub" -> {
+                // TODO TextStatusUpdateNotificationSideSub
+            }
+            case "NotificationGroupPropertyUpdate" -> {
+                // TODO NotificationGroupPropertyUpdate
+            }
+            case "NotificationGroupHiddenPropertyUpdate" -> {
+                // TODO NotificationGroupHiddenPropertyUpdate
+            }
+            case "NotificationGroupSafetyCheckPropertyUpdate" -> {
+                // TODO NotificationGroupSafetyCheckPropertyUpdate
+            }
+            case "NotificationCommunityOwnerUpdate" -> {
+                // TODO NotificationCommunityOwnerUpdate
+            }
+            case "UsernameSetNotification" -> {
+                // TODO UsernameSetNotification
+            }
+            case "UsernameDeleteNotification" -> {
+                // TODO UsernameDeleteNotification
+            }
+            case "UsernameUpdateNotification" -> {
+                // TODO UsernameUpdateNotification
+            }
+            case "AccountSyncUsernameNotification" -> {
+                // TODO AccountSyncUsernameNotification
+            }
+            case "LidChangeNotification" -> {
+                // TODO LidChangeNotification
+            }
+            case "NotificationUserBrigadingUpdate" -> {
+                // TODO NotificationUserBrigadingUpdate
+            }
+            case "NotificationGroupLimitSharingPropertyUpdate" -> {
+                // TODO NotificationGroupLimitSharingPropertyUpdate
+            }
+            case "NotificationUserReachoutTimelockUpdate" -> {
+                // TODO NotificationUserReachoutTimelockUpdate
+            }
         }
     }
 
@@ -248,13 +309,15 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
     private void handlePictureNotification(Node node) {
         var fromJid = node.attributes()
                 .getRequiredJid("from");
-        var fromChat = socketConnection.store()
-                .findChatByJid(fromJid)
-                .orElseGet(() -> socketConnection.store().addNewChat(fromJid));
-        var timestamp = node.attributes().getLong("t");
-        if (fromChat.isGroupOrCommunity()) {
-            addMessageForGroupStubType(fromChat, ChatMessageInfo.StubType.GROUP_CHANGE_ICON, timestamp, node);
-            socketConnection.onGroupPictureChanged(fromChat);
+        if (fromJid.hasServer(JidServer.groupOrCommunity())) {
+            var fromChat = socketConnection.store()
+                    .findChatByJid(fromJid)
+                    .orElseGet(() -> socketConnection.store().addNewChat(fromJid));
+            var timestamp = node.attributes().getLong("t");
+            var participantJid = node.attributes()
+                    .getOptionalJid("participant")
+                    .orElse(null);
+            addMessageForGroupStubType(timestamp, fromChat, participantJid, ChatMessageStubType.GROUP_CHANGE_ICON, node);
             return;
         }
         var fromContact = socketConnection.store().findContactByJid(fromJid).orElseGet(() -> {
@@ -266,108 +329,40 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
     }
 
     private void handleGroupNotification(Node node) {
-        var child = node.findChild();
-        if (child.isEmpty()) {
-            return;
-        }
-
-        var stubType = ChatMessageInfo.StubType.of(child.get().description());
-        if (stubType.isEmpty()) {
-            return;
-        }
-
         var timestamp = node.attributes().getLong("t");
         var fromJid = node.attributes()
                 .getRequiredJid("from");
         var fromChat = socketConnection.store()
                 .findChatByJid(fromJid)
                 .orElseGet(() -> socketConnection.store().addNewChat(fromJid));
-        addMessageForGroupStubType(fromChat, stubType.get(), timestamp, node);
-
-        // TODO: Handle all cases
-        switch (stubType.get()) {
-            case GROUP_CHANGE_SUBJECT -> onGroupSubjectChange(node);
-        }
-    }
-
-    private void onGroupSubjectChange(Node node) {
-        var subject = node.findChild("subject")
-                .flatMap(subjectNode -> subjectNode.attributes().getOptionalString("subject"))
-                .orElse(null);
-        if(subject == null) {
-            return;
-        }
-
-        var fromJid = node.attributes()
-                .getRequiredJid("from");
-        socketConnection.store()
-                .findChatByJid(fromJid)
-                .ifPresent(chat -> chat.setName(subject));
-    }
-
-    private void addMessageForGroupStubType(Chat chat, ChatMessageInfo.StubType stubType, long timestamp, Node metadata) {
-        var participantJid = metadata.attributes()
+        var participantJid = node.attributes()
                 .getOptionalJid("participant")
                 .orElse(null);
-        var parameters = getStubTypeParameters(metadata);
+        var notificationType = node.description();
+        var child = node.findChild();
+        var bodyType = child.map(Node::description)
+                .orElse(null);
+        var stubType = ChatMessageStubType.getStubType(notificationType, bodyType);
+        addMessageForGroupStubType(timestamp, fromChat, participantJid, stubType, node);
+    }
+
+    private void addMessageForGroupStubType(long timestamp, Chat chat, Jid sender, ChatMessageStubType stubType, Node metadata) {
         var key = new ChatMessageKeyBuilder()
                 .id(ChatMessageKey.randomId(socketConnection.store().clientType()))
                 .chatJid(chat.jid())
-                .senderJid(participantJid)
+                .senderJid(sender)
                 .build();
         var message = new ChatMessageInfoBuilder()
-                .status(MessageStatus.PENDING)
+                .status(MessageStatus.DELIVERED)
                 .timestampSeconds(timestamp)
                 .key(key)
                 .ignore(true)
                 .stubType(stubType)
-                .stubParameters(parameters)
-                .senderJid(participantJid)
+                .stubParameters(stubType.getParameters(metadata))
+                .senderJid(sender)
                 .build();
         chat.addNewMessage(message);
         socketConnection.onNewMessage(message);
-        if (participantJid == null) {
-            return;
-        }
-
-        handleGroupStubType(timestamp, chat, stubType, participantJid);
-    }
-
-    private void handleGroupStubType(long timestamp, Chat chat, ChatMessageInfo.StubType stubType, Jid participantJid) {
-        switch (stubType) {
-            case GROUP_PARTICIPANT_REMOVE, GROUP_PARTICIPANT_LEAVE -> {
-                var reason = stubType == ChatMessageInfo.StubType.GROUP_PARTICIPANT_REMOVE ? ChatPastParticipant.Reason.REMOVED : ChatPastParticipant.Reason.LEFT;
-                var pastParticipant = new ChatPastParticipantBuilder()
-                        .jid(participantJid)
-                        .reason(reason)
-                        .timestampSeconds(timestamp)
-                        .build();
-                socketConnection.addPastParticipant(chat.jid(), pastParticipant);
-            }
-            case GROUP_PARTICIPANT_ADD -> {
-                var pastParticipants = socketConnection.pastParticipants().get(chat.jid());
-                if(pastParticipants == null) {
-                    return;
-                }
-
-                pastParticipants.removeIf(entry -> Objects.equals(entry.jid(), participantJid));
-            }
-        }
-    }
-
-    private List<String> getStubTypeParameters(Node metadata) {
-        var attributes = new ArrayList<String>();
-        attributes.add(metadata.attributes().toJson());
-        for (var child : metadata.children()) {
-            var data = child.attributes();
-            if (data.isEmpty()) {
-                continue;
-            }
-
-            attributes.add(data.toJson());
-        }
-
-        return Collections.unmodifiableList(attributes);
     }
 
     private void handleEncryptNotification(Node node) {

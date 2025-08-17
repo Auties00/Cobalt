@@ -81,9 +81,8 @@ public final class SocketConnection {
     private final WhatsappErrorHandler errorHandler;
     private volatile ScheduledExecutorService scheduler;
     private final ConcurrentHashMap<String, Request> pendingRequests;
-    private final ConcurrentMap<Jid, SequencedSet<ChatPastParticipant>> pastParticipants;
     private final ConcurrentMap<String, CompletableFuture<MessageInfo>> pendingMessages;
-    private final Map<Jid, ChatMetadata> chatMetadataCache;
+    private final Map<Jid, GroupOrCommunityMetadata> chatMetadataCache;
     private final AtomicBoolean serializable;
     private final AtomicReference<State> state;
     private final PairingCodeSession pairingCodeSession;
@@ -103,7 +102,6 @@ public final class SocketConnection {
         this.appStateHandler = new AppStateComponent(this);
         this.webVerificationHandler = webVerificationHandler;
         this.errorHandler = errorHandler;
-        this.pastParticipants = new ConcurrentHashMap<>();
         this.chatMetadataCache = new ConcurrentHashMap<>();
         this.pendingRequests = new ConcurrentHashMap<>();
         this.pendingMessages = new ConcurrentHashMap<>();
@@ -371,7 +369,7 @@ public final class SocketConnection {
     public Optional<URI> queryPicture(JidProvider chat) {
         var body = Node.of("picture", Map.of("query", "url", "type", "image"));
         var community = chat.toJid().hasServer(JidServer.groupOrCommunity())
-                && queryGroupMetadata(chat.toJid()).isCommunity();
+                && queryGroupOrCommunityMetadata(chat.toJid()).isCommunity();
         return sendQuery("get", "w:profile:picture", Map.of(community ? "parent_group_jid" : "target", chat.toJid()), body)
                 .findChild("picture")
                 .flatMap(picture -> picture.attributes().getOptionalString("url"))
@@ -422,16 +420,20 @@ public final class SocketConnection {
                 .forEach(messages -> decodeMessage(messages, newsletter, false));
     }
 
-    public ChatMetadata queryGroupMetadata(JidProvider group) {
-        var metadata = chatMetadataCache.get(group.toJid());
+    public Optional<GroupOrCommunityMetadata> getChatMetadata(JidProvider chat) {
+        return Optional.ofNullable(chatMetadataCache.get(chat.toJid()));
+    }
+
+    public GroupOrCommunityMetadata queryGroupOrCommunityMetadata(JidProvider chat) {
+        var metadata = chatMetadataCache.get(chat.toJid());
         if (metadata != null) {
             return metadata;
         }
 
         var body = Node.of("query", Map.of("request", "interactive"));
-        var response = sendQuery(group.toJid(), "get", "w:g2", body);
+        var response = sendQuery(chat.toJid(), "get", "w:g2", body);
         var result = handleGroupMetadata(response);
-        chatMetadataCache.put(group.toJid(), result);
+        chatMetadataCache.put(chat.toJid(), result);
         return result;
     }
 
@@ -486,7 +488,7 @@ public final class SocketConnection {
         }
     }
 
-    public ChatMetadata handleGroupMetadata(Node response) {
+    public GroupOrCommunityMetadata handleGroupMetadata(Node response) {
         var metadataNode = Optional.of(response)
                 .filter(entry -> entry.hasDescription("group"))
                 .or(() -> response.findChild("group"))
@@ -498,7 +500,7 @@ public final class SocketConnection {
         return metadata;
     }
 
-    private ChatMetadata parseGroupMetadata(Node node) {
+    private GroupOrCommunityMetadata parseGroupMetadata(Node node) {
         var groupId = node.attributes()
                 .getOptionalString("id")
                 .map(id -> Jid.of(id, JidServer.groupOrCommunity()))
@@ -531,7 +533,6 @@ public final class SocketConnection {
         var communityNode = node.findChild("parent")
                 .orElse(null);
         var policies = new HashMap<Integer, ChatSettingPolicy>();
-        var pastParticipants = Objects.requireNonNullElseGet(this.pastParticipants.get(groupId), LinkedHashSet<ChatPastParticipant>::new);
         if (communityNode == null) {
             policies.put(GroupSetting.EDIT_GROUP_INFO.index(), ChatSettingPolicy.of(node.hasNode("announce")));
             policies.put(GroupSetting.SEND_MESSAGES.index(), ChatSettingPolicy.of(node.hasNode("restrict")));
@@ -549,7 +550,7 @@ public final class SocketConnection {
                     .map(this::parseGroupParticipant)
                     .flatMap(Optional::stream)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
-            return new ChatMetadataBuilder()
+            return new GroupOrCommunityMetadataBuilder()
                     .jid(groupId)
                     .subject(subject)
                     .subjectAuthorJid(subjectAuthor)
@@ -560,7 +561,6 @@ public final class SocketConnection {
                     .descriptionId(descriptionId)
                     .settings(policies)
                     .participants(participants)
-                    .pastParticipants(pastParticipants)
                     .ephemeralExpirationSeconds(ephemeral)
                     .isCommunity(false)
                     .build();
@@ -580,7 +580,7 @@ public final class SocketConnection {
             var request = CommunityRequests.linkedGroups(groupId, "INTERACTIVE");
             var communityResponse = sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "7353258338095347"), request));
             var linkedGroups = parseLinkedGroups(communityResponse);
-            return new ChatMetadataBuilder()
+            return new GroupOrCommunityMetadataBuilder()
                     .jid(groupId)
                     .subject(subject)
                     .subjectAuthorJid(subjectAuthor)
@@ -591,7 +591,6 @@ public final class SocketConnection {
                     .descriptionId(descriptionId)
                     .settings(policies)
                     .participants(participants)
-                    .pastParticipants(pastParticipants)
                     .ephemeralExpirationSeconds(ephemeral)
                     .isCommunity(true)
                     .communityGroups(linkedGroups)
@@ -701,13 +700,6 @@ public final class SocketConnection {
         });
     }
 
-    public void onMetadata(Map<String, String> properties) {
-        callListenersAsync(listener -> {
-            listener.onMetadata(whatsapp, properties);
-            listener.onMetadata(properties);
-        });
-    }
-
     public void onMessageStatus(MessageInfo message) {
         callListenersAsync(listener -> {
             listener.onMessageStatus(whatsapp, message);
@@ -746,22 +738,22 @@ public final class SocketConnection {
 
     public void onChatRecentMessages(Chat chat, boolean last) {
         callListenersAsync(listener -> {
-            listener.onChatMessagesSync(whatsapp, chat, last);
-            listener.onChatMessagesSync(chat, last);
+            listener.onWebHistorySyncMessages(whatsapp, chat, last);
+            listener.onWebHistorySyncMessages(chat, last);
         });
     }
 
     public void onFeatures(PrimaryFeature features) {
         callListenersAsync(listener -> {
-            listener.onFeatures(whatsapp, features.flags());
-            listener.onFeatures(features.flags());
+            listener.onWebAppPrimaryFeatures(whatsapp, features.flags());
+            listener.onWebAppPrimaryFeatures(features.flags());
         });
     }
 
     public void onSetting(Setting setting) {
         callListenersAsync(listener -> {
-            listener.onSetting(whatsapp, setting);
-            listener.onSetting(setting);
+            listener.onWebAppStateSetting(whatsapp, setting);
+            listener.onWebAppStateSetting(setting);
         });
     }
 
@@ -774,8 +766,8 @@ public final class SocketConnection {
 
     public void onAction(Action action, MessageIndexInfo indexInfo) {
         callListenersAsync(listener -> {
-            listener.onAction(whatsapp, action, indexInfo);
-            listener.onAction(action, indexInfo);
+            listener.onWebAppStateAction(whatsapp, action, indexInfo);
+            listener.onWebAppStateAction(action, indexInfo);
         });
     }
 
@@ -830,8 +822,8 @@ public final class SocketConnection {
 
     public void onHistorySyncProgress(Integer progress, boolean recent) {
         callListenersAsync(listener -> {
-            listener.onHistorySyncProgress(whatsapp, progress, recent);
-            listener.onHistorySyncProgress(progress, recent);
+            listener.onWebHistorySyncProgress(whatsapp, progress, recent);
+            listener.onWebHistorySyncProgress(progress, recent);
         });
     }
 
@@ -848,13 +840,6 @@ public final class SocketConnection {
         callListenersAsync(listener -> {
             listener.onMessageReply(whatsapp, info, quoted);
             listener.onMessageReply(info, quoted);
-        });
-    }
-
-    public void onGroupPictureChanged(Chat fromChat) {
-        callListenersAsync(listener -> {
-            listener.onGroupPictureChanged(whatsapp, fromChat);
-            listener.onGroupPictureChanged(fromChat);
         });
     }
 
@@ -1048,33 +1033,6 @@ public final class SocketConnection {
                 .map(node -> node.attributes().getString("id"))
                 .orElse("");
         store.setVerifiedName(verifiedName);
-    }
-
-    public ConcurrentMap<Jid, SequencedSet<ChatPastParticipant>> pastParticipants() {
-        return pastParticipants;
-    }
-
-    public void addPastParticipant(Jid jid, ChatPastParticipant pastParticipant) {
-        var pastParticipants = pastParticipants().get(jid);
-        if (pastParticipants != null) {
-            pastParticipants.add(pastParticipant);
-            this.pastParticipants.put(jid, pastParticipants);
-        } else {
-            var values = new LinkedHashSet<ChatPastParticipant>();
-            values.add(pastParticipant);
-            this.pastParticipants.put(jid, values);
-        }
-    }
-
-    public void addPastParticipant(Jid jid, Collection<? extends ChatPastParticipant> pastParticipant) {
-        var pastParticipants = pastParticipants().get(jid);
-        if (pastParticipants != null) {
-            pastParticipants.addAll(pastParticipant);
-            this.pastParticipants.put(jid, pastParticipants);
-        } else {
-            var values = new LinkedHashSet<ChatPastParticipant>(pastParticipant);
-            this.pastParticipants.put(jid, values);
-        }
     }
 
     public Optional<Newsletter> queryNewsletter(Jid newsletterJid, NewsletterViewerRole role) {
@@ -1279,6 +1237,13 @@ public final class SocketConnection {
 
     public void handle(WhatsappVerificationHandler.Web.PairingCode webHandler) {
         pairingCodeSession.accept(webHandler);
+    }
+
+    public void onPastParticipants(Jid chatJid, List<ChatPastParticipant> chatPastParticipants) {
+        callListenersAsync(listener -> {
+            listener.onWebHistorySyncPastParticipants(whatsapp, chatJid, chatPastParticipants);
+            listener.onWebHistorySyncPastParticipants(chatJid, chatPastParticipants);
+        });
     }
 
     private enum State {

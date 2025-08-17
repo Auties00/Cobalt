@@ -58,7 +58,7 @@ public final class PollUpdateMessage implements Message, EncryptedMessage {
 
     /**
      * Constructs a new builder to create a PollCreationMessage The newsletters can be later sent using
-     * {@link Whatsapp#sendMessage(ChatMessageInfo)}
+     * {@link Whatsapp#sendChatMessage(ChatMessageInfo)}
      *
      * @param poll  the non-null poll where the vote should be cast
      * @param votes the votes to cast: this list will override previous votes, so it can be empty or null if you want to revoke all votes

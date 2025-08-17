@@ -12,10 +12,10 @@ import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.*;
@@ -50,7 +50,6 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
                 socketConnection.queryGroups();
             }
             setActiveConnection();
-            queryRequiredWebInfo();
             sendInitialPreKeys();
             scheduleMediaConnectionUpdate();
             updateSelfPresence();
@@ -308,15 +307,6 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
         socketConnection.onLoggedIn();
     }
 
-    private void queryRequiredWebInfo() {
-        try {
-            var result = socketConnection.sendQuery("get", "w", Node.of("props"));
-            parseProps(result);
-        } catch (Exception exception) {
-            socketConnection.handleFailure(LOGIN, exception);
-        }
-    }
-
     private void checkBusinessStatus() {
         if (!socketConnection.store().device().platform().isBusiness() || socketConnection.keys().businessCertificate()) {
             return;
@@ -393,17 +383,6 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
                 .stream()
                 .flatMap(entry -> entry.children().stream())
                 .forEach(entry -> socketConnection.addPrivacySetting(entry, false));
-    }
-
-    private void parseProps(Node result) {
-        var properties = result.findChild("props")
-                .stream()
-                .map(entry -> entry.listChildren("prop"))
-                .flatMap(Collection::stream)
-                .map(node -> Map.entry(node.attributes().getString("name"), node.attributes().getString("value")))
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (first, second) -> second, ConcurrentHashMap::new));
-        socketConnection.store().addProperties(properties);
-        socketConnection.onMetadata(properties);
     }
 
     private void scheduleMediaConnectionUpdate() {

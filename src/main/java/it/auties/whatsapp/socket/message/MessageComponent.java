@@ -13,7 +13,7 @@ import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructure
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
-import it.auties.whatsapp.model.chat.ChatMetadata;
+import it.auties.whatsapp.model.chat.GroupOrCommunityMetadata;
 import it.auties.whatsapp.model.chat.ChatParticipant;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
@@ -474,7 +474,7 @@ public final class MessageComponent {
             return socketConnection.sendNode(encodedMessageNode);
         }
 
-        var groupMetadata = socketConnection.queryGroupMetadata(request.info().chatJid());
+        var groupMetadata = socketConnection.queryGroupOrCommunityMetadata(request.info().chatJid());
         var allDevices = getGroupDevices(groupMetadata);
         var preKeys = createGroupNodes(request, signalMessage, allDevices, request.force());
         return createEncodedMessageNode(request, preKeys, messageNode);
@@ -644,7 +644,7 @@ public final class MessageComponent {
         return peer ? messageNode : Node.of("to", Map.of("jid", contact), messageNode);
     }
 
-    private List<Jid> getGroupDevices(ChatMetadata metadata) {
+    private List<Jid> getGroupDevices(GroupOrCommunityMetadata metadata) {
         var jids = metadata.participants()
                 .stream()
                 .map(ChatParticipant::jid)
@@ -1463,7 +1463,7 @@ public final class MessageComponent {
 
     private void handleNonBlockingData(HistorySync history) {
         for (var pastParticipants : history.pastParticipants()) {
-            socketConnection.addPastParticipant(pastParticipants.groupJid(), pastParticipants.pastParticipants());
+            socketConnection.onPastParticipants(pastParticipants.groupJid(), pastParticipants.pastParticipants());
         }
     }
 

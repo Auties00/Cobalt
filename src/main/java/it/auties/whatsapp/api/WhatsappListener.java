@@ -1,9 +1,9 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatPastParticipant;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
@@ -19,16 +19,14 @@ import it.auties.whatsapp.model.setting.Setting;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This interface can be used to listen for events fired when new information is sent by
- * WhatsappWeb's socket. A listener can be registered using {@link Whatsapp#addListener(WhatsappListener)}.
+ * WhatsApp. A listener can be registered using {@link Whatsapp#addListener(WhatsappListener)}.
  */
-@SuppressWarnings("unused")
 public interface WhatsappListener {
     /**
-     * Called when the socket sends a node to Whatsapp
+     * Called when the socket sends a node to WhatsApp
      *
      * @param whatsapp an instance to the calling api
      * @param outgoing the non-null node that was just sent
@@ -37,7 +35,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket sends a node to Whatsapp
+     * Called when the socket sends a node to WhatsApp
      *
      * @param outgoing the non-null node that was just sent
      */
@@ -45,7 +43,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives a node from Whatsapp
+     * Called when the socket receives a node from WhatsApp
      *
      * @param whatsapp an instance to the calling api
      * @param incoming the non-null node that was just received
@@ -54,7 +52,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives a node from Whatsapp
+     * Called when the socket receives a node from WhatsApp
      *
      * @param incoming the non-null node that was just received
      */
@@ -64,8 +62,8 @@ public interface WhatsappListener {
     /**
      * Called when the socket successfully establishes a connection and logs in into an account. When
      * this event is called, any data, including chats and contact, is not guaranteed to be already in
-     * memory. Instead, {@link WhatsappListener#onChats(Whatsapp, Collection)} ()} and
-     * {@link WhatsappListener#onContacts(Whatsapp, Collection)} ()} should be used.
+     * memory. Prefer using the event that corresponds to that specific type of data: for example, for chats
+     * use {@link WhatsappListener#onChats(Whatsapp, Collection)}. 
      *
      * @param whatsapp an instance to the calling api
      */
@@ -75,37 +73,14 @@ public interface WhatsappListener {
     /**
      * Called when the socket successfully establishes a connection and logs in into an account. When
      * this event is called, any data, including chats and contact, is not guaranteed to be already in
-     * memory. Instead, {@link WhatsappListener#onChats(Collection)} and
-     * {@link WhatsappListener#onContacts(Collection)} should be used.
+     * memory. Prefer using the event that corresponds to that specific type of data: for example, for chats
+     * use {@link WhatsappListener#onChats(Whatsapp, Collection)}. 
      */
     default void onLoggedIn() {
     }
 
     /**
-     * Called when an updated list of properties is received. This method is called both when a
-     * connection is established with WhatsappWeb and when new props are available. In the latter case
-     * though, this object should be considered as partial and is guaranteed to contain only updated
-     * entries.
-     *
-     * @param whatsapp an instance to the calling api
-     * @param metadata the updated list of properties
-     */
-    default void onMetadata(Whatsapp whatsapp, Map<String, String> metadata) {
-    }
-
-    /**
-     * Called when an updated list of properties is received. This method is called both when a
-     * connection is established with WhatsappWeb and when new props are available. In the latter case
-     * though, this object should be considered as partial and is guaranteed to contain only updated
-     * entries.
-     *
-     * @param metadata the updated list of properties
-     */
-    default void onMetadata(Map<String, String> metadata) {
-    }
-
-    /**
-     * Called when the socket successfully disconnects from WhatsappWeb's Socket
+     * Called when the socket successfully disconnects from WhatsApp
      *
      * @param whatsapp an instance to the calling api
      * @param reason   the errorReason why the session was disconnected
@@ -115,7 +90,7 @@ public interface WhatsappListener {
 
 
     /**
-     * Called when the socket successfully disconnects from WhatsappWeb's Socket
+     * Called when the socket successfully disconnects from WhatsApp
      *
      * @param reason the errorReason why the session was disconnected
      */
@@ -123,61 +98,67 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives a sync from Whatsapp.
+     * Called when the socket receives an action from WhatsAppWeb.
+     * This listener only works for web clients.
      *
      * @param whatsapp         an instance to the calling api
      * @param action           the sync that was executed
      * @param messageIndexInfo the data about this action
      */
-    default void onAction(Whatsapp whatsapp, Action action, MessageIndexInfo messageIndexInfo) {
+    default void onWebAppStateAction(Whatsapp whatsapp, Action action, MessageIndexInfo messageIndexInfo) {
     }
 
     /**
-     * Called when the socket receives a sync from Whatsapp.
+     * Called when the socket receives an action from WhatsAppWeb.
+     * This listener only works for web clients.
      *
      * @param action           the sync that was executed
      * @param messageIndexInfo the data about this action
      */
-    default void onAction(Action action, MessageIndexInfo messageIndexInfo) {
+    default void onWebAppStateAction(Action action, MessageIndexInfo messageIndexInfo) {
     }
 
     /**
-     * Called when the socket receives a setting change from Whatsapp.
+     * Called when the socket receives a setting from WhatsAppWeb.
+     * This listener only works for web clients.
      *
      * @param whatsapp an instance to the calling api
      * @param setting  the setting that was toggled
      */
-    default void onSetting(Whatsapp whatsapp, Setting setting) {
+    default void onWebAppStateSetting(Whatsapp whatsapp, Setting setting) {
     }
 
     /**
-     * Called when the socket receives a setting change from Whatsapp.
+     * Called when the socket receives a setting from WhatsAppWeb.
+     * This listener only works for web clients.
      *
      * @param setting the setting that was toggled
      */
-    default void onSetting(Setting setting) {
+    default void onWebAppStateSetting(Setting setting) {
     }
 
     /**
-     * Called when the socket receives new features from Whatsapp.
+     * Called when the socket receives primary features from WhatsAppWeb.
+     * This listener only works for web clients.
      *
      * @param whatsapp an instance to the calling api
      * @param features the non-null features that were sent
      */
-    default void onFeatures(Whatsapp whatsapp, List<String> features) {
+    default void onWebAppPrimaryFeatures(Whatsapp whatsapp, List<String> features) {
     }
 
 
     /**
-     * Called when the socket receives new features from Whatsapp.
+     * Called when the socket receives primary features from WhatsAppWeb.
+     * This listener only works for web clients.
      *
      * @param features the non-null features that were sent
      */
-    default void onFeatures(List<String> features) {
+    default void onWebAppPrimaryFeatures(Collection<String> features) {
     }
 
     /**
-     * Called when the socket receives all the contacts from WhatsappWeb's Socket
+     * Called when the socket receives all the contacts from Whatsapp.
      *
      * @param whatsapp an instance to the calling api
      * @param contacts the contacts
@@ -186,7 +167,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives all the contacts from WhatsappWeb's Socket
+     * Called when the socket receives all the contacts from Whatsapp.
      *
      * @param contacts the contacts
      */
@@ -213,11 +194,11 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives all the chats from WhatsappWeb's Socket. When this event is
+     * Called when the socket receives all the chats from WhatsApp. When this event is
      * fired, it is guaranteed that all metadata excluding messages will be present. If you also need
-     * the messages to be loaded, please refer to {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}.
+     * the messages to be loaded, please refer to {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}.
      * Particularly old chats may come later through
-     * {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}
+     * {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}
      *
      * @param whatsapp an instance to the calling api
      * @param chats    the chats
@@ -226,11 +207,10 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives all the chats from WhatsappWeb's Socket. When this event is
-     * fired, it is guaranteed that all metadata excluding messages will be present. To access this
-     * data use {@link Store#chats()}. If you also need the messages to be loaded, please refer to
-     * {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}. Particularly old chats may come later
-     * through {@link WhatsappListener#onChatMessagesSync(Chat, boolean)}.
+     * Called when the socket receives all the chats from WhatsApp.
+     * When this event is fired, it is guaranteed that all metadata excluding messages will be present. if you are using a web client
+     * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}.
+     * Particularly old chats may come later through {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}.
      *
      * @param chats the chats
      */
@@ -239,7 +219,7 @@ public interface WhatsappListener {
 
 
     /**
-     * Called when the socket receives all the newsletters from WhatsappWeb's Socket
+     * Called when the socket receives all the newsletters from WhatsApp
      *
      * @param whatsapp    an instance to the calling api
      * @param newsletters the newsletters
@@ -248,7 +228,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives all the newsletters from WhatsappWeb's Socket
+     * Called when the socket receives all the newsletters from WhatsApp
      *
      * @param newsletters the newsletters
      */
@@ -264,7 +244,7 @@ public interface WhatsappListener {
      * @param chat     the chat
      * @param last     whether the messages in this chat are complete or there are more coming
      */
-    default void onChatMessagesSync(Whatsapp whatsapp, Chat chat, boolean last) {
+    default void onWebHistorySyncMessages(Whatsapp whatsapp, Chat chat, boolean last) {
     }
 
     /**
@@ -275,7 +255,26 @@ public interface WhatsappListener {
      * @param chat the chat
      * @param last whether the messages in this chat are complete or there are more coming
      */
-    default void onChatMessagesSync(Chat chat, boolean last) {
+    default void onWebHistorySyncMessages(Chat chat, boolean last) {
+    }
+
+    /**
+     * Called when past participants for a group are received during a web history sync
+     *
+     * @param whatsapp an instance to the calling api
+     * @param chatJid the non-null chat jid
+     * @param chatPastParticipants the non-null past participants
+     */
+    default void onWebHistorySyncPastParticipants(Whatsapp whatsapp, Jid chatJid, Collection<ChatPastParticipant> chatPastParticipants) {
+    }
+
+    /**
+     * Called when past participants for a group are received during a web history sync
+     *
+     * @param chatJid the non-null chat jid
+     * @param chatPastParticipants the non-null past participants
+     */
+    default void onWebHistorySyncPastParticipants(Jid chatJid, Collection<ChatPastParticipant> chatPastParticipants) {
     }
 
     /**
@@ -285,7 +284,7 @@ public interface WhatsappListener {
      * @param percentage the percentage synced up to now
      * @param recent     whether the sync is about the recent messages or older messages
      */
-    default void onHistorySyncProgress(int percentage, boolean recent) {
+    default void onWebHistorySyncProgress(int percentage, boolean recent) {
     }
 
     /**
@@ -296,7 +295,7 @@ public interface WhatsappListener {
      * @param percentage the percentage synced up to now
      * @param recent     whether the sync is about the recent messages or older messages
      */
-    default void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent) {
+    default void onWebHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent) {
     }
 
     /**
@@ -356,7 +355,7 @@ public interface WhatsappListener {
 
 
     /**
-     * Called when the socket receives all the status updated from WhatsappWeb's Socket.
+     * Called when the socket receives all the status updated from WhatsApp.
      *
      * @param whatsapp an instance to the calling api
      * @param status   the status
@@ -365,7 +364,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives all the status updated from WhatsappWeb's Socket.
+     * Called when the socket receives all the status updated from WhatsApp.
      *
      * @param status the status
      */
@@ -373,7 +372,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives a new status from WhatsappWeb's Socket
+     * Called when the socket receives a new status from WhatsApp
      *
      * @param whatsapp an instance to the calling api
      * @param status   the new status message
@@ -382,7 +381,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives a new status from WhatsappWeb's Socket
+     * Called when the socket receives a new status from WhatsApp
      *
      * @param status the new status message
      */
@@ -424,23 +423,6 @@ public interface WhatsappListener {
      * @param jid  the contact whose pic changed
      */
     default void onProfilePictureChanged(Whatsapp whatsapp, JidProvider jid) {
-    }
-
-    /**
-     * Called when a group's picture changes
-     *
-     * @param group the group whose pic changed
-     */
-    default void onGroupPictureChanged(Chat group) {
-    }
-
-    /**
-     * Called when a group's picture changes
-     *
-     * @param whatsapp an instance to the calling api
-     * @param group    the group whose pic changed
-     */
-    default void onGroupPictureChanged(Whatsapp whatsapp, Chat group) {
     }
 
     /**
@@ -612,23 +594,5 @@ public interface WhatsappListener {
      */
     default void onCall(Whatsapp whatsapp, Call call) {
 
-    }
-
-    sealed interface Consumer {
-        non-sealed interface Empty extends Consumer {
-            void accept();
-        }
-
-        non-sealed interface Unary<F> extends Consumer {
-            void accept(F value);
-        }
-
-        non-sealed interface Binary<F, S> extends Consumer {
-            void accept(F first, S second);
-        }
-
-        non-sealed interface Ternary<F, S, T> extends Consumer {
-            void accept(F first, S second, T third);
-        }
     }
 }

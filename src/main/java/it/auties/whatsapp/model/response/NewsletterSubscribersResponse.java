@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.response;
 import com.alibaba.fastjson2.JSON;
 
 import java.util.Optional;
-import java.util.OptionalLong;
 
 public final class NewsletterSubscribersResponse {
     private final Long subscribersCount;
@@ -42,7 +41,7 @@ public final class NewsletterSubscribersResponse {
         return Optional.of(result);
     }
 
-    public OptionalLong subscribersCount() {
-        return subscribersCount == null ? OptionalLong.empty() : OptionalLong.of(subscribersCount);
+    public Optional<Long> subscribersCount() {
+        return Optional.ofNullable(subscribersCount);
     }
 }

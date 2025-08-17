@@ -57,7 +57,7 @@ public final class PollCreationMessage implements ContextualMessage {
 
     /**
      * Constructs a new builder to create a PollCreationMessage The newsletters can be later sent using
-     * {@link Whatsapp#sendMessage(ChatMessageInfo)}
+     * {@link Whatsapp#sendChatMessage(ChatMessageInfo)}
      *
      * @param title             the non-null title of the poll
      * @param selectableOptions the null-null non-empty options of the poll

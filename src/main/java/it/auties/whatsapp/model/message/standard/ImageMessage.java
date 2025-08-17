@@ -137,7 +137,7 @@ public final class ImageMessage extends MediaMessage
 
     /**
      * Constructs a new builder to create a ImageMessage. The newsletters can be later sent using
-     * {@link Whatsapp#sendMessage(ChatMessageInfo)}
+     * {@link Whatsapp#sendChatMessage(ChatMessageInfo)}
      *
      * @param media       the non-null image that the new message wraps
      * @param mimeType    the mime type of the new message, by default
