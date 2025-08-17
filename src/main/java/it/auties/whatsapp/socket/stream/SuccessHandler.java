@@ -97,7 +97,7 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
             if (!socketConnection.keys().initialAppSync()) {
                 socketConnection.store()
                         .jid()
-                        .map(Jid::toSimpleJid)
+                        .map(Jid::withoutData)
                         .ifPresent(socketConnection::addMe);
                 initMobileSessionPresence(false);
                 setPushEndpoint();

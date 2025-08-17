@@ -356,7 +356,7 @@ public final class Store extends Controller {
         return switch (jid) {
             case Contact contact -> Optional.of(contact);
             case null -> Optional.empty();
-            default -> Optional.ofNullable(contacts.get(jid.toJid().toSimpleJid()));
+            default -> Optional.ofNullable(contacts.get(jid.toJid().withoutData()));
         };
     }
 
@@ -434,15 +434,19 @@ public final class Store extends Controller {
             case Newsletter newsletter -> findMessageById(newsletter, id);
             case Contact contact -> findChatByJid(contact.jid())
                     .flatMap(chat -> findMessageById(chat, id));
-            case Jid contactJid -> switch (contactJid.type()) {
-                case NEWSLETTER -> findNewsletterByJid(contactJid)
-                        .flatMap(newsletter -> findMessageById(newsletter, id));
-                case STATUS -> status.stream()
-                        .filter(entry -> Objects.equals(entry.chatJid(), provider.toJid()) && Objects.equals(entry.id(), id))
-                        .findFirst();
-                default -> findChatByJid(contactJid)
-                        .flatMap(chat -> findMessageById(chat, id));
-            };
+            case Jid contactJid -> {
+                if (contactJid.server().type() == JidServer.Type.NEWSLETTER) {
+                    yield findNewsletterByJid(contactJid)
+                            .flatMap(newsletter -> findMessageById(newsletter, id));
+                } else if (Jid.statusBroadcastAccount().equals(contactJid)) {
+                    yield status.stream()
+                            .filter(entry -> Objects.equals(entry.chatJid(), provider.toJid()) && Objects.equals(entry.id(), id))
+                            .findFirst();
+                } else {
+                    yield findChatByJid(contactJid)
+                            .flatMap(chat -> findMessageById(chat, id));
+                }
+            }
             case JidServer jidServer -> findChatByJid(jidServer.toJid())
                     .flatMap(chat -> findMessageById(chat, id));
         };
@@ -665,7 +669,7 @@ public final class Store extends Controller {
      * @return the old chat, if present
      */
     public Optional<Chat> addChat(Chat chat) {
-        if (chat.hasName() && chat.jid().hasServer(JidServer.whatsapp())) {
+        if (chat.hasName() && chat.jid().hasServer(JidServer.user())) {
             var contact = findContactByJid(chat.jid())
                     .orElseGet(() -> addContact(chat.jid()));
             contact.setFullName(chat.name());

@@ -128,7 +128,7 @@ public final class NodeEncoder {
     }
 
     private static int jidLength(Jid jid){
-        if (jid.isCompanion()) {
+        if (jid.hasAgent() || jid.hasDevice()) {
             return 3 + stringLength(jid.user());
         }else {
             return 2 + (jid.hasUser() ? stringLength(jid.user()) : 1);
@@ -339,8 +339,8 @@ public final class NodeEncoder {
     }
 
     private static int writeJid(Jid jid, byte[] output, int offset){
-        if (jid.isCompanion()) {
-            output[offset++] = COMPANION_JID;
+        if (jid.hasAgent() || jid.hasDevice()) {
+            output[offset++] = AD_JID;
             output[offset++] = (byte) jid.agent();
             output[offset++] = (byte) jid.device();
             return writeString(jid.user(), output, offset);

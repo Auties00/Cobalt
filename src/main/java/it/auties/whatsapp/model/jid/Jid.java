@@ -3,26 +3,105 @@ package it.auties.whatsapp.model.jid;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufString;
+import it.auties.whatsapp.exception.MalformedJidException;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * A model class that represents a jid.
  * This class is only a model: this means that changing its values will have no real effect on WhatsappWeb's servers.
  */
-public final class Jid implements JidProvider { // How can string parsing get so complicated?
-    final String user;
-    final JidServer server;
-    final int device;
-    final int agent;
+public final class Jid implements JidProvider {
+    private static final char PHONE_CHAR = '+';
+    private static final char SERVER_CHAR = '@';
+    private static final char DEVICE_CHAR = ':';
+    private static final char AGENT_CHAR = '_';
+
+    private static final Jid LEGACY_USER = new Jid(null, JidServer.legacyUser(), 0, 0);
+    private static final Jid GROUP_OR_COMMUNITY = new Jid(null, JidServer.groupOrCommunity(), 0, 0);
+    private static final Jid BROADCAST = new Jid(null, JidServer.broadcast(), 0, 0);
+    private static final Jid CALL = new Jid(null, JidServer.call(), 0, 0);
+    private static final Jid USER = new Jid(null, JidServer.user(), 0, 0);
+    private static final Jid LID = new Jid(null, JidServer.lid(), 0, 0);
+    private static final Jid NEWSLETTER = new Jid(null, JidServer.newsletter(), 0, 0);
+    private static final Jid BOT = new Jid(null, JidServer.bot(), 0, 0);
+    private static final ConcurrentMap<JidServer, Jid> unknownServerJidsStore = new ConcurrentHashMap<>();
+
+    private static final Jid OFFICIAL_SURVEYS_ACCOUNT = new Jid("16505361212", JidServer.user(), 0, 0);
+    private static final Jid OFFICIAL_BUSINESS_ACCOUNT = new Jid("16505361212", JidServer.legacyUser(), 0, 0);
+    private static final Jid STATUS_BROADCAST = new Jid("status", JidServer.broadcast(), 0, 0);
+    private static final Jid ANNOUNCEMENTS = new Jid("0", JidServer.user(), 0, 0);
+
+    private final String user;
+    private final JidServer server;
+    private final int device;
+    private final int agent;
 
     private Jid(String user, JidServer server, int device, int agent) {
         this.user = user;
         this.server = server;
-        this.device = device;
-        this.agent = agent;
+        this.device = checkUnsignedByte(device);
+        this.agent = checkUnsignedByte(agent);
+    }
+
+    private static int checkUnsignedByte(int i) {
+        if(i < 0 || i > 255) {
+            throw new MalformedJidException(i + " is not an unsigned byte");
+        }
+        return i;
+    }
+
+    public static Jid legacyUserServer() {
+        return LEGACY_USER;
+    }
+
+    public static Jid groupOrCommunityServer() {
+        return GROUP_OR_COMMUNITY;
+    }
+
+    public  static Jid broadcastServer() {
+        return BROADCAST;
+    }
+
+    public static Jid callServer() {
+        return CALL;
+    }
+
+    public static Jid userServer() {
+        return USER;
+    }
+
+    public static Jid lidServer() {
+        return LID;
+    }
+
+    public static Jid newsletterServer() {
+        return NEWSLETTER;
+    }
+
+    public static Jid Server() {
+        return BOT;
+    }
+
+    public static Jid officialSurveysAccount() {
+        return OFFICIAL_SURVEYS_ACCOUNT;
+    }
+
+    public static Jid officialBusinessAccount() {
+        return OFFICIAL_BUSINESS_ACCOUNT;
+    }
+
+    public static Jid statusBroadcastAccount() {
+        return STATUS_BROADCAST;
+    }
+
+    public static Jid announcementsAccount() {
+        return ANNOUNCEMENTS;
     }
 
     /**
@@ -38,10 +117,21 @@ public final class Jid implements JidProvider { // How can string parsing get so
      */
     public static Jid of(String user, JidServer server, int device, int agent) {
         Objects.requireNonNull(server, "Server cannot be null");
-        if (user != null && !user.isEmpty() && user.charAt(0) == '+') {
-            user = user.substring(1);
+        if(user == null) {
+            return new Jid(null, server, device, agent);
         }
-        return new Jid(user, server, device, agent);
+
+        var inputLength = user.length();
+        var offset = !user.isEmpty() && user.charAt(0) == PHONE_CHAR
+                ? 1
+                : 0;
+        for(var i = 0; i < inputLength; i++) {
+            var token = user.charAt(i);
+            if (token == SERVER_CHAR || token == DEVICE_CHAR || token == AGENT_CHAR) {
+                return new Jid(user.substring(offset, i), server, device, agent);
+            }
+        }
+        return new Jid(offset == 0 ? user : user.substring(offset), server, device, agent);
     }
 
     /**
@@ -52,7 +142,17 @@ public final class Jid implements JidProvider { // How can string parsing get so
      */
     public static Jid of(JidServer server) {
         Objects.requireNonNull(server, "Server cannot be null");
-        return new Jid(null, server, 0, 0);
+        return switch (server.type()) {
+            case UNKNOWN -> unknownServerJidsStore.computeIfAbsent(server, value -> new Jid(null, value, 0, 0));
+            case LEGACY_USER -> LEGACY_USER;
+            case GROUP_OR_COMMUNITY -> GROUP_OR_COMMUNITY;
+            case BROADCAST -> BROADCAST;
+            case CALL -> CALL;
+            case USER -> USER;
+            case LID -> LID;
+            case NEWSLETTER -> NEWSLETTER;
+            case BOT -> BOT;
+        };
     }
 
     /**
@@ -62,7 +162,116 @@ public final class Jid implements JidProvider { // How can string parsing get so
      * @return a non-null contact jid
      */
     public static Jid of(long jid) {
-        return new Jid(String.valueOf(jid), JidServer.whatsapp(), 0, 0);
+        if(jid < 0) {
+            throw new MalformedJidException("jid cannot be negative");
+        }
+        return new Jid(String.valueOf(jid), JidServer.user(), 0, 0);
+    }
+
+    /**
+     * Constructs a new ContactId for a user from a jid and a custom server
+     *
+     * @param jid    the non-null jid
+     * @return a non-null contact jid
+     */
+    public static Jid of(String jid) {
+        if(jid == null) {
+            return null;
+        }
+
+        var knownServer = JidServer.of(jid, false);
+        if(knownServer != null) {
+            return of(knownServer);
+        }
+
+        var serverSeparatorIndex = jid.indexOf(SERVER_CHAR);
+        var server = serverSeparatorIndex == -1
+                ? JidServer.user()
+                : JidServer.of(jid, serverSeparatorIndex + 1, jid.length() - serverSeparatorIndex - 1);
+        return parseJid(jid, serverSeparatorIndex, server);
+    }
+
+    /**
+     * Constructs a new ContactId for a user from a jid and a custom server
+     *
+     * @param user    the nullable user
+     * @param server the non-null custom server
+     * @return a non-null contact jid
+     */
+    public static Jid of(String user, JidServer server) {
+        Objects.requireNonNull(server, "Server cannot be null");
+        return parseJid(user, user.indexOf(SERVER_CHAR), server);
+    }
+
+    private static Jid parseJid(String jid, int jidLength, JidServer server) {
+        var length = jidLength == -1 ? jid.length() : jidLength;
+        if (length == 0) {
+            return new Jid(null, server, 0, 0);
+        }
+
+        var offset = jid.charAt(0) == PHONE_CHAR ? 1 : 0;
+        if (offset >= length) {
+            throw new MalformedJidException("Malformed jid '" + jid + "'");
+        }
+
+        enum ParserState {
+            USER,
+            DEVICE,
+            AGENT
+        }
+
+        var state = ParserState.USER;
+        var userLength = length;
+        var agent = 0;
+        var device = 0;
+        for (var parserPosition = 0; parserPosition < length; parserPosition++) {
+            var token = jid.charAt(offset + parserPosition);
+            if (token == SERVER_CHAR) {
+                if(state == ParserState.USER) {
+                    userLength = parserPosition;
+                }
+                server = JidServer.of(jid, offset + parserPosition + 1, length - parserPosition - 1);
+                break;
+            }
+
+            switch (state) {
+                case USER -> {
+                    if(token == DEVICE_CHAR) {
+                        userLength = parserPosition;
+                        state = ParserState.DEVICE;
+                    }else if(token == AGENT_CHAR) {
+                        userLength = parserPosition;
+                        state = ParserState.AGENT;
+                    }
+                }
+                case DEVICE -> {
+                    if (token == AGENT_CHAR) {
+                        if(agent != 0) {
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                        }
+                        state = ParserState.AGENT;
+                    } else if(Character.isDigit(token)) {
+                        device = device * 10 + (token - '0');
+                    }else {
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                    }
+                }
+                case AGENT -> {
+                    if (token == DEVICE_CHAR) {
+                        if(device != 0) {
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                        }
+                        state = ParserState.DEVICE;
+                    } else if(Character.isDigit(token)) {
+                        agent = agent * 10 + (token - '0');
+                    }else {
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                    }
+                }
+            }
+        }
+        var user = jid.substring(offset, offset + userLength);
+        return new Jid(user, server, device, agent);
     }
 
     /**
@@ -74,306 +283,96 @@ public final class Jid implements JidProvider { // How can string parsing get so
     @ProtobufDeserializer
     public static Jid of(ProtobufString jid) {
         return switch(jid) {
-            case ProtobufString.Lazy lazy -> {
-                var source = lazy.encodedBytes();
-                var offset = lazy.encodedOffset();
-                var length = lazy.encodedLength();
-                var splitOffset = length;
-                var state = ParserState.USER;
-                userLengthLabel: {
-                    for(var position = 0; position < length; position++) {
-                        switch (getAsciiChar(source, offset + position)) {
-                            case '@' -> {
-                                splitOffset = position;
-                                state = ParserState.SERVER;
-                                break userLengthLabel;
-                            }
-                            case ':' -> {
-                                splitOffset = position;
-                                state = ParserState.DEVICE;
-                                break userLengthLabel;
-                            }
-                            case '_' -> {
-                                splitOffset = position;
-                                state = ParserState.AGENT;
-                                break userLengthLabel;
-                            }
-                        }
-                    }
-                }
-                yield switch (state) {
-                    case USER -> parseJid(source, offset, splitOffset);
-                    case SERVER -> parseJid(source, offset, length, splitOffset);
-                    case AGENT, DEVICE -> parseJid(source, offset, length, splitOffset, state);
-                };
-            }
+            case ProtobufString.Lazy lazy -> Jid.of(lazy);
             case ProtobufString.Value value -> Jid.of(value.toString());
             case null -> null;
         };
     }
 
-    private static Jid parseJid(byte[] source, int sourceOffset, int sourceLength) {
-        var user = parseUser(source, sourceOffset, sourceLength, sourceLength);
-        return new Jid(user, JidServer.whatsapp(), 0, 0);
-    }
+    /**
+     * Constructs a new ContactId for a user from a jid
+     *
+     * @param jid the non-null jid of the user
+     * @return a non-null contact jid
+     */
+    public static Jid of(ProtobufString.Lazy jid) {
+        if(jid == null) {
+            return null;
+        }
 
-    private static Jid parseJid(byte[] source, int sourceOffset, int sourceLength, int userLength) {
-        var user = parseUser(source, sourceOffset, userLength, userLength);
-        var serverOffset = userLength + 1;
-        var server = JidServer.of(source, sourceOffset + serverOffset, sourceLength - serverOffset);
-        return new Jid(user, server, 0, 0);
-    }
+        enum ParserState {
+            USER,
+            DEVICE,
+            AGENT,
+            SERVER
+        }
 
-    private static Jid parseJid(byte[] source, int sourceOffset, int sourceLength, int userLength, ParserState state) {
+        var source = jid.encodedBytes();
+        var offset = jid.encodedOffset();
+        var length = jid.encodedLength();
+
+        var knownServer = JidServer.of(source, offset, length, false);
+        if(knownServer != null) {
+            return of(knownServer);
+        }
+
+        var state = ParserState.USER;
+        var userLength = length; // Do not allocate a char[], it's slower
         var agent = 0;
         var device = 0;
-        var server = JidServer.whatsapp();
-        var errorPosition = -1;
-        agentAndDeviceLabel: {
-            for (var parserPosition = userLength + 1; parserPosition < sourceLength; parserPosition++) {
-                var token = getAsciiChar(source, sourceOffset + parserPosition);
-                switch (state) {
-                    case DEVICE -> {
-                        if (token == '@') {
-                            var serverOffset = sourceOffset + parserPosition + 1;
-                            server = JidServer.of(source, serverOffset, sourceLength - serverOffset);
-                            break agentAndDeviceLabel;
-                        } else if (token == ':') {
-                            device = 0;
-                        } else if (token == '_') {
-                            agent = 0;
-                            state = ParserState.AGENT;
-                        } else if(Character.isDigit(token)) {
-                            device = device * 10 + (token - '0');
-                        }else {
-                            errorPosition = parserPosition;
-                            break agentAndDeviceLabel;
+        var server = JidServer.user();
+        for (var parserPosition = 0; parserPosition < length; parserPosition++) {
+            var token = (char) (source[offset + parserPosition] & 0x7F);
+            if (token == SERVER_CHAR) {
+                if(state == ParserState.USER) {
+                    userLength = parserPosition;
+                }
+                server = JidServer.of(source, offset + parserPosition + 1, length - parserPosition - 1, true);
+                break;
+            }
+
+            switch (state) {
+                case USER -> {
+                    if(token == DEVICE_CHAR) {
+                        // device is already 0
+                        userLength = parserPosition;
+                        state = ParserState.DEVICE;
+                    }else if(token == AGENT_CHAR) {
+                        // agent is already 0
+                        userLength = parserPosition;
+                        state = ParserState.AGENT;
+                    }
+                }
+                case DEVICE -> {
+                    if (token == AGENT_CHAR) {
+                        if(agent != 0) {
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
                         }
+                        state = ParserState.AGENT;
+                    } else if(Character.isDigit(token)) {
+                        device = device * 10 + (token - '0');
+                    }else {
+                        var value = new String(source, offset, length, StandardCharsets.US_ASCII);
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + value + "'");
                     }
-                    case AGENT -> {
-                        if (token == '@') {
-                            var serverOffset = sourceOffset + parserPosition + 1;
-                            server = JidServer.of(source, serverOffset, sourceLength - serverOffset);
-                            break agentAndDeviceLabel;
-                        } else if (token == ':') {
-                            device = 0;
-                            state = ParserState.DEVICE;
-                        } else if (token == '_') {
-                            agent = 0;
-                        } else if(Character.isDigit(token)) {
-                            agent = agent * 10 + (token - '0');
-                        }else {
-                            errorPosition = parserPosition;
-                            break agentAndDeviceLabel;
+                }
+                case AGENT -> {
+                    if (token == DEVICE_CHAR) {
+                        if(device != 0) {
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
                         }
-                    }
-                }
-            }
-        }
-        if(errorPosition != -1) {
-            while (errorPosition < sourceLength) {
-                if (getAsciiChar(source, sourceOffset + errorPosition) == '@') {
-                    return parseJid(source, sourceOffset, sourceLength, errorPosition);
-                }
-                errorPosition++;
-            }
-            return parseJid(source, sourceOffset, sourceLength, errorPosition);
-        }else {
-            var user = parseUser(source, sourceOffset, userLength, userLength);
-            return new Jid(user, server, device, agent);
-        }
-    }
-
-    private static String parseUser(byte[] source, int sourceOffset, int sourceLength, int outputLength) {
-        var output = new char[outputLength];
-        for (var position = 0; position < sourceLength; position++) {
-            output[position] = getAsciiChar(source, sourceOffset + position);
-        }
-        return new String(output);
-    }
-
-    private static char getAsciiChar(byte[] source, int offset) {
-        return (char) (source[offset] & 0x7F);
-    }
-
-    private enum ParserState {
-        USER,
-        DEVICE,
-        AGENT,
-        SERVER
-    }
-
-    /**
-     * Constructs a new ContactId for a user from a jid and a custom server
-     *
-     * @param jid    the nullable jid of the user
-     * @return a non-null contact jid
-     */
-    public static Jid of(String jid) {
-        var serverSeparatorIndex = jid.indexOf("@");
-        if (serverSeparatorIndex == -1) {
-            return parseJid(jid, JidServer.whatsapp(), serverSeparatorIndex);
-        }else {
-            var serverOffset = serverSeparatorIndex + 1;
-            var server = JidServer.of(jid, serverOffset, jid.length() - serverOffset);
-            return parseJid(jid, server, serverSeparatorIndex);
-        }
-    }
-
-    /**
-     * Constructs a new ContactId for a user from a jid and a custom server
-     *
-     * @param jid    the nullable jid of the user
-     * @param server the non-null custom server
-     * @return a non-null contact jid
-     */
-    public static Jid of(String jid, JidServer server) {
-        Objects.requireNonNull(server, "Server cannot be null");
-        return parseJid(jid, server, jid.indexOf("@"));
-    }
-
-    private static Jid parseJid(String jid, JidServer server, int userLength) {
-        var length = userLength == -1 ? jid.length() : userLength;
-        if (length == 0) {
-            return new Jid(null, server, 0, 0);
-        }
-
-        var offset = jid.charAt(0) == '+' ? 1 : 0;
-        if (offset >= length) {
-            return new Jid(null, server, 0, 0);
-        }
-
-        var deviceIndex = -1;
-        var agentIndex = -1;
-        var index = offset;
-        while (index < length && (deviceIndex == -1 || agentIndex == -1)) {
-            switch (jid.charAt(index)) {
-                case ':' -> deviceIndex = index;
-                case '_' -> agentIndex = index;
-            }
-            index++;
-        }
-
-        if (deviceIndex == -1 && agentIndex == -1) {
-            return parseJid(jid, offset, length, server, userLength);
-        }else if (deviceIndex != -1 && agentIndex != -1) {
-            if(agentIndex < deviceIndex) {
-                var user = jid.substring(offset, agentIndex);
-
-                var agent = 0;
-                while (agentIndex < deviceIndex - 1) {
-                    var digit = jid.charAt(++agentIndex);
-                    if (Character.isDigit(digit)) {
-                        agent = agent * 10 + (digit - '0');
+                        state = ParserState.DEVICE;
+                    } else if(Character.isDigit(token)) {
+                        agent = agent * 10 + (token - '0');
                     }else {
-                        return parseJid(jid, offset, length, server, userLength);
+                        var value = new String(source, offset, length, StandardCharsets.US_ASCII);
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + value + "'");
                     }
-                }
-
-                var device = 0;
-                while (deviceIndex < length - 1) {
-                    var digit = jid.charAt(++deviceIndex);
-                    if (Character.isDigit(digit)) {
-                        device = device * 10 + (digit - '0');
-                    }else {
-                        return parseJid(jid, offset, length, server, userLength);
-                    }
-                }
-
-                return new Jid(user, server, device, agent);
-            }else {
-                var user = jid.substring(offset, deviceIndex);
-
-                var device = 0;
-                while (deviceIndex < agentIndex - 1) {
-                    var digit = jid.charAt(++deviceIndex);
-                    if (Character.isDigit(digit)) {
-                        device = device * 10 + (digit - '0');
-                    }else {
-                        return parseJid(jid, offset, length, server, userLength);
-                    }
-                }
-
-                var agent = 0;
-                while (agentIndex < length - 1) {
-                    var digit = jid.charAt(++agentIndex);
-                    if (Character.isDigit(digit)) {
-                        agent = agent * 10 + (digit - '0');
-                    }else {
-                        return parseJid(jid, offset, length, server, userLength);
-                    }
-                }
-
-                return new Jid(user, server, device, agent);
-            }
-        } else if (deviceIndex != -1) {
-            var user = jid.substring(offset, deviceIndex);
-
-            var device = 0;
-            while (deviceIndex < length - 1) {
-                var digit = jid.charAt(++deviceIndex);
-                if (Character.isDigit(digit)) {
-                    device = device * 10 + (digit - '0');
-                }else {
-                    return parseJid(jid, offset, length, server, userLength);
                 }
             }
-
-            return new Jid(user, server, device, 0);
-        } else {
-            var user = jid.substring(offset, agentIndex);
-
-            var agent = 0;
-            while (agentIndex < length - 1) {
-                var digit = jid.charAt(++agentIndex);
-                if (Character.isDigit(digit)) {
-                    agent = agent * 10 + (digit - '0');
-                }else {
-                    return parseJid(jid, offset, length, server, userLength);
-                }
-            }
-
-            return new Jid(user, server, 0, agent);
         }
-    }
-
-    private static Jid parseJid(String source, int sourceOffset, int sourceLength, JidServer server, int userLength) {
-        var user = userLength == -1 && sourceOffset == 0 ? source : source.substring(sourceOffset, sourceLength);
-        return new Jid(user, server, 0, 0);
-    }
-
-    /**
-     * Returns the type of this jid
-     *
-     * @return a non-null type
-     */
-    // FIXME: Update this method
-    public Type type() {
-        return isCompanion() ? Type.COMPANION : switch (server().type()) {
-            case WHATSAPP -> Objects.equals(user(), "16505361212") ? Type.OFFICIAL_SURVEY_ACCOUNT : Type.USER;
-            case LID -> Type.LID;
-            case BROADCAST -> Objects.equals(user(), "status") ? Type.STATUS : Type.BROADCAST;
-            case GROUP_OR_COMMUNITY -> Type.GROUP;
-            case CALL -> Type.CALL;
-            case NEWSLETTER -> Type.NEWSLETTER;
-            case USER -> switch (user()) {
-                case "server" -> Type.SERVER;
-                case "0" -> Type.ANNOUNCEMENT;
-                case "16508638904" -> Type.IAS;
-                case "16505361212" -> Type.OFFICIAL_BUSINESS_ACCOUNT;
-                case null, default -> Type.UNKNOWN;
-            };
-            case UNKNOWN -> Type.UNKNOWN;
-        };
-    }
-
-    /**
-     * Returns whether this jid is associated with a companion device
-     *
-     * @return true if this jid is a companion
-     */
-    public boolean isCompanion() {
-        return device() != 0;
+        var user = new String(source, offset, userLength, StandardCharsets.UTF_8);
+        return new Jid(user, server, device, agent);
     }
 
     /**
@@ -403,7 +402,9 @@ public final class Jid implements JidProvider { // How can string parsing get so
      * @return a non-null jid
      */
     public Jid withServer(JidServer server) {
-        return new Jid(user(), server, device, agent);
+        return Objects.equals(this.server, server)
+                ? this
+                : new Jid(user, server, device, agent);
     }
 
     /**
@@ -413,7 +414,9 @@ public final class Jid implements JidProvider { // How can string parsing get so
      * @return a non-null jid
      */
     public Jid withAgent(int agent) {
-        return new Jid(user, server, device, agent);
+        return this.agent == agent
+                ? this
+                : new Jid(user, server, device, agent);
     }
     /**
      * Returns a new jid using with a different device
@@ -422,7 +425,9 @@ public final class Jid implements JidProvider { // How can string parsing get so
      * @return a non-null jid
      */
     public Jid withDevice(int device) {
-        return new Jid(user, server, device, agent);
+        return this.device == device
+                ? this
+                : new Jid(user, server, device, agent);
     }
 
     /**
@@ -430,8 +435,10 @@ public final class Jid implements JidProvider { // How can string parsing get so
      *
      * @return a non-null jid
      */
-    public Jid toSimpleJid() {
-        return new Jid(user, server, 0, 0);
+    public Jid withoutData() {
+        return !hasDevice() && !hasAgent()
+                ? this
+                : new Jid(user, server, 0, 0);
     }
 
     /**
@@ -442,7 +449,7 @@ public final class Jid implements JidProvider { // How can string parsing get so
     public Optional<String> toPhoneNumber() {
         try {
             Long.parseLong(user);
-            return Optional.of("+" + user);
+            return Optional.of(PHONE_CHAR + user);
         } catch (NumberFormatException ignored) {
             return Optional.empty();
         }
@@ -464,9 +471,9 @@ public final class Jid implements JidProvider { // How can string parsing get so
         }
 
         var user = hasUser ? this.user : "";
-        var agent = hasAgent ? "_" + this.agent : "";
-        var device = hasDevice ? ":" + this.device : "";
-        return user + agent + device + "@" + server.toString();
+        var agent = hasAgent ? "" + AGENT_CHAR + this.agent : "";
+        var device = hasDevice ? "" + DEVICE_CHAR + this.device : "";
+        return user + agent + device + SERVER_CHAR + server.toString();
     }
 
     /**
@@ -563,67 +570,5 @@ public final class Jid implements JidProvider { // How can string parsing get so
     @Override
     public int hashCode() {
         return Objects.hash(user, server, device, agent);
-    }
-
-    /**
-     * The constants of this enumerated type describe the various types of jids currently supported
-     */
-    public enum Type {
-        /**
-         * Represents a device connected using the multi device beta
-         */
-        COMPANION,
-        /**
-         * Regular Whatsapp contact Jid
-         */
-        USER,
-        /**
-         * Official survey account
-         */
-        OFFICIAL_SURVEY_ACCOUNT,
-        /**
-         * Lid
-         */
-        LID,
-        /**
-         * Broadcast list
-         */
-        BROADCAST,
-        /**
-         * Official business account
-         */
-        OFFICIAL_BUSINESS_ACCOUNT,
-        /**
-         * Group Chat Jid
-         */
-        GROUP,
-        /**
-         * Group Call Jid
-         */
-        CALL,
-        /**
-         * Server Jid: Used to send nodes to Whatsapp usually
-         */
-        SERVER,
-        /**
-         * Announcements Chat Jid: Read only chat, usually used by Whatsapp for log updates
-         */
-        ANNOUNCEMENT,
-        /**
-         * IAS Chat jid
-         */
-        IAS,
-        /**
-         * Image Status Jid of a contact
-         */
-        STATUS,
-        /**
-         * Unknown Jid type
-         */
-        UNKNOWN,
-        /**
-         * Newsletter
-         */
-        NEWSLETTER
     }
 }

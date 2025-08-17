@@ -22,12 +22,12 @@ public final class SenderKeyRecord {
         this.states = new ArrayList<>();
     }
 
-    public SenderKeyState firstState() {
+    public Optional<SenderKeyState> firstState() {
         if(states.isEmpty()) {
-            throw new NoSuchElementException("Cannot get head state for empty record");
+            return Optional.empty();
+        }else {
+            return Optional.ofNullable(states.getFirst());
         }
-
-        return states.getFirst();
     }
 
     public Optional<SenderKeyState> findStateById(int keyId) {
@@ -36,16 +36,17 @@ public final class SenderKeyRecord {
                 .findFirst();
     }
 
-    public void addState(int id, byte[] signatureKey, int iteration, byte[] seed) {
-        addState(id, SignalKeyPair.of(signatureKey), iteration, seed);
+    public SenderKeyState addState(int id, byte[] signatureKey, int iteration, byte[] seed) {
+        return addState(id, SignalKeyPair.of(signatureKey), iteration, seed);
     }
 
-    public void addState(int id, SignalKeyPair signingKey, int iteration, byte[] seed) {
+    public SenderKeyState addState(int id, SignalKeyPair signingKey, int iteration, byte[] seed) {
         var state = new SenderKeyState(id, signingKey, iteration, seed);
         states.add(state);
         if (states.size() > MAX_STATES) {
             states.removeFirst();
         }
+        return state;
     }
 
     public boolean isEmpty() {

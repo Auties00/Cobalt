@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.info;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.jid.Jid;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -17,7 +16,7 @@ public final class MessageIndexInfo implements Info {
     final String type;
 
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    final Jid chatJid;
+    final String targetId;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     final String messageId;
@@ -25,9 +24,9 @@ public final class MessageIndexInfo implements Info {
     @ProtobufProperty(index = 4, type = ProtobufType.BOOL)
     final boolean fromMe;
 
-    MessageIndexInfo(String type, Jid chatJid, String messageId, boolean fromMe) {
+    MessageIndexInfo(String type, String targetId, String messageId, boolean fromMe) {
         this.type = Objects.requireNonNull(type, "type cannot be null");
-        this.chatJid = chatJid;
+        this.targetId = targetId;
         this.messageId = messageId;
         this.fromMe = fromMe;
     }
@@ -36,8 +35,8 @@ public final class MessageIndexInfo implements Info {
         return type;
     }
 
-    public Optional<Jid> chatJid() {
-        return Optional.ofNullable(chatJid);
+    public Optional<String> targetId() {
+        return Optional.ofNullable(targetId);
     }
 
     public Optional<String> messageId() {
@@ -53,20 +52,20 @@ public final class MessageIndexInfo implements Info {
         return o instanceof MessageIndexInfo that
                 && fromMe == that.fromMe
                 && Objects.equals(type, that.type)
-                && Objects.equals(chatJid, that.chatJid)
+                && Objects.equals(targetId, that.targetId)
                 && Objects.equals(messageId, that.messageId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, chatJid, messageId, fromMe);
+        return Objects.hash(type, targetId, messageId, fromMe);
     }
 
     @Override
     public String toString() {
         return "MessageIndexInfo[" +
                 "type=" + type + ", " +
-                "chatJid=" + chatJid + ", " +
+                "targetId=" + targetId + ", " +
                 "messageId=" + messageId + ", " +
                 "fromMe=" + fromMe + ']';
     }

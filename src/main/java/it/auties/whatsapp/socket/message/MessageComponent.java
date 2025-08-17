@@ -298,7 +298,7 @@ public final class MessageComponent {
             }
 
             var pollCreationId = pollUpdateMessage.pollCreationMessageKey().id();
-            var additionalData = "%s\0%s".formatted(pollCreationId, me.get().toSimpleJid());
+            var additionalData = "%s\0%s".formatted(pollCreationId, me.get().withoutData());
             var encryptedOptions = pollUpdateMessage.votes()
                     .stream()
                     .map(this::getPollUpdateOptionHash)
@@ -311,9 +311,9 @@ public final class MessageComponent {
                     .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
                     .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
             var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
-            var modificationSenderJid = info.senderJid().toSimpleJid();
+            var modificationSenderJid = info.senderJid().withoutData();
             pollUpdateMessage.setVoter(modificationSenderJid);
-            var originalPollSenderJid = originalPollInfo.senderJid().toSimpleJid();
+            var originalPollSenderJid = originalPollInfo.senderJid().withoutData();
             var useSecretPayload = pollCreationId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
             var encryptionKey = originalPollMessage.encryptionKey()
                     .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
@@ -451,7 +451,7 @@ public final class MessageComponent {
             throw new IllegalStateException("Cannot create message: user is not signed in");
         }
 
-        var senderName = new SenderKeyName(request.info().chatJid().toString(), sender.toSignalAddress());
+        var senderName = new SenderKeyName(request.info().chatJid(), sender.toSignalAddress());
         var signalMessage = sessionCipher.createOutgoing(senderName);
         var groupMessage = sessionCipher.encrypt(senderName, encodedMessage);
         var messageNode = createMessageNode(request, groupMessage);
@@ -462,7 +462,7 @@ public final class MessageComponent {
             return socketConnection.sendNode(encodedMessageNode);
         }
 
-        if (request.info().chatJid().type() == Jid.Type.STATUS) {
+        if (Jid.statusBroadcastAccount().equals(request.info().chatJid())) {
             var recipients = socketConnection.store()
                     .contacts()
                     .stream()
@@ -526,12 +526,12 @@ public final class MessageComponent {
             return Set.of(request.info().chatJid());
         }
 
-        return new HashSet<>(List.of(socketConnection.store().jid().orElseThrow().toSimpleJid(), request.info().chatJid()));
+        return new HashSet<>(List.of(socketConnection.store().jid().orElseThrow().withoutData(), request.info().chatJid()));
     }
 
     private boolean isConversation(ChatMessageInfo info) {
-        return info.chatJid().hasServer(JidServer.whatsapp())
-                || info.chatJid().hasServer(JidServer.user());
+        return info.chatJid().hasServer(JidServer.user())
+                || info.chatJid().hasServer(JidServer.legacyUser());
     }
 
     private Node createEncodedMessageNode(MessageRequest.Chat request, List<Node> preKeys, Node descriptor) {
@@ -606,7 +606,7 @@ public final class MessageComponent {
             return List.of();
         }
         var whatsappMessage = new SenderKeyDistributionMessageBuilder()
-                .groupId(request.info().chatJid().toString())
+                .groupJid(request.info().chatJid())
                 .data(distributionMessage)
                 .build();
         var paddedMessage = messageToBytes(MessageContainer.of(whatsappMessage));
@@ -733,7 +733,7 @@ public final class MessageComponent {
     }
 
     private void cacheDevice(Jid jid) {
-        var cachedDevices = devicesCache.get(jid.toSimpleJid());
+        var cachedDevices = devicesCache.get(jid.withoutData());
         if (cachedDevices != null) {
             cachedDevices.add(jid);
             return;
@@ -741,7 +741,7 @@ public final class MessageComponent {
 
         var devices = new CopyOnWriteArrayList<Jid>();
         devices.add(jid);
-        devicesCache.put(jid.toSimpleJid(), devices);
+        devicesCache.put(jid.withoutData(), devices);
     }
 
     void parseSessions(Node node) {
@@ -974,69 +974,77 @@ public final class MessageComponent {
     }
 
     private void decodeChatMessage(Node infoNode, Node messageNode, String businessName, boolean notify) {
+        ChatMessageKey chatMessageKey = null;
         try {
+            var selfJid = socketConnection.store()
+                    .jid()
+                    .orElse(null);
+            if (selfJid == null) {
+                return;
+            }
+
             var pushName = infoNode.attributes().getNullableString("notify");
             var timestamp = infoNode.attributes().getLong("t");
             var id = infoNode.attributes().getRequiredString("id");
             var from = infoNode.attributes()
                     .getRequiredJid("from");
-            var participant = infoNode.attributes()
-                    .getOptionalJid("participant")
-                    .orElse(null);
-            var recipient = infoNode.attributes()
-                    .getOptionalJid("recipient")
-                    .orElse(from);
             var messageBuilder = new ChatMessageInfoBuilder()
                     .status(MessageStatus.PENDING);
             var keyBuilder = new ChatMessageKeyBuilder()
-                    .id(SocketConnection.randomSid());
-            var receiver = socketConnection.store()
-                    .jid()
-                    .map(Jid::toSimpleJid)
-                    .orElse(null);
-            if (receiver == null) {
-                return;
-            }
-
-            if (from.hasServer(JidServer.whatsapp()) || from.hasServer(JidServer.user())) {
+                    .id(id);
+            if (from.hasServer(JidServer.user()) || from.hasServer(JidServer.legacyUser())) {
+                var recipient = infoNode.attributes()
+                        .getOptionalJid("recipient")
+                        .orElse(from);
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                keyBuilder.fromMe(Objects.equals(from.toSimpleJid(), receiver));
+                keyBuilder.fromMe(Objects.equals(from.withoutData(), selfJid.withoutData()));
                 messageBuilder.senderJid(from);
-            } else {
+            }else if(from.hasServer(JidServer.bot())) {
+                var meta = infoNode.findChild("meta")
+                        .orElseThrow();
+                var chatJid = meta.attributes()
+                        .getRequiredJid("target_chat_jid");
+                var senderJid = meta.attributes()
+                        .getOptionalJid("target_sender_jid")
+                        .orElse(chatJid);
+                keyBuilder.chatJid(chatJid);
+                keyBuilder.senderJid(senderJid);
+                keyBuilder.fromMe(Objects.equals(senderJid.withoutData(), selfJid.withoutData()));
+            } else if(from.hasServer(JidServer.groupOrCommunity()) || from.hasServer(JidServer.broadcast()) || from.hasServer(JidServer.newsletter())) {
+                var participant = infoNode.attributes()
+                        .getOptionalJid("participant")
+                        .or(() -> infoNode.attributes().getOptionalJid("sender_pn"))
+                        .orElseThrow(() -> new NoSuchElementException("Missing sender"));
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.toSimpleJid(), receiver));
+                keyBuilder.fromMe(Objects.equals(participant.withoutData(), selfJid.withoutData()));
                 messageBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
+            }else {
+                throw new RuntimeException("Unknown jid server: " + from.server());
             }
-            var key = keyBuilder.id(id).build();
-            var senderJid = key.senderJid()
-                    .orElse(null);
-            if (Objects.equals(senderJid, socketConnection.store().jid().orElse(null))) {
-                sendEncMessageSuccessReceipt(infoNode, id, key.chatJid(), senderJid, key.fromMe());
+            chatMessageKey = keyBuilder.build();
+            if (selfJid.equals(chatMessageKey.senderJid().orElse(null))) {
                 return;
             }
 
             ChatMessageInfo info;
             try {
                 sessionCipherLock.lock();
-                var message = decodeChatMessageContainer(messageNode, from, participant);
-                info = messageBuilder.key(key)
-                        .broadcast(key.chatJid().hasServer(JidServer.broadcast()))
+                var message = decodeChatMessageContainer(chatMessageKey, messageNode);
+                info = messageBuilder.key(chatMessageKey)
+                        .broadcast(chatMessageKey.chatJid().hasServer(JidServer.broadcast()))
                         .pushName(pushName)
                         .status(MessageStatus.DELIVERED)
                         .businessVerifiedName(businessName)
                         .timestampSeconds(timestamp)
                         .message(message)
                         .build();
-                var keyDistributionMessage = info.message()
-                        .senderKeyDistributionMessage()
-                        .orElse(null);
-                if(keyDistributionMessage != null) {
-                    var groupName = new SenderKeyName(keyDistributionMessage.groupId(), info.senderJid().toSignalAddress());
+                message.senderKeyDistributionMessage().ifPresent(keyDistributionMessage -> {
+                    var groupName = new SenderKeyName(keyDistributionMessage.groupJid(), info.senderJid().toSignalAddress());
                     var signalDistributionMessage = SignalDistributionMessage.ofSerialized(keyDistributionMessage.data());
                     sessionCipher.createIncoming(groupName, signalDistributionMessage);
-                }
+                });
             }finally {
                 sessionCipherLock.unlock();
             }
@@ -1045,13 +1053,19 @@ public final class MessageComponent {
             attributeChatMessage(info);
             saveMessage(info, notify);
             socketConnection.onReply(info);
-            sendEncMessageSuccessReceipt(infoNode, id, key.chatJid(), senderJid, key.fromMe());
         } catch (Throwable throwable) {
             socketConnection.handleFailure(MESSAGE, throwable);
+        }finally {
+            if(chatMessageKey != null) {
+                sendEncMessageSuccessReceipt(
+                        infoNode,
+                        chatMessageKey
+                );
+            }
         }
     }
 
-    private MessageContainer decodeChatMessageContainer(Node messageNode, Jid from, Jid participant) {
+    private MessageContainer decodeChatMessageContainer(ChatMessageKey messageKey, Node messageNode) {
         if (messageNode == null) {
             return MessageContainer.empty();
         }
@@ -1062,19 +1076,19 @@ public final class MessageComponent {
             return MessageContainer.empty();
         }
 
-        return decodeMessageBytes(type, encodedMessage.get(), from, participant);
+        return decodeMessageBytes(messageKey, type, encodedMessage.get());
     }
 
-    private void sendEncMessageSuccessReceipt(Node infoNode, String id, Jid chatJid, Jid senderJid, boolean fromMe) {
-        socketConnection.sendMessageAck(chatJid, infoNode);
+    private void sendEncMessageSuccessReceipt(Node infoNode, ChatMessageKey key) {
+        socketConnection.sendMessageAck(key.chatJid(), infoNode);
         if (!socketConnection.store().automaticMessageReceipts()) {
             return;
         }
 
-        var participant = fromMe && senderJid == null ? chatJid : senderJid;
+        var participant = key.fromMe() && key.senderJid().isEmpty() ? key.chatJid() : key.senderJid().get();
         var category = infoNode.attributes().getString("category");
-        var receiptType = getReceiptType(category, fromMe);
-        socketConnection.sendReceipt(chatJid, participant, List.of(id), receiptType);
+        var receiptType = getReceiptType(category, key.fromMe());
+        socketConnection.sendReceipt(key.chatJid(), participant, List.of(key.id()), receiptType);
     }
 
     private void sendPlainMessageSuccessReceipt(Node messageNode, boolean notify, Jid newsletterJid, String messageId) {
@@ -1107,30 +1121,34 @@ public final class MessageComponent {
         return null;
     }
 
-    private MessageContainer decodeMessageBytes(String type, byte[] encodedMessage, Jid from, Jid participant) {
+    private MessageContainer decodeMessageBytes(ChatMessageKey messageKey, String type, byte[] encodedMessage) {
         try {
             if(MSMG.equals(type)) {
-                // TODO: Support BOT
                 return MessageContainer.empty();
             }
 
             var result = switch (type) {
-                case SKMSG -> {
-                    Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
-                    var senderName = new SenderKeyName(from.toString(), participant.toSignalAddress());
-                    yield sessionCipher.decrypt(senderName, encodedMessage);
+                case MSG -> {
+                    var signalAddress = messageKey.senderJid()
+                            .orElse(messageKey.chatJid())
+                            .toSignalAddress();
+                    var signalMessage = SignalMessage.ofSerialized(encodedMessage);
+                    yield sessionCipher.decrypt(signalAddress, signalMessage);
                 }
                 case PKMSG -> {
-                    var user = from.hasServer(JidServer.whatsapp()) ? from : participant;
-                    Objects.requireNonNull(user, "Cannot decipher pkmsg without user");
+                    var signalAddress = messageKey.senderJid()
+                            .orElse(messageKey.chatJid())
+                            .toSignalAddress();
                     var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
-                    yield sessionCipher.decrypt(user.toSignalAddress(), preKey);
+                    yield sessionCipher.decrypt(signalAddress, preKey);
                 }
-                case MSG -> {
-                    var user = from.hasServer(JidServer.whatsapp()) ? from : participant;
-                    Objects.requireNonNull(user, "Cannot decipher msg without user");
-                    var signalMessage = SignalMessage.ofSerialized(encodedMessage);
-                    yield sessionCipher.decrypt(user.toSignalAddress(), signalMessage);
+                case SKMSG -> {
+                    var groupJid = messageKey.chatJid();
+                    var signalAddress = messageKey.senderJid()
+                            .orElseThrow(() -> new IllegalArgumentException("Missing sender jid"))
+                            .toSignalAddress();
+                    var senderName = new SenderKeyName(groupJid, signalAddress);
+                    yield sessionCipher.decrypt(senderName, encodedMessage);
                 }
                 default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
             };
@@ -1146,7 +1164,7 @@ public final class MessageComponent {
     private void attributeMessageReceipt(ChatMessageInfo info) {
         var self = socketConnection.store()
                 .jid()
-                .map(Jid::toSimpleJid)
+                .map(Jid::withoutData)
                 .orElse(null);
         if (!info.fromMe() || (self != null && !info.chatJid().equals(self))) {
             return;
@@ -1158,7 +1176,7 @@ public final class MessageComponent {
     }
 
     private void saveMessage(ChatMessageInfo info, boolean notify) {
-        if (info.chatJid().type() == Jid.Type.STATUS) {
+        if (Jid.statusBroadcastAccount().equals(info.chatJid())) {
             socketConnection.store().addStatus(info);
             socketConnection.onNewStatus(info);
             return;
@@ -1352,7 +1370,7 @@ public final class MessageComponent {
                 .build();
         var index = new MessageIndexInfoBuilder()
                 .type("contact")
-                .chatJid(jid)
+                .targetId(pushName.id())
                 .fromMe(true)
                 .build();
         socketConnection.onAction(action, index);
@@ -1462,7 +1480,7 @@ public final class MessageComponent {
     }
 
     private void attributeSender(ChatMessageInfo info, Jid senderJid) {
-        if (senderJid.server() != JidServer.whatsapp() && senderJid.server() != JidServer.user()) {
+        if (senderJid.server() != JidServer.user() && senderJid.server() != JidServer.legacyUser()) {
             return;
         }
 
@@ -1494,7 +1512,7 @@ public final class MessageComponent {
         info.setChat(chat);
         var me = socketConnection.store().jid().orElse(null);
         if (info.fromMe() && me != null) {
-            info.key().setSenderJid(me.toSimpleJid());
+            info.key().setSenderJid(me.withoutData());
         }
 
         attributeSender(info, info.senderJid());
@@ -1541,8 +1559,8 @@ public final class MessageComponent {
             pollUpdateMessage.setPollCreationMessage(originalPollMessage);
             var originalPollSenderJid = originalPollInfo.get()
                     .senderJid()
-                    .toSimpleJid();
-            var modificationSenderJid = info.senderJid().toSimpleJid();
+                    .withoutData();
+            var modificationSenderJid = info.senderJid().withoutData();
             pollUpdateMessage.setVoter(modificationSenderJid);
             var originalPollId = originalPollInfo.get().id();
             var useSecretPayload = originalPollId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();

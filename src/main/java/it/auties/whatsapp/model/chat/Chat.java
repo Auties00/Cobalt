@@ -9,6 +9,7 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
+import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.model.media.MediaVisibility;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
@@ -376,8 +377,8 @@ public final class Chat implements JidProvider {
      *
      * @return true if this chat is a group
      */
-    public boolean isGroup() {
-        return jid.type() == Jid.Type.GROUP;
+    public boolean isGroupOrCommunity() {
+        return jid.server().type() == JidServer.Type.GROUP_OR_COMMUNITY;
     }
 
     /**

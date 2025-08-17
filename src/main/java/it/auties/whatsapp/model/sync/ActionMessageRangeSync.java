@@ -54,7 +54,7 @@ public final class ActionMessageRangeSync {
 
     private ChatMessageKey checkSenderKey(ChatMessageKey key) {
         return key.senderJid()
-                .map(entry -> new ChatMessageKey(key.chatJid(), key.fromMe(), key.id(), entry.toSimpleJid()))
+                .map(entry -> new ChatMessageKey(key.chatJid(), key.fromMe(), key.id(), entry.withoutData()))
                 .orElse(key);
     }
 

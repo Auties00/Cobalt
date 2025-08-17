@@ -336,7 +336,7 @@ public class Whatsapp {
                 .id(ChatMessageKey.randomId(store().clientType()))
                 .chatJid(message.parentJid())
                 .senderJid(message.senderJid())
-                .fromMe(Objects.equals(message.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid()))
+                .fromMe(Objects.equals(message.senderJid().withoutData(), jidOrThrowError().withoutData()))
                 .id(message.id())
                 .build();
         var reactionMessage = new ReactionMessageBuilder()
@@ -553,7 +553,7 @@ public class Whatsapp {
         var deviceInfoMetadata = new DeviceListMetadataBuilder()
                 .senderTimestamp(Clock.nowSeconds())
                 .build();
-        var deviceInfo = recipient.toJid().hasServer(JidServer.whatsapp()) ? new DeviceContextInfoBuilder()
+        var deviceInfo = recipient.toJid().hasServer(JidServer.user()) ? new DeviceContextInfoBuilder()
                 .deviceListMetadataVersion(2)
                 .deviceListMetadata(deviceInfoMetadata)
                 .build() : null;
@@ -775,7 +775,7 @@ public class Whatsapp {
         var timestamp = Clock.nowSeconds();
         var key = new ChatMessageKeyBuilder()
                 .id(ChatMessageKey.randomId(store().clientType()))
-                .chatJid(Jid.of("status@broadcast"))
+                .chatJid(Jid.statusBroadcastAccount())
                 .fromMe(true)
                 .senderJid(jidOrThrowError())
                 .build();
@@ -812,7 +812,7 @@ public class Whatsapp {
             throw new IllegalArgumentException("Use sendNewsletterMessage to send a message in a newsletter");
         }
         var timestamp = Clock.nowSeconds();
-        if (recipient.hasServer(JidServer.whatsapp())) {
+        if (recipient.hasServer(JidServer.user())) {
             var chatResult = prepareChat(timestamp, Set.of(recipient));
             if (chatResult.isEmpty()) {
                 info.setStatus(MessageStatus.ERROR);
@@ -1254,7 +1254,7 @@ public class Whatsapp {
             store().setOnline(presence == AVAILABLE);
         }
 
-        var self = store().findContactByJid(jidOrThrowError().toSimpleJid());
+        var self = store().findContactByJid(jidOrThrowError().withoutData());
         if (self.isEmpty()) {
             return;
         }
@@ -1416,7 +1416,7 @@ public class Whatsapp {
     }
 
     private Jid checkGroupParticipantJid(Jid jid, String errorMessage) {
-        if (Objects.equals(jid.toSimpleJid(), jidOrThrowError().toSimpleJid())) {
+        if (Objects.equals(jid.withoutData(), jidOrThrowError().withoutData())) {
             throw new IllegalArgumentException(errorMessage);
         }
 
@@ -1595,7 +1595,7 @@ public class Whatsapp {
         children.add(Node.of("membership_approval_mode", Node.of("group_join", Map.of("state", "off"))));
         availableMembers.stream()
                 .map(JidProvider::toJid)
-                .map(Jid::toSimpleJid)
+                .map(Jid::withoutData)
                 .distinct()
                 .map(contact -> Node.of("participant", Map.of("jid", checkGroupParticipantJid(contact.toJid(), "Cannot create group with yourself as a participant"))))
                 .forEach(children::add);
@@ -1624,7 +1624,7 @@ public class Whatsapp {
      */
     public List<Jid> addContacts(JidProvider... contacts) {
         var users = Arrays.stream(contacts)
-                .filter(entry -> entry.toJid().hasServer(JidServer.whatsapp()) && !store().hasContact(entry))
+                .filter(entry -> entry.toJid().hasServer(JidServer.user()) && !store().hasContact(entry))
                 .map(contact -> contact.toJid().toPhoneNumber())
                 .flatMap(Optional::stream)
                 .map(phoneNumber -> Node.of("user", Node.of("contact", phoneNumber.getBytes())))
@@ -1709,7 +1709,7 @@ public class Whatsapp {
     }
 
     private void handleLeaveGroup(JidProvider group) {
-        var jid = jidOrThrowError().toSimpleJid();
+        var jid = jidOrThrowError().withoutData();
         var pastParticipant = new ChatPastParticipantBuilder()
                 .jid(jid)
                 .reason(ChatPastParticipant.Reason.REMOVED)
@@ -1803,7 +1803,7 @@ public class Whatsapp {
      */
     public void changeEphemeralTimer(JidProvider chat, ChatEphemeralTimer timer) {
         switch (chat.toJid().server().type()) {
-            case WHATSAPP -> {
+            case USER -> {
                 var message = new ProtocolMessageBuilder()
                         .protocolType(ProtocolMessage.Type.EPHEMERAL_SETTING)
                         .ephemeralExpirationSeconds(timer.period().toSeconds())
@@ -1897,12 +1897,12 @@ public class Whatsapp {
     }
 
     private String fromMeToFlag(MessageInfo info) {
-        var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
+        var fromMe = Objects.equals(info.senderJid().withoutData(), jidOrThrowError().withoutData());
         return booleanToInt(fromMe);
     }
 
     private String participantToFlag(MessageInfo info) {
-        var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
+        var fromMe = Objects.equals(info.senderJid().withoutData(), jidOrThrowError().withoutData());
         return info.parentJid().hasServer(JidServer.groupOrCommunity())
                 && !fromMe ? info.senderJid().toString() : "0";
     }
@@ -2039,7 +2039,7 @@ public class Whatsapp {
             return 8;
         }
 
-        var fromMe = Objects.equals(info.senderJid().toSimpleJid(), jidOrThrowError().toSimpleJid());
+        var fromMe = Objects.equals(info.senderJid().withoutData(), jidOrThrowError().withoutData());
         if (info.parentJid().hasServer(JidServer.groupOrCommunity()) && !fromMe) {
             return 8;
         }
@@ -2201,7 +2201,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public List<BusinessCatalogEntry> queryBusinessCatalog(int productsLimit) {
-        return queryBusinessCatalog(jidOrThrowError().toSimpleJid(), productsLimit);
+        return queryBusinessCatalog(jidOrThrowError().withoutData(), productsLimit);
     }
 
     /**
@@ -2253,7 +2253,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public Object queryBusinessCollections(int collectionsLimit) {
-        return queryBusinessCollections(jidOrThrowError().toSimpleJid(), collectionsLimit);
+        return queryBusinessCollections(jidOrThrowError().withoutData(), collectionsLimit);
     }
 
     /**
@@ -2376,7 +2376,7 @@ public class Whatsapp {
                     .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
                     .toMap();
             var node = Node.of("receipt", Map.of("id", info.key().id(), "to", jidOrThrowError()
-                    .toSimpleJid(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", Bytes.random(12))), Node.of("rmr", rmrAttributes));
+                    .withoutData(), "type", "server-error"), Node.of("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", Bytes.random(12))), Node.of("rmr", rmrAttributes));
             var result = socketConnection.sendNode(node, resultNode -> resultNode.hasDescription("notification"));
             parseMediaReupload(info, mediaMessage, retryKey, info.key().id().getBytes(StandardCharsets.UTF_8), result);
         } catch (GeneralSecurityException exception) {
@@ -3126,7 +3126,7 @@ public class Whatsapp {
         var recipient = results.getFirst()
                 .findChild("lid")
                 .flatMap(result -> result.attributes().getOptionalJid("val"))
-                .map(jid -> jid.withServer(JidServer.lid()).toSimpleJid())
+                .map(jid -> jid.withServer(JidServer.lid()).withoutData())
                 .orElse(admin.toJid());
         var request = NewsletterRequests.createAdminInviteNewsletter(newsletterJid.toJid(), recipient);
         var result = socketConnection.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6826078034173770"), request));
@@ -3185,7 +3185,7 @@ public class Whatsapp {
         var recipient = results.getFirst()
                 .findChild("lid")
                 .flatMap(result -> result.attributes().getOptionalJid("val"))
-                .map(jid -> jid.withServer(JidServer.lid()).toSimpleJid())
+                .map(jid -> jid.withServer(JidServer.lid()).withoutData())
                 .orElse(admin.toJid());
         var request = NewsletterRequests.revokeAdminInviteNewsletter(newsletterJid.toJid(), recipient);
         var result = socketConnection.sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6111171595650958"), request));

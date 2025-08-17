@@ -84,7 +84,7 @@ final class IqHandler extends NodeHandler.Dispatcher {
         var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("type", "result")
-                .put("to", JidServer.whatsapp().toJid())
+                .put("to", JidServer.user().toJid())
                 .toMap();
         var request = Node.of("iq", attributes, content);
         try {
@@ -198,6 +198,6 @@ final class IqHandler extends NodeHandler.Dispatcher {
         socketConnection.store().setJid(companion);
         PhoneNumber.of(companion.user())
                 .ifPresent(phoneNumber -> socketConnection.store().setPhoneNumber(phoneNumber));
-        socketConnection.addMe(companion.toSimpleJid());
+        socketConnection.addMe(companion.withoutData());
     }
 }

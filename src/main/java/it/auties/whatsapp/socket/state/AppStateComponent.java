@@ -5,12 +5,12 @@ import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.LTHash;
 import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.exception.MalformedJidException;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.node.Attributes;
@@ -440,12 +440,11 @@ public final class AppStateComponent {
 
     private void onAction(ActionDataSync mutation, Action action) {
         var messageIndex = mutation.messageIndex();
-        var targetContact = messageIndex.chatJid()
-                .flatMap(socketConnection.store()::findContactByJid);
-        var targetChat = messageIndex.chatJid()
-                .flatMap(socketConnection.store()::findChatByJid);
-        var targetNewsletter = messageIndex.chatJid()
-                .flatMap(socketConnection.store()::findNewsletterByJid);
+        var targetJid = messageIndex.targetId()
+                .flatMap(this::tryParseJid);
+        var targetContact = targetJid.flatMap(socketConnection.store()::findContactByJid);
+        var targetChat = targetJid.flatMap(socketConnection.store()::findChatByJid);
+        var targetNewsletter = targetJid.flatMap(socketConnection.store()::findNewsletterByJid);
         var targetChatMessage = targetChat.flatMap(chat -> {
             var messageId = mutation.messageIndex().messageId().orElse(null);
             return socketConnection.store()
@@ -462,8 +461,14 @@ public final class AppStateComponent {
                 clearMessages(chat, clearChatAction);
             }
             case ContactAction contactAction -> {
-                var contact = targetContact.orElseGet(() -> createContact(messageIndex));
-                var chat = targetChat.orElseGet(() -> createChat(messageIndex));
+                var contact = targetContact.orElseGet(() -> {
+                    var newContact = socketConnection.store()
+                            .addContact(targetJid.orElseThrow());
+                    socketConnection.onNewContact(newContact);
+                    return newContact;
+                });
+                var chat = targetChat.orElseGet(() -> socketConnection.store()
+                        .addNewChat(targetJid.orElseThrow()));
                 updateName(contact, chat, contactAction);
             }
             case DeleteMessageForMeAction ignored -> {
@@ -506,16 +511,12 @@ public final class AppStateComponent {
         socketConnection.onAction(action, messageIndex);
     }
 
-    private Chat createChat(MessageIndexInfo messageIndex) {
-        var chat = messageIndex.chatJid().orElseThrow();
-        return socketConnection.store().addNewChat(chat);
-    }
-
-    private Contact createContact(MessageIndexInfo messageIndex) {
-        var chatJid = messageIndex.chatJid().orElseThrow();
-        var contact = socketConnection.store().addContact(chatJid);
-        socketConnection.onNewContact(contact);
-        return contact;
+    private Optional<Jid> tryParseJid(String id) {
+        try {
+            return Optional.of(Jid.of(id));
+        }catch(MalformedJidException exception) {
+            return Optional.empty();
+        }
     }
 
     private void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {

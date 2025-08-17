@@ -286,7 +286,7 @@ public final class SocketConnection {
 
     @SuppressWarnings("UnusedReturnValue")
     public void sendQueryWithNoResponse(String method, String category, Node... body) {
-        sendQueryWithNoResponse(null, JidServer.whatsapp().toJid(), method, category, null, body);
+        sendQueryWithNoResponse(null, JidServer.user().toJid(), method, category, null, body);
     }
 
     public void sendQueryWithNoResponse(String id, Jid to, String method, String category, Map<String, Object> metadata, Node... body) {
@@ -355,7 +355,7 @@ public final class SocketConnection {
     }
 
     public Node sendQuery(String method, String category, Node... body) {
-        return sendQuery(null, JidServer.whatsapp().toJid(), method, category, null, body);
+        return sendQuery(null, JidServer.user().toJid(), method, category, null, body);
     }
 
     public Node sendQuery(String id, Jid to, String method, String category, Map<String, Object> metadata, Node... body) {
@@ -379,7 +379,7 @@ public final class SocketConnection {
     }
 
     public Node sendQuery(String method, String category, Map<String, Object> metadata, Node... body) {
-        return sendQuery(null, JidServer.whatsapp().toJid(), method, category, metadata, body);
+        return sendQuery(null, JidServer.user().toJid(), method, category, metadata, body);
     }
 
     public List<Jid> queryBlockList() {
@@ -647,7 +647,7 @@ public final class SocketConnection {
                 .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
                 .put("to", jid.withAgent(0))
                 .put("type", type, Objects::nonNull);
-        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.whatsapp())) {
+        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.user())) {
             Objects.requireNonNull(participant);
             attributes.put("recipient", jid.withAgent(0));
             attributes.put("to", participant.withAgent(0));
@@ -685,7 +685,7 @@ public final class SocketConnection {
 
         var attributes = Attributes.of()
                 .put("id", node.id())
-                .put("to", from)
+                .put("to", from.withAgent(0))
                 .put("class", node.description())
                 .put("participant", participant != null ? participant.withAgent(0) : null, Objects::nonNull)
                 .put("recipient", recipient != null ? recipient.withAgent(0) : null, Objects::nonNull)
@@ -872,7 +872,7 @@ public final class SocketConnection {
 
         var self = store.jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
-                .toSimpleJid();
+                .withoutData();
         store().findContactByJid(self)
                 .orElseGet(() -> store().addContact(self))
                 .setChosenName(newName);
@@ -1021,7 +1021,7 @@ public final class SocketConnection {
         try {
             var attributes = Attributes.of()
                     .put("xmlns", "w:p")
-                    .put("to", JidServer.whatsapp().toJid())
+                    .put("to", JidServer.user().toJid())
                     .put("type", "get")
                     .put("id", HexFormat.of().formatHex(Bytes.random(10)))
                     .toMap();
@@ -1229,7 +1229,7 @@ public final class SocketConnection {
             return;
         }
         
-        var response = queryAbout(user.toSimpleJid())
+        var response = queryAbout(user.withoutData())
                 .orElse(null);
         if(response == null) {
             return;
@@ -1255,12 +1255,12 @@ public final class SocketConnection {
             return;
         }
         
-        var result = queryPicture(user.toSimpleJid());
+        var result = queryPicture(user.withoutData());
         store.setProfilePicture(result.orElse(null));
         if (update) {
             callListenersAsync(listener -> {
-                listener.onProfilePictureChanged(whatsapp, user.toSimpleJid());
-                listener.onProfilePictureChanged(user.toSimpleJid());
+                listener.onProfilePictureChanged(whatsapp, user.withoutData());
+                listener.onProfilePictureChanged(user.withoutData());
             });
         }
     }

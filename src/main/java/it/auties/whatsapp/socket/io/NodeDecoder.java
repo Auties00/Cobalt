@@ -114,7 +114,7 @@ public final class NodeDecoder {
         var tag = (byte) inputStream.read();
         return switch (tag) {
             case LIST_EMPTY -> null;
-            case COMPANION_JID -> readCompanionJid(inputStream);
+            case AD_JID -> readAdJid(inputStream);
             case LIST_8 -> readList8(inputStream);
             case LIST_16 -> readList16(inputStream);
             case JID_PAIR -> readJidPair(inputStream);
@@ -174,18 +174,18 @@ public final class NodeDecoder {
         return user == null ? Jid.of(server) : Jid.of(user, server);
     }
 
-    private static Jid readCompanionJid(InputStream inputStream) throws IOException {
+    private static Jid readAdJid(InputStream inputStream) throws IOException {
         var agent = inputStream.read() & 0xFF;
-        var device =  inputStream.read() & 0xFF;
+        var device = inputStream.read() & 0xFF;
         var user = readString(inputStream);
-        return Jid.of(user, JidServer.whatsapp(), device, agent);
+        return Jid.of(user, JidServer.user(), device, agent);
     }
 
     private static Object readContent(InputStream inputStream) throws IOException {
         var tag = (byte) inputStream.read();
         return switch (tag) {
             case LIST_EMPTY -> null;
-            case COMPANION_JID -> readCompanionJid(inputStream);
+            case AD_JID -> readAdJid(inputStream);
             case LIST_8 -> readList8(inputStream);
             case LIST_16 -> readList16(inputStream);
             case JID_PAIR -> readJidPair(inputStream);

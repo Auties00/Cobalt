@@ -252,7 +252,7 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
                 .findChatByJid(fromJid)
                 .orElseGet(() -> socketConnection.store().addNewChat(fromJid));
         var timestamp = node.attributes().getLong("t");
-        if (fromChat.isGroup()) {
+        if (fromChat.isGroupOrCommunity()) {
             addMessageForGroupStubType(fromChat, ChatMessageInfo.StubType.GROUP_CHANGE_ICON, timestamp, node);
             socketConnection.onGroupPictureChanged(fromChat);
             return;
@@ -373,7 +373,7 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
     private void handleEncryptNotification(Node node) {
         var chat = node.attributes()
                 .getRequiredJid("from");
-        if (!chat.isServerJid(JidServer.whatsapp())) {
+        if (!chat.isServerJid(JidServer.user())) {
             return;
         }
         var keysSize = node.findChild("count")
@@ -412,7 +412,7 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
         var companionJid = socketConnection.store()
                 .jid()
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
-                .toSimpleJid();
+                .withoutData();
         var companionDevice = devices.remove(companionJid);
         devices.put(companionJid, companionDevice);
         socketConnection.store().setLinkedDevicesKeys(devices);

@@ -4,7 +4,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.api.WhatsappWebHistoryPolicy;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
-import it.auties.whatsapp.model.message.model.MediaMessage;
 
 public class WebQrLoginExample {
     public static void main(String[] args) {
@@ -15,13 +14,7 @@ public class WebQrLoginExample {
                 .unregistered(WhatsappVerificationHandler.Web.QrCode.toTerminal())
                 .addLoggedInListener(() -> System.out.println("Logged in!"))
                 .addFeaturesListener(features -> System.out.printf("Received features: %s%n", features))
-                .addNewChatMessageListener((api, message) -> {
-                    System.out.println(message);
-                    if(message.message().content() instanceof MediaMessage) {
-                        System.out.println("Got a media message");
-                        api.downloadMedia(message);
-                    }
-                })
+                .addNewChatMessageListener((api, message) -> System.out.println(message))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener((api, chats) -> System.out.printf("Chats: %s%n", chats.size()))
                 .addNewslettersListener((api, newsletters) -> System.out.printf("Newsletters: %s%n", newsletters.size()))

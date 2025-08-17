@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.*;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
+import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
 import it.auties.whatsapp.model.signal.session.*;
@@ -356,7 +357,9 @@ public final class SignalSession {
     public Result encrypt(SenderKeyName name, byte[] data) {
         try {
             var currentState = keys.findSenderKeyByName(name)
-                    .firstState();
+                    .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for " + name))
+                    .firstState()
+                    .orElseThrow(() -> new NoSuchElementException("No sender key state for " + name));
             var messageKey = currentState.chainKey()
                     .toMessageKey();
             var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -379,7 +382,8 @@ public final class SignalSession {
     }
 
     public byte[] decrypt(SenderKeyName name, byte[] data) {
-        var record = keys.findSenderKeyByName(name);
+        var record = keys.findSenderKeyByName(name)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for " + name));
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
         var senderKeyState = record.findStateById(senderKeyMessage.id())
                 .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for " + name + " with id " + senderKeyMessage.id()));
@@ -409,11 +413,17 @@ public final class SignalSession {
     }
 
     public byte[] createOutgoing(SenderKeyName name) {
-        var record = keys.findSenderKeyByName(name);
-        if (record.isEmpty()) {
-            record.addState(randomId(), SignalKeyPair.random(), 0, Bytes.random(32));
-        }
-        var state = record.firstState();
+        var record = keys.findSenderKeyByName(name).orElseGet(() -> {
+            var newRecord = new SenderKeyRecord();
+            keys.addSenderKey(name, newRecord);
+            return newRecord;
+        });
+        var state = record.firstState().orElseGet(() -> record.addState(
+                randomId(),
+                SignalKeyPair.random(),
+                0,
+                Bytes.random(32)
+        ));
         var message = new SignalDistributionMessage(
                 CURRENT_VERSION,
                 state.id(),
@@ -424,6 +434,20 @@ public final class SignalSession {
         return message.serialized();
     }
 
+    public void createIncoming(SenderKeyName name, SignalDistributionMessage message) {
+        var record = keys.findSenderKeyByName(name).orElseGet(() -> {
+            var newRecord = new SenderKeyRecord();
+            keys.addSenderKey(name, newRecord);
+            return newRecord;
+        });
+        record.addState(
+                message.id(),
+                message.signingKey(),
+                message.iteration(),
+                message.chainKey()
+        );
+    }
+
     private int randomId() {
         try {
             return SecureRandom.getInstanceStrong()
@@ -432,11 +456,6 @@ public final class SignalSession {
             return new SecureRandom()
                     .nextInt();
         }
-    }
-
-    public void createIncoming(SenderKeyName name, SignalDistributionMessage message) {
-        var record = keys.findSenderKeyByName(name);
-        record.addState(message.id(), message.signingKey(), message.iteration(), message.chainKey());
     }
 
     public static final class Result {

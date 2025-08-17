@@ -32,8 +32,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Objects.requireNonNullElseGet;
-
 /**
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
@@ -235,21 +233,21 @@ public final class Keys extends Controller {
      * Queries the first {@link SenderKeyRecord} that matches {@code name}
      *
      * @param name the non-null name to search
-     * @return a non-null SenderKeyRecord
+     * @return an optional
      */
-    public SenderKeyRecord findSenderKeyByName(SenderKeyName name) {
-        return requireNonNullElseGet(senderKeys.get(name), () -> {
-            var record = new SenderKeyRecord();
-            senderKeys.put(name, record);
-            return record;
-        });
+    public Optional<SenderKeyRecord> findSenderKeyByName(SenderKeyName name) {
+        return Optional.ofNullable(senderKeys.get(name));
+    }
+
+    public void addSenderKey(SenderKeyName name, SenderKeyRecord newRecord) {
+        senderKeys.put(name, newRecord);
     }
 
     /**
      * Queries the {@link Session} that matches {@code address}
      *
      * @param address the non-null address to search
-     * @return a non-null Optional SessionRecord
+     * @return an optional
      */
     public Optional<Session> findSessionByAddress(SessionAddress address) {
         return Optional.ofNullable(sessions.get(address));
@@ -293,11 +291,11 @@ public final class Keys extends Controller {
     }
 
     /**
-     * Queries the hash state that matches {@code name}. Otherwise, creates a new one.
+     * Queries the hash state that matches {@code name}
      *
      * @param device    the non-null device
      * @param patchType the non-null name to search
-     * @return a non-null hash state
+     * @return an optional
      */
     public Optional<CompanionHashState> findHashStateByName(Jid device, PatchType patchType) {
         return Optional.ofNullable(hashStates.get("%s_%s".formatted(device, patchType)));
