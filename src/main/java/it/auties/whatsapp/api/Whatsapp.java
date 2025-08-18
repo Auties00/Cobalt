@@ -155,6 +155,10 @@ public class Whatsapp {
      * Waits for this session to be disconnected
      */
     public Whatsapp waitForDisconnection() {
+        if(!isConnected()) {
+            return this;
+        }
+
         var future = new CompletableFuture<Void>();
         addDisconnectedListener((reason) -> {
             if(reason != WhatsappDisconnectReason.RECONNECTING) {

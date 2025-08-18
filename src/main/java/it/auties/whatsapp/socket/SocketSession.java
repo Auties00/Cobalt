@@ -3,7 +3,6 @@ package it.auties.whatsapp.socket;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -23,6 +22,7 @@ abstract sealed class SocketSession {
     private static final int PORT = 443;
     private static final int MAX_MESSAGE_LENGTH = 1048576;
     private static final int DEFAULT_RCV_BUF = 8192;
+    private static final int DEFAULT_READ_TIMEOUT = 10_000;
 
     SocketChannel channel;
 
@@ -40,25 +40,19 @@ abstract sealed class SocketSession {
         };
     }
 
-    void connect(Consumer<ByteBuffer> onMessage) {
-        if (isConnected()) {
-            return;
-        }
-        var endpoint = new InetSocketAddress(HOST_NAME, PORT); // Don't resolve this statically
-        connect(endpoint, onMessage);
-    }
+    abstract void connect(Consumer<ByteBuffer> onMessage);
 
-    private void connect(InetSocketAddress endpoint, Consumer<ByteBuffer> onMessage) {
+    private void connect(InetSocketAddress endpoint, boolean ready, Consumer<ByteBuffer> onMessage) {
         try {
             this.channel = SocketChannel.open();
             channel.configureBlocking(false);
-            var context = new ConnectionContext(onMessage);
+            var ctx = new ConnectionContext(onMessage, ready);
             if (channel.connect(endpoint)) {
-                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_READ, context);
+                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_READ, ctx);
             } else {
-                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_CONNECT, context);
-                synchronized (context.connectionLock) {
-                    context.connectionLock.wait();
+                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_CONNECT, ctx);
+                synchronized (ctx.connectionLock) {
+                    ctx.connectionLock.wait();
                 }
             }
         }catch (Throwable exception) {
@@ -87,23 +81,61 @@ abstract sealed class SocketSession {
         return channel != null && channel.isConnected();
     }
 
-    void sendBinary(byte[] bytes) {
+    void sendBinary(ByteBuffer buffer) {
         if (!isConnected()) {
             throw new IllegalStateException("Socket is not connected");
         }
 
-        CentralSelector.INSTANCE
-                .addWrite(channel, ByteBuffer.wrap(bytes));
+        if(!CentralSelector.INSTANCE.addWrite(channel, buffer)) {
+            throw new IllegalStateException("Failed to send binary");
+        }
+    }
+
+    // Should only be used while connecting the proxy
+    private int readBinary(ByteBuffer buffer, boolean fully) throws IOException {
+        if (!isConnected()) {
+            throw new IllegalStateException("Socket is not connected");
+        }
+
+        var read = new PendingRead(buffer, fully);
+        if(!CentralSelector.INSTANCE.addRead(channel, read)) {
+            throw new IllegalStateException("Failed to read binary");
+        }
+
+        synchronized (read.lock) {
+            try {
+                read.lock.wait(DEFAULT_READ_TIMEOUT);
+            }catch (InterruptedException exception) {
+                throw new RuntimeException("Interrupted while waiting for read", exception);
+            }
+        }
+
+        if(read.length == -1) {
+            throw new IOException("Unexpected end of stream");
+        }
+
+        return read.length;
     }
 
     private static final class DirectSession extends SocketSession {
+        @Override
+        void connect(Consumer<ByteBuffer> onMessage) {
+            if (isConnected()) {
+                return;
+            }
 
+            var endpoint = new InetSocketAddress(HOST_NAME, PORT); // Don't resolve this statically
+            super.connect(endpoint, true, onMessage);
+        }
     }
 
     private static final class ProxiedHttpSession extends SocketSession {
         private static final char CARRIAGE_RETURN = '\r';
         private static final char LINE_FEED = '\n';
         private static final char SPACE = ' ';
+        public static final int HTTP_VERSION_MINOR = 1;
+        public static final int HTTP_VERSION_MAJOR = 1;
+        private static final int SUCCESS_STATUS_CODE = 200;
 
         private final URI proxy;
 
@@ -122,30 +154,33 @@ abstract sealed class SocketSession {
                     default -> throw new InternalError();
                 };
             }
-            super.connect(new InetSocketAddress(host, port), onMessage);
-            authenticate(host, port);
+            super.connect(new InetSocketAddress(host, port), false, onMessage);
+            authenticate();
+            if(!CentralSelector.INSTANCE.markReady(channel)) {
+                throw new IllegalStateException("Failed to authenticate with proxy: rejected");
+            }
         }
 
-        private void authenticate(String host, int port) {
+        private void authenticate() {
             try {
-                sendAuthenticationRequest(host, port);
+                sendAuthenticationRequest();
                 handleAuthenticationResponse();
             }catch (IOException exception) {
                 throw new UncheckedIOException("Failed to authenticate with proxy", exception);
             }
         }
 
-        private void sendAuthenticationRequest(String host, int port) throws IOException {
+        private void sendAuthenticationRequest() throws IOException {
             var builder = new StringBuilder();
             builder.append("CONNECT ")
-                    .append(host)
+                    .append(HOST_NAME)
                     .append(":")
-                    .append(port)
-                    .append(" HTTP/1.1\r\n");
+                    .append(PORT)
+                    .append(" HTTP/" + HTTP_VERSION_MAJOR + "." + HTTP_VERSION_MINOR + "\r\n");
             builder.append("Host: ")
-                    .append(host)
+                    .append(HOST_NAME)
                     .append(":")
-                    .append(port)
+                    .append(PORT)
                     .append("\r\n");
             var authInfo = proxy.getUserInfo();
             if (authInfo != null) {
@@ -154,143 +189,113 @@ abstract sealed class SocketSession {
                         .append("\r\n");
             }
             builder.append("\r\n");
-            channel.write(ByteBuffer.wrap(builder.toString().getBytes()));
+            super.sendBinary(ByteBuffer.wrap(builder.toString().getBytes()));
         }
 
         // Optimized method that just tries to confirm we got a 200 status code
         // Skips everything else
         private void handleAuthenticationResponse() throws IOException {
-            // Allocate the stuff we need
-            var buffer = allocateReadBuffer();
-
             // Skip junk before the actual HTTP response starts
-            // Not always necessary
+            var reader = ByteBuffer.allocate(12);
             do {
-                var read = channel.read(buffer.position(0));
-                if(read == -1) {
-                    throw unexpectedEndOfStream();
-                }
-            } while (!skipJunk(buffer));
+                super.readBinary(reader, true);
+            }while(isJunk(reader));
 
-            // Make sure we have at least enough data to parse the HTTP version and status code
-            var start = buffer.position();
-            while (buffer.position() - start < 12) {
-                var read = channel.read(buffer);
-                if(read == -1) {
-                    throw unexpectedEndOfStream();
-                }
+            // Read again if we read junk
+            if(reader.position() != 0) {
+                reader.compact();
+                super.readBinary(reader, true);
             }
 
-            // Make the buffer readable
-            buffer.limit(buffer.position());
-            buffer.position(start);
-
             // Parse the HTTP/ part
-            if(buffer.get() != 'H'
-                    || buffer.get() != 'T'
-                    || buffer.get() != 'T'
-                    || buffer.get() != 'P'
-                    || buffer.get() != '/') {
-                throw invalidResponse(buffer, start);
+            if(reader.get() != 'H'
+                    || reader.get() != 'T'
+                    || reader.get() != 'T'
+                    || reader.get() != 'P'
+                    || reader.get() != '/') {
+                throw new IOException("Invalid HTTP response: expected HTTP/1.1");
             }
 
             // Parse the HTTP version, we don't care about receiving a specific version back
-            var major = buffer.get() - '0';
-            if(major < 0 || major > 9) {
-                throw invalidResponse(buffer, start);
+            var major = reader.get() - '0';
+            if(major != HTTP_VERSION_MAJOR) {
+                throw new IOException("Invalid HTTP response: expected HTTP/1.1");
             }
-            var versionSeparator = buffer.get();
-            if(versionSeparator == '.'){
-                var minor = buffer.get() - '0';
-                if(minor < 0 || minor > 9) {
-                    throw invalidResponse(buffer, start);
-                }
-                versionSeparator = buffer.get();
+            var versionSeparator = reader.get();
+            if(versionSeparator != '.') {
+                throw new IOException("Invalid HTTP response: expected HTTP/1.1");
             }
-            if(versionSeparator != SPACE) {
-                throw invalidResponse(buffer, start);
+
+            var minor = reader.get() - '0';
+            if(minor != HTTP_VERSION_MINOR) {
+                throw new IOException("Invalid HTTP response: expected HTTP/1.1");
+            }
+
+            var space = reader.get();
+            if(space != SPACE) {
+                throw new IOException("Invalid HTTP response: expected separator between HTTP version and status code");
             }
 
             // Make sure we are getting a 200 status code
-            var statusCodeFirstDigit = buffer.get() - '0';
-            if(statusCodeFirstDigit != 2) {
-                throw invalidResponse(buffer, start);
-            }
-            var statusCodeSecondDigit = buffer.get() - '0';
-            if(statusCodeSecondDigit != 0) {
-                throw invalidResponse(buffer, start);
-            }
-            var statusCodeThirdDigit = buffer.get() - '0';
-            if(statusCodeThirdDigit != 0) {
-                throw invalidResponse(buffer, start);
+            var statusCode = (reader.get() - '0') * 100
+                    +  (reader.get() - '0') * 10
+                    +  (reader.get() - '0');
+            if(statusCode != SUCCESS_STATUS_CODE) {
+                throw new IOException("Invalid HTTP response: expected status code " + SUCCESS_STATUS_CODE + ", but got " +  statusCode);
             }
 
             // Read the payload until the HTTP response ends (\r\n\r\n)
             // If the stream end, throw an error
+            reader = ByteBuffer.allocate(512); // The http response is usually very small
+            var length = super.readBinary(reader, false);
+            reader.position(0);
+            reader.limit(length);
             byte current;
             while (isConnected()) {
-                if(buffer.remaining() < 4) {
-                    buffer.limit(buffer.capacity());
-                    buffer.position(0);
-                    while (buffer.remaining() < 4) {
-                        var read = channel.read(buffer);
-                        if(read == -1) {
-                            throw unexpectedEndOfStream();
-                        }
+                if(reader.remaining() < 4) {
+                    var available = reader.remaining();
+                    reader.compact();
+                    while (available < 4) {
+                        available += super.readBinary(reader, false);
                     }
-                    buffer.flip();
+                    reader.position(0);
+                    reader.limit(available);
                 }
 
-                current = buffer.get();
+                current = reader.get();
                 if (current != CARRIAGE_RETURN) {
                     continue;
                 }
 
-                current = buffer.get();
+                current = reader.get();
                 if(current != LINE_FEED) {
                     continue;
                 }
 
-                current = buffer.get();
+                current = reader.get();
                 if (current != CARRIAGE_RETURN) {
                     continue;
                 }
 
-                current = buffer.get();
+                current = reader.get();
                 if(current != LINE_FEED) {
                     continue;
                 }
 
                 return;
             }
-            throw unexpectedEndOfStream();
+            throw new IOException("Unexpected end of stream");
         }
 
-        private boolean skipJunk(ByteBuffer buffer) {
-            while (buffer.hasRemaining()) {
-                var current = buffer.get();
+        private boolean isJunk(ByteBuffer header) {
+            while (header.hasRemaining()) {
+                var current = header.get();
                 if (current != SPACE && current != CARRIAGE_RETURN && current != LINE_FEED) {
-                    buffer.position(buffer.position() - 1);
-                    return true;
+                    header.position(header.position() - 1);
+                    return false;
                 }
             }
-            return false;
-        }
-
-        private ByteBuffer allocateReadBuffer() {
-            try {
-                return ByteBuffer.allocate(channel.getOption(StandardSocketOptions.SO_RCVBUF));
-            }catch (IOException exception) {
-                return ByteBuffer.allocate(DEFAULT_RCV_BUF);
-            }
-        }
-
-        private static IOException unexpectedEndOfStream() {
-            return new IOException("Unexpected end of stream");
-        }
-
-        private static IOException invalidResponse(ByteBuffer buffer, int offset) {
-            return new IOException("Invalid HTTP response: " + new String(buffer.array(), offset, buffer.limit() - offset));
+            return true;
         }
     }
 
@@ -303,6 +308,14 @@ abstract sealed class SocketSession {
         private static final byte AUTH_VERSION_1 = 0x01;
         private static final byte AUTH_SUCCESS = 0x00;
         private static final byte REPLY_SUCCESS = 0x00;
+        private static final int REPLY_GENERAL_FAILURE = 0x01;
+        private static final int REPLY_CONNECTION_NOT_ALLOWED = 0x02;
+        private static final int REPLY_NETWORK_UNREACHABLE = 0x03;
+        private static final int REPLY_HOST_UNREACHABLE = 0x04;
+        private static final int REPLY_CONNECTION_REFUSED = 0x05;
+        private static final int REPLY_TTL_EXPIRED = 0x06;
+        private static final int REPLY_COMMAND_NOT_SUPPORTED = 0x07;
+        private static final int REPLY_ADDRESS_TYPE_UNSUPPORTED = 0x08;
         private static final int IPV4_REPLY = 0x01;
         private static final int DOMAIN_REPLY = 0x03;
         private static final int IPV6_REPLY = 0x04;
@@ -317,30 +330,33 @@ abstract sealed class SocketSession {
         void connect(Consumer<ByteBuffer> onMessage) {
             var proxyHost = proxy.getHost();
             var proxyPort = proxy.getPort() == -1 ? 1080 : proxy.getPort();
-            super.connect(new InetSocketAddress(proxyHost, proxyPort), onMessage);
-            authenticate(proxyHost, proxyPort);
+            super.connect(new InetSocketAddress(proxyHost, proxyPort), false, onMessage);
+            authenticate();
+            if(!CentralSelector.INSTANCE.markReady(channel)) {
+                throw new IllegalStateException("Failed to authenticate with proxy: rejected");
+            }
         }
 
-        private void authenticate(String proxyHost, int proxyPort) {
+        private void authenticate() {
             try {
-                sendAuthenticationRequest(proxyHost, proxyPort);
+                sendAuthenticationRequest();
                 handleAuthenticationResponse();
             }catch (IOException exception) {
                 throw new UncheckedIOException("Failed to authenticate with proxy", exception);
             }
         }
 
-        private void sendAuthenticationRequest(String proxyHost, int proxyPort) throws IOException {
+        private void sendAuthenticationRequest() throws IOException {
             var greeting = ByteBuffer.wrap(new byte[]{
                     SOCKS_VERSION_5,
                     2,
                     METHOD_NO_AUTH,
                     METHOD_USER_PASS
             });
-            channel.write(greeting);
+            super.sendBinary(greeting);
 
             var serverChoice = ByteBuffer.allocate(2);
-            readFully(serverChoice);
+            super.readBinary(serverChoice, true);
             var version = serverChoice.get();
             if (version != SOCKS_VERSION_5) {
                 throw new IOException("Unsupported socks version: " + Byte.toUnsignedInt(version));
@@ -366,10 +382,10 @@ abstract sealed class SocketSession {
                 authRequest.put((byte) passBytes.length);
                 authRequest.put(passBytes);
                 authRequest.flip();
-                channel.write(authRequest);
+                super.sendBinary(authRequest);
 
                 var authResponse = ByteBuffer.allocate(2);
-                readFully(authResponse);
+                super.readBinary(authResponse, true);
                 authResponse.get(); // Skip version
                 if (authResponse.get() != AUTH_SUCCESS) {
                     throw new IOException("SOCKS proxy authentication failed.");
@@ -377,7 +393,7 @@ abstract sealed class SocketSession {
             } else if (chosenMethod != METHOD_NO_AUTH) {
                 throw new IOException("Proxy selected an unsupported authentication method: " + chosenMethod);
             }
-            var destHostBytes = proxyHost.getBytes(StandardCharsets.ISO_8859_1);
+            var destHostBytes = HOST_NAME.getBytes(StandardCharsets.ISO_8859_1);
             var connRequest = ByteBuffer.allocate(4 + 1 + destHostBytes.length + 2);
             connRequest.put(SOCKS_VERSION_5);
             connRequest.put(CMD_CONNECT);
@@ -385,47 +401,56 @@ abstract sealed class SocketSession {
             connRequest.put(ADDR_TYPE_DOMAIN);
             connRequest.put((byte) destHostBytes.length);
             connRequest.put(destHostBytes);
-            connRequest.putShort((short) proxyPort);
+            connRequest.putShort((short) PORT);
             connRequest.flip();
-            channel.write(connRequest);
+            super.sendBinary(connRequest);
         }
 
         private void handleAuthenticationResponse() throws IOException {
-            var replyInfo = ByteBuffer.allocate(4);
-            readFully(replyInfo);
+            var replyInfo = ByteBuffer.allocate(2);
+            super.readBinary(replyInfo, true);
 
             if (replyInfo.get() != SOCKS_VERSION_5) {
                 throw new IOException("Invalid SOCKS version in server reply.");
             }
             var replyCode = replyInfo.get();
             if (replyCode != REPLY_SUCCESS) {
-                throw new IOException("SOCKS proxy request failed with code: " + replyCode);
+                var reason = getReplyReason(replyCode);
+                throw new IOException("SOCKS proxy request failed: " + reason + " (Code: " + replyCode + ")");
             }
 
-            replyInfo.get();
-            var addrType = replyInfo.get();
+            var addrInfo = ByteBuffer.allocate(2);
+            super.readBinary(addrInfo, true);
 
+            addrInfo.get();
+
+            var addrType = addrInfo.get();
             int remainingBytes;
             switch (addrType) {
                 case IPV4_REPLY -> remainingBytes = 4 + 2;
                 case DOMAIN_REPLY -> {
                     var lenBuf = ByteBuffer.allocate(1);
-                    readFully(lenBuf);
+                    super.readBinary(lenBuf, true);
                     remainingBytes = (lenBuf.get() & 0xFF) + 2;
                 }
                 case IPV6_REPLY -> remainingBytes = 16 + 2;
                 default -> throw new IOException("Proxy returned an unsupported address type in reply: " + addrType);
             }
-            readFully(ByteBuffer.allocate(remainingBytes));
+            super.readBinary(ByteBuffer.allocate(remainingBytes), true);
         }
 
-        private void readFully(ByteBuffer buffer) throws IOException {
-            while (buffer.hasRemaining()) {
-                if (channel.read(buffer) == -1) {
-                    throw new IOException("Proxy connection closed unexpectedly during handshake.");
-                }
-            }
-            buffer.flip();
+        public static String getReplyReason(int replyCode) {
+            return switch (replyCode) {
+                case REPLY_GENERAL_FAILURE -> "General SOCKS server failure";
+                case REPLY_CONNECTION_NOT_ALLOWED -> "Connection not allowed by ruleset";
+                case REPLY_NETWORK_UNREACHABLE -> "Network unreachable";
+                case REPLY_HOST_UNREACHABLE -> "Host unreachable";
+                case REPLY_CONNECTION_REFUSED -> "Connection refused";
+                case REPLY_TTL_EXPIRED -> "TTL expired";
+                case REPLY_COMMAND_NOT_SUPPORTED -> "Command not supported";
+                case REPLY_ADDRESS_TYPE_UNSUPPORTED -> "Address type not supported";
+                default -> "Unknown failure";
+            };
         }
     }
 
@@ -465,15 +490,40 @@ abstract sealed class SocketSession {
             }
         }
 
-        public void addWrite(SocketChannel channel, ByteBuffer buffer) {
+        public boolean addRead(SocketChannel channel, PendingRead read) {
             var key = channel.keyFor(selector);
             if (key == null) {
-                return;
+                return false;
+            }
+            var ctx = (ConnectionContext) key.attachment();
+            ctx.pendingReads.add(read);
+            key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+            selector.wakeup();
+            return true;
+        }
+
+        public boolean markReady(SocketChannel channel) {
+            var key = channel.keyFor(selector);
+            if (key == null) {
+                return false;
+            }
+            var ctx = (ConnectionContext) key.attachment();
+            ctx.ready = true;
+            key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+            selector.wakeup();
+            return true;
+        }
+
+        public boolean addWrite(SocketChannel channel, ByteBuffer buffer) {
+            var key = channel.keyFor(selector);
+            if (key == null) {
+                return false;
             }
             var ctx = (ConnectionContext) key.attachment();
             ctx.pendingWrites.add(buffer);
             key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
             selector.wakeup();
+            return true;
         }
 
         @Override
@@ -520,15 +570,15 @@ abstract sealed class SocketSession {
                     }
                 }
                 if (key.isReadable()) {
-                    var ok = processRead(channel, ctx);
+                    var ok = processRead(channel, ctx, key);
                     if (!ok) {
                         unregister(channel);
                         return;
                     }
                 }
                 if (key.isWritable()) {
-                    var ok = processWrite(channel, ctx);
-                    if(ok) {
+                    var done = processWrite(channel, ctx);
+                    if(done) {
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
                     }
                 }
@@ -537,8 +587,36 @@ abstract sealed class SocketSession {
             }
         }
 
-        private boolean processRead(SocketChannel channel, ConnectionContext ctx) throws IOException {
-            if (ctx.messageLengthBuffer.hasRemaining()) {
+        private boolean processRead(SocketChannel channel, ConnectionContext ctx, SelectionKey key) throws IOException {
+            if(!ctx.ready) {
+                var pendingRead = ctx.pendingReads.peek();
+                if(pendingRead == null) {
+                    key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
+                    return true;
+                }
+
+                var bytesRead = channel.read(pendingRead.buffer);
+                if (bytesRead == -1) {
+                    pendingRead.length = -1;
+                    synchronized (pendingRead.lock) {
+                        pendingRead.lock.notifyAll();
+                    }
+                    return false;
+                }
+
+                pendingRead.length += bytesRead;
+                if(!pendingRead.fullRead || !pendingRead.buffer.hasRemaining()) {
+                    if(pendingRead.fullRead) {
+                        pendingRead.buffer.flip();
+                    }
+                    ctx.pendingReads.remove();
+                    synchronized (pendingRead.lock) {
+                        pendingRead.lock.notifyAll();
+                    }
+                }
+
+                return true;
+            } else if (ctx.messageLengthBuffer.hasRemaining()) {
                 var bytesRead = channel.read(ctx.messageLengthBuffer);
                 if (bytesRead == -1) {
                     return false;
@@ -593,18 +671,48 @@ abstract sealed class SocketSession {
     }
 
     private static final class ConnectionContext {
+        // Lock to synchronize the connect method
         private final Object connectionLock;
-        private final ByteBuffer messageLengthBuffer;
-        private ByteBuffer messageBuffer;
+        // Whether the connection is ready
+        // If the client is not using a proxy, this is instantly true, otherwise only after the proxy auth is done this is true
+        private boolean ready;
+        // List of buffers to read, used while tunneled = false
+        private final Queue<PendingRead> pendingReads;
+        // LIst of buffers to write, always used
         private final Queue<ByteBuffer> pendingWrites;
+        // Buffer used to read the length of the current WhatsApp message
+        // Only used when tunneled = true
+        private final ByteBuffer messageLengthBuffer;
+        // Buffer used to read the current WhatsApp message
+        // Only used when tunneled = true
+        private ByteBuffer messageBuffer;
+        // Callback for a WhatsApp message
+        // ONly used whe tunneled = true
         private final Consumer<ByteBuffer> onMessage;
+        // The dispatcher used for onMessage
+        // Prevents the next message from being processed if the previous is not done processing
         private final ExecutorService dispatcher;
-        private ConnectionContext(Consumer<ByteBuffer> onMessage) {
-            this.onMessage = onMessage;
-            this.messageLengthBuffer = ByteBuffer.allocate(3);
-            this.pendingWrites = new ConcurrentLinkedQueue<>();
+        private ConnectionContext(Consumer<ByteBuffer> onMessage, boolean ready) {
             this.connectionLock = new Object();
+            this.ready = ready;
+            this.onMessage = onMessage;
+            this.pendingReads = new ConcurrentLinkedQueue<>();
+            this.pendingWrites = new ConcurrentLinkedQueue<>();
+            this.messageLengthBuffer = ByteBuffer.allocate(3);
             this.dispatcher = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
+        }
+    }
+
+    private static class PendingRead {
+        private final ByteBuffer buffer;
+        private final boolean fullRead;
+        private final Object lock;
+        private int length;
+
+        private PendingRead(ByteBuffer buffer, boolean fullRead) {
+            this.buffer = buffer;
+            this.fullRead = fullRead;
+            this.lock = new Object();
         }
     }
 }

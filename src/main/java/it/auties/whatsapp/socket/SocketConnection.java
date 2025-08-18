@@ -117,10 +117,13 @@ public final class SocketConnection {
             this.session = SocketSession.of(store.proxy().orElse(null));
             session.connect(this::onMessage);
         } catch (Throwable throwable) {
-            state.set(State.DISCONNECTED);
             if (reason == WhatsappDisconnectReason.RECONNECTING) {
+                state.set(State.DISCONNECTED);
                 handleFailure(RECONNECT, throwable);
+            }else {
+                handleFailure(LOGIN, throwable);
             }
+            return;
         }
 
         if (shutdownHook == null) {
@@ -134,7 +137,7 @@ public final class SocketConnection {
     }
 
     public void disconnect(WhatsappDisconnectReason reason)  {
-        if(!state.compareAndSet(State.CONNECTED, State.DISCONNECTED)) {
+        if(state.getAndSet(State.DISCONNECTED) == State.DISCONNECTED) {
             return;
         }
 
@@ -257,7 +260,7 @@ public final class SocketConnection {
             throw new IllegalStateException("Instance is not connected");
         }
 
-        session.sendBinary(binary);
+        session.sendBinary(ByteBuffer.wrap(binary));
     }
 
     public void pushPatch(PatchRequest request) {
@@ -959,7 +962,7 @@ public final class SocketConnection {
     }
 
     public boolean isConnected() {
-        return state.getAcquire() == State.CONNECTED;
+        return state.getAcquire() != State.DISCONNECTED;
     }
 
     public Keys keys() {

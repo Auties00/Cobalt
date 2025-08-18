@@ -7,6 +7,7 @@ import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.SixPartsKeys;
 import it.auties.whatsapp.util.MobileRegistration;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -365,6 +366,16 @@ public sealed class WhatsappBuilder {
             this.keys = keys;
         }
 
+        public Options proxy(URI proxy) {
+            store.setProxy(proxy);
+            return this;
+        }
+
+        public Options device(CompanionDevice device) {
+            store.setDevice(device);
+            return this;
+        }
+
         public Options errorHandler(WhatsappErrorHandler errorHandler) {
             this.errorHandler = errorHandler;
             return this;
@@ -375,6 +386,18 @@ public sealed class WhatsappBuilder {
 
             private Web(Store store, Keys keys) {
                 super(store, keys);
+            }
+
+            @Override
+            public Web proxy(URI proxy) {
+                super.proxy(proxy);
+                return this;
+            }
+
+            @Override
+            public Web device(CompanionDevice device) {
+                super.device(device);
+                return this;
             }
 
             @Override
@@ -481,18 +504,40 @@ public sealed class WhatsappBuilder {
             }
 
             @Override
+            public Mobile proxy(URI proxy) {
+                store.setProxy(proxy);
+                return this;
+            }
+
+            @Override
+            public Mobile device(CompanionDevice device) {
+                store.setDevice(device);
+                return this;
+            }
+
+            @Override
             public Mobile errorHandler(WhatsappErrorHandler errorHandler) {
                 super.errorHandler(errorHandler);
                 return this;
             }
 
             /**
-             * Set the device to emulate
+             * Sets the name
              *
              * @return the same instance for chaining
              */
-            public Mobile device(CompanionDevice device) {
-                store.setDevice(device);
+            public Options name(String name) {
+                store.setName(name);
+                return this;
+            }
+
+            /**
+             * Sets the about
+             *
+             * @return the same instance for chaining
+             */
+            public Options about(String about) {
+                store.setAbout(about);
                 return this;
             }
 
