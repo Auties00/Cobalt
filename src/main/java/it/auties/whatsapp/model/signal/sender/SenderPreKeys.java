@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.signal.sender;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 
@@ -10,7 +10,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-public final class SenderPreKeys implements ProtobufMessage {
+@ProtobufMessage
+public final class SenderPreKeys {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final Collection<Jid> preKeys;
 

@@ -1,9 +1,9 @@
 package it.auties.whatsapp.model.message.payment;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message to pay an order.
  */
-@ProtobufMessageName("Message.PaymentOrderMessage")
+@ProtobufMessage(name = "Message.PaymentOrderMessage")
 public final class PaymentOrderMessage implements ContextualMessage<PaymentOrderMessage>, PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String id;
@@ -26,9 +26,9 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     private final byte[] thumbnail;
     @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
     private final int itemCount;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
     private final Status status;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
     private final PaymentOrderSurface surface;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final String message;
@@ -42,7 +42,7 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     private final long amount;
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
     private final String currency;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public PaymentOrderMessage(String id, byte[] thumbnail, int itemCount, Status status, PaymentOrderSurface surface, String message, String title, Jid sellerId, String token, long amount, String currency, ContextInfo contextInfo) {
@@ -138,8 +138,8 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
     }
 
 
-    @ProtobufMessageName("Message.OrderMessage.OrderStatus")
-    public enum Status implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.OrderMessage.OrderStatus")
+    public enum Status {
         /**
          * Inquiry
          */
@@ -156,8 +156,8 @@ public final class PaymentOrderMessage implements ContextualMessage<PaymentOrder
         }
     }
 
-    @ProtobufMessageName("Message.OrderMessage.OrderSurface")
-    public enum PaymentOrderSurface implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.OrderMessage.OrderSurface")
+    public enum PaymentOrderSurface {
         /**
          * Catalog
          */

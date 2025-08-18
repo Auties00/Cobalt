@@ -2,85 +2,74 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.registration.HttpRegistration;
+import it.auties.whatsapp.model.response.RegistrationResponse;
+import it.auties.whatsapp.registration.WhatsappRegistration;
 
+import java.net.URI;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 /**
  * A builder to specify the options for the mobile api
  */
 @SuppressWarnings("unused")
-public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilder<T>> {
+public sealed class MobileRegistrationBuilder {
     final Store store;
     final Keys keys;
     final ErrorHandler errorHandler;
-    final ExecutorService socketExecutor;
-    Whatsapp whatsapp;
+    RegisteredResult result;
+    boolean printRequests;
     AsyncVerificationCodeSupplier verificationCodeSupplier;
 
-    MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
+    MobileRegistrationBuilder(Store store, Keys keys, ErrorHandler errorHandler) {
         this.store = store;
         this.keys = keys;
         this.errorHandler = errorHandler;
-        this.socketExecutor = socketExecutor;
+        this.printRequests = false;
     }
 
-    /**
-     * Sets the handler that provides the verification code when verifying an account
-     *
-     * @param verificationCodeSupplier the non-null supplier
-     * @return the same instance
-     */
-    @SuppressWarnings("unchecked")
-    public T verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
-        this.verificationCodeSupplier = AsyncVerificationCodeSupplier.of(verificationCodeSupplier);
-        return (T) this;
-    }
-
-    /**
-     * Sets the handler that provides the verification code when verifying an account
-     *
-     * @param verificationCodeSupplier the non-null supplier
-     * @return the same instance
-     */
-    @SuppressWarnings("unchecked")
-    public T verificationCodeSupplier(AsyncVerificationCodeSupplier verificationCodeSupplier) {
-        this.verificationCodeSupplier = verificationCodeSupplier;
-        return (T) this;
-    }
-
-    Whatsapp buildWhatsapp() {
-        return this.whatsapp = Whatsapp.customBuilder()
-                .store(store)
-                .keys(keys)
-                .errorHandler(errorHandler)
-                .socketExecutor(socketExecutor)
-                .build();
-    }
-
-    public final static class Unregistered extends MobileRegistrationBuilder<Unregistered> {
-        private Unverified unverified;
+    public final static class Unregistered extends MobileRegistrationBuilder {
+        private UnverifiedResult unregisteredResult;
         private VerificationCodeMethod verificationCodeMethod;
+        private boolean autocloseCloudVerificationClient;
 
-        Unregistered(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
-            super(store, keys, errorHandler, socketExecutor);
+        Unregistered(Store store, Keys keys, ErrorHandler errorHandler) {
+            super(store, keys, errorHandler);
             this.verificationCodeMethod = VerificationCodeMethod.SMS;
         }
 
+        public Unregistered verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
+            this.verificationCodeSupplier = AsyncVerificationCodeSupplier.of(verificationCodeSupplier);
+            return this;
+        }
 
-        /**
-         * Sets the type of method used to verify the account
-         *
-         * @param verificationCodeMethod the non-null method
-         * @return the same instance
-         */
+        public Unregistered verificationCodeSupplier(AsyncVerificationCodeSupplier verificationCodeSupplier) {
+            this.verificationCodeSupplier = verificationCodeSupplier;
+            return this;
+        }
+
+        public Unregistered device(CompanionDevice device) {
+            store.setDevice(device);
+            return this;
+        }
+
+        public Unregistered proxy(URI proxy) {
+            store.setProxy(proxy);
+            return this;
+        }
+
         public Unregistered verificationCodeMethod(VerificationCodeMethod verificationCodeMethod) {
             this.verificationCodeMethod = verificationCodeMethod;
+            return this;
+        }
+
+        public Unregistered printRequests(boolean printRequests) {
+            this.printRequests = printRequests;
             return this;
         }
 
@@ -90,9 +79,9 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
          * @param phoneNumber a phone number(include the prefix)
          * @return a future
          */
-        public CompletableFuture<Whatsapp> register(long phoneNumber) {
-            if (whatsapp != null) {
-                return CompletableFuture.completedFuture(whatsapp);
+        public CompletableFuture<RegisteredResult> register(long phoneNumber) {
+            if (result != null) {
+                return CompletableFuture.completedFuture(result);
             }
 
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
@@ -101,14 +90,31 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
                 var number = PhoneNumber.of(phoneNumber);
                 keys.setPhoneNumber(number);
                 store.setPhoneNumber(number);
-                var registration = new HttpRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
+                var registration = new WhatsappRegistration(
+                        store,
+                        keys,
+                        verificationCodeSupplier,
+                        verificationCodeMethod,
+                        printRequests
+                );
                 return registration.registerPhoneNumber()
-                        .thenApply(ignored -> buildWhatsapp());
+                        .thenApplyAsync(response -> {
+                            var api = Whatsapp.customBuilder()
+                                    .store(store)
+                                    .keys(keys)
+                                    .errorHandler(errorHandler)
+                                    .build();
+                            return this.result = new RegisteredResult(api, Optional.ofNullable(response));
+                        });
             }
 
-            return CompletableFuture.completedFuture(buildWhatsapp());
+            var api = Whatsapp.customBuilder()
+                    .store(store)
+                    .keys(keys)
+                    .errorHandler(errorHandler)
+                    .build();
+            return CompletableFuture.completedFuture(result);
         }
-
 
         /**
          * Asks Whatsapp for a one-time-password to start the registration process
@@ -116,28 +122,62 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
          * @param phoneNumber a phone number(include the prefix)
          * @return a future
          */
-        public CompletableFuture<Unverified> requestVerificationCode(long phoneNumber) {
-            if(unverified != null) {
-                return CompletableFuture.completedFuture(unverified);
+        public CompletableFuture<UnverifiedResult> requestVerificationCode(long phoneNumber) {
+            if(unregisteredResult != null) {
+                return CompletableFuture.completedFuture(unregisteredResult);
             }
 
             var number = PhoneNumber.of(phoneNumber);
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             if (!keys.registered()) {
-                var registration = new HttpRegistration(store, keys, verificationCodeSupplier, verificationCodeMethod);
-                return registration.requestVerificationCode()
-                        .thenApply(ignored -> this.unverified = new Unverified(store, keys, errorHandler, socketExecutor));
+                var registration = new WhatsappRegistration(
+                        store,
+                        keys,
+                        verificationCodeSupplier,
+                        verificationCodeMethod,
+                        printRequests
+                );
+                return registration.requestVerificationCode().thenApply(response -> {
+                    var unverified = new Unverified(store, keys, errorHandler, verificationCodeSupplier);
+                    return this.unregisteredResult = new UnverifiedResult(unverified, Optional.ofNullable(response));
+                });
             }
 
-            this.unverified = new Unverified(store, keys, errorHandler, socketExecutor);
-            return CompletableFuture.completedFuture(unverified);
+            var unverified = new Unverified(store, keys, errorHandler, verificationCodeSupplier);
+            return CompletableFuture.completedFuture(this.unregisteredResult = new UnverifiedResult(unverified, Optional.empty()));
         }
     }
 
-    public final static class Unverified extends MobileRegistrationBuilder<Unverified> {
-        Unverified(Store store, Keys keys, ErrorHandler errorHandler, ExecutorService socketExecutor) {
-            super(store, keys, errorHandler, socketExecutor);
+    public final static class Unverified extends MobileRegistrationBuilder {
+        Unverified(Store store, Keys keys, ErrorHandler errorHandler, AsyncVerificationCodeSupplier verificationCodeSupplier) {
+            super(store, keys, errorHandler);
+            this.verificationCodeSupplier = verificationCodeSupplier;
+        }
+
+        public Unverified verificationCodeSupplier(Supplier<String> verificationCodeSupplier) {
+            this.verificationCodeSupplier = AsyncVerificationCodeSupplier.of(verificationCodeSupplier);
+            return this;
+        }
+
+        public Unverified verificationCodeSupplier(AsyncVerificationCodeSupplier verificationCodeSupplier) {
+            this.verificationCodeSupplier = verificationCodeSupplier;
+            return this;
+        }
+
+        public Unverified device(CompanionDevice device) {
+            store.setDevice(device);
+            return this;
+        }
+
+        public Unverified proxy(URI proxy) {
+            store.setProxy(proxy);
+            return this;
+        }
+
+        public Unverified printRequests(boolean printRequests) {
+            this.printRequests = printRequests;
+            return this;
         }
 
         /**
@@ -145,25 +185,48 @@ public sealed class MobileRegistrationBuilder<T extends MobileRegistrationBuilde
          *
          * @return the same instance for chaining
          */
-        public CompletableFuture<Whatsapp> verify(long phoneNumber) {
+        public CompletableFuture<RegisteredResult> verify(long phoneNumber) {
             var number = PhoneNumber.of(phoneNumber);
             keys.setPhoneNumber(number);
             store.setPhoneNumber(number);
             return verify();
         }
 
-
         /**
          * Sends the verification code you already requested to Whatsapp
          *
          * @return the same instance for chaining
          */
-        public CompletableFuture<Whatsapp> verify() {
+        public CompletableFuture<RegisteredResult> verify() {
+            if(result != null) {
+                return CompletableFuture.completedFuture(result);
+            }
+
             Objects.requireNonNull(store.phoneNumber(), "Missing phone number: please specify it");
             Objects.requireNonNull(verificationCodeSupplier, "Expected a valid verification code supplier");
-            var registration = new HttpRegistration(store, keys, verificationCodeSupplier, VerificationCodeMethod.NONE);
-            return registration.sendVerificationCode()
-                    .thenApply(ignored -> buildWhatsapp());
+            var registration = new WhatsappRegistration(
+                    store,
+                    keys,
+                    verificationCodeSupplier,
+                    VerificationCodeMethod.NONE,
+                    printRequests
+            );
+            return registration.sendVerificationCode().thenApply(response -> {
+                var api = Whatsapp.customBuilder()
+                        .store(store)
+                        .keys(keys)
+                        .errorHandler(errorHandler)
+                        .build();
+                return this.result = new RegisteredResult(api, Optional.ofNullable(response));
+            });
         }
+    }
+
+    public record RegisteredResult(Whatsapp whatsapp, Optional<RegistrationResponse> response) {
+
+    }
+
+    public record UnverifiedResult(Unverified unverified, Optional<RegistrationResponse> response) {
+
     }
 }

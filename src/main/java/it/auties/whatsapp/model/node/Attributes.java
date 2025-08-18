@@ -25,9 +25,20 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
      * @return a new instance of Attributes
      */
     @SafeVarargs
-    @JsonCreator
-    public static Attributes of(Entry<String, Object>... entries) {
+    public static Attributes of(Entry<String, ?>... entries) {
         return ofNullable(ofEntries(entries));
+    }
+
+    /**
+     * Constructs a new map using the non-null provided entries
+     *
+     * @param entries the non-null entries
+     * @return a new instance of Attributes
+     */
+    @SafeVarargs
+    @JsonCreator
+    public static Attributes ofNullable(Entry<String, ?>... entries) {
+        return entries == null ? of() : ofNullable(ofEntries(entries));
     }
 
     /**
@@ -54,7 +65,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     }
 
     /**
-     * Checks whether a non-null key whatsappOldEligible in this map
+     * Checks whether a non-null key has a value in this map
      *
      * @param key the non-null key
      * @return a boolean
@@ -64,7 +75,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     }
 
     /**
-     * Checks whether a non-null key whatsappOldEligible in this map and has the provided value
+     * Checks whether a non-null key value in this map and has the provided value
      *
      * @param key   the non-null key
      * @param value the nullable value to check against
@@ -390,7 +401,7 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
     }
 
     public Attributes putAll(Collection<? extends Entry<String, ?>> entries) {
-        for(var entry : entries) {
+        for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
 
@@ -399,10 +410,15 @@ public record Attributes(@JsonValue LinkedHashMap<String, Object> toMap) {
 
     @SafeVarargs
     public final Attributes putAll(Entry<String, ?>... entries) {
-        for(var entry : entries) {
+        for (var entry : entries) {
             toMap.put(entry.getKey(), entry.getValue());
         }
 
         return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Entry<String, Object>[] toEntries() {
+        return toMap.entrySet().toArray(Entry[]::new);
     }
 }

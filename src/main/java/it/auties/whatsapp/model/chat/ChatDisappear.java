@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
@@ -12,17 +11,17 @@ import java.util.Objects;
 /**
  * A model that represents a chat disappear mode
  */
-@ProtobufMessageName("DisappearingMode")
+@ProtobufMessage(name = "DisappearingMode")
 public record ChatDisappear(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         Initiator initiator
-) implements ProtobufMessage {
+) {
     /**
      * The constants of this enumerated type describe the various actors that can initialize
      * disappearing messages in a chat
      */
-    @ProtobufMessageName("DisappearingMode.Initiator")
-    public enum Initiator implements ProtobufEnum {
+    @ProtobufEnum(name = "DisappearingMode.Initiator")
+    public enum Initiator {
         /**
          * Changed in chat
          */

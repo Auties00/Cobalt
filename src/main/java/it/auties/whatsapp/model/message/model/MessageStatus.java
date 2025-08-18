@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -9,7 +9,8 @@ import java.util.Optional;
 /**
  * The constants of this enumerated type describe the various types of status of a {@link Message}
  */
-public enum MessageStatus implements ProtobufEnum {
+@ProtobufEnum
+public enum MessageStatus {
     /**
      * Erroneous status(no ticks)
      */

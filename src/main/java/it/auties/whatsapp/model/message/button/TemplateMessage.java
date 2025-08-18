@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.HexFormat;
 import java.util.Objects;
@@ -21,19 +21,19 @@ import java.util.Optional;
  * A model class that represents a message sent in a WhatsappBusiness chat that provides a list of
  * buttons to choose from.
  */
-@ProtobufMessageName("Message.TemplateMessage")
+@ProtobufMessage(name = "Message.TemplateMessage")
 public final class TemplateMessage implements ContextualMessage<TemplateMessage>, ButtonMessage {
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
     private final String id;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final HydratedFourRowTemplate content;
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final HydratedFourRowTemplate hydratedFourRowTemplateFormat;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final InteractiveMessage interactiveMessageFormat;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public TemplateMessage(String id, HydratedFourRowTemplate content, HighlyStructuredFourRowTemplate highlyStructuredFourRowTemplateFormat, HydratedFourRowTemplate hydratedFourRowTemplateFormat, InteractiveMessage interactiveMessageFormat, ContextInfo contextInfo) {
@@ -48,7 +48,7 @@ public final class TemplateMessage implements ContextualMessage<TemplateMessage>
     @ProtobufBuilder(className = "TemplateMessageSimpleBuilder")
     static TemplateMessage customBuilder(String id, HydratedFourRowTemplate content, TemplateFormatter format, ContextInfo contextInfo) {
         var builder = new TemplateMessageBuilder()
-                .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(BytesHelper.random(6))))
+                .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(Bytes.random(6))))
                 .content(content)
                 .contextInfo(contextInfo);
         switch (format) {

@@ -13,9 +13,13 @@ public final class Sha256 {
     }
 
     public static byte[] calculate(byte[] data) {
+        return calculate(data, 0, data.length);
+    }
+
+    public static byte[] calculate(byte[] data, int offset, int length) {
         try {
             var digest = MessageDigest.getInstance(SHA_256);
-            digest.update(data);
+            digest.update(data, offset, length);
             return digest.digest();
         } catch (NoSuchAlgorithmException exception) {
             throw new UnsupportedOperationException("Missing sha256 implementation");

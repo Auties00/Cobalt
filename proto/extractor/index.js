@@ -224,7 +224,7 @@ async function findAppModules() {
 						if(type === 'message' || type === 'enum') {
 							const currLoc = ` from member '${name}' of message '${targetIdent.name}'`
 							if(elements[2].type === 'Identifier') {
-								type = Object.values(modInfo.identifiers).find(v => v.alias === elements[2].name)?.name
+								type = MESSAGE.values(modInfo.identifiers).find(v => v.alias === elements[2].name)?.name
 								if(!type) {
 									console.warn(`unable to find reference of alias '${elements[2].name}'` + currLoc)
 								}

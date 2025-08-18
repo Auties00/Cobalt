@@ -5,14 +5,12 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.util.Validate;
 
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 
 public class WhatsappCustomBuilder {
     private Store store;
     private Keys keys;
     private ErrorHandler errorHandler;
-    private WebVerificationSupport webVerificationSupport;
-    private ExecutorService socketExecutor;
+    private WebVerificationHandler webVerificationHandler;
 
     WhatsappCustomBuilder() {
 
@@ -33,13 +31,8 @@ public class WhatsappCustomBuilder {
         return this;
     }
 
-    public WhatsappCustomBuilder webVerificationSupport(WebVerificationSupport webVerificationSupport) {
-        this.webVerificationSupport = webVerificationSupport;
-        return this;
-    }
-
-    public WhatsappCustomBuilder socketExecutor(ExecutorService socketExecutor) {
-        this.socketExecutor = socketExecutor;
+    public WhatsappCustomBuilder webVerificationSupport(WebVerificationHandler webVerificationHandler) {
+        this.webVerificationHandler = webVerificationHandler;
         return this;
     }
 
@@ -50,19 +43,19 @@ public class WhatsappCustomBuilder {
             return knownInstance.get();
         }
 
-        var checkedSupport = getWebVerificationMethod(store, keys, webVerificationSupport);
-        return new Whatsapp(store, keys, errorHandler, checkedSupport, socketExecutor);
+        var checkedSupport = getWebVerificationMethod(store, keys, webVerificationHandler);
+        return new Whatsapp(store, keys, errorHandler, checkedSupport);
     }
 
-    private static WebVerificationSupport getWebVerificationMethod(Store store, Keys keys, WebVerificationSupport webVerificationSupport) {
+    private static WebVerificationHandler getWebVerificationMethod(Store store, Keys keys, WebVerificationHandler webVerificationHandler) {
         if (store.clientType() != ClientType.WEB) {
             return null;
         }
 
-        if (!keys.registered() && webVerificationSupport == null) {
+        if (!keys.registered() && webVerificationHandler == null) {
             return QrHandler.toTerminal();
         }
 
-        return webVerificationSupport;
+        return webVerificationHandler;
     }
 }

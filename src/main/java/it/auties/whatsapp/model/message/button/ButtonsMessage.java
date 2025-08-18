@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.Button;
@@ -21,27 +21,27 @@ import java.util.Optional;
 /**
  * A model class that represents a message that contains buttons inside
  */
-@ProtobufMessageName("Message.ButtonsMessage")
+@ProtobufMessage(name = "Message.ButtonsMessage")
 public final class ButtonsMessage implements ButtonMessage, ContextualMessage<ButtonsMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final ButtonsMessageHeaderText headerText;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final DocumentMessage headerDocument;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final ImageMessage headerImage;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final VideoOrGifMessage headerVideo;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final LocationMessage headerLocation;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final String body;
     @ProtobufProperty(index = 7, type = ProtobufType.STRING)
     private final String footer;
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-    @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
     private final List<Button> buttons;
-    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 10, type = ProtobufType.ENUM)
     private final Type headerType;
 
 
@@ -102,7 +102,7 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
             return Optional.of(headerText);
         }
 
-        if (headerDocument  != null) {
+        if (headerDocument != null) {
             return Optional.of(headerDocument);
         }
 
@@ -116,31 +116,31 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
 
         return Optional.ofNullable(headerLocation);
     }
-    
+
     public Optional<ButtonsMessageHeaderText> headerText() {
         return Optional.ofNullable(headerText);
     }
-    
+
     public Optional<DocumentMessage> headerDocument() {
         return Optional.ofNullable(headerDocument);
     }
-    
+
     public Optional<ImageMessage> headerImage() {
         return Optional.ofNullable(headerImage);
     }
-    
+
     public Optional<VideoOrGifMessage> headerVideo() {
         return Optional.ofNullable(headerVideo);
     }
-    
+
     public Optional<LocationMessage> headerLocation() {
         return Optional.ofNullable(headerLocation);
     }
-    
+
     public Optional<String> body() {
         return Optional.ofNullable(body);
     }
-    
+
     public Optional<String> footer() {
         return Optional.ofNullable(footer);
     }
@@ -163,7 +163,7 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
         this.contextInfo = contextInfo;
         return this;
     }
-    
+
     @Override
     public String toString() {
         return "ButtonsMessage[" +

@@ -1,9 +1,10 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.media.AttachmentType;
@@ -18,37 +19,29 @@ import java.util.OptionalLong;
 /**
  * A model class that represents a message to notify the invoice about a successful payment.
  */
-public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage<PaymentInvoiceMessage> {
+@ProtobufMessage
+public final class PaymentInvoiceMessage extends MediaMessage<PaymentInvoiceMessage> implements PaymentMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String note;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String token;
-
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
     private final PaymentAttachmentType paymentAttachmentType;
-
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     private final String mimeType;
-
     @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
     private byte[] mediaKey;
-
     @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
     private Long mediaKeyTimestampSeconds;
-
     @ProtobufProperty(index = 7, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
-
     @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
-
     @ProtobufProperty(index = 9, type = ProtobufType.STRING)
     private String mediaDirectPath;
-
     @ProtobufProperty(index = 10, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
@@ -202,7 +195,8 @@ public final class PaymentInvoiceMessage implements PaymentMessage, MediaMessage
      * The constants of this enumerated type describe the various types of attachment that an invoice
      * can wrap
      */
-    public enum PaymentAttachmentType implements ProtobufEnum {
+    @ProtobufEnum
+    public enum PaymentAttachmentType {
         /**
          * Image
          */

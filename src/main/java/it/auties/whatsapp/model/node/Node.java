@@ -1,14 +1,11 @@
 package it.auties.whatsapp.model.node;
 
-import it.auties.whatsapp.model.message.model.ChatMessageKey;
-import it.auties.whatsapp.socket.SocketRequest;
 import it.auties.whatsapp.util.Json;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client
@@ -235,9 +232,9 @@ public record Node(String description, Attributes attributes, Object content) {
     }
 
     /**
-     * Checks whether the child node with the given description whatsappOldEligible
+     * Checks whether the child node with the given description exists
      *
-     * @return true if a child node with the given description whatsappOldEligible
+     * @return true if a child node with the given description exists
      */
     public boolean hasNode(String description) {
         return children().stream().anyMatch(node -> Objects.equals(node.description(), description));
@@ -276,7 +273,7 @@ public record Node(String description, Attributes attributes, Object content) {
      *
      * @return an optional
      */
-    public Optional<Node> findNode() {
+    public Optional<Node> findChild() {
         return children().stream().findFirst();
     }
 
@@ -286,7 +283,7 @@ public record Node(String description, Attributes attributes, Object content) {
      * @param description the nullable description
      * @return an optional
      */
-    public Optional<Node> findNode(String description) {
+    public Optional<Node> findChild(String description) {
         return children().stream().filter(node -> Objects.equals(node.description(), description)).findFirst();
     }
 
@@ -294,17 +291,23 @@ public record Node(String description, Attributes attributes, Object content) {
      * Returns all the nodes that match the description provided
      *
      * @param description the nullable description
-     * @return an optional body, present if a newsletters was found
+     * @return a list
      */
-    public List<Node> findNodes(String description) {
-        return children().stream().filter(node -> Objects.equals(node.description(), description)).toList();
+    public List<Node> listChildren(String description) {
+        return streamChildren(description)
+                .toList();
     }
 
     /**
-     * Asserts that a child node with the provided description whatsappOldEligible
+     * Returns all the nodes that match the description provided
+     *
+     * @param description the nullable description
+     * @return a stream
      */
-    public void assertNode(String description, Supplier<String> error) {
-        findNode(description).orElseThrow(() -> new NoSuchElementException(error.get()));
+    public Stream<Node> streamChildren(String description) {
+        return children()
+                .stream()
+                .filter(node -> Objects.equals(node.description(), description));
     }
 
     /**
@@ -326,20 +329,6 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     public boolean hasContent() {
         return Objects.nonNull(content);
-    }
-
-    /**
-     * Constructs a new request from this node
-     *
-     * @return a non null request
-     * @throws NullPointerException if no valid jid can be found
-     */
-    public SocketRequest toRequest(Function<Node, Boolean> filter, boolean response) {
-        if (response && id() == null) {
-            attributes.put("id", ChatMessageKey.randomId());
-        }
-
-        return SocketRequest.of(this, filter);
     }
 
     /**
@@ -371,8 +360,17 @@ public record Node(String description, Attributes attributes, Object content) {
     public String toString() {
         var description = this.description.isBlank() || this.description.isEmpty() ? "" : "description=%s".formatted(this.description);
         var attributes = this.attributes.toMap().isEmpty() ? "" : ", attributes=%s".formatted(this.attributes.toMap());
-        var content = this.content == null ? "" : ", content=%s".formatted(this.content instanceof byte[] bytes ? Arrays.toString(bytes) : this.content);
+        var content = this.content == null ? "" : ", content=%s".formatted(contentToString());
         return "Node[%s%s%s]".formatted(description, attributes, content);
+    }
+
+    private Object contentToString() {
+        if (!(this.content instanceof byte[] bytes)) {
+            return this.content;
+        }
+
+        return hasDescription("result") || hasDescription("query") || hasDescription("body")
+                ? new String(bytes) : Arrays.toString(bytes);
     }
 
     /**

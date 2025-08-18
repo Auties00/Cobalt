@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
@@ -15,7 +15,6 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
@@ -23,90 +22,64 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import static it.auties.whatsapp.model.message.model.MediaMessageType.IMAGE;
-import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a message holding an image inside
  */
-@ProtobufMessageName("Message.ImageMessage")
-public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
-        implements MediaMessage<ImageMessage>, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+@ProtobufMessage(name = "Message.ImageMessage")
+public final class ImageMessage extends MediaMessage<ImageMessage>
+        implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;
-
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String mimetype;
-
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     private final String caption;
-
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
-
     @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
     private Long mediaSize;
-
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
     private final Integer height;
-
     @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
     private final Integer width;
-
     @ProtobufProperty(index = 8, type = ProtobufType.BYTES)
     private byte[] mediaKey;
-
     @ProtobufProperty(index = 9, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
-
-    @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
     private final List<InteractiveLocationAnnotation> interactiveAnnotations;
-
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
     private String mediaDirectPath;
-
     @ProtobufProperty(index = 12, type = ProtobufType.UINT64)
     private Long mediaKeyTimestampSeconds;
-
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-
     @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
     private final byte[] firstScanSidecar;
-
     @ProtobufProperty(index = 19, type = ProtobufType.UINT32)
     private final Integer firstScanLength;
-
     @ProtobufProperty(index = 20, type = ProtobufType.UINT32)
     private final Integer experimentGroupId;
-
     @ProtobufProperty(index = 21, type = ProtobufType.BYTES)
     private final byte[] scansSidecar;
-
     @ProtobufProperty(index = 22, type = ProtobufType.UINT32)
     private final List<Integer> scanLengths;
-
     @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
     private final byte[] midQualityFileSha256;
-
     @ProtobufProperty(index = 24, type = ProtobufType.BYTES)
     private final byte[] midQualityFileEncSha256;
-
     @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
     private final boolean viewOnce;
-
     @ProtobufProperty(index = 26, type = ProtobufType.STRING)
     private final String thumbnailDirectPath;
-
     @ProtobufProperty(index = 27, type = ProtobufType.BYTES)
     private final byte[] thumbnailSha256;
-
     @ProtobufProperty(index = 28, type = ProtobufType.BYTES)
     private final byte[] thumbnailEncSha256;
-
     @ProtobufProperty(index = 29, type = ProtobufType.STRING)
     private final String staticUrl;
 
@@ -146,7 +119,7 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
      *
      * @param media       the non-null image that the new message wraps
      * @param mimeType    the mime type of the new message, by default
-     *                    {@link MediaMessageType#defaultMimeType()}
+     *                    {@link MediaMessageType#mimeType()}
      * @param caption     the caption of the new message
      * @param thumbnail   the thumbnail of the document that the new message wraps
      * @param contextInfo the context info that the new message wraps
@@ -156,11 +129,11 @@ public final class ImageMessage extends ExtendedMediaMessage<ImageMessage>
     static ImageMessage simpleBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         return new ImageMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
+                .mimetype(requireNonNullElse(mimeType, IMAGE.mimeType()))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, JPG).orElse(null))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, true).orElse(null))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build()
                 .setDecodedMedia(media);

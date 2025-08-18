@@ -1,9 +1,8 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
@@ -12,15 +11,13 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import java.util.Collections;
 import java.util.List;
 
-@ProtobufMessageName("SyncActionValue.SyncActionMessageRange")
-public final class ActionMessageRangeSync implements ProtobufMessage {
+@ProtobufMessage(name = "SyncActionValue.SyncActionMessageRange")
+public final class ActionMessageRangeSync {
     @ProtobufProperty(index = 1, type = ProtobufType.INT64)
     private Long lastMessageTimestamp;
-
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)
     private Long lastSystemMessageTimestamp;
-
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final List<SyncActionMessage> messages;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
@@ -59,7 +56,7 @@ public final class ActionMessageRangeSync implements ProtobufMessage {
 
     private ChatMessageKey checkSenderKey(ChatMessageKey key) {
         return key.senderJid()
-                .map(entry -> new ChatMessageKey(key.chatJid(), key.fromMe(), key.id(), entry.withoutDevice()))
+                .map(entry -> new ChatMessageKey(key.chatJid(), key.fromMe(), key.id(), entry.toSimpleJid()))
                 .orElse(key);
     }
 

@@ -10,32 +10,37 @@ public enum MediaMessageType {
     /**
      * No media
      */
-    NONE("", MessageType.EMPTY, AttachmentType.NONE),
+    NONE("", "", MessageType.EMPTY, AttachmentType.NONE),
     /**
      * The message is an image
      */
-    IMAGE("image/jpeg", MessageType.IMAGE, AttachmentType.IMAGE),
+    IMAGE("jpg", "image/jpeg", MessageType.IMAGE, AttachmentType.IMAGE),
     /**
      * The message is a document
      */
-    DOCUMENT("application/octet-stream", MessageType.DOCUMENT, AttachmentType.DOCUMENT),
+    DOCUMENT("", "application/octet-stream", MessageType.DOCUMENT, AttachmentType.DOCUMENT),
     /**
      * The message is an audio
      */
-    AUDIO("audio/mpeg", MessageType.AUDIO, AttachmentType.AUDIO),
+    AUDIO("mp3", "audio/mpeg", MessageType.AUDIO, AttachmentType.AUDIO),
     /**
      * The message is a video
      */
-    VIDEO("video/mp4", MessageType.VIDEO, AttachmentType.VIDEO),
+    VIDEO("mp4", "video/mp4", MessageType.VIDEO, AttachmentType.VIDEO),
     /**
      * The message is a sticker
      */
-    STICKER("image/webp", MessageType.STICKER, AttachmentType.IMAGE);
+    STICKER("webp", "image/webp", MessageType.STICKER, AttachmentType.IMAGE);
+
+    /**
+     * The default extension for this enumerated type. Might be right, might be wrong, who knows.
+     */
+    private final String extension;
 
     /**
      * The default mime type for this enumerated type. Might be right, might be wrong, who knows.
      */
-    private final String defaultMimeType;
+    private final String mimeType;
 
     /**
      * The message type for this media
@@ -47,8 +52,9 @@ public enum MediaMessageType {
      */
     private final AttachmentType attachmentType;
 
-    MediaMessageType(String defaultMimeType, MessageType messageType, AttachmentType attachmentType) {
-        this.defaultMimeType = defaultMimeType;
+    MediaMessageType(String extension, String mimeType, MessageType messageType, AttachmentType attachmentType) {
+        this.extension = extension;
+        this.mimeType = mimeType;
         this.messageType = messageType;
         this.attachmentType = attachmentType;
     }
@@ -71,7 +77,21 @@ public enum MediaMessageType {
         return attachmentType;
     }
 
-    public String defaultMimeType() {
-        return this.defaultMimeType;
+    /**
+     * Returns the extension of this media
+     *
+     * @return a string
+     */
+    public String extension() {
+        return extension;
+    }
+
+    /**
+     * Returns the mime type of this media
+     *
+     * @return a string
+     */
+    public String mimeType() {
+        return this.mimeType;
     }
 }

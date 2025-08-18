@@ -1,13 +1,12 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.util.Json;
-import it.auties.whatsapp.util.ProtobufUuidMixin;
 
 import java.util.*;
 
@@ -16,11 +15,12 @@ import java.util.*;
  * way to store IDs and serialize said class.
  */
 @SuppressWarnings("unused")
-public abstract sealed class Controller<T extends Controller<T>> implements ProtobufMessage permits Store, Keys {
+@ProtobufMessage
+public abstract sealed class Controller<T extends Controller<T>> permits Store, Keys {
     /**
      * The id of this controller
      */
-    @ProtobufProperty(index = 1, type = ProtobufType.STRING, mixin = ProtobufUuidMixin.class)
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     protected final UUID uuid;
 
     /**
@@ -38,7 +38,7 @@ public abstract sealed class Controller<T extends Controller<T>> implements Prot
     /**
      * The client type
      */
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
     protected final ClientType clientType;
 
     /**
@@ -48,7 +48,7 @@ public abstract sealed class Controller<T extends Controller<T>> implements Prot
     protected final Collection<String> alias;
 
     public Controller(UUID uuid, PhoneNumber phoneNumber, ControllerSerializer serializer, ClientType clientType, Collection<String> alias) {
-        this.uuid = uuid;
+        this.uuid = Objects.requireNonNull(uuid, "Missing uuid");
         this.phoneNumber = phoneNumber;
         this.serializer = serializer;
         this.clientType = clientType;

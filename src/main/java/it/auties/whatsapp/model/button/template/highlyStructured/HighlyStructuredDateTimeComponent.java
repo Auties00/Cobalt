@@ -1,17 +1,17 @@
 package it.auties.whatsapp.model.button.template.highlyStructured;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
 
 /**
  * A model class that represents a time component
  */
-@ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent")
+@ProtobufMessage(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent")
 public record HighlyStructuredDateTimeComponent(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         DayOfWeek dayOfWeek,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
         int year,
@@ -23,7 +23,7 @@ public record HighlyStructuredDateTimeComponent(
         int hour,
         @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
         int minute,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
         CalendarType calendar
 ) implements HighlyStructuredDateTimeValue {
     @Override
@@ -34,8 +34,8 @@ public record HighlyStructuredDateTimeComponent(
     /**
      * The constants of this enumerated type describe the supported calendar types
      */
-    @ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent.CalendarType")
-    public enum CalendarType implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent.CalendarType")
+    public enum CalendarType {
         /**
          * Gregorian calendar
          */
@@ -59,8 +59,9 @@ public record HighlyStructuredDateTimeComponent(
     /**
      * The constants of this enumerated type describe the days of the week
      */
-    @ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent.DayOfWeekType")
-    public enum DayOfWeek implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent.DayOfWeekType")
+    public enum DayOfWeek {
+
         /**
          * Monday
          */

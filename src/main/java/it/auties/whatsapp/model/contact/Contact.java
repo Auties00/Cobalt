@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
@@ -19,7 +19,8 @@ import java.util.OptionalLong;
  * A model class that represents a Contact. This class is only a model, this means that changing its
  * values will have no real effect on WhatsappWeb's servers.
  */
-public final class Contact implements JidProvider, ProtobufMessage {
+@ProtobufMessage
+public final class Contact implements JidProvider {
     /**
      * The non-null unique jid used to identify this contact
      */
@@ -55,7 +56,7 @@ public final class Contact implements JidProvider, ProtobufMessage {
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
      * send updates, use {@link Whatsapp#subscribeToPresence(JidProvider)}.
      */
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
     private ContactStatus lastKnownPresence;
 
     /**

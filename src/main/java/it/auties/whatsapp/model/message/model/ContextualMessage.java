@@ -17,5 +17,6 @@ public sealed interface ContextualMessage<T extends ContextualMessage<T>> extend
         TemplateMessage, ButtonReplyMessage, MediaMessage, PaymentOrderMessage, ContactMessage, ContactsMessage,
         GroupInviteMessage, LiveLocationMessage, LocationMessage, PollCreationMessage, ProductMessage, RequestPhoneNumberMessage, TextMessage {
     Optional<ContextInfo> contextInfo();
+
     T setContextInfo(ContextInfo contextInfo);
 }

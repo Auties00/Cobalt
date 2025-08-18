@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufDeserializer;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.Instant;
@@ -64,7 +65,7 @@ public record ChatMute(long endTimeStamp) {
     /**
      * Do not use this method, reserved for protobuf
      */
-    @ProtobufConverter
+    @ProtobufDeserializer
     public static ChatMute ofProtobuf(long object) {
         return muted(object);
     }
@@ -127,7 +128,7 @@ public record ChatMute(long endTimeStamp) {
         return Clock.parseSeconds(endTimeStamp);
     }
 
-    @ProtobufConverter
+    @ProtobufSerializer
     public long endTimeStamp() {
         return endTimeStamp;
     }

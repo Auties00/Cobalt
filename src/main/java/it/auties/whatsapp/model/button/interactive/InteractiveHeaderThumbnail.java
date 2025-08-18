@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.button.interactive;
 
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufDeserializer;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 
 /**
  * A model that represents the jpeg thumbnail of a {@link InteractiveHeader}
@@ -8,12 +9,12 @@ import it.auties.protobuf.annotation.ProtobufConverter;
  * @param thumbnail the non-null jpeg thumbnail
  */
 public record InteractiveHeaderThumbnail(byte[] thumbnail) implements InteractiveHeaderAttachment {
-    @ProtobufConverter
+    @ProtobufDeserializer(builderBehaviour = ProtobufDeserializer.BuilderBehaviour.DISCARD)
     public static InteractiveHeaderThumbnail of(byte[] thumbnail) {
         return new InteractiveHeaderThumbnail(thumbnail);
     }
 
-    @ProtobufConverter
+    @ProtobufSerializer
     @Override
     public byte[] thumbnail() {
         return thumbnail;

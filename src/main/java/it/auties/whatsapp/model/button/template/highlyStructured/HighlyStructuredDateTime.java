@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.button.template.highlyStructured;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
@@ -9,11 +9,11 @@ import java.util.Optional;
 /**
  * A model class that represents a time
  */
-@ProtobufMessageName("Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime")
+@ProtobufMessage(name = "Message.HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime")
 public record HighlyStructuredDateTime(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredDateTimeComponent> dateComponent,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredDateTimeUnixEpoch> dateUnixEpoch
 ) implements HighlyStructuredLocalizableParameterValue {
     /**

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Validate;
 
 import javax.crypto.Mac;
@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.KEY_LENGTH;
 
 public final class Hkdf {
     private static final int ITERATION_START_OFFSET = 1; // v3
@@ -29,7 +29,7 @@ public final class Hkdf {
         Validate.isTrue(salt.length == KEY_LENGTH, "Incorrect salt codeLength: %s", salt.length);
         Validate.isTrue(chunks >= 1 && chunks <= 3, "Incorrect number of chunks: %s", chunks);
         var prk = Hmac.calculateSha256(input, salt);
-        var result = BytesHelper.concat(new byte[KEY_LENGTH], info, new byte[]{1});
+        var result = Bytes.concat(new byte[KEY_LENGTH], info, new byte[]{1});
         var signed = new byte[chunks][];
         var key = Arrays.copyOfRange(result, KEY_LENGTH, result.length);
         var first = Hmac.calculateSha256(key, prk);

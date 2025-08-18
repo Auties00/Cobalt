@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Optional;
@@ -10,17 +9,17 @@ import java.util.Optional;
 /**
  * A model class that represents a hydrated template for a button
  */
-@ProtobufMessageName("HydratedTemplateButton")
+@ProtobufMessage(name = "HydratedTemplateButton")
 public record HydratedTemplateButton(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         HydratedQuickReplyButton quickReplyButton,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         HydratedURLButton urlButton,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         HydratedCallButton callButton,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
         int index
-) implements ProtobufMessage {
+) {
     /**
      * Constructs a new template button
      *

@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Optional;
@@ -10,17 +9,17 @@ import java.util.Optional;
 /**
  * A model class that represents a template for a button
  */
-@ProtobufMessageName("HydratedTemplateButton")
+@ProtobufMessage(name = "HydratedTemplateButton")
 public record HighlyStructuredButtonTemplate(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredQuickReplyButton> highlyStructuredQuickReplyButton,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredURLButton> highlyStructuredUrlButton,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredCallButton> highlyStructuredCallButton,
         @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
         int index
-) implements ProtobufMessage {
+) {
     /**
      * Constructs a new template
      *

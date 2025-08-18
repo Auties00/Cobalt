@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.signal.session;
 
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Collection;
@@ -11,8 +11,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class Session implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+@ProtobufMessage
+public final class Session {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final ConcurrentHashMap.KeySetView<SessionState, Boolean> states;
 
     public Session() {

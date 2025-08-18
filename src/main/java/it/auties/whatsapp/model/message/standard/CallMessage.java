@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.Message;
@@ -11,7 +11,7 @@ import it.auties.whatsapp.model.message.model.MessageType;
 /**
  * A message that contains information related to a call
  */
-@ProtobufMessageName("Message.Call")
+@ProtobufMessage(name = "Message.Call")
 public record CallMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
         byte[] key,

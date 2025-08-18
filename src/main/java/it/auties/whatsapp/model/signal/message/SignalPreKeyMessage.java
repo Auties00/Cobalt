@@ -1,14 +1,14 @@
 package it.auties.whatsapp.model.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.Arrays;
 
-@ProtobufMessageName("PreKeySignalMessage")
+@ProtobufMessage(name = "PreKeySignalMessage")
 public final class SignalPreKeyMessage extends SignalProtocolMessage<SignalPreKeyMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
     private final Integer preKeyId;
@@ -40,14 +40,14 @@ public final class SignalPreKeyMessage extends SignalProtocolMessage<SignalPreKe
 
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
         return SignalPreKeyMessageSpec.decode(Arrays.copyOfRange(serialized, 1, serialized.length))
-                .setVersion(BytesHelper.bytesToVersion(serialized[0]))
+                .setVersion(Bytes.bytesToVersion(serialized[0]))
                 .setSerialized(serialized);
     }
 
     @Override
     public byte[] serialized() {
         if (serialized == null) {
-            this.serialized = BytesHelper.concat(serializedVersion(), SignalPreKeyMessageSpec.encode(this));
+            this.serialized = Bytes.concat(serializedVersion(), SignalPreKeyMessageSpec.encode(this));
         }
 
         return serialized;

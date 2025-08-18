@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -17,19 +17,19 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a product inside
  */
-@ProtobufMessageName("Message.ProductMessage")
+@ProtobufMessage(name = "Message.ProductMessage")
 public final class ProductMessage implements ContextualMessage<ProductMessage>, ButtonMessage {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final Product product;
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final Jid businessOwnerJid;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final ProductCatalog catalog;
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     private final String body;
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     private final String footer;
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public ProductMessage(Product product, Jid businessOwnerJid, ProductCatalog catalog, String body, String footer, ContextInfo contextInfo) {

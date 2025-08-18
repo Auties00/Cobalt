@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.interactive.*;
@@ -18,21 +18,21 @@ import java.util.Optional;
  * A model class that represents a message holding an interactive message inside. Not really clear
  * how this could be used, contributions are welcomed.
  */
-@ProtobufMessageName("Message.InteractiveMessage")
+@ProtobufMessage(name = "Message.InteractiveMessage")
 public final class InteractiveMessage implements ContextualMessage<InteractiveMessage>, ButtonMessage, TemplateFormatter {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final InteractiveHeader header;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final InteractiveBody body;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final InteractiveFooter footer;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private final InteractiveShop contentShop;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final InteractiveCollection contentCollection;
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     private final InteractiveNativeFlow contentNativeFlow;
-    @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 15, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public InteractiveMessage(InteractiveHeader header, InteractiveBody body, InteractiveFooter footer, InteractiveShop contentShop, InteractiveCollection contentCollection, InteractiveNativeFlow contentNativeFlow, ContextInfo contextInfo) {
@@ -56,7 +56,8 @@ public final class InteractiveMessage implements ContextualMessage<InteractiveMe
             case InteractiveShop interactiveShop -> builder.contentShop(interactiveShop);
             case InteractiveCollection interactiveCollection -> builder.contentCollection(interactiveCollection);
             case InteractiveNativeFlow interactiveNativeFlow -> builder.contentNativeFlow(interactiveNativeFlow);
-            case null -> {}
+            case null -> {
+            }
         }
         return builder.build();
     }

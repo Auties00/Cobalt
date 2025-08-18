@@ -1,12 +1,11 @@
 package it.auties.whatsapp.model.payment;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 
-@ProtobufMessageName("PaymentBackground.MediaData")
+@ProtobufMessage(name = "PaymentBackground.MediaData")
 public record PaymentMediaData(
         @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
         byte[] mediaKey,
@@ -18,6 +17,6 @@ public record PaymentMediaData(
         byte[] mediaEncryptedSha256,
         @ProtobufProperty(index = 5, type = ProtobufType.STRING)
         String mediaDirectPath
-) implements ProtobufMessage {
+) {
 
 }

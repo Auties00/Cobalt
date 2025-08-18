@@ -1,10 +1,10 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MutableAttachmentProvider;
 
@@ -13,7 +13,7 @@ import java.util.OptionalLong;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
-@ProtobufMessageName("Message.HistorySyncNotification")
+@ProtobufMessage(name = "Message.HistorySyncNotification")
 public final class HistorySyncNotification implements MutableAttachmentProvider<HistorySyncNotification> {
     @ProtobufProperty(index = 1, type = BYTES)
     private byte[] mediaSha256;
@@ -25,14 +25,14 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     private byte[] mediaEncryptedSha256;
     @ProtobufProperty(index = 5, type = STRING)
     private String mediaDirectPath;
-    @ProtobufProperty(index = 6, type = OBJECT)
+    @ProtobufProperty(index = 6, type = ENUM)
     private final HistorySync.Type syncType;
     @ProtobufProperty(index = 7, type = UINT32)
     private final Integer chunkOrder;
     @ProtobufProperty(index = 8, type = STRING)
     private final String originalMessageId;
     @ProtobufProperty(index = 9, type = UINT32)
-    private final int progress;
+    private final Integer progress;
     @ProtobufProperty(index = 10, type = INT64)
     private final long oldestMsgInChunkTimestampSec;
     @ProtobufProperty(index = 11, type = BYTES)
@@ -41,7 +41,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     private final String peerDataRequestSessionId;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public HistorySyncNotification(byte[] mediaSha256, Long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId, int progress, long oldestMsgInChunkTimestampSec, byte[] initialHistBootstrapInlinePayload, String peerDataRequestSessionId) {
+    public HistorySyncNotification(byte[] mediaSha256, Long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId, Integer progress, long oldestMsgInChunkTimestampSec, byte[] initialHistBootstrapInlinePayload, String peerDataRequestSessionId) {
         this.mediaSha256 = mediaSha256;
         this.mediaSize = mediaSize;
         this.mediaKey = mediaKey;
@@ -135,7 +135,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         return syncType;
     }
 
-    public int chunkOrder() {
+    public Integer chunkOrder() {
         return chunkOrder;
     }
 
@@ -144,7 +144,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
 
-    public int progress() {
+    public Integer progress() {
         return progress;
     }
 
@@ -160,9 +160,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         return Optional.ofNullable(peerDataRequestSessionId);
     }
 
-    @ProtobufMessageName("Message.HistorySyncNotification.HistorySyncType")
-    public enum Type implements ProtobufEnum {
-
+    @ProtobufEnum(name = "Message.HistorySyncNotification.HistorySyncType")
+    public enum Type {
         INITIAL_BOOTSTRAP(0),
         INITIAL_STATUS_V3(1),
         FULL(2),

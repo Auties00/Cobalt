@@ -1,28 +1,27 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 
-@ProtobufMessageName("SyncdPatch")
-public final class PatchSync implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+@ProtobufMessage(name = "SyncdPatch")
+public final class PatchSync {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private VersionSync version;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final List<MutationSync> mutations;
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final ExternalBlobReference externalMutations;
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private final byte[] snapshotMac;
     @ProtobufProperty(index = 5, type = ProtobufType.BYTES)
     private final byte[] patchMac;
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     private final KeyId keyId;
-    @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
     private final ExitCode exitCode;
     @ProtobufProperty(index = 8, type = ProtobufType.UINT32)
     private final Integer deviceIndex;

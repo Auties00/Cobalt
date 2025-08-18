@@ -1,19 +1,19 @@
 package it.auties.whatsapp.model.media;
 
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.Specification.Signal.IV_LENGTH;
-import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.IV_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.KEY_LENGTH;
 
 public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) {
     private static final int EXPANDED_SIZE = 112;
 
     public static MediaKeys random(String type) {
-        return of(BytesHelper.random(32), type);
+        return of(Bytes.random(32), type);
     }
 
     public static MediaKeys of(byte[] key, String type) {

@@ -1,11 +1,11 @@
 package it.auties.whatsapp.model.message.button;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.button.misc.ButtonSection;
+import it.auties.whatsapp.model.button.base.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.ProductListInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message that contains a list of buttons or a list of products
  */
-@ProtobufMessageName("Message.ListMessage")
+@ProtobufMessage(name = "Message.ListMessage")
 public final class ListMessage implements ContextualMessage<ListMessage>, ButtonMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private final String title;
@@ -26,15 +26,15 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
     private final String description;
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     private final String button;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
     private final Type listType;
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private final List<ButtonSection> sections;
-    @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     private final ProductListInfo productListInfo;
     @ProtobufProperty(index = 7, type = ProtobufType.STRING)
     private final String footer;
-    @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
 
     public ListMessage(String title, String description, String button, Type listType, List<ButtonSection> sections, ProductListInfo productListInfo, String footer, ContextInfo contextInfo) {
@@ -109,8 +109,8 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
     /**
      * The constants of this enumerated type describe the various types of {@link ListMessage}
      */
-    @ProtobufMessageName("Message.ListMessage.Type")
-    public enum Type implements ProtobufEnum {
+    @ProtobufEnum(name = "Message.ListMessage.Type")
+    public enum Type {
         /**
          * Unknown
          */

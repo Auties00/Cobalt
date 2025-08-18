@@ -2,7 +2,8 @@ package it.auties.whatsapp.model.jid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.protobuf.annotation.ProtobufConverter;
+import it.auties.protobuf.annotation.ProtobufDeserializer;
+import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 
 import java.util.Objects;
@@ -11,11 +12,11 @@ import java.util.Objects;
  * A model class that represents a jid. This class is only a model, this means that changing its
  * values will have no real effect on WhatsappWeb's servers.
  */
-public record Jid(String user, JidServer server, int device, int agent) implements JidProvider {
+public record Jid(String user, JidServer server, Integer device, Integer agent) implements JidProvider {
     /**
      * Default constructor
      */
-    public Jid(String user, JidServer server, int device, int agent) {
+    public Jid(String user, JidServer server, Integer device, Integer agent) {
         this.user = user != null && user.startsWith("+") ? user.substring(1) : user;
         this.server = server;
         this.device = device;
@@ -32,7 +33,7 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
         return of(null, server);
     }
 
-    @ProtobufConverter // Reserved for protobuf
+    @ProtobufDeserializer // Reserved for protobuf
     public static Jid ofProtobuf(String input) {
         return input == null ? null : Jid.of(input);
     }
@@ -47,8 +48,9 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
     public static Jid of(String jid, JidServer server) {
         var complexUser = withoutServer(jid);
         if (complexUser == null) {
-            return new Jid(null, server, 0, 0);
+            return new Jid(null, server, null, null);
         }
+
         if (complexUser.contains(":")) {
             var simpleUser = complexUser.split(":", 2);
             var user = simpleUser[0];
@@ -58,14 +60,16 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
                 var agent = tryParseAgent(simpleUserAgent[1]);
                 return new Jid(simpleUserAgent[0], server, device, agent);
             }
-            return new Jid(user, server, device, 0);
+            return new Jid(user, server, device, null);
         }
+
         if (!complexUser.contains("_")) {
-            return new Jid(complexUser, server, 0, 0);
+            return new Jid(complexUser, server, null, null);
         }
+
         var simpleUserAgent = complexUser.split("_", 2);
         var agent = tryParseAgent(simpleUserAgent[1]);
-        return new Jid(simpleUserAgent[0], server, 0, agent);
+        return new Jid(simpleUserAgent[0], server, null, agent);
     }
 
     /**
@@ -84,24 +88,12 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
         return jid;
     }
 
-    private static int tryParseAgent(String string) {
+    private static Integer tryParseAgent(String string) {
         try {
             return Integer.parseUnsignedInt(string);
         } catch (NumberFormatException exception) {
-            return 0;
+            return null;
         }
-    }
-
-    /**
-     * Constructs a new ContactId for a device
-     *
-     * @param jid    the nullable jid of the user
-     * @param agent  the agent jid
-     * @param device the device jid
-     * @return a non-null contact jid
-     */
-    public static Jid ofDevice(String jid, int device, int agent) {
-        return new Jid(withoutServer(jid), JidServer.WHATSAPP, device, agent);
     }
 
     /**
@@ -112,12 +104,7 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
      * @return a non-null contact jid
      */
     public static Jid ofDevice(String jid, int device) {
-        return new Jid(withoutServer(jid), JidServer.WHATSAPP, device, 0);
-    }
-
-    @ProtobufConverter
-    public String toProtobufValue() {
-        return toString();
+        return new Jid(withoutServer(jid), JidServer.WHATSAPP, device, null);
     }
 
     /**
@@ -151,7 +138,7 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
             case WHATSAPP -> Objects.equals(user(), "16505361212") ? JidType.OFFICIAL_SURVEY_ACCOUNT : JidType.USER;
             case LID -> JidType.LID;
             case BROADCAST -> Objects.equals(user(), "status") ? JidType.STATUS : JidType.BROADCAST;
-            case GROUP -> JidType.GROUP;
+            case GROUP_OR_COMMUNITY -> JidType.GROUP;
             case GROUP_CALL -> JidType.GROUP_CALL;
             case NEWSLETTER -> JidType.NEWSLETTER;
             case USER -> switch (user()) {
@@ -204,11 +191,31 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
     }
 
     /**
+     * Returns a new jid using with a different agent
+     *
+     * @param agent the new agent
+     * @return a non-null jid
+     */
+    public Jid withAgent(Integer agent) {
+        return new Jid(user(), server, device, agent);
+    }
+
+    /**
+     * Returns a new jid using with a different device
+     *
+     * @param device the new device
+     * @return a non-null jid
+     */
+    public Jid withDevice(Integer device) {
+        return new Jid(user(), server, device, agent);
+    }
+
+    /**
      * Converts this jid to a user jid
      *
      * @return a non-null jid
      */
-    public Jid withoutDevice() {
+    public Jid toSimpleJid() {
         return of(user(), server());
     }
 
@@ -227,11 +234,12 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
      * @return a non-null String
      */
     @JsonValue
+    @ProtobufSerializer
     @Override
     public String toString() {
         var user = Objects.requireNonNullElse(user(), "");
-        var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
-        var device = device() != 0 ? ":%s".formatted(device()) : "";
+        var agent = hasAgent() ? "_%s".formatted(agent()) : "";
+        var device = hasDevice() ? ":%s".formatted(device()) : "";
         var leading = "%s%s%s".formatted(user, agent, device);
         return leading.isEmpty() ? server().toString() : "%s@%s".formatted(leading, server());
     }
@@ -255,13 +263,23 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
         return this;
     }
 
+    @Override
+    public Integer device() {
+        return Objects.requireNonNullElse(device, 0);
+    }
+
     /**
      * Returns whether this jid specifies a device
      *
      * @return a boolean
      */
     public boolean hasDevice() {
-        return device != 0;
+        return device != null && device != 0;
+    }
+
+    @Override
+    public Integer agent() {
+        return Objects.requireNonNullElse(agent, 0);
     }
 
     /**
@@ -270,7 +288,7 @@ public record Jid(String user, JidServer server, int device, int agent) implemen
      * @return a boolean
      */
     public boolean hasAgent() {
-        return agent != 0;
+        return agent != null && agent != 0;
     }
 
     @Override

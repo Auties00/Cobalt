@@ -3,16 +3,18 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>cobalt</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.7</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/Cobalt</url>
+
     <developers>
         <developer>
             <name>Alessandro Autiero</name>
             <email>alautiero@gmail.com</email>
         </developer>
     </developers>
+
     <licenses>
         <license>
             <name>MIT License</name>
@@ -20,6 +22,7 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
     <scm>
         <url>https://github.com/Auties00/Cobalt/tree/master</url>
         <connection>scm:git:https://github.com/Auties00/Cobalt.git</connection>
@@ -36,6 +39,19 @@
             <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>AsposeJavaAPI</id>
+            <name>Aspose Java API</name>
+            <url>https://releases.aspose.com/java/repo/</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <name>Jitpack</name>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
     <profiles>
         <profile>
@@ -109,7 +125,7 @@
                         </executions>
                     </plugin>
 
-                    <!-- Deploy the newsletters-->
+                    <!-- Deploy the artifact -->
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -149,55 +165,65 @@
             </build>
         </profile>
     </profiles>
+
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
-        <jilt.version>1.2</jilt.version>
         <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
         <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
-        <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>3.0.4</protoc.version>
+        <protoc.version>3.4.1</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
-        <jna.version>5.13.0</jna.version>
         <jackson.version>2.15.2</jackson.version>
-        <curve25519.version>1.1</curve25519.version>
-        <classgraph.version>4.8.160</classgraph.version>
-        <reflection.version>1.2</reflection.version>
+        <curve25519.version>1.2</curve25519.version>
         <lazysodium.version>5.1.4</lazysodium.version>
         <linkpreview.version>2.3</linkpreview.version>
         <vcard.version>0.12.1</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
         <libphonenumber.version>8.13.13</libphonenumber.version>
-        <pdfbox.version>2.0.27</pdfbox.version>
-        <poi.version>5.2.3</poi.version>
-        <netty.buffer.version>4.1.93.Final</netty.buffer.version>
-        <sl4j.version>2.0.7</sl4j.version>
-        <log4j.version>2.20.0</log4j.version>
         <maven.versions.version>2.15.0</maven.versions.version>
+        <plist.version>1.27</plist.version>
+        <aspose.words.version>22.11</aspose.words.version>
+        <ffmpeg.version>2023.09.10</ffmpeg.version>
+        <http.version>5.3</http.version>
+        <sl4j.version>2.0.13</sl4j.version>
         <apk.parser.version>2.6.10</apk.parser.version>
     </properties>
 
     <build>
         <plugins>
-            <!-- Dependencies version updater -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>versions-maven-plugin</artifactId>
-                <version>${maven.versions.version}</version>
-            </plugin>
-
             <!-- Compile the project-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>process-test-annotations</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <annotationProcessorPath>
+                                    <groupId>${groupId}</groupId>
+                                    <artifactId>${artifactId}</artifactId>
+                                    <version>${version}</version>
+                                </annotationProcessorPath>
+                            </annotationProcessorPaths>
+                            <annotationProcessors>
+                                <annotationProcessor>it.auties.whatsapp.listener.RegisterListenerProcessor</annotationProcessor>
+                            </annotationProcessors>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -207,11 +233,6 @@
                             <groupId>com.github.auties00</groupId>
                             <artifactId>protobuf-serialization-plugin</artifactId>
                             <version>${protoc.version}</version>
-                        </annotationProcessorPath>
-                        <annotationProcessorPath>
-                            <groupId>cc.jilt</groupId>
-                            <artifactId>jilt</artifactId>
-                            <version>${jilt.version}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <compilerArgs>
@@ -250,17 +271,7 @@
             <version>${qr.terminal.version}</version>
         </dependency>
 
-        <!-- Cryptography -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-        </dependency>
+        <!-- Cryptography (used by Whatsapp) -->
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>curve25519</artifactId>
@@ -271,6 +282,11 @@
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>protobuf-base</artifactId>
+            <version>${protoc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>protobuf-serialization-plugin</artifactId>
             <version>${protoc.version}</version>
         </dependency>
 
@@ -296,19 +312,18 @@
             <version>${jackson.version}</version>
         </dependency>
 
-
-        <!-- Scan for listeners - @RegisterListener -->
-        <dependency>
-            <groupId>io.github.classgraph</groupId>
-            <artifactId>classgraph</artifactId>
-            <version>${classgraph.version}</version>
-        </dependency>
-
         <!-- Parse phone numbers (Mobile API) -->
         <dependency>
             <groupId>com.googlecode.libphonenumber</groupId>
             <artifactId>libphonenumber</artifactId>
             <version>${libphonenumber.version}</version>
+        </dependency>
+
+        <!-- Parse PLIST files for Apple APNS (Mobile API) -->
+        <dependency>
+            <groupId>com.googlecode.plist</groupId>
+            <artifactId>dd-plist</artifactId>
+            <version>${plist.version}</version>
         </dependency>
 
         <!-- Parse Android APK for token generation (Mobile API) -->
@@ -318,45 +333,42 @@
             <version>${apk.parser.version}</version>
         </dependency>
 
-        <!-- Parse PLIST files for Apple APNS -->
-        <dependency>
-            <groupId>com.googlecode.plist</groupId>
-            <artifactId>dd-plist</artifactId>
-            <version>1.27</version>
-        </dependency>
-
         <!-- Generate message previews -->
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>link-preview</artifactId>
             <version>${linkpreview.version}</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>${pdfbox.version}</version>
-            <optional>true</optional>
+            <groupId>com.aspose</groupId>
+            <artifactId>aspose-words</artifactId>
+            <version>${aspose.words.version}</version>
+            <classifier>jdk17</classifier>
         </dependency>
         <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>${poi.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-scratchpad</artifactId>
-            <version>${poi.version}</version>
-            <optional>true</optional>
+            <groupId>com.github.kokorin.jaffree</groupId>
+            <artifactId>jaffree</artifactId>
+            <version>${ffmpeg.version}</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.ez-vcard</groupId>
             <artifactId>ez-vcard</artifactId>
             <version>${vcard.version}</version>
-            <optional>true</optional>
         </dependency>
 
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>${sl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${sl4j.version}</version>
+        </dependency>
+
+        <!-- Testing framework -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -367,30 +379,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.goterl</groupId>
-            <artifactId>lazysodium-java</artifactId>
-            <version>${lazysodium.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>${jna.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcmail-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpg-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

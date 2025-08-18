@@ -1,7 +1,11 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.controller.ControllerSerializer;
+import it.auties.whatsapp.controller.KeysBuilder;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.controller.StoreKeysPair;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.mobile.SixPartsKeys;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +24,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
 
     ConnectionBuilder(ClientType clientType) {
         this.clientType = clientType;
-        this.serializer = ControllerSerializer.toSmile();
+        this.serializer = ControllerSerializer.toProtobuf();
     }
 
     /**
@@ -45,7 +49,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
 
     /**
      * Creates a new connection using a unique identifier
-     * If a session with the given id already whatsappOldEligible, it will be retrieved.
+     * If a session with the given id already otpEligible, it will be retrieved.
      * Otherwise, a new one will be created.
      *
      * @param uuid the nullable uuid to use to create the connection
@@ -60,7 +64,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
 
     /**
      * Creates a new connection using a phone number
-     * If a session with the given phone number already whatsappOldEligible, it will be retrieved.
+     * If a session with the given phone number already exists, it will be retrieved.
      * Otherwise, a new one will be created.
      *
      * @param phoneNumber the nullable uuid to use to create the connection
@@ -74,7 +78,7 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
 
     /**
      * Creates a new connection using an alias
-     * If a session with the given alias already whatsappOldEligible, it will be retrieved.
+     * If a session with the given alias already exists, it will be retrieved.
      * Otherwise, a new one will be created.
      *
      * @param alias the nullable alias to use to create the connection
@@ -84,6 +88,37 @@ public final class ConnectionBuilder<T extends OptionsBuilder<T>> {
         var sessionStoreAndKeys = serializer.deserializeStoreKeysPair(null, null, alias, clientType)
                 .orElseGet(() -> serializer.newStoreKeysPair(UUID.randomUUID(), null, alias != null ? List.of(alias) : null, clientType));
         return createConnection(sessionStoreAndKeys);
+    }
+
+    /**
+     * Creates a new connection using a six parts key representation
+     *
+     * @param sixParts the non-null six parts to use to create the connection
+     * @return a non-null options selector
+     */
+    public T newConnection(SixPartsKeys sixParts) {
+        var serialized = serializer.deserializeStoreKeysPair(null, sixParts.phoneNumber().number(), null, ClientType.MOBILE);
+        if(serialized.isPresent()) {
+            return createConnection(serialized.get());
+        }
+
+        var uuid = UUID.randomUUID();
+        var keys = new KeysBuilder()
+                .uuid(uuid)
+                .phoneNumber(sixParts.phoneNumber())
+                .noiseKeyPair(sixParts.noiseKeyPair())
+                .identityKeyPair(sixParts.identityKeyPair())
+                .identityId(sixParts.identityId())
+                .registered(true)
+                .clientType(ClientType.MOBILE)
+                .build();
+        keys.setSerializer(serializer);
+        var phoneNumber = keys.phoneNumber()
+                .map(PhoneNumber::number)
+                .orElse(null);
+        var store = Store.newStore(uuid, phoneNumber, null, ClientType.MOBILE);
+        store.setSerializer(serializer);
+        return createConnection(new StoreKeysPair(store, keys));
     }
 
     /**

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
@@ -11,9 +11,9 @@ import java.util.Optional;
 /**
  * A model clas that represents a cleared chat
  */
-@ProtobufMessageName("SyncActionValue.ClearChatAction")
+@ProtobufMessage(name = "SyncActionValue.ClearChatAction")
 public record ClearChatAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<ActionMessageRangeSync> messageRange
 ) implements Action {
     /**

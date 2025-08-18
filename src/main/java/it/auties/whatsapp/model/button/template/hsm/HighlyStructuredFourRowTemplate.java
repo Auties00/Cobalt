@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.button.template.hsm;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
@@ -18,23 +18,23 @@ import java.util.stream.IntStream;
 /**
  * A model class that represents a four row template
  */
-@ProtobufMessageName("Message.TemplateMessage.FourRowTemplate")
+@ProtobufMessage(name = "Message.TemplateMessage.FourRowTemplate")
 public record HighlyStructuredFourRowTemplate(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<DocumentMessage> titleDocument,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredMessage> titleHighlyStructured,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<ImageMessage> titleImage,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<VideoOrGifMessage> titleVideo,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         Optional<LocationMessage> titleLocation,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         HighlyStructuredMessage content,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredMessage> footer,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
         List<HighlyStructuredButtonTemplate> buttons
 ) implements TemplateFormatter {
     @ProtobufBuilder(className = "HighlyStructuredFourRowTemplateSimpleBuilder")

@@ -19,7 +19,7 @@ public enum AttachmentType {
     THUMBNAIL_LINK("mms/thumbnail-link", "WhatsApp Link Thumbnail Keys", false),
     VIDEO("mms/video", "WhatsApp Video Keys", false),
     APP_STATE("mms/md-app-state", "WhatsApp App State Keys", true),
-    HISTORY_SYNC(null, "WhatsApp History Keys", true),
+    HISTORY_SYNC("mms/md-msg-hist", "WhatsApp History Keys", true),
     PRODUCT_CATALOG_IMAGE("product/image", null, false),
     BUSINESS_COVER_PHOTO("pps/biz-cover-photo", null, false),
     NEWSLETTER_AUDIO("newsletter/newsletter-audio", null, false),

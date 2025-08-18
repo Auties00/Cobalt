@@ -1,17 +1,17 @@
 package it.auties.whatsapp.model.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Bytes;
 
 import java.util.Arrays;
 import java.util.Objects;
 
-import static it.auties.whatsapp.util.Specification.Signal.MAC_LENGTH;
+import static it.auties.whatsapp.util.SignalConstants.MAC_LENGTH;
 
-@ProtobufMessageName("SignalMessage")
+@ProtobufMessage(name = "SignalMessage")
 public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
     private final byte[] ephemeralPublicKey;
@@ -48,7 +48,7 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
         var data = Arrays.copyOfRange(serialized, 1, serialized.length - MAC_LENGTH);
         var signature = Arrays.copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length);
         return SignalMessageSpec.decode(data)
-                .setVersion(BytesHelper.bytesToVersion(serialized[0]))
+                .setVersion(Bytes.bytesToVersion(serialized[0]))
                 .setSerialized(serialized)
                 .setSignature(signature);
     }
@@ -56,8 +56,8 @@ public final class SignalMessage extends SignalProtocolMessage<SignalMessage> {
     @Override
     public byte[] serialized() {
         if (serialized == null) {
-            var encodedMessage = BytesHelper.concat(serializedVersion(), SignalMessageSpec.encode(this));
-            this.serialized = BytesHelper.concat(encodedMessage, Objects.requireNonNull(signature, "Message wasn't signed"));
+            var encodedMessage = Bytes.concat(serializedVersion(), SignalMessageSpec.encode(this));
+            this.serialized = Bytes.concat(encodedMessage, Objects.requireNonNull(signature, "Message wasn't signed"));
         }
 
         return serialized;

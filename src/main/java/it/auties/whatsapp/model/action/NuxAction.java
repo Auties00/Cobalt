@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.sync.PatchType;
 /**
  * Unknown
  */
-@ProtobufMessageName("SyncActionValue.NuxAction")
+@ProtobufMessage(name = "SyncActionValue.NuxAction")
 public record NuxAction(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean acknowledged

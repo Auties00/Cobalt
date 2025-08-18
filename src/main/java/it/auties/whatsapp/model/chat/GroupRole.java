@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
-import it.auties.protobuf.model.ProtobufEnum;
 import it.auties.whatsapp.api.Whatsapp;
 
 import java.util.Arrays;
@@ -13,8 +12,8 @@ import java.util.Objects;
  * The constants of this enumerated type describe the various roles that a {@link GroupParticipant}
  * can have in a group. Said roles can be changed using various methods in {@link Whatsapp}.
  */
-@ProtobufMessageName("GroupParticipant.Rank")
-public enum GroupRole implements ProtobufEnum {
+@ProtobufEnum(name = "GroupParticipant.Rank")
+public enum GroupRole {
     /**
      * A participant of the group with no special powers
      */

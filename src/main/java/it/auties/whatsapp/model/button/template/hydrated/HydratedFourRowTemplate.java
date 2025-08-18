@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.button.template.hydrated;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.TemplateFormatter;
@@ -17,23 +17,23 @@ import java.util.stream.IntStream;
 /**
  * A model class that represents a hydrated four row template
  */
-@ProtobufMessageName("Message.TemplateMessage.HydratedFourRowTemplate")
+@ProtobufMessage(name = "Message.TemplateMessage.HydratedFourRowTemplate")
 public record HydratedFourRowTemplate(
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
         Optional<DocumentMessage> titleDocument,
         @ProtobufProperty(index = 2, type = ProtobufType.STRING)
         Optional<HydratedFourRowTemplateTextTitle> titleText,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<ImageMessage> titleImage,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<VideoOrGifMessage> titleVideo,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         Optional<LocationMessage> titleLocation,
         @ProtobufProperty(index = 6, type = ProtobufType.STRING)
         String body,
         @ProtobufProperty(index = 7, type = ProtobufType.STRING)
         Optional<String> footer,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
         List<HydratedTemplateButton> hydratedButtons,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
         String templateId

@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
@@ -16,7 +16,6 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Validate;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -24,33 +23,32 @@ import java.util.Optional;
 /**
  * A model class that represents a message holding a vote for a poll inside
  */
-@ProtobufMessageName("Message.PollUpdateMessage")
+@ProtobufMessage(name = "Message.PollUpdateMessage")
 public final class PollUpdateMessage implements Message, EncryptedMessage {
-    private Jid voter;
-
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final ChatMessageKey pollCreationMessageKey;
-
-    private PollCreationMessage pollCreationMessage;
-
-    private List<PollOption> votes;
-
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private PollUpdateEncryptedMetadata encryptedMetadata;
-
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final PollUpdateMessageMetadata metadata;
-
     @ProtobufProperty(index = 4, type = ProtobufType.INT64)
     private final long senderTimestampMilliseconds;
+    @ProtobufProperty(index = 999, type = ProtobufType.STRING)
+    private Jid voter;
+    @ProtobufProperty(index = 1000, type = ProtobufType.MESSAGE)
+    private PollCreationMessage pollCreationMessage;
+    @ProtobufProperty(index = 1001, type = ProtobufType.MESSAGE)
+    private List<PollOption> votes;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public PollUpdateMessage(ChatMessageKey pollCreationMessageKey, PollUpdateEncryptedMetadata encryptedMetadata, PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds) {
+    public PollUpdateMessage(ChatMessageKey pollCreationMessageKey, PollUpdateEncryptedMetadata encryptedMetadata, PollUpdateMessageMetadata metadata, long senderTimestampMilliseconds, Jid voter, PollCreationMessage pollCreationMessage, List<PollOption> votes) {
         this.pollCreationMessageKey = pollCreationMessageKey;
         this.encryptedMetadata = encryptedMetadata;
         this.metadata = metadata;
         this.senderTimestampMilliseconds = senderTimestampMilliseconds;
-        this.votes = new ArrayList<>();
+        this.voter = voter;
+        this.pollCreationMessage = pollCreationMessage;
+        this.votes = votes;
     }
 
     /**

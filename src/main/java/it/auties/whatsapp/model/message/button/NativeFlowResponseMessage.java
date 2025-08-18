@@ -1,12 +1,12 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 
-@ProtobufMessageName("Message.InteractiveResponseMessage.NativeFlowResponseMessage")
+@ProtobufMessage(name = "Message.InteractiveResponseMessage.NativeFlowResponseMessage")
 public record NativeFlowResponseMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String name,

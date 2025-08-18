@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
@@ -17,9 +16,7 @@ import java.util.Optional;
 /**
  * A container for all types of messages known currently to WhatsappWeb.
  * <p>
- * Only one of these properties should be populated, however it's not certain as Whatsapp's Protobuf
- * doesn't use a one of instruction as it would be logical to in said case. This may imply that in
- * some particular and rare cases more than one property can be populated.
+ * Only one of these properties is populated usually, but it is possible to have multiple after a message retry for example
  * <p>
  * There are several categories of messages:
  * <ul>
@@ -30,105 +27,107 @@ import java.util.Optional;
  * <li>Standard messages</li>
  * </ul>
  */
-@ProtobufMessageName("Message")
+@ProtobufMessage(name = "Message")
 public record MessageContainer(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         Optional<String> textWithNoContextMessage,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<SenderKeyDistributionMessage> senderKeyDistributionMessage,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<ImageMessage> imageMessage,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<ContactMessage> contactMessage,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         Optional<LocationMessage> locationMessage,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         Optional<TextMessage> textMessage,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<DocumentMessage> documentMessage,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
         Optional<AudioMessage> audioMessage,
-        @ProtobufProperty(index = 9, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
         Optional<VideoOrGifMessage> videoMessage,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
         Optional<CallMessage> callMessage,
-        @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
         Optional<ProtocolMessage> protocolMessage,
-        @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
         Optional<ContactsMessage> contactsArrayMessage,
-        @ProtobufProperty(index = 14, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 14, type = ProtobufType.MESSAGE)
         Optional<HighlyStructuredMessage> highlyStructuredMessage,
-        @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 16, type = ProtobufType.MESSAGE)
         Optional<SendPaymentMessage> sendPaymentMessage,
-        @ProtobufProperty(index = 18, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 18, type = ProtobufType.MESSAGE)
         Optional<LiveLocationMessage> liveLocationMessage,
-        @ProtobufProperty(index = 22, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 22, type = ProtobufType.MESSAGE)
         Optional<RequestPaymentMessage> requestPaymentMessage,
-        @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
         Optional<DeclinePaymentRequestMessage> declinePaymentRequestMessage,
-        @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
         Optional<CancelPaymentRequestMessage> cancelPaymentRequestMessage,
-        @ProtobufProperty(index = 25, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 25, type = ProtobufType.MESSAGE)
         Optional<TemplateMessage> templateMessage,
-        @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 26, type = ProtobufType.MESSAGE)
         Optional<StickerMessage> stickerMessage,
-        @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
         Optional<GroupInviteMessage> groupInviteMessage,
-        @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 29, type = ProtobufType.MESSAGE)
         Optional<TemplateReplyMessage> templateReplyMessage,
-        @ProtobufProperty(index = 30, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 30, type = ProtobufType.MESSAGE)
         Optional<ProductMessage> productMessage,
-        @ProtobufProperty(index = 31, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
         Optional<DeviceSentMessage> deviceSentMessage,
-        @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
         Optional<DeviceSyncMessage> deviceSyncMessage,
-        @ProtobufProperty(index = 36, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 36, type = ProtobufType.MESSAGE)
         Optional<ListMessage> listMessage,
-        @ProtobufProperty(index = 37, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 37, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> viewOnceMessage,
-        @ProtobufProperty(index = 38, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 38, type = ProtobufType.MESSAGE)
         Optional<PaymentOrderMessage> orderMessage,
-        @ProtobufProperty(index = 39, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 39, type = ProtobufType.MESSAGE)
         Optional<ListResponseMessage> listResponseMessage,
-        @ProtobufProperty(index = 40, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 40, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> ephemeralMessage,
-        @ProtobufProperty(index = 41, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 41, type = ProtobufType.MESSAGE)
         Optional<PaymentInvoiceMessage> invoiceMessage,
-        @ProtobufProperty(index = 42, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 42, type = ProtobufType.MESSAGE)
         Optional<ButtonsMessage> buttonsMessage,
-        @ProtobufProperty(index = 43, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 43, type = ProtobufType.MESSAGE)
         Optional<ButtonsResponseMessage> buttonsResponseMessage,
-        @ProtobufProperty(index = 44, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 44, type = ProtobufType.MESSAGE)
         Optional<PaymentInviteMessage> paymentInviteMessage,
-        @ProtobufProperty(index = 45, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 45, type = ProtobufType.MESSAGE)
         Optional<InteractiveMessage> interactiveMessage,
-        @ProtobufProperty(index = 46, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 46, type = ProtobufType.MESSAGE)
         Optional<ReactionMessage> reactionMessage,
-        @ProtobufProperty(index = 47, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 47, type = ProtobufType.MESSAGE)
         Optional<StickerSyncRMRMessage> stickerSyncMessage,
-        @ProtobufProperty(index = 48, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 48, type = ProtobufType.MESSAGE)
         Optional<InteractiveResponseMessage> interactiveResponseMessage,
-        @ProtobufProperty(index = 49, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 49, type = ProtobufType.MESSAGE)
         Optional<PollCreationMessage> pollCreationMessage,
-        @ProtobufProperty(index = 50, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 50, type = ProtobufType.MESSAGE)
         Optional<PollUpdateMessage> pollUpdateMessage,
-        @ProtobufProperty(index = 51, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 51, type = ProtobufType.MESSAGE)
         Optional<KeepInChatMessage> keepInChatMessage,
-        @ProtobufProperty(index = 53, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 53, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> documentWithCaptionMessage,
-        @ProtobufProperty(index = 54, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 54, type = ProtobufType.MESSAGE)
         Optional<RequestPhoneNumberMessage> requestPhoneNumberMessage,
-        @ProtobufProperty(index = 55, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 55, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> viewOnceV2Message,
-        @ProtobufProperty(index = 56, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 56, type = ProtobufType.MESSAGE)
         Optional<EncryptedReactionMessage> encryptedReactionMessage,
-        @ProtobufProperty(index = 58, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 58, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> editedMessage,
-        @ProtobufProperty(index = 59, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 59, type = ProtobufType.MESSAGE)
         Optional<FutureMessageContainer> viewOnceV2ExtensionMessage,
-        @ProtobufProperty(index = 35, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 78, type = ProtobufType.MESSAGE)
+        Optional<NewsletterAdminInviteMessage> newsletterAdminInviteMessage,
+        @ProtobufProperty(index = 35, type = ProtobufType.MESSAGE)
         Optional<DeviceContextInfo> deviceInfo
-) implements ProtobufMessage {
+) {
     /**
      * An empty message
      */
@@ -165,54 +164,56 @@ public record MessageContainer(
         var builder = new MessageContainerBuilder();
         switch (message) {
             case SenderKeyDistributionMessage senderKeyDistribution ->
-                    builder.senderKeyDistributionMessage(Optional.of(senderKeyDistribution));
-            case ImageMessage image -> builder.imageMessage(Optional.of(image));
-            case ContactMessage contact -> builder.contactMessage(Optional.of(contact));
-            case LocationMessage location -> builder.locationMessage(Optional.of(location));
-            case TextMessage text -> builder.textMessage(Optional.of(text));
-            case DocumentMessage document -> builder.documentMessage(Optional.of(document));
-            case AudioMessage audio -> builder.audioMessage(Optional.of(audio));
-            case VideoOrGifMessage video -> builder.videoMessage(Optional.of(video));
-            case ProtocolMessage protocol -> builder.protocolMessage(Optional.of(protocol));
-            case ContactsMessage contactsArray -> builder.contactsArrayMessage(Optional.of(contactsArray));
+                    builder.senderKeyDistributionMessage(senderKeyDistribution);
+            case ImageMessage image -> builder.imageMessage(image);
+            case ContactMessage contact -> builder.contactMessage(contact);
+            case LocationMessage location -> builder.locationMessage(location);
+            case TextMessage text -> builder.textMessage(text);
+            case DocumentMessage document -> builder.documentMessage(document);
+            case AudioMessage audio -> builder.audioMessage(audio);
+            case VideoOrGifMessage video -> builder.videoMessage(video);
+            case ProtocolMessage protocol -> builder.protocolMessage(protocol);
+            case ContactsMessage contactsArray -> builder.contactsArrayMessage(contactsArray);
             case HighlyStructuredMessage highlyStructured ->
-                    builder.highlyStructuredMessage(Optional.of(highlyStructured));
-            case SendPaymentMessage sendPayment -> builder.sendPaymentMessage(Optional.of(sendPayment));
-            case LiveLocationMessage liveLocation -> builder.liveLocationMessage(Optional.of(liveLocation));
-            case RequestPaymentMessage requestPayment -> builder.requestPaymentMessage(Optional.of(requestPayment));
+                    builder.highlyStructuredMessage(highlyStructured);
+            case SendPaymentMessage sendPayment -> builder.sendPaymentMessage(sendPayment);
+            case LiveLocationMessage liveLocation -> builder.liveLocationMessage(liveLocation);
+            case RequestPaymentMessage requestPayment -> builder.requestPaymentMessage(requestPayment);
             case DeclinePaymentRequestMessage declinePaymentRequest ->
-                    builder.declinePaymentRequestMessage(Optional.of(declinePaymentRequest));
+                    builder.declinePaymentRequestMessage(declinePaymentRequest);
             case CancelPaymentRequestMessage cancelPaymentRequest ->
-                    builder.cancelPaymentRequestMessage(Optional.of(cancelPaymentRequest));
-            case TemplateMessage template -> builder.templateMessage(Optional.of(template));
-            case StickerMessage sticker -> builder.stickerMessage(Optional.of(sticker));
-            case GroupInviteMessage groupInvite -> builder.groupInviteMessage(Optional.of(groupInvite));
+                    builder.cancelPaymentRequestMessage(cancelPaymentRequest);
+            case TemplateMessage template -> builder.templateMessage(template);
+            case StickerMessage sticker -> builder.stickerMessage(sticker);
+            case GroupInviteMessage groupInvite -> builder.groupInviteMessage(groupInvite);
             case TemplateReplyMessage templateButtonReply ->
-                    builder.templateReplyMessage(Optional.of(templateButtonReply));
-            case ProductMessage product -> builder.productMessage(Optional.of(product));
-            case DeviceSyncMessage deviceSync -> builder.deviceSyncMessage(Optional.of(deviceSync));
-            case ListMessage buttonsList -> builder.listMessage(Optional.of(buttonsList));
-            case PaymentOrderMessage order -> builder.orderMessage(Optional.of(order));
-            case ListResponseMessage listResponse -> builder.listResponseMessage(Optional.of(listResponse));
-            case PaymentInvoiceMessage invoice -> builder.invoiceMessage(Optional.of(invoice));
-            case ButtonsMessage buttons -> builder.buttonsMessage(Optional.of(buttons));
-            case ButtonsResponseMessage buttonsResponse -> builder.buttonsResponseMessage(Optional.of(buttonsResponse));
-            case PaymentInviteMessage paymentInvite -> builder.paymentInviteMessage(Optional.of(paymentInvite));
-            case InteractiveMessage interactive -> builder.interactiveMessage(Optional.of(interactive));
-            case ReactionMessage reaction -> builder.reactionMessage(Optional.of(reaction));
-            case StickerSyncRMRMessage stickerSync -> builder.stickerSyncMessage(Optional.of(stickerSync));
-            case DeviceSentMessage deviceSent -> builder.deviceSentMessage(Optional.of(deviceSent));
+                    builder.templateReplyMessage(templateButtonReply);
+            case ProductMessage product -> builder.productMessage(product);
+            case DeviceSyncMessage deviceSync -> builder.deviceSyncMessage(deviceSync);
+            case ListMessage buttonsList -> builder.listMessage(buttonsList);
+            case PaymentOrderMessage order -> builder.orderMessage(order);
+            case ListResponseMessage listResponse -> builder.listResponseMessage(listResponse);
+            case PaymentInvoiceMessage invoice -> builder.invoiceMessage(invoice);
+            case ButtonsMessage buttons -> builder.buttonsMessage(buttons);
+            case ButtonsResponseMessage buttonsResponse -> builder.buttonsResponseMessage(buttonsResponse);
+            case PaymentInviteMessage paymentInvite -> builder.paymentInviteMessage(paymentInvite);
+            case InteractiveMessage interactive -> builder.interactiveMessage(interactive);
+            case ReactionMessage reaction -> builder.reactionMessage(reaction);
+            case StickerSyncRMRMessage stickerSync -> builder.stickerSyncMessage(stickerSync);
+            case DeviceSentMessage deviceSent -> builder.deviceSentMessage(deviceSent);
             case InteractiveResponseMessage interactiveResponseMessage ->
-                    builder.interactiveResponseMessage(Optional.of(interactiveResponseMessage));
+                    builder.interactiveResponseMessage(interactiveResponseMessage);
             case PollCreationMessage pollCreationMessage ->
-                    builder.pollCreationMessage(Optional.of(pollCreationMessage));
-            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(Optional.of(pollUpdateMessage));
-            case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(Optional.of(keepInChatMessage));
+                    builder.pollCreationMessage(pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(pollUpdateMessage);
+            case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(keepInChatMessage);
             case RequestPhoneNumberMessage requestPhoneNumberMessage ->
-                    builder.requestPhoneNumberMessage(Optional.of(requestPhoneNumberMessage));
+                    builder.requestPhoneNumberMessage(requestPhoneNumberMessage);
             case EncryptedReactionMessage encReactionMessage ->
-                    builder.encryptedReactionMessage(Optional.of(encReactionMessage));
-            case CallMessage callMessage -> builder.callMessage(Optional.of(callMessage));
+                    builder.encryptedReactionMessage(encReactionMessage);
+            case CallMessage callMessage -> builder.callMessage(callMessage);
+            case NewsletterAdminInviteMessage newsletterAdminInviteMessage ->
+                    builder.newsletterAdminInviteMessage(newsletterAdminInviteMessage);
             default -> {
             }
         }
@@ -300,9 +301,6 @@ public record MessageContainer(
     public Message content() {
         if (this.textWithNoContextMessage.isPresent()) {
             return TextMessage.of(textWithNoContextMessage.get());
-        }
-        if (this.senderKeyDistributionMessage.isPresent()) {
-            return senderKeyDistributionMessage.get();
         }
         if (this.imageMessage.isPresent()) {
             return imageMessage.get();
@@ -439,6 +437,13 @@ public record MessageContainer(
         if (callMessage.isPresent()) {
             return callMessage.get();
         }
+        if (newsletterAdminInviteMessage.isPresent()) {
+            return newsletterAdminInviteMessage.get();
+        }
+        // This needs to be last
+        if (this.senderKeyDistributionMessage.isPresent()) {
+            return senderKeyDistributionMessage.get();
+        }
         return EMPTY_MESSAGE;
     }
 
@@ -479,6 +484,10 @@ public record MessageContainer(
      * @return a non-null type
      */
     public MessageType type() {
+        if (textWithNoContextMessage.isPresent()) {
+            return MessageType.TEXT;
+        }
+
         if (ephemeralMessage.isPresent()) {
             return MessageType.EPHEMERAL;
         }
@@ -524,7 +533,7 @@ public record MessageContainer(
 
         return new MessageContainerBuilder()
                 .ephemeralMessage(FutureMessageContainer.of(content()))
-                .deviceInfo(deviceInfo)
+                .deviceInfo(deviceInfo.orElse(null))
                 .build();
     }
 
@@ -540,7 +549,7 @@ public record MessageContainer(
 
         return new MessageContainerBuilder()
                 .viewOnceMessage(FutureMessageContainer.of(content()))
-                .deviceInfo(deviceInfo)
+                .deviceInfo(deviceInfo.orElse(null))
                 .build();
     }
 

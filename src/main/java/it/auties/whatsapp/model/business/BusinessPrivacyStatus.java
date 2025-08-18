@@ -1,12 +1,13 @@
 package it.auties.whatsapp.model.business;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of business privacy
  */
-public enum BusinessPrivacyStatus implements ProtobufEnum {
+@ProtobufEnum(name = "WebMessageInfo.BizPrivacyStatus")
+public enum BusinessPrivacyStatus {
     /**
      * End-to-end encryption
      */

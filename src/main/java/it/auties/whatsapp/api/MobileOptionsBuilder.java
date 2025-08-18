@@ -111,7 +111,6 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
                 .store(store)
                 .keys(keys)
                 .errorHandler(errorHandler)
-                .socketExecutor(socketExecutor)
                 .build());
     }
 
@@ -122,7 +121,7 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unverified unverified() {
-        return new Unverified(store, keys, errorHandler, socketExecutor);
+        return new Unverified(store, keys, errorHandler, null);
     }
 
     /**
@@ -132,6 +131,6 @@ public final class MobileOptionsBuilder extends OptionsBuilder<MobileOptionsBuil
      * @return a non-null selector
      */
     public Unregistered unregistered() {
-        return new Unregistered(store, keys, errorHandler, socketExecutor);
+        return new Unregistered(store, keys, errorHandler);
     }
 }

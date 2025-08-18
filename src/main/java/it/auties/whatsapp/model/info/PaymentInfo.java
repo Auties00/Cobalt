@@ -1,10 +1,9 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufEnum;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
@@ -18,20 +17,20 @@ import java.util.Optional;
 /**
  * A model class that holds the information related to a payment.
  */
-@ProtobufMessageName("PaymentInfo")
+@ProtobufMessage(name = "PaymentInfo")
 public record PaymentInfo(
         @Deprecated
-        @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
         Currency currencyDeprecated,
         @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Jid receiverJid,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
         Status status,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long transactionTimestampSeconds,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         ChatMessageKey requestMessageKey,
         @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
@@ -39,15 +38,15 @@ public record PaymentInfo(
         boolean futureProofed,
         @ProtobufProperty(index = 9, type = ProtobufType.STRING)
         String currency,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 10, type = ProtobufType.ENUM)
         TransactionStatus transactionStatus,
         @ProtobufProperty(index = 11, type = ProtobufType.BOOL)
         boolean useNoviFormat,
-        @ProtobufProperty(index = 12, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
         PaymentMoney primaryAmount,
-        @ProtobufProperty(index = 13, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
         PaymentMoney exchangeAmount
-) implements Info, ProtobufMessage {
+) implements Info {
     /**
      * Returns when the transaction happened
      *
@@ -70,8 +69,8 @@ public record PaymentInfo(
      * The constants of this enumerated type describe the status of a payment described by a
      * {@link PaymentInfo}
      */
-    @ProtobufMessageName("PaymentInfo.Status")
-    public enum Status implements ProtobufEnum {
+    @ProtobufEnum(name = "PaymentInfo.Status")
+    public enum Status {
         /**
          * Unknown status
          */
@@ -136,8 +135,8 @@ public record PaymentInfo(
      * The constants of this enumerated type describe the currencies supported for a transaction
      * described by a {@link PaymentInfo}
      */
-    @ProtobufMessageName("PaymentInfo.Currency")
-    public enum Currency implements ProtobufEnum {
+    @ProtobufEnum(name = "PaymentInfo.Currency")
+    public enum Currency {
         /**
          * Unknown currency
          */
@@ -158,8 +157,8 @@ public record PaymentInfo(
         }
     }
 
-    @ProtobufMessageName("PaymentInfo.TxnStatus")
-    public enum TransactionStatus implements ProtobufEnum {
+    @ProtobufEnum(name = "PaymentInfo.TxnStatus")
+    public enum TransactionStatus {
         UNKNOWN(0),
         PENDING_SETUP(1),
         PENDING_RECEIVER_SETUP(2),

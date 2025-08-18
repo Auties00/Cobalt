@@ -1,20 +1,20 @@
 package it.auties.whatsapp.api;
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.Specification;
 
 /**
  * The constants of this enumerated type describe the various chat history's codeLength that Whatsapp
  * can send on the first login attempt
  */
+@ProtobufMessage
 public record WebHistoryLength(
         @ProtobufProperty(index = 1, type = ProtobufType.INT32)
         int size
-) implements ProtobufMessage {
+) {
     private static final WebHistoryLength ZERO = new WebHistoryLength(0);
-    private static final WebHistoryLength STANDARD = new WebHistoryLength(Specification.Whatsapp.DEFAULT_HISTORY_SIZE);
+    private static final WebHistoryLength STANDARD = new WebHistoryLength(59206);
     private static final WebHistoryLength EXTENDED = new WebHistoryLength(Integer.MAX_VALUE);
 
     /**
@@ -65,6 +65,6 @@ public record WebHistoryLength(
      * @return a boolean
      */
     public boolean isExtended() {
-        return size > Specification.Whatsapp.DEFAULT_HISTORY_SIZE;
+        return size > STANDARD.size();
     }
 }

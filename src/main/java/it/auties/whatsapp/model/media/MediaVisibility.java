@@ -1,15 +1,14 @@
 package it.auties.whatsapp.model.media;
 
+import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessageName;
-import it.auties.protobuf.model.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various types of media visibility that can be
  * set for a chat
  */
-@ProtobufMessageName("MediaVisibility")
-public enum MediaVisibility implements ProtobufEnum {
+@ProtobufEnum(name = "MediaVisibility")
+public enum MediaVisibility {
     /**
      * Default
      */

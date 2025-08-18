@@ -1,8 +1,10 @@
 package it.auties.whatsapp.controller;
 
 import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.controller.builtin.DiscardingControllerSerializer;
+import it.auties.whatsapp.controller.builtin.JsonControllerSerializer;
+import it.auties.whatsapp.controller.builtin.ProtobufControllerSerializer;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.util.DefaultControllerSerializer;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -18,23 +20,54 @@ import java.util.concurrent.CompletableFuture;
 public interface ControllerSerializer {
     /**
      * Returns the default serializer
-     * This implementation uses .smile files compressed using gzip
+     * This implementation uses .proto files compressed using gzip
      *
      * @return a serializer
      */
-    static ControllerSerializer toSmile() {
-        return DefaultControllerSerializer.of();
+    static ControllerSerializer discarding() {
+        return DiscardingControllerSerializer.of();
     }
 
     /**
      * Returns the default serializer
-     * This implementation uses .smile files compressed using gzip
+     * This implementation uses .proto files compressed using gzip
+     *
+     * @return a serializer
+     */
+    static ControllerSerializer toProtobuf() {
+        return ProtobufControllerSerializer.ofDefaultPath();
+    }
+
+    /**
+     * Returns the default serializer
+     * This implementation uses .proto files compressed using gzip
      *
      * @param baseDirectory the directory where all the sessions should be saved
      * @return a serializer
      */
-    static ControllerSerializer toSmile(Path baseDirectory) {
-        return DefaultControllerSerializer.of(baseDirectory);
+    static ControllerSerializer toProtobuf(Path baseDirectory) {
+        return ProtobufControllerSerializer.of(baseDirectory);
+    }
+
+    /**
+     * Returns a json serializer
+     * This implementation uses .json files with no compression
+     *
+     * @return a serializer
+     */
+    static ControllerSerializer toJson() {
+        return JsonControllerSerializer.ofDefaultPath();
+    }
+
+    /**
+     * Returns the default serializer
+     * This implementation uses .json files with no compression
+     *
+     * @param baseDirectory the directory where all the sessions should be saved
+     * @return a serializer
+     */
+    static ControllerSerializer toJson(Path baseDirectory) {
+        return JsonControllerSerializer.of(baseDirectory);
     }
 
     /**
@@ -62,7 +95,15 @@ public interface ControllerSerializer {
      * @param clientType  the non-null client type
      * @return a non-null store-keys pair
      */
-    StoreKeysPair newStoreKeysPair(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType);
+    default StoreKeysPair newStoreKeysPair(UUID uuid, Long phoneNumber, Collection<String> alias, ClientType clientType) {
+        var store = Store.newStore(uuid, phoneNumber, alias, clientType);
+        store.setSerializer(this);
+        linkMetadata(store);
+        var keys = Keys.newKeys(uuid, phoneNumber, alias, clientType);
+        keys.setSerializer(this);
+        serializeKeys(keys, true);
+        return new StoreKeysPair(store, keys);
+    }
 
     /**
      * Deserializes a store-keys pair from a list of possible identifiers
@@ -73,7 +114,60 @@ public interface ControllerSerializer {
      * @param clientType  the non-null client type
      * @return an optional store-keys pair
      */
-    Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, Long phoneNumber, String alias, ClientType clientType);
+    default Optional<StoreKeysPair> deserializeStoreKeysPair(UUID uuid, Long phoneNumber, String alias, ClientType clientType) {
+        if (uuid != null) {
+            var store = deserializeStore(clientType, uuid);
+            if(store.isEmpty()) {
+                return Optional.empty();
+            }
+
+            store.get().setSerializer(this);
+            attributeStore(store.get());
+            var keys = deserializeKeys(clientType, uuid);
+            if(keys.isEmpty()) {
+                return Optional.empty();
+            }
+
+            keys.get().setSerializer(this);
+            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
+        }
+
+        if (phoneNumber != null) {
+            var store = deserializeStore(clientType, phoneNumber);
+            if(store.isEmpty()) {
+                return Optional.empty();
+            }
+
+            store.get().setSerializer(this);
+            attributeStore(store.get());
+            var keys = deserializeKeys(clientType, phoneNumber);
+            if(keys.isEmpty()) {
+                return Optional.empty();
+            }
+
+            keys.get().setSerializer(this);
+            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
+        }
+
+        if (alias != null) {
+            var store = deserializeStore(clientType, alias);
+            if(store.isEmpty()) {
+                return Optional.empty();
+            }
+
+            store.get().setSerializer(this);
+            attributeStore(store.get());
+            var keys = deserializeKeys(clientType,  alias);
+            if(keys.isEmpty()) {
+                return Optional.empty();
+            }
+
+            keys.get().setSerializer(this);
+            return Optional.of(new StoreKeysPair(store.get(), keys.get()));
+        }
+
+        return Optional.empty();
+    }
 
     /**
      * Serializes the keys

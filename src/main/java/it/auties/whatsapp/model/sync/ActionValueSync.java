@@ -1,84 +1,84 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.util.Clock;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
-@ProtobufMessageName("SyncActionValue")
+@ProtobufMessage(name = "SyncActionValue")
 public record ActionValueSync(
         @ProtobufProperty(index = 1, type = ProtobufType.INT64)
         long timestamp,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<StarAction> starAction,
-        @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
         Optional<ContactAction> contactAction,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<MuteAction> muteAction,
-        @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
         Optional<PinAction> pinAction,
-        @ProtobufProperty(index = 8, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
         Optional<QuickReplyAction> quickReplyAction,
-        @ProtobufProperty(index = 11, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 11, type = ProtobufType.MESSAGE)
         Optional<RecentEmojiWeightsAction> recentEmojiWeightsAction,
-        @ProtobufProperty(index = 14, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 14, type = ProtobufType.MESSAGE)
         Optional<LabelEditAction> labelEditAction,
-        @ProtobufProperty(index = 15, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 15, type = ProtobufType.MESSAGE)
         Optional<LabelAssociationAction> labelAssociationAction,
-        @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
         Optional<ArchiveChatAction> archiveChatAction,
-        @ProtobufProperty(index = 18, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 18, type = ProtobufType.MESSAGE)
         Optional<DeleteMessageForMeAction> deleteMessageForMeAction,
-        @ProtobufProperty(index = 20, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 20, type = ProtobufType.MESSAGE)
         Optional<MarkChatAsReadAction> markChatAsReadAction,
-        @ProtobufProperty(index = 21, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 21, type = ProtobufType.MESSAGE)
         Optional<ClearChatAction> clearChatAction,
-        @ProtobufProperty(index = 22, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 22, type = ProtobufType.MESSAGE)
         Optional<DeleteChatAction> deleteChatAction,
-        @ProtobufProperty(index = 25, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 25, type = ProtobufType.MESSAGE)
         Optional<StickerAction> favoriteStickerAction,
-        @ProtobufProperty(index = 26, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 26, type = ProtobufType.MESSAGE)
         Optional<AndroidUnsupportedActions> androidUnsupportedActions,
-        @ProtobufProperty(index = 27, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 27, type = ProtobufType.MESSAGE)
         Optional<AgentAction> agentAction,
-        @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
         Optional<SubscriptionAction> subscriptionAction,
-        @ProtobufProperty(index = 29, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 29, type = ProtobufType.MESSAGE)
         Optional<UserStatusMuteAction> userStatusMuteAction,
-        @ProtobufProperty(index = 30, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 30, type = ProtobufType.MESSAGE)
         Optional<TimeFormatAction> timeFormatAction,
-        @ProtobufProperty(index = 31, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
         Optional<NuxAction> nuxAction,
-        @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
         Optional<PrimaryVersionAction> primaryVersionAction,
-        @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 33, type = ProtobufType.MESSAGE)
         Optional<StickerAction> stickerAction,
-        @ProtobufProperty(index = 34, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 34, type = ProtobufType.MESSAGE)
         Optional<RemoveRecentStickerAction> removeRecentStickerAction,
-        @ProtobufProperty(index = 35, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 35, type = ProtobufType.MESSAGE)
         Optional<ChatAssignmentAction> chatAssignmentAction,
-        @ProtobufProperty(index = 36, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 36, type = ProtobufType.MESSAGE)
         Optional<ChatAssignmentOpenedStatusAction> chatAssignmentOpenedStatusAction,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         Optional<SecurityNotificationSettings> securityNotificationSetting,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<PushNameSettings> pushNameSetting,
-        @ProtobufProperty(index = 16, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 16, type = ProtobufType.MESSAGE)
         Optional<LocaleSettings> localeSetting,
-        @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
         Optional<UnarchiveChatsSettings> unarchiveChatsSetting,
-        @ProtobufProperty(index = 10, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
         Optional<StickerMetadata> stickerMetadata,
-        @ProtobufProperty(index = 19, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 19, type = ProtobufType.MESSAGE)
         Optional<KeyExpiration> keyExpiration,
-        @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
         Optional<PrimaryFeature> primaryFeature
-) implements ProtobufMessage {
+) {
     public static ActionValueSync of(Action action) {
         var builder = new ActionValueSyncBuilder().timestamp(Clock.nowSeconds());
         switch (action) {
@@ -218,5 +218,20 @@ public record ActionValueSync(
             return localeSetting;
         }
         return unarchiveChatsSetting;
+    }
+
+    @SuppressWarnings("OptionalIsPresent")
+    public OptionalInt version() {
+        var setting = setting();
+        if(setting.isPresent()) {
+            return OptionalInt.of(setting.get().settingVersion());
+        }
+
+        var action = action();
+        if(action.isPresent()) {
+            return OptionalInt.of(action.get().actionVersion());
+        }
+
+        return OptionalInt.empty();
     }
 }

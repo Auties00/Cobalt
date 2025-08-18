@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * A model class that represents a message to try to place a {@link PaymentMessage}.
  */
-@ProtobufMessageName("Message.RequestPaymentMessage")
+@ProtobufMessage(name = "Message.RequestPaymentMessage")
 public record RequestPaymentMessage(
         @ProtobufProperty(index = 1, type = ProtobufType.STRING)
         String currency,
@@ -26,13 +26,13 @@ public record RequestPaymentMessage(
         long amount1000,
         @ProtobufProperty(index = 3, type = ProtobufType.STRING)
         Jid requestFrom,
-        @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
         Optional<MessageContainer> noteMessage,
         @ProtobufProperty(index = 5, type = ProtobufType.UINT64)
         long expiryTimestampSeconds,
-        @ProtobufProperty(index = 6, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
         PaymentMoney amount,
-        @ProtobufProperty(index = 7, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
         Optional<PaymentBackground> background
 ) implements PaymentMessage {
     /**

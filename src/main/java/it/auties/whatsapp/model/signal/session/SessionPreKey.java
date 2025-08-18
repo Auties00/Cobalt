@@ -1,10 +1,11 @@
 package it.auties.whatsapp.model.signal.session;
 
 
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 
+@ProtobufMessage
 public record SessionPreKey(
         @ProtobufProperty(index = 1, type = ProtobufType.INT32)
         Integer preKeyId,
@@ -12,6 +13,6 @@ public record SessionPreKey(
         byte[] baseKey,
         @ProtobufProperty(index = 3, type = ProtobufType.INT32)
         int signedKeyId
-) implements ProtobufMessage {
+) {
 
 }

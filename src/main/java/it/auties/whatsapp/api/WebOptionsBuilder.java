@@ -15,6 +15,18 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
     }
 
     /**
+     * Whether the library should send receipts automatically for messages
+     * By default disabled
+     * For the web api, if enabled, the companion won't receive notifications
+     *
+     * @return the same instance for chaining
+     */
+    public WebOptionsBuilder automaticMessageReceipts(boolean automaticMessageReceipts) {
+        store.setAutomaticMessageReceipts(automaticMessageReceipts);
+        return this;
+    }
+
+    /**
      * Sets how much chat history Whatsapp should send when the QR is first scanned.
      * By default, one year
      *
@@ -38,7 +50,6 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
                     .keys(keys)
                     .errorHandler(errorHandler)
                     .webVerificationSupport(qrHandler)
-                    .socketExecutor(socketExecutor)
                     .build();
         }
 
@@ -60,7 +71,6 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
                     .keys(keys)
                     .errorHandler(errorHandler)
                     .webVerificationSupport(pairingCodeHandler)
-                    .socketExecutor(socketExecutor)
                     .build();
         }
 
@@ -84,7 +94,6 @@ public final class WebOptionsBuilder extends OptionsBuilder<WebOptionsBuilder> {
                     .store(store)
                     .keys(keys)
                     .errorHandler(errorHandler)
-                    .socketExecutor(socketExecutor)
                     .build();
         }
 

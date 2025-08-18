@@ -1,14 +1,13 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.whatsapp.model.message.model.ChatMessageKey;
 
 import static it.auties.protobuf.model.ProtobufType.INT64;
-import static it.auties.protobuf.model.ProtobufType.OBJECT;
+import static it.auties.protobuf.model.ProtobufType.MESSAGE;
 
-@ProtobufMessageName("SyncActionMessage")
-public record SyncActionMessage(@ProtobufProperty(index = 1, type = OBJECT) ChatMessageKey key,
-                                @ProtobufProperty(index = 2, type = INT64) Long timestamp) implements ProtobufMessage {
+@ProtobufMessage(name = "SyncActionMessage")
+public record SyncActionMessage(@ProtobufProperty(index = 1, type = MESSAGE) ChatMessageKey key,
+                                @ProtobufProperty(index = 2, type = INT64) Long timestamp) {
 }

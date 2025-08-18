@@ -4,17 +4,14 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
-import it.auties.whatsapp.model.signal.auth.Version;
 
 import java.net.URI;
-import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings("unused")
 public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOptionsBuilder, WebOptionsBuilder {
     Store store;
     Keys keys;
     ErrorHandler errorHandler;
-    ExecutorService socketExecutor;
 
     OptionsBuilder(Store store, Keys keys) {
         this.store = store;
@@ -31,20 +28,6 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T name(String name) {
         store.setName(name);
-        return (T) this;
-    }
-
-    /**
-     * Sets the version of Whatsapp to use
-     * If the version is too outdated, the server will refuse to connect
-     * If you are using the mobile api and the version doesn't match the hash, the server will refuse to connect
-     * By default the latest stable version will be used
-     *
-     * @return the same instance for chaining
-     */
-    @SuppressWarnings("unchecked")
-    public T version(Version version) {
-        store.setVersion(version);
         return (T) this;
     }
 
@@ -73,6 +56,19 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     }
 
     /**
+     * Sets whether the provided proxy should be used for media uploads/downloads
+     * By default, the proxy is used for both uploads and downloads
+     *
+     * @return the same instance for chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T mediaProxySetting(MediaProxySetting mediaProxySetting) {
+        store.setMediaProxySetting(mediaProxySetting);
+        return (T) this;
+    }
+
+
+    /**
      * Sets the error handler for this session
      *
      * @return the same instance for chaining
@@ -80,18 +76,6 @@ public sealed class OptionsBuilder<T extends OptionsBuilder<T>> permits MobileOp
     @SuppressWarnings("unchecked")
     public T errorHandler(ErrorHandler errorHandler) {
         this.errorHandler = errorHandler;
-        return (T) this;
-    }
-
-
-    /**
-     * Sets the executor to use for the socket
-     *
-     * @return the same instance for chaining
-     */
-    @SuppressWarnings("unchecked")
-    public T socketExecutor(ExecutorService socketExecutor) {
-        this.socketExecutor = socketExecutor;
         return (T) this;
     }
 

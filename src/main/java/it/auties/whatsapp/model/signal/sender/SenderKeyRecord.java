@@ -1,15 +1,16 @@
 package it.auties.whatsapp.model.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
 import java.util.*;
 
-public final class SenderKeyRecord implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = ProtobufType.OBJECT)
+@ProtobufMessage
+public final class SenderKeyRecord {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     private final List<SenderKeyState> states;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

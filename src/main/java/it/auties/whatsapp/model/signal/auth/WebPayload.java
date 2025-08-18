@@ -1,13 +1,12 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
 
-@ProtobufMessageName("ClientPayload.WebInfo.WebdPayload")
+@ProtobufMessage(name = "ClientPayload.WebInfo.WebdPayload")
 public record WebPayload(@ProtobufProperty(index = 1, type = BOOL) boolean usesParticipantInKey,
                          @ProtobufProperty(index = 2, type = BOOL) boolean supportsStarredMessages,
                          @ProtobufProperty(index = 3, type = BOOL) boolean supportsDocumentMessages,
@@ -18,5 +17,5 @@ public record WebPayload(@ProtobufProperty(index = 1, type = BOOL) boolean usesP
                          @ProtobufProperty(index = 8, type = BOOL) boolean supportsE2EAudio,
                          @ProtobufProperty(index = 9, type = BOOL) boolean supportsE2EDocument,
                          @ProtobufProperty(index = 10, type = STRING) String documentTypes,
-                         @ProtobufProperty(index = 11, type = BYTES) byte[] features) implements ProtobufMessage {
+                         @ProtobufProperty(index = 11, type = BYTES) byte[] features) {
 }

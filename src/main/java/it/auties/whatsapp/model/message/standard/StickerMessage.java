@@ -2,13 +2,12 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.model.reserved.ExtendedMediaMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
@@ -19,62 +18,45 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import static it.auties.whatsapp.model.message.model.MediaMessageType.STICKER;
-import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a message holding a sticker inside
  */
-@ProtobufMessageName("Message.StickerMessage")
-public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> implements MediaMessage<StickerMessage> {
+@ProtobufMessage(name = "Message.StickerMessage")
+public final class StickerMessage extends MediaMessage<StickerMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     private String mediaUrl;
-
     @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
     private byte[] mediaSha256;
-
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
     private byte[] mediaEncryptedSha256;
-
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     private byte[] mediaKey;
-
     @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     private final String mimetype;
-
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
     private final Integer height;
-
     @ProtobufProperty(index = 7, type = ProtobufType.UINT32)
     private final Integer width;
-
     @ProtobufProperty(index = 8, type = ProtobufType.STRING)
     private String mediaDirectPath;
-
     @ProtobufProperty(index = 9, type = ProtobufType.UINT64)
     private Long mediaSize;
-
     @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
     private Long mediaKeyTimestampSeconds;
-
     @ProtobufProperty(index = 11, type = ProtobufType.UINT32)
     private final Integer firstFrameLength;
-
     @ProtobufProperty(index = 12, type = ProtobufType.BYTES)
     private final byte[] firstFrameSidecar;
-
     @ProtobufProperty(index = 13, type = ProtobufType.BOOL)
     private final boolean animated;
-
     @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
     private final byte[] thumbnail;
-
-    @ProtobufProperty(index = 17, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-
     @ProtobufProperty(index = 18, type = ProtobufType.INT64)
     private final Long stickerSentTimestamp;
-
     @ProtobufProperty(index = 19, type = ProtobufType.BOOL)
     private final boolean avatar;
 
@@ -102,9 +84,8 @@ public final class StickerMessage extends ExtendedMediaMessage<StickerMessage> i
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
     static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         return new StickerMessageBuilder()
-
-                .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
+                .mimetype(requireNonNullElse(mimeType, STICKER.mimeType()))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, false).orElse(null))
                 .animated(animated)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build()

@@ -2,9 +2,8 @@ package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonActionLink;
 import it.auties.whatsapp.model.chat.Chat;
@@ -21,8 +20,8 @@ import java.util.Optional;
 /**
  * A model class that holds the information related to a {@link it.auties.whatsapp.model.message.model.ContextualMessage}.
  */
-@ProtobufMessageName("ContextInfo")
-public final class ContextInfo implements Info, ProtobufMessage {
+@ProtobufMessage(name = "ContextInfo")
+public final class ContextInfo implements Info {
     /**
      * The jid of the message that this ContextualMessage quotes
      */
@@ -38,7 +37,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * The message container that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final MessageContainer quotedMessage;
 
     /**
@@ -86,13 +85,13 @@ public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * The ad that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 23, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
     private final AdReplyInfo quotedAd;
 
     /**
      * Placeholder key
      */
-    @ProtobufProperty(index = 24, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
     private final ChatMessageKey placeholderKey;
 
     /**
@@ -101,7 +100,6 @@ public final class ContextInfo implements Info, ProtobufMessage {
      */
     @ProtobufProperty(index = 25, type = ProtobufType.UINT32)
     private int ephemeralExpiration;
-
     /**
      * The timestampSeconds, that is the seconds in seconds since {@link java.time.Instant#EPOCH}, of the
      * last modification to the ephemeral settings for the chat where this ContextualMessage was
@@ -119,7 +117,7 @@ public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * External ad reply
      */
-    @ProtobufProperty(index = 28, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
     private final ExternalAdReplyInfo externalAdReply;
 
     /**
@@ -143,13 +141,13 @@ public final class ContextInfo implements Info, ProtobufMessage {
     /**
      * Disappearing mode
      */
-    @ProtobufProperty(index = 32, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
     private final ChatDisappear disappearingMode;
 
     /**
      * Action link
      */
-    @ProtobufProperty(index = 33, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 33, type = ProtobufType.MESSAGE)
     private final ButtonActionLink actionLink;
 
     /**
@@ -216,14 +214,46 @@ public final class ContextInfo implements Info, ProtobufMessage {
         this.trustBannerAction = trustBannerAction;
     }
 
-    public static ContextInfo of(MessageInfo quotedMessage) {
+    public static ContextInfo of(MessageInfo<?> quotedMessage) {
         return new ContextInfoBuilder()
                 .quotedMessageId(quotedMessage.id())
+                .quotedMessageSenderJid(quotedMessage.senderJid())
                 .quotedMessage(quotedMessage.message())
                 .quotedMessageChatJid(quotedMessage.parentJid())
-                .quotedMessageSenderJid(quotedMessage.senderJid())
                 .mentions(new ArrayList<>())
                 .build();
+    }
+
+
+    public static ContextInfo of(ContextInfo contextInfo, MessageInfo<?> quotedMessage) {
+        return contextInfo == null ? of(quotedMessage) : new ContextInfoBuilder()
+                .quotedMessageId(quotedMessage.id())
+                .quotedMessageSenderJid(quotedMessage.senderJid())
+                .quotedMessage(quotedMessage.message())
+                .quotedMessageChatJid(quotedMessage.parentJid())
+                .mentions(new ArrayList<>())
+                .conversionSource(contextInfo.conversionSource)
+                .conversionData(contextInfo.conversionData)
+                .conversionDelaySeconds(contextInfo.conversionDelaySeconds)
+                .forwardingScore(contextInfo.forwardingScore)
+                .forwarded(contextInfo.forwarded)
+                .quotedAd(contextInfo.quotedAd)
+                .placeholderKey(contextInfo.placeholderKey)
+                .ephemeralExpiration(contextInfo.ephemeralExpiration)
+                .ephemeralSettingTimestamp(contextInfo.ephemeralSettingTimestamp)
+                .ephemeralSharedSecret(contextInfo.ephemeralSharedSecret)
+                .externalAdReply(contextInfo.externalAdReply)
+                .entryPointConversionSource(contextInfo.entryPointConversionSource)
+                .entryPointConversionApp(contextInfo.entryPointConversionApp)
+                .entryPointConversionDelaySeconds(contextInfo.entryPointConversionDelaySeconds)
+                .disappearingMode(contextInfo.disappearingMode)
+                .actionLink(contextInfo.actionLink)
+                .groupSubject(contextInfo.groupSubject)
+                .parentGroup(contextInfo.parentGroup)
+                .trustBannerType(contextInfo.trustBannerType)
+                .trustBannerAction(contextInfo.trustBannerAction)
+                .build();
+
     }
 
     public static ContextInfo empty() {

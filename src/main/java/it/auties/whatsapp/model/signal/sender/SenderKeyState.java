@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufMessage;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 
@@ -12,14 +12,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class SenderKeyState implements ProtobufMessage {
+@ProtobufMessage
+public final class SenderKeyState {
     @ProtobufProperty(index = 1, type = ProtobufType.INT32)
     private final int id;
-    @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
     private final SignalKeyPair signingKey;
-    @ProtobufProperty(index = 3, type = ProtobufType.MAP, keyType = ProtobufType.INT32, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
     private final ConcurrentHashMap<Integer, SenderMessageKey> messageKeys;
-    @ProtobufProperty(index = 4, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
     private SenderChainKey chainKey;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

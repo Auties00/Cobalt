@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
@@ -14,7 +14,7 @@ import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.SelectedPollOption;
-import it.auties.whatsapp.util.KeyHelper;
+import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Validate;
 
 import java.util.*;
@@ -23,27 +23,21 @@ import java.util.*;
 /**
  * A model class that represents a message holding a poll inside
  */
-@ProtobufMessageName("Message.PollCreationMessage")
+@ProtobufMessage(name = "Message.PollCreationMessage")
 public final class PollCreationMessage implements ContextualMessage<PollCreationMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
     private byte[] encryptionKey;
-
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     private final String title;
-
-    @ProtobufProperty(index = 3, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
     private final List<PollOption> selectableOptions;
-
     @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
     private final int selectableOptionsCount;
-
-    @ProtobufProperty(index = 5, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     private ContextInfo contextInfo;
-
-    @ProtobufProperty(index = 999, type = ProtobufType.MAP, keyType = ProtobufType.STRING, valueType = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final Map<String, PollOption> selectableOptionsMap;
-
-    @ProtobufProperty(index = 1000, type = ProtobufType.OBJECT)
+    @ProtobufProperty(index = 1000, type = ProtobufType.MESSAGE)
     final List<SelectedPollOption> selectedOptions;
 
     public PollCreationMessage(byte[] encryptionKey, String title, List<PollOption> selectableOptions, int selectableOptionsCount, ContextInfo contextInfo, Map<String, PollOption> selectableOptionsMap, List<SelectedPollOption> selectedOptions) {
@@ -69,7 +63,7 @@ public final class PollCreationMessage implements ContextualMessage<PollCreation
         Validate.isTrue(!title.isBlank(), "Title cannot be empty");
         Validate.isTrue(selectableOptions.size() > 1, "Options must have at least two entries");
         var result = new PollCreationMessageBuilder()
-                .encryptionKey(KeyHelper.senderKey())
+                .encryptionKey(Bytes.random(32))
                 .title(title)
                 .selectableOptions(selectableOptions)
                 .selectableOptionsCount(selectableOptions.size())
@@ -94,7 +88,7 @@ public final class PollCreationMessage implements ContextualMessage<PollCreation
     }
 
     public void addSelectedOptions(JidProvider voter, Collection<PollOption> voted) {
-        for(var entry : voted) {
+        for (var entry : voted) {
             var selectedPollOption = new SelectedPollOption(voter.toJid(), entry.name());
             selectedOptions.add(selectedPollOption);
         }

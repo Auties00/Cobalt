@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
@@ -11,11 +11,11 @@ import java.util.Optional;
 /**
  * A model clas that represents an archived chat
  */
-@ProtobufMessageName("SyncActionValue.ArchiveChatAction")
+@ProtobufMessage(name = "SyncActionValue.ArchiveChatAction")
 public record ArchiveChatAction(
         @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
         boolean archived,
-        @ProtobufProperty(index = 2, type = ProtobufType.OBJECT)
+        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
         Optional<ActionMessageRangeSync> messageRange
 ) implements Action {
     /**

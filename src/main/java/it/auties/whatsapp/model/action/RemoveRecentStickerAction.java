@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.annotation.ProtobufMessageName;
+import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.sync.PatchType;
@@ -12,7 +12,7 @@ import java.util.Optional;
 /**
  * A model class that represents the deletion of a sticker from the recent list
  */
-@ProtobufMessageName("SyncActionValue.RemoveRecentStickerAction")
+@ProtobufMessage(name = "SyncActionValue.RemoveRecentStickerAction")
 public record RemoveRecentStickerAction(
         @ProtobufProperty(index = 1, type = ProtobufType.INT64)
         long lastStickerSentTimestampSeconds
